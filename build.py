@@ -14,6 +14,11 @@ sbmadhav.github.io custom domain), so every page URL starts with /vedic-math/.
   with no ?v= stamp, because this repo cannot hash them: the design-system CSS, the
   Explore menu, analytics, fonts and icons. That is the same pattern as
   /state-of-voice-agents/.
+- sw.js (the offline service worker, scope /vedic-math/) gets its precache list and VERSION
+  between the "build.py: precache" markers: every file of this repo the page loads, at the exact
+  URL index.html uses, with a hash the worker checks on install, plus the shared files index.html
+  and manifest.webmanifest reference (no hash: this repo cannot see them). VERSION hashes all of
+  that and the rest of sw.js, so any change to the app means a new cache.
 
 Running it twice changes nothing the second time.
 """
@@ -73,4 +78,29 @@ for url in SHARED:
         raise SystemExit(f"index.html: no reference to {url}")
 
 write("index.html", html)
-print(f"{len(imports)} Vedic Math modules pinned, app.js v={own[BASE + 'js/app.js']}, math.css v={own[BASE + 'math.css']}")
+
+# Offline: the service worker's precache list. Files of this repo are listed at the URL the page uses,
+# with a hash the worker checks on install; shared files from the main site are listed without one.
+own_files = {BASE: "index.html", f"{BASE}math.css?v={own[BASE + 'math.css']}": "math.css", BASE + "manifest.webmanifest": "manifest.webmanifest"}
+own_files.update({imports[BASE + p]: p for p in js})
+refs = set(re.findall(r'(?:src|href)="(/[^"]*)"', html)) | set(re.findall(r'url\((/[^)]+)\)', html))
+manifest = json.loads((root / "manifest.webmanifest").read_text())
+refs |= {posixpath.join(BASE, i["src"]) for i in manifest.get("icons", [])}
+shared = sorted(u for u in refs if u != "/" and not u.startswith(BASE))
+missing = sorted(u for u in refs if u.startswith(BASE) and u not in own_files)
+if missing:
+    raise SystemExit(f"index.html: {', '.join(missing)} would not be saved for offline use; add it to own_files in build.py")
+precache = [[u, fhash(f)] for u, f in own_files.items()] + [[u, None] for u in shared]
+
+SW_START, SW_END = "/* build.py: precache (generated, do not edit) */", "/* /build.py: precache */"
+sw = (root / "sw.js").read_text()
+block = re.compile(re.escape(SW_START) + r".*?" + re.escape(SW_END), re.S)
+if len(block.findall(sw)) != 1:
+    raise SystemExit("sw.js: precache markers not found")
+listing = "[\n" + ",\n".join(" " + json.dumps(e) for e in precache) + "\n]"
+sw_version = h((listing + block.sub(SW_START + SW_END, sw)).encode())
+sw = block.sub(lambda m: f"{SW_START}\nconst VERSION = '{sw_version}';\nconst PRECACHE = {listing};\n{SW_END}", sw)
+write("sw.js", sw)
+
+print(f"{len(imports)} Vedic Math modules pinned, app.js v={own[BASE + 'js/app.js']}, math.css v={own[BASE + 'math.css']}, "
+      f"sw.js v={sw_version} ({len(own_files)} own + {len(shared)} shared files precached)")

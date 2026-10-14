@@ -925,3 +925,8 @@ fx.applyMode();
 gm.init();
 render();
 initAmbient();
+/* Offline: sw.js (scope /vedic-math/) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
+  const registerSW = () => navigator.serviceWorker.register('/vedic-math/sw.js', { scope: '/vedic-math/' }).catch(() => {});
+  if (document.readyState === 'complete') registerSW(); else addEventListener('load', registerSW, { once: true });
+}

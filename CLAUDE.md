@@ -32,7 +32,14 @@ They are not `?v=` stamped (this repo cannot hash them). Do not copy them in; ch
 
 ## Offline
 
-There is no service worker in this repo. The root service worker of sbmadhav.com (`sw.js` in the main repo, scope `/`) leaves `/vedic-math/` to the network, so visitors always get what this repo serves. If offline play is wanted later, add a worker at `/vedic-math/sw.js` registered with scope `/vedic-math/` and a cache name that does not start with `madhav-` (the root worker deletes those).
+`sw.js` is this app's service worker, registered by `js/app.js` with scope `/vedic-math/` (on https and localhost). That scope is more specific than the root worker of sbmadhav.com (scope `/`, which leaves `/vedic-math/` to the network), so it controls these pages, including their requests to `/assets/` and `/design-system/`.
+
+- `build.py` writes its `VERSION` and `PRECACHE` list (between the `build.py: precache` markers): the shell, `math.css`, every module at its import-map URL and the manifest, each with a hash the worker checks on install, plus the shared files `index.html` and the manifest reference. Never edit that block by hand.
+- Page loads are network first with the saved shell as the offline fallback; `?v=` files are cache first; shared files are stale while revalidate. Other origins (Firebase, Google, analytics) and non-GET requests are never cached. Leaderboards fall back to this device when offline.
+- Caches are `vedic-math-<VERSION>`; the worker keeps the current and previous one and never touches `madhav-*` (the root worker's). Never rename the prefix to `madhav-`.
+- New same-origin files the page loads must be in `index.html` or the manifest (build.py lists them), and a module worker must be started with `import.meta.resolve(...)` so it gets its `?v=` stamp.
+- To retire it, set `KILL = true` in `sw.js`, run `build.py` and deploy (see the comment there).
+- `manifest.webmanifest` here makes Vedic Math its own installable app (scope `/vedic-math/`); the main site's manifest is unchanged.
 
 ## Leaderboards
 

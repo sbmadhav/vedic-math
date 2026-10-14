@@ -29,6 +29,10 @@ python3 -m http.server 8000
 
 Then open http://localhost:8000/vedic-math/.
 
+## Offline
+
+After one visit online, the app works offline: `sw.js` (scope `/vedic-math/`) saves the page, its modules, styles and fonts. `build.py` stamps its version and file list. Leaderboards need a connection and fall back to this device. To test locally, `localhost` registers the worker too; use DevTools > Application > Service workers to bypass or unregister it while editing.
+
 ## Checks
 
 | Check | Command |
