@@ -2,24 +2,24 @@
 
 Leaderboards work on each device out of the box. To make them global, connect a Firebase project (the free Spark plan is enough).
 
-Data model: `boards/{board}/scores/{uid}` with `{ name, avatar, score, ts, exp }`. Board ids look like `daily-2026-10-12-challenger` and `week-2026-W42-pro`. Only the Arena daily round writes, to today's and this week's board for the player's league. Each anonymous player has one entry per board, and it only changes when the new score is higher. The browser client is `vedic-math/js/cloud.js`; the config lives in `vedic-math/js/cloud-config.js`.
+Data model: `boards/{board}/scores/{uid}` with `{ name, avatar, score, ts, exp }`. Board ids look like `daily-2026-10-12-challenger` and `week-2026-W42-pro`. Only the Arena daily round writes, to today's and this week's board for the player's league. Each anonymous player has one entry per board, and it only changes when the new score is higher. The browser client is `js/cloud.js`; the config lives in `js/cloud-config.js`.
 
 ## One command (recommended)
 
 On a machine with the Google Cloud CLI (`gcloud`) and Node.js, from the repo root:
 
 ```
-bash vedic-math/cloud/setup.sh
+bash cloud/setup.sh
 ```
 
-It asks for a project id (default `sbmadhav-vedic-math`; or pass it: `bash vedic-math/cloud/setup.sh my-id`) and is safe to re-run. It:
+It asks for a project id (default `sbmadhav-vedic-math`; or pass it: `bash cloud/setup.sh my-id`) and is safe to re-run. It:
 
 1. Signs you in to `gcloud` and Firebase if needed (a browser window opens for each).
 2. Creates the Google Cloud project if missing, enables the APIs and adds Firebase to it.
 3. Creates the Firestore database in native mode (location `nam5`; override with `REGION=us-east1`).
 4. Turns on Anonymous sign-in and adds `localhost`, `sbmadhav.com` and `www.sbmadhav.com` to the authorized domains (Identity Toolkit admin API).
 5. Deploys `firestore.rules` and `firestore.indexes.json` from this folder.
-6. Creates a Firebase web app if none exists and writes its config into `vedic-math/js/cloud-config.js`.
+6. Creates a Firebase web app if none exists and writes its config into `js/cloud-config.js`.
 7. Turns on the Firestore TTL policy on `exp`, so entries delete themselves about 30 days after the last score.
 8. Prints the next steps (commit and push), the App Check steps and a budget alert command.
 
@@ -30,8 +30,8 @@ If step 4 says Authentication is not initialized, open the Authentication page i
 1. In the Firebase console, create a project (or add Firebase to an existing Google Cloud project).
 2. Build > Authentication > Get started > Sign-in method: enable **Anonymous**.
 3. Build > Firestore Database: create a database in production mode (pick a US location such as `nam5`).
-4. Deploy the rules and indexes from this folder: `npx firebase-tools deploy --only firestore --project <project-id>` (run inside `vedic-math/cloud`).
-5. Project settings > Your apps > add a **Web app**, copy its config object, and paste it into `vedic-math/js/cloud-config.js` (keep the comment at the top):
+4. Deploy the rules and indexes from this folder: `npx firebase-tools deploy --only firestore --project <project-id>` (run inside `cloud`).
+5. Project settings > Your apps > add a **Web app**, copy its config object, and paste it into `js/cloud-config.js` (keep the comment at the top):
    `export const FIREBASE = { apiKey: "...", authDomain: "...", projectId: "...", appId: "..." };`
 6. Authentication > Settings > Authorized domains: add `sbmadhav.com` (and `www.sbmadhav.com`; `localhost` is there by default).
 7. Turn on automatic deletion: Firestore Database > Time-to-live > Create policy, collection group `scores`, timestamp field `exp`. Or: `gcloud firestore fields ttls update exp --collection-group=scores --enable-ttl --project <project-id>`. This needs the Blaze plan; on Spark the command fails with "billing disabled". Keep `parentNote()` in `js/app.js` in step with whether the policy exists.
@@ -72,7 +72,7 @@ When App Check is on, the parent note on the site also mentions that Google reCA
 `test/` runs `firestore.rules` against the local Firestore emulator with `@firebase/rules-unit-testing`. Needs Node.js 20+ and Java 11+ (the emulator is a Java program). No Google account or project is used.
 
 ```
-cd vedic-math/cloud/test
+cd cloud/test
 npm install
 npm test
 ```
@@ -97,5 +97,5 @@ Board ids in the tests are built from today's date, because past and future boar
 After changing `firestore.rules`, deploy it with:
 
 ```
-cd vedic-math/cloud && npx firebase-tools deploy --only firestore:rules --project sbmadhav-vedic-math
+cd cloud && npx firebase-tools deploy --only firestore:rules --project sbmadhav-vedic-math
 ```

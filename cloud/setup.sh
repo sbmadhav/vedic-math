@@ -3,9 +3,9 @@
 # Safe to re-run: every step checks first and skips what already exists.
 #
 # Usage (from anywhere inside the repo):
-#   bash vedic-math/cloud/setup.sh                 # asks for the project id
-#   PROJECT_ID=my-project bash vedic-math/cloud/setup.sh
-#   bash vedic-math/cloud/setup.sh my-project
+#   bash cloud/setup.sh                 # asks for the project id
+#   PROJECT_ID=my-project bash cloud/setup.sh
+#   bash cloud/setup.sh my-project
 #
 # Optional env: REGION (Firestore location, default nam5), BILLING_ACCOUNT (only used for a brand new project),
 #               APP_CHECK=1 (also create a reCAPTCHA Enterprise key, register App Check and write the site key).
@@ -205,7 +205,7 @@ Next steps:
      Data appears in: https://console.firebase.google.com/project/$PROJECT_ID/firestore
 
 Hardening:
-  - App Check (blocks scripted writes from outside the site). $( [ -n "$APP_CHECK_KEY" ] && echo "Registered with key $APP_CHECK_KEY." || echo "Not set up: re-run with APP_CHECK=1, or follow vedic-math/cloud/README.md (App Check).")
+  - App Check (blocks scripted writes from outside the site). $( [ -n "$APP_CHECK_KEY" ] && echo "Registered with key $APP_CHECK_KEY." || echo "Not set up: re-run with APP_CHECK=1, or follow cloud/README.md (App Check).")
       After publishing the key, watch https://console.firebase.google.com/project/$PROJECT_ID/appcheck
       for a few days, then click Enforce for Cloud Firestore (and Authentication).
       Local testing: open the site on localhost and add the debug token it prints under Manage debug tokens.
