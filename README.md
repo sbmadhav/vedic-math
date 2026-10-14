@@ -2,7 +2,7 @@
 
 Speed tricks from the sutras, a counting-to-calculus skill map, games, daily quests, an Arena with leaderboards and duels. Three play modes for every age. Live at [sbmadhav.com/vedic-math](https://sbmadhav.com/vedic-math/).
 
-Part of [sbmadhav.com](https://sbmadhav.com). The design system (`/design-system/`), fonts, Explore menu and analytics come from the rest of sbmadhav.com ([`sbmadhav.github.io`](https://github.com/sbmadhav/sbmadhav.github.io)) and are loaded by absolute URL.
+Part of [sbmadhav.com](https://sbmadhav.com). GitHub Pages publishes this repo (branch `main`) as a project site, and the user site's custom domain puts it at `/vedic-math/`. The design system (`/design-system/`, from [sbmadhav/design-system](https://github.com/sbmadhav/design-system)) and the fonts, Explore menu and analytics (`/assets/`, from [sbmadhav/sbmadhav.github.io](https://github.com/sbmadhav/sbmadhav.github.io)) are loaded by absolute URL.
 
 ## Layout
 
@@ -18,12 +18,12 @@ History before the split comes from `vedic-math/` in `sbmadhav.github.io` (`git 
 
 ## Run locally
 
-Pages use absolute paths (`/vedic-math/...` and the main site's `/design-system/...`, `/assets/...`), so serve both repos from one root. With the two repos cloned side by side:
+Pages use absolute paths (`/vedic-math/...` and the main site's `/design-system/...`, `/assets/...`), so serve them all from one root. With the three repos cloned side by side:
 
 ```sh
 cd ../sbmadhav.github.io
-ln -s ../vedic-math vedic-math   # ignored by that repo's .gitignore
-# if /design-system/ also lives in its own repo: ln -s ../design-system design-system
+ln -s ../vedic-math vedic-math         # both links are ignored by that repo's .gitignore
+ln -s ../design-system design-system   # clone sbmadhav/design-system next to it first
 python3 -m http.server 8000
 ```
 
@@ -44,3 +44,17 @@ git config core.hooksPath .githooks
 ```
 
 CI (`.github/workflows/ci.yml`) runs the same on every push and pull request to `main`.
+
+`main` is protected: every change from someone else arrives as a pull request, needs the owner's review and passing checks, and nothing merges without approval.
+
+## Contributing
+
+Content corrections, bug fixes and accessibility improvements are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to propose a change, and [SECURITY.md](SECURITY.md) to report a security problem privately.
+
+## License
+
+[MIT](LICENSE).
+
+## Thank you, Claude
+
+Built with Claude: much of Vedic Math was designed and written together with Claude, Anthropic's AI assistant, through Claude Code. Thank you, Claude.
