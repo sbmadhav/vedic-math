@@ -13,18 +13,11 @@ The parent note SHALL appear next to every World board and on the Me page, worde
 - **THEN** the parent note is available beside it
 
 ### Requirement: The note names every kind of post
-The parent note SHALL name every kind of post the app makes (Arena daily round Scores, ranked game round Scores, the weekly XP total) and SHALL name nothing the app does not send.
+The parent note SHALL name every kind of post the app makes (Arena daily round Scores, ranked game round Scores, the weekly Sparks total) and SHALL name nothing the app does not send.
 
 #### Scenario: Note matches what is sent
 - **WHEN** the parent note is compared with every request the app can send to World boards
 - **THEN** each kind of post appears in the note, and the note mentions no other
-
-### Requirement: The note explains XP and Practice
-The parent note SHALL state that XP from all play, Practice included, adds up to one weekly total that is posted, and that Practice Scores never leave the device.
-
-#### Scenario: A parent reads about Practice
-- **WHEN** a grown-up reads the note
-- **THEN** it does not say Practice keeps everything on the device without also saying its XP counts toward the posted weekly total
 
 ### Requirement: The note states consent, identity and keeping
 The parent note SHALL state that nothing is posted before the Age answer, nothing for a Player under 13 before the Parent step, and that no identity exists until the first post. It SHALL list the fields an entry holds, say that entries are not deleted automatically, and say how to ask for removal.
@@ -50,3 +43,10 @@ The parent note SHALL say that the site counts anonymous visits and actions to i
 #### Scenario: Grown-up reads the note
 - **WHEN** a grown-up opens the parent note in any Mode
 - **THEN** it says usage is counted anonymously without cookies or IDs, separately from World boards
+
+### Requirement: The note explains Sparks and Practice
+The parent note SHALL state that Sparks from all play, Practice included, add up to one weekly total that is posted, and that Practice Scores never leave the device. It SHALL NOT mention XP.
+
+#### Scenario: A parent reads about Practice
+- **WHEN** a grown-up reads the note
+- **THEN** it does not say Practice keeps everything on the device without also saying its Sparks count toward the posted weekly total

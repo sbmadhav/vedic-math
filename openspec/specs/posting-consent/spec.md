@@ -6,7 +6,7 @@ Decide when a Player's Scores and XP may leave the device for World boards, so t
 ## Requirements
 
 ### Requirement: Age answer before the first post
-The system SHALL ask each Player one neutral age question before the first time any Score or XP total of theirs would be posted to a World board, and SHALL post nothing for that Player until it is answered. The question SHALL NOT indicate which answer allows posting. The Age answer SHALL be stored only on the device, per Player, and SHALL NOT be sent anywhere.
+The system SHALL ask each Player one neutral age question before the first time any Score or weekly Sparks total of theirs would be posted to a World board, and SHALL post nothing for that Player until it is answered. The question SHALL NOT indicate which answer allows posting. The Age answer SHALL be stored only on the device, per Player, and SHALL NOT be sent anywhere.
 
 #### Scenario: First Ranked round of a new Player
 - **WHEN** a Player with no Age answer finishes a Ranked round whose Score would be posted
@@ -21,7 +21,7 @@ The system SHALL ask each Player one neutral age question before the first time 
 - **THEN** no request leaving the device contains the Age answer
 
 ### Requirement: Parent step for Players under 13
-The system SHALL NOT post any Score or XP total to a World board for a Player whose Age answer is under 13 until a grown-up gives the Parent step for that Player on this device. This SHALL apply in every Mode. The Parent step SHALL include a simple check that a grown-up is present and SHALL be stored only on the device.
+The system SHALL NOT post any Score or weekly Sparks total to a World board for a Player whose Age answer is under 13 until a grown-up gives the Parent step for that Player on this device. This SHALL apply in every Mode. The Parent step SHALL include a simple check that a grown-up is present and SHALL be stored only on the device.
 
 #### Scenario: Under-13 Player in Pro mode
 - **WHEN** a Player who answered under 13 and chose Pro finishes a Ranked round
@@ -29,7 +29,7 @@ The system SHALL NOT post any Score or XP total to a World board for a Player wh
 
 #### Scenario: Grown-up gives the Parent step
 - **WHEN** a grown-up completes the Parent step for an under-13 Player
-- **THEN** that Player's later Scores and XP totals post to World boards as for any other Player
+- **THEN** that Player's later Scores and weekly Sparks totals post to World boards as for any other Player
 
 #### Scenario: Players 13 and over
 - **WHEN** a Player whose Age answer is 13 or over finishes a Ranked round
