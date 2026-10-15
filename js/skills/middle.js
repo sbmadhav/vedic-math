@@ -1,5 +1,5 @@
 /* Grades 3 to 5: multiplication strategies, division, fractions, decimals, area, volume and the coordinate plane. */
-import { ri, pick, shuffle, gcd, lcm, simp, fr, frRaw, mixed, factors, isPrime, round, PEOPLE, THINGS } from '../lib.js';
+import { ri, pick, shuffle, gcd, lcm, simp, fr, frRaw, mixed, factors, isPrime, round, PEOPLE, THINGS, ordinal } from '../lib.js';
 import * as V from '../viz.js';
 
 /* Strategy hint for a times fact, built from facts a learner already knows */
@@ -127,7 +127,7 @@ export default [
       const type = pick(['prime', 'count', 'multiple']);
       if (type === 'prime') { const n = ri(2, 60), ans = isPrime(n) ? 'Prime' : 'Composite'; return { q: `Is ${n} prime or composite?`, kind: 'choice', choices: ['Prime', 'Composite'], answer: ans, hints: ['Try dividing by 2, 3, 5 and 7.'], steps: [ans === 'Prime' ? `${n} has only the factors 1 and ${n}.` : `${n} = ${factors(n)[1]} &times; ${n / factors(n)[1]}, so it is composite.`] }; }
       if (type === 'count') { const n = pick([12, 16, 18, 20, 24, 28, 30, 36, 40, 45, 48]), f = factors(n); return { q: `How many factors does ${n} have?`, kind: 'num', answer: f.length, hints: ['List factor pairs: 1 and ' + n + ', then 2 and ...'], steps: [`Factors: ${f.join(', ')}. That is ${f.length}.`] }; }
-      const k = ri(3, 12), m = ri(2, 9); return { q: `What is the ${m}th multiple of ${k}? (The 1st is ${k}.)`, kind: 'num', answer: k * m, hints: [`${k} &times; ${m}`], steps: [`${k} &times; ${m} = ${k * m}`] };
+      const k = ri(3, 12), m = ri(2, 9); return { q: `What is the ${ordinal(m)} multiple of ${k}? (The 1st is ${k}.)`, kind: 'num', answer: k * m, hints: [`${k} &times; ${m}`], steps: [`${k} &times; ${m} = ${k * m}`] };
     } },
   { id: '4-equiv', grade: 4, strand: 'frac', title: 'Equivalent fractions', kid: 'Same amount, new name',
     idea: 'Multiplying the top and bottom by the same number cuts each piece smaller without changing the amount.',
@@ -161,7 +161,7 @@ export default [
       const hund = Math.random() < .5, n = hund ? ri(1, 99) : ri(1, 9), d = hund ? 100 : 10, toDec = Math.random() < .5;
       const dec = (n / d).toFixed(hund ? 2 : 1);
       return toDec ? { q: `Write ${frRaw(n, d)} as a decimal.`, kind: 'num', answer: n / d, asDecimal: true, hints: [hund ? 'Two places after the point for hundredths.' : 'One place after the point for tenths.'], steps: [`${frRaw(n, d)} = ${dec}`] }
-        : { q: `${dec} = <span class="fr"><span>?</span><span>${d}</span></span>`, viz: V.fracBar(hund ? Math.round(n / 10) : n, 10), kind: 'num', answer: n, hints: [`Read it: ${dec} is ${n} ${hund ? 'hundredths' : 'tenths'}.`], steps: [`${dec} = ${frRaw(n, d)}`] };
+        : { q: `${dec} = <span class="fr"><span>?</span><span>${d}</span></span>`, viz: hund ? V.hundredGrid(n) : V.fracBar(n, 10), kind: 'num', answer: n, hints: [`Read it: ${dec} is ${n} ${hund ? 'hundredths' : 'tenths'}.`], steps: [`${dec} = ${frRaw(n, d)}`] };
     } },
   { id: '4-angles', grade: 4, strand: 'geo', title: 'Measure angles', kid: 'Angle hunter',
     idea: 'A straight line is 180°. A square corner (right angle) is 90°. Parts of an angle add up to the whole.',

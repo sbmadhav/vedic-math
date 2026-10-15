@@ -101,6 +101,9 @@ test.describe('pro', () => {
 test('the footer says progress stays in this browser', async ({ page }) => {
   await open(page);
   await expect(page.locator('footer.mq-foot')).toContainText('Progress stays in this browser, and leaderboards only see a made-up nickname.');
+  // Honest framing: the sutras come from the 1965 book, not "traditional Vedic mathematics"
+  await expect(page.locator('footer.mq-foot')).toContainText("Speed tricks use sutras from Bharati Krishna Tirtha's 1965 book; lessons, problems and visuals are original.");
+  await expect(page.locator('footer.mq-foot')).not.toContainText(/traditional|Vedas/i);
 });
 
 test.describe('a Player who may post (a grown-up)', () => {

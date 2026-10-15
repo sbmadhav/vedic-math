@@ -8,6 +8,7 @@ import { SUTRAS, SUBSUTRAS, HISTORY } from './sutras.js';
 import { DETAILS } from './sutra-details.js';
 import { mountScene } from './scenes.js';
 import { RESOURCES } from './resources.js';
+import { relatedTo } from './related.js';
 import { checkOne } from './check.js';
 import { answerText } from './answers.js';
 import { pick, shuffle } from './lib.js';
@@ -116,7 +117,7 @@ function modePicker() {
   view.innerHTML = `<section class="md-section mq-hero"><div class="md-wrap">
     <span class="md-tag md-tag--plum">Vedic Math for Everyone</span>
     <h1 class="md-heading">Fast, fun math for <span class="hl-word">every</span> brain</h1>
-    <p class="md-lede">Speed tricks from the Vedic sutras, a full skill map from counting to calculus, games, daily quests and an Arena with leaderboards. Pick how you want to play. You can change it any time.</p>
+    <p class="md-lede">Speed tricks from the sutras in Bharati Krishna Tirtha's 1965 book, a full skill map from counting to calculus, games, daily quests and an Arena with leaderboards. Pick how you want to play. You can change it any time.</p>
     <div class="mode-pick">${Object.entries(fx.MODES).map(([id, m]) => `<button class="mode-card mode-card--${m.color}" data-mode="${id}"><span class="mode-ic" aria-hidden="true">${modeIcon(id)}</span><b>${m.name}</b><small>${m.ages}</small><span>${m.blurb}</span></button>`).join('')}</div>
     <p class="mq-note">Playing as <b>${esc(p.name)}</b>. Nicknames are made up for you, so no real names are ever needed.</p>
   </div></section>`;
@@ -134,7 +135,7 @@ function questsHTML() {
 }
 function heroStats() {
   const p = store.player(), L = gm.levelInfo();
-  return `<div class="me-strip">${avatar(p, 54)}<div class="me-strip-t"><small>${fx.t({ explorer: 'Hello,', challenger: 'Welcome back,', pro: 'Welcome back,' })}</small><b>${esc(p.name)}</b><span>Level ${L.lv} · ${gm.titleOf(L.lv)}</span><span class="mq-xpbar mq-xpbar--big" role="progressbar" aria-label="XP to the next level" aria-valuemin="0" aria-valuemax="${L.need}" aria-valuenow="${L.into}" aria-valuetext="${L.into} of ${L.need} XP to the next level"><i style="width:${pct(L.pct)}%"></i></span></div>
+  return `<div class="me-strip">${avatar(p, 54)}<div class="me-strip-t"><small>${fx.t({ explorer: 'Hello,', challenger: store.playedBefore() ? 'Welcome back,' : 'Welcome,', pro: store.playedBefore() ? 'Welcome back,' : 'Welcome,' })}</small><b>${esc(p.name)}</b><span>Level ${L.lv} · ${gm.titleOf(L.lv)}</span><span class="mq-xpbar mq-xpbar--big" role="progressbar" aria-label="XP to the next level" aria-valuemin="0" aria-valuemax="${L.need}" aria-valuenow="${L.into}" aria-valuetext="${L.into} of ${L.need} XP to the next level"><i style="width:${pct(L.pct)}%"></i></span></div>
     <div class="me-nums"><div><b>${store.xp()}</b><small>XP</small></div><div><b>${store.streakDays()}</b><small>day streak</small></div><div><b>${Object.keys(store.badges()).length}</b><small>badges</small></div></div></div>`;
 }
 const tile = (href, title, sub, color, ic) => `<a class="play-tile play-tile--${color}" href="${href}"><span class="play-ic" aria-hidden="true">${icon(ic)}</span><b>${title}</b><small>${sub}</small></a>`;
@@ -252,11 +253,10 @@ function skillView(id, { signal } = {}) {
   if (trick) mountAnimator(trick, signal); else showExample(s);
   return practice($('#practice'), () => s, { signal });
 }
-/* Related videos: match trick or skill words against the Watch shelf tags */
+/* Related videos: whole trick or skill words against the Watch shelf tags and titles (js/related.js) */
 function videosFor(s, trick) {
   const words = (trick ? `${trick.title} ${trick.sutra} vedic` : `${s.title} ${s.strand}`).toLowerCase();
-  const keys = ['square', 'nikhilam', 'crosswise', 'multipl', 'times', '11', 'count', 'fraction', 'algebra', 'calculus', 'geometry', 'vedic', 'subtract', 'add'];
-  const hits = RESOURCES.filter(r => r.type !== 'channel' && keys.some(k => words.includes(k) && (r.tags.join(' ') + ' ' + r.title).toLowerCase().includes(k))).slice(0, 3);
+  const hits = relatedTo(words, RESOURCES);
   if (!hits.length) return '';
   return `<h2 class="mq-h3">Watch it explained</h2><div class="rel-links">${hits.map(r => `<a${wa(r)}>${icon(embedOf(r) ? 'play' : 'link')}<span>${esc(r.title)}</span>${embedOf(r) ? '' : '<small class="rel-ext">opens site</small>'}</a>`).join('')}</div>`;
 }
@@ -376,7 +376,7 @@ function dojoView() {
     ${crumbs([null, 'Dojo'])}
     <span class="md-tag md-tag--plum">Vedic Dojo</span>
     <h1 class="md-heading">From white belt to <span class="hl-word">black belt</span></h1>
-    <p class="md-lede">${TRICKS.length} speed tricks from the Vedic sutras, in seven belts. Master all three tricks in a belt to earn it. Each trick has a step-by-step animator, endless practice and <b>${LV.KATAS_PER_TRICK} katas</b>: numbered drills that get harder, ${LV.KATA_COUNT.toLocaleString('en-US')} in all. Earn up to 3 stars on each.</p>
+    <p class="md-lede">${TRICKS.length} speed tricks from the sutras in Bharati Krishna Tirtha's 1965 book, in seven belts. Master all three tricks in a belt to earn it. Each trick has a step-by-step animator, endless practice and <b>${LV.KATAS_PER_TRICK} katas</b>: numbered drills that get harder, ${LV.KATA_COUNT.toLocaleString('en-US')} in all. Earn up to 3 stars on each.</p>
     <p class="mq-small">Kata stars: ${store.starsWhere('k:')} of ${LV.KATA_COUNT * 3} &#9733; · ${store.doneWhere('k:')} of ${LV.KATA_COUNT.toLocaleString('en-US')} katas done</p>
     <div class="belt-row">${bp.map(b => `<span class="belt-chip${b.earned ? ' on' : ''}" style="--belt:${b.color}"><span class="belt-knot" aria-hidden="true"></span>${b.name}</span>`).join('')}</div>
     <p class="mq-small">${earned} of ${BELTS.length} belts earned.</p>
@@ -523,7 +523,7 @@ function challengeView(id, { signal } = {}) {
 const sutraId = (c, sub) => (sub ? 'u' : 's') + c.n;
 const ALL_SUTRAS = [...SUTRAS.map(c => ({ ...c, sub: false, id: 's' + c.n })), ...SUBSUTRAS.map(c => ({ ...c, sub: true, id: 'u' + c.n }))];
 function sutrasView() {
-  document.title = `The Vedic sutras: ${BRAND} · Madhav`;
+  document.title = `The sutras: ${BRAND} · Madhav`;
   store.markSeen('sutras');
   const got = ALL_SUTRAS.filter(gm.collectedCard).length;
   const card = c => { const have = gm.collectedCard(c); return `<article class="sutra-card${have ? ' got' : ''}" data-id="${c.id}" data-name="${esc(c.name)}">
@@ -598,7 +598,7 @@ function closeSutra(instant = false) {
   if (!sutraDlg || !sutraDlg.open) return;
   if (sutraScene) { sutraScene.abort(); sutraScene = null; }
   const art = sutraFrom && document.body.contains(sutraFrom) ? sutraFrom : null;
-  const done = () => { sutraDlg.close(); document.title = `The Vedic sutras: ${BRAND} · Madhav`; if (art) art.querySelector('.sutra-face').focus({ preventScroll: true }); };
+  const done = () => { sutraDlg.close(); document.title = `The sutras: ${BRAND} · Madhav`; if (art) art.querySelector('.sutra-face').focus({ preventScroll: true }); };
   if (instant || !art || reducedMotion()) return done();
   const a = art.getBoundingClientRect(), b = sutraDlg.getBoundingClientRect();
   sutraDlg.querySelector('.sd-inner').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' });

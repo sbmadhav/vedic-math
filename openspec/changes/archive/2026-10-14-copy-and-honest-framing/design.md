@@ -1,0 +1,15 @@
+# Design
+
+The tasks note that this change needed no design beyond local copy, CSS and helper fixes. This file holds only the decisions made while implementing it.
+
+## Decisions made during implementation
+
+- **Prompt selectors.** `.g-q`, `.g-q-sm` and `.g-say` keep their plain selectors and gain a `.g-shell` form (`.g-q, .g-shell .g-q`), so they beat `.md-card p` inside a game card and still apply outside one. `.g-say` had no size of its own; it is now `1.15rem` (about 18 px) in `var(--ink)`. `.g-q` also sets `color: var(--ink)`.
+- **Mouse parked in the game specs.** With the larger instruction line, the first Make ten tile is drawn under the pointer left on Start, and `.g-tile:hover { transform: translateY(-2px) }` makes it bob between hovered and not, so Playwright never sees it "stable". The launch spec moves the mouse to the corner after Start. The hover style itself is unchanged (out of scope).
+- **Greeting.** `store.playedBefore()` is true when the Player's `days` has a date before today with play; Challenger and Pro read "Welcome back," only then and "Welcome," otherwise. Explorer stays "Hello,".
+- **Sutra wording.** The Mode picker and the Dojo ledes say "from the sutras in Bharati Krishna Tirtha's 1965 book" (rather than "the 16 sutras", because the speed tricks also use sub-sutras); both page titles are "The sutras: ...". The comment at the top of `js/vedic.js` was reworded the same way.
+- **Copy scan covers whole files**, not only string literals: `index.html`, `manifest.webmanifest` and every `js/**/*.js`, comments included, which is stricter and avoids a fragile JS string parser. It bans "Vedic sutra(s)", "traditional Vedic mathematics" and "from the Vedas" (a sentence that says "not" or "never" may name the Vedas), plus em dashes and `&mdash;`. The only em dash was inside the minus-folding character class in `js/check.js`; it is now written as `—`.
+- **Related videos** moved to a pure `relatedTo(text, resources)` in a new `js/related.js`. Keys are whole-word regexes that allow their own plural and -ing forms (`count`, `counts`, `counting`; `multiply`, `multiplication`), so "Discounts" never matches "count".
+- **Hundredths picture check.** Instead of committed screenshot baselines (three engines, two schemes, and a live target), the Practice spec checks the grid structurally (100 squares, the right number shaded, the label) and attaches light and dark screenshots to the report for a person to look at.
+- **CLS measurement.** Playwright's default load is fast enough that the old page also measured 0, so the mobile spec throttles through CDP (150 ms latency, 1.6 Mbps down, 4x CPU) to look like Lighthouse's phone profile. Measured on the mobile project: before (live, `origin/main` 987e711) 0.3013, after (this branch's `_site`) 0.0002.
+- **Release check (5.1).** Ticked on the local run (unit, rules, full e2e against a production-like build); the live E2E run is reported in the PR. A Lighthouse run was not available in this environment; the throttled CLS spec stands in for it.

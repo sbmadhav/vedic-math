@@ -124,4 +124,34 @@ test('after 5 Practice questions a symbol key inserts once and "Want a hint?" gi
   expect(writes).toBe(1);
   await expect(box.locator('#prSay')).toContainText('Hint:');
   expect(issues.console, 'console errors').toEqual([]);
+
+test('hundredths show a 10 by 10 grid with the right squares shaded, in both schemes', async ({ page }, testInfo) => {
+  await seedRandom(page, 5);
+  await open(page, '#/skill/4-decimals');
+  const box = page.locator('#practice');
+  for (let k = 0; k < 40; k++) {
+    const q = (await box.locator('#prQ').innerHTML());
+    if (/<span>100<\/span>/.test(q) && /\d*\.\d+ =/.test(q)) break;
+    await box.locator('#prShow').click();
+    await box.locator('#prCheck').click();
+  }
+  expect(await box.locator('#prQ').innerHTML(), 'a hundredths question came up').toMatch(/\d*\.\d+ =.*<span>100<\/span>/);
+  const dec = Number(((await box.locator('#prQ').textContent()) || '').match(/\d*\.\d+/)![0]);
+  const viz = box.locator('.mq-viz svg');
+  await expect(viz).toHaveAttribute('aria-label', `${Math.round(dec * 100)} out of 100 equal squares shaded`);
+  await expect(viz.locator('rect')).toHaveCount(100);
+  await expect(viz.locator('rect.vz-coral')).toHaveCount(Math.round(dec * 100));
+  for (const scheme of ['light', 'dark'] as const) {
+    await page.emulateMedia({ colorScheme: scheme });
+    await testInfo.attach(`hundredths-${scheme}`, { body: await viz.screenshot(), contentType: 'image/png' });
+  }
+});
+
+test('a percent lesson links no counting videos', async ({ page }) => {
+  await open(page, '#/skill/7-pctchange');
+  await expect(page.locator('#view h1')).toBeVisible();
+  await expect(page.locator('#view h1')).toHaveText(/Discounts, tax and percent change/);
+  await expect(page.locator('.rel-links a', { hasText: /Numberblocks/i })).toHaveCount(0);
+  await open(page, '#/skill/k-count');
+  await expect(page.locator('.rel-links')).toContainText(/Numberblocks/);
 });
