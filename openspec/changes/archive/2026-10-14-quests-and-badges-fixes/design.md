@@ -37,3 +37,16 @@
 ## Migration Plan
 
 Client-only. On first load after release, `startDay()` builds today's `questDay` from current counts, so today's quests restart at 0 for everyone once. Rollback is a revert; old keys still work for the old code.
+
+## Decisions made during implementation
+
+- **Quest ids name what the quest asks:** `${counter}-${goal}` (`answers-15`, `arena-1`). The same quest in two Modes has the same id, so a quest finished in Challenger that Pro also has (`arena-1`, `runs-1`) stays done after a switch and pays no second 25 XP. A quest the new Mode has that the old one did not is never shown as done.
+- **Pools.** Explorer: answer 8, answer 12, 5 right, 1 game, 2 games, watch a trick, finish an Arena round. Challenger: answer 15, 10 right, watch a trick, finish an Arena round, play a game, finish a Dojo kata, finish an Endless run. Pro: answer 20, 15 right, finish an Arena round, watch 2 tricks, finish 2 katas, finish an Endless run, play 2 games. The old Explorer `games` counter was never bumped anywhere (only `gamesPlayed` is), so the game quests use `gamesPlayed`.
+- **The draw.** `seeded('v1:quests:' + day + ':' + mode, ...)` from `js/levels.js` (the same mulberry32 and hash as the Arena and the tower) with `shuffle()` from `js/lib.js`. The first quest is the first answer quest (`answers` or `right`) in the shuffled pool; the other two are the next ones that count a different thing, so a day never has two answer quests or two quests on one counter.
+- **Midnight while the app is open.** `init()` sets a timer for just after local midnight that calls `startDay()`, so the new day's first action counts. `quests()` also starts the day if the record is from an earlier date, and fills in a baseline for any counter missing from the record (a pool edited mid-day).
+- **Old keys.** `startDay()` no longer writes `day:<date>` seen keys or `q:` counters, and quests no longer write `quest:` seen keys. Existing ones stay in storage and are ignored.
+- **Duelist goes to the active Player.** The Duel's `onEnd` bumps `duelsDone`; the old `duels` counter is still bumped on Start for history.
+- **Video learner counts a minute with the player open.** There is no `later()` helper in `js/app.js`, so it is a `setTimeout` kept on the dialog and cleared on close and on reopening. Without the YouTube iframe API (rejected above) the page cannot tell playing from paused, so "open and playing" is measured as open for 60 seconds. The `watched` click counter is still bumped.
+- **Sutra scholar counts every collected card** (`collectedCount()` over the 29 Sutra and sub-sutra cards), including cards collected by mastering one of their tricks.
+- **E2E.** The Duel spec replaces `Math.random` with a resettable seeded one, rebuilds the duel's question set with `makeSet` from the page's own module and answers right ten times. The video spec routes the YouTube frame and thumbnails to empty local answers and uses `page.clock`. The day-1 quest spec answers one "Times tables" question (`#/skill/3-mult`).
+- **Release check (4.1)** is ticked on the local run (unit, rules, full e2e against a production-like build, including the mobile project). The "fresh phone browser" check is covered by the mobile project of the day-1 quest spec; the live E2E run is reported in the PR.
