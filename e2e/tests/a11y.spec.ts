@@ -37,6 +37,20 @@ for (const scheme of ['light', 'dark'] as const) {
   });
 }
 
+/* The Duel after Start (duel spec): both sides show the same question, picture and choices */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, explorer`, () => {
+    test.use({ colorScheme: scheme, seedMode: 'explorer' });
+    test('#/duel after Start has no serious or critical axe violations', async ({ page }, testInfo) => {
+      chromiumOnly(testInfo);
+      await open(page, '#/duel');
+      await page.locator('#dGo').click();
+      await expect(page.locator('#dQ0')).not.toBeEmpty();
+      expect(await serious(page, '#/duel')).toEqual([]);
+    });
+  });
+}
+
 for (const k of KNOWN) {
   // Known issue on the live site, reported to the owner. Remove .fixme (and the KNOWN entry) once fixed.
   test.fixme(`known: ${k.rule} on ${k.target} (${k.route}). ${k.note}`, async ({ page }, testInfo) => {
