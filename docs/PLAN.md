@@ -71,6 +71,8 @@ Paper or Figma prototype of "Beat the calculator" with 3 to 5 kids aged 9 to 14,
 
 ## Phase 1: the magic moment (weeks 3 to 5)
 
+The game-world direction (Star Quest) and its decisions so far are in `docs/star-quest.md`, with a playable prototype in `docs/prototypes/star-quest/`. Settle its open questions before writing Phase 1 changes; it may absorb some items below.
+
 | Item | Effort | What it does | Tradeoff |
 | --- | --- | --- | --- |
 | Beat the calculator Hook | M | First screen dares "Square 85 before the calculator does". The player loses, sees a 20-second reveal, then wins 3 times. The mode question comes after. | The race must be honest (0.45s per key plus "="), using only problems humans really win |
