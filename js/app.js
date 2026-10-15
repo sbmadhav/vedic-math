@@ -596,7 +596,11 @@ function parentNote() {
     <p class="pn-now"><b>${now}</b></p>
     <p>World boards run on Google Firebase. Three kinds of post go to boards for the player's league: the score of a Daily challenge in the Arena and the score of a Ranked round of a game (today's and this week's board for each), and the player's XP total for this week (one weekly board). XP comes from all play, Practice included, so practice adds to that posted weekly total. Practice scores themselves never leave this device.</p>
     <p>Nothing is posted before a player answers one question about their age. The answer stays on this device and is never sent. Nothing is posted for a player under 13 until a grown-up turns on World boards for them on this device (Me page, World boards), and it can be turned off there at any time.</p>
-    <p>No identity exists until the first post: looking at World boards needs no sign-in. At the first post, Firebase gives this browser a random ID and keeps it with the dates it was created and last used. Every player on this device posts under that one ID, so they share one entry per board. There is no account, sign-up or password.</p>
+    <p>No identity exists until the first post: looking at World boards needs no sign-in. ${fx.t({
+      explorer: "When a player first posts, Firebase gives that player their own random ID on this browser and keeps it with the dates it was created and last used. Each player on this device who posts has their own ID and their own entry on each board. Removing a player on the Me page forgets their ID on this device; entries they already posted stay until you ask for them to be removed.",
+      challenger: "At a player's first post, Firebase gives that player their own random ID on this browser and keeps it with the dates it was created and last used. Each player on this device who posts has their own ID and their own entry on each board. Removing a player on the Me page forgets their ID on this device; entries they already posted stay until you ask for them to be removed.",
+      pro: "At a player's first post, Firebase gives that player their own random ID on this browser and keeps it with the dates it was created and last used. Each player on this device who posts has their own ID and their own entry on each board. Removing a player on the Me page forgets their ID on this device; entries already posted stay until their removal is requested.",
+    })} There is no account, sign-up or password.</p>
     <p>Each entry holds exactly: the made-up nickname (picked from fixed word lists, never typed), an avatar color, the best score, the time it was saved, and the time it expires. No names, emails, ages, photos or typed text are ever collected. Progress, badges and the players on this device stay in this browser only.${on && cloud.appCheckOn() ? ' To stop cheating scripts, Google reCAPTCHA checks that scores come from this site.' : ''}</p>
     <p>A board stops taking scores when its day or week ends. Entries are not deleted automatically, and turning World boards off does not delete them. To have an entry removed, message Madhav on <a href="https://www.linkedin.com/in/sbmadhav/" target="_blank" rel="noopener">LinkedIn</a> with the nickname, color and date.</p></details>`;
 }
@@ -621,15 +625,14 @@ async function loadBoard(el, board, n = 10) {
 async function postScore(boards, score, label) {
   boards.forEach(b => store.boardAdd(b, score));
   if (!cloud.enabled() || score < 10) return;
-  await sendScore(boards, score, label);
+  await sendScore(boards, score, label, store.player()); /* the Player who finished the round, under their own identity */
 }
-async function sendScore(boards, score, label) {
-  const p = store.player();
+async function sendScore(boards, score, label, p) {
   try {
-    const res = await Promise.all(boards.map(b => cloud.submit(b, { name: p.name, avatar: p.avatar, score })));
+    const res = await Promise.all(boards.map(b => cloud.submit(b, { name: p.name, avatar: p.avatar, score }, p)));
     if (res.some(r => r.posted)) return fx.toast(`<b>Posted to the world leaderboard</b> ${label}`, 'ok');
     const why = res.find(r => r.reason === 'needs-age' || r.reason === 'needs-parent')?.reason;
-    if (why === 'needs-age') askAge({ onAnswer: () => { if (cloud.canPost() === 'ok') { sendScore(boards, score, label); queueXpPost(); } }, onDismiss: () => savedHere('needs-age') });
+    if (why === 'needs-age') askAge({ onAnswer: () => { const q = store.playerById(p.id); if (q && cloud.canPost(q) === 'ok') { sendScore(boards, score, label, q); queueXpPost(); } }, onDismiss: () => savedHere('needs-age') });
     else if (why) savedHere(why);
   } catch (err) { fx.toast(`Could not reach the world leaderboard${err && err.code ? ` (${esc(err.code)})` : ''}. Your score is saved on this device.`); }
 }
@@ -638,13 +641,25 @@ function savedHere(why) {
   const how = why === 'needs-parent' ? ' ' + fx.t({ explorer: 'A grown-up can turn on World boards on the Me page.', challenger: 'Ask a grown-up to turn on World boards on the Me page.', pro: 'A parent or guardian can turn on World boards on the Me page.' }) : '';
   fx.toast(`<b>Saved on this device.</b> ${fx.t({ explorer: 'Your score is on the This device board.', challenger: 'It is on the This device board.', pro: 'It ranks on the This device board.' })}${how}`);
 }
-/* Weekly XP board: everything you do earns XP, so this ranks all activity. Sent at most once a minute. */
+/* Weekly XP board: everything you do earns XP, so this ranks all activity. Sent at most once a minute.
+   The Players who earned XP are remembered by id, so after a Player switch each one's own weekly total
+   still goes out under their own identity (never another Player's), and a removed Player's is dropped. */
 let xpTimer = 0, xpLast = 0;
+const xpWho = new Set();
 function queueXpPost() {
   if (!cloud.enabled() || cloud.canPost() !== 'ok') return; /* no Age answer, or under 13 without the Parent step: nothing is sent (submit checks again) */
+  xpWho.add(store.player().id);
   clearTimeout(xpTimer);
   const wait = Math.max(3000, 65000 - (Date.now() - xpLast));
-  xpTimer = setTimeout(() => { xpLast = Date.now(); const w = store.weekXP(), L = fx.MODES[fx.mode()]?.league; if (L && w >= 10) cloud.postWeekXP(L, w).catch(() => {}); }, wait);
+  xpTimer = setTimeout(() => {
+    xpLast = Date.now();
+    for (const id of [...xpWho]) {
+      xpWho.delete(id);
+      const p = store.playerById(id); if (!p) continue;
+      const w = store.weekXPOf(id), L = fx.MODES[p.mode]?.league;
+      if (L && w >= 10) cloud.postWeekXP(L, w, p).catch(() => {});
+    }
+  }, wait);
 }
 store.on(type => { if (type === 'xp') queueXpPost(); });
 function arenaView() {

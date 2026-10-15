@@ -35,38 +35,46 @@ export function isFirestoreWrite(method: string, url: string) {
 }
 
 /* Fake Firebase modules served in place of https://www.gstatic.com/firebasejs/<v>/firebase-*.js.
-   They implement exactly the calls js/cloud.js makes. Sign-in succeeds with a fixed fake uid, reads
-   return empty boards, and writes are only recorded in window.__e2eCloud.writes. */
-const FAKE_HEAD = `const C = (globalThis.__e2eCloud ||= { signIns: 0, authLoaded: false, reads: [], writes: [] });`;
+   They implement exactly the calls js/cloud.js makes. Each Firebase app (one per Player who posts) has its
+   own fake Auth session, kept in localStorage under e2e.fakeAuth like the real SDK keeps one per app name,
+   so it survives a reload. Sign-in gives the default app (the first Player) the uid 'e2e-fake-uid' and a
+   named app 'e2e-fake-<app name>'. Reads return the rows in window.__e2eRows (empty by default), and
+   writes are only recorded in window.__e2eCloud.writes. */
+const FAKE_HEAD = `const C = (globalThis.__e2eCloud ||= { signIns: 0, signOuts: [], apps: [], authLoaded: false, reads: [], writes: [] });
+const SAVED = () => { try { return JSON.parse(localStorage.getItem('e2e.fakeAuth')) || {}; } catch (e) { return {}; } };
+const SAVE = m => { try { localStorage.setItem('e2e.fakeAuth', JSON.stringify(m)); } catch (e) {} };`;
 const FAKE_SDK: Record<string, string> = {
   'firebase-app.js': `${FAKE_HEAD}
-export const initializeApp = cfg => ({ options: cfg, fake: true });`,
+export const initializeApp = (cfg, name = '[DEFAULT]') => { C.apps.push(name); return { options: cfg, name, fake: true }; };
+export const deleteApp = async app => { app.deleted = true; };`,
   'firebase-app-check.js': `${FAKE_HEAD}
 export class ReCaptchaEnterpriseProvider { constructor(k) { this.k = k; } }
 export class ReCaptchaV3Provider { constructor(k) { this.k = k; } }
 export const initializeAppCheck = () => ({ fake: true });`,
   'firebase-auth.js': `${FAKE_HEAD}
 C.authLoaded = true;
-export const getAuth = () => (globalThis.__e2eAuth ||= { currentUser: null, authStateReady: async () => {} });
-export async function signInAnonymously(a) { C.signIns++; a.currentUser = { uid: 'e2e-fake-uid', isAnonymous: true }; return { user: a.currentUser }; }`,
+const auths = (globalThis.__e2eAuths ||= {});
+export const getAuth = app => (auths[app.name] ||= { app, get currentUser() { const u = SAVED()[app.name]; return u ? { uid: u, isAnonymous: true } : null; }, authStateReady: async () => {} });
+export async function signInAnonymously(a) { C.signIns++; const m = SAVED(); m[a.app.name] = a.app.name === '[DEFAULT]' ? 'e2e-fake-uid' : 'e2e-fake-' + a.app.name; SAVE(m); return { user: a.currentUser }; }
+export async function signOut(a) { C.signOuts.push(a.app.name); const m = SAVED(); delete m[a.app.name]; SAVE(m); }`,
   'firebase-firestore.js': `${FAKE_HEAD}
 const path = parts => parts.filter(p => typeof p === 'string').join('/');
-export const getFirestore = () => ({ fake: true });
-export const doc = (db, ...p) => ({ path: path(p) });
+export const getFirestore = app => ({ fake: true, app: app.name });
+export const doc = (db, ...p) => ({ path: path(p), app: db.app });
 export const collection = (db, ...p) => ({ path: path(p) });
 export const orderBy = (f, d) => ({ orderBy: [f, d] });
 export const limit = n => ({ limit: n });
 export const query = (c, ...q) => ({ path: c.path, q });
 export async function getDoc(ref) { C.reads.push(ref.path); return { exists: () => false, data: () => undefined }; }
-export async function getDocs(q) { C.reads.push(q.path); return { docs: [] }; }
-export async function setDoc(ref, data) { C.writes.push({ path: ref.path, data: JSON.parse(JSON.stringify(data)) }); }
+export async function getDocs(q) { C.reads.push(q.path); return { docs: (globalThis.__e2eRows || []).map(([id, name, score]) => ({ id, data: () => ({ name, avatar: 'teal', score }) })) }; }
+export async function setDoc(ref, data) { C.writes.push({ path: ref.path, app: ref.app, data: JSON.parse(JSON.stringify(data)) }); }
 export const serverTimestamp = () => ({ serverTimestamp: true });
 export const Timestamp = { fromMillis: ms => ({ millis: ms }) };`,
 };
 
 export type Issues = { console: string[]; failed: string[] };
 export type Mode = 'explorer' | 'challenger' | 'pro';
-export type CloudLog = { signIns: number; authLoaded: boolean; reads: string[]; writes: { path: string; data: Record<string, unknown> }[] };
+export type CloudLog = { signIns: number; signOuts: string[]; apps: string[]; authLoaded: boolean; reads: string[]; writes: { path: string; app: string; data: Record<string, unknown> }[] };
 /** The first Player's posting consent: the Age answer and, for under-13s, when the Parent step was given. */
 export type Consent = { age: number | 'adult'; parentOk?: number | null };
 
@@ -158,7 +166,7 @@ export async function open(page: Page, hash = '#/') {
 
 /** What the fake Firebase SDK saw (signs-ins, reads and writes the app attempted). */
 export async function cloudLog(page: Page): Promise<CloudLog> {
-  return page.evaluate(() => (globalThis as any).__e2eCloud || { signIns: 0, authLoaded: false, reads: [], writes: [] });
+  return page.evaluate(() => (globalThis as any).__e2eCloud || { signIns: 0, signOuts: [], apps: [], authLoaded: false, reads: [], writes: [] });
 }
 
 /** Skips the current test outside the chromium project (for checks other engines add nothing to). */
