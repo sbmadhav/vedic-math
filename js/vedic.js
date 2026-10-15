@@ -1,4 +1,4 @@
-/* Speed tricks from the Vedic mathematics sutras. Each trick has a step-by-step animator
+/* Speed tricks from the sutras in Bharati Krishna Tirtha's 1965 book. Each trick has a step-by-step animator
    (steps for any numbers the learner types) and a practice generator that plugs into the skill engine.
    Explanations are written fresh; the sutra names and meanings are traditional. */
 import { ri, pick } from './lib.js';

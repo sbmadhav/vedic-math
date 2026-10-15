@@ -75,6 +75,8 @@ for (const [id, g] of Object.entries(GAMES)) {
       await page.locator('#gShell [data-m="endless"]').click();
       await expect(page.locator('#gStart')).toHaveText(/Practice/);
       await page.locator('#gStart').click();
+      // Park the mouse: a tile drawn under the pointer would bob on :hover (translateY) and never be "stable"
+      await page.mouse.move(0, 0);
       const area = page.locator('#gArea');
       await expect(area).not.toBeEmpty();
       await g.step(area, page);
@@ -98,3 +100,37 @@ test('a ranked round shows the game leaderboards and starts the clock', async ({
   await expect(page.locator('#gStart')).toBeVisible();
   expect((await cloudLog(page)).writes).toEqual([]);
 });
+
+/* Game prompts inside the game card render at the game prompt size in the main ink color (page-layout spec),
+   not at the design system's 15px muted card paragraph. */
+const PROMPTS = [
+  { id: 'balloons', mode: 'explorer' as Mode, sel: '#gArea .g-q', min: 24 },
+  { id: 'make-ten', mode: 'explorer' as Mode, sel: '#gArea .g-say', min: 15.5 },
+  { id: 'rain', mode: 'explorer' as Mode, sel: '#gArea .g-say', min: 15.5 },
+];
+for (const p of PROMPTS) {
+  test.describe(`prompt in ${p.id}`, () => {
+    test.use({ seedMode: p.mode });
+    for (const scheme of ['light', 'dark'] as const) {
+      test(`${p.id}: the prompt is large and in ink (${scheme})`, async ({ page }, testInfo) => {
+        chromiumOnly(testInfo);
+        await page.emulateMedia({ colorScheme: scheme });
+        await open(page, `#/game/${p.id}`);
+        await page.locator('#gShell [data-m="endless"]').click();
+        await page.locator('#gStart').click();
+        const el = page.locator(p.sel).first();
+        await expect(el).toBeVisible();
+        await expect(el).not.toBeEmpty();
+        const st = await el.evaluate(e => {
+          const probe = document.createElement('span'); probe.style.color = 'var(--ink)'; e.parentElement!.append(probe);
+          const ink = getComputedStyle(probe).color; probe.remove();
+          const cs = getComputedStyle(e);
+          return { size: parseFloat(cs.fontSize), color: cs.color, ink };
+        });
+        expect(st.size).toBeGreaterThanOrEqual(p.min);
+        expect(st.color).toBe(st.ink);
+        await page.locator('#gQuit').click();
+      });
+    }
+  });
+}

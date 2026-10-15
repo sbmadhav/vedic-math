@@ -71,3 +71,25 @@ test('Me page switches the mode, and "Reset play mode" brings the picker back', 
   await expect(page.locator('body')).toHaveClass(/mode-none/);
   expect(await page.evaluate(() => localStorage.getItem('kidmode'))).toBeNull();
 });
+
+test.describe('the home greeting', () => {
+  for (const mode of ['challenger', 'pro'] as const) {
+    test.describe(mode, () => {
+      test.use({ seedMode: mode });
+      test(`${mode}: no "Welcome back" on the first day, "Welcome back" after playing yesterday`, async ({ page }) => {
+        await page.goto(APP);
+        const hello = page.locator('.me-strip-t small');
+        await expect(hello).toHaveText('Welcome,');
+        // A day of play yesterday in this Player's progress record
+        await page.evaluate(() => {
+          const d = new Date(); d.setDate(d.getDate() - 1);
+          const y = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          const k = 'mathquest.v1.p1', rec = JSON.parse(localStorage.getItem(k) || '{}');
+          rec.days = { ...(rec.days || {}), [y]: 3 }; localStorage.setItem(k, JSON.stringify(rec));
+        });
+        await page.reload();
+        await expect(hello).toHaveText('Welcome back,');
+      });
+    });
+  }
+});

@@ -67,6 +67,8 @@ export function simpRoot(n) { let a = 1, b = n; for (let k = Math.floor(Math.sqr
 export const rootHtml = (a, b) => b === 1 ? String(a) : `${a === 1 ? '' : a}${sq(b)}`;
 export const rootText = (a, b) => b === 1 ? String(a) : `${a === 1 ? '' : a}sqrt(${b})`;
 
+/* 1st, 2nd, 3rd, 4th, 11th, 12th, 13th, 21st, 101st, 111th */
+export const ordinal = n => { const a = Math.abs(n) % 100, b = a % 10; return `${n}${a >= 11 && a <= 13 ? 'th' : b === 1 ? 'st' : b === 2 ? 'nd' : b === 3 ? 'rd' : 'th'}`; };
 export const nameNum = n => ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'][n] || String(n);
 export const PEOPLE = ['Maya', 'Leo', 'Aria', 'Kai', 'Zoe', 'Ravi', 'Nia', 'Sam', 'Ivy', 'Omar', 'Lena', 'Theo'];
 export const THINGS = ['apples', 'stickers', 'marbles', 'shells', 'cards', 'stars', 'beads', 'pencils', 'cookies', 'blocks'];

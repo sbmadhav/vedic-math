@@ -102,7 +102,7 @@ test.describe('first visit', () => {
 
     const ROUTES: [string, RegExp][] = [
       ['#/', /^Vedic Math for Everyone/], ['#/learn', /^Skill map/], ['#/dojo', /^Vedic Dojo/], ['#/arena', /^Arena/],
-      ['#/games', /^Games/], ['#/sutras', /^The Vedic sutras/], ['#/watch', /^Watch and learn/], ['#/me', /^Me:/],
+      ['#/games', /^Games/], ['#/sutras', /^The sutras:/], ['#/watch', /^Watch and learn/], ['#/me', /^Me:/],
       ['#/grade/3', /./], ['#/skill/v-sq5', /./], ['#/katas/sq5', /./], ['#/kata/sq5/1', /./], ['#/tower', /./], ['#/tower/1', /./],
       ['#/challenge/1', /./], ['#/game/times-sprint', /^Times sprint/], ['#/game/times-sprint/1', /^Times sprint level 1/],
       ['#/duel', /^Duel/], ['#/mix/3', /./], ['#/sutras/s1', /: Vedic Math · Madhav$/],
