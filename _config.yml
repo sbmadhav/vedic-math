@@ -9,5 +9,6 @@ exclude:
   - cloud/
   - test/
   - docs/
+  - openspec/
   - e2e/
   - node_modules/

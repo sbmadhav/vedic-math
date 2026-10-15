@@ -60,3 +60,4 @@ Firebase with Firestore security rules. Setup, rules and the rules tests live in
 - Domain terms are defined in `GLOSSARY.md` (Player, Mode, League, Rating, Ranked round, Practice, Score, XP, Board and more). Use those words in code comments, docs and plans, and update the glossary when a term changes.
 - Decisions that are hard to reverse are recorded in `docs/adr/`. Read them before changing who can post, what is sent, or when an identity is created.
 - `docs/PLAN.md` is the product plan.
+- Changes are planned with OpenSpec (`openspec/`, CLI `openspec`, Claude commands `/opsx:propose`, `/opsx:apply`, `/opsx:archive`). Every non-trivial behavior change starts as a change in `openspec/changes/<name>/` (proposal, spec deltas, design, tasks), is implemented with `/opsx:apply` once the owner approves it, and is archived after release so `openspec/specs/` describes what is live. Run `openspec validate --strict` before committing a change.
