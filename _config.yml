@@ -5,6 +5,10 @@ exclude:
   - CLAUDE.md
   - README.md
   - GLOSSARY.md
+  - CONTRIBUTING.md
+  - SECURITY.md
+  - LICENSE
+  - LICENSE-CONTENT.md
   - build.py
   - cloud/
   - test/
