@@ -16,12 +16,16 @@ const dir = mkdtempSync(join(tmpdir(), 'vedic-math-build-'));
 for (const f of ['build.py', '_config.yml', '.gitignore', 'index.html', 'math.css', 'sw.js', 'manifest.webmanifest', 'js', 'CLAUDE.md', 'README.md', 'cloud/firestore.rules', 'test/index.js', '.github'])
   cpSync(join(repo, f), join(dir, f), { recursive: true });
 writeFileSync(join(dir, '_notes.txt'), 'starts with _');
-execFileSync('git', ['init', '-q'], { cwd: dir });
+/* Run git and the build in the temp copy only. A pre-commit hook exports GIT_DIR, GIT_INDEX_FILE and friends;
+   inherited, they would point `git init` at the real repository (which marks it core.bare = true) and make
+   build.py list the real repository's files. */
+const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_')));
+execFileSync('git', ['init', '-q'], { cwd: dir, env });
 const out = join(dir, 'out');
 test.after(() => rmSync(dir, { recursive: true, force: true }));
 
-const build = () => execFileSync('python3', ['build.py', '--out', out], { cwd: dir, encoding: 'utf8' });
-const tryBuild = () => spawnSync('python3', ['build.py', '--out', out], { cwd: dir, encoding: 'utf8' });
+const build = () => execFileSync('python3', ['build.py', '--out', out], { cwd: dir, env, encoding: 'utf8' });
+const tryBuild = () => spawnSync('python3', ['build.py', '--out', out], { cwd: dir, env, encoding: 'utf8' });
 const read = f => readFileSync(join(out, f), 'utf8');
 const sw = () => {
   const src = read('sw.js');

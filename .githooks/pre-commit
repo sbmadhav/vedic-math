@@ -18,6 +18,8 @@ tmp=$(mktemp -d) || fail "could not make a temp directory"
 trap 'rm -rf "$tmp"' EXIT
 python3 build.py --out "$tmp/site" >/dev/null || fail "build.py failed (see above)"
 
+# Tests make their own temp git repos; git's hook variables would point those at this repository
+unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_PREFIX GIT_OBJECT_DIRECTORY GIT_COMMON_DIR
 command -v node >/dev/null 2>&1 || fail "node is required to run test/"
 node --test --test-reporter=dot 'test/**/*.test.{js,mjs}' >&2 || fail "tests failed"
 
