@@ -28,7 +28,7 @@ They are not `?v=` stamped (this repo cannot hash them). Do not copy them in; ch
 - Tests: `node --test 'test/**/*.test.{js,mjs}'`.
 - Pre-commit hook in `.githooks/pre-commit` runs the build (fails if it changed a file: stage and commit again) and the tests. Enable once per clone: `git config core.hooksPath .githooks`.
 - `.github/workflows/ci.yml` runs the same checks on pushes and pull requests to `main`.
-- Repo-only files are listed in `exclude` in `_config.yml` (`cloud/`, `test/`, this file, the README, `build.py`). Add new ones there.
+- Repo-only files are listed in `exclude` in `_config.yml` (`cloud/`, `test/`, `docs/`, this file, the README, `build.py`). Add new ones there.
 
 ## Offline
 

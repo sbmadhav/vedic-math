@@ -13,6 +13,7 @@ Part of [sbmadhav.com](https://sbmadhav.com). The design system (`/design-system
 | `test/` | Unit tests (`node --test`) |
 | `cloud/` | Firebase setup, Firestore rules and the rules tests |
 | `build.py` | Stamps the import map and cache versions |
+| `docs/PLAN.md` | Product plan: phases, gates, metrics (not published) |
 
 History before the split comes from `vedic-math/` in `sbmadhav.github.io` (`git subtree split`). The first versions, from when the app lived at `math/`, stay in that repo (commits `2c5b256` and `7933aee`).
 
