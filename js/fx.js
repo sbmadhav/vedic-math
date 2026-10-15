@@ -67,7 +67,7 @@ export { settingsHTML as voiceSettingsHTML, wireSettings as wireVoiceSettings } 
 export function confetti(n = 70) {
   if (reduced()) return;
   const c = document.createElement('canvas'); c.className = 'fx-confetti'; c.width = innerWidth; c.height = innerHeight; document.body.append(c);
-  const g = c.getContext('2d'), css = getComputedStyle(document.body), cols = ['--coral', '--teal', '--sun', '--sky', '--plum'].map(v => css.getPropertyValue(v).trim() || '#FFC53D');
+  const g = c.getContext('2d'), css = getComputedStyle(document.body), cols = ['--coral', '--teal', '--sun', '--sky', '--plum'].map(v => css.getPropertyValue(v).trim() || '#F2B544');
   const ps = Array.from({ length: n }, () => ({ x: innerWidth / 2 + (Math.random() - .5) * 200, y: innerHeight * .35, vx: (Math.random() - .5) * 12, vy: -Math.random() * 12 - 4, r: Math.random() * 6 + 4, c: cols[Math.floor(Math.random() * cols.length)], a: Math.random() * 6, s: Math.random() * .3 - .15 }));
   let f = 0; const step = () => { g.clearRect(0, 0, c.width, c.height); ps.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += .35; p.vx *= .99; p.a += p.s; g.save(); g.translate(p.x, p.y); g.rotate(p.a); g.fillStyle = p.c; g.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * .6); g.restore(); }); if (++f < 110) requestAnimationFrame(step); else c.remove(); };
   requestAnimationFrame(step);
