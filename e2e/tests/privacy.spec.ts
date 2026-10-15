@@ -1,8 +1,8 @@
 import { test, expect, APP, open, cloudLog, chromiumOnly } from './fixtures';
 
-/* The note for parents is shown wherever a child sees a leaderboard nickname (Me, Arena, Pro home),
-   and what it promises must match what the app sends. The fake Firebase SDK records what the app
-   tries to write, so these checks never touch production. */
+/* The note for grown-ups is shown beside every World board (Arena, game pages, Pro home) and on the Me
+   page, and what it promises must match what the app sends (openspec parent-note spec). The fake Firebase
+   SDK records what the app tries to read, sign in and write, so these checks never touch production. */
 
 const SUMMARY = {
   explorer: 'For grown-ups: what the leaderboard keeps',
@@ -10,29 +10,82 @@ const SUMMARY = {
   pro: 'Privacy: what the leaderboard stores',
 } as const;
 
-async function expectNote(page: import('@playwright/test').Page, summary: string) {
+/* Every statement the parent-note spec requires */
+const REQUIRED = [
+  'World boards run on Google Firebase.',
+  // every kind of post, and nothing else
+  "Three kinds of post go to boards for the player's league: the score of a Daily challenge in the Arena and the score of a Ranked round of a game (today's and this week's board for each), and the player's XP total for this week (one weekly board).",
+  // XP and Practice
+  'XP comes from all play, Practice included, so practice adds to that posted weekly total. Practice scores themselves never leave this device.',
+  // consent
+  'Nothing is posted before a player answers one question about their age. The answer stays on this device and is never sent.',
+  'Nothing is posted for a player under 13 until a grown-up turns on World boards for them on this device (Me page, World boards), and it can be turned off there at any time.',
+  // identity
+  'No identity exists until the first post: looking at World boards needs no sign-in.',
+  'Every player on this device posts under that one ID, so they share one entry per board.',
+  // fields and keeping
+  'Each entry holds exactly: the made-up nickname (picked from fixed word lists, never typed), an avatar color, the best score, the time it was saved, and the time it expires.',
+  'No names, emails, ages, photos or typed text are ever collected',
+  'Google reCAPTCHA',
+  'Entries are not deleted automatically, and turning World boards off does not delete them.',
+  'To have an entry removed, message Madhav on LinkedIn with the nickname, color and date.',
+];
+async function expectNote(page: import('@playwright/test').Page, summary: string, now?: string) {
   const note = page.locator('details', { has: page.locator('summary', { hasText: summary }) }).first();
   await expect(note).toBeVisible();
   await note.locator('summary').click();
   await expect(note).toHaveAttribute('open', '');
-  await expect(note).toContainText('World leaderboards run on Google Firebase');
-  await expect(note).toContainText('No names, emails, ages, photos or typed text are ever collected');
-  await expect(note).toContainText('Google reCAPTCHA');
+  for (const line of REQUIRED) await expect(note).toContainText(line);
+  if (now) await expect(note.locator('.pn-now')).toHaveText(now);
+  // Practice is never described as staying on the device without its XP counting
+  await expect(note).not.toContainText('practice and endless rounds');
   await expect(note.getByRole('link', { name: 'LinkedIn' })).toHaveAttribute('href', 'https://www.linkedin.com/in/sbmadhav/');
+  return note;
 }
+const NOW = {
+  noAnswer: 'Right now nothing is posted for this player. They have not answered the age question yet; it is asked the first time a score would be posted.',
+  under13: 'Right now nothing is posted for this player, because their age answer is under 13. To turn on World boards for them, a grown-up opens the Me page and goes to World boards.',
+  parentOk: 'A grown-up turned on World boards for this player on this device. They can turn it off again on the Me page, under World boards.',
+  posting: "This player's scores and weekly XP post to World boards.",
+};
 
-test('the parent note is on the Me page and in the Arena', async ({ page }) => {
+test('the parent note is on the Me page, in the Arena and beside a game\'s World boards', async ({ page }) => {
   await open(page, '#/me');
-  await expectNote(page, SUMMARY.challenger);
+  await expectNote(page, SUMMARY.challenger, NOW.noAnswer);
   await open(page, '#/arena');
-  await expectNote(page, SUMMARY.challenger);
+  await expectNote(page, SUMMARY.challenger, NOW.noAnswer);
+  await open(page, '#/game/times-sprint');
+  await expect(page.locator('#gbDay .lb-tabs')).toBeVisible();
+  await expectNote(page, SUMMARY.challenger, NOW.noAnswer);
+});
+
+test.describe('under 13 without the Parent step', () => {
+  test.use({ seedMode: 'pro', seedConsent: { age: 10 } });
+  test('the note says nothing is posted for this player and how to turn World boards on', async ({ page }) => {
+    await open(page, '#/arena');
+    await expectNote(page, SUMMARY.pro, NOW.under13);
+  });
+});
+test.describe('under 13 with the Parent step', () => {
+  test.use({ seedMode: 'explorer', seedConsent: { age: 7, parentOk: 1760000000000 } });
+  test('the note says a grown-up turned World boards on and where to turn them off', async ({ page }) => {
+    await open(page, '#/me');
+    await expectNote(page, SUMMARY.explorer, NOW.parentOk);
+  });
+});
+test.describe('13 and over', () => {
+  test.use({ seedConsent: { age: 14 } });
+  test('the note says this player posts', async ({ page }) => {
+    await open(page, '#/arena');
+    await expectNote(page, SUMMARY.challenger, NOW.posting);
+  });
 });
 
 test.describe('explorer', () => {
   test.use({ seedMode: 'explorer' });
   test('the note is worded for grown-ups', async ({ page }) => {
     await open(page, '#/me');
-    await expectNote(page, SUMMARY.explorer);
+    await expectNote(page, SUMMARY.explorer, NOW.noAnswer);
   });
 });
 
@@ -49,6 +102,9 @@ test('the footer says progress stays in this browser', async ({ page }) => {
   await open(page);
   await expect(page.locator('footer.mq-foot')).toContainText('Progress stays in this browser, and leaderboards only see a made-up nickname.');
 });
+
+test.describe('a Player who may post (a grown-up)', () => {
+test.use({ seedConsent: { age: 'adult' } });
 
 test('an Arena score entry holds only the nickname, avatar color, score and two timestamps', async ({ page }) => {
   // Calls the app's own cloud.submit (what the Arena daily round uses) against the fake SDK
@@ -79,20 +135,18 @@ const writes = async (page: import('@playwright/test').Page) => (await cloudLog(
 
 test('the note names every kind of score that is sent', async ({ page }) => {
   await open(page, '#/me');
-  await page.locator('details summary', { hasText: SUMMARY.challenger }).click();
-  const note = page.locator('details[open]');
-  // The shipped wording (97181d9); the write-path tests below check the app does exactly this
-  await expect(note).toContainText("Three things send a score, each to boards for the player's league: a Daily challenge in the Arena and a Ranked round of a game (today's and this week's board for each), and the XP earned this week (one weekly board).");
-  await expect(note).toContainText('Progress, badges, practice and endless rounds, and the players on this device stay in this browser only.');
+  // The write-path tests below check the app sends exactly these three kinds of post
+  await expectNote(page, SUMMARY.challenger, NOW.posting);
 });
 
-test('opening a leaderboard signs in anonymously and only reads', async ({ page }, testInfo) => {
+test('opening a leaderboard reads without loading Auth or signing in', async ({ page }, testInfo) => {
   chromiumOnly(testInfo, 'app logic, the same in every engine');
   await open(page, '#/arena');
   const { day, wk } = await ids(page);
   await expect.poll(async () => (await cloudLog(page)).reads.length).toBeGreaterThanOrEqual(3);
   const log = await cloudLog(page);
-  expect(log.signIns).toBe(1);
+  expect(log.authLoaded).toBe(false);
+  expect(log.signIns).toBe(0);
   expect(log.reads.sort()).toEqual([`boards/daily-${day}-challenger/scores`, `boards/week-${wk}-challenger/scores`, `boards/xp-week-${wk}-challenger/scores`].sort());
   expect(log.writes).toEqual([]);
 });
@@ -180,4 +234,21 @@ test('XP earned anywhere sends this week\'s XP total to the weekly XP board, at 
   w = await writes(page);
   expect(w[1].path).toBe(board);
   expect(w[1].data.score).toBe(15); // weekly XP is not rounded to even (only Arena scores are)
+});
+}); // a Player who may post
+
+test.describe('a Player who may not post', () => {
+  test.use({ seedConsent: { age: 9 } });
+  test('XP earned by an under-13 Player without the Parent step sends nothing and signs in nowhere', async ({ page }, testInfo) => {
+    chromiumOnly(testInfo, 'app logic, the same in every engine');
+    await page.clock.install();
+    await open(page, '#/sutras');
+    for (const i of [0, 1, 2, 3]) await page.locator('.sutra-card .sutra-face').nth(i).click();
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1')!).xp)).toBe(20);
+    await page.clock.runFor(130_000);
+    const log = await cloudLog(page);
+    expect(log.writes).toEqual([]);
+    expect(log.signIns).toBe(0);
+    expect(log.authLoaded).toBe(false);
+  });
 });

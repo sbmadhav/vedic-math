@@ -37,7 +37,7 @@ export function isFirestoreWrite(method: string, url: string) {
 /* Fake Firebase modules served in place of https://www.gstatic.com/firebasejs/<v>/firebase-*.js.
    They implement exactly the calls js/cloud.js makes. Sign-in succeeds with a fixed fake uid, reads
    return empty boards, and writes are only recorded in window.__e2eCloud.writes. */
-const FAKE_HEAD = `const C = (globalThis.__e2eCloud ||= { signIns: 0, reads: [], writes: [] });`;
+const FAKE_HEAD = `const C = (globalThis.__e2eCloud ||= { signIns: 0, authLoaded: false, reads: [], writes: [] });`;
 const FAKE_SDK: Record<string, string> = {
   'firebase-app.js': `${FAKE_HEAD}
 export const initializeApp = cfg => ({ options: cfg, fake: true });`,
@@ -46,6 +46,7 @@ export class ReCaptchaEnterpriseProvider { constructor(k) { this.k = k; } }
 export class ReCaptchaV3Provider { constructor(k) { this.k = k; } }
 export const initializeAppCheck = () => ({ fake: true });`,
   'firebase-auth.js': `${FAKE_HEAD}
+C.authLoaded = true;
 export const getAuth = () => (globalThis.__e2eAuth ||= { currentUser: null, authStateReady: async () => {} });
 export async function signInAnonymously(a) { C.signIns++; a.currentUser = { uid: 'e2e-fake-uid', isAnonymous: true }; return { user: a.currentUser }; }`,
   'firebase-firestore.js': `${FAKE_HEAD}
@@ -65,13 +66,17 @@ export const Timestamp = { fromMillis: ms => ({ millis: ms }) };`,
 
 export type Issues = { console: string[]; failed: string[] };
 export type Mode = 'explorer' | 'challenger' | 'pro';
-export type CloudLog = { signIns: number; reads: string[]; writes: { path: string; data: Record<string, unknown> }[] };
+export type CloudLog = { signIns: number; authLoaded: boolean; reads: string[]; writes: { path: string; data: Record<string, unknown> }[] };
+/** The first Player's posting consent: the Age answer and, for under-13s, when the Parent step was given. */
+export type Consent = { age: number | 'adult'; parentOk?: number | null };
 
 type Fixtures = {
   /** Load the real Firebase SDK (anonymous sign-in, live Firestore reads). Default false. */
   liveFirebase: boolean;
   /** Play mode stored for the first player before the page loads, or null for a first visit. */
   seedMode: Mode | null;
+  /** Age answer (and Parent step) stored for that player. Default null: not answered, so nothing may be posted. */
+  seedConsent: Consent | null;
   /** Requests that broke the live-dependency rules. Checked automatically after each test. */
   violations: string[];
   issues: Issues;
@@ -80,18 +85,19 @@ type Fixtures = {
 export const test = base.extend<Fixtures>({
   liveFirebase: [false, { option: true }],
   seedMode: ['challenger', { option: true }],
+  seedConsent: [null, { option: true }],
 
-  context: async ({ context, seedMode }, use) => {
+  context: async ({ context, seedMode, seedConsent }, use) => {
     await blockAnalytics(context);
     // A returning player with a mode, sound off. Only on an empty profile, so reloads keep progress.
-    await context.addInitScript(mode => {
+    await context.addInitScript(([mode, consent]) => {
       try {
         if (!localStorage.getItem('vm.players')) {
           localStorage.setItem('vm.sound', '0');
-          if (mode) localStorage.setItem('vm.players', JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode, created: Date.now() }] }));
+          if (mode) localStorage.setItem('vm.players', JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode, created: Date.now(), ...(consent || {}) }] }));
         }
       } catch (e) { /* storage blocked: the app copes */ }
-    }, seedMode);
+    }, [seedMode, seedConsent] as const);
     await use(context);
   },
 
@@ -152,7 +158,7 @@ export async function open(page: Page, hash = '#/') {
 
 /** What the fake Firebase SDK saw (signs-ins, reads and writes the app attempted). */
 export async function cloudLog(page: Page): Promise<CloudLog> {
-  return page.evaluate(() => (globalThis as any).__e2eCloud || { signIns: 0, reads: [], writes: [] });
+  return page.evaluate(() => (globalThis as any).__e2eCloud || { signIns: 0, authLoaded: false, reads: [], writes: [] });
 }
 
 /** Skips the current test outside the chromium project (for checks other engines add nothing to). */

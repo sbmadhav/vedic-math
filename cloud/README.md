@@ -2,7 +2,7 @@
 
 Leaderboards work on each device out of the box. To make them global, connect a Firebase project (the free Spark plan is enough).
 
-Data model: `boards/{board}/scores/{uid}` with `{ name, avatar, score, ts, exp }`. Board ids look like `daily-2026-10-12-challenger`, `week-2026-W42-pro`, `g_times_sprint-daily-2026-10-12-pro` and `xp-week-2026-W42-explorer`. Three things write, always to the player's league: the Arena daily round and a Ranked game round (today's and this week's board each), and weekly XP (the `xp-week` board, at most once a minute). See Boards below. Each anonymous player has one entry per board, and it only changes when the new score is higher. The browser client is `js/cloud.js`; the config lives in `js/cloud-config.js`.
+Data model: `boards/{board}/scores/{uid}` with `{ name, avatar, score, ts, exp }`. Board ids look like `daily-2026-10-12-challenger`, `week-2026-W42-pro`, `g_times_sprint-daily-2026-10-12-pro` and `xp-week-2026-W42-explorer`. Three things write, always to the player's league: the Arena daily round and a Ranked game round (today's and this week's board each), and weekly XP (the `xp-week` board, at most once a minute). See Boards below. Nothing is written for a Player without an Age answer, or under 13 without the Parent step (`canPost()` in `js/cloud.js`, see Privacy). Each anonymous identity has one entry per board, and it only changes when the new score is higher. The browser client is `js/cloud.js`; the config lives in `js/cloud-config.js`.
 
 ## One command (recommended)
 
@@ -44,12 +44,12 @@ The browser key (Google Cloud console > APIs & Services > Credentials, "Browser 
 
 ## What the rules enforce
 
-- Anonymous sign-in is required to write, and a player can write only `scores/{their uid}`. Nobody can delete from the browser.
+- Anonymous sign-in is required to write (and to read your own entry), and a player can write only `scores/{their uid}`. Nobody can delete from the browser.
 - Fields: exactly `name`, `avatar`, `score`, `ts`, `exp`. The nickname must be `Adjective Noun NN` using the word lists in `js/store.js` (update the rules if those lists change). `ts` must be the server time. `exp` must be 1 to 60 days ahead (the client sends 30).
 - Scores: even integers from 10 to a per-league cap (every right answer earns 10 to 30 points, always even). The game has no hard maximum, so the caps assume a fast human pace for 60 seconds: Explorer 2000 (70 right in a row), Challenger 1600 (57), Pro 1200 (44). `MAX_SCORE` in `js/cloud.js` mirrors them.
 - Board window: a board accepts writes only while its date (or ISO week) is current somewhere on Earth, plus an hour of slack. Old and future boards are frozen.
 - Rate limit: an entry changes only when the score rises and at least 50 seconds after its last write (a round plus countdown is 62 seconds).
-- Reads: a player can read only their own entry, and lists must be signed-in queries with `limit(20)` or less.
+- Reads: lists of a valid board need no sign-in but must use `limit(20)` or less, so viewing a World board creates no identity (`docs/adr/0002`). Getting one entry by its id needs that entry's own signed-in identity, so nobody browses entries one by one.
 
 These limits make forging harder and cheaper to absorb; they do not prove a score was earned. App Check closes the main gap: scripts writing directly to Firestore from outside the site.
 
@@ -77,16 +77,19 @@ npm install
 npm test
 ```
 
-Board ids in the tests are built from today's date, because past and future boards are frozen. They cover: creating your own entry in every league, writing another player's entry, invalid board ids, past and future boards, nicknames (shape and word lists), avatars, scores (odd, non-integer, below 10, over each league cap), extra or missing fields, a client-set `ts`, `exp` bounds, updates that do not raise the score, partial updates, the 50 second rate limit, deletes, reads of your own entry only, list queries (signed in, `limit` 20 or less), reads and writes elsewhere, and a top-20 `orderBy('score', 'desc')` query with no composite index. Run them after any change to `firestore.rules`.
+Board ids in the tests are built from today's date, because past and future boards are frozen. They cover: creating your own entry in every league, writing another player's entry, invalid board ids, past and future boards, nicknames (shape and word lists), avatars, scores (odd, non-integer, below 10, over each league cap), extra or missing fields, a client-set `ts`, `exp` bounds, updates that do not raise the score, partial updates, the 50 second rate limit, deletes, reads of your own entry only, list queries (`limit` 20 or less), signed-out access (top-20 lists of valid boards allowed; bigger, unlimited or invalid-board lists, single-entry gets and every write refused), reads and writes elsewhere, and a top-20 `orderBy('score', 'desc')` query with no composite index. Run them after any change to `firestore.rules`.
 
 ## Privacy
 
-- Players are anonymous: Firebase Anonymous Auth gives each browser a random id. No email, name, age or account.
-- An entry holds only a generated nickname (from fixed word lists, never typed), one of five avatar colors, an integer score, a server timestamp and an expiry time. The rules reject anything else. The document id is the Firebase anonymous user id; Firebase Authentication keeps that id with its created and last sign-in dates.
-- Nothing is sent unless online leaderboards are turned on in `cloud-config.js`, and the Firebase SDK loads only when a leaderboard is opened or an Arena score is sent.
-- TTL policies need the Blaze (billing) plan, so on Spark entries are not deleted automatically and the parent note says so. If the project moves to Blaze, set a budget alert, create the TTL policy (step 7), and change `parentNote()` back to promise deletion about 30 days after the last score. Entries cannot be deleted from the browser. To honor a removal request, find the entry by nickname and color in the Firebase console and delete it.
-- The site shows a note for parents next to the nickname (Me page) and the leaderboards (Arena, home). It is `parentNote()` in `js/app.js`; keep it in sync with this section.
-
+- Players are anonymous: no email, name, age or account. The browser client is `js/cloud.js`, and everything it posts goes through `submit()`.
+- **Age answer first** (`docs/adr/0001`): nothing is posted for a Player until they answer one neutral age question, asked the first time a Ranked round's score would be posted. The answer is stored only on the device, in that Player's record (`age` in `vm.players`), and is never sent.
+- **Parent step for under-13s**: a Player whose Age answer is under 13 posts nothing, in any Mode, until a grown-up turns on World boards for them on this device (Me page: a simple adult check, then the "Allow World boards" switch, stored as `parentOk`, only on the device). A grown-up can switch it off there; posting stops again, and entries already on World boards stay. Until then their Scores and XP rank on Device boards only.
+- **No identity until the first post** (`docs/adr/0002`): viewing World boards loads Firestore and App Check only, never Firebase Auth, and reads signed out. The Firebase Anonymous Auth id is created at the Player's first actual post. Firebase Authentication keeps that id with its created and last sign-in dates. After the first post the device keeps a copy of the id (`vm.cloudUid`) to mark its own row on a board. All Players on one device share that id, so they share one entry per board.
+- What is posted: the score of an Arena Daily challenge and of a Ranked game round (today's and this week's board for each), and the weekly XP total. XP comes from all play, Practice included, so Practice adds to the posted weekly total; Practice scores themselves never leave the device.
+- An entry holds only a generated nickname (from fixed word lists, never typed), one of five avatar colors, an integer score, a server timestamp and an expiry time. The rules reject anything else. The document id is the anonymous id.
+- Nothing is sent unless online leaderboards are turned on in `cloud-config.js`, and the Firebase SDK loads only when a World board is opened or something is posted.
+- TTL policies need the Blaze (billing) plan, so on Spark entries are not deleted automatically and the parent note says so. Withdrawing the Parent step does not delete entries either. If the project moves to Blaze, set a budget alert, create the TTL policy (step 7), and change `parentNote()` back to promise deletion about 30 days after the last score. Entries cannot be deleted from the browser. To honor a removal request, find the entry by nickname and color in the Firebase console and delete it.
+- The site shows a note for grown-ups beside every World board (Arena, each game page, Pro home) and on the Me page. It is `parentNote()` in `js/app.js`; keep it in sync with this section.
 
 ## Boards
 

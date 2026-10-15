@@ -1,6 +1,6 @@
 /* Progress lives in this browser (localStorage), one record per player so a family can share a device.
    Mastery is a running score from 0 to 1: first tries count fully, a try after a hint counts half.
-   Nothing here leaves the device unless the player joins an online leaderboard (cloud.js). */
+   Nothing here leaves the device except what cloud.js posts to World boards (nickname, color, score). */
 const LEGACY = 'mathquest.v1', PKEY = 'vm.players', BOARD = 'vm.board';
 let S = null, P = null;
 const blank = () => ({ v: 2, skills: {}, xp: 0, days: {}, best: {}, last: null, grade: null, badges: {}, counts: {}, seen: {}, stars: {}, ratings: {}, weekXp: {} });
@@ -33,6 +33,14 @@ export const player = () => players().list.find(p => p.id === P.active) || P.lis
 export function updatePlayer(patch) { Object.assign(player(), patch); put(PKEY, P); emit('player', player()); }
 export function addPlayer() { const p = { id: 'p' + Date.now().toString(36), name: makeName(), avatar: AVATARS[P.list.length % AVATARS.length], mode: null, created: Date.now() }; players().list.push(p); switchPlayer(p.id); return p; }
 export function switchPlayer(id) { players(); if (!P.list.some(p => p.id === id)) return; P.active = id; put(PKEY, P); S = null; emit('player', player()); }
+/* Posting consent, per Player and only on this device (never sent; see cloud.canPost):
+   age is the Age answer, a whole number of years or 'adult' (null until answered);
+   parentOk is when a grown-up gave the Parent step (null when not given or withdrawn). */
+export function setAge(age) {
+  if (!(age === 'adult' || (Number.isInteger(age) && age >= 1 && age <= 120))) throw new Error('bad age');
+  updatePlayer({ age });
+}
+export const setParentOk = on => updatePlayer({ parentOk: on ? Date.now() : null });
 export function removePlayer(id) { players(); if (P.list.length < 2) return; P.list = P.list.filter(p => p.id !== id); try { localStorage.removeItem(LEGACY + '.' + id); } catch (e) {} if (P.active === id) P.active = P.list[0].id; put(PKEY, P); S = null; emit('player', player()); }
 
 /* ---------- Progress for the active player ---------- */
