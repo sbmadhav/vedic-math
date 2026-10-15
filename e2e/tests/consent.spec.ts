@@ -30,7 +30,7 @@ async function arenaRound(page: Page, mode: Mode) {
   if (!page.url().endsWith('#/arena')) await open(page, '#/arena');
   const answer = await page.evaluate(async m => {
     const cloud = await import('/vedic-math/js/cloud.js' as string), arena = await import('/vedic-math/js/arena.js' as string);
-    return String(arena.makeSet(m, `daily-${cloud.dayId()}-${m}`)[0].answer);
+    return String(arena.dailySet(m, cloud.dayId())[0].answer);
   }, mode);
   await page.locator('#arGo').click();
   await page.clock.runFor(2_500); // 3, 2, 1

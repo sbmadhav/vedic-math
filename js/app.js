@@ -280,16 +280,22 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
   let s, p, tries = 0, hints = 0, done = false, right = 0, total = 0, run = 0, life = lives;
   const session = child(signal); let question = null;
   const explorer = fx.mode() === 'explorer';
+  /* One Dial per Skill seen this session (Endless practice mixes Skills), starting at the Player's Skill Rating.
+     It picks each question's generator level (AD.levelFor) and is saved as the Skill Rating every 10 answers and
+     when the session ends (openspec ratings spec). Mastery is recorded as before. */
+  const dials = new Map(), mode = fx.mode();
+  const dialFor = id => { if (!dials.has(id)) dials.set(id, new AD.Dial(AD.skillRating(id, mode))); return dials.get(id); };
+  const saveDial = id => { const d = dials.get(id); if (!d || d.n < 4) return; AD.saveRating('skill:' + id, d); dials.set(id, new AD.Dial(d.d)); };
   const next = () => {
     if (question) question.abort();
     question = child(session.signal);
-    s = pickSkill(); p = withPlain(s, s.gen(store.level(s.id))); tries = 0; hints = 0; done = false;
+    s = pickSkill(); const level = AD.levelFor(dialFor(s.id).lv); p = withPlain(s, s.gen(level)); tries = 0; hints = 0; done = false;
     // Explorer mode: no typing; small whole-number answers become big buttons
     if (explorer && p.kind === 'num' && Number.isInteger(p.answer) && p.answer >= 0 && p.answer <= 200) { const near = [...new Set([p.answer + 1, p.answer - 1, p.answer + 2, p.answer + 10, p.answer - 2].filter(v => v >= 0))]; p = { ...p, kind: 'choice', choices: [p.answer, ...shuffle(near).slice(0, 3)].sort((a, b) => a - b).map(String), answer: String(p.answer) }; }
     const keyset = p.kind === 'expr' ? KEYS.alg : p.kind === 'set' ? KEYS.set : p.kind === 'ineq' ? KEYS.ineq : p.kind === 'complex' ? KEYS.complex : p.kind === 'num' && !['K', 1, 2].includes(s.grade) ? KEYS.basic : null;
     root.innerHTML = `
       <div class="pr-head"><span class="pr-meter">${ring(store.mastery(s.id), 36)}<span><small>${mix ? `<a href="#/skill/${s.id}">${both(s.title, s.kid)}</a>` : 'Your turn'}</small><b id="prPct">${pct(store.mastery(s.id))}% mastery</b></span></span><span class="pr-run" id="prRun">${run >= 2 ? `<b>${run}</b> in a row` : ''}</span>${lives ? `<span class="pr-lives" role="img" aria-label="${life} lives left">${'<i class="on"></i>'.repeat(life)}${'<i></i>'.repeat(lives - life)}</span>` : ''}<span class="pr-score" role="img" aria-label="${right} of ${total} right this session">${right}/${total}</span></div>
-      <div class="pr-q${plain(p.q).length > 60 ? ' long' : ''}" id="prQ">${p.q}</div>
+      <div class="pr-q${plain(p.q).length > 60 ? ' long' : ''}" id="prQ" data-level="${level}">${p.q}</div>
       ${p.viz ? `<div class="mq-viz">${p.viz}</div>` : ''}
       <form class="pr-form" id="prForm" autocomplete="off">${answerUI(p)}${keyset ? `<div class="pr-keys" aria-label="Symbol keys">${keyset.map(k => `<button type="button" class="pr-key" data-k="${esc(k)}">${esc(k)}</button>`).join('')}</div>` : ''}
         <div class="pr-actions"><button class="md-btn md-btn--primary" id="prCheck">Check</button><button type="button" class="md-btn md-btn--sm" id="prHint">Hint</button><button type="button" class="md-btn md-btn--sm" id="prShow">Show me</button>${'speechSynthesis' in window ? `<button type="button" class="md-btn md-btn--sm" id="prHear">${icon('speaker')} Hear it</button>` : ''}</div>
@@ -304,6 +310,8 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
   const finish = ok => {
     done = true; total++; if (ok) right++; run = ok && tries === 1 && !hints ? run + 1 : 0;
     const r = store.record(s.id, ok, hints > 0 || tries > 1);
+    /* For the Rating, only a first try with no hint counts as right */
+    const dial = dialFor(s.id); dial.hit(ok && tries === 1 && !hints); if (dial.n >= 10) saveDial(s.id);
     metrics.answered(lives ? 'run' : 'practice', ok); /* untimed play only: no per-answer events in timed rounds */
     if (r.justMastered) track('mastered/' + s.id, 'Mastered: ' + s.title);
     if (run === 3 || run === 7 || (run && run % 10 === 0)) fx.confetti(40);
@@ -345,7 +353,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
     return checkOne(p, root.querySelector('.ans-in').value);
   };
   next();
-  return { destroy: () => session.abort() };
+  return { destroy: () => { [...dials.keys()].forEach(saveDial); session.abort(); } };
 }
 function answerUI(p) {
   if (p.kind === 'choice') return `<div class="pr-choices" role="group" aria-label="Choices">${p.choices.map(c => `<button type="button" class="md-chip pr-choice" aria-pressed="false" data-v="${esc(c)}">${c}</button>`).join('')}</div>`;
@@ -709,10 +717,16 @@ function arenaView({ signal } = {}) {
     <p class="md-lede">Answer as many as you can. Each right answer is worth 10, and every answer in a row adds a combo bonus. The daily round uses the same questions for every ${fx.MODES[fx.mode()].name}, so it is a fair race.</p>
     <a class="tower-promo" href="#/tower">${icon('trophy')}<span><b>Challenge tower: ${LV.CHALLENGE_COUNT.toLocaleString('en-US')} levels</b><small>${store.doneWhere('a:')} cleared · ${store.starsWhere('a:')} &#9733; · Sprint, Survival, Sharpshooter, Time attack, Boss</small></span><span aria-hidden="true">&rarr;</span></a>
     <div class="md-card ar-shell" id="arShell"></div></div></section>`;
-  const shell = $('#arShell');
+  const shell = $('#arShell'), rKey = 'arena:' + league, mode = fx.mode();
+  const arenaRating = () => Math.round(AD.rating(rKey, mode));
+  const arenaRatingLine = () => `<small id="arRating" data-rating="${arenaRating()}">${fx.t({
+    explorer: `Your Arena Rating: <b>${arenaRating()}</b> of 20. Practice rounds get harder as you get them right.`,
+    challenger: `Your Arena Rating: <b>${arenaRating()}</b> of 20. Practice rounds start there and adapt to every answer.`,
+    pro: `Arena Rating: <b>${arenaRating()}</b>/20. Practice rounds start there and adapt to every answer; the daily round is the same for everyone.`
+  })}</small>`;
   const lobby = (result = '') => {
     shell.innerHTML = `${result}<div class="g-optrow" role="group" aria-label="Round type"><button class="md-chip" aria-pressed="${type === 'daily'}" data-t="daily">Daily challenge</button><button class="md-chip" aria-pressed="${type === 'practice'}" data-t="practice">Practice round</button></div>
-      <p class="g-best">League: <b>${fx.MODES[fx.mode()].name}</b> · Your best today: <b>${store.best('arena-' + day)}</b></p>
+      <p class="g-best">League: <b>${fx.MODES[fx.mode()].name}</b> · Your best today: <b>${store.best('arena-' + day)}</b><br>${arenaRatingLine()}</p>
       <button class="md-btn md-btn--primary ar-go" id="arGo">${icon('bolt')} Start</button>
       <div class="lb-cols"><div><h2 class="mq-h3">Today</h2><div id="lbDay" class="lb-wrap"></div></div><div><h2 class="mq-h3">This week</h2><div id="lbWeek" class="lb-wrap"></div></div></div>
       <h2 class="mq-h3">Most XP this week <small class="mq-small">everything you play counts</small></h2><div id="lbXp" class="lb-wrap"></div>${parentNote()}`;
@@ -727,8 +741,16 @@ function arenaView({ signal } = {}) {
   };
   const start = () => {
     track('arena/' + league + '/' + type, 'Arena round'); metrics.roundStart('arena');
-    runArena(shell, { league, seed: type === 'daily' ? `daily-${day}-${league}` : null, signal, onEnd: async r => {
+    /* Practice: the Dial picks each question. Daily: it only records the answers (the questions are the same for everyone). */
+    const before = arenaRating(), dial = new AD.Dial(AD.rating(rKey, mode));
+    runArena(shell, { league, day: type === 'daily' ? day : null, dial, signal, onEnd: async r => {
       metrics.roundEnd('arena', league);
+      const after = Math.round(AD.saveRating(rKey, dial) || before);
+      const moved = dial.n < 4 ? '' : fx.t({
+        explorer: after > before ? ` Your Arena Rating went up to ${after}!` : after < before ? ` Your Arena Rating is ${after} now.` : '',
+        challenger: after > before ? ` Arena Rating up to ${after}.` : after < before ? ` Arena Rating now ${after}.` : '',
+        pro: after > before ? ` Arena Rating up to ${after}.` : after < before ? ` Arena Rating down to ${after}.` : ''
+      });
       store.bump('arena'); store.touchDay();
       if (r.score > store.count('arenaBest')) store.bump('arenaBest', r.score - store.count('arenaBest'));
       const xp = Math.round(r.score / 5); if (xp) store.addXP(xp, 'arena');
@@ -739,7 +761,7 @@ function arenaView({ signal } = {}) {
         if (isBest) { fx.confetti(100); msg = 'New personal best for today!'; }
         postScore([`daily-${day}-${league}`, `week-${wk}-${league}`], r.score, `for today's ${fx.MODES[fx.mode()].name} race.`);
       }
-      lobby(`<div class="ar-result"><div class="md-stat"><div class="md-kicker">Score</div><div class="md-value">${r.score}</div><p>${r.right} right · ${r.wrong} missed · best combo ${r.bestCombo}x</p></div><p class="ar-msg">${msg || (type === 'practice' ? 'Practice rounds do not count for the leaderboard.' : 'Play again to beat your best.')} <span class="fx-xp">+${xp} XP</span></p></div>`);
+      lobby(`<div class="ar-result"><div class="md-stat"><div class="md-kicker">Score</div><div class="md-value">${r.score}</div><p>${r.right} right · ${r.wrong} missed · best combo ${r.bestCombo}x${moved}</p></div><p class="ar-msg">${msg || (type === 'practice' ? 'Practice rounds do not count for the leaderboard.' : 'Play again to beat your best.')} <span class="fx-xp">+${xp} XP</span></p></div>`);
     } });
   };
   lobby();
@@ -766,7 +788,7 @@ function duelView({ signal } = {}) {
 function gamesView() {
   document.title = `Games: ${BRAND} · Madhav`;
   const m = fx.mode(), mine = GAMES.filter(g => g.modes.includes(m)), rest = GAMES.filter(g => !g.modes.includes(m));
-  const card = g => `<a class="md-card mq-game" href="#/game/${g.id}"><div class="md-icon-tile" style="background:color-mix(in srgb,var(--${g.color}) 18%,transparent);color:var(--${g.color}-strong)">${icon('game')}</div><h3>${both(g.title, g.kid)}</h3><p>${g.desc.split('. ')[0]}.</p><small class="mq-game-f">Skill ${Math.round(AD.rating(g.id, m))}/20 · ${store.doneWhere(`g:${g.id}:`)}/${LEVELS_PER_GAME} levels · ${store.starsWhere(`g:${g.id}:`)} &#9733; · leaderboard</small></a>`;
+  const card = g => `<a class="md-card mq-game" href="#/game/${g.id}"><div class="md-icon-tile" style="background:color-mix(in srgb,var(--${g.color}) 18%,transparent);color:var(--${g.color}-strong)">${icon('game')}</div><h3>${both(g.title, g.kid)}</h3><p>${g.desc.split('. ')[0]}.</p><small class="mq-game-f">Skill ${Math.round(AD.rating('game:' + g.id, m))}/20 · ${store.doneWhere(`g:${g.id}:`)}/${LEVELS_PER_GAME} levels · ${store.starsWhere(`g:${g.id}:`)} &#9733; · leaderboard</small></a>`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs([null, 'Games'])}
     <span class="md-tag md-tag--plum">Games</span>
@@ -778,7 +800,7 @@ function gamesView() {
 }
 function gameView(id, lvl = 0, { signal } = {}) {
   const g = GAMES.find(x => x.id === id); if (!g) return gamesView();
-  const m = fx.mode(), league = fx.MODES[m].league, gkey = n => `g:${g.id}:${n}`, rate = AD.rating(g.id, m);
+  const m = fx.mode(), league = fx.MODES[m].league, gkey = n => `g:${g.id}:${n}`, rate = AD.rating('game:' + g.id, m);
   const ratedLevel = AD.levelForDifficulty(rate, LEVELS_PER_GAME);
   const isOpen = n => n <= ratedLevel || n === 1 || store.stars(gkey(n - 1)) > 0;
   if (lvl && (lvl > LEVELS_PER_GAME || !isOpen(lvl))) { location.replace(`#/game/${g.id}`); return; }
@@ -798,7 +820,7 @@ function gameView(id, lvl = 0, { signal } = {}) {
   const lobby = (msg = '') => {
     if (L) { shell.innerHTML = `${msg}<p class="lv-best">Starts at difficulty ${L.cfg.start} of 20 and adapts as you play. Goal: ${L.goal.map((t, i) => `${'&#9733;'.repeat(i + 1)} ${t.toLocaleString('en-US')}`).join(' · ')} points.</p><p class="lv-best">Your best: ${starHTML(store.stars(gkey(lvl)))}</p><button class="md-btn md-btn--primary ar-go" id="gStart">${icon('play')} Play level ${lvl}</button>`; $('#gStart', shell).onclick = start; return; }
     shell.innerHTML = `${msg}<div class="g-optrow" role="group" aria-label="How to play"><button class="md-chip" aria-pressed="${mode === 'ranked'}" data-m="ranked">${icon('trophy')} Ranked round (${lengthText})</button><button class="md-chip" aria-pressed="${mode === 'endless'}" data-m="endless">Endless practice</button></div>
-      <p class="g-best">Your skill in this game: ${dialMeter(Math.round(AD.rating(g.id, m)))}<br><small>Every round adapts: right answers make it harder, misses make it easier. Points are worth more at higher difficulty, so the leaderboard is fair across levels.</small></p>
+      <p class="g-best">Your skill in this game: ${dialMeter(Math.round(AD.rating('game:' + g.id, m)))}<br><small>Every round adapts: right answers make it harder, misses make it easier. Points are worth more at higher difficulty, so the leaderboard is fair across levels.</small></p>
       <button class="md-btn md-btn--primary ar-go" id="gStart">${icon('play')} ${mode === 'ranked' ? 'Play ranked' : 'Practice'}</button>`;
     shell.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { mode = b.dataset.m; lobby(msg); });
     $('#gStart', shell).onclick = start;
@@ -806,7 +828,7 @@ function gameView(id, lvl = 0, { signal } = {}) {
   const start = () => {
     track('game/' + g.id + '/' + mode, 'Game: ' + g.title); metrics.roundStart('game'); fx.sfx('tap');
     round = child(signal); const roundSignal = round.signal;
-    const startD = L ? L.cfg.start : AD.rating(g.id, m), dial = new AD.Dial(startD, { floor: L ? L.cfg.floor : 1 });
+    const startD = L ? L.cfg.start : AD.rating('game:' + g.id, m), dial = new AD.Dial(startD, { floor: L ? L.cfg.floor : 1 });
     shell.innerHTML = `<div class="g-head"><span class="g-hud" id="gHud">${dialMeter(dial.lv)}<span class="g-pts"><b id="gPts">0</b> pts</span></span><span class="g-sayline" id="gSay" role="status" aria-live="polite"></span><button class="md-btn md-btn--sm" id="gQuit">${mode === 'endless' ? 'Finish' : 'Stop'}</button></div><div class="g-area" id="gArea"></div>`;
     const sayEl = $('#gSay', shell), hudEl = $('#gHud', shell);
     const hud = (d, pts, ok) => { hudEl.innerHTML = `${dialMeter(d.lv)}<span class="g-pts"><b id="gPts">${d.points.toLocaleString('en-US')}</b> pts</span>${ok && pts ? `<span class="g-gain">+${pts}</span>` : ''}${d.trend > 0 ? '<span class="g-trend up" role="img" aria-label="Getting harder">&#9650;</span>' : d.trend < 0 ? '<span class="g-trend down" role="img" aria-label="Getting easier">&#9660;</span>' : ''}`; };
@@ -815,7 +837,7 @@ function gameView(id, lvl = 0, { signal } = {}) {
       if (ended) return; ended = true; round.abort();
       metrics.roundEnd('game', league); /* Stop never gets here, so a stopped round sends nothing */
       store.markSeen('game:' + g.id); store.bump('gamesPlayed'); store.touchDay();
-      const before = AD.rating(g.id, m), after = AD.saveRating(g.id, dial), moved = Math.round((after - before) * 10) / 10;
+      const before = AD.rating('game:' + g.id, m), after = AD.saveRating('game:' + g.id, dial), moved = Math.round((after - before) * 10) / 10;
       const skillLine = `Difficulty: started at ${Math.round(startD)}, reached ${Math.round(dial.peak)}, settled at ${Math.round(dial.settled())} of 20. ${dial.right} of ${dial.n} right.`;
       const skillMove = dial.n >= 4 ? (moved > 0 ? ` Your skill rose to ${Math.round(after)}.` : moved < 0 ? ` Your skill is now ${Math.round(after)}.` : '') : '';
       if (L) {

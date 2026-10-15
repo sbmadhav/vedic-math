@@ -156,3 +156,62 @@ test('a percent lesson links no counting videos', async ({ page }) => {
   await open(page, '#/skill/k-count');
   await expect(page.locator('.rel-links')).toContainText(/Numberblocks/);
 });
+
+/* Skill Ratings (ratings spec): the Rating picks each Practice question's generator level; mastery is unchanged */
+const progress = (page: Page) => page.evaluate(async () => (await import('/vedic-math/js/store.js' as string)).load());
+/* The times-table question on screen, answered right on the first try */
+async function answerTimes(page: Page, ok = true) {
+  const box = page.locator('#practice');
+  const [a, b] = ((await box.locator('#prQ').textContent()) || '').match(/\d+/g)!.map(Number);
+  await box.locator('.ans-in').fill(String(ok ? a * b : a * b + 1));
+  await box.locator('#prCheck').click();
+}
+async function nextQuestion(page: Page) {
+  const box = page.locator('#practice');
+  await expect(box.locator('#prCheck')).toHaveText('Next');
+  await box.locator('#prCheck').click();
+  await expect(box.locator('#prCheck')).toHaveText('Check');
+}
+
+test('10 right answers raise the Skill Rating and move later questions to level 2', async ({ page }) => {
+  await seedRandom(page, 21);
+  await open(page, '#/skill/3-mult');
+  const q = page.locator('#practice #prQ');
+  await expect(q).toHaveAttribute('data-level', '1'); // Challenger starts at 5: level 1
+  const levels: number[] = [];
+  for (let i = 0; i < 10; i++) {
+    levels.push(Number(await q.getAttribute('data-level')));
+    await answerTimes(page);
+    await expect(page.locator('#practice #prSay')).toHaveClass(/\bok\b/);
+    await nextQuestion(page);
+  }
+  expect(levels[0]).toBe(1);
+  expect(levels.slice(3).every(l => l >= 2), `levels ${levels}`).toBe(true);
+  await expect(q).not.toHaveAttribute('data-level', '1');
+  // Saved after 10 answers, in this Player's progress on the device
+  const p = await progress(page);
+  expect(p.ratings['skill:3-mult']).toBeGreaterThan(5);
+  // Leaving the Skill keeps the Rating, and the next visit starts there
+  await page.goto('/vedic-math/#/learn');
+  await open(page, '#/skill/3-mult');
+  await expect(q).not.toHaveAttribute('data-level', '1');
+});
+
+test('mastery moves exactly as before Skill Ratings: a fixed answer sequence gives the same value', async ({ page }) => {
+  await seedRandom(page, 4);
+  await open(page, '#/skill/3-mult');
+  const box = page.locator('#practice');
+  // right, right, Show me, right on the second try, right, a miss shown after three tries, right
+  const seq = ['right', 'right', 'show', 'second', 'right', 'miss', 'right'] as const;
+  for (const step of seq) {
+    if (step === 'show') await box.locator('#prShow').click();
+    else if (step === 'second') { await answerTimes(page, false); await answerTimes(page); }
+    else if (step === 'miss') { for (let k = 0; k < 3; k++) await answerTimes(page, false); }
+    else await answerTimes(page);
+    await nextQuestion(page);
+  }
+  // The mastery formula before this change: score 1 (first try), 0.5 (with help) or 0, rate 0.35 for the first 5 answers then 0.22
+  let m = 0;
+  seq.forEach((step, n) => { const score = step === 'right' ? 1 : step === 'second' ? 0.5 : 0; m = Math.round((m + (n < 5 ? 0.35 : 0.22) * (score - m)) * 1000) / 1000; });
+  expect((await progress(page)).skills['3-mult'].m).toBe(m);
+});

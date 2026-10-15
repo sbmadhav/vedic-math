@@ -19,7 +19,7 @@ This plan rebases the Oct 13 review and action plan (a six-persona age panel plu
 | --- | --- | --- |
 | Overall (age panel) | 5.9/10; motivation to return 4.7/10 | Unchanged until Phase 0 ships |
 | World leaderboards | "Coming soon" | Live on Firebase: Arena daily and weekly, a daily and weekly board per game, weekly XP. Rules enforce the nickname word list, score caps, date bounds, query limits. App Check registered, not enforced. |
-| Difficulty fit | Wrong for 5 of 6 personas | Games adapt on a 1 to 20 Rating (right answers raise it, misses lower it), start by Mode (Explorer 1, Challenger 5, Pro 9), remember each Player's Rating, and score by difficulty. **Arena and practice still use fixed sets.** |
+| Difficulty fit | Wrong for 5 of 6 personas | Games adapt on a 1 to 20 Rating (right answers raise it, misses lower it), start by Mode (Explorer 1, Challenger 5, Pro 9), remember each Player's Rating, and score by difficulty. The Arena and Practice use Ratings too: an Arena Rating per League sets where Arena Practice rounds start and adapt, and a Rating per Skill picks each Practice question's generator level (1 to 3). Daily Arena rounds stay identical for a League on a fixed difficulty ramp. The Pro Arena is mental arithmetic only (2-digit products, squares, percents, near-base products, division), with Pro daily rounds switching over on Monday 2026-10-19 so no Board mixes question sets. |
 | Repeats | Many | No repeats within a game round |
 | Offline | Root service worker could mix module versions | Own repo and service worker, every module pinned with a `?v=` hash |
 | Trust bugs | 12 open | 12 open (verified in code, see Phase 0) |

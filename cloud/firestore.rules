@@ -50,7 +50,7 @@ service cloud.firestore {
       // the game itself, so the cap is a generous human pace per league:
       //   explorer   2000 = 70 right in a row, one tap every 0.86 s (four big choices, simple counting and sums)
       //   challenger 1600 = 57 right in a row, one typed answer every 1.05 s (times tables, 2 to 4 digit answers)
-      //   pro        1200 = 44 right in a row, one typed answer every 1.36 s (squares, roots, percents, logs, algebra)
+      //   pro        1200 = 44 right in a row, one typed answer every 1.36 s (mental arithmetic: 2-digit products, squares, percents, near-base products, division)
       // Ranked game rounds score 10 to 143 points per right answer, weighted by how hard the question was
       // (vedic-math/js/adapt.js); 12000 is about 85 hardest answers in one round. Weekly XP is capped at 60000.
       function maxScore() {

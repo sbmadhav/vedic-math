@@ -4,43 +4,87 @@ import { byId } from './skills/index.js';
 import { checkOne } from './check.js';
 import { answerText } from './answers.js';
 import { shuffle } from './lib.js';
+import { mentalQ, FAMILIES } from './mental.js';
+import { levelFor } from './adapt.js';
 import { sfx, speak, confetti, t } from './fx.js';
 import { on, later, loop, child } from './life.js';
 
+/* Question pools by League. The Pro League draws from the mental arithmetic families (js/mental.js) instead;
+   proV1 is the Pro pool before that change, kept only for Pro daily rounds dated before MENTAL_FROM. */
 const POOLS = {
   explorer: ['k-add10', 'k-sub10', 'k-bonds', 'k-count', '1-doubles', '1-maketen', 'k-teens'],
   challenger: ['3-mult', '3-div', 'v-sq5', 'v-by11', 'v-times5', 'v-ends10', '2-add100', '3-multtens', 'v-from9', 'v-by9s'],
-  pro: ['v-near-base', 'v-duplex', '6-percent', '7-twostep', '8-exprules', 'v-sqroot', '6-exp', '8-multistep', '11-logs', 'v-square-near']
+  proV1: ['v-near-base', 'v-duplex', '6-percent', '7-twostep', '8-exprules', 'v-sqroot', '6-exp', '8-multistep', '11-logs', 'v-square-near']
 };
 export const ROUND_SECS = 60;
+/* Pro daily rounds switch to mental arithmetic on Monday 2026-10-19, the first day of ISO week 2026-W43. Boards are
+   named after the Player's local date and ISO week, and the switch uses the same date, so no day's or week's Pro
+   Board mixes the old and new question sets. The Pro daily seed gains a version prefix at the same time. */
+export const MENTAL_FROM = '2026-10-19';
+/* The difficulty ramp of a Pro daily round, from its first item to its last (every Pro Player gets the same) */
+export const PRO_RAMP = [6, 16];
 
 /* Seeded random: same day + league = same questions for everyone */
 function mulberry32(a) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const hash = s => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; };
+const withSeed = (seedText, fn) => { const real = Math.random; if (seedText) Math.random = mulberry32(hash(seedText)); try { return fn(); } finally { Math.random = real; } };
 
-export function makeSet(league, seedText, n = 80) {
-  const real = Math.random; if (seedText) Math.random = mulberry32(hash(seedText));
-  const out = [];
-  try {
-    const pool = POOLS[league] || POOLS.challenger; let guard = 0;
-    while (out.length < n && guard++ < n * 20) {
-      const s = byId[pool[Math.floor(Math.random() * pool.length)]]; if (!s) continue;
-      const p = s.gen(league === 'explorer' ? 1 : 2);
-      if (p.kind !== 'num' || !Number.isInteger(p.answer) || Math.abs(p.answer) > 99999) continue;
-      const near = [...new Set([p.answer, p.answer + 1, p.answer - 1, p.answer + 2, p.answer + 10, p.answer - 10].filter(v => league !== 'explorer' || v >= 0))];
-      out.push({ q: p.q, viz: league === 'explorer' ? p.viz : '', answer: p.answer, choices: shuffle([p.answer, ...shuffle(near.slice(1)).slice(0, 3)]), skill: s.id });
+/* An Arena item from a generated question: four choices (for tap play) around the answer */
+const item = (p, league, extra) => {
+  const near = [...new Set([p.answer, p.answer + 1, p.answer - 1, p.answer + 2, p.answer + 10, p.answer - 10].filter(v => league !== 'explorer' || v >= 0))];
+  return { q: p.q, viz: league === 'explorer' ? p.viz : '', answer: p.answer, choices: shuffle([p.answer, ...shuffle(near.slice(1)).slice(0, 3)]), ...extra };
+};
+/* One question from a skill pool at a generator level (1 to 3), or null when the skill gave an answer the keypad cannot take */
+function poolItem(pool, league, level, d) {
+  const s = byId[pool[Math.floor(Math.random() * pool.length)]]; if (!s) return null;
+  const p = s.gen(level);
+  if (p.kind !== 'num' || !Number.isInteger(p.answer) || Math.abs(p.answer) > 99999) return null;
+  return item(p, league, d === undefined ? { skill: s.id } : { skill: s.id, d });
+}
+const mentalItem = (family, d) => { const p = mentalQ(family, d); return item(p, 'pro', { family: p.family, d: p.d }); };
+
+/* n Arena items for a League (or the proV1 pool). seedText makes the set the same for everyone; null draws at random.
+   Pro: the families take turns in a seeded order, and difficulty rises evenly from ramp[0] to ramp[1]. */
+export function makeSet(league, seedText, n = 80, { ramp = PRO_RAMP } = {}) {
+  return withSeed(seedText, () => {
+    const out = [];
+    if (league === 'pro') {
+      const order = shuffle(FAMILIES);
+      for (let i = 0; i < n; i++) out.push(mentalItem(order[i % order.length], Math.round(ramp[0] + ((ramp[1] - ramp[0]) * i) / Math.max(1, n - 1))));
+      return out;
     }
-  } finally { Math.random = real; }
-  return out;
+    const pool = POOLS[league] || POOLS.challenger; let guard = 0;
+    while (out.length < n && guard++ < n * 20) { const it = poolItem(pool, league, league === 'explorer' ? 1 : 2); if (it) out.push(it); }
+    return out;
+  });
+}
+/* The daily round for a League on a local date (YYYY-MM-DD): the same questions in the same order for everyone */
+export function dailySet(league, day) {
+  if (league !== 'pro') return makeSet(league, `daily-${day}-${league}`);
+  if (day < MENTAL_FROM) return makeSet('proV1', `daily-${day}-pro`);
+  return makeSet('pro', `v2:daily-${day}-pro`, 80, { ramp: PRO_RAMP });
+}
+/* One Arena Practice question at difficulty d (1 to 20): a mental family for Pro, else the League's pool at the
+   generator level for d */
+export function practiceItem(league, d) {
+  if (league === 'pro') return mentalItem(FAMILIES[Math.floor(Math.random() * FAMILIES.length)], d);
+  const pool = POOLS[league] || POOLS.challenger;
+  for (let k = 0; k < 40; k++) { const it = poolItem(pool, league, levelFor(d), Math.round(d)); if (it) return it; }
+  return makeSet(league, null, 1)[0];
 }
 
 const PAD = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '-', '0', 'del'];
 
-/* Arena round. opts: { league, seed, signal, onEnd({ score, right, wrong, bestCombo }) }.
-   The round runs under a child of signal, aborted when it ends or by destroy(), so its handlers never act
-   on the next round drawn into the same root. */
-export function runArena(root, { league, seed, signal, onEnd }) {
-  const set = makeSet(league, seed), tapMode = league === 'explorer';
+/* Arena round. opts: { league, day, dial, signal, onEnd({ score, right, wrong, bestCombo }) }.
+   day (YYYY-MM-DD): a daily round, dailySet(league, day), the same for everyone; dial (js/adapt.js Dial) only
+   records the answers. No day: a Practice round, where dial picks each next question's difficulty and moves with
+   every answer (openspec arena spec). The round runs under a child of signal, aborted when it ends or by destroy(),
+   so its handlers never act on the next round drawn into the same root. */
+export function runArena(root, { league, day = null, dial, signal, onEnd }) {
+  const set = day ? dailySet(league, day) : null, tapMode = league === 'explorer';
+  const draw = () => dial.fresh(() => { const it = practiceItem(league, dial.lv); return [it.q, it]; });
+  let cur = set ? null : draw();
+  const at = () => (set ? set[i % set.length] : cur);
   const round = child(signal), rs = round.signal;
   let i = 0, score = 0, right = 0, wrong = 0, combo = 0, bestCombo = 0, over = false;
   root.innerHTML = `<div class="ar">
@@ -50,8 +94,9 @@ export function runArena(root, { league, seed, signal, onEnd }) {
     <div id="arIn"></div><div class="ar-pop" id="arPop" aria-hidden="true"></div></div>`;
   const $ = s => root.querySelector(s);
   const show = () => {
-    const p = set[i % set.length];
-    $('#arQ').innerHTML = p.q; $('#arViz').innerHTML = p.viz || '';
+    const p = at(), qEl = $('#arQ');
+    qEl.innerHTML = p.q; $('#arViz').innerHTML = p.viz || '';
+    if (p.d) qEl.dataset.d = p.d; else delete qEl.dataset.d;
     if (tapMode) { $('#arIn').innerHTML = `<div class="ar-choices">${p.choices.map(c => `<button class="ar-choice" data-v="${c}">${c}</button>`).join('')}</div>`; speak(p.q); }
     else { $('#arIn').innerHTML = `<form class="ar-form" id="arForm"><output class="ar-entry" id="arEntry" aria-label="Your answer"></output><input class="ar-hidden" id="arType" inputmode="numeric" autocomplete="off" aria-label="Type your answer"><button class="md-btn md-btn--primary">Go</button></form><div class="ar-pad">${PAD.map(k => `<button type="button" class="ar-key" data-k="${k}">${k === 'del' ? 'Del' : k === '-' ? '&minus;' : k}</button>`).join('')}</div>`;
       const typ = $('#arType'); if (matchMedia('(pointer: fine)').matches) typ.focus({ preventScroll: true });
@@ -62,11 +107,12 @@ export function runArena(root, { league, seed, signal, onEnd }) {
   const pop = (txt, ok) => { const el = $('#arPop'); el.textContent = txt; el.className = 'ar-pop show ' + (ok ? 'ok' : 'no'); later(() => (el.className = 'ar-pop'), 600, rs); };
   const answer = v => {
     if (over) return;
-    const p = set[i % set.length], ok = checkOne({ kind: 'num', answer: p.answer }, String(v)).ok;
+    const p = at(), ok = checkOne({ kind: 'num', answer: p.answer }, String(v)).ok;
+    if (dial) dial.hit(ok);
     if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); const gain = 10 + Math.min(combo - 1, 10) * 2; score += gain; right++; sfx('ok'); pop('+' + gain, true); if (combo % 5 === 0) confetti(30); }
     else { combo = 0; wrong++; sfx('no'); pop(String(p.answer), false); }
     $('#arScore').textContent = score; $('#arCombo').innerHTML = combo >= 2 ? `<b>${combo}x</b> combo` : '';
-    i++; show();
+    i++; if (!set) cur = draw(); show();
   };
   on(root, 'click', e => {
     const c = e.target.closest('.ar-choice'); if (c) return answer(c.dataset.v);

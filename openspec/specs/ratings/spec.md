@@ -1,10 +1,9 @@
-# Spec Delta
+# ratings Specification
 
 ## Purpose
-
 Keep one 1 to 20 Rating per Player for each game, the Arena and each Skill, so every kind of play starts at the right difficulty and adapts to the Player.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: A Rating per game, Arena League and Skill
 Each Player SHALL have a separate Rating from 1 to 20 for each game, for the Arena in their League, and for each Skill they practice. Ratings SHALL be stored only on the device, per Player.
@@ -18,11 +17,15 @@ Each Player SHALL have a separate Rating from 1 to 20 for each game, for the Are
 - **THEN** no request leaving the device contains a Rating
 
 ### Requirement: Starting Rating by Mode
-A Player with no Rating yet for a game, the Arena or a Skill SHALL start at 1 in Explorer, 5 in Challenger and 9 in Pro.
+A Player with no Rating yet for a game, the Arena or a Skill SHALL start at 1 in Explorer, 5 in Challenger and 9 in Pro. A Player who practiced a Skill before Skill Ratings existed SHALL instead start that Skill at a Rating inside the band of their current mastery level, so their questions stay at the level they had.
 
 #### Scenario: First Arena Practice round as Pro
 - **WHEN** a Pro Player with no Arena Rating starts an Arena Practice round
 - **THEN** it starts at difficulty 9
+
+#### Scenario: Existing Player on a Skill they already practiced
+- **WHEN** a Pro Player whose mastery level on a Skill is 1 practices it for the first time after this change
+- **THEN** their questions on that Skill are still generated at level 1
 
 ### Requirement: Ratings move with answers
 Within a round or Practice session, a right answer SHALL raise the difficulty and a miss SHALL lower it. At the end, the Player's Rating SHALL move toward the level they held, so one bad round does not erase progress, and a round with fewer than 4 answers SHALL NOT change it.
