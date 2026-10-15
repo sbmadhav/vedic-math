@@ -3,7 +3,7 @@
    Nothing here leaves the device except what cloud.js posts to World boards (nickname, color, score). */
 const LEGACY = 'mathquest.v1', PKEY = 'vm.players', BOARD = 'vm.board';
 let S = null, P = null;
-const blank = () => ({ v: 2, skills: {}, xp: 0, days: {}, best: {}, last: null, grade: null, badges: {}, counts: {}, seen: {}, stars: {}, ratings: {}, weekXp: {} });
+const blank = () => ({ v: 2, skills: {}, xp: 0, days: {}, best: {}, last: null, grade: null, badges: {}, counts: {}, seen: {}, stars: {}, ratings: {}, weekXp: {}, questDay: null });
 const get = k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
 const put = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
 const listeners = new Set();
@@ -70,6 +70,9 @@ export function bump(counter, n = 1) { load(); S.counts[counter] = (S.counts[cou
 export const count = c => (load(), S.counts[c] || 0);
 export function markSeen(k) { load(); if (S.seen[k]) return false; S.seen[k] = Date.now(); save(); emit('seen', k); return true; }
 export const seen = k => (load(), !!S.seen[k]);
+/* Today's quest record: { day, base: { counter: value at the day's start }, done: { questId: time } }, replaced each day */
+export const questDay = () => (load(), S.questDay || null);
+export function setQuestDay(q) { load(); S.questDay = q; save(); }
 export function award(badge) { load(); if (S.badges[badge]) return false; S.badges[badge] = Date.now(); save(); emit('badge', badge); return true; }
 export const badges = () => (load(), S.badges);
 /* Stars for numbered levels (Dojo katas, Arena challenges, game levels): keeps the best 0 to 3 */

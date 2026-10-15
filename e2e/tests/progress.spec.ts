@@ -56,3 +56,59 @@ test('the sound setting persists', async ({ page }) => {
   await expect(page.locator('#setSound')).toBeChecked();
   expect(await page.evaluate(() => localStorage.getItem('vm.sound'))).toBe('1');
 });
+
+/* Daily quests and badges (quests and badges specs) */
+const badge = (page: import('@playwright/test').Page, name: string) => page.locator('.badge-grid .badge').filter({ has: page.locator('b', { hasText: new RegExp(`^${name}$`) }) });
+
+test('day-1 quests: one right answer shows whole-number progress like 1/15', async ({ page }) => {
+  await open(page, '#/skill/3-mult');
+  const q = (await page.locator('#practice #prQ').textContent()) || '';
+  const [a, b] = q.match(/\d+/g)!.map(Number);
+  await page.locator('#practice .ans-in').fill(String(a * b));
+  await page.locator('#practice #prCheck').click();
+  await expect(page.locator('#practice #prSay')).toHaveClass(/\bok\b/);
+  await page.goto(`${APP}#/`);
+  const nums = page.locator('.quest-card .q-n');
+  await expect(nums).toHaveCount(3);
+  const texts = await nums.allTextContents();
+  texts.forEach(t => { expect(t).toMatch(/^\d+\/\d+$/); expect(t).not.toContain('.'); });
+  // The first quest is always an answer quest: one right answer counts once
+  expect(texts[0]).toMatch(/^1\/\d+$/);
+});
+
+test('Sutra scholar: opening the Sutras page earns nothing, collecting 10 cards earns it', async ({ page }) => {
+  await open(page, '#/sutras');
+  await page.goto(`${APP}#/me`);
+  await expect(badge(page, 'Sutra scholar')).not.toHaveClass(/\bgot\b/);
+  await expect(badge(page, 'Sutra scholar')).toContainText('Collect 10 Sutra cards.');
+  await page.goto(`${APP}#/sutras`);
+  const cards = page.locator('.sutra-card');
+  for (let i = 0; i < 10; i++) { await cards.nth(i).locator('.sutra-face').click(); await expect(cards.nth(i)).toHaveClass(/got/); }
+  await page.goto(`${APP}#/me`);
+  await expect(badge(page, 'Sutra scholar')).toHaveClass(/\bgot\b/);
+});
+
+test('Video learner: closing a video after 5 seconds earns nothing, a minute in the player earns it', async ({ page }) => {
+  // The player's YouTube frame gets an empty page: no third-party load in the test
+  await page.route(/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>video</title>' }));
+  await page.route(/^https:\/\/i\.ytimg\.com\//, r => r.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg"/>' }));
+  await page.clock.install();
+  await open(page, '#/watch');
+  const card = page.locator('a.watch-card.plays').first();
+  const dlg = page.locator('dialog.vm-player');
+  await card.click();
+  await expect(dlg).toBeVisible();
+  await page.clock.runFor(5_000);
+  await dlg.locator('.vp-x').click();
+  await expect(dlg).toBeHidden();
+  await page.clock.runFor(70_000);
+  const badges = () => page.evaluate(async () => (await import('/vedic-math/js/store.js' as string)).badges());
+  expect((await badges()).watch).toBeUndefined();
+  await card.click();
+  await expect(dlg).toBeVisible();
+  await page.clock.runFor(61_000);
+  expect((await badges()).watch).toBeTruthy();
+  await dlg.locator('.vp-x').click();
+  await page.goto(`${APP}#/me`);
+  await expect(badge(page, 'Video learner')).toHaveClass(/\bgot\b/);
+});

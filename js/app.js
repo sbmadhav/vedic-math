@@ -155,7 +155,7 @@ function home() {
         ${tile('#/watch', 'Watch and learn', 'Best trick videos', 'coral', 'play')}
       </div>`;
   } else {
-    const collected = [...SUTRAS, ...SUBSUTRAS].filter(collectedCard).length;
+    const collected = gm.collectedCount();
     body = `<div class="home-2"><div class="md-card"><span class="md-tag md-tag--coral">Arena</span><h2 class="mq-h3">Today's leaderboard</h2><div id="homeBoard" class="lb-wrap"><p class="mq-small">Loading…</p></div>${parentNote()}<a class="md-btn md-btn--primary" href="#/arena">Play today's round</a></div>${questsHTML()}</div>
       <div class="play-grid">
         ${tile('#/dojo', 'Vedic Dojo', `${gm.beltProgress().filter(b => b.earned).length} of ${BELTS.length} belts`, 'plum', 'belt')}
@@ -497,14 +497,13 @@ function challengeView(id) {
 }
 
 /* ---------- Sutras: deep dive and card collection ---------- */
-function collectedCard(c) { return c.tricks.some(t => store.mastered('v-' + t)) || store.seen('sutra:' + c.name); }
 const sutraId = (c, sub) => (sub ? 'u' : 's') + c.n;
 const ALL_SUTRAS = [...SUTRAS.map(c => ({ ...c, sub: false, id: 's' + c.n })), ...SUBSUTRAS.map(c => ({ ...c, sub: true, id: 'u' + c.n }))];
 function sutrasView() {
   document.title = `The Vedic sutras: ${BRAND} · Madhav`;
   store.markSeen('sutras');
-  const got = ALL_SUTRAS.filter(collectedCard).length;
-  const card = c => { const have = collectedCard(c); return `<article class="sutra-card${have ? ' got' : ''}" data-id="${c.id}" data-name="${esc(c.name)}">
+  const got = ALL_SUTRAS.filter(gm.collectedCard).length;
+  const card = c => { const have = gm.collectedCard(c); return `<article class="sutra-card${have ? ' got' : ''}" data-id="${c.id}" data-name="${esc(c.name)}">
     <button class="sutra-face" aria-expanded="false" aria-label="${esc(c.name)}: ${esc(c.meaning)}. Flip card"><span class="sutra-n">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n}</span><b lang="sa-Latn">${c.name}</b><i>${c.meaning}</i>${have ? '<span class="sutra-got">Collected</span>' : '<span class="sutra-tap">Tap to flip</span>'}</button>
     <div class="sutra-back"><span>${c.plain}</span>${c.example ? `<code>${c.example}</code>` : ''}
       <span class="sutra-acts"><a class="sutra-more" href="#/sutras/${c.id}">Learn more ${icon('play')}</a><button type="button" class="sutra-flipback" aria-label="Flip back">${icon('loop')}</button></span></div></article>`; };
@@ -707,7 +706,7 @@ function duelView() {
   const lobby = (res = '') => {
     shell.innerHTML = `${res}<div class="g-optrow" role="group" aria-label="Level">${Object.entries(fx.MODES).map(([id, m]) => `<button class="md-chip" aria-pressed="${id === lg}" data-l="${id}">${m.name}</button>`).join('')}</div><label class="duel-flip"><input type="checkbox" id="dFlip"> Face to face (flip the top player)</label><p><button class="md-btn md-btn--primary" id="dGo">${icon('duel')} Start the duel</button></p>`;
     shell.querySelectorAll('[data-l]').forEach(b => b.onclick = () => { lg = b.dataset.l; lobby(res); });
-    $('#dGo', shell).onclick = () => { const flip = $('#dFlip', shell).checked; store.bump('duels'); track('duel/' + lg, 'Duel'); shell.classList.toggle('duel-flipped', flip); stop = runDuel(shell, { league: lg, names: ['Player 1', 'Player 2'], onEnd: w => { stop = null; store.addXP(20, 'duel'); setTimeout(() => lobby(`<div class="ar-result"><div class="md-stat"><div class="md-kicker">Winner</div><div class="md-value">Player ${w + 1}</div><p>Great duel! Rematch?</p></div></div>`), 600); } }); };
+    $('#dGo', shell).onclick = () => { const flip = $('#dFlip', shell).checked; store.bump('duels'); track('duel/' + lg, 'Duel'); shell.classList.toggle('duel-flipped', flip); stop = runDuel(shell, { league: lg, names: ['Player 1', 'Player 2'], onEnd: w => { stop = null; store.bump('duelsDone'); store.addXP(20, 'duel'); setTimeout(() => lobby(`<div class="ar-result"><div class="md-stat"><div class="md-kicker">Winner</div><div class="md-value">Player ${w + 1}</div><p>Great duel! Rematch?</p></div></div>`), 600); } }); };
   };
   lobby();
   cleanup = () => { if (stop) stop(); };
@@ -827,7 +826,7 @@ function openPlayer(r, em, opener) {
     const close = () => playerDlg.close();
     playerDlg.querySelector('.vp-x').onclick = close;
     playerDlg.addEventListener('click', ev => { if (ev.target === playerDlg) close(); });
-    playerDlg.addEventListener('close', () => { playerDlg.querySelector('.vp-frame').innerHTML = ''; if (playerDlg._opener) playerDlg._opener.focus({ preventScroll: true }); });
+    playerDlg.addEventListener('close', () => { clearTimeout(playerDlg._minute); playerDlg.querySelector('.vp-frame').innerHTML = ''; if (playerDlg._opener) playerDlg._opener.focus({ preventScroll: true }); });
   }
   playerDlg._opener = opener;
   playerDlg.querySelector('#vpTitle').textContent = r.title;
@@ -836,6 +835,8 @@ function openPlayer(r, em, opener) {
   playerDlg.classList.toggle('tall', em.tall);
   playerDlg.querySelector('.vp-frame').innerHTML = `<iframe src="${em.src}" title="${esc(r.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
   playerDlg.showModal();
+  // Video learner: the player has stayed open for a whole minute (cancelled when it closes)
+  clearTimeout(playerDlg._minute); playerDlg._minute = setTimeout(() => { if (playerDlg.open) store.bump('watchedMinute'); }, 60000);
   if (!store.seen('vid:' + r.url) && store.markSeen('vid:' + r.url)) store.addXP(5, 'video');
 }
 
