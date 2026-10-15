@@ -1,4 +1,4 @@
-import { test, expect, open, chromiumOnly, cloudLog, type Mode } from './fixtures';
+import { test, expect, open, chromiumOnly, cloudLog, heldClock, type Mode } from './fixtures';
 import type { Page, Locator } from '@playwright/test';
 
 /* Every game launches (Endless practice, so no round ends and nothing is posted) and accepts an answer.
@@ -108,7 +108,7 @@ test('a ranked round shows the game leaderboards and starts the clock', async ({
 const num = (t: string | null) => Number((t || '').replace(/,/g, '').replace('−', '-'));
 
 test('Number bonds: a miss holds the question and its explanation for 1.2 s and ignores taps', async ({ page }) => {
-  await page.clock.install();
+  await heldClock(page);
   await open(page, '#/game/bonds');
   await page.locator('#gShell [data-m="endless"]').click();
   await page.locator('#gStart').click();
@@ -131,7 +131,7 @@ test('Number bonds: a miss holds the question and its explanation for 1.2 s and 
 });
 
 test('Times sprint: after a right answer the next question has no explanation under it', async ({ page }) => {
-  await page.clock.install();
+  await heldClock(page);
   await open(page, '#/game/times-sprint');
   await page.locator('#gShell [data-m="endless"]').click();
   await page.locator('#gStart').click();
@@ -161,7 +161,7 @@ test.describe('balloon pop, stop and start', () => {
       (window as any).__cancels = 0;
       if ('speechSynthesis' in window) { const c = speechSynthesis.cancel.bind(speechSynthesis); speechSynthesis.cancel = () => { (window as any).__cancels++; c(); }; }
     });
-    await page.clock.install();
+    await heldClock(page);
     await open(page, '#/game/balloons');
     await expect(page.locator('#gShell [data-m="ranked"]')).toHaveAttribute('aria-pressed', 'true');
     await page.locator('#gStart').click();

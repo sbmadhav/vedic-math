@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog } from './fixtures';
+import { test, expect, APP, open, cloudLog, heldClock } from './fixtures';
 
 /* The app is a hash router (#/learn, #/dojo, ...). Every top-level route renders, deep links work,
    and Back / Forward move between views. */
@@ -117,7 +117,7 @@ test('leaving the Arena during the countdown never starts the round', async ({ p
     const calls: string[] = []; (window as any).__tracked = calls;
     Object.defineProperty(window, 'siteTrack', { configurable: true, get: () => (name: string) => { calls.push(name); }, set: () => {} });
   });
-  await page.clock.install();
+  await heldClock(page);
   await open(page, '#/arena');
   await page.locator('#arGo').click();
   await expect(page.locator('.ar-count')).toBeVisible();
