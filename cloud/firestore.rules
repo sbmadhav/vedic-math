@@ -5,7 +5,7 @@ rules_version = '2';
 //   Ranked game rounds:  boards/g_<game>-daily-YYYY-MM-DD-<league>/... and boards/g_<game>-week-YYYY-Www-<league>/...
 //                        (<game> is the game id with _ for -, from the list in validBoard)
 //   Weekly XP:           boards/xp-week-YYYY-Www-<league>/... (XP earned this week across everything)
-// Each signed-in (anonymous) player owns one entry per board. Allowed fields, nothing else:
+// Each signed-in (anonymous) player owns one entry per board; anyone may list a board's top 20. Allowed fields, nothing else:
 //   name   a generated nickname from the fixed word lists in vedic-math/js/store.js (never typed)
 //   avatar one of five colors
 //   score  an integer from 10 to the board's cap (see maxScore); Arena scores are also even
@@ -73,8 +73,10 @@ service cloud.firestore {
       }
 
       // Reads: your own entry (checked before a submit) and top-20 lists. No browsing other players' entries one by one.
+      // Lists need no sign-in, so viewing a World board creates no identity (docs/adr/0002). They hold only
+      // nicknames, avatar colors, scores and times. Getting one entry by its id still needs that identity.
       allow get: if validBoard() && signedInAs();
-      allow list: if validBoard() && request.auth != null && request.query.limit <= 20;
+      allow list: if validBoard() && request.query.limit <= 20;
 
       allow create: if signedInAs() && validBoard() && boardOpen() && validEntry();
       // Only a higher score replaces an entry, and at most once per 50 seconds (a round plus its countdown is 62 s).

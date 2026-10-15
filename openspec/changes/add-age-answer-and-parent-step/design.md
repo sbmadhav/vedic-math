@@ -59,3 +59,20 @@ The adult check reuses a simple arithmetic or reading prompt that young children
 ## Open Questions
 
 - The exact age choices in the sheet (ranges versus single years) can be settled in copy review without changing the specs.
+
+## Decisions made during implementation
+
+The owner approved the proposal, including that a grown-up can withdraw the Parent step. These choices were made while building it, without further review:
+
+- **Age choices** (the open question above): single years, "5 or under", 6 to 17, then "Grown-up". "5 or under" is stored as 5 and "Grown-up" as `'adult'`. Every choice looks the same, and the question step never mentions World boards, posting or 13.
+- **Where the question appears**: after a Ranked round whose Score would be posted (an Arena Daily challenge or a ranked game round), and from an "Answer the question" button in the World boards card on the Me page. XP alone never opens it, because it would interrupt Practice; the weekly XP total is simply not posted until the Age answer allows it.
+- **The Age answer cannot be changed** once given, short of removing the Player. Letting a child re-answer would defeat the neutral question. A grown-up who needs to fix it can remove and re-add the Player. Candidate follow-up: a change behind the adult check.
+- **Adult check**: a random four-digit number written in words ("six thousand and forty-two"), to be typed in digits. A new number is drawn each time the card is drawn, and nothing about it is stored. It is a presence check, not age verification.
+- **Withdrawal** needs no adult check (switching posting off is always safe); turning World boards back on needs the check again.
+- **`submit` result**: `{ posted, reason }`, with `reason` one of `needs-age`, `needs-parent`, `low` (the board takes no such score) or `not-higher`. Only the nickname and color of the entry passed in are sent, so the Player record (which now holds `age`) is never spread into a write.
+- **Marking "me" on a World board**: after the first post the device keeps a copy of the anonymous id in `localStorage` (`vm.cloudUid`), so `top()` can mark the device's own row without loading Auth. Firebase already keeps that id in the same browser, so nothing new leaves the device. Before the first post no row is marked.
+- **Weekly XP post** moved into `cloud.postWeekXP()`, so the node tests can check it goes through the same gate; `queueXpPost()` in `js/app.js` also skips its timer when the active Player may not post.
+- **Late Auth registration**: `bootWrite()` loads Auth after `bootRead()` has already started Firestore without it. A one-off check on the Firestore and Auth emulators confirmed a signed-out list, then anonymous sign-in, then a get and a write of the own entry all succeed in that order.
+- **Parent note**: also added beside the World boards on each game page (the spec requires it next to every World board). It also says that every Player on a device posts under one id and so shares one entry per Board, which was true before but unstated.
+- **Rules deployed first** (task 1.2) through the Firebase Rules REST API, as the migration plan says; the release was read back and matched the file.
+- **Tests**: e2e fixtures gained a `seedConsent` option (default: no Age answer) and the fake SDK records whether Auth was loaded. Write-path specs now seed a grown-up. `leaderboard.live.spec.ts` asserts no request to identitytoolkit or securetoken and no Auth file. It cannot run from localhost, because App Check rejects the debug token there and Firestore falls back to an empty offline result. The round-driven consent flows skip WebKit, whose faked clock does not advance the Arena's `requestAnimationFrame` timer evenly. Their UI still runs on WebKit through the keyboard, reduced-motion and 13-and-over tests.

@@ -65,3 +65,45 @@ test('the Explore menu has no serious or critical axe violations', async ({ page
   const res = await new AxeBuilder({ page }).include('dialog.xpm').analyze();
   expect(res.violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => `${v.id}: ${v.nodes.map(n => n.target.join(' ')).join(' | ')}`)).toEqual([]);
 });
+
+/* Posting consent: the age sheet and the Parent step on the Me page, in both color schemes and every Mode */
+const axeIn = async (page: import('@playwright/test').Page, sel: string) => {
+  const res = await new AxeBuilder({ page }).include(sel).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice']).analyze();
+  return res.violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => `${v.id}: ${v.nodes.map(n => n.target.join(' ')).join(' | ')}`);
+};
+for (const scheme of ['light', 'dark'] as const) {
+  for (const mode of ['explorer', 'challenger', 'pro'] as const) {
+    test.describe(`${scheme} scheme, ${mode}`, () => {
+      test.use({ colorScheme: scheme, seedMode: mode });
+      test('the age sheet has no serious or critical axe violations', async ({ page }, testInfo) => {
+        chromiumOnly(testInfo);
+        await open(page, '#/me');
+        await page.locator('#wbAsk').click();
+        await expect(page.locator('dialog.vm-sheet')).toBeVisible();
+        expect(await axeIn(page, 'dialog.vm-sheet')).toEqual([]);
+        await page.locator('dialog.vm-sheet [data-age="9"]').click();
+        await expect(page.locator('dialog.vm-sheet h2')).toHaveText('Saved on this device');
+        expect(await axeIn(page, 'dialog.vm-sheet')).toEqual([]);
+      });
+    });
+    test.describe(`${scheme} scheme, ${mode}, under 13`, () => {
+      test.use({ colorScheme: scheme, seedMode: mode, seedConsent: { age: 8 } });
+      test('the Parent step and its switch have no serious or critical axe violations', async ({ page }, testInfo) => {
+        chromiumOnly(testInfo);
+        await open(page, '#/me');
+        expect(await axeIn(page, '#worldBoards')).toEqual([]);
+        await page.locator('#wbIn').fill('1');
+        await page.locator('#wbCheck button').click();
+        await expect(page.locator('#wbErr')).not.toBeEmpty();
+        expect(await axeIn(page, '#worldBoards')).toEqual([]);
+        await page.locator('#wbIn').fill((await page.locator('#wbCheck').getAttribute('data-n'))!);
+        await page.locator('#wbCheck button').click();
+        await expect(page.getByRole('switch')).toBeVisible();
+        expect(await axeIn(page, '#worldBoards')).toEqual([]);
+        await page.getByRole('switch').click();
+        await expect(page.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+        expect(await axeIn(page, '#worldBoards')).toEqual([]);
+      });
+    });
+  }
+}

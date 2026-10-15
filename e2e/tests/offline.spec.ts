@@ -169,6 +169,9 @@ test('a Dojo kata and a game play offline, and the progress persists', async ({ 
   expect((await cloudLog(page)).writes).toEqual([]);
 });
 
+test.describe('a Player who may post', () => {
+// A grown-up's XP would post when online, so this checks that nothing earned offline is saved up to send later
+test.use({ seedConsent: { age: 'adult' } });
 test('offline, the leaderboards fall back to this device, and nothing is queued or written', async ({ page, context }) => {
   test.setTimeout(90_000);
   await open(page);
@@ -204,9 +207,10 @@ test('offline, the leaderboards fall back to this device, and nothing is queued 
   await expect(page.locator('#lbDay .lb-body')).not.toContainText('not reachable');
   await page.waitForTimeout(4_500);
   log = await cloudLog(page);
-  expect(log.signIns).toBe(1);
+  expect(log.signIns).toBe(0); // viewing World boards never signs in (docs/adr/0002)
   expect(log.reads.length).toBeGreaterThan(0);
   expect(log.writes).toEqual([]);
+});
 });
 
 test('the shared main-site files are served offline', async ({ page, context }) => {
