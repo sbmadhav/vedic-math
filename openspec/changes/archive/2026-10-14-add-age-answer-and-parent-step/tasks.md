@@ -31,6 +31,7 @@
 ## 6. Release check
 
 - [ ] 6.1 Full unit, rules emulator and e2e runs pass locally against a built `_site`, then live after deploy. Verify: CI and the post-deploy E2E workflow are green, and a manual check on a phone shows the age sheet after an Arena round on a fresh browser.
+  - Status at archive (2026-10-14): unit 64/64, rules emulator 28/28 and local e2e (chromium 115, mobile 62, webkit 53 passed) green against a built `_site`; CI and the post-deploy E2E (live site) run for 0295106 green, including the live World board read with no sign-in. Still open: the manual check on a real phone (the Playwright Pixel 7 project shows the age sheet after an Arena round).
 
 ## Workflow follow-up
 
