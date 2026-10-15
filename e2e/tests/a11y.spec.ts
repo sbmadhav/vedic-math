@@ -9,12 +9,9 @@ import { test, expect, APP, open, chromiumOnly } from './fixtures';
 
 const ROUTES = ['#/', '#/learn', '#/dojo', '#/arena', '#/games', '#/sutras', '#/watch', '#/me', '#/skill/v-sq5', '#/game/times-sprint'];
 
-const KNOWN = [
-  { route: '#/', rule: 'aria-prohibited-attr', target: '.mq-xpbar--big',
-    note: 'Home: the XP bar <span class="mq-xpbar mq-xpbar--big" aria-label="... XP to the next level"> has aria-label on a span with no role (heroStats() in js/app.js). Give it role="progressbar" with aria-valuenow/min/max, or move the text into visually hidden copy.' },
-  { route: '#/skill/v-sq5', rule: 'aria-prohibited-attr', target: '#prRun',
-    note: 'Skill practice: <span class="pr-run" id="prRun" aria-label="Streak"> has aria-label on a span with no role (practice() in js/app.js). Drop the label or give it a role such as status.' },
-];
+/* Known violations on the live site: { route, rule, target, note }. Empty: the XP bar is a progressbar and
+   #prRun lost its label (both fixed in js/app.js). Add an entry when a new one is found and reported. */
+const KNOWN: { route: string; rule: string; target: string; note: string }[] = [];
 
 async function serious(page: import('@playwright/test').Page, route?: string) {
   const res = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice']).analyze();

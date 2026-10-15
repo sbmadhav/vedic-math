@@ -179,5 +179,5 @@ test('XP earned anywhere sends this week\'s XP total to the weekly XP board, at 
   await expect.poll(async () => (await writes(page)).length).toBe(2);
   w = await writes(page);
   expect(w[1].path).toBe(board);
-  expect(w[1].data.score).toBeGreaterThan(w[0].data.score as number);
+  expect(w[1].data.score).toBe(15); // weekly XP is not rounded to even (only Arena scores are)
 });

@@ -11,6 +11,8 @@ test.describe.configure({ mode: 'serial', retries: 0 });
 
 test('World leaderboards load from live Firestore (read-only)', async ({ page }, testInfo) => {
   chromiumOnly(testInfo, 'one anonymous sign-in per run: chromium only');
+  // App Check and Firebase Auth only accept the production origin (localhost would need a debug token)
+  test.skip(!/^https:\/\/sbmadhav\.com$/.test(testInfo.project.use.baseURL || ''), 'live Firebase only answers https://sbmadhav.com');
   test.setTimeout(90_000);
   const firestore: string[] = [];
   let signUps = 0;
