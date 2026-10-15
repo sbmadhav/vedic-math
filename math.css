@@ -310,7 +310,7 @@ sup { font-size: .65em; }
 @media (max-width: 860px) { .home-2 { grid-template-columns: 1fr; } }
 .home-2 .md-card:hover, .quest-card:hover, .history:hover, .me-head:hover { transform: none; }
 .dojo-card p { margin: 6px 0 12px; }
-.belts-mini { display: flex; gap: 6px; margin: 10px 0; }
+.belts-mini { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
 .belt-mini { width: 34px; height: 12px; border-radius: 4px; border: 2px solid var(--edge); background: color-mix(in srgb, var(--ink) 8%, transparent); }
 .belt-mini.on { background: var(--belt); }
 .quests { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
@@ -365,6 +365,8 @@ sup { font-size: .65em; }
 .sutra-card.got { background: linear-gradient(160deg, color-mix(in srgb, var(--plum) 22%, var(--card)), var(--card) 60%); }
 .sutra-face, .sutra-back { position: absolute; inset: 0; padding: 16px; display: flex; flex-direction: column; gap: 6px; transition: transform .45s, opacity .3s; backface-visibility: hidden; }
 .sutra-face { border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; width: 100%; }
+/* The face sits in the flow, so the card grows with its text (WCAG 1.4.12) instead of clipping it; the back scrolls */
+.sutra-face { position: relative; inset: auto; min-height: 220px; box-sizing: border-box; overflow-wrap: anywhere; }
 .sutra-back { transform: rotateY(180deg); opacity: 0; pointer-events: none; font-size: 14.5px; line-height: 1.45; overflow: auto; }
 .sutra-card.flipped .sutra-face { transform: rotateY(-180deg); opacity: 0; pointer-events: none; }
 .sutra-card.flipped .sutra-back { transform: none; opacity: 1; pointer-events: auto; }
@@ -419,6 +421,7 @@ sup { font-size: .65em; }
 .ar-form { display: flex; gap: 10px; justify-content: center; align-items: center; }
 .ar-entry { min-width: 180px; min-height: 56px; display: grid; place-items: center; border: 2px solid var(--edge); border-radius: var(--radius-md); font: 700 1.8rem/1 var(--display); background: var(--card); }
 .ar-hidden { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.vm-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .ar-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 320px; margin: 14px auto 0; }
 .ar-key { min-height: 56px; border: 2px solid var(--edge); border-radius: var(--radius-md); background: var(--card); color: var(--ink); font: 700 1.5rem/1 var(--display); cursor: pointer; box-shadow: 0 3px 0 var(--ledge); touch-action: manipulation; }
 .ar-key:active { transform: translateY(3px); box-shadow: none; }
@@ -628,9 +631,9 @@ sup { font-size: .65em; }
 @media (prefers-reduced-motion: reduce) { .sc-svg .enter, .sc-svg .enter .sc-line, .sc-eqline.enter { animation: none; stroke-dashoffset: 0; } .sutra-card { transition: none; } }
 
 /* ---------- Read-aloud voice settings, download pill and slow-device note (voice.js) ---------- */
-.vv-set { display: grid; gap: var(--space-3); margin-top: var(--space-4); }
+.vv-set { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); margin-top: var(--space-4); }
 .vv-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); font-weight: 600; }
-.vv-check { display: inline-flex; align-items: center; gap: var(--space-2); }
+.vv-check { display: inline-flex; align-items: center; gap: var(--space-2); min-width: 0; }
 .vv-check input { width: 18px; height: 18px; accent-color: var(--teal-strong); }
 .vv-select { font: 600 14px/1.2 var(--font-sans); color: var(--ink); background: var(--card); border: 2px solid var(--edge); border-radius: var(--radius-sm); padding: 6px 10px; max-width: 100%; min-width: 0; }
 .vv-select:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }

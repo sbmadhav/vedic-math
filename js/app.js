@@ -3,7 +3,7 @@
    XP and levels, badges, Dojo belts, daily quests, the Arena with leaderboards, duels and games. */
 import { SKILLS, byId, skillsFor, GRADES, STRANDS, gradeOf, withPlain } from './skills/index.js';
 import { TRICKS, BELTS } from './vedic.js';
-import { GAMES } from './games.js';
+import { GAMES, keepFocus } from './games.js';
 import { SUTRAS, SUBSUTRAS, HISTORY } from './sutras.js';
 import { DETAILS } from './sutra-details.js';
 import { mountScene } from './scenes.js';
@@ -297,7 +297,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
       <div class="pr-head"><span class="pr-meter">${ring(store.mastery(s.id), 36)}<span><small>${mix ? `<a href="#/skill/${s.id}">${both(s.title, s.kid)}</a>` : 'Your turn'}</small><b id="prPct">${pct(store.mastery(s.id))}% mastery</b></span></span><span class="pr-run" id="prRun">${run >= 2 ? `<b>${run}</b> in a row` : ''}</span>${lives ? `<span class="pr-lives" role="img" aria-label="${life} lives left">${'<i class="on"></i>'.repeat(life)}${'<i></i>'.repeat(lives - life)}</span>` : ''}<span class="pr-score" role="img" aria-label="${right} of ${total} right this session">${right}/${total}</span></div>
       <div class="pr-q${plain(p.q).length > 60 ? ' long' : ''}" id="prQ" data-level="${level}">${p.q}</div>
       ${p.viz ? `<div class="mq-viz">${p.viz}</div>` : ''}
-      <form class="pr-form" id="prForm" autocomplete="off">${answerUI(p)}${keyset ? `<div class="pr-keys" aria-label="Symbol keys">${keyset.map(k => `<button type="button" class="pr-key" data-k="${esc(k)}">${esc(k)}</button>`).join('')}</div>` : ''}
+      <form class="pr-form" id="prForm" autocomplete="off">${answerUI(p)}${keyset ? `<div class="pr-keys" role="group" aria-label="Symbol keys">${keyset.map(k => `<button type="button" class="pr-key" data-k="${esc(k)}">${esc(k)}</button>`).join('')}</div>` : ''}
         <div class="pr-actions"><button class="md-btn md-btn--primary" id="prCheck">Check</button><button type="button" class="md-btn md-btn--sm" id="prHint">Hint</button><button type="button" class="md-btn md-btn--sm" id="prShow">Show me</button>${'speechSynthesis' in window ? `<button type="button" class="md-btn md-btn--sm" id="prHear">${icon('speaker')} Hear it</button>` : ''}</div>
       </form>
       <div class="pr-say" id="prSay" role="status" aria-live="polite"></div>
@@ -564,7 +564,7 @@ function collect(name) { if (store.markSeen('sutra:' + name)) store.addXP(5, 'su
 
 /* ---------- Sutra deep-dive modal: the card grows into it ---------- */
 let sutraDlg = null, sutraScene = null, sutraFrom = null, openedInPage = false; /* sutraScene: the open scene's controller */
-const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reducedMotion = () => fx.motionOff();
 function sutraHTML(c) {
   const d = DETAILS[c.name], i = ALL_SUTRAS.indexOf(c), prev = ALL_SUTRAS[i - 1], next = ALL_SUTRAS[i + 1];
   const tricks = c.tricks.map(t => TRICKS.find(x => x.id === t)).filter(Boolean);
@@ -828,6 +828,7 @@ function gameView(id, lvl = 0, { signal } = {}) {
   const start = () => {
     track('game/' + g.id + '/' + mode, 'Game: ' + g.title); metrics.roundStart('game'); fx.sfx('tap');
     round = child(signal); const roundSignal = round.signal;
+    const focusWasHere = shell.contains(document.activeElement); /* Start pressed from the keyboard: focus goes to the first option */
     const startD = L ? L.cfg.start : AD.rating('game:' + g.id, m), dial = new AD.Dial(startD, { floor: L ? L.cfg.floor : 1 });
     shell.innerHTML = `<div class="g-head"><span class="g-hud" id="gHud">${dialMeter(dial.lv)}<span class="g-pts"><b id="gPts">0</b> pts</span></span><span class="g-sayline" id="gSay" role="status" aria-live="polite"></span><button class="md-btn md-btn--sm" id="gQuit">${mode === 'endless' ? 'Finish' : 'Stop'}</button></div><div class="g-area" id="gArea"></div>`;
     const sayEl = $('#gSay', shell), hudEl = $('#gHud', shell);
@@ -853,6 +854,7 @@ function gameView(id, lvl = 0, { signal } = {}) {
       lobby(`<div class="g-result"><div class="md-stat"><div class="md-kicker">${mode === 'ranked' ? 'Ranked score' : 'Practice score'}</div><div class="md-value">${score.toLocaleString('en-US')}</div><p>${note} <span class="fx-xp">+${xp} XP</span></p></div><p class="mq-small">${skillLine}${skillMove}</p></div>`);
       if (mode === 'ranked') later(() => { loadBoard($('#gbDay'), bDay); loadBoard($('#gbWeek'), bWeek); }, 1500, signal);
     };
+    keepFocus($('#gArea', shell), roundSignal, focusWasHere);
     g.run($('#gArea', shell), { dial, hud, endless: mode === 'endless', secs: g.secs, signal: roundSignal, say: m2 => (sayEl.innerHTML = m2), end: finish });
     $('#gQuit', shell).onclick = () => { if (mode === 'endless') return finish(dial.points); round.abort(); ended = true; lobby(); };
   };

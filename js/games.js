@@ -8,10 +8,10 @@ import { ri, pick, shuffle } from './lib.js';
 import { evalNum } from './check.js';
 import { factStrategy } from './skills/middle.js';
 import * as V from './viz.js';
-import { sfx as tapSfx, speak as speakIt } from './fx.js';
+import { sfx as tapSfx, speak as speakIt, motionOff } from './fx.js';
 import { SUTRAS } from './sutras.js';
 import { pointsAt, levelStart } from './adapt.js';
-import { on, later, loop, child } from './life.js';
+import { on, later, loop, child, onAbort } from './life.js';
 
 const el = (tag, attrs = {}, html = '') => { const e = document.createElement(tag); Object.entries(attrs).forEach(([k, v]) => (k === 'class' ? (e.className = v) : e.setAttribute(k, v))); if (html) e.innerHTML = html; return e; };
 /* The round clock: a bar that empties over secs, then onEnd(). Runs until signal aborts. */
@@ -26,6 +26,30 @@ const frac = (n, d) => `<span class="fr"><span>${n}</span><span>${d}</span></spa
 const nd = d => ri(10 ** (d - 1), 10 ** d - 1);
 /* Four choices: the answer plus three nearby wrong ones */
 const near = (ans, spread, n = 4, ok = () => true) => { const s = new Set([ans]); let g = 0; while (s.size < n && g++ < 120) { const v = ans + pick([-1, 1]) * ri(1, spread); if (v !== ans && ok(v)) s.add(v); } return shuffle([...s]); };
+
+/* Keyboard focus stays in the game (WCAG 2.4.3). Games rebuild or disable their option buttons after each
+   answer, which drops focus to <body>. When focus was inside the game area, it goes back to the first option
+   of the new question (or, on a board marked data-keep-index, to the same tile). When focus was elsewhere
+   (a mouse click outside, the Stop button), nothing moves. Runs for the whole round. */
+const FOCUSABLE = 'button:not(:disabled), input:not(:disabled), select:not(:disabled), [tabindex="0"]';
+export function keepFocus(area, signal, startInside = false) {
+  let inside = startInside, idx = 0;
+  const controls = () => [...area.querySelectorAll(FOCUSABLE)].filter(x => x.getClientRects().length);
+  on(document, 'focusin', e => { inside = area.contains(e.target); if (inside) idx = controls().indexOf(e.target); }, signal);
+  on(document, 'pointerdown', e => { if (!area.contains(e.target)) inside = false; }, signal, { capture: true });
+  const restore = () => {
+    if (signal.aborted || !inside || !area.isConnected) return;
+    const a = document.activeElement;
+    if (a && a !== document.body && a !== document.documentElement) return; /* focus is somewhere real */
+    const list = controls(); if (!list.length) return;
+    const same = list[Math.max(0, idx)], keep = same && same.closest('[data-keep-index]');
+    const target = keep ? same : (list.find(x => x.closest('[role="group"]')) || list[0]);
+    target.focus({ preventScroll: true });
+  };
+  const mo = new MutationObserver(restore);
+  mo.observe(area, { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled'] });
+  onAbort(signal, () => mo.disconnect());
+}
 
 /* Shared plumbing: score an answer, update the HUD, count rounds, and wait on the round's signal */
 export const HOLD_MS = 1200;
@@ -170,7 +194,7 @@ export const GAMES = [
     run(area, ctx) {
       const k = kit(ctx), { dial } = ctx; let sel = null, key = '', T = 0, vals = [];
       const targetFor = lv => lv <= 3 ? [10, 1] : lv <= 6 ? [20, 1] : lv <= 9 ? [100, 5] : lv <= 12 ? [100, 1] : lv <= 15 ? [1000, 10] : lv <= 18 ? [1, 0.1] : [1, 0.01];
-      const say = el('p', { class: 'g-say' }), board = el('div', { class: 'g-board g-tiles', role: 'group' }); area.append(say, board);
+      const say = el('p', { class: 'g-say' }), board = el('div', { class: 'g-board g-tiles', role: 'group', 'data-keep-index': '' }); area.append(say, board);
       const pair = () => { const [t, step] = targetFor(dial.lv), n = Math.round(t / step), a = Math.round(ri(1, n - 1) * step * 100) / 100; return [a, Math.round((t - a) * 100) / 100]; };
       const setup = () => { const [t, step] = targetFor(dial.lv); T = t; key = `${t}/${step}`; vals = shuffle([...pair(), ...pair(), ...pair(), ...pair(), ...pair(), ...pair()]); say.innerHTML = `Find pairs that make <b>${T}</b>.`; board.setAttribute('aria-label', `Pick two that make ${T}`); draw(); };
       const draw = () => { board.innerHTML = ''; vals.forEach((v, i) => { const b = el('button', { class: 'g-tile', 'aria-pressed': String(sel === i) }, String(v)); b.onclick = () => choose(i); board.append(b); }); };
@@ -227,7 +251,8 @@ export const GAMES = [
       const q = el('div', { class: 'g-q', 'aria-live': 'polite' }), form = el('form', { class: 'g-form' }, '<input inputmode="numeric" autocomplete="off" aria-label="Answer" class="ans-in"><button class="md-btn md-btn--primary md-btn--sm">Go</button>'), tip = el('p', { class: 'g-tip', 'aria-live': 'polite' });
       area.append(q, form, tip); const inp = form.querySelector('input'); const k = kit(ctx, area, { tip });
       const next = () => { cur = dial.fresh(() => timesQ(dial.lv)); q.innerHTML = `${fmt(cur.a)} &times; ${fmt(cur.b)}`; inp.value = ''; inp.focus(); };
-      form.onsubmit = e => { e.preventDefault(); const v = inp.value.replace(/[,\s]/g, ''); if (!v) return; const ok = +v === cur.ans; k.mark(ok, q); k.answered(ok, `${fmt(cur.a)} &times; ${fmt(cur.b)} = ${fmt(cur.ans)}. ${timesTip(cur.a, cur.b)}`, next); };
+      /* A right answer is announced in the status line (WCAG 4.1.3), with the running count so it is never the same text twice */
+      form.onsubmit = e => { e.preventDefault(); const v = inp.value.replace(/[,\s]/g, ''); if (!v) return; const ok = +v === cur.ans; k.mark(ok, q); ctx.say(ok ? `Right! ${dial.right} so far.` : ''); k.answered(ok, `${fmt(cur.a)} &times; ${fmt(cur.b)} = ${fmt(cur.ans)}. ${timesTip(cur.a, cur.b)}`, next); };
       next();
       k.timed(area, ctx.secs || 60);
     } },
@@ -350,7 +375,7 @@ export const GAMES = [
     desc: 'Numbers drift down. Tap only the multiples of the magic number. The magic number changes as you level up, from 2 to tricky ones like 13, 17 and 25, and the rain speeds up.',
     run(area, ctx) {
       const k = kit(ctx), { dial } = ctx; const K = [2, 5, 10, 3, 4, 6, 9, 8, 7, 11, 12, 15, 13, 25, 14, 17, 18, 19, 23, 27];
-      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; let last = performance.now(), spawnT = 0, kv = K[dial.lv - 1];
+      const reduced = motionOff(); let last = performance.now(), spawnT = 0, kv = K[dial.lv - 1];
       const head = el('p', { class: 'g-say' }), sky = el('div', { class: 'g-rain', role: 'group' }); area.append(head, sky);
       const setK = () => { kv = K[dial.lv - 1]; head.innerHTML = `Tap the multiples of <b>${kv}</b>.`; sky.setAttribute('aria-label', `Falling numbers. Tap multiples of ${kv}.`); };
       const check = () => { if (K[dial.lv - 1] !== kv) setK(); };

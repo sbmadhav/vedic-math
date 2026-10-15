@@ -1,7 +1,7 @@
 /* js/life.js: listeners, timers, intervals and frame loops bound to an AbortSignal (view-lifecycle spec). */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { on, later, every, loop, child } from '../js/life.js';
+import { on, later, every, loop, child, onAbort } from '../js/life.js';
 
 /* A frame is a 16 ms timeout, so mock timers drive the loop too */
 globalThis.requestAnimationFrame = cb => setTimeout(() => cb(Date.now()), 16);
@@ -15,6 +15,17 @@ test('every helper throws without a signal', () => {
   assert.throws(() => every(() => {}, 10, {}), TypeError);
   assert.throws(() => loop(() => {}), TypeError);
   assert.throws(() => child(null), TypeError);
+});
+
+test('onAbort: runs once on abort, or at once when already aborted', () => {
+  assert.throws(() => onAbort(null, () => {}), TypeError);
+  const ctl = new AbortController(); let n = 0;
+  onAbort(ctl.signal, () => n++);
+  assert.equal(n, 0);
+  ctl.abort(); ctl.abort();
+  assert.equal(n, 1);
+  onAbort(ctl.signal, () => n++);
+  assert.equal(n, 2);
 });
 
 test('on: the handler stops firing when the signal aborts', () => {

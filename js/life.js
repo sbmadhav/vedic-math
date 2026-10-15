@@ -5,8 +5,9 @@
 const need = signal => {
   if (!signal || typeof signal.aborted !== 'boolean' || typeof signal.addEventListener !== 'function') throw new TypeError('life.js: an AbortSignal is required');
 };
-/* Runs fn once when signal aborts (at once if it already has) */
-const onAbort = (signal, fn) => { if (signal.aborted) fn(); else signal.addEventListener('abort', fn, { once: true }); };
+/* Runs fn once when signal aborts (at once if it already has): for cleanups that are not a listener or timer,
+   such as disconnecting an observer */
+export const onAbort = (signal, fn) => { need(signal); if (signal.aborted) fn(); else signal.addEventListener('abort', fn, { once: true }); };
 
 /* addEventListener that is removed when signal aborts. opts: other listener options (capture, passive) */
 export function on(target, type, fn, signal, opts = {}) {

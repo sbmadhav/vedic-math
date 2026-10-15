@@ -2,6 +2,7 @@
    A scene is a list of steps. Each step adds SVG (or equation lines) and a sentence; earlier steps stay,
    unless a later step hides them. New pieces enter with a short draw-in or fade animation. */
 import { on, every, child } from './life.js';
+import { motionOff } from './fx.js';
 
 /* ---------- tiny SVG helpers (theme-aware via vz- classes) ---------- */
 export const R = (x, y, w, h, cls = 'vz-sky', label = '', lcls = 'vz-tb') => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" class="${cls} vz-blk sc-soft"/>${label ? T(x + w / 2, y + h / 2, label, lcls) : ''}`;
@@ -42,5 +43,5 @@ export function mountScene(host, scene, signal) {
     if (a === 'play') { if (playing) return stop(); if (k === steps.length - 1) k = 0; draw(); e.target.textContent = 'Pause'; playing = child(signal); every(() => { if (k >= steps.length - 1) return stop(); k++; draw(); }, 2800, playing.signal); }
   }, signal);
   draw();
-  if (!matchMedia('(prefers-reduced-motion: reduce)').matches && steps.length > 1) host.querySelector('[data-a="play"]').click();
+  if (!motionOff() && steps.length > 1) host.querySelector('[data-a="play"]').click();
 }
