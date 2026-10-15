@@ -169,8 +169,9 @@ export async function heldClock(page: Page) {
 }
 
 /** Console errors from the app itself. On the live site GoatCounter's script is stubbed by blockAnalytics, so the
-    shared analytics.js can throw when it flushes its queue; that is not the app's error. */
-export const appErrors = (issues: Issues) => issues.console.filter(e => !/goatcounter/i.test(e));
+    shared analytics.js can throw when it flushes its queue through window.goatcounter.count (WebKit names
+    goatcounter in the message, Chromium only says "reading 'count'"); that is not the app's error. */
+export const appErrors = (issues: Issues) => issues.console.filter(e => !/goatcounter|\(reading 'count'\)/i.test(e));
 
 /** What the fake Firebase SDK saw (signs-ins, reads and writes the app attempted). */
 export async function cloudLog(page: Page): Promise<CloudLog> {
