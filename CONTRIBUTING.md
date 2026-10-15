@@ -55,11 +55,18 @@ Then open http://localhost:8000/vedic-math/.
 
 | Check | Command |
 |---|---|
-| Stamped files are current | `python3 build.py && git diff --exit-code` |
+| The app builds (and the source has no cache stamps) | `python3 build.py --out /tmp/vm-site` |
 | Unit tests | `node --test 'test/**/*.test.{js,mjs}'` |
+| End-to-end tests | `cd e2e && npm ci && npx playwright test` |
 | Firestore rules tests (only when you change `cloud/`; needs Java) | `cd cloud/test && npm install && npm test` |
 
-The pre-commit hook runs the first two. CI runs the same on every pull request. After editing `index.html`, `math.css` or anything in `js/`, run `python3 build.py` and commit what it changes.
+The pre-commit hook runs the first two. CI runs them on every pull request and checks that the build holds no repo-only files. Cache stamps are added only by the CI deploy, never in git, so there is nothing to run or commit after editing `index.html`, `math.css` or `js/`.
+
+## Tests
+
+Every change that affects behavior updates or adds the matching Playwright test in `e2e/` in the same commit. Run `cd e2e && npx playwright test` before pushing (first run: `npm ci && npx playwright install chromium webkit`).
+
+The suite runs against the live app by default. To test your checkout before it is live, run `node e2e/local-server.mjs 8124`, then `BASE_URL=http://localhost:8124 npx playwright test` in `e2e/`. Tests never write to the production leaderboards: keep using the fake Firebase SDK in `e2e/tests/fixtures.ts`.
 
 ## Style rules
 
@@ -74,7 +81,7 @@ The pre-commit hook runs the first two. CI runs the same on every pull request. 
 
 ## Repo-only files
 
-GitHub Pages publishes every file it is not told to skip. If you add a file that is not part of the app (docs, scripts, tests), add it to `exclude` in `_config.yml`.
+GitHub Pages publishes every file it is not told to skip. If you add a file that is not part of the app (docs, scripts, tests), add it to `exclude` in `_config.yml`. That is the one list: `build.py --out` and Jekyll both read it. Paths starting with `.` or `_` are always left out.
 
 ## Security problems
 

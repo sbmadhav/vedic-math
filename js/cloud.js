@@ -4,8 +4,10 @@
 import { FIREBASE, appCheckSiteKey, appCheckProvider } from './cloud-config.js';
 
 const V = '10.12.2', CDN = `https://www.gstatic.com/firebasejs/${V}`;
-/* Per-league score caps and the entry lifetime, mirrored from cloud/firestore.rules (the rules are the authority). */
+/* Score caps and the entry lifetime, mirrored from cloud/firestore.rules (the rules are the authority):
+   Arena boards per league, Ranked game boards (g_...) and weekly XP boards (xp-week-...) one cap each. */
 export const MAX_SCORE = { explorer: 2000, challenger: 1600, pro: 1200 };
+export const MAX_GAME_SCORE = 12000, MAX_WEEK_XP = 60000;
 export const KEEP_DAYS = 30;
 let ready = null;
 export const enabled = () => !!(FIREBASE && FIREBASE.projectId);
@@ -33,12 +35,19 @@ async function boot() {
   return ready;
 }
 
-/* Keeps one entry per player per board; a lower score never replaces a higher one (enforced by the rules too).
-   Board ids end in the league; scores are even (every right answer earns an even amount) and capped per league. */
+/* The score a board accepts, as the rules check it: an integer from 10 to the board's cap, and even on
+   Arena boards (every right answer in the Arena earns an even amount). 0 means the board takes none. */
+export function boardScore(board, raw) {
+  const cap = board.startsWith('g_') ? MAX_GAME_SCORE : board.startsWith('xp-') ? MAX_WEEK_XP : MAX_SCORE[board.split('-').pop()] || 0;
+  let score = Math.min(cap, Math.round(Number(raw) || 0));
+  if (!board.startsWith('g_') && !board.startsWith('xp-')) score -= score % 2;
+  return score >= 10 ? score : 0;
+}
+
+/* Keeps one entry per player per board; a lower score never replaces a higher one (enforced by the rules too). */
 export async function submit(board, entry) {
-  const cap = MAX_SCORE[board.split('-').pop()] || 0;
-  let score = Math.min(cap, Math.round(Number(entry.score) || 0)); score -= score % 2;
-  if (score < 10) return false; /* rules accept an even integer from 10 to the league cap */
+  const score = boardScore(board, entry.score);
+  if (!score) return false;
   const { uid, db, fs } = await boot();
   const ref = fs.doc(db, 'boards', board, 'scores', uid);
   const cur = await fs.getDoc(ref);

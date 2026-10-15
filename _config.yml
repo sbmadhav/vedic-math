@@ -1,9 +1,10 @@
-# GitHub Pages builds this repo with Jekyll (branch deploy from main) and serves it at
-# https://sbmadhav.com/vedic-math/ under the sbmadhav.github.io custom domain. No theme or
-# layouts: every page is hand-written HTML. Keep repo-only files out of the published site.
+# Repo-only files: the single list read by build.py --out (the CI deploy, see .github/workflows/ci.yml)
+# and by Jekyll if Pages ever deploys the main branch directly. One "- item" per line. Paths starting
+# with . or _ are always left out. Published at https://sbmadhav.com/vedic-math/.
 exclude:
   - CLAUDE.md
   - README.md
+  - GLOSSARY.md
   - CONTRIBUTING.md
   - SECURITY.md
   - LICENSE
@@ -11,4 +12,6 @@ exclude:
   - build.py
   - cloud/
   - test/
+  - docs/
+  - e2e/
   - node_modules/

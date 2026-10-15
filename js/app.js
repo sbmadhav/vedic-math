@@ -117,7 +117,7 @@ function questsHTML() {
 }
 function heroStats() {
   const p = store.player(), L = gm.levelInfo();
-  return `<div class="me-strip">${avatar(p, 54)}<div class="me-strip-t"><small>${fx.t({ explorer: 'Hello,', challenger: 'Welcome back,', pro: 'Welcome back,' })}</small><b>${esc(p.name)}</b><span>Level ${L.lv} · ${gm.titleOf(L.lv)}</span><span class="mq-xpbar mq-xpbar--big" aria-label="${L.into} of ${L.need} XP to the next level"><i style="width:${pct(L.pct)}%"></i></span></div>
+  return `<div class="me-strip">${avatar(p, 54)}<div class="me-strip-t"><small>${fx.t({ explorer: 'Hello,', challenger: 'Welcome back,', pro: 'Welcome back,' })}</small><b>${esc(p.name)}</b><span>Level ${L.lv} · ${gm.titleOf(L.lv)}</span><span class="mq-xpbar mq-xpbar--big" role="progressbar" aria-label="XP to the next level" aria-valuemin="0" aria-valuemax="${L.need}" aria-valuenow="${L.into}" aria-valuetext="${L.into} of ${L.need} XP to the next level"><i style="width:${pct(L.pct)}%"></i></span></div>
     <div class="me-nums"><div><b>${store.xp()}</b><small>XP</small></div><div><b>${store.streakDays()}</b><small>day streak</small></div><div><b>${Object.keys(store.badges()).length}</b><small>badges</small></div></div></div>`;
 }
 const tile = (href, title, sub, color, ic) => `<a class="play-tile play-tile--${color}" href="${href}"><span class="play-ic" aria-hidden="true">${icon(ic)}</span><b>${title}</b><small>${sub}</small></a>`;
@@ -179,7 +179,7 @@ function home() {
 function learnView() {
   document.title = `Skill map: ${BRAND} · Madhav`;
   const m = fx.MODES[fx.mode()], mine = GRADES.filter(g => m.grades.map(String).includes(String(g.id))), rest = GRADES.filter(g => !mine.includes(g) && g.id !== 'V');
-  const card = g => { const st = gradeStats(g.id); return `<a class="mq-grade" href="#/grade/${g.id}"><span class="mq-grade-n">${gradeShort(g.id)}</span><span class="mq-grade-t"><b>${both(g.pro, g.kid)}</b><small>${g.band}</small></span><span class="mq-bar" aria-label="${st.done} of ${st.total} mastered"><i style="width:${pct(st.done / (st.total || 1))}%"></i></span></a>`; };
+  const card = g => { const st = gradeStats(g.id); return `<a class="mq-grade" href="#/grade/${g.id}"><span class="mq-grade-n">${gradeShort(g.id)}</span><span class="mq-grade-t"><b>${both(g.pro, g.kid)}</b><small>${g.band}</small></span><span class="mq-bar" role="progressbar" aria-label="Skills mastered" aria-valuemin="0" aria-valuemax="${st.total}" aria-valuenow="${st.done}" aria-valuetext="${st.done} of ${st.total} mastered"><i style="width:${pct(st.done / (st.total || 1))}%"></i></span></a>`; };
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs([null, 'Skill map'])}
     <span class="md-tag md-tag--sky">Skill map</span>
@@ -270,7 +270,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null } = {}
     if (explorer && p.kind === 'num' && Number.isInteger(p.answer) && p.answer >= 0 && p.answer <= 200) { const near = [...new Set([p.answer + 1, p.answer - 1, p.answer + 2, p.answer + 10, p.answer - 2].filter(v => v >= 0))]; p = { ...p, kind: 'choice', choices: [p.answer, ...shuffle(near).slice(0, 3)].sort((a, b) => a - b).map(String), answer: String(p.answer) }; }
     const keyset = p.kind === 'expr' ? KEYS.alg : p.kind === 'set' ? KEYS.set : p.kind === 'ineq' ? KEYS.ineq : p.kind === 'complex' ? KEYS.complex : p.kind === 'num' && !['K', 1, 2].includes(s.grade) ? KEYS.basic : null;
     root.innerHTML = `
-      <div class="pr-head"><span class="pr-meter">${ring(store.mastery(s.id), 36)}<span><small>${mix ? `<a href="#/skill/${s.id}">${both(s.title, s.kid)}</a>` : 'Your turn'}</small><b id="prPct">${pct(store.mastery(s.id))}% mastery</b></span></span><span class="pr-run" id="prRun" aria-label="Streak">${run >= 2 ? `<b>${run}</b> in a row` : ''}</span>${lives ? `<span class="pr-lives" aria-label="${life} lives left">${'<i class="on"></i>'.repeat(life)}${'<i></i>'.repeat(lives - life)}</span>` : ''}<span class="pr-score" aria-label="Session score">${right}/${total}</span></div>
+      <div class="pr-head"><span class="pr-meter">${ring(store.mastery(s.id), 36)}<span><small>${mix ? `<a href="#/skill/${s.id}">${both(s.title, s.kid)}</a>` : 'Your turn'}</small><b id="prPct">${pct(store.mastery(s.id))}% mastery</b></span></span><span class="pr-run" id="prRun">${run >= 2 ? `<b>${run}</b> in a row` : ''}</span>${lives ? `<span class="pr-lives" role="img" aria-label="${life} lives left">${'<i class="on"></i>'.repeat(life)}${'<i></i>'.repeat(lives - life)}</span>` : ''}<span class="pr-score" role="img" aria-label="${right} of ${total} right this session">${right}/${total}</span></div>
       <div class="pr-q${plain(p.q).length > 60 ? ' long' : ''}" id="prQ">${p.q}</div>
       ${p.viz ? `<div class="mq-viz">${p.viz}</div>` : ''}
       <form class="pr-form" id="prForm" autocomplete="off">${answerUI(p)}${keyset ? `<div class="pr-keys" aria-label="Symbol keys">${keyset.map(k => `<button type="button" class="pr-key" data-k="${esc(k)}">${esc(k)}</button>`).join('')}</div>` : ''}
@@ -289,7 +289,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null } = {}
     if (r.justMastered) track('mastered/' + s.id, 'Mastered: ' + s.title);
     if (run === 3 || run === 7 || (run && run % 10 === 0)) fx.confetti(40);
     $('#prPct', root).textContent = `${pct(store.mastery(s.id))}% mastery`; root.querySelector('.pr-meter .ring').outerHTML = ring(store.mastery(s.id), 36);
-    root.querySelector('.pr-score').textContent = `${right}/${total}`; $('#prRun', root).innerHTML = run >= 2 ? `<b>${run}</b> in a row` : '';
+    const sc = root.querySelector('.pr-score'); sc.textContent = `${right}/${total}`; sc.setAttribute('aria-label', `${right} of ${total} right this session`); $('#prRun', root).innerHTML = run >= 2 ? `<b>${run}</b> in a row` : '';
     const btn = $('#prCheck', root); btn.textContent = 'Next'; btn.dataset.next = '1';
     root.querySelectorAll('#prHint, #prShow').forEach(b => (b.hidden = true));
     btn.focus({ preventScroll: true });
@@ -303,7 +303,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null } = {}
       tries++;
       if (res.ok) { fx.sfx('ok'); const first = tries === 1 && !hints; const msg = first ? pick(PRAISE[fx.mode()] || PRAISE.challenger) : 'You got it!'; say(msg + (first ? ` <span class="pr-xp">+${10 + Math.min(store.skill(s.id).streak + 1, 5)} XP</span>` : ''), 'ok'); if (explorer) fx.speak(msg, true); finish(true); return; }
       fx.sfx('no');
-      if (lives) { life--; reveal(); say(life ? `Oops! ${life} ${life === 1 ? 'life' : 'lives'} left. See how it works, then keep going.` : 'Out of lives!', 'no'); finish(false); root.querySelector('.pr-lives').innerHTML = '<i class="on"></i>'.repeat(life) + '<i></i>'.repeat(lives - life); if (!life && onOver) { const b = $('#prCheck', root); b.textContent = 'See my score'; b.onclick = e => { e.preventDefault(); onOver(right); }; } return; }
+      if (lives) { life--; reveal(); say(life ? `Oops! ${life} ${life === 1 ? 'life' : 'lives'} left. See how it works, then keep going.` : 'Out of lives!', 'no'); finish(false); const lv = root.querySelector('.pr-lives'); lv.innerHTML = '<i class="on"></i>'.repeat(life) + '<i></i>'.repeat(lives - life); lv.setAttribute('aria-label', `${life} lives left`); if (!life && onOver) { const b = $('#prCheck', root); b.textContent = 'See my score'; b.onclick = e => { e.preventDefault(); onOver(right); }; } return; }
       if (tries === 1) { say((res.msg ? res.msg + ' ' : '') + 'Not quite. Try once more.' + (p.hints[0] && !hints ? ' <button type="button" class="linkbtn" data-hint>Want a hint?</button>' : ''), 'no'); if (explorer) fx.speak('Not quite. Try again!', true); }
       else if (tries === 2) { hints = Math.max(hints, 1); say((res.msg ? res.msg + ' ' : '') + `Hint: ${p.hints[Math.min(1, p.hints.length - 1)] || p.hints[0]}`, 'no'); if (explorer) fx.speak(p.hints[0], true); }
       else { reveal(); say('That one was tricky. See how it works, then try the next one.', 'no'); finish(false); }
@@ -372,13 +372,13 @@ function dojoView() {
 }
 
 /* ---------- Numbered levels: shared map ---------- */
-const starHTML = n => `<span class="lv-stars" aria-label="${n} of 3 stars">${[1, 2, 3].map(i => `<i class="${i <= n ? 'on' : ''}">&#9733;</i>`).join('')}</span>`;
+const starHTML = n => `<span class="lv-stars" role="img" aria-label="${n} of 3 stars">${[1, 2, 3].map(i => `<i class="${i <= n ? 'on' : ''}">&#9733;</i>`).join('')}</span>`;
 function levelMap(count, keyOf, hrefOf, { openAll = false, perRow = 0, isOpen = null, suggest = 0 } = {}) {
   let unlocked = true, flagged = false;
   return `<div class="lv-map${perRow ? ' lv-map--rows' : ''}">${Array.from({ length: count }, (_, i) => {
     const n = i + 1, st = store.stars(keyOf(n)), open = openAll || (isOpen ? isOpen(n) : unlocked); unlocked = st > 0;
     const next = suggest ? n === suggest : open && !st && !flagged; if (next) flagged = true;
-    return open ? `<a class="lv-node${st ? ' done' : ''}${next ? ' next' : ''}" href="${hrefOf(n)}" aria-label="Level ${n}${st ? `, ${st} stars` : ''}"><b>${n}</b>${starHTML(st)}</a>` : `<span class="lv-node locked" aria-label="Level ${n}, locked"><b>${n}</b>${icon('lock')}</span>`;
+    return open ? `<a class="lv-node${st ? ' done' : ''}${next ? ' next' : ''}" href="${hrefOf(n)}" aria-label="Level ${n}${st ? `, ${st} stars` : ''}"><b>${n}</b>${starHTML(st)}</a>` : `<span class="lv-node locked" role="img" aria-label="Level ${n}, locked"><b>${n}</b>${icon('lock')}</span>`;
   }).join('')}</div>`;
 }
 function resultHTML(stars, lines, nextHref, retryHref, backHref, backLabel) {
@@ -595,8 +595,8 @@ function parentNote() {
   const sum = fx.t({ explorer: 'For grown-ups: what the leaderboard keeps', challenger: 'For parents: what the leaderboard keeps', pro: 'Privacy: what the leaderboard stores' });
   return `<details class="mq-small"><summary class="linkbtn">${sum}</summary>
     ${on ? '' : '<p>Right now nothing is sent anywhere: scores stay in this browser. If world leaderboards are turned on, this is what they keep.</p>'}
-    <p>World leaderboards run on Google Firebase. Only a Daily challenge in the Arena sends a score, to two boards: today's and this week's for the league. Each entry holds exactly: the made-up nickname (picked from fixed word lists, never typed), an avatar color, the best score, the time it was saved, and the time it expires. It is filed under a random ID that Firebase gives this browser; Firebase keeps that ID with the dates it was created and last used. There is no account, sign-up or password.</p>
-    <p>No names, emails, ages, photos or typed text are ever collected. Progress, badges, practice rounds and the players on this device stay in this browser only.${on && cloud.appCheckOn() ? ' To stop cheating scripts, Google reCAPTCHA checks that scores come from this site.' : ''}</p>
+    <p>World leaderboards run on Google Firebase. Three things send a score, each to boards for the player's league: a Daily challenge in the Arena and a Ranked round of a game (today's and this week's board for each), and the XP earned this week (one weekly board). Each entry holds exactly: the made-up nickname (picked from fixed word lists, never typed), an avatar color, the best score, the time it was saved, and the time it expires. It is filed under a random ID that Firebase gives this browser; Firebase keeps that ID with the dates it was created and last used. There is no account, sign-up or password.</p>
+    <p>No names, emails, ages, photos or typed text are ever collected. Progress, badges, practice and endless rounds, and the players on this device stay in this browser only.${on && cloud.appCheckOn() ? ' To stop cheating scripts, Google reCAPTCHA checks that scores come from this site.' : ''}</p>
     <p>A board stops taking scores when its day or week ends. Entries are not deleted automatically. To have an entry removed, message Madhav on <a href="https://www.linkedin.com/in/sbmadhav/" target="_blank" rel="noopener">LinkedIn</a> with the nickname, color and date.</p></details>`;
 }
 async function loadBoard(el, board, n = 10) {
@@ -729,7 +729,7 @@ function gameView(id, lvl = 0) {
     <h2 class="mq-strand">Levels <small class="mq-small">${store.doneWhere(`g:${g.id}:`)} of ${LEVELS_PER_GAME} cleared · ${store.starsWhere(`g:${g.id}:`)} &#9733; · levels up to ${ratedLevel} are open at your skill (level ${Math.round(rate)} of 20)</small></h2>${levelMap(LEVELS_PER_GAME, gkey, n => `#/game/${g.id}/${n}`, { isOpen, suggest: Math.max(ratedLevel, ...Array.from({ length: LEVELS_PER_GAME }, (_, i) => (store.stars(gkey(i + 1)) ? Math.min(LEVELS_PER_GAME, i + 2) : 0))) })}`}
   </div></section>`;
   const shell = $('#gShell');
-  const dialMeter = d => `<span class="dial" aria-label="Difficulty ${d} of 20"><span class="dial-bar"><i style="width:${(d / 20) * 100}%"></i></span><b>Level ${d}</b></span>`;
+  const dialMeter = d => `<span class="dial" role="img" aria-label="Difficulty ${d} of 20"><span class="dial-bar"><i style="width:${(d / 20) * 100}%"></i></span><b>Level ${d}</b></span>`;
   const lobby = (msg = '') => {
     if (L) { shell.innerHTML = `${msg}<p class="lv-best">Starts at difficulty ${L.cfg.start} of 20 and adapts as you play. Goal: ${L.goal.map((t, i) => `${'&#9733;'.repeat(i + 1)} ${t.toLocaleString('en-US')}`).join(' · ')} points.</p><p class="lv-best">Your best: ${starHTML(store.stars(gkey(lvl)))}</p><button class="md-btn md-btn--primary ar-go" id="gStart">${icon('play')} Play level ${lvl}</button>`; $('#gStart', shell).onclick = start; return; }
     shell.innerHTML = `${msg}<div class="g-optrow" role="group" aria-label="How to play"><button class="md-chip" aria-pressed="${mode === 'ranked'}" data-m="ranked">${icon('trophy')} Ranked round (${lengthText})</button><button class="md-chip" aria-pressed="${mode === 'endless'}" data-m="endless">Endless practice</button></div>
@@ -743,7 +743,7 @@ function gameView(id, lvl = 0) {
     const startD = L ? L.cfg.start : AD.rating(g.id, m), dial = new AD.Dial(startD, { floor: L ? L.cfg.floor : 1 });
     shell.innerHTML = `<div class="g-head"><span class="g-hud" id="gHud">${dialMeter(dial.lv)}<span class="g-pts"><b id="gPts">0</b> pts</span></span><span class="g-sayline" id="gSay" role="status" aria-live="polite"></span><button class="md-btn md-btn--sm" id="gQuit">${mode === 'endless' ? 'Finish' : 'Stop'}</button></div><div class="g-area" id="gArea"></div>`;
     const sayEl = $('#gSay', shell), hudEl = $('#gHud', shell);
-    const hud = (d, pts, ok) => { hudEl.innerHTML = `${dialMeter(d.lv)}<span class="g-pts"><b id="gPts">${d.points.toLocaleString('en-US')}</b> pts</span>${ok && pts ? `<span class="g-gain">+${pts}</span>` : ''}${d.trend > 0 ? '<span class="g-trend up" aria-label="Getting harder">&#9650;</span>' : d.trend < 0 ? '<span class="g-trend down" aria-label="Getting easier">&#9660;</span>' : ''}`; };
+    const hud = (d, pts, ok) => { hudEl.innerHTML = `${dialMeter(d.lv)}<span class="g-pts"><b id="gPts">${d.points.toLocaleString('en-US')}</b> pts</span>${ok && pts ? `<span class="g-gain">+${pts}</span>` : ''}${d.trend > 0 ? '<span class="g-trend up" role="img" aria-label="Getting harder">&#9650;</span>' : d.trend < 0 ? '<span class="g-trend down" role="img" aria-label="Getting easier">&#9660;</span>' : ''}`; };
     let ended = false;
     const finish = score => {
       if (ended) return; ended = true; if (stop) stop(); stop = null;
@@ -925,3 +925,8 @@ fx.applyMode();
 gm.init();
 render();
 initAmbient();
+/* Offline: sw.js (scope /vedic-math/) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
+  const registerSW = () => navigator.serviceWorker.register('/vedic-math/sw.js', { scope: '/vedic-math/' }).catch(() => {});
+  if (document.readyState === 'complete') registerSW(); else addEventListener('load', registerSW, { once: true });
+}

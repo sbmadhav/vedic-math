@@ -24,15 +24,56 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Stamp the import map
-        run: python3 build.py
-
-      - name: Stamped files are committed
-        run: |
-          git diff --exit-code || {
-            echo "::error::build.py changed the files above. Run python3 build.py and commit the result."
-            exit 1
-          }
-
       - name: Unit tests
         run: node --test 'test/**/*.test.{js,mjs}'
+
+      # Also fails if the source carries stamps (an import map, ?v= on app.js or math.css, or a
+      # sw.js VERSION other than 'dev')
+      - name: Build _site with cache stamps
+        run: python3 build.py --out _site
+
+      - name: The build is stamped and has no repo-only files
+        run: |
+          set -e
+          err() { echo "::error::$1"; exit 1; }
+          grep -q '<script type="importmap">' _site/index.html || err "_site/index.html has no import map"
+          grep -Eq '"/vedic-math/js/app\.js": "/vedic-math/js/app\.js\?v=[0-9a-f]{10}"' _site/index.html || err "_site/index.html does not pin app.js in the import map"
+          grep -Eq '<script type="module" src="/vedic-math/js/app\.js\?v=[0-9a-f]{10}"></script>' _site/index.html || err "_site/index.html loads app.js without a ?v= stamp"
+          grep -Eq 'href="/vedic-math/math\.css\?v=[0-9a-f]{10}"' _site/index.html || err "_site/index.html loads math.css without a ?v= stamp"
+          grep -Eq "^const VERSION = '[0-9a-f]{10}';" _site/sw.js || err "_site/sw.js VERSION is not a stamped hash"
+          grep -q '"/vedic-math/", "' _site/sw.js || err "_site/sw.js does not precache the shell"
+          grep -q "^const VERSION = 'dev';" sw.js || err "sw.js in git must keep VERSION = 'dev'"
+          test -f _site/.nojekyll || err "_site/.nojekyll is missing"
+          for f in CLAUDE.md README.md GLOSSARY.md CONTRIBUTING.md SECURITY.md LICENSE LICENSE-CONTENT.md build.py _config.yml cloud test e2e docs .github .githooks; do
+            test ! -e "_site/$f" || err "_site/$f is a repo-only file and must not be published"
+          done
+          find _site -type f | sort
+
+      # The exact files checked above are the ones deployed
+      - name: Upload _site for the deploy job
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  # Publishes _site (stamped) to GitHub Pages at https://sbmadhav.com/vedic-math/. Needs
+  # Settings > Pages > Source set to "GitHub Actions" AND the repository variable PAGES_VIA_ACTIONS
+  # set to true; until both are done, Pages deploys the main branch with Jekyll, which publishes
+  # the UNSTAMPED source (it works, but with no import map pins and a 'dev' worker that caches
+  # nothing, so no offline). See "Deploy" in README.md.
+  deploy:
+    needs: check
+    if: vars.PAGES_VIA_ACTIONS == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
