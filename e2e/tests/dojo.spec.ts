@@ -75,3 +75,19 @@ test('the trick animator steps through a worked example', async ({ page }) => {
   await expect(page.locator('#animPos')).toHaveText(`${total} / ${total}`);
   await expect(page.locator('#animBoard .anim-step')).toHaveCount(total);
 });
+
+test('leaving a kata mid-question and coming back starts a fresh kata', async ({ page }) => {
+  await open(page, '#/kata/sq5/1');
+  const probs = await kataProblems(page, 'sq5', 1);
+  await page.locator('#kata .ans-in').fill(String(probs[0].answer));
+  await page.locator('#kGo').click();
+  await expect(page.locator('#kata .pr-score')).toHaveText('1/5');
+  await page.locator('#kGo').click();
+  await expect(page.locator('.kata-prog i').nth(1)).toHaveClass('cur');
+  await page.evaluate(() => { location.hash = '#/dojo'; });
+  await expect(page.locator('#view h1')).toContainText('black belt');
+  await page.evaluate(() => { location.hash = '#/kata/sq5/1'; });
+  await expect(page.locator('#kata .pr-score')).toHaveText('0/5');
+  await expect(page.locator('.kata-prog i').first()).toHaveClass('cur');
+  await expect(page.locator('#kGo')).toHaveText('Check');
+});

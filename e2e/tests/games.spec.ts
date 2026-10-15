@@ -6,6 +6,9 @@ import type { Page, Locator } from '@playwright/test';
 
 type Step = (area: Locator, page: Page) => Promise<void>;
 const say = (page: Page) => page.locator('#gSay');
+/* A right answer moves on at once with the explanation line cleared, so it shows as points; a miss shows its explanation */
+const scoredOr = async (p: Page, line: Locator, miss: RegExp) =>
+  expect.poll(async () => miss.test((await line.textContent()) || '') || /^[1-9]/.test((await p.locator('#gPts').textContent()) || '')).toBe(true);
 const GAMES: Record<string, { mode?: Mode; step: Step }> = {
   balloons: { mode: 'explorer', step: async (a, p) => {
     await a.locator('.g-balloon').first().click();
@@ -19,7 +22,7 @@ const GAMES: Record<string, { mode?: Mode; step: Step }> = {
     await expect(say(p)).toHaveText(/=/);
   } },
   'quick-look': { step: async (a, p) => { await a.locator('.g-opts .md-chip').first().click(); await expect(say(p)).toHaveText(/Yes, \d+!|It was \d+\./); } },
-  bonds: { step: async (a, p) => { await a.locator('.g-opts .md-chip').first().click(); await expect(say(p)).toHaveText(/\+.*=/); } },
+  bonds: { step: async (a, p) => { await a.locator('.g-opts .md-chip').first().click(); await scoredOr(p, say(p), /\+.*=.*so the part is/); } },
   'times-sprint': { step: async (a, p) => {
     const q = (await a.locator('.g-q').textContent())!.replace(/,/g, '');
     const [x, y] = q.split('×').map(s => Number(s.trim()));
@@ -48,7 +51,7 @@ const GAMES: Record<string, { mode?: Mode; step: Step }> = {
     await cards.nth(1).click();
     await expect(cards.nth(1)).toHaveClass(/\b(up|got)\b/);
   } },
-  'check-it': { step: async a => { await a.getByRole('button', { name: 'Right', exact: true }).click(); await expect(a.locator('.g-tip')).toHaveText(/Digit sums:.*It was (right|wrong)\./); } },
+  'check-it': { step: async (a, p) => { await a.getByRole('button', { name: 'Right', exact: true }).click(); await scoredOr(p, a.locator('.g-tip'), /Digit sums:.*It was (right|wrong)\./); } },
   rain: { step: async (a, p) => {
     const drop = a.locator('.g-drop').first();
     await expect(drop).toBeAttached({ timeout: 5000 });
@@ -56,7 +59,7 @@ const GAMES: Record<string, { mode?: Mode; step: Step }> = {
     await expect(say(p)).toHaveText(/multiple of|=/);
   } },
   sequence: { step: async a => { await a.locator('.g-opts .md-chip').first().click(); await expect(a.locator('.g-tip')).toHaveText(/^-?[\d,]+: /); } },
-  balance: { step: async a => { await a.locator('.g-opts .md-chip').first().click(); await expect(a.locator('.g-tip')).toHaveText(/^x = /); } },
+  balance: { step: async (a, p) => { await a.locator('.g-opts .md-chip').first().click(); await scoredOr(p, a.locator('.g-tip'), /^x = /); } },
 };
 
 test('the games page lists all 14 games with a leaderboard each', async ({ page }) => {
@@ -99,6 +102,86 @@ test('a ranked round shows the game leaderboards and starts the clock', async ({
   await page.locator('#gQuit').click();
   await expect(page.locator('#gStart')).toBeVisible();
   expect((await cloudLog(page)).writes).toEqual([]);
+});
+
+/* view-lifecycle spec: an explanation stays with its question. page.clock drives the 1.2 second hold. */
+const num = (t: string | null) => Number((t || '').replace(/,/g, '').replace('−', '-'));
+
+test('Number bonds: a miss holds the question and its explanation for 1.2 s and ignores taps', async ({ page }) => {
+  await page.clock.install();
+  await open(page, '#/game/bonds');
+  await page.locator('#gShell [data-m="endless"]').click();
+  await page.locator('#gStart').click();
+  const area = page.locator('#gArea'), whole = area.locator('.bond-w'), part = area.locator('.bond-a');
+  const W = await whole.textContent(), A = await part.textContent(), b = Math.round((num(W) - num(A)) * 100) / 100;
+  const chips = area.locator('.g-opts .md-chip'), values = (await chips.allTextContents()).map(num);
+  await chips.nth(values.findIndex(v => v !== b)).click();
+  await expect(say(page)).toContainText('so the part is');
+  const pts = await page.locator('#gPts').textContent();
+  // A tap on the right part during the hold counts for nothing
+  await chips.nth(values.indexOf(b)).dispatchEvent('click');
+  await page.clock.runFor(1100);
+  await expect(whole).toHaveText(W!);
+  await expect(part).toHaveText(A!);
+  await expect(say(page)).toContainText(`so the part is`);
+  await expect(page.locator('#gPts')).toHaveText(pts!);
+  await page.clock.runFor(200);
+  await expect(say(page)).toHaveText('');
+  await expect.poll(async () => `${await whole.textContent()}|${await part.textContent()}`).not.toBe(`${W}|${A}`);
+});
+
+test('Times sprint: after a right answer the next question has no explanation under it', async ({ page }) => {
+  await page.clock.install();
+  await open(page, '#/game/times-sprint');
+  await page.locator('#gShell [data-m="endless"]').click();
+  await page.locator('#gStart').click();
+  const area = page.locator('#gArea'), q = area.locator('.g-q'), tip = area.locator('.g-tip'), inp = area.locator('.ans-in');
+  const product = async () => { const [x, y] = ((await q.textContent()) || '').replace(/,/g, '').split('×').map(s => Number(s.trim())); return x * y; };
+  // A miss first, so there is an explanation to clear
+  const q1 = await q.textContent();
+  await inp.fill(String((await product()) + 1));
+  await inp.press('Enter');
+  await expect(tip).toContainText(`= `);
+  await expect(q).toHaveText(q1!);
+  await page.clock.runFor(1300);
+  await expect(tip).toHaveText('');
+  const q2 = await q.textContent();
+  expect(q2).not.toBe(q1);
+  await inp.fill(String(await product()));
+  await inp.press('Enter');
+  await expect(q).not.toHaveText(q2!);
+  await expect(tip).toHaveText('');
+});
+
+test.describe('balloon pop, stop and start', () => {
+  test.use({ seedMode: 'explorer' });
+  test('stopping during the wait and starting again shows only the new round', async ({ page }) => {
+    // Every read-aloud starts by cancelling speech, so counting cancels shows whether a stale question is read
+    await page.addInitScript(() => {
+      (window as any).__cancels = 0;
+      if ('speechSynthesis' in window) { const c = speechSynthesis.cancel.bind(speechSynthesis); speechSynthesis.cancel = () => { (window as any).__cancels++; c(); }; }
+    });
+    await page.clock.install();
+    await open(page, '#/game/balloons');
+    await expect(page.locator('#gShell [data-m="ranked"]')).toHaveAttribute('aria-pressed', 'true');
+    await page.locator('#gStart').click();
+    const area = page.locator('#gArea');
+    await area.locator('.g-balloon').first().click();
+    await area.getByRole('button', { name: 'Done' }).click();
+    await expect(say(page)).toHaveText(/Yes!|You popped 1\./);
+    // Stop inside the 0.9 s wait, then start a new round
+    await page.locator('#gQuit').click();
+    await page.locator('#gStart').click();
+    await expect(page.locator('#gPts')).toHaveText('0');
+    const ask = await area.locator('.g-q').textContent(), cancels = await page.evaluate(() => (window as any).__cancels);
+    await page.clock.runFor(1500);
+    await expect(area.locator('.g-q')).toHaveText(ask!);
+    expect(await page.evaluate(() => (window as any).__cancels)).toBe(cancels);
+    await expect(page.locator('#gPts')).toHaveText('0');
+    await expect(say(page)).toHaveText('');
+    await expect(area.locator('.g-sky.g-ok, .g-sky.g-no')).toHaveCount(0);
+    expect((await cloudLog(page)).writes).toEqual([]);
+  });
 });
 
 /* Game prompts inside the game card render at the game prompt size in the main ink color (page-layout spec),

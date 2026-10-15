@@ -5,6 +5,7 @@ import { checkOne } from './check.js';
 import { answerText } from './answers.js';
 import { shuffle } from './lib.js';
 import { sfx, speak, confetti } from './fx.js';
+import { on, later, loop, child } from './life.js';
 
 const POOLS = {
   explorer: ['k-add10', 'k-sub10', 'k-bonds', 'k-count', '1-doubles', '1-maketen', 'k-teens'],
@@ -35,10 +36,13 @@ export function makeSet(league, seedText, n = 80) {
 
 const PAD = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '-', '0', 'del'];
 
-/* Arena round. opts: { league, seed, onEnd({ score, right, wrong, bestCombo }) } */
-export function runArena(root, { league, seed, onEnd }) {
+/* Arena round. opts: { league, seed, signal, onEnd({ score, right, wrong, bestCombo }) }.
+   The round runs under a child of signal, aborted when it ends or by destroy(), so its handlers never act
+   on the next round drawn into the same root. */
+export function runArena(root, { league, seed, signal, onEnd }) {
   const set = makeSet(league, seed), tapMode = league === 'explorer';
-  let i = 0, score = 0, right = 0, wrong = 0, combo = 0, bestCombo = 0, over = false, raf = 0;
+  const round = child(signal), rs = round.signal;
+  let i = 0, score = 0, right = 0, wrong = 0, combo = 0, bestCombo = 0, over = false;
   root.innerHTML = `<div class="ar">
     <div class="ar-top"><div class="ar-score"><small>Score</small><b id="arScore">0</b></div><div class="ar-combo" id="arCombo" aria-live="polite"></div><div class="ar-time"><small>Time</small><b id="arTime">${ROUND_SECS}</b></div></div>
     <div class="g-timer ar-bar"><span id="arBar"></span></div>
@@ -51,11 +55,11 @@ export function runArena(root, { league, seed, onEnd }) {
     if (tapMode) { $('#arIn').innerHTML = `<div class="ar-choices">${p.choices.map(c => `<button class="ar-choice" data-v="${c}">${c}</button>`).join('')}</div>`; speak(p.q); }
     else { $('#arIn').innerHTML = `<form class="ar-form" id="arForm"><output class="ar-entry" id="arEntry" aria-label="Your answer"></output><input class="ar-hidden" id="arType" inputmode="numeric" autocomplete="off" aria-label="Type your answer"><button class="md-btn md-btn--primary">Go</button></form><div class="ar-pad">${PAD.map(k => `<button type="button" class="ar-key" data-k="${k}">${k === 'del' ? 'Del' : k === '-' ? '&minus;' : k}</button>`).join('')}</div>`;
       const typ = $('#arType'); if (matchMedia('(pointer: fine)').matches) typ.focus({ preventScroll: true });
-      typ.addEventListener('input', () => { typ.value = typ.value.replace(/[^0-9-]/g, '').slice(0, 7); $('#arEntry').textContent = typ.value; });
+      on(typ, 'input', () => { typ.value = typ.value.replace(/[^0-9-]/g, '').slice(0, 7); $('#arEntry').textContent = typ.value; }, rs);
       $('#arForm').onsubmit = e => { e.preventDefault(); if (typ.value.trim()) answer(typ.value); };
     }
   };
-  const pop = (txt, ok) => { const el = $('#arPop'); el.textContent = txt; el.className = 'ar-pop show ' + (ok ? 'ok' : 'no'); setTimeout(() => (el.className = 'ar-pop'), 600); };
+  const pop = (txt, ok) => { const el = $('#arPop'); el.textContent = txt; el.className = 'ar-pop show ' + (ok ? 'ok' : 'no'); later(() => (el.className = 'ar-pop'), 600, rs); };
   const answer = v => {
     if (over) return;
     const p = set[i % set.length], ok = checkOne({ kind: 'num', answer: p.answer }, String(v)).ok;
@@ -64,43 +68,46 @@ export function runArena(root, { league, seed, onEnd }) {
     $('#arScore').textContent = score; $('#arCombo').innerHTML = combo >= 2 ? `<b>${combo}x</b> combo` : '';
     i++; show();
   };
-  root.addEventListener('click', e => {
+  on(root, 'click', e => {
     const c = e.target.closest('.ar-choice'); if (c) return answer(c.dataset.v);
     const k = e.target.closest('.ar-key'); if (!k) return; sfx('tap');
     const typ = $('#arType'); if (!typ) return;
     if (k.dataset.k === 'del') typ.value = typ.value.slice(0, -1); else if (k.dataset.k === '-') typ.value = typ.value.startsWith('-') ? typ.value.slice(1) : '-' + typ.value; else if (typ.value.length < 7) typ.value += k.dataset.k;
     $('#arEntry').textContent = typ.value; if (matchMedia('(pointer: fine)').matches) typ.focus({ preventScroll: true });
-  });
+  }, rs);
   show();
   const t0 = performance.now(); let lastSec = ROUND_SECS;
-  const tick = () => {
-    if (over) return; const left = Math.max(0, ROUND_SECS - (performance.now() - t0) / 1000), sec = Math.ceil(left);
+  loop(() => {
+    if (over) return false; const left = Math.max(0, ROUND_SECS - (performance.now() - t0) / 1000), sec = Math.ceil(left);
     $('#arBar').style.width = (left / ROUND_SECS) * 100 + '%'; if (sec !== lastSec) { lastSec = sec; $('#arTime').textContent = sec; if (sec <= 5) sfx('tick'); }
-    if (left <= 0) { over = true; onEnd({ score, right, wrong, bestCombo }); return; } raf = requestAnimationFrame(tick);
-  };
-  raf = requestAnimationFrame(tick);
-  return () => { over = true; cancelAnimationFrame(raf); };
+    if (left <= 0) { over = true; round.abort(); onEnd({ score, right, wrong, bestCombo }); return false; }
+  }, rs);
+  return { destroy: () => { over = true; round.abort(); } };
 }
 
-/* Two players, one screen: first to 10 points wins. Wrong answers freeze that player for a moment. */
-export function runDuel(root, { league, names = ['Player 1', 'Player 2'], onEnd }) {
+/* Two players, one screen: first to 10 points wins. Wrong answers freeze that player for a moment.
+   opts.signal: as in runArena, the Duel runs under a child of it, so a rematch in the same root starts clean. */
+export function runDuel(root, { league, names = ['Player 1', 'Player 2'], signal, onEnd }) {
   const set = makeSet(league, null, 120); let k = 0, over = false;
+  const duel = child(signal), ds = duel.signal;
   const pts = [0, 0], cur = [null, null], frozen = [false, false];
   root.innerHTML = `<div class="duel">${[0, 1].map(p => `<div class="duel-side duel-p${p + 1}" data-p="${p}"><div class="duel-name">${names[p]} <b id="dS${p}">0</b>/10</div><div class="duel-q" id="dQ${p}"></div><div class="duel-ch" id="dC${p}"></div></div>`).join('')}</div>`;
   const deal = p => { const q = set[k++ % set.length]; cur[p] = q; root.querySelector(`#dQ${p}`).innerHTML = q.q; root.querySelector(`#dC${p}`).innerHTML = q.choices.map(c => `<button class="ar-choice" data-v="${c}">${c}</button>`).join(''); };
-  root.addEventListener('click', e => {
+  on(root, 'click', e => {
     const b = e.target.closest('.ar-choice'); if (!b || over) return; const side = b.closest('.duel-side'), p = +side.dataset.p; if (frozen[p]) return;
-    if (+b.dataset.v === cur[p].answer) { pts[p]++; sfx('ok'); root.querySelector(`#dS${p}`).textContent = pts[p]; if (pts[p] >= 10) { over = true; confetti(120); sfx('level'); onEnd(p); return; } deal(p); }
-    else { sfx('no'); frozen[p] = true; side.classList.add('frozen'); setTimeout(() => { frozen[p] = false; side.classList.remove('frozen'); deal(p); }, 1200); }
-  });
+    if (+b.dataset.v === cur[p].answer) { pts[p]++; sfx('ok'); root.querySelector(`#dS${p}`).textContent = pts[p]; if (pts[p] >= 10) { over = true; duel.abort(); confetti(120); sfx('level'); onEnd(p); return; } deal(p); }
+    else { sfx('no'); frozen[p] = true; side.classList.add('frozen'); later(() => { frozen[p] = false; side.classList.remove('frozen'); deal(p); }, 1200, ds); }
+  }, ds);
   deal(0); deal(1);
-  return () => { over = true; };
+  return { destroy: () => { over = true; duel.abort(); } };
 }
 
 /* Arena challenge runner for the 1,000-level tower: sprint, survival, sharpshooter, time attack and boss formats. */
 const PAD2 = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '-', '0', '.', '/', 'del'];
-export function runChallenge(root, ch, set, { onEnd, tap = false }) {
-  let i = 0, score = 0, right = 0, wrong = 0, combo = 0, lives = ch.lives, over = false, raf = 0;
+/* opts.signal: as in runArena */
+export function runChallenge(root, ch, set, { onEnd, tap = false, signal }) {
+  const round = child(signal), rs = round.signal;
+  let i = 0, score = 0, right = 0, wrong = 0, combo = 0, lives = ch.lives, over = false;
   const t0 = performance.now(), secs = () => (performance.now() - t0) / 1000;
   const total = ch.total || Infinity;
   root.innerHTML = `<div class="ar">
@@ -110,7 +117,7 @@ export function runChallenge(root, ch, set, { onEnd, tap = false }) {
     <div class="ar-q" id="arQ" aria-live="polite"></div><div class="ar-viz" id="arViz"></div>
     <div id="arIn"></div><p class="ar-fix" id="arFix" aria-live="polite"></p><div class="ar-pop" id="arPop" aria-hidden="true"></div></div>`;
   const $ = s => root.querySelector(s);
-  const finish = () => { if (over) return; over = true; cancelAnimationFrame(raf); onEnd({ score, right, wrong, secs: Math.round(secs()), finished: right + wrong >= total || ch.goal !== 'seconds' ? true : false }); };
+  const finish = () => { if (over) return; over = true; round.abort(); onEnd({ score, right, wrong, secs: Math.round(secs()), finished: right + wrong >= total || ch.goal !== 'seconds' ? true : false }); };
   const show = () => {
     if (i >= set.length) return finish();
     const p = set[i];
@@ -121,11 +128,11 @@ export function runChallenge(root, ch, set, { onEnd, tap = false }) {
     } else {
       $('#arIn').innerHTML = `<form class="ar-form" id="arForm"><output class="ar-entry" id="arEntry" aria-label="Your answer"></output><input class="ar-hidden" id="arType" inputmode="decimal" autocomplete="off" aria-label="Type your answer"><button class="md-btn md-btn--primary">Go</button></form><div class="ar-pad ar-pad--wide">${PAD2.map(k => `<button type="button" class="ar-key" data-k="${k}">${k === 'del' ? 'Del' : k === '-' ? '&minus;' : k}</button>`).join('')}</div>`;
       const typ = $('#arType'); if (matchMedia('(pointer: fine)').matches) typ.focus({ preventScroll: true });
-      typ.addEventListener('input', () => { typ.value = typ.value.replace(/[^0-9./-]/g, '').slice(0, 9); $('#arEntry').textContent = typ.value; });
+      on(typ, 'input', () => { typ.value = typ.value.replace(/[^0-9./-]/g, '').slice(0, 9); $('#arEntry').textContent = typ.value; }, rs);
       $('#arForm').onsubmit = e => { e.preventDefault(); if (typ.value.trim()) answer(typ.value); };
     }
   };
-  const pop = (txt, ok) => { const el = $('#arPop'); el.textContent = txt; el.className = 'ar-pop show ' + (ok ? 'ok' : 'no'); setTimeout(() => (el.className = 'ar-pop'), 600); };
+  const pop = (txt, ok) => { const el = $('#arPop'); el.textContent = txt; el.className = 'ar-pop show ' + (ok ? 'ok' : 'no'); later(() => (el.className = 'ar-pop'), 600, rs); };
   const answer = v => {
     if (over) return;
     const p = set[i], ok = p.kind === 'choice' ? String(v) === String(p.answer) : checkOne({ kind: 'num', answer: p.answer, tol: 1e-6 }, String(v)).ok;
@@ -138,14 +145,14 @@ export function runChallenge(root, ch, set, { onEnd, tap = false }) {
     if (!ch.secs && !ch.lives) $('#arTime').textContent = `${i + 1}/${total}`;
     show();
   };
-  root.addEventListener('click', e => {
+  on(root, 'click', e => {
     const c = e.target.closest('.ar-choice'); if (c) return answer(c.dataset.v);
     const k = e.target.closest('.ar-key'); if (!k) return; sfx('tap');
     const typ = $('#arType'); if (!typ) return;
     if (k.dataset.k === 'del') typ.value = typ.value.slice(0, -1); else if (k.dataset.k === '-') typ.value = typ.value.startsWith('-') ? typ.value.slice(1) : '-' + typ.value; else if (typ.value.length < 9) typ.value += k.dataset.k;
     $('#arEntry').textContent = typ.value; if (matchMedia('(pointer: fine)').matches) typ.focus({ preventScroll: true });
-  });
+  }, rs);
   show();
-  if (ch.secs) { let lastSec = ch.secs; const tick = () => { if (over) return; const left = Math.max(0, ch.secs - secs()), sec = Math.ceil(left); $('#arBar').style.width = (left / ch.secs) * 100 + '%'; if (sec !== lastSec) { lastSec = sec; $('#arTime').textContent = sec; if (sec <= 5) sfx('tick'); } if (left <= 0) return finish(); raf = requestAnimationFrame(tick); }; raf = requestAnimationFrame(tick); }
-  return () => { over = true; cancelAnimationFrame(raf); };
+  if (ch.secs) { let lastSec = ch.secs; loop(() => { if (over) return false; const left = Math.max(0, ch.secs - secs()), sec = Math.ceil(left); $('#arBar').style.width = (left / ch.secs) * 100 + '%'; if (sec !== lastSec) { lastSec = sec; $('#arTime').textContent = sec; if (sec <= 5) sfx('tick'); } if (left <= 0) { finish(); return false; } }, rs); }
+  return { destroy: () => { over = true; round.abort(); } };
 }

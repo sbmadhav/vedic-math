@@ -20,6 +20,7 @@ They are not `?v=` stamped (this repo cannot hash them). Do not copy them in; ch
 - No kid mode switch in the header. The play modes (Explorer, Challenger, Pro) set the wording, and the page never writes the site-wide `kidmode` setting.
 - Keep the Explore button (`<button id="exploreBtn" class="xp-btn">`) in the header and `<script src="/assets/explore.js" defer>` plus `<script src="/assets/analytics.js" defer>` before `</body>`. Record notable actions with `window.siteTrack('area/action', 'Readable title')`; never send personal data.
 - Never use em dashes in copy.
+- Views and rounds tie every listener, timer and animation-frame loop to an `AbortSignal` with `js/life.js` (`on`, `later`, `every`, `loop`, `child`). The router gives each view `{ signal }` and aborts it on the next route; rounds and questions use `child(signal)`. `test/lifecycle-scan.test.mjs` fails on a bare `addEventListener`, `setTimeout` or `requestAnimationFrame` in view or round code.
 - Every page URL starts with `/vedic-math/`. Module imports are relative or absolute paths inside `/vedic-math/js/` (`build.py` fails on anything else).
 
 ## Build, checks and hook
