@@ -22,6 +22,7 @@ import { LEVELS, LEVELS_PER_GAME, levelStars, boardGame } from './games.js';
 import * as AD from './adapt.js';
 import { initAmbient, bgOn, setBg, BG_NOTES, stop as stopMusic, isPlaying as musicOn } from './ambient.js';
 import { on, later, every, child } from './life.js';
+import * as metrics from './metrics.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const view = $('#view');
@@ -85,16 +86,20 @@ function mount(fn) {
   const out = fn({ signal: ctl.signal });
   if (life === mine && out && typeof out.destroy === 'function') mine.destroy = out.destroy;
 }
+/* Which catalog ids a route-view event may name (metrics.routePath); anything else is sent as 'unknown' */
+const knownId = (kind, id) => kind === 'grade' ? !!gradeOf(id) : kind === 'skill' ? !!byId[id] : kind === 'trick' ? TRICKS.some(t => t.id === id)
+  : kind === 'sutra' ? ALL_SUTRAS.some(c => c.id === id) : kind === 'game' ? GAMES.some(g => g.id === id) : false;
 function render() {
   try { speechSynthesis.cancel(); } catch (e) {}
   const h = location.hash || '#/';
   // Sutra deep dives open over the sutras page without re-rendering it
   const ms = h.match(/^#\/sutras\/(\w+)$/);
-  if (ms && document.querySelector('.sutra-grid')) { openSutra(ms[1], true); return; }
-  if (h === '#/sutras' && sutraDlg && sutraDlg.open) { closeSutra(); return; }
+  if (ms && document.querySelector('.sutra-grid')) { openSutra(ms[1], true); metrics.view(h, knownId); return; }
+  if (h === '#/sutras' && sutraDlg && sutraDlg.open) { closeSutra(); metrics.view(h, knownId); return; }
   if (sutraDlg && sutraDlg.open) closeSutra(true);
-  const hit = routes.find(([re]) => re.test(h));
-  mount(ctx => (!fx.mode() && !/^#\/(watch|sutras)$/.test(h) ? modePicker(ctx) : hit ? hit[1](h.match(hit[0]), ctx) : home(ctx)));
+  const hit = routes.find(([re]) => re.test(h)), picker = !fx.mode() && !/^#\/(watch|sutras)$/.test(h);
+  mount(ctx => (picker ? modePicker(ctx) : hit ? hit[1](h.match(hit[0]), ctx) : home(ctx)));
+  if ((location.hash || '#/') === h) metrics.view(h, knownId, picker); /* one anonymous route view (analytics spec); a view that redirected is counted when its target renders */
   document.querySelectorAll('.mq-nav a[href]').forEach(a => a.setAttribute('aria-current', String(h === a.getAttribute('href') || (!!a.dataset.match && new RegExp(a.dataset.match).test(h)))));
   chip();
   const head = view.querySelector('h1, h2'); if (head) { head.setAttribute('tabindex', '-1'); if (render.n++) head.focus({ preventScroll: true }); }
@@ -299,6 +304,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
   const finish = ok => {
     done = true; total++; if (ok) right++; run = ok && tries === 1 && !hints ? run + 1 : 0;
     const r = store.record(s.id, ok, hints > 0 || tries > 1);
+    metrics.answered(lives ? 'run' : 'practice', ok); /* untimed play only: no per-answer events in timed rounds */
     if (r.justMastered) track('mastered/' + s.id, 'Mastered: ' + s.title);
     if (run === 3 || run === 7 || (run && run % 10 === 0)) fx.confetti(40);
     $('#prPct', root).textContent = `${pct(store.mastery(s.id))}% mastery`; root.querySelector('.pr-meter .ring').outerHTML = ring(store.mastery(s.id), 36);
@@ -445,7 +451,7 @@ function kataView(trickId, n, { signal } = {}) {
       if (p.kind === 'choice') { const c = box.querySelector('.pr-choice[aria-pressed="true"]'); if (!c) return; ok = c.dataset.v === p.answer; }
       else if (p.kind === 'fields') { const ins = [...box.querySelectorAll('.ans-in')]; if (ins.some(x => !x.value.trim())) return; ok = ins.every((x, k) => checkOne({ kind: 'num', answer: p.fields[k].answer }, x.value).ok); }
       else { const v = box.querySelector('.ans-in').value; if (!v.trim()) return; const res = checkOne(p, v); if (res.notAnswer) { $('#kSay').className = 'pr-say'; $('#kSay').innerHTML = `${BOLT}<div class="md-bubble">${notAnswerMsg()}</div>`; return; } ok = res.ok; }
-      tried = true; if (ok) right++; fx.sfx(ok ? 'ok' : 'no');
+      tried = true; if (ok) right++; fx.sfx(ok ? 'ok' : 'no'); metrics.answered('kata', ok);
       $('#kSay').className = 'pr-say ' + (ok ? 'ok' : 'no');
       $('#kSay').innerHTML = `${BOLT}<div class="md-bubble">${ok ? pick(['Correct!', 'Clean!', 'Nailed it!', 'Yes!']) : `Not this time. Answer: <b>${answerText(p, byId['v-' + trickId])}</b><br><small>${p.steps.slice(0, 3).join(' ')}</small>`}</div>`;
       $('#kGo').textContent = i + 1 < K.problems.length ? 'Next' : 'Finish'; $('#kGo').focus({ preventScroll: true });
@@ -508,8 +514,9 @@ function challengeView(id, { signal } = {}) {
     every(() => { n--; if (n === 0) { count.abort(); fx.sfx('ok'); go(); } else { shell.firstChild.textContent = n; fx.sfx('tick'); } }, 650, count.signal);
   };
   const go = () => {
-    track('challenge/' + ch.format, 'Challenge ' + id);
+    track('challenge/' + ch.format, 'Challenge ' + id); metrics.roundStart('tower');
     runChallenge(shell, ch, LV.challengeSet(ch), { tap: fx.mode() === 'explorer', signal, onEnd: r => {
+      metrics.roundEnd('tower', fx.MODES[fx.mode()].league);
       const stars = LV.challengeStars(ch, r), improved = store.setStars(LV.challengeKey(id), stars), xp = stars * 15 + r.right * 2;
       if (xp) store.addXP(xp, 'challenge'); store.bump('arena'); store.touchDay(); if (stars === 3) fx.confetti(100); else if (stars) fx.confetti(40);
       const nextId = id % LV.PER_CHAPTER ? id + 1 : null;
@@ -626,6 +633,11 @@ function parentNote() {
       pro: "At a player's first post, Firebase gives that player their own random ID on this browser and keeps it with the dates it was created and last used. Each player on this device who posts has their own ID and their own entry on each board. Removing a player on the Me page forgets their ID on this device; entries already posted stay until their removal is requested.",
     })} There is no account, sign-up or password.</p>
     <p>Each entry holds exactly: the made-up nickname (picked from fixed word lists, never typed), an avatar color, the best score, the time it was saved, and the time it expires. No names, emails, ages, photos or typed text are ever collected. Progress, badges and the players on this device stay in this browser only.${on && cloud.appCheckOn() ? ' To stop cheating scripts, Google reCAPTCHA checks that scores come from this site.' : ''}</p>
+    <p>${fx.t({
+      explorer: 'Separately from World boards, the site counts visits and things done in the app (pages opened, questions answered, rounds finished) to make it better, with GoatCounter, anonymously: no cookies, no IDs and no names.',
+      challenger: 'Separately from World boards, the site counts visits and actions in the app (pages opened, questions answered, rounds finished) to improve it, with GoatCounter, anonymously: no cookies, no IDs and no names.',
+      pro: 'Separately from World boards, the site counts visits and actions in the app (pages opened, questions answered, rounds finished) to improve it, with GoatCounter, anonymously: no cookies, no IDs and no names.',
+    })}</p>
     <p>A board stops taking scores when its day or week ends. Entries are not deleted automatically, and turning World boards off does not delete them. To have an entry removed, message Madhav on <a href="https://www.linkedin.com/in/sbmadhav/" target="_blank" rel="noopener">LinkedIn</a> with the nickname, color and date.</p></details>`;
 }
 async function loadBoard(el, board, n = 10) {
@@ -714,8 +726,9 @@ function arenaView({ signal } = {}) {
     every(() => { n--; if (n === 0) { count.abort(); fx.sfx('ok'); start(); } else { shell.firstChild.textContent = n; fx.sfx('tick'); } }, 700, count.signal);
   };
   const start = () => {
-    track('arena/' + league + '/' + type, 'Arena round');
+    track('arena/' + league + '/' + type, 'Arena round'); metrics.roundStart('arena');
     runArena(shell, { league, seed: type === 'daily' ? `daily-${day}-${league}` : null, signal, onEnd: async r => {
+      metrics.roundEnd('arena', league);
       store.bump('arena'); store.touchDay();
       if (r.score > store.count('arenaBest')) store.bump('arenaBest', r.score - store.count('arenaBest'));
       const xp = Math.round(r.score / 5); if (xp) store.addXP(xp, 'arena');
@@ -744,7 +757,7 @@ function duelView({ signal } = {}) {
   const lobby = (res = '') => {
     shell.innerHTML = `${res}<div class="g-optrow" role="group" aria-label="Level">${Object.entries(fx.MODES).map(([id, m]) => `<button class="md-chip" aria-pressed="${id === lg}" data-l="${id}">${m.name}</button>`).join('')}</div><label class="duel-flip"><input type="checkbox" id="dFlip"> Face to face (flip the top player)</label><p><button class="md-btn md-btn--primary" id="dGo">${icon('duel')} Start the duel</button></p>`;
     shell.querySelectorAll('[data-l]').forEach(b => b.onclick = () => { lg = b.dataset.l; lobby(res); });
-    $('#dGo', shell).onclick = () => { const flip = $('#dFlip', shell).checked; store.bump('duels'); track('duel/' + lg, 'Duel'); shell.classList.toggle('duel-flipped', flip); runDuel(shell, { league: lg, names: ['Player 1', 'Player 2'], signal, onEnd: w => { store.bump('duelsDone'); store.addXP(20, 'duel'); later(() => lobby(`<div class="ar-result"><div class="md-stat"><div class="md-kicker">Winner</div><div class="md-value">Player ${w + 1}</div><p>Great duel! Rematch?</p></div></div>`), 600, signal); } }); };
+    $('#dGo', shell).onclick = () => { const flip = $('#dFlip', shell).checked; store.bump('duels'); track('duel/' + lg, 'Duel'); metrics.roundStart('duel'); shell.classList.toggle('duel-flipped', flip); runDuel(shell, { league: lg, names: ['Player 1', 'Player 2'], signal, onEnd: w => { metrics.roundEnd('duel', lg); store.bump('duelsDone'); store.addXP(20, 'duel'); later(() => lobby(`<div class="ar-result"><div class="md-stat"><div class="md-kicker">Winner</div><div class="md-value">Player ${w + 1}</div><p>Great duel! Rematch?</p></div></div>`), 600, signal); } }); };
   };
   lobby();
 }
@@ -791,7 +804,7 @@ function gameView(id, lvl = 0, { signal } = {}) {
     $('#gStart', shell).onclick = start;
   };
   const start = () => {
-    track('game/' + g.id + '/' + mode, 'Game: ' + g.title); fx.sfx('tap');
+    track('game/' + g.id + '/' + mode, 'Game: ' + g.title); metrics.roundStart('game'); fx.sfx('tap');
     round = child(signal); const roundSignal = round.signal;
     const startD = L ? L.cfg.start : AD.rating(g.id, m), dial = new AD.Dial(startD, { floor: L ? L.cfg.floor : 1 });
     shell.innerHTML = `<div class="g-head"><span class="g-hud" id="gHud">${dialMeter(dial.lv)}<span class="g-pts"><b id="gPts">0</b> pts</span></span><span class="g-sayline" id="gSay" role="status" aria-live="polite"></span><button class="md-btn md-btn--sm" id="gQuit">${mode === 'endless' ? 'Finish' : 'Stop'}</button></div><div class="g-area" id="gArea"></div>`;
@@ -800,6 +813,7 @@ function gameView(id, lvl = 0, { signal } = {}) {
     let ended = false;
     const finish = score => {
       if (ended) return; ended = true; round.abort();
+      metrics.roundEnd('game', league); /* Stop never gets here, so a stopped round sends nothing */
       store.markSeen('game:' + g.id); store.bump('gamesPlayed'); store.touchDay();
       const before = AD.rating(g.id, m), after = AD.saveRating(g.id, dial), moved = Math.round((after - before) * 10) / 10;
       const skillLine = `Difficulty: started at ${Math.round(startD)}, reached ${Math.round(dial.peak)}, settled at ${Math.round(dial.settled())} of 20. ${dial.right} of ${dial.n} right.`;
@@ -1063,6 +1077,7 @@ function icon(n) {
 const rm = $('#resetMode'); if (rm) rm.onclick = () => { store.updatePlayer({ mode: null }); fx.applyMode(); location.hash = '#/'; render(); window.scrollTo({ top: 0 }); };
 fx.applyMode();
 gm.init();
+metrics.returnCheck(); /* before the first route view: remembers this device's first visit */
 render();
 initAmbient();
 /* Offline: sw.js (scope /vedic-math/) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */

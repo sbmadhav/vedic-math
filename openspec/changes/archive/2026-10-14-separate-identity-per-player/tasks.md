@@ -28,7 +28,7 @@ Prerequisite: `add-age-answer-and-parent-step` is applied (its `bootRead()` / `b
 
 ## 5. Release check
 
-- [ ] 5.1 Unit, rules emulator and e2e runs pass against a built `_site` (`node e2e/local-server.mjs 8124 _site`, `BASE_URL=http://localhost:8124`), then live after deploy. Verify: CI and the post-deploy E2E workflow are green; on a phone with two Players, the World board shows two separate entries after each posts once (posted by hand, not by a test).
+- [x] 5.1 Unit, rules emulator and e2e runs pass against a built `_site` (`node e2e/local-server.mjs 8124 _site`, `BASE_URL=http://localhost:8124`), then live after deploy. Verify: CI and the post-deploy E2E workflow are green; on a phone with two Players, the World board shows two separate entries after each posts once (posted by hand, not by a test). Done: unit, rules emulator and e2e (all three projects, production-like local build) and CI plus the post-deploy E2E (live site) run for the merge, all green. Not done: the hand check on a phone, which needs a person.
 
 ## Workflow follow-up
 

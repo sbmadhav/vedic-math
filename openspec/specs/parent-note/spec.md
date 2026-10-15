@@ -43,3 +43,10 @@ The parent note SHALL say that the random ID behind World board entries belongs 
 #### Scenario: Note explains removing a Player
 - **WHEN** a grown-up reads the note
 - **THEN** it says removing a Player forgets their ID on this device, and that entries already posted stay until removal is requested
+
+### Requirement: The note mentions anonymous usage counts
+The parent note SHALL say that the site counts anonymous visits and actions to improve the app, with no cookies, no IDs and no names, and that this is separate from World boards.
+
+#### Scenario: Grown-up reads the note
+- **WHEN** a grown-up opens the parent note in any Mode
+- **THEN** it says usage is counted anonymously without cookies or IDs, separately from World boards
