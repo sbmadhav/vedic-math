@@ -31,7 +31,9 @@ function players() {
 export const allPlayers = () => players().list;
 export const player = () => players().list.find(p => p.id === P.active) || P.list[0];
 export function updatePlayer(patch) { Object.assign(player(), patch); put(PKEY, P); emit('player', player()); }
-export function addPlayer() { const p = { id: 'p' + Date.now().toString(36), name: makeName(), avatar: AVATARS[P.list.length % AVATARS.length], mode: null, created: Date.now() }; players().list.push(p); switchPlayer(p.id); return p; }
+/* Player ids are unique on the device: each one names that Player's World board identity (cloud.appNameFor) */
+const newId = () => { let t = Date.now(), id; do id = 'p' + (t++).toString(36); while (players().list.some(p => p.id === id)); return id; };
+export function addPlayer() { const p = { id: newId(), name: makeName(), avatar: AVATARS[P.list.length % AVATARS.length], mode: null, created: Date.now() }; players().list.push(p); switchPlayer(p.id); return p; }
 export function switchPlayer(id) { players(); if (!P.list.some(p => p.id === id)) return; P.active = id; put(PKEY, P); S = null; emit('player', player()); }
 /* Posting consent, per Player and only on this device (never sent; see cloud.canPost):
    age is the Age answer, a whole number of years or 'adult' (null until answered);
@@ -41,7 +43,9 @@ export function setAge(age) {
   updatePlayer({ age });
 }
 export const setParentOk = on => updatePlayer({ parentOk: on ? Date.now() : null });
-export function removePlayer(id) { players(); if (P.list.length < 2) return; P.list = P.list.filter(p => p.id !== id); try { localStorage.removeItem(LEGACY + '.' + id); } catch (e) {} if (P.active === id) P.active = P.list[0].id; put(PKEY, P); S = null; emit('player', player()); }
+/* Removing a Player drops their record and progress; cloud.js hears 'removed' and forgets their World board
+   identity on this device (their entries already posted stay). */
+export function removePlayer(id) { players(); if (P.list.length < 2) return; const gone = P.list.find(p => p.id === id); if (!gone) return; P.list = P.list.filter(p => p.id !== id); try { localStorage.removeItem(LEGACY + '.' + id); } catch (e) {} if (P.active === id) P.active = P.list[0].id; put(PKEY, P); S = null; emit('removed', gone); emit('player', player()); }
 
 /* ---------- Progress for the active player ---------- */
 const key = () => LEGACY + '.' + player().id;
@@ -63,6 +67,9 @@ export function isoWeek(d = new Date()) {
   return `${t.getUTCFullYear()}-W${String(wk).padStart(2, '0')}`;
 }
 export const weekXP = () => (load(), (S.weekXp || {})[isoWeek()] || 0);
+/* This week's XP of any Player on this device (the weekly XP post reads the Player who earned it, not the active one) */
+export function weekXPOf(id) { if (id === player().id) return weekXP(); return ((get(LEGACY + '.' + id) || {}).weekXp || {})[isoWeek()] || 0; }
+export const playerById = id => players().list.find(p => p.id === id) || null;
 /* Adaptive game ratings (difficulty 1 to 20), one per game */
 export const rating = k => (load(), (S.ratings || {})[k] || 0);
 export function setRating(k, v) { load(); S.ratings = S.ratings || {}; S.ratings[k] = v; save(); emit('rating', { k, v }); }

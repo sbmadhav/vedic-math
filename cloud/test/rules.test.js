@@ -238,6 +238,19 @@ test('top-20 query ordered by score desc works with no composite index', async (
   assert.deepEqual(scores, [...scores].sort((a, b) => b - a));
 });
 
+/* One identity per Player (openspec board-identity): two Players on one device are two anonymous users, so
+   the rules must keep their entries apart with no change. */
+test('two Players on one device: each creates their own entry, neither can change the other, both list', async () => {
+  const A = 'player-a-uid', B = 'player-b-uid';
+  await assertSucceeds(setDoc(ref(A), ok({ name: 'Swift Tiger 42', score: 400 })));
+  await assertSucceeds(setDoc(ref(B), ok({ name: 'Lucky Otter 17', avatar: 'plum', score: 300 })));
+  await assertFails(setDoc(ref(B, A), ok({ name: 'Lucky Otter 17', score: 800 })));
+  await assertFails(setDoc(ref(A, B), ok({ name: 'Swift Tiger 42', score: 800 })));
+  await assertFails(updateDoc(ref(B, A), { score: 800, ts: serverTimestamp() }));
+  const snap = await assertSucceeds(getDocs(query(collection(db(null), 'boards', BOARD, 'scores'), orderBy('score', 'desc'), limit(20))));
+  assert.deepEqual(snap.docs.map(d => [d.id, d.data().name, d.data().score]), [[A, 'Swift Tiger 42', 400], [B, 'Lucky Otter 17', 300]]);
+});
+
 /* ---------- Ranked game boards and the weekly XP board ---------- */
 const GAME_IDS = ['balloons', 'more_less', 'make_ten', 'quick_look', 'bonds', 'times_sprint', 'target', 'frac_faceoff', 'line_snipe', 'pairs', 'check_it', 'rain', 'sequence', 'balance'];
 

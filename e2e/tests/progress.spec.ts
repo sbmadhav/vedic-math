@@ -1,4 +1,4 @@
-import { test, expect, APP, open } from './fixtures';
+import { test, expect, APP, open, cloudLog } from './fixtures';
 
 /* Progress lives in localStorage (vm.players, mathquest.v1.<player>) and survives a reload. */
 
@@ -111,4 +111,44 @@ test('Video learner: closing a video after 5 seconds earns nothing, a minute in 
   await dlg.locator('.vp-x').click();
   await page.goto(`${APP}#/me`);
   await expect(badge(page, 'Video learner')).toHaveClass(/\bgot\b/);
+});
+
+/* Removing a Player forgets their World board identity on this device (openspec board-identity). The fake
+   Firebase SDK keeps each app's session in e2e.fakeAuth, as the real one keeps it per app name. */
+test.describe('removing a Player who posted', () => {
+  test.use({ seedConsent: { age: 'adult' } });
+  test('signs them out here and sends nothing; the next new Player gets a new identity', async ({ page }) => {
+    const PB = 'pbgone1', UID_B = `e2e-fake-vm-${PB}`;
+    await page.addInitScript(([pb, uid]) => {
+      if (localStorage.getItem('e2e.seeded2')) return;
+      localStorage.setItem('e2e.seeded2', '1');
+      const P = JSON.parse(localStorage.getItem('vm.players')!);
+      P.list.push({ id: pb, name: 'Lucky Otter 17', avatar: 'plum', mode: 'challenger', created: 1, age: 'adult' });
+      localStorage.setItem('vm.players', JSON.stringify(P));
+      localStorage.setItem('vm.cloudUids', JSON.stringify({ [pb]: uid }));
+      localStorage.setItem('e2e.fakeAuth', JSON.stringify({ [`vm-${pb}`]: uid })); // B posted on an earlier visit
+    }, [PB, UID_B] as const);
+    await open(page, '#/me');
+    page.once('dialog', d => d.accept());
+    await page.locator(`[data-del="${PB}"]`).click();
+    await expect(page.locator('.players .player')).toHaveCount(1);
+    await expect.poll(async () => (await cloudLog(page)).signOuts).toEqual([`vm-${PB}`]);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('e2e.fakeAuth') || '{}'))).toEqual({});
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('vm.cloudUids') || '{}'))).toEqual({});
+    let log = await cloudLog(page);
+    expect(log.signIns).toBe(0);
+    expect(log.writes).toEqual([]);
+    // A new Player posts for the first time: a new identity, not the removed Player's
+    const path = await page.evaluate(async () => {
+      const store = await import('/vedic-math/js/store.js' as string), cloud = await import('/vedic-math/js/cloud.js' as string);
+      const c = store.addPlayer(); store.setAge('adult');
+      await cloud.submit(`daily-${cloud.dayId()}-challenger`, { name: c.name, avatar: c.avatar, score: 120 });
+      return { id: c.id as string };
+    });
+    log = await cloudLog(page);
+    expect(log.signIns).toBe(1);
+    expect(log.writes).toHaveLength(1);
+    expect(log.writes[0].path.split('/').pop()).toBe(`e2e-fake-vm-${path.id}`);
+    expect(log.writes[0].path).not.toContain(UID_B);
+  });
 });
