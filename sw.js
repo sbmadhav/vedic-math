@@ -30,14 +30,14 @@
    register call in js/app.js and delete this file. */
 const KILL = false;
 /* build.py: precache (generated, do not edit) */
-const VERSION = 'fc79fe4c25';
+const VERSION = '0b8dae6217';
 const PRECACHE = [
- ["/vedic-math/", "b49e8eadd8"],
+ ["/vedic-math/", "720a8e13a4"],
  ["/vedic-math/math.css?v=1d88b38c0f", "1d88b38c0f"],
  ["/vedic-math/manifest.webmanifest", "028e2ff70d"],
  ["/vedic-math/js/adapt.js?v=91f53acbfd", "91f53acbfd"],
  ["/vedic-math/js/ambient.js?v=0492d22369", "0492d22369"],
- ["/vedic-math/js/app.js?v=f95db8a373", "f95db8a373"],
+ ["/vedic-math/js/app.js?v=92dda69530", "92dda69530"],
  ["/vedic-math/js/arena.js?v=b1a7d0d7ed", "b1a7d0d7ed"],
  ["/vedic-math/js/check.js?v=bc33f6d3e3", "bc33f6d3e3"],
  ["/vedic-math/js/cloud-config.js?v=ecb87dc5eb", "ecb87dc5eb"],

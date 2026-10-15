@@ -2,7 +2,7 @@
 
 Leaderboards work on each device out of the box. To make them global, connect a Firebase project (the free Spark plan is enough).
 
-Data model: `boards/{board}/scores/{uid}` with `{ name, avatar, score, ts, exp }`. Board ids look like `daily-2026-10-12-challenger` and `week-2026-W42-pro`. Only the Arena daily round writes, to today's and this week's board for the player's league. Each anonymous player has one entry per board, and it only changes when the new score is higher. The browser client is `js/cloud.js`; the config lives in `js/cloud-config.js`.
+Data model: `boards/{board}/scores/{uid}` with `{ name, avatar, score, ts, exp }`. Board ids look like `daily-2026-10-12-challenger`, `week-2026-W42-pro`, `g_times_sprint-daily-2026-10-12-pro` and `xp-week-2026-W42-explorer`. Three things write, always to the player's league: the Arena daily round and a Ranked game round (today's and this week's board each), and weekly XP (the `xp-week` board, at most once a minute). See Boards below. Each anonymous player has one entry per board, and it only changes when the new score is higher. The browser client is `js/cloud.js`; the config lives in `js/cloud-config.js`.
 
 ## One command (recommended)
 
