@@ -20,6 +20,7 @@ import * as LV from './levels.js';
 import { LEVELS, LEVELS_PER_GAME, levelStars, boardGame } from './games.js';
 import * as AD from './adapt.js';
 import { initAmbient, bgOn, setBg, BG_NOTES, stop as stopMusic, isPlaying as musicOn } from './ambient.js';
+import { on, later, every, child } from './life.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const view = $('#view');
@@ -34,7 +35,6 @@ const BRAND = 'Vedic Math';
 /* Videos and playlists play inside the page (privacy-enhanced YouTube embed); channels and websites open in a new tab */
 const embedOf = r => { if (r.yt) return { src: `https://www.youtube-nocookie.com/embed/${r.yt}?autoplay=1&rel=0&modestbranding=1&playsinline=1`, tall: r.type === 'short' }; const m = r.url.match(/[?&]list=([\w-]+)/); return m ? { src: `https://www.youtube-nocookie.com/embed/videoseries?list=${m[1]}&autoplay=1&rel=0&modestbranding=1&playsinline=1`, tall: false } : null; };
 const wa = r => ` href="${r.url}" target="_blank" rel="noopener noreferrer" data-watch data-ri="${RESOURCES.indexOf(r)}"`;
-let cleanup = null;
 
 const ring = (m, size = 44) => { const r = size / 2 - 4, c = 2 * Math.PI * r; return `<svg class="ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle cx="${size / 2}" cy="${size / 2}" r="${r}" class="ring-bg"/><circle cx="${size / 2}" cy="${size / 2}" r="${r}" class="ring-fg" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - m)}" transform="rotate(-90 ${size / 2} ${size / 2})"/></svg>`; };
 const status = id => (store.mastered(id) ? ['done', both('Mastered', 'Got it!')] : store.started(id) ? ['going', both('Practicing', 'Learning')] : ['new', 'New']);
@@ -44,31 +44,47 @@ const BOLT = `<svg class="bolt" viewBox="0 0 64 64" aria-hidden="true"><rect x="
 const crumbs = (...parts) => `<nav class="mq-crumbs" aria-label="Breadcrumb"><a href="#/">${BRAND}</a>${parts.map(([h, l]) => ` <span aria-hidden="true">/</span> ${h ? `<a href="${h}">${l}</a>` : `<span>${l}</span>`}`).join('')}</nav>`;
 
 /* ---------- Router ---------- */
+/* Each view gets ctx = { signal }: the signal aborts when the route changes (view-lifecycle spec). A view may
+   return { destroy } for extra work on the way out; render() calls it, then aborts the signal. */
 const routes = [
-  [/^#?\/?$/, home],
-  [/^#\/learn$/, learnView],
-  [/^#\/grade\/(\w+)$/, m => gradeView(m[1])],
-  [/^#\/skill\/([\w-]+)$/, m => skillView(m[1])],
-  [/^#\/mix\/(\w+)$/, m => mixView(m[1])],
-  [/^#\/run\/(\w+)$/, m => mixView(m[1], true)],
-  [/^#\/(dojo|tricks)$/, dojoView],
-  [/^#\/katas\/([\w-]+)$/, m => katasView(m[1])],
-  [/^#\/kata\/([\w-]+)\/(\d+)$/, m => kataView(m[1], +m[2])],
-  [/^#\/tower$/, towerView],
-  [/^#\/tower\/(\d+)$/, m => chapterView(+m[1])],
-  [/^#\/challenge\/(\d+)$/, m => challengeView(+m[1])],
-  [/^#\/sutras$/, sutrasView],
-  [/^#\/sutras\/(\w+)$/, m => { sutrasView(); openSutra(m[1], false); }],
-  [/^#\/arena$/, arenaView],
-  [/^#\/duel$/, duelView],
-  [/^#\/games$/, gamesView],
-  [/^#\/game\/([\w-]+)$/, m => gameView(m[1])],
-  [/^#\/game\/([\w-]+)\/(\d+)$/, m => gameView(m[1], +m[2])],
-  [/^#\/watch$/, watchView],
-  [/^#\/(me|progress)$/, meView]
+  [/^#?\/?$/, (m, ctx) => home(ctx)],
+  [/^#\/learn$/, (m, ctx) => learnView(ctx)],
+  [/^#\/grade\/(\w+)$/, (m, ctx) => gradeView(m[1], ctx)],
+  [/^#\/skill\/([\w-]+)$/, (m, ctx) => skillView(m[1], ctx)],
+  [/^#\/mix\/(\w+)$/, (m, ctx) => mixView(m[1], false, ctx)],
+  [/^#\/run\/(\w+)$/, (m, ctx) => mixView(m[1], true, ctx)],
+  [/^#\/(dojo|tricks)$/, (m, ctx) => dojoView(ctx)],
+  [/^#\/katas\/([\w-]+)$/, (m, ctx) => katasView(m[1], ctx)],
+  [/^#\/kata\/([\w-]+)\/(\d+)$/, (m, ctx) => kataView(m[1], +m[2], ctx)],
+  [/^#\/tower$/, (m, ctx) => towerView(ctx)],
+  [/^#\/tower\/(\d+)$/, (m, ctx) => chapterView(+m[1], ctx)],
+  [/^#\/challenge\/(\d+)$/, (m, ctx) => challengeView(+m[1], ctx)],
+  [/^#\/sutras$/, (m, ctx) => sutrasView(ctx)],
+  [/^#\/sutras\/(\w+)$/, (m, ctx) => { sutrasView(ctx); openSutra(m[1], false); }],
+  [/^#\/arena$/, (m, ctx) => arenaView(ctx)],
+  [/^#\/duel$/, (m, ctx) => duelView(ctx)],
+  [/^#\/games$/, (m, ctx) => gamesView(ctx)],
+  [/^#\/game\/([\w-]+)$/, (m, ctx) => gameView(m[1], 0, ctx)],
+  [/^#\/game\/([\w-]+)\/(\d+)$/, (m, ctx) => gameView(m[1], +m[2], ctx)],
+  [/^#\/watch$/, (m, ctx) => watchView(ctx)],
+  [/^#\/(me|progress)$/, (m, ctx) => meView(ctx)]
 ];
+/* The view on screen: its AbortController and the destroy() it returned, if any */
+let life = null;
+function teardown() {
+  const l = life; life = null; if (!l) return;
+  try { if (l.destroy) l.destroy(); } catch (e) {}
+  l.ctl.abort();
+}
+/* Stops everything the previous view started, then runs fn({ signal }) as the new view.
+   Views that draw themselves again from scratch (Play again, Run again) come back through here too. */
+function mount(fn) {
+  teardown();
+  const ctl = new AbortController(), mine = { ctl, destroy: null }; life = mine;
+  const out = fn({ signal: ctl.signal });
+  if (life === mine && out && typeof out.destroy === 'function') mine.destroy = out.destroy;
+}
 function render() {
-  if (cleanup) { try { cleanup(); } catch (e) {} cleanup = null; }
   try { speechSynthesis.cancel(); } catch (e) {}
   const h = location.hash || '#/';
   // Sutra deep dives open over the sutras page without re-rendering it
@@ -77,7 +93,7 @@ function render() {
   if (h === '#/sutras' && sutraDlg && sutraDlg.open) { closeSutra(); return; }
   if (sutraDlg && sutraDlg.open) closeSutra(true);
   const hit = routes.find(([re]) => re.test(h));
-  if (!fx.mode() && !/^#\/(watch|sutras)$/.test(h)) modePicker(); else (hit ? hit[1](h.match(hit[0])) : home());
+  mount(ctx => (!fx.mode() && !/^#\/(watch|sutras)$/.test(h) ? modePicker(ctx) : hit ? hit[1](h.match(hit[0]), ctx) : home(ctx)));
   document.querySelectorAll('.mq-nav a[href]').forEach(a => a.setAttribute('aria-current', String(h === a.getAttribute('href') || (!!a.dataset.match && new RegExp(a.dataset.match).test(h)))));
   chip();
   const head = view.querySelector('h1, h2'); if (head) { head.setAttribute('tabindex', '-1'); if (render.n++) head.focus({ preventScroll: true }); }
@@ -212,7 +228,7 @@ function gradeView(g) {
 }
 
 /* ---------- Skill: lesson plus practice ---------- */
-function skillView(id) {
+function skillView(id, { signal } = {}) {
   const s = byId[id]; if (!s) return home();
   document.title = `${s.title}: ${BRAND} · Madhav`;
   const S = STRANDS[s.strand], trick = s.trick && TRICKS.find(t => t.id === s.trick);
@@ -233,8 +249,8 @@ function skillView(id) {
       <div class="mq-practice md-card" id="practice"></div>
     </div>
   </div></section>`;
-  if (trick) mountAnimator(trick); else showExample(s);
-  cleanup = practice($('#practice'), () => s, {});
+  if (trick) mountAnimator(trick, signal); else showExample(s);
+  return practice($('#practice'), () => s, { signal });
 }
 /* Related videos: match trick or skill words against the Watch shelf tags */
 function videosFor(s, trick) {
@@ -254,10 +270,14 @@ function showExample(s) {
 /* Typed something that is not a plain number on an arithmetic skill: not a try, no XP */
 const notAnswerMsg = () => fx.t({ explorer: 'Type just the answer, like 7.', challenger: 'Type just the answer, like 56 or 3/4.', pro: 'Type just the answer as a number, like 56 or 3/4.' });
 const KEYS = { basic: ['/', '-', '.'], alg: ['x', '^', '(', ')', '/', '-', '√', 'π'], set: [',', '-', '/', '√'], ineq: ['x', '<', '>', '<=', '>=', '-'], complex: ['i', '+', '-'] };
-function practice(root, pickSkill, { mix = null, lives = 0, onOver = null } = {}) {
+/* One Practice session in root. signal: the view's. Each question runs under its own child signal, aborted by the next one. */
+function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signal } = {}) {
   let s, p, tries = 0, hints = 0, done = false, right = 0, total = 0, run = 0, life = lives;
+  const session = child(signal); let question = null;
   const explorer = fx.mode() === 'explorer';
   const next = () => {
+    if (question) question.abort();
+    question = child(session.signal);
     s = pickSkill(); p = withPlain(s, s.gen(store.level(s.id))); tries = 0; hints = 0; done = false;
     // Explorer mode: no typing; small whole-number answers become big buttons
     if (explorer && p.kind === 'num' && Number.isInteger(p.answer) && p.answer >= 0 && p.answer <= 200) { const near = [...new Set([p.answer + 1, p.answer - 1, p.answer + 2, p.answer + 10, p.answer - 2].filter(v => v >= 0))]; p = { ...p, kind: 'choice', choices: [p.answer, ...shuffle(near).slice(0, 3)].sort((a, b) => a - b).map(String), answer: String(p.answer) }; }
@@ -271,7 +291,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null } = {}
       </form>
       <div class="pr-say" id="prSay" role="status" aria-live="polite"></div>
       <div class="pr-sol" id="prSol" hidden></div>`;
-    wire(); fx.speak(p.q);
+    wire(question.signal); fx.speak(p.q);
     const first = root.querySelector('input, .pr-choice'); if (first && render.n > 1 && matchMedia('(pointer: fine)').matches) first.focus({ preventScroll: true });
   };
   const say = (html, tone = '') => { const b = $('#prSay', root); b.className = 'pr-say ' + tone; b.innerHTML = html ? `${BOLT}<div class="md-bubble">${html}</div>` : ''; };
@@ -288,8 +308,14 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null } = {}
     btn.focus({ preventScroll: true });
   };
   const PRAISE = { explorer: ['Yay! You got it!', 'Super star!', 'Woohoo! Correct!', 'You are so smart!'], challenger: ['Correct!', 'Nailed it!', 'Boom! First try.', 'Lightning fast!'], pro: ['Correct.', 'Exactly right.', 'Clean.', 'Correct, first try.'] };
-  const wire = () => {
-    $('#prForm', root).addEventListener('submit', e => {
+  /* Symbol keys and the "Want a hint?" link: one delegated handler for the whole session */
+  on(root, 'click', e => {
+    const k = e.target.closest('.pr-key'); if (k) { fx.sfx('tap'); const inp = root.querySelector('.ans-in:focus') || root.querySelector('.ans-in'); if (inp) { const v = k.dataset.k, a = inp.selectionStart ?? inp.value.length; inp.value = inp.value.slice(0, a) + v + inp.value.slice(inp.selectionEnd ?? a); inp.focus(); inp.setSelectionRange(a + v.length, a + v.length); } return; }
+    if (e.target.closest('[data-hint]')) { e.preventDefault(); $('#prHint', root).click(); }
+  }, session.signal);
+  /* Per-question handlers, on the question's signal */
+  const wire = qs => {
+    on($('#prForm', root), 'submit', e => {
       e.preventDefault();
       if ($('#prCheck', root).dataset.next) { fx.sfx('tap'); return next(); }
       const res = grade(); if (res.empty) { say('Type an answer first.'); return; }
@@ -301,15 +327,11 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null } = {}
       if (tries === 1) { say((res.msg ? res.msg + ' ' : '') + 'Not quite. Try once more.' + (p.hints[0] && !hints ? ' <button type="button" class="linkbtn" data-hint>Want a hint?</button>' : ''), 'no'); if (explorer) fx.speak('Not quite. Try again!', true); }
       else if (tries === 2) { hints = Math.max(hints, 1); say((res.msg ? res.msg + ' ' : '') + `Hint: ${p.hints[Math.min(1, p.hints.length - 1)] || p.hints[0]}`, 'no'); if (explorer) fx.speak(p.hints[0], true); }
       else { reveal(); say('That one was tricky. See how it works, then try the next one.', 'no'); finish(false); }
-    });
-    root.addEventListener('click', e => {
-      const k = e.target.closest('.pr-key'); if (k) { fx.sfx('tap'); const inp = root.querySelector('.ans-in:focus') || root.querySelector('.ans-in'); if (inp) { const v = k.dataset.k, a = inp.selectionStart ?? inp.value.length; inp.value = inp.value.slice(0, a) + v + inp.value.slice(inp.selectionEnd ?? a); inp.focus(); inp.setSelectionRange(a + v.length, a + v.length); } return; }
-      if (e.target.closest('[data-hint]')) { e.preventDefault(); $('#prHint', root).click(); }
-    });
-    $('#prHint', root).onclick = () => { if (done) return; const h = p.hints[Math.min(hints, p.hints.length - 1)]; hints++; say(`Hint: ${h}`); if (explorer) fx.speak(h, true); };
-    $('#prShow', root).onclick = () => { if (done) return; tries = Math.max(tries, 3); reveal(); say('Read the steps, then try the next one.'); finish(false); };
-    const hear = $('#prHear', root); if (hear) hear.onclick = () => fx.speak(p.q, true);
-    root.querySelectorAll('.pr-choice').forEach(b => b.onclick = () => { if (done) return; root.querySelectorAll('.pr-choice').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); $('#prForm', root).requestSubmit(); });
+    }, qs);
+    on($('#prHint', root), 'click', () => { if (done) return; const h = p.hints[Math.min(hints, p.hints.length - 1)]; hints++; say(`Hint: ${h}`); if (explorer) fx.speak(h, true); }, qs);
+    on($('#prShow', root), 'click', () => { if (done) return; tries = Math.max(tries, 3); reveal(); say('Read the steps, then try the next one.'); finish(false); }, qs);
+    const hear = $('#prHear', root); if (hear) on(hear, 'click', () => fx.speak(p.q, true), qs);
+    root.querySelectorAll('.pr-choice').forEach(b => on(b, 'click', () => { if (done) return; root.querySelectorAll('.pr-choice').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); $('#prForm', root).requestSubmit(); }, qs));
   };
   const grade = () => {
     if (p.kind === 'choice') { const c = root.querySelector('.pr-choice[aria-pressed="true"]'); if (!c) return { empty: true }; return { ok: c.dataset.v === p.answer }; }
@@ -317,7 +339,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null } = {}
     return checkOne(p, root.querySelector('.ans-in').value);
   };
   next();
-  return () => {};
+  return { destroy: () => session.abort() };
 }
 function answerUI(p) {
   if (p.kind === 'choice') return `<div class="pr-choices" role="group" aria-label="Choices">${p.choices.map(c => `<button type="button" class="md-chip pr-choice" aria-pressed="false" data-v="${esc(c)}">${c}</button>`).join('')}</div>`;
@@ -326,7 +348,7 @@ function answerUI(p) {
   return `<div class="pr-in"><input class="ans-in" aria-label="Your answer" placeholder="${ph}" spellcheck="false" autocapitalize="off" inputmode="${p.kind === 'num' && Number.isInteger(p.answer) && p.answer >= 0 && !p.simplest ? 'numeric' : 'text'}">${p.unit ? `<span class="pr-unit">${p.unit}</span>` : ''}</div>`;
 }
 
-function mixView(g, isRun = false) {
+function mixView(g, isRun = false, { signal } = {}) {
   const G = gradeOf(g); if (!G) return home();
   document.title = `${isRun ? 'Endless run' : 'Endless practice'}, ${G.pro}: ${BRAND} · Madhav`;
   const list = skillsFor(g);
@@ -336,14 +358,14 @@ function mixView(g, isRun = false) {
     <p class="md-lede">${isRun ? `Questions from every skill in this level, forever. You have 3 lives: how far can you go? Your best: <b>${store.best('run-' + g)}</b>.` : 'Questions from the whole level, all mixed up and never-ending, favoring skills in progress. Mixing topics is harder, and that is exactly why it makes learning stick.'}</p>
     <div class="mq-practice md-card" id="practice"></div></div></section>`;
   let lastId = null;
-  cleanup = practice($('#practice'), () => {
+  return practice($('#practice'), () => {
     const going = list.filter(s => store.started(s.id) && !store.mastered(s.id)), pool = (going.length >= 2 && Math.random() < .7 ? going : list).filter(s => s.id !== lastId);
     const s = pick(pool.length ? pool : list); lastId = s.id; return s;
   }, { mix: true, lives: isRun ? 3 : 0, onOver: right => {
     store.bump('runs'); const isBest = store.setBest('run-' + g, right), xp = 10 + right * 3; store.addXP(xp, 'run'); if (isBest && right) fx.confetti(90);
     $('#practice').innerHTML = `<div class="ar-result"><div class="md-stat"><div class="md-kicker">You reached</div><div class="md-value">${right}</div><p>${isBest && right ? 'New best run!' : `Best: ${store.best('run-' + g)}`} <span class="fx-xp">+${xp} XP</span></p></div></div><p><button class="md-btn md-btn--primary" id="again">${icon('bolt')} Run again</button> <a class="md-btn" href="#/grade/${g}">Back to ${gradeLabel(g)}</a></p>`;
-    $('#again').onclick = () => mixView(g, true);
-  } });
+    $('#again').onclick = () => mount(ctx => mixView(g, true, ctx));
+  }, signal });
 }
 
 /* ---------- Dojo: belts of speed tricks ---------- */
@@ -393,7 +415,7 @@ function katasView(trickId) {
     ${levelMap(LV.KATAS_PER_TRICK, n => LV.kataKey(trickId, n), n => `#/kata/${trickId}/${n}`)}
   </div></section>`;
 }
-function kataView(trickId, n) {
+function kataView(trickId, n, { signal } = {}) {
   const t = TRICKS.find(x => x.id === trickId); if (!t || n < 1 || n > LV.KATAS_PER_TRICK) return dojoView();
   if (n > 1 && !store.stars(LV.kataKey(trickId, n - 1))) { location.replace(`#/katas/${trickId}`); return; }
   const K = LV.kata(trickId, n);
@@ -403,8 +425,10 @@ function kataView(trickId, n) {
     <h1 class="md-heading">Kata ${n} <small class="kata-of">of ${LV.KATAS_PER_TRICK}</small></h1>
     <p class="md-lede">${K.problems.length} problems · par time ${K.par} seconds · ${t.when}</p>
     <div class="md-card mq-practice" id="kata"></div></div></section>`;
-  const box = $('#kata'); let i = 0, right = 0, hints = 0, tried = false; const t0 = performance.now();
+  const box = $('#kata'); let i = 0, right = 0, hints = 0, tried = false, question = null; const t0 = performance.now();
   const show = () => {
+    if (question) question.abort();
+    question = child(signal); const qs = question.signal; /* this problem's handlers */
     const p = K.problems[i];
     box.innerHTML = `<div class="pr-head"><span class="kata-prog">${K.problems.map((_, j) => `<i class="${j < i ? 'past' : j === i ? 'cur' : ''}"></i>`).join('')}</span><span class="pr-score">${right}/${K.problems.length}</span></div>
       <div class="pr-q${plain(p.q).length > 60 ? ' long' : ''}">${p.q}</div>
@@ -412,9 +436,9 @@ function kataView(trickId, n) {
       <div class="pr-say" id="kSay" role="status" aria-live="polite"></div>`;
     tried = false; fx.speak(p.q);
     const f = box.querySelector('input, .pr-choice'); if (f && matchMedia('(pointer: fine)').matches) f.focus({ preventScroll: true });
-    box.querySelectorAll('.pr-choice').forEach(b => b.onclick = () => { box.querySelectorAll('.pr-choice').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); $('#kForm').requestSubmit(); });
-    $('#kHint').onclick = () => { hints++; $('#kSay').innerHTML = `${BOLT}<div class="md-bubble">Hint: ${p.hints[0] || p.steps[0]}</div>`; };
-    $('#kForm').onsubmit = e => {
+    box.querySelectorAll('.pr-choice').forEach(b => on(b, 'click', () => { box.querySelectorAll('.pr-choice').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); $('#kForm').requestSubmit(); }, qs));
+    on($('#kHint'), 'click', () => { hints++; $('#kSay').innerHTML = `${BOLT}<div class="md-bubble">Hint: ${p.hints[0] || p.steps[0]}</div>`; }, qs);
+    on($('#kForm'), 'submit', e => {
       e.preventDefault();
       if (tried) { i++; return i < K.problems.length ? show() : done(); }
       let ok;
@@ -426,14 +450,15 @@ function kataView(trickId, n) {
       $('#kSay').innerHTML = `${BOLT}<div class="md-bubble">${ok ? pick(['Correct!', 'Clean!', 'Nailed it!', 'Yes!']) : `Not this time. Answer: <b>${answerText(p, byId['v-' + trickId])}</b><br><small>${p.steps.slice(0, 3).join(' ')}</small>`}</div>`;
       $('#kGo').textContent = i + 1 < K.problems.length ? 'Next' : 'Finish'; $('#kGo').focus({ preventScroll: true });
       box.querySelector('.pr-score').textContent = `${right}/${K.problems.length}`;
-    };
+    }, qs);
   };
   const done = () => {
+    question.abort();
     const secs = Math.round((performance.now() - t0) / 1000), stars = LV.kataStars(right, K.problems.length, secs, K.par, hints), key = LV.kataKey(trickId, n), improved = store.setStars(key, stars);
     const xp = stars * 10 + right * 2; if (xp) store.addXP(xp, 'kata'); store.bump('katas'); store.touchDay(); track('kata/' + trickId, 'Kata ' + n);
     if (stars === 3) fx.confetti(90); else if (stars) fx.confetti(40);
     box.innerHTML = resultHTML(stars, [`${right} of ${K.problems.length} right in ${secs} seconds (par ${K.par})${hints ? `, ${hints} hint${hints > 1 ? 's' : ''}` : ''}.`, `<span class="fx-xp">+${xp} XP</span>${improved ? ' New best for this kata.' : ''}`], n < LV.KATAS_PER_TRICK ? `#/kata/${trickId}/${n + 1}` : null, `#/kata/${trickId}/${n}`, `#/katas/${trickId}`, 'All katas');
-    const rt = box.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); kataView(trickId, n); };
+    const rt = box.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); mount(ctx => kataView(trickId, n, ctx)); };
   };
   show();
 }
@@ -464,13 +489,12 @@ function chapterView(c) {
     <p class="mq-cta">${c > 1 ? `<a class="md-btn" href="#/tower/${c - 1}">&larr; Chapter ${c - 1}</a>` : ''}${c < LV.TOPICS.length ? `<a class="md-btn" href="#/tower/${c + 1}">Chapter ${c + 1} &rarr;</a>` : ''}</p>
   </div></section>`;
 }
-function challengeView(id) {
+function challengeView(id, { signal } = {}) {
   if (id < 1 || id > LV.CHALLENGE_COUNT) return towerView();
   const ch = LV.challenge(id), chapterStart = ch.chapter * LV.PER_CHAPTER + 1;
   if (id > chapterStart && !store.stars(LV.challengeKey(id - 1))) { location.replace(`#/tower/${ch.chapter + 1}`); return; }
   const F = LV.FORMATS[ch.format], goalText = ch.goal === 'seconds' ? `Finish ${ch.total} with at least ${Math.ceil(ch.total * .8)} right. Stars at ${ch.targets.join(', ')} seconds or faster.` : `Stars at ${ch.targets.join(', ')} ${ch.goal}.`;
   document.title = `Challenge ${id}: ${BRAND}`;
-  let stop = null;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs(['#/tower', 'Challenge tower'], [`#/tower/${ch.chapter + 1}`, ch.topic.name], [null, `Challenge ${id}`])}
     <span class="md-tag md-tag--coral">${F.name}</span>
@@ -480,20 +504,19 @@ function challengeView(id) {
   const shell = $('#chShell');
   $('#chGo').onclick = () => {
     let n = 3; shell.innerHTML = `<div class="ar-count" aria-live="assertive">${n}</div>`; fx.sfx('tick');
-    const iv = setInterval(() => { n--; if (n === 0) { clearInterval(iv); fx.sfx('ok'); go(); } else { shell.firstChild.textContent = n; fx.sfx('tick'); } }, 650);
-    stop = () => clearInterval(iv);
+    const count = child(signal); /* the countdown stops when it reaches 0 or the view is left */
+    every(() => { n--; if (n === 0) { count.abort(); fx.sfx('ok'); go(); } else { shell.firstChild.textContent = n; fx.sfx('tick'); } }, 650, count.signal);
   };
   const go = () => {
     track('challenge/' + ch.format, 'Challenge ' + id);
-    stop = runChallenge(shell, ch, LV.challengeSet(ch), { tap: fx.mode() === 'explorer', onEnd: r => {
-      stop = null; const stars = LV.challengeStars(ch, r), improved = store.setStars(LV.challengeKey(id), stars), xp = stars * 15 + r.right * 2;
+    runChallenge(shell, ch, LV.challengeSet(ch), { tap: fx.mode() === 'explorer', signal, onEnd: r => {
+      const stars = LV.challengeStars(ch, r), improved = store.setStars(LV.challengeKey(id), stars), xp = stars * 15 + r.right * 2;
       if (xp) store.addXP(xp, 'challenge'); store.bump('arena'); store.touchDay(); if (stars === 3) fx.confetti(100); else if (stars) fx.confetti(40);
       const nextId = id % LV.PER_CHAPTER ? id + 1 : null;
       shell.innerHTML = resultHTML(stars, [`${r.right} right, ${r.wrong} missed${ch.goal === 'points' ? `, ${r.score} points` : ''}${ch.goal === 'seconds' ? `, ${r.secs} seconds` : ''}.`, `<span class="fx-xp">+${xp} XP</span>${improved ? ' New best.' : ''}`], nextId ? `#/challenge/${nextId}` : `#/tower/${ch.chapter + 2 <= LV.TOPICS.length ? ch.chapter + 2 : 1}`, `#/challenge/${id}`, `#/tower/${ch.chapter + 1}`, 'Chapter map');
-      const rt = shell.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); challengeView(id); };
+      const rt = shell.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); mount(ctx => challengeView(id, ctx)); };
     } });
   };
-  cleanup = () => { if (stop) stop(); };
 }
 
 /* ---------- Sutras: deep dive and card collection ---------- */
@@ -525,7 +548,7 @@ function sutrasView() {
 function collect(name) { if (store.markSeen('sutra:' + name)) store.addXP(5, 'sutra'); }
 
 /* ---------- Sutra deep-dive modal: the card grows into it ---------- */
-let sutraDlg = null, sutraStop = null, sutraFrom = null, openedInPage = false;
+let sutraDlg = null, sutraScene = null, sutraFrom = null, openedInPage = false; /* sutraScene: the open scene's controller */
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 function sutraHTML(c) {
   const d = DETAILS[c.name], i = ALL_SUTRAS.indexOf(c), prev = ALL_SUTRAS[i - 1], next = ALL_SUTRAS[i + 1];
@@ -553,9 +576,10 @@ function openSutra(id, fromPage) {
     sutraDlg.addEventListener('click', e => { if (e.target === sutraDlg) requestClose(); if (e.target.closest('.sd-x')) requestClose(); const sw = e.target.closest('[data-swap]'); if (sw) { e.preventDefault(); location.replace(sw.getAttribute('href')); } if (e.target.closest('a[href^="#/skill"]')) { sutraDlg.close(); } });
   }
   const swapping = sutraDlg.open;
-  if (sutraStop) sutraStop();
+  if (sutraScene) sutraScene.abort();
   sutraDlg.innerHTML = `<div class="sd-inner">${sutraHTML(c)}</div>`;
-  sutraStop = mountScene(sutraDlg.querySelector('.sd-scene'), DETAILS[c.name].scene);
+  sutraScene = new AbortController();
+  mountScene(sutraDlg.querySelector('.sd-scene'), DETAILS[c.name].scene, sutraScene.signal);
   collect(c.name); track('sutra/' + id, 'Sutra: ' + c.name);
   document.title = `${c.name}: ${BRAND} · Madhav`;
   if (swapping) { sutraDlg.scrollTop = 0; sutraDlg.querySelector('.sd-x').focus(); return; }
@@ -572,7 +596,7 @@ function openSutra(id, fromPage) {
 function requestClose() { if (openedInPage) history.back(); else location.hash = '#/sutras'; }
 function closeSutra(instant = false) {
   if (!sutraDlg || !sutraDlg.open) return;
-  if (sutraStop) { sutraStop(); sutraStop = null; }
+  if (sutraScene) { sutraScene.abort(); sutraScene = null; }
   const art = sutraFrom && document.body.contains(sutraFrom) ? sutraFrom : null;
   const done = () => { sutraDlg.close(); document.title = `The Vedic sutras: ${BRAND} · Madhav`; if (art) art.querySelector('.sutra-face').focus({ preventScroll: true }); };
   if (instant || !art || reducedMotion()) return done();
@@ -647,10 +671,10 @@ function queueXpPost() {
   xpTimer = setTimeout(() => { xpLast = Date.now(); const w = store.weekXP(), L = fx.MODES[fx.mode()]?.league; if (L && w >= 10) cloud.postWeekXP(L, w).catch(() => {}); }, wait);
 }
 store.on(type => { if (type === 'xp') queueXpPost(); });
-function arenaView() {
+function arenaView({ signal } = {}) {
   document.title = `Arena: ${BRAND} · Madhav`;
   const league = fx.MODES[fx.mode()].league, day = cloud.dayId(), wk = cloud.weekId();
-  let type = 'daily', stop = null;
+  let type = 'daily';
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs([null, 'Arena'])}
     <span class="md-tag md-tag--coral">Arena</span>
@@ -671,13 +695,13 @@ function arenaView() {
   };
   const countdown = () => {
     let n = 3; shell.innerHTML = `<div class="ar-count" aria-live="assertive">${n}</div>`; fx.sfx('tick');
-    const iv = setInterval(() => { n--; if (n === 0) { clearInterval(iv); fx.sfx('ok'); start(); } else { shell.firstChild.textContent = n; fx.sfx('tick'); } }, 700);
-    stop = () => clearInterval(iv);
+    const count = child(signal); /* leaving during the countdown means the round never starts */
+    every(() => { n--; if (n === 0) { count.abort(); fx.sfx('ok'); start(); } else { shell.firstChild.textContent = n; fx.sfx('tick'); } }, 700, count.signal);
   };
   const start = () => {
     track('arena/' + league + '/' + type, 'Arena round');
-    stop = runArena(shell, { league, seed: type === 'daily' ? `daily-${day}-${league}` : null, onEnd: async r => {
-      stop = null; store.bump('arena'); store.touchDay();
+    runArena(shell, { league, seed: type === 'daily' ? `daily-${day}-${league}` : null, signal, onEnd: async r => {
+      store.bump('arena'); store.touchDay();
       if (r.score > store.count('arenaBest')) store.bump('arenaBest', r.score - store.count('arenaBest'));
       const xp = Math.round(r.score / 5); if (xp) store.addXP(xp, 'arena');
       let msg = '';
@@ -691,11 +715,10 @@ function arenaView() {
     } });
   };
   lobby();
-  cleanup = () => { if (stop) stop(); };
 }
-function duelView() {
+function duelView({ signal } = {}) {
   document.title = `Duel: ${BRAND} · Madhav`;
-  const league = fx.MODES[fx.mode()].league; let stop = null, lg = league;
+  const league = fx.MODES[fx.mode()].league; let lg = league;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs([null, 'Duel'])}
     <span class="md-tag md-tag--sky">Duel</span>
@@ -706,10 +729,9 @@ function duelView() {
   const lobby = (res = '') => {
     shell.innerHTML = `${res}<div class="g-optrow" role="group" aria-label="Level">${Object.entries(fx.MODES).map(([id, m]) => `<button class="md-chip" aria-pressed="${id === lg}" data-l="${id}">${m.name}</button>`).join('')}</div><label class="duel-flip"><input type="checkbox" id="dFlip"> Face to face (flip the top player)</label><p><button class="md-btn md-btn--primary" id="dGo">${icon('duel')} Start the duel</button></p>`;
     shell.querySelectorAll('[data-l]').forEach(b => b.onclick = () => { lg = b.dataset.l; lobby(res); });
-    $('#dGo', shell).onclick = () => { const flip = $('#dFlip', shell).checked; store.bump('duels'); track('duel/' + lg, 'Duel'); shell.classList.toggle('duel-flipped', flip); stop = runDuel(shell, { league: lg, names: ['Player 1', 'Player 2'], onEnd: w => { stop = null; store.bump('duelsDone'); store.addXP(20, 'duel'); setTimeout(() => lobby(`<div class="ar-result"><div class="md-stat"><div class="md-kicker">Winner</div><div class="md-value">Player ${w + 1}</div><p>Great duel! Rematch?</p></div></div>`), 600); } }); };
+    $('#dGo', shell).onclick = () => { const flip = $('#dFlip', shell).checked; store.bump('duels'); track('duel/' + lg, 'Duel'); shell.classList.toggle('duel-flipped', flip); runDuel(shell, { league: lg, names: ['Player 1', 'Player 2'], signal, onEnd: w => { store.bump('duelsDone'); store.addXP(20, 'duel'); later(() => lobby(`<div class="ar-result"><div class="md-stat"><div class="md-kicker">Winner</div><div class="md-value">Player ${w + 1}</div><p>Great duel! Rematch?</p></div></div>`), 600, signal); } }); };
   };
   lobby();
-  cleanup = () => { if (stop) stop(); };
 }
 
 /* ---------- Games ---------- */
@@ -726,7 +748,7 @@ function gamesView() {
     ${rest.length ? `<h2 class="mq-strand">More games</h2><div class="md-grid">${rest.map(card).join('')}</div>` : ''}
   </div></section>`;
 }
-function gameView(id, lvl = 0) {
+function gameView(id, lvl = 0, { signal } = {}) {
   const g = GAMES.find(x => x.id === id); if (!g) return gamesView();
   const m = fx.mode(), league = fx.MODES[m].league, gkey = n => `g:${g.id}:${n}`, rate = AD.rating(g.id, m);
   const ratedLevel = AD.levelForDifficulty(rate, LEVELS_PER_GAME);
@@ -735,7 +757,7 @@ function gameView(id, lvl = 0) {
   const L = lvl ? LEVELS[g.id](lvl) : null, bDay = `${boardGame(g.id)}-daily-${cloud.dayId()}-${league}`, bWeek = `${boardGame(g.id)}-week-${cloud.weekId()}-${league}`;
   const lengthText = g.secs ? `${g.secs} seconds` : `${g.rounds} ${g.id === 'pairs' ? 'boards' : g.id === 'target' ? 'puzzles' : 'questions'}`;
   document.title = `${g.title}${lvl ? ` level ${lvl}` : ''}: ${BRAND} · Madhav`;
-  let mode = lvl ? 'level' : 'ranked', stop = null;
+  let mode = lvl ? 'level' : 'ranked', round = null; /* round: the running round's controller */
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs(['#/games', 'Games'], lvl ? [`#/game/${g.id}`, both(g.title, g.kid)] : [null, both(g.title, g.kid)], ...(lvl ? [[null, `Level ${lvl}`]] : []))}
     <h1 class="md-heading">${both(g.title, g.kid)}${lvl ? ` <small class="kata-of">level ${lvl} of ${LEVELS_PER_GAME}</small>` : ''}</h1><p class="md-lede">${g.desc}</p>
@@ -755,13 +777,14 @@ function gameView(id, lvl = 0) {
   };
   const start = () => {
     track('game/' + g.id + '/' + mode, 'Game: ' + g.title); fx.sfx('tap');
+    round = child(signal); const roundSignal = round.signal;
     const startD = L ? L.cfg.start : AD.rating(g.id, m), dial = new AD.Dial(startD, { floor: L ? L.cfg.floor : 1 });
     shell.innerHTML = `<div class="g-head"><span class="g-hud" id="gHud">${dialMeter(dial.lv)}<span class="g-pts"><b id="gPts">0</b> pts</span></span><span class="g-sayline" id="gSay" role="status" aria-live="polite"></span><button class="md-btn md-btn--sm" id="gQuit">${mode === 'endless' ? 'Finish' : 'Stop'}</button></div><div class="g-area" id="gArea"></div>`;
     const sayEl = $('#gSay', shell), hudEl = $('#gHud', shell);
     const hud = (d, pts, ok) => { hudEl.innerHTML = `${dialMeter(d.lv)}<span class="g-pts"><b id="gPts">${d.points.toLocaleString('en-US')}</b> pts</span>${ok && pts ? `<span class="g-gain">+${pts}</span>` : ''}${d.trend > 0 ? '<span class="g-trend up" role="img" aria-label="Getting harder">&#9650;</span>' : d.trend < 0 ? '<span class="g-trend down" role="img" aria-label="Getting easier">&#9660;</span>' : ''}`; };
     let ended = false;
     const finish = score => {
-      if (ended) return; ended = true; if (stop) stop(); stop = null;
+      if (ended) return; ended = true; round.abort();
       store.markSeen('game:' + g.id); store.bump('gamesPlayed'); store.touchDay();
       const before = AD.rating(g.id, m), after = AD.saveRating(g.id, dial), moved = Math.round((after - before) * 10) / 10;
       const skillLine = `Difficulty: started at ${Math.round(startD)}, reached ${Math.round(dial.peak)}, settled at ${Math.round(dial.settled())} of 20. ${dial.right} of ${dial.n} right.`;
@@ -770,21 +793,20 @@ function gameView(id, lvl = 0) {
         const stars = levelStars(L.goal, score), improved = store.setStars(gkey(lvl), stars), xp = 10 + stars * 10 + Math.min(60, Math.round(score / 40)); store.addXP(xp, 'game');
         if (stars === 3) fx.confetti(100); else if (stars) fx.confetti(40);
         shell.innerHTML = resultHTML(stars, [`${score.toLocaleString('en-US')} points. Goals: ${L.goal.map(v => v.toLocaleString('en-US')).join(', ')}.`, skillLine + skillMove, `<span class="fx-xp">+${xp} XP</span>${improved ? ' New best.' : ''}`], lvl < LEVELS_PER_GAME ? `#/game/${g.id}/${lvl + 1}` : null, `#/game/${g.id}/${lvl}`, `#/game/${g.id}`, 'Game home');
-        const rt = shell.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); gameView(g.id, lvl); };
+        const rt = shell.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); mount(ctx => gameView(g.id, lvl, ctx)); };
         return;
       }
       const xp = 10 + Math.min(80, Math.round(score / 30)); store.addXP(xp, 'game');
       let note = '';
       if (mode === 'ranked') { const isBest = store.setBest(`${g.id}-ranked-${cloud.dayId()}`, score); if (isBest && score) fx.confetti(80); note = isBest && score ? 'Your best today!' : `Today's best: ${store.best(`${g.id}-ranked-${cloud.dayId()}`).toLocaleString('en-US')}.`; postScore([bDay, bWeek], score, `for ${g.title}.`); }
       lobby(`<div class="g-result"><div class="md-stat"><div class="md-kicker">${mode === 'ranked' ? 'Ranked score' : 'Practice score'}</div><div class="md-value">${score.toLocaleString('en-US')}</div><p>${note} <span class="fx-xp">+${xp} XP</span></p></div><p class="mq-small">${skillLine}${skillMove}</p></div>`);
-      if (mode === 'ranked') setTimeout(() => { loadBoard($('#gbDay'), bDay); loadBoard($('#gbWeek'), bWeek); }, 1500);
+      if (mode === 'ranked') later(() => { loadBoard($('#gbDay'), bDay); loadBoard($('#gbWeek'), bWeek); }, 1500, signal);
     };
-    stop = g.run($('#gArea', shell), { dial, hud, endless: mode === 'endless', secs: g.secs, say: m2 => (sayEl.innerHTML = m2), end: finish });
-    $('#gQuit', shell).onclick = () => { if (mode === 'endless') return finish(dial.points); if (stop) stop(); stop = null; ended = true; lobby(); };
+    g.run($('#gArea', shell), { dial, hud, endless: mode === 'endless', secs: g.secs, signal: roundSignal, say: m2 => (sayEl.innerHTML = m2), end: finish });
+    $('#gQuit', shell).onclick = () => { if (mode === 'endless') return finish(dial.points); round.abort(); ended = true; lobby(); };
   };
   lobby();
   if (!lvl) { loadBoard($('#gbDay'), bDay); loadBoard($('#gbWeek'), bWeek); }
-  cleanup = () => { if (stop) stop(); };
 }
 
 /* ---------- Watch shelf ---------- */
@@ -978,17 +1000,17 @@ function animatorHTML(t) {
     <div class="anim-board" id="animBoard" aria-live="polite"></div>
     <div class="anim-nav" id="animNav" hidden><button type="button" class="md-btn md-btn--sm" id="animPrev">Back</button><span id="animPos"></span><button type="button" class="md-btn md-btn--sm md-btn--primary" id="animNext">Next step</button><button type="button" class="md-btn md-btn--sm" id="animAll">Show all</button></div></div>`;
 }
-function mountAnimator(t) {
+function mountAnimator(t, signal) {
   const form = $('#animForm'), ins = [...form.querySelectorAll('input')], board = $('#animBoard'), nav = $('#animNav'), err = $('#animErr'); let steps = [], i = 0, counted = false;
   const fill = vals => ins.forEach((x, k) => (x.value = vals[k]));
   const show = (all = false) => { board.innerHTML = steps.slice(0, all ? steps.length : i + 1).map((s, k) => `<div class="anim-step${k === (all ? steps.length - 1 : i) ? ' cur' : ''}"><div class="anim-show">${s.show}</div><p>${s.say}</p></div>`).join(''); $('#animPos').textContent = `${all ? steps.length : i + 1} / ${steps.length}`; $('#animPrev').disabled = i === 0 && !all; $('#animNext').disabled = all || i === steps.length - 1;
     if ((all || i === steps.length - 1) && !counted) { counted = true; store.bump('tricksWatched'); if (store.markSeen('trick:' + t.id)) store.addXP(5, 'trick'); } };
   const run = (user = true) => { const vals = ins.map(x => Number(x.value)); if (ins.some(x => x.value === '') || vals.some(v => !Number.isFinite(v))) { err.textContent = 'Fill in every number.'; return; } const bad = t.valid(vals); err.textContent = bad || ''; if (bad) { board.innerHTML = ''; nav.hidden = true; return; } steps = t.steps(vals); i = 0; counted = !user; nav.hidden = false; show(); if (user) track('trick/' + t.id, 'Trick: ' + t.title); };
-  form.onsubmit = e => { e.preventDefault(); fx.sfx('tap'); run(); };
-  $('#animRand').onclick = () => { let v; do { v = t.random(); } while (t.valid(v)); fill(v); fx.sfx('pop'); run(); };
-  $('#animPrev').onclick = () => { i = Math.max(0, i - 1); show(); };
-  $('#animNext').onclick = () => { i = Math.min(steps.length - 1, i + 1); fx.sfx('tap'); show(); };
-  $('#animAll').onclick = () => { i = steps.length - 1; show(true); };
+  on(form, 'submit', e => { e.preventDefault(); fx.sfx('tap'); run(); }, signal);
+  on($('#animRand'), 'click', () => { let v; do { v = t.random(); } while (t.valid(v)); fill(v); fx.sfx('pop'); run(); }, signal);
+  on($('#animPrev'), 'click', () => { i = Math.max(0, i - 1); show(); }, signal);
+  on($('#animNext'), 'click', () => { i = Math.min(steps.length - 1, i + 1); fx.sfx('tap'); show(); }, signal);
+  on($('#animAll'), 'click', () => { i = steps.length - 1; show(true); }, signal);
   let v; do { v = t.random(); } while (t.valid(v)); fill(v); run(false);
 }
 

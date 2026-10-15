@@ -93,3 +93,35 @@ test('factoring with negative roots reveals real signs', async ({ page }) => {
   }
   throw new Error('no factoring question with a negative root came up');
 });
+
+/* view-lifecycle spec: one tap, one action, however many questions came before in the session */
+test('after 5 Practice questions a symbol key inserts once and "Want a hint?" gives one hint', async ({ page, issues }) => {
+  await seedRandom(page, 5);
+  await open(page, '#/skill/4-fracadd');
+  const box = page.locator('#practice');
+  for (let i = 0; i < 5; i++) {
+    await box.locator('#prShow').click();
+    await expect(box.locator('#prCheck')).toHaveText('Next');
+    await box.locator('#prCheck').click();
+    await expect(box.locator('#prCheck')).toHaveText('Check');
+  }
+  await expect(box.locator('.pr-score')).toHaveText('0/5');
+  const input = box.locator('.ans-in');
+  await input.fill('');
+  await box.locator('.pr-key[data-k="/"]').click();
+  await expect(input).toHaveValue('/');
+  // A wrong first try offers the hint link; one tap writes one hint
+  await input.fill('999');
+  await box.locator('#prCheck').click();
+  await expect(box.locator('#prSay [data-hint]')).toBeVisible();
+  const writes = await page.evaluate(() => {
+    const say = document.querySelector('#practice #prSay')!;
+    const obs = new MutationObserver(() => {}); obs.observe(say, { childList: true, subtree: true });
+    (document.querySelector('#practice [data-hint]') as HTMLElement).click();
+    const n = obs.takeRecords().filter(r => [...r.addedNodes].some(x => (x.textContent || '').includes('Hint:'))).length;
+    obs.disconnect(); return n;
+  });
+  expect(writes).toBe(1);
+  await expect(box.locator('#prSay')).toContainText('Hint:');
+  expect(issues.console, 'console errors').toEqual([]);
+});
