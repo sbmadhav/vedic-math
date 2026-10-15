@@ -1,6 +1,6 @@
 # Vedic Math for Everyone
 
-Served at https://sbmadhav.com/vedic-math/ as part of sbmadhav.com: GitHub project Pages for this repo (branch `main`, Jekyll) under the custom domain of the `sbmadhav.github.io` repo. There is no CNAME here; the domain comes from the user site.
+Served at https://sbmadhav.com/vedic-math/ as part of sbmadhav.com: GitHub project Pages for this repo under the custom domain of the `sbmadhav.github.io` repo. There is no CNAME here; the domain comes from the user site.
 
 ## Shared files come from the main site
 
@@ -24,10 +24,11 @@ They are not `?v=` stamped (this repo cannot hash them). Do not copy them in; ch
 
 ## Build, checks and hook
 
-- After editing `index.html`, `math.css` or anything in `js/`, run `python3 build.py`. It rewrites the import map in `index.html` (every module pinned to `?v=<hash>`) and stamps the entry script and `math.css`.
+- Never commit cache stamps. In git, `index.html` has no import map and loads plain `/vedic-math/js/app.js` and `/vedic-math/math.css`, and `sw.js` keeps `const VERSION = 'dev';` and `const PRECACHE = [];` between the precache markers. The CI deploy runs `python3 build.py --out _site`, which copies the publishable files and stamps the copies (the import map pinning every module to `?v=<hash>`, the entry script and `math.css`, the worker's `VERSION` and precache list), so there is nothing to run after editing. The build fails if the source carries stamps.
+- The published files are every file git knows about minus `exclude` in `_config.yml` and any path with a part starting with `.` or `_`; the build also writes `.nojekyll`.
 - Tests: `node --test 'test/**/*.test.{js,mjs}'`.
-- Pre-commit hook in `.githooks/pre-commit` runs the build (fails if it changed a file: stage and commit again) and the tests. Enable once per clone: `git config core.hooksPath .githooks`.
-- `.github/workflows/ci.yml` runs the same checks on pushes and pull requests to `main`.
+- Pre-commit hook in `.githooks/pre-commit` builds into a throwaway directory (catches build errors and committed stamps) and runs the tests. Enable once per clone: `git config core.hooksPath .githooks`.
+- `.github/workflows/ci.yml` runs the tests and the build on pushes and pull requests to `main`, and checks that `_site/` is stamped and holds no repo-only files. Its `deploy` job publishes that `_site/` with actions/deploy-pages only when the repository variable `PAGES_VIA_ACTIONS` is `true` and Settings > Pages > Source is "GitHub Actions". Without both, Pages deploys `main` with Jekyll, which publishes the unstamped source: it works, but nothing is pinned and the `'dev'` worker means no offline.
 
 ## End-to-end tests (`e2e/`)
 
@@ -43,11 +44,11 @@ They are not `?v=` stamped (this repo cannot hash them). Do not copy them in; ch
 
 `sw.js` is this app's service worker, registered by `js/app.js` with scope `/vedic-math/` (on https and localhost). That scope is more specific than the root worker of sbmadhav.com (scope `/`, which leaves `/vedic-math/` to the network), so it controls these pages, including their requests to `/assets/` and `/design-system/`.
 
-- `build.py` writes its `VERSION` and `PRECACHE` list (between the `build.py: precache` markers): the shell, `math.css`, every module at its import-map URL and the manifest, each with a hash the worker checks on install, plus the shared files `index.html` and the manifest reference. Never edit that block by hand.
+- `build.py --out` writes its `VERSION` and `PRECACHE` list into the published copy (between the `build.py: precache` markers): the shell, `math.css`, every module at its import-map URL and the manifest, each with a hash the worker checks on install, plus the shared files `index.html` and the manifest reference. In git that block stays `'dev'` and empty; never stamp it by hand. A `'dev'` worker has no fetch handler (network only) and deletes `vedic-math-*` caches, so serving the source locally never goes stale. To test the real worker, build `_site` and serve it (`node e2e/local-server.mjs 8124 _site`).
 - Page loads are network first with the saved shell as the offline fallback; `?v=` files are cache first; shared files are stale while revalidate. Other origins (Firebase, Google, analytics) and non-GET requests are never cached. Leaderboards fall back to this device when offline.
 - Caches are `vedic-math-<VERSION>`; the worker keeps the current and previous one and never touches `madhav-*` (the root worker's). Never rename the prefix to `madhav-`.
 - New same-origin files the page loads must be in `index.html` or the manifest (build.py lists them), and a module worker must be started with `import.meta.resolve(...)` so it gets its `?v=` stamp.
-- To retire it, set `KILL = true` in `sw.js`, run `build.py` and deploy (see the comment there).
+- To retire it, set `KILL = true` in `sw.js` and deploy (see the comment there).
 - `manifest.webmanifest` here makes Vedic Math its own installable app (scope `/vedic-math/`); the main site's manifest is unchanged.
 
 ## Leaderboards

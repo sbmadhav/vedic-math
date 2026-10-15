@@ -1,14 +1,17 @@
 // Serves this checkout at /vedic-math/ for local end-to-end runs. Everything else (/design-system/,
 // /assets/, /manifest.webmanifest, ...) comes from the live site, so the page runs exactly as on
 // sbmadhav.com but with this branch's files.
-//   node local-server.mjs [port]     (default 8124; 8000 is often taken)
+//   node local-server.mjs [port] [dir]   (default 8124 and this checkout; 8000 is often taken)
+// The checkout is unstamped source (a 'dev' worker, so no offline). To test what the deploy publishes,
+// build it and serve that: python3 build.py --out _site && node e2e/local-server.mjs 8124 _site
 //   BASE_URL=http://localhost:8124 npx playwright test
 import http from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const root = process.argv[3] ? path.resolve(process.cwd(), process.argv[3]) : repo;
 const port = +(process.argv[2] || process.env.PORT || 8124);
 const LIVE = 'https://sbmadhav.com';
 const PREFIX = '/vedic-math/';

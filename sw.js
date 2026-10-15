@@ -3,9 +3,12 @@
    controls Vedic Math pages. A controlled page's requests to /assets/ and /design-system/ come
    through here too, so the shared files are cached as well.
 
-   build.py writes VERSION and PRECACHE (the block between the markers below). VERSION is a hash of
-   every file this repo precaches plus the rest of this file, so any change to the app installs a
-   fresh cache. Run python3 build.py after editing index.html, math.css, js/ or this file.
+   VERSION stays 'dev' in git, with an empty PRECACHE. The deploy (python3 build.py --out _site, run
+   by CI) writes the real VERSION and PRECACHE into the published copy, between the markers below.
+   VERSION is a hash of every file this repo precaches plus the rest of this file, so any change to
+   the app installs a fresh cache. A 'dev' worker caches nothing and leaves every request to the
+   network (and deletes this app's caches), so the unbuilt source, served locally or published by
+   mistake without the build, never serves stale files.
 
    One version at a time: index.html carries the import map, so the shell and its modules must come
    from the same deploy. Install fetches every file of this repo in PRECACHE and checks it against
@@ -24,57 +27,14 @@
    Caches are named vedic-math-<VERSION>. The root worker only deletes madhav-*, and this one only
    deletes its own older vedic-math-* caches (keeping the previous one for tabs still open on it).
 
-   KILL SWITCH (retire the worker): set KILL = true below, run build.py and deploy. Browsers re-check
+   KILL SWITCH (retire the worker): set KILL = true below and deploy (push to main). Browsers re-check
    sw.js on the next visit; the new worker deletes every vedic-math-* cache and unregisters itself,
    and open tabs keep working from the network. Leave it deployed for a few weeks, then remove the
    register call in js/app.js and delete this file. */
 const KILL = false;
 /* build.py: precache (generated, do not edit) */
-const VERSION = 'c19e4ec9c1';
-const PRECACHE = [
- ["/vedic-math/", "2f93c1e581"],
- ["/vedic-math/math.css?v=1d88b38c0f", "1d88b38c0f"],
- ["/vedic-math/manifest.webmanifest", "028e2ff70d"],
- ["/vedic-math/js/adapt.js?v=91f53acbfd", "91f53acbfd"],
- ["/vedic-math/js/ambient.js?v=0492d22369", "0492d22369"],
- ["/vedic-math/js/app.js?v=21b76cd097", "21b76cd097"],
- ["/vedic-math/js/arena.js?v=b1a7d0d7ed", "b1a7d0d7ed"],
- ["/vedic-math/js/check.js?v=bc33f6d3e3", "bc33f6d3e3"],
- ["/vedic-math/js/cloud-config.js?v=ecb87dc5eb", "ecb87dc5eb"],
- ["/vedic-math/js/cloud.js?v=904c6706aa", "904c6706aa"],
- ["/vedic-math/js/fx.js?v=9424dca4d6", "9424dca4d6"],
- ["/vedic-math/js/games.js?v=3257ae9c40", "3257ae9c40"],
- ["/vedic-math/js/gamify.js?v=d88ecd06b9", "d88ecd06b9"],
- ["/vedic-math/js/levels.js?v=96a39883e8", "96a39883e8"],
- ["/vedic-math/js/lib.js?v=de7f100624", "de7f100624"],
- ["/vedic-math/js/resources.js?v=8a47c9a533", "8a47c9a533"],
- ["/vedic-math/js/scenes.js?v=275416bf73", "275416bf73"],
- ["/vedic-math/js/skills/early.js?v=9be492b231", "9be492b231"],
- ["/vedic-math/js/skills/high.js?v=006c43d457", "006c43d457"],
- ["/vedic-math/js/skills/index.js?v=4b7c5f0901", "4b7c5f0901"],
- ["/vedic-math/js/skills/middle.js?v=e8427ddd9b", "e8427ddd9b"],
- ["/vedic-math/js/skills/upper.js?v=75bb812d4f", "75bb812d4f"],
- ["/vedic-math/js/store.js?v=0fc67287e4", "0fc67287e4"],
- ["/vedic-math/js/sutra-details.js?v=821d45aa5e", "821d45aa5e"],
- ["/vedic-math/js/sutras.js?v=67420e835e", "67420e835e"],
- ["/vedic-math/js/vedic.js?v=19fb78fa3b", "19fb78fa3b"],
- ["/vedic-math/js/viz.js?v=d299f651ef", "d299f651ef"],
- ["/vedic-math/js/voice-worker.js?v=55fd8ad6b7", "55fd8ad6b7"],
- ["/vedic-math/js/voice.js?v=4eae733eb6", "4eae733eb6"],
- ["/assets/analytics.js", null],
- ["/assets/explore.js", null],
- ["/assets/fonts/fredoka-latin-600-normal.woff2", null],
- ["/assets/fonts/fredoka-latin-700-normal.woff2", null],
- ["/assets/fonts/jetbrains-mono-latin-500-normal.woff2", null],
- ["/assets/fonts/nunito-sans-latin-wght-normal.woff2", null],
- ["/assets/fonts/space-grotesk-latin-wght-normal.woff2", null],
- ["/assets/icons/apple-touch-icon.png", null],
- ["/assets/icons/icon-192.png", null],
- ["/assets/icons/icon-512.png", null],
- ["/assets/icons/maskable-512.png", null],
- ["/design-system/components.css", null],
- ["/design-system/tokens.css", null]
-];
+const VERSION = 'dev';
+const PRECACHE = [];
 /* /build.py: precache */
 const PREFIX = 'vedic-math-';
 const CACHE = PREFIX + VERSION;
@@ -84,7 +44,18 @@ const RUNTIME_MAX = 60; // entries kept beyond the precache list; the oldest go 
 const NAV_TIMEOUT = 3500; // ms before a page load falls back to the saved shell
 const PRECACHED = new Set(PRECACHE.map(([u]) => new URL(u, location.origin).href));
 
-if (KILL) {
+if (VERSION === 'dev') {
+  /* Unbuilt source: no fetch handler, so the browser goes to the network. Take over at once and drop
+     any saved stamped version, so a stale one does not linger. */
+  self.addEventListener('install', () => self.skipWaiting());
+  self.addEventListener('activate', event => {
+    event.waitUntil((async () => {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter(k => k.startsWith(PREFIX)).map(k => caches.delete(k)));
+      await self.clients.claim();
+    })());
+  });
+} else if (KILL) {
   self.addEventListener('install', () => self.skipWaiting());
   self.addEventListener('activate', event => {
     event.waitUntil((async () => {

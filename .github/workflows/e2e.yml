@@ -36,19 +36,24 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      # On a push, GitHub Pages deploys in the background. Wait until the live index.html matches the
-      # committed one (build.py stamps every module hash into it, so it changes with any shipped change).
+      # On a push, the CI deploy publishes a stamped build in the background. Wait until the live files
+      # match this commit's build (index.html pins every module hash, sw.js carries the cache VERSION).
       - name: Wait for the Pages deploy
         if: github.event_name == 'push'
         run: |
-          want=$(sha256sum ../index.html | cut -d' ' -f1)
+          # The deploy publishes python3 build.py --out, so compare against the same build of this commit
+          python3 "$GITHUB_WORKSPACE/build.py" --out "$GITHUB_WORKSPACE/_site" >/dev/null
           for i in $(seq 1 45); do
-            got=$(curl -fsSL "https://sbmadhav.com/vedic-math/index.html?deploy-check=${GITHUB_SHA}-${i}" | sha256sum | cut -d' ' -f1) || got=none
-            if [ "$got" = "$want" ]; then echo "Live index.html matches this commit (try $i)."; exit 0; fi
-            echo "Try $i: live index.html is not this commit yet; waiting 20s."
+            ok=1
+            for f in index.html sw.js js/app.js; do
+              want=$(sha256sum "$GITHUB_WORKSPACE/_site/$f" | cut -d' ' -f1)
+              got=$(curl -fsSL "https://sbmadhav.com/vedic-math/$f?deploy-check=${GITHUB_SHA}-${i}" | sha256sum | cut -d' ' -f1) || got=none
+              [ "$got" = "$want" ] || { ok=0; echo "Try $i: live $f is not this commit yet."; }
+            done
+            if [ $ok = 1 ]; then echo "Live Vedic Math matches this commit (try $i)."; exit 0; fi
             sleep 20
           done
-          echo "::warning::The live index.html still differs from this commit after about 15 minutes. Testing what is live."
+          echo "::warning::The live site still differs from this commit after about 15 minutes. Testing what is live."
 
       - uses: actions/setup-node@v5
         with:
