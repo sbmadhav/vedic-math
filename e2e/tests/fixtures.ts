@@ -156,6 +156,22 @@ export async function open(page: Page, hash = '#/') {
   await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
 }
 
+/** A fake clock that moves only when the test moves it (page.clock.runFor / fastForward). page.clock.install()
+    alone lets time keep flowing, so on a slow CI machine a 1.2 second wait can end before the test looks.
+    Call before opening the page. */
+export async function heldClock(page: Page) {
+  // On the live site analytics.js loads GoatCounter after an idle timer, then flushes its queue through
+  // window.goatcounter.count. The script is stubbed (blockAnalytics), so that throws, and under a fake clock it
+  // throws inside runFor / fastForward. A no-op counter keeps it quiet; nothing is sent either way.
+  await page.addInitScript(() => { (window as any).goatcounter ||= { count() {} }; });
+  await page.clock.install();
+  await page.clock.pauseAt(Date.now() + 1000);
+}
+
+/** Console errors from the app itself. On the live site GoatCounter's script is stubbed by blockAnalytics, so the
+    shared analytics.js can throw when it flushes its queue; that is not the app's error. */
+export const appErrors = (issues: Issues) => issues.console.filter(e => !/goatcounter/i.test(e));
+
 /** What the fake Firebase SDK saw (signs-ins, reads and writes the app attempted). */
 export async function cloudLog(page: Page): Promise<CloudLog> {
   return page.evaluate(() => (globalThis as any).__e2eCloud || { signIns: 0, authLoaded: false, reads: [], writes: [] });

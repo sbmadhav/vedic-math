@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog } from './fixtures';
+import { test, expect, APP, open, cloudLog, heldClock, appErrors } from './fixtures';
 
 /* Arena rounds start and take answers. Every test leaves before the 60 second round ends,
    so no score is ever submitted (and the fake SDK would record it if one were). */
@@ -129,7 +129,7 @@ async function practiceRound(page: import('@playwright/test').Page) {
 }
 
 test('second Arena round: keypad taps 1 then 2 enter 12', async ({ page, issues }) => {
-  await page.clock.install();
+  await heldClock(page);
   await open(page, '#/arena');
   await practiceRound(page);
   await endRound(page);
@@ -139,13 +139,13 @@ test('second Arena round: keypad taps 1 then 2 enter 12', async ({ page, issues 
   await page.locator('.ar-key[data-k="2"]').click();
   await expect(page.locator('#arEntry')).toHaveText('12');
   expect((await cloudLog(page)).writes).toEqual([]);
-  expect(issues.console, 'console errors').toEqual([]);
+  expect(appErrors(issues), 'console errors').toEqual([]);
 });
 
 test.describe('explorer, second round', () => {
   test.use({ seedMode: 'explorer' });
   test('one tap answers exactly one question', async ({ page }) => {
-    await page.clock.install();
+    await heldClock(page);
     await open(page, '#/arena');
     await practiceRound(page);
     await endRound(page);
@@ -160,7 +160,7 @@ test.describe('explorer, second round', () => {
 });
 
 test('challenge tower: Play again, then one keypad tap enters one digit', async ({ page }) => {
-  await page.clock.install();
+  await heldClock(page);
   await open(page, '#/challenge/1');
   await page.locator('#chGo').click();
   await page.clock.runFor(2000);
@@ -183,26 +183,27 @@ test('duel rematch: one right tap scores exactly 1', async ({ page, issues }) =>
     Math.random = () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   });
   await open(page, '#/duel');
+  // Seeding and building the set happen in one tick each, so nothing else draws a random number in between
   const answers = new Map(await page.evaluate(async () => {
-    (window as any).__seed(4242);
     const A = await import('/vedic-math/js/arena.js' as string);
+    (window as any).__seed(4242);
+    const set = A.makeSet('challenger', null, 120);
     const html = (h: string) => { const d = document.createElement('div'); d.innerHTML = h; return d.innerHTML; };
-    return A.makeSet('challenger', null, 120).map((q: { q: string; answer: number }) => [html(q.q), q.answer]);
+    return set.map((q: { q: string; answer: number }) => [html(q.q), q.answer]);
   }) as [string, number][]);
+  const start = () => page.evaluate(() => { (window as any).__seed(4242); (document.querySelector('#dGo') as HTMLElement).click(); });
   const tapRight = async () => {
     const q = await page.locator('#dQ0').innerHTML();
     expect(answers.has(q), `question ${q} is in the rebuilt set`).toBe(true);
     await page.locator(`.duel-p1 .ar-choice[data-v="${answers.get(q)}"]`).first().click();
   };
-  await page.evaluate(() => (window as any).__seed(4242));
-  await page.locator('#dGo').click();
+  await start();
   for (let i = 0; i < 10; i++) { await tapRight(); if (i < 9) await expect(page.locator('#dS0')).toHaveText(String(i + 1)); }
   await expect(page.locator('.ar-result')).toContainText('Player 1');
-  await page.evaluate(() => (window as any).__seed(4242));
-  await page.locator('#dGo').click();
+  await start();
   await expect(page.locator('#dS0')).toHaveText('0');
   await tapRight();
   await expect(page.locator('#dS0')).toHaveText('1');
   await expect(page.locator('#dS1')).toHaveText('0');
-  expect(issues.console, 'console errors').toEqual([]);
+  expect(appErrors(issues), 'console errors').toEqual([]);
 });

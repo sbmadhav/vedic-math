@@ -1,4 +1,4 @@
-import { test, expect, open, type Page } from './fixtures';
+import { test, expect, open, appErrors, type Page } from './fixtures';
 
 /* Answer checking and revealed answers in skill Practice (answer-checking and answer-display specs). */
 
@@ -123,7 +123,7 @@ test('after 5 Practice questions a symbol key inserts once and "Want a hint?" gi
   });
   expect(writes).toBe(1);
   await expect(box.locator('#prSay')).toContainText('Hint:');
-  expect(issues.console, 'console errors').toEqual([]);
+  expect(appErrors(issues), 'console errors').toEqual([]);
 });
 
 test('hundredths show a 10 by 10 grid with the right squares shaded, in both schemes', async ({ page }, testInfo) => {
