@@ -85,7 +85,7 @@ An Endless run: questions until three lives are lost, scored by how far the Play
 _Avoid_: first run, streak
 
 **Duel**:
-Two Players on one screen answering the same questions.
+Two Players on one screen racing the same question at the same time. The first right answer wins the point, and the first to 10 points wins.
 _Avoid_: versus, battle, multiplayer
 
 **Score**:
