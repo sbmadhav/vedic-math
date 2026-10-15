@@ -306,7 +306,7 @@ export const GAMES = [
     run(area, ctx) {
       const k = kit(ctx), { dial } = ctx; let boards = 0;
       const SETS = [
-        [1, () => { const n = ri(1, 10); return [String(n), `<span class="g-dotsm">${'&#9679;'.repeat(n)}</span>`]; }],
+        [1, () => { const n = ri(1, 10); return [String(n), `<span class="g-dotsm" role="img" aria-label="${n} dots">${'<i></i>'.repeat(n)}</span>`]; }],
         [4, () => { const a = ri(2, 10), b = ri(2, 10); return [`${a} &times; ${b}`, String(a * b)]; }],
         [8, () => { const n = ri(4, 25); return [`${n}<sup>2</sup>`, String(n * n)]; }],
         [11, () => { const n = ri(2, 12); return [`${n}<sup>3</sup>`, fmt(n ** 3)]; }],

@@ -91,6 +91,37 @@ for (const [id, g] of Object.entries(GAMES)) {
   });
 }
 
+test.describe('dot pictures', () => {
+  test.use({ seedMode: 'explorer' });
+
+test('Which is more: the dot pictures are centred in their buttons', async ({ page }) => {
+  await open(page, '#/game/more-less');
+  await page.locator('#gShell [data-m="endless"]').click();
+  await page.locator('#gStart').click();
+  await page.mouse.move(0, 0);
+  // early levels compare dots
+  const btn = page.locator('#gArea .g-more').first();
+  await expect(btn.locator('svg circle').first()).toBeVisible();
+  const off = await btn.evaluate(b => {
+    const r = b.getBoundingClientRect(), cs = [...b.querySelectorAll('svg circle')].map(c => c.getBoundingClientRect());
+    const x0 = Math.min(...cs.map(c => c.left)), x1 = Math.max(...cs.map(c => c.right));
+    const y0 = Math.min(...cs.map(c => c.top)), y1 = Math.max(...cs.map(c => c.bottom));
+    return { dx: Math.abs((x0 + x1) / 2 - (r.left + r.right) / 2), dy: Math.abs((y0 + y1) / 2 - (r.top + r.bottom) / 2) };
+  });
+  expect(off.dx).toBeLessThan(4);
+  expect(off.dy).toBeLessThan(4);
+});
+
+test('Memory: a dot card lays its dots out in rows of five', async ({ page }) => {
+  await open(page, '#/games');
+  // the card markup games.js builds for 8 dots, styled by the live math.css
+  await page.locator('#view').evaluate(v => v.insertAdjacentHTML('beforeend', '<button class="g-card up" style="width:110px"><span class="g-card-in"><span class="g-dotsm">' + '<i></i>'.repeat(8) + '</span></span></button>'));
+  const tops = await page.locator('.g-dotsm i').evaluateAll(is => is.map(i => Math.round(i.getBoundingClientRect().top)));
+  const rows = [...new Set(tops)].map(t => tops.filter(x => x === t).length);
+  expect(rows).toEqual([5, 3]);
+});
+});
+
 test('a ranked round shows the game leaderboards and starts the clock', async ({ page }) => {
   await open(page, '#/game/times-sprint');
   await expect(page.locator('#gbDay .lb-tabs [data-src="world"]')).toBeVisible();

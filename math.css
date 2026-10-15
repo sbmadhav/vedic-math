@@ -690,7 +690,8 @@ sup { font-size: .65em; }
 .g-card-in { display: block; opacity: 0; font: 600 1rem/1.25 var(--display); transition: opacity .2s; }
 .g-card.up, .g-card.got { background: var(--card); } .g-card.up .g-card-in, .g-card.got .g-card-in { opacity: 1; }
 .g-card.got { border-color: var(--teal-strong); background: color-mix(in srgb, var(--teal) 18%, var(--card)); }
-.g-dotsm { letter-spacing: 1px; color: var(--coral-strong); font-size: 12px; overflow-wrap: anywhere; }
+.g-dotsm { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 5px; max-width: 65px; vertical-align: middle; } /* rows of five */
+.g-dotsm i { width: 9px; height: 9px; border-radius: 50%; background: var(--coral-strong); }
 .g-rain { position: relative; height: 380px; border: 2px solid var(--edge); border-radius: var(--radius-lg); overflow: hidden; background: color-mix(in srgb, var(--sky) 10%, var(--card)); }
 .g-drop { position: absolute; top: 0; min-width: 52px; height: 52px; border-radius: 50%; border: 2px solid var(--edge); background: var(--card); color: var(--ink); font: 700 1.2rem/1 var(--display); cursor: pointer; touch-action: manipulation; }
 .g-drop.hit { background: var(--teal); } .g-drop.miss { background: var(--coral); }
