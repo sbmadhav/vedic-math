@@ -66,3 +66,39 @@ test('the parser is safe and strict', () => {
   assert.equal(evalNum('2^3^2'), 512);
   assert.equal(evalNum('1/0'), NaN);
 });
+
+test('mixed numbers', () => {
+  const m = { kind: 'num', answer: 1.75 };
+  ['1 3/4', ' 1  3/4 ', '1 3 / 4', '7/4', '1.75'].forEach(s => ok(m, s));
+  ['13/4', '1 3', '1 4/3'].forEach(s => no(m, s));
+  ok({ kind: 'num', answer: -2.5 }, '-2 1/2'); ok({ kind: 'num', answer: -2.5 }, '−2 1/2');
+  const n = { kind: 'num', answer: 1225 };
+  no(n, '1 225'); no(n, '12 25');
+  assert.match(checkOne(n, '1 225').msg, /Type a number/);
+  // simplest form: a mixed number in lowest terms is simplest, one that is not is refused
+  const f = { kind: 'num', answer: 7 / 6, simplest: true };
+  ok(f, '1 1/6'); no(f, '1 2/12');
+  assert.match(checkOne(f, '1 2/12').msg, /simplify/);
+});
+
+test('plain numbers only', () => {
+  const n = { kind: 'num', answer: 1225, plain: true };
+  ['1225', ' 1225 ', '1,225', '1225.0', '+1225'].forEach(s => ok(n, s));
+  ['44*72', '35^2', '35²', '1200+25', '3x', '(1225)', 'sqrt(1500625)'].forEach(s => {
+    const r = checkOne(n, s);
+    assert.equal(r.ok, false, s); assert.equal(r.notAnswer, true, `${s} should be refused as not an answer`);
+    assert.match(r.msg, /Type just the answer/);
+  });
+  assert.equal(checkOne({ kind: 'num', answer: 3168, plain: true }, '44*72').notAnswer, true);
+  ok({ kind: 'num', answer: 0.75, plain: true }, '3/4'); ok({ kind: 'num', answer: 0.75, plain: true }, '.75');
+  ok({ kind: 'num', answer: 1.75, plain: true }, '1 3/4'); ok({ kind: 'num', answer: -7, plain: true }, '-7'); ok({ kind: 'num', answer: -7, plain: true }, '−7');
+  // wrong plain numbers are ordinary misses, not refusals
+  const miss = checkOne(n, '1224'); assert.equal(miss.ok, false); assert.ok(!miss.notAnswer);
+  no(n, '1 225');
+  // simplest form behaves the same under plain
+  const f = { kind: 'num', answer: 7 / 6, simplest: true, plain: true };
+  ok(f, '7/6'); no(f, '14/12'); assert.match(checkOne(f, '14/12').msg, /simplify/); assert.match(checkOne(f, '1.1666667').msg, /fraction/);
+  // without plain, expressions with the right value still count (grade 9 and up)
+  ok({ kind: 'num', answer: 1225 }, '35^2');
+  ok({ kind: 'expr', vars: [], answer: '4sqrt(3)' }, '4sqrt(3)'); ok({ kind: 'expr', vars: [], answer: 'pi/6' }, 'π/6');
+});

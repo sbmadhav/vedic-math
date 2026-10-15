@@ -40,3 +40,18 @@
 ## Migration Plan
 
 Client-only, no stored data changes. Rollback is a revert.
+
+## Decisions made during implementation
+
+- **Proper fractions only in a mixed number.** `1 3/4` is rewritten to `(1+3/4)` only when the fraction part is proper; `2 5/4` keeps its digit, space, digit and is unreadable ("Type a number"), matching the spec's "a whole number followed by a space and a proper fraction".
+- **Mixed numbers and simplest form.** A mixed number counts as simplest when its fraction part is in lowest terms (`1 1/6` for 7/6 is right, `1 2/12` gets the "simplify" message).
+- **`1 225` on a plain spec is not an answer.** It is not a plain number, so it gets the "Type just the answer" message and is not a try, instead of a miss. On a non-plain spec it is still unreadable and a miss, as before.
+- **A leading `+` is allowed** in the plain pattern (`+1225`), as the "optional sign".
+- **Wording per Mode.** `check.js` returns `NOT_ANSWER` (Challenger wording) and the views show `fx.t()` wording for Explorer ("Type just the answer, like 7."), Challenger and Pro. All three contain "Type just the answer".
+- **Fields answers are not under the plain rule.** Two-field problems (the `div9` Kata quotient and remainder, point transformations) are checked field by field as `num` specs without `plain`; the spec only covers `num` problems. Left as is to keep the change small.
+- **`asDecimal` on `5-decops` too.** "Add, subtract and multiply decimals" is in the `frac` strand, so without the flag its answers would have been revealed as fractions (`3.75` as `15/4`). Both of its branches set `asDecimal: true`, like the "Write as a decimal" branch of `4-decimals`.
+- **One more generator key fixed: `11-inverse`.** Its key was `(x-(${b}))/(${a})`, which reads `(x − (−3))/(2)` for a negative `b`. The spec says each sign is written once, so it now uses an `inverseKey(a, b)` helper: `(x + 3)/2`, `x/(−2)`, and no `/1`. Checking by value is unchanged.
+- **`exprText()` tidies every algebra key.** Besides the factoring keys, the shared formatter collapses `+-`, `--`, `-+` and `++`, drops a 1 before a letter that is not part of a longer number, and spaces binary signs (`x − 1`). Keys from `polyText()` already had spaced signs, so they look the same.
+- **Tower items carry `simplest` and `asDecimal`** from their problem, so the tower reveal uses the same rule with the item's skill.
+- **E2E draws.** The Practice specs seed `Math.random` with `page.addInitScript`, read the question off the page and, if its sum is not above 1 (or the factoring draw has no negative root), use Show me and Next until one is; this keeps them stable if a generator changes how it uses randomness.
+- **Release check (5.1)** is ticked on the local run (unit tests, the full e2e suite against a production-like build); the live E2E run after the deploy is reported in the PR.

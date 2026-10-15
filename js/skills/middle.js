@@ -160,7 +160,7 @@ export default [
     gen() {
       const hund = Math.random() < .5, n = hund ? ri(1, 99) : ri(1, 9), d = hund ? 100 : 10, toDec = Math.random() < .5;
       const dec = (n / d).toFixed(hund ? 2 : 1);
-      return toDec ? { q: `Write ${frRaw(n, d)} as a decimal.`, kind: 'num', answer: n / d, hints: [hund ? 'Two places after the point for hundredths.' : 'One place after the point for tenths.'], steps: [`${frRaw(n, d)} = ${dec}`] }
+      return toDec ? { q: `Write ${frRaw(n, d)} as a decimal.`, kind: 'num', answer: n / d, asDecimal: true, hints: [hund ? 'Two places after the point for hundredths.' : 'One place after the point for tenths.'], steps: [`${frRaw(n, d)} = ${dec}`] }
         : { q: `${dec} = <span class="fr"><span>?</span><span>${d}</span></span>`, viz: V.fracBar(hund ? Math.round(n / 10) : n, 10), kind: 'num', answer: n, hints: [`Read it: ${dec} is ${n} ${hund ? 'hundredths' : 'tenths'}.`], steps: [`${dec} = ${frRaw(n, d)}`] };
     } },
   { id: '4-angles', grade: 4, strand: 'geo', title: 'Measure angles', kid: 'Angle hunter',
@@ -203,9 +203,9 @@ export default [
     method: ['Adding: line up the points and add place by place.', 'Multiplying: ignore the points, multiply, then put back as many decimal places as the factors had together.'],
     gen(lv) {
       const t = pick(lv === 1 ? ['add', 'sub'] : ['add', 'sub', 'mul']);
-      if (t === 'mul') { const a = ri(11, 99) / 10, b = ri(2, 9) / (Math.random() < .5 ? 1 : 10); const places = (String(a).split('.')[1] || '').length + (String(b).split('.')[1] || '').length; return { q: `${a} &times; ${b} = ?`, kind: 'num', answer: round(a * b, 4), hints: [`Multiply ${Math.round(a * 10 ** ((String(a).split('.')[1] || '').length))} &times; ${Math.round(b * 10 ** ((String(b).split('.')[1] || '').length))} first.`], steps: [`Then put back ${places} decimal place${places === 1 ? '' : 's'}: ${round(a * b, 4)}`] }; }
+      if (t === 'mul') { const a = ri(11, 99) / 10, b = ri(2, 9) / (Math.random() < .5 ? 1 : 10); const places = (String(a).split('.')[1] || '').length + (String(b).split('.')[1] || '').length; return { q: `${a} &times; ${b} = ?`, kind: 'num', answer: round(a * b, 4), asDecimal: true, hints: [`Multiply ${Math.round(a * 10 ** ((String(a).split('.')[1] || '').length))} &times; ${Math.round(b * 10 ** ((String(b).split('.')[1] || '').length))} first.`], steps: [`Then put back ${places} decimal place${places === 1 ? '' : 's'}: ${round(a * b, 4)}`] }; }
       const a = ri(100, 9999) / 100, b = ri(100, Math.floor(a * 100)) / 100, ans = round(t === 'add' ? a + b : a - b, 2);
-      return { q: `${a.toFixed(2)} ${t === 'add' ? '+' : '&minus;'} ${b.toFixed(2)} = ?`, kind: 'num', answer: ans, hints: ['Line up the decimal points.'], steps: [`${ans.toFixed(2)}`] };
+      return { q: `${a.toFixed(2)} ${t === 'add' ? '+' : '&minus;'} ${b.toFixed(2)} = ?`, kind: 'num', answer: ans, asDecimal: true, hints: ['Line up the decimal points.'], steps: [`${ans.toFixed(2)}`] };
     } },
   { id: '5-pow10', grade: 5, strand: 'number', title: 'Multiply and divide by powers of ten', kid: 'Slide the digits',
     idea: 'Multiplying by 10 slides every digit one place to the left. Dividing slides them right.',

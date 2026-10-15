@@ -4,6 +4,10 @@ import * as V from '../viz.js';
 
 const fact = n => (n <= 1 ? 1 : n * fact(n - 1));
 const nCr = (n, r) => fact(n) / (fact(r) * fact(n - r));
+/* A signed factor for answer keys: factor(1, -1) is (x - 1), factor(2, 3) is (2x + 3) */
+const factor = (a, p) => `(${a === 1 ? '' : a}x ${p < 0 ? '-' : '+'} ${Math.abs(p)})`;
+/* f(x) = ax + b inverts to (x - b)/a, written with one sign per gap */
+const inverseKey = (a, b) => { const top = b === 0 ? 'x' : `(x ${b < 0 ? '+' : '-'} ${Math.abs(b)})`; return a === 1 ? top : `${top}/${a < 0 ? `(${a})` : a}`; };
 const binom = (p, q) => `(<i>x</i> ${p < 0 ? '&minus;' : '+'} ${Math.abs(p)})(<i>x</i> ${q < 0 ? '&minus;' : '+'} ${Math.abs(q)})`;
 
 export default [
@@ -21,8 +25,8 @@ export default [
     method: ['List factor pairs of c (watch the signs).', 'Pick the pair that adds to b.', 'Write (x + p)(x + q).'],
     gen(lv) {
       const p = rnz(-9, 9), q = rnz(-9, 9), a = lv === 3 ? pick([2, 3]) : 1;
-      if (a > 1) return { q: `Factor: ${poly([a, a * q + p, p * q])}`, kind: 'expr', form: 'factored', answer: `(${a}x+${p})(x+${q})`, hints: [`AC method: find two numbers that multiply to ${a} &times; ${neg(p * q)} = ${neg(a * p * q)} and add to ${neg(a * q + p)}.`], steps: [`(${a}<i>x</i> ${p < 0 ? '&minus;' : '+'} ${Math.abs(p)})(<i>x</i> ${q < 0 ? '&minus;' : '+'} ${Math.abs(q)})`] };
-      return { q: `Factor: ${poly([1, p + q, p * q])}`, kind: 'expr', form: 'factored', answer: `(x+${p})(x+${q})`,
+      if (a > 1) return { q: `Factor: ${poly([a, a * q + p, p * q])}`, kind: 'expr', form: 'factored', answer: factor(a, p) + factor(1, q), hints: [`AC method: find two numbers that multiply to ${a} &times; ${neg(p * q)} = ${neg(a * p * q)} and add to ${neg(a * q + p)}.`], steps: [`(${a}<i>x</i> ${p < 0 ? '&minus;' : '+'} ${Math.abs(p)})(<i>x</i> ${q < 0 ? '&minus;' : '+'} ${Math.abs(q)})`] };
+      return { q: `Factor: ${poly([1, p + q, p * q])}`, kind: 'expr', form: 'factored', answer: factor(1, p) + factor(1, q),
         hints: [`Two numbers that multiply to ${neg(p * q)} and add to ${neg(p + q)}.`], steps: [`${neg(p)} &times; ${paren(q)} = ${neg(p * q)} and ${neg(p)} + ${paren(q)} = ${neg(p + q)}`, binom(p, q)] };
     } },
   { id: '9-quadsolve', grade: 9, strand: 'alg', title: 'Solve quadratics by factoring', kid: 'Zero product',
@@ -202,7 +206,7 @@ export default [
     method: ['Inverse: swap x and y, then solve for y.', 'Composite: work from the inside out.'],
     gen() {
       const a = rnz(-5, 5), b = ri(-9, 9);
-      if (Math.random() < .5) return { q: `<i>f</i>(<i>x</i>) = ${poly([a, b])}. Find <i>f</i><sup>&minus;1</sup>(<i>x</i>).`, kind: 'expr', answer: `(x-(${b}))/(${a})`, hints: [`Swap: <i>x</i> = ${neg(a)}<i>y</i> ${b < 0 ? '&minus;' : '+'} ${Math.abs(b)}. Solve for y.`], steps: [`<i>f</i><sup>&minus;1</sup>(<i>x</i>) = (<i>x</i> ${b < 0 ? '+' : '&minus;'} ${Math.abs(b)}) &divide; ${paren(a)}`] };
+      if (Math.random() < .5) return { q: `<i>f</i>(<i>x</i>) = ${poly([a, b])}. Find <i>f</i><sup>&minus;1</sup>(<i>x</i>).`, kind: 'expr', answer: inverseKey(a, b), hints: [`Swap: <i>x</i> = ${neg(a)}<i>y</i> ${b < 0 ? '&minus;' : '+'} ${Math.abs(b)}. Solve for y.`], steps: [`<i>f</i><sup>&minus;1</sup>(<i>x</i>) = (<i>x</i> ${b < 0 ? '+' : '&minus;'} ${Math.abs(b)}) &divide; ${paren(a)}`] };
       const c = rnz(-3, 3), d = ri(-5, 5), x = ri(-4, 4), g = c * x + d;
       return { q: `<i>f</i>(<i>x</i>) = ${poly([a, b])} and <i>g</i>(<i>x</i>) = ${poly([c, d])}. Find <i>f</i>(<i>g</i>(${neg(x)})).`, kind: 'num', answer: a * g + b, hints: [`First <i>g</i>(${neg(x)}) = ${neg(g)}.`], steps: [`<i>g</i>(${neg(x)}) = ${neg(g)}`, `<i>f</i>(${neg(g)}) = ${neg(a * g + b)}`] };
     } },

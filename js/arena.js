@@ -2,6 +2,7 @@
    and the two-player Duel on one device. */
 import { byId } from './skills/index.js';
 import { checkOne } from './check.js';
+import { answerText } from './answers.js';
 import { shuffle } from './lib.js';
 import { sfx, speak, confetti } from './fx.js';
 
@@ -129,7 +130,7 @@ export function runChallenge(root, ch, set, { onEnd, tap = false }) {
     if (over) return;
     const p = set[i], ok = p.kind === 'choice' ? String(v) === String(p.answer) : checkOne({ kind: 'num', answer: p.answer, tol: 1e-6 }, String(v)).ok;
     if (ok) { combo++; right++; const gain = 10 + Math.min(combo - 1, 10) * 2; score += gain; sfx('ok'); pop('+' + gain, true); $('#arFix').textContent = ''; if (combo % 5 === 0) confetti(30); }
-    else { combo = 0; wrong++; sfx('no'); pop('', false); $('#arFix').innerHTML = `Answer: <b>${p.kind === 'choice' ? p.answer : Math.round(p.answer * 1e6) / 1e6}</b>${p.steps && p.steps[0] ? ` · ${p.steps[0]}` : ''}`; if (ch.lives) lives--; }
+    else { combo = 0; wrong++; sfx('no'); pop('', false); $('#arFix').innerHTML = `Answer: <b>${p.kind === 'choice' ? p.answer : answerText(p, byId[p.skill])}</b>${p.steps && p.steps[0] ? ` · ${p.steps[0]}` : ''}`; if (ch.lives) lives--; }
     $('#arScore').textContent = ch.goal === 'points' ? score : right; $('#arCombo').innerHTML = combo >= 2 ? `<b>${combo}x</b> combo` : '';
     if (ch.lives) $('#arTime').innerHTML = lives > 0 ? '&#9679;'.repeat(lives) : '0';
     i++;
