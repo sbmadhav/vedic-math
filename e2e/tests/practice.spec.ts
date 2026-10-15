@@ -124,6 +124,7 @@ test('after 5 Practice questions a symbol key inserts once and "Want a hint?" gi
   expect(writes).toBe(1);
   await expect(box.locator('#prSay')).toContainText('Hint:');
   expect(issues.console, 'console errors').toEqual([]);
+});
 
 test('hundredths show a 10 by 10 grid with the right squares shaded, in both schemes', async ({ page }, testInfo) => {
   await seedRandom(page, 5);
