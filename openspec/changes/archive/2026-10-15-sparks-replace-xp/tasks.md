@@ -34,4 +34,4 @@ Prerequisites: none. This is the first Star Quest change; land it before `star-r
 
 ## 6. Release check
 
-- [ ] 6.1 `node --test 'test/**/*.test.{js,mjs}'`, the build, and `cd e2e && npx playwright test` against a local server pass; after deploy, the live E2E run is green and a Player with old progress (seeded in a manual check) shows the same Title, Sparks equal to the old XP, and Medals.
+- [x] 6.1 `node --test 'test/**/*.test.{js,mjs}'`, the build, and `cd e2e && npx playwright test` against a local server pass; after deploy, the live E2E run is green and a Player with old progress (seeded in a manual check) shows the same Title, Sparks equal to the old XP, and Medals.
