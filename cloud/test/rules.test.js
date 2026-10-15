@@ -178,14 +178,35 @@ test('get: only your own entry, including a missing one (checked before the firs
   await assertFails(getDoc(doc(db(null), 'boards', BOARD, 'scores', BOB)));
 });
 
-test('list: signed-in top-20 queries only', async () => {
+test('list: top-20 queries only, signed in or not', async () => {
   const scores = uid => collection(db(uid), 'boards', WEEK, 'scores');
   await assertSucceeds(getDocs(query(scores(ALICE), orderBy('score', 'desc'), limit(20))));
   await assertSucceeds(getDocs(query(scores(ALICE), orderBy('score', 'desc'), limit(5))));
   await assertFails(getDocs(query(scores(ALICE), orderBy('score', 'desc'), limit(21))));
   await assertFails(getDocs(scores(ALICE)));
-  await assertFails(getDocs(query(scores(null), orderBy('score', 'desc'), limit(20))));
   await assertFails(getDocs(query(collection(db(ALICE), 'boards', 'daily-2026-10-12-legend', 'scores'), limit(20))));
+});
+
+test('signed out: top-20 lists of a valid Board work; bigger, unlimited and invalid queries, gets and writes are refused', async () => {
+  // Viewing a World board needs no identity (docs/adr/0002); writes still do.
+  await seed(BOARD, BOB, old());
+  const scores = (board = BOARD) => collection(db(null), 'boards', board, 'scores');
+  const snap = await assertSucceeds(getDocs(query(scores(), orderBy('score', 'desc'), limit(20))));
+  assert.equal(snap.size, 1);
+  assert.deepEqual(Object.keys(snap.docs[0].data()).sort(), ['avatar', 'exp', 'name', 'score', 'ts']);
+  await assertSucceeds(getDocs(query(scores(`xp-week-${weekId(NOW)}-explorer`), orderBy('score', 'desc'), limit(20))));
+  await assertSucceeds(getDocs(query(scores(`g_rain-daily-${dayId(NOW)}-pro`), orderBy('score', 'desc'), limit(20))));
+  await assertFails(getDocs(query(scores(), orderBy('score', 'desc'), limit(21))));
+  await assertFails(getDocs(scores()));
+  for (const b of [`daily-${dayId(NOW)}-legend`, 'monthly-2026-10-pro', `g_chess-daily-${dayId(NOW)}-pro`]) {
+    await assertFails(getDocs(query(scores(b), orderBy('score', 'desc'), limit(20))), b);
+  }
+  await assertFails(getDoc(doc(db(null), 'boards', BOARD, 'scores', BOB)));
+  await assertFails(getDocs(query(collection(db(null), 'boards'), limit(5))));
+  await assertFails(setDoc(doc(db(null), 'boards', BOARD, 'scores', ALICE), ok()));
+  await assertFails(setDoc(doc(db(null), 'boards', BOARD, 'scores', BOB), ok({ score: 500 })));
+  await assertFails(updateDoc(doc(db(null), 'boards', BOARD, 'scores', BOB), { score: 500, ts: serverTimestamp() }));
+  await assertFails(deleteDoc(doc(db(null), 'boards', BOARD, 'scores', BOB)));
 });
 
 test('reads and writes of other paths rejected', async () => {
