@@ -53,7 +53,7 @@ Content corrections, bug fixes and accessibility improvements are welcome. See [
 
 ## License
 
-[MIT](LICENSE).
+[MIT](LICENSE), including the lessons and games. The name Madhav Srinivasan and his likeness are not licensed; see [LICENSE-CONTENT.md](LICENSE-CONTENT.md).
 
 ## Thank you, Claude
 
