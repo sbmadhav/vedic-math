@@ -19,9 +19,13 @@ export const FIREBASE_SDK = /^https:\/\/www\.gstatic\.com\/firebasejs\//;
 export const FIREBASE_AUTH = /^https:\/\/(identitytoolkit|securetoken)\.googleapis\.com\//;
 export const FIRESTORE = /^https:\/\/firestore\.googleapis\.com\//;
 
+/* GoatCounter's count.js defines window.goatcounter.count, and the shared /assets/analytics.js flushes its
+   queue through it once count.js loads. The local answer has to define it too (as a no-op), or that flush
+   throws on the live site: as a page error, and inside page.clock.runFor under a fake clock. Nothing is sent. */
+const NO_OP_COUNTER = '/* analytics blocked in tests */ window.goatcounter = window.goatcounter || {}; if (typeof window.goatcounter.count !== "function") window.goatcounter.count = function () {};';
 export async function blockAnalytics(ctx: BrowserContext | Page) {
   await ctx.route(ANALYTICS, route =>
-    route.fulfill({ status: 200, contentType: 'text/javascript', body: '/* analytics blocked in tests */' }));
+    route.fulfill({ status: 200, contentType: 'text/javascript', body: NO_OP_COUNTER }));
 }
 
 /** True for a request that could change production Firestore data. */
@@ -97,6 +101,8 @@ export const test = base.extend<Fixtures>({
 
   context: async ({ context, seedMode, seedConsent }, use) => {
     await blockAnalytics(context);
+    // The same no-op counter from the start, for pages whose queue flushes before the local count.js answer runs
+    await context.addInitScript(() => { const w = window as any; w.goatcounter ||= {}; if (typeof w.goatcounter.count !== 'function') w.goatcounter.count = () => {}; });
     // A returning player with a mode, sound off. Only on an empty profile, so reloads keep progress.
     await context.addInitScript(([mode, consent]) => {
       try {
