@@ -699,3 +699,27 @@ sup { font-size: .65em; }
 .g-big-auto { font-size: clamp(1.4rem, 5vw, 2.4rem); }
 .g-line-zone { position: absolute; top: -8px; height: 20px; background: color-mix(in srgb, var(--teal) 35%, transparent); border-radius: 4px; }
 .g-result .mq-small { margin-top: 8px; }
+
+/* Age question sheet and the World boards card on the Me page (posting consent) */
+.vm-sheet { width: min(520px, 94vw); max-height: 94dvh; padding: var(--space-4) var(--space-5); border: 2px solid var(--edge); border-radius: var(--radius-xl); background: var(--card); color: var(--ink); box-shadow: var(--shadow-card); overflow: auto; }
+.vm-sheet::backdrop { background: color-mix(in srgb, var(--bg) 55%, transparent); backdrop-filter: blur(4px); }
+.vm-sheet[open] { animation: toastIn .3s cubic-bezier(.5,1.4,.5,1); }
+.vs-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.vs-head h2 { font: 600 1.3rem/1.25 var(--display); margin: 0; }
+.vs-head .vp-x svg { width: 22px; height: 22px; }
+.vs-sub { color: var(--ink-muted); margin: 8px 0 14px; line-height: 1.5; }
+.vs-ages { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; }
+.vs-ages .md-chip { min-height: 44px; }
+.vs-foot { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin: 16px 0 0; }
+.vs-foot a { text-decoration: none; }
+.wb-card { display: grid; gap: 10px; }
+.wb-card p { margin: 0; line-height: 1.5; }
+.wb-check { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-md); }
+.wb-check label { line-height: 1.5; }
+.wb-words { font-style: italic; }
+.wb-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.wb-row input { font: 600 16px/1.2 var(--font-sans); padding: 8px 12px; border: 2px solid var(--edge); border-radius: var(--radius-md); background: var(--card); color: var(--ink); width: 10ch; }
+.wb-err { color: var(--coral-strong); font-weight: 700; min-height: 1.2em; }
+.wb-card .md-switch { justify-self: start; }
+.pn-now { margin-top: 8px; }
+@media (prefers-reduced-motion: reduce) { .vm-sheet[open] { animation: none; } .wb-card .md-switch .md-knob, .wb-card .md-switch .md-track { transition: none; } }
