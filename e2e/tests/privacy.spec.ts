@@ -22,7 +22,11 @@ const REQUIRED = [
   'Nothing is posted for a player under 13 until a grown-up turns on World boards for them on this device (Me page, World boards), and it can be turned off there at any time.',
   // identity
   'No identity exists until the first post: looking at World boards needs no sign-in.',
-  'Every player on this device posts under that one ID, so they share one entry per board.',
+  // one identity per Player (board-identity spec), and what removing a Player does
+  'Firebase gives that player their own random ID on this browser and keeps it with the dates it was created and last used.',
+  'Each player on this device who posts has their own ID and their own entry on each board.',
+  'Removing a player on the Me page forgets their ID on this device; entries',
+  'already posted stay until',
   // fields and keeping
   'Each entry holds exactly: the made-up nickname (picked from fixed word lists, never typed), an avatar color, the best score, the time it was saved, and the time it expires.',
   'No names, emails, ages, photos or typed text are ever collected',
@@ -39,6 +43,9 @@ async function expectNote(page: import('@playwright/test').Page, summary: string
   if (now) await expect(note.locator('.pn-now')).toHaveText(now);
   // Practice is never described as staying on the device without its XP counting
   await expect(note).not.toContainText('practice and endless rounds');
+  // The ID belongs to one Player, not to the browser
+  await expect(note).not.toContainText('gives this browser');
+  await expect(note).not.toContainText('share one entry');
   await expect(note.getByRole('link', { name: 'LinkedIn' })).toHaveAttribute('href', 'https://www.linkedin.com/in/sbmadhav/');
   return note;
 }
@@ -253,5 +260,105 @@ test.describe('a Player who may not post', () => {
     expect(log.writes).toEqual([]);
     expect(log.signIns).toBe(0);
     expect(log.authLoaded).toBe(false);
+  });
+});
+
+/* ---------- One identity per Player (openspec board-identity) ----------
+   Two Players on one device, both grown-ups. The fake SDK keeps one session per Firebase app, so each
+   Player's writes carry their own uid: 'e2e-fake-uid' for the first Player (p1, the default app) and
+   'e2e-fake-vm-<id>' for any other. */
+const PB = 'pbtest1', UID_A = 'e2e-fake-uid', UID_B = `e2e-fake-vm-${PB}`;
+const boardIds = (page: import('@playwright/test').Page) => page.evaluate(async () => {
+  const cloud = await import('/vedic-math/js/cloud.js' as string);
+  return { day: cloud.dayId() as string, wk: cloud.weekId() as string };
+});
+const sent = async (page: import('@playwright/test').Page) => (await cloudLog(page)).writes;
+const B = { id: PB, name: 'Lucky Otter 17', avatar: 'plum', mode: 'challenger', created: 1, age: 'adult' };
+/** Adds Player B (a grown-up, Challenger unless told otherwise) to the seeded device, once, before the page loads. */
+async function seedSecondPlayer(page: import('@playwright/test').Page, extra: Record<string, unknown> = {}, more: Record<string, string> = {}) {
+  await page.addInitScript(([b, more]) => {
+    if (localStorage.getItem('e2e.seeded2')) return;
+    localStorage.setItem('e2e.seeded2', '1');
+    const P = JSON.parse(localStorage.getItem('vm.players')!);
+    P.list.push(b); localStorage.setItem('vm.players', JSON.stringify(P));
+    for (const [k, v] of Object.entries(more)) localStorage.setItem(k, v);
+  }, [{ ...B, ...extra }, more] as const);
+}
+const switchTo = (page: import('@playwright/test').Page, id: string) => page.evaluate(async id => {
+  (await import('/vedic-math/js/store.js' as string)).switchPlayer(id);
+}, id);
+
+test.describe('two Players on one device', () => {
+  test.use({ seedConsent: { age: 'adult' } });
+
+  test('each Player\'s Arena Daily challenge goes under their own identity, with their own Nickname', async ({ page }, testInfo) => {
+    chromiumOnly(testInfo, 'app logic, the same in every engine');
+    test.slow(); // two full 60 second rounds on the fake clock take about 20 seconds each
+    await seedSecondPlayer(page);
+    await page.clock.install();
+    await open(page, '#/arena');
+    const { day, wk } = await boardIds(page);
+    const answer = await page.evaluate(async seed => (await import('/vedic-math/js/arena.js' as string)).makeSet('challenger', seed)[0].answer, `daily-${day}-challenger`);
+    const play = async () => {
+      await page.locator('#arGo').click();
+      await page.clock.runFor(2_500);
+      await page.locator('#arType').fill(String(answer));
+      await page.locator('#arForm button').click();
+      await expect(page.locator('#arScore')).toHaveText('10');
+      await page.clock.runFor(61_000);
+      await expect(page.locator('.ar-result')).toBeVisible();
+    };
+    await play();
+    await expect.poll(async () => (await sent(page)).length).toBe(2);
+    // Player B takes over the device and plays the same Daily challenge
+    await switchTo(page, PB);
+    await page.goto(`${APP}#/me`);
+    await page.goto(`${APP}#/arena`);
+    await expect(page.locator('#arGo')).toBeVisible();
+    await play();
+    await expect.poll(async () => (await sent(page)).length).toBe(4);
+    const w = await sent(page);
+    const by = (uid: string) => w.filter(x => x.path.endsWith('/' + uid));
+    expect(by(UID_A).map(x => x.path).sort()).toEqual([`boards/daily-${day}-challenger/scores/${UID_A}`, `boards/week-${wk}-challenger/scores/${UID_A}`]);
+    expect(by(UID_B).map(x => x.path).sort()).toEqual([`boards/daily-${day}-challenger/scores/${UID_B}`, `boards/week-${wk}-challenger/scores/${UID_B}`]);
+    for (const x of by(UID_A)) expect(x.data).toMatchObject({ name: 'Swift Tiger 42', avatar: 'teal' });
+    for (const x of by(UID_B)) expect(x.data).toMatchObject({ name: 'Lucky Otter 17', avatar: 'plum' });
+    expect((await cloudLog(page)).signIns).toBe(2);
+  });
+
+  test('XP earned by A and posted after a switch to B goes out as A\'s own total, under A\'s identity', async ({ page }, testInfo) => {
+    chromiumOnly(testInfo, 'app logic, the same in every engine');
+    await seedSecondPlayer(page, { mode: 'pro' });
+    await page.clock.install();
+    await open(page, '#/sutras');
+    const { wk } = await boardIds(page);
+    await page.locator('.sutra-card .sutra-face').nth(0).click();
+    await page.locator('.sutra-card .sutra-face').nth(1).click(); // 10 XP for A: the post is due in 3 seconds
+    await switchTo(page, PB);
+    await page.clock.runFor(3_500);
+    await expect.poll(async () => (await sent(page)).length).toBe(1);
+    const [x] = await sent(page);
+    expect(x.path).toBe(`boards/xp-week-${wk}-challenger/scores/${UID_A}`); // A's League, A's uid
+    expect(x.data).toMatchObject({ name: 'Swift Tiger 42', score: 10 });
+    const log = await cloudLog(page);
+    expect(log.apps).not.toContain(`vm-${PB}`); // B has earned nothing and posted nothing: no identity
+    expect(log.signIns).toBe(1);
+  });
+
+  test('"me" on a World board follows the active Player', async ({ page }) => {
+    await seedSecondPlayer(page, {}, { 'vm.cloudUids': JSON.stringify({ p1: UID_A, [PB]: UID_B }) });
+    await page.addInitScript(([a, b]) => { (globalThis as any).__e2eRows = [[a, 'Swift Tiger 42', 400], [b, 'Lucky Otter 17', 300], ['someone', 'Brave Panda 12', 200]]; }, [UID_A, UID_B] as const);
+    await open(page, '#/arena');
+    await expect(page.locator('#lbDay li.me')).toHaveCount(1);
+    await expect(page.locator('#lbDay li.me .lb-name')).toHaveText('Swift Tiger 42');
+    await open(page, '#/me');
+    await page.locator(`[data-switch="${PB}"]`).click();
+    await expect(page.locator('#view h1')).toHaveText('Lucky Otter 17');
+    await open(page, '#/arena');
+    await expect(page.locator('#lbDay li.me')).toHaveCount(1);
+    await expect(page.locator('#lbDay li.me .lb-name')).toHaveText('Lucky Otter 17');
+    const log = await cloudLog(page);
+    expect(log.authLoaded).toBe(false);
+    expect(log.signIns).toBe(0);
   });
 });
