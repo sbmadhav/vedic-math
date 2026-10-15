@@ -8,7 +8,7 @@ This repo does not contain the design system, fonts or site chrome. `index.html`
 
 - `/design-system/tokens.css` and `/design-system/components.css`
 - `/assets/explore.js` (site-wide Explore menu) and `/assets/analytics.js` (GoatCounter)
-- `/assets/fonts/*.woff2`, `/assets/icons/apple-touch-icon.png`, `/manifest.webmanifest`
+- `/assets/fonts/*.woff2` and `/assets/icons/*.png` (the touch icon, and the icons this repo's own `manifest.webmanifest` lists)
 
 They are not `?v=` stamped (this repo cannot hash them). Do not copy them in; change them where they live.
 
@@ -28,7 +28,16 @@ They are not `?v=` stamped (this repo cannot hash them). Do not copy them in; ch
 - Tests: `node --test 'test/**/*.test.{js,mjs}'`.
 - Pre-commit hook in `.githooks/pre-commit` runs the build (fails if it changed a file: stage and commit again) and the tests. Enable once per clone: `git config core.hooksPath .githooks`.
 - `.github/workflows/ci.yml` runs the same checks on pushes and pull requests to `main`.
-- Repo-only files are listed in `exclude` in `_config.yml` (`cloud/`, `test/`, `docs/`, this file, the README, `build.py`). Add new ones there.
+
+## End-to-end tests (`e2e/`)
+
+- Every change that affects behavior updates or adds the matching Playwright test in `e2e/` in the same commit. Run `cd e2e && npx playwright test` before pushing (`BASE_URL=http://localhost:8124` for a local server: `node e2e/local-server.mjs 8124` serves this checkout at `/vedic-math/` and proxies the rest of the site from https://sbmadhav.com).
+- The suite targets the LIVE https://sbmadhav.com/vedic-math/ by default (projects chromium, webkit, mobile). First run: `cd e2e && npm ci && npx playwright install chromium webkit`.
+- Never write to production Firestore from a test. `e2e/tests/fixtures.ts` replaces the Firebase SDK with a fake that records attempted writes (`cloudLog(page)`), and aborts and fails the test on any write-shaped request to `firestore.googleapis.com`. Only `leaderboard.live.spec.ts` loads the real SDK (one anonymous sign-in, reads only, chromium, no retries). Never submit an Arena or game score against the live backend.
+- The service worker is blocked (`serviceWorkers: 'block'` in `e2e/playwright.config.ts`) everywhere except `e2e/tests/offline.spec.ts`. Two reasons: Playwright WebKit does not route requests from a worker-controlled page, so the fake SDK and the local GoatCounter answer are bypassed there (real anonymous sign-ins, counted visits); and a worker installing in every fresh test context roughly doubles the requests and gets the IP rate limited by GitHub Pages (HTTP 429, every test then times out). Keep offline specs off WebKit and keep their tripwire for live Google backends.
+- Known axe violations go in `KNOWN` in `e2e/tests/a11y.spec.ts` (each becomes a `test.fixme` with a note); remove the entry when fixed.
+- `.github/workflows/e2e.yml` runs the suite daily, on demand (optional `base_url`) and on pushes to `main` (after waiting for the Pages deploy).
+- Repo-only files are listed in `exclude` in `_config.yml` (`cloud/`, `test/`, `docs/`, `e2e/`, this file, the README, `build.py`). Add new ones there.
 
 ## Offline
 

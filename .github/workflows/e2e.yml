@@ -1,0 +1,71 @@
+name: E2E (live site)
+
+# Playwright end-to-end tests against the LIVE https://sbmadhav.com/vedic-math/ and its real
+# dependencies (main-site design system, fonts, Explore menu, Firebase reads). Production Firestore
+# is never written to: the suite aborts and fails on any write-shaped request (e2e/tests/fixtures.ts).
+# No pull_request trigger: a PR is not live yet. No secrets.
+
+on:
+  schedule:
+    - cron: '23 6 * * *'
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'Site to test (default https://sbmadhav.com)'
+        required: false
+        default: ''
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: e2e
+    env:
+      BASE_URL: ${{ inputs.base_url || 'https://sbmadhav.com' }}
+    steps:
+      - uses: actions/checkout@v6
+
+      # On a push, GitHub Pages deploys in the background. Wait until the live index.html matches the
+      # committed one (build.py stamps every module hash into it, so it changes with any shipped change).
+      - name: Wait for the Pages deploy
+        if: github.event_name == 'push'
+        run: |
+          want=$(sha256sum ../index.html | cut -d' ' -f1)
+          for i in $(seq 1 45); do
+            got=$(curl -fsSL "https://sbmadhav.com/vedic-math/index.html?deploy-check=${GITHUB_SHA}-${i}" | sha256sum | cut -d' ' -f1) || got=none
+            if [ "$got" = "$want" ]; then echo "Live index.html matches this commit (try $i)."; exit 0; fi
+            echo "Try $i: live index.html is not this commit yet; waiting 20s."
+            sleep 20
+          done
+          echo "::warning::The live index.html still differs from this commit after about 15 minutes. Testing what is live."
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium webkit
+
+      - name: Playwright tests
+        run: npx playwright test
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: e2e/playwright-report
+          retention-days: 14
