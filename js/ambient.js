@@ -3,7 +3,9 @@
    Himalayan dawn pad, temple chimes). Music never starts on its own and pauses when the tab is hidden.
    Everything is drawn and synthesized in the browser: no audio files, no extra downloads. */
 
-const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* Reduced motion: the device setting, or Pause motion in the site's Explore menu (html.motion-paused, WCAG 2.2.2).
+   Either one, or this page's own Moving background switch, stops the background. */
+const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.classList.contains('motion-paused');
 const pref = (k, d) => { try { const v = localStorage.getItem('vm.' + k); return v === null ? d : v; } catch (e) { return d; } };
 const setPref = (k, v) => { try { localStorage.setItem('vm.' + k, v); } catch (e) {} };
 
@@ -151,7 +153,12 @@ function startBg() {
   const vis = () => { if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else if (!raf && !reduced()) { last = performance.now(); raf = requestAnimationFrame(frame); } };
   document.addEventListener('visibilitychange', vis);
   if (reduced()) { t = 40; cStart = 0; mStart = 0; draw(0); } else raf = requestAnimationFrame(frame);
-  const mo = new MutationObserver(() => { if (reduced()) draw(0); }); mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  /* Theme changes redraw a still frame; Pause motion (the class on <html>) stops or restarts the loop live */
+  const mo = new MutationObserver(() => {
+    if (reduced()) { cancelAnimationFrame(raf); raf = 0; draw(0); }
+    else if (!raf && !document.hidden) { last = performance.now(); raf = requestAnimationFrame(frame); }
+  });
+  mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
   bg = () => { cancelAnimationFrame(raf); removeEventListener('resize', size); document.removeEventListener('visibilitychange', vis); mo.disconnect(); c.remove(); bg = null; };
 }
 function stopBg() { if (bg) bg(); }

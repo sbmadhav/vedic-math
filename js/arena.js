@@ -91,7 +91,7 @@ export function runArena(root, { league, day = null, dial, signal, onEnd }) {
     <div class="ar-top"><div class="ar-score"><small>Score</small><b id="arScore">0</b></div><div class="ar-combo" id="arCombo" aria-live="polite"></div><div class="ar-time"><small>Time</small><b id="arTime">${ROUND_SECS}</b></div></div>
     <div class="g-timer ar-bar"><span id="arBar"></span></div>
     <div class="ar-q" id="arQ" aria-live="polite"></div><div class="ar-viz" id="arViz"></div>
-    <div id="arIn"></div><div class="ar-pop" id="arPop" aria-hidden="true"></div></div>`;
+    <div id="arIn"></div><div class="ar-pop" id="arPop" aria-hidden="true"></div><p class="vm-sr" id="arSay" role="status"></p></div>`;
   const $ = s => root.querySelector(s);
   const show = () => {
     const p = at(), qEl = $('#arQ');
@@ -111,6 +111,8 @@ export function runArena(root, { league, day = null, dial, signal, onEnd }) {
     if (dial) dial.hit(ok);
     if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); const gain = 10 + Math.min(combo - 1, 10) * 2; score += gain; right++; sfx('ok'); pop('+' + gain, true); if (combo % 5 === 0) confetti(30); }
     else { combo = 0; wrong++; sfx('no'); pop(String(p.answer), false); }
+    /* The pop is visual only; screen readers get one short status message per answer (WCAG 4.1.3) */
+    $('#arSay').textContent = ok ? `Right, plus ${10 + Math.min(combo - 1, 10) * 2}. Score ${score}.` : `Not quite. It was ${p.answer}.`;
     $('#arScore').textContent = score; $('#arCombo').innerHTML = combo >= 2 ? `<b>${combo}x</b> combo` : '';
     i++; if (!set) cur = draw(); show();
   };
@@ -205,7 +207,7 @@ export function runChallenge(root, ch, set, { onEnd, tap = false, signal }) {
       <div class="ar-time"><small>${ch.secs ? 'Time' : ch.lives ? 'Lives' : 'Question'}</small><b id="arTime">${ch.secs || (ch.lives ? '&#9679;'.repeat(lives) : `1/${total}`)}</b></div></div>
     ${ch.secs ? '<div class="g-timer ar-bar"><span id="arBar"></span></div>' : ''}
     <div class="ar-q" id="arQ" aria-live="polite"></div><div class="ar-viz" id="arViz"></div>
-    <div id="arIn"></div><p class="ar-fix" id="arFix" aria-live="polite"></p><div class="ar-pop" id="arPop" aria-hidden="true"></div></div>`;
+    <div id="arIn"></div><p class="ar-fix" id="arFix" aria-live="polite"></p><div class="ar-pop" id="arPop" aria-hidden="true"></div><p class="vm-sr" id="arSay" role="status"></p></div>`;
   const $ = s => root.querySelector(s);
   const finish = () => { if (over) return; over = true; round.abort(); onEnd({ score, right, wrong, secs: Math.round(secs()), finished: right + wrong >= total || ch.goal !== 'seconds' ? true : false }); };
   const show = () => {
@@ -228,6 +230,8 @@ export function runChallenge(root, ch, set, { onEnd, tap = false, signal }) {
     const p = set[i], ok = p.kind === 'choice' ? String(v) === String(p.answer) : checkOne({ kind: 'num', answer: p.answer, tol: 1e-6 }, String(v)).ok;
     if (ok) { combo++; right++; const gain = 10 + Math.min(combo - 1, 10) * 2; score += gain; sfx('ok'); pop('+' + gain, true); $('#arFix').textContent = ''; if (combo % 5 === 0) confetti(30); }
     else { combo = 0; wrong++; sfx('no'); pop('', false); $('#arFix').innerHTML = `Answer: <b>${p.kind === 'choice' ? p.answer : answerText(p, byId[p.skill])}</b>${p.steps && p.steps[0] ? ` · ${p.steps[0]}` : ''}`; if (ch.lives) lives--; }
+    /* One short status message per answer (WCAG 4.1.3); a miss is read from the answer line (#arFix) instead */
+    $('#arSay').textContent = ok ? `Right, plus ${10 + Math.min(combo - 1, 10) * 2}. Score ${score}.` : '';
     $('#arScore').textContent = ch.goal === 'points' ? score : right; $('#arCombo').innerHTML = combo >= 2 ? `<b>${combo}x</b> combo` : '';
     if (ch.lives) $('#arTime').innerHTML = lives > 0 ? '&#9679;'.repeat(lives) : '0';
     i++;
