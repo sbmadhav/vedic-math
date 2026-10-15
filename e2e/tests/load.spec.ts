@@ -145,3 +145,29 @@ test.describe('color schemes', () => {
     expect(await page.evaluate(() => localStorage.getItem('theme'))).toBe('');
   });
 });
+
+/* Stable layout (page-layout spec): on a phone-sized first load, cumulative layout shift stays below 0.1. */
+test('home first load on a phone: cumulative layout shift below 0.1', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'measured on the phone project');
+  await page.addInitScript(() => {
+    (window as any).__cls = 0;
+    try {
+      new PerformanceObserver(list => { for (const e of list.getEntries() as any[]) if (!e.hadRecentInput) (window as any).__cls += e.value; })
+        .observe({ type: 'layout-shift', buffered: true });
+    } catch (e) { (window as any).__cls = -1; }
+  });
+  // A slow phone on a slow network (Lighthouse-like), so late module loads would show as shifts
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Network.enable');
+  await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: 150, downloadThroughput: 1.6e6 / 8, uploadThroughput: 750e3 / 8 });
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+  await page.goto(APP);
+  await expect(page.locator('#view h1').first()).toBeVisible({ timeout: 30_000 });
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(500);
+  const cls = await page.evaluate(() => (window as any).__cls as number);
+  test.skip(cls < 0, 'layout-shift entries are not supported in this engine');
+  testInfo.annotations.push({ type: 'CLS', description: cls.toFixed(4) });
+  console.log(`CLS on first load: ${cls.toFixed(4)}`);
+  expect(cls).toBeLessThan(0.1);
+});

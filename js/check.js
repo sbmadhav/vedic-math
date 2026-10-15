@@ -3,7 +3,7 @@
 
 /* A whole input that is a mixed number: sign, whole part, a proper fraction (1 3/4, -2 1/2) */
 const MIXED = /^([+-]?)\s*(\d+)\s+(\d+)\s*\/\s*(\d+)$/;
-const foldMinus = s => String(s).replace(/[−–—]/g, '-');
+const foldMinus = s => String(s).replace(/[\u2212\u2013\u2014]/g, '-');
 
 function normalize(s) {
   let v = foldMinus(String(s).trim().toLowerCase());

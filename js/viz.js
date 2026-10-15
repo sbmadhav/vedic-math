@@ -82,6 +82,12 @@ export function fracBar(n, d, { w = 360, cls = 'vz-coral', label = true } = {}) 
   }
   return svg(w + 4, wholes * 50 - 6, `${n} out of ${d} equal parts shaded`, body);
 }
+/* Hundredths: a 10 by 10 grid with n squares shaded, row by row */
+export function hundredGrid(n, { cls = 'vz-coral' } = {}) {
+  const c = 22; let body = '';
+  for (let k = 0; k < 100; k++) body += `<rect x="${2 + (k % 10) * c}" y="${2 + Math.floor(k / 10) * c}" width="${c}" height="${c}" class="${k < n ? cls : 'vz-cell'} vz-blk"/>`;
+  return svg(10 * c + 4, 10 * c + 4, `${n} out of 100 equal squares shaded`, body);
+}
 export function fracCircle(n, d) {
   const r = 56, cx = 62, cy = 62; let body = '';
   if (d === 1) return svg(124, 124, `${n} whole`, `<circle cx="${cx}" cy="${cy}" r="${r}" class="${n ? 'vz-coral' : 'vz-cell'} vz-blk"/>`);

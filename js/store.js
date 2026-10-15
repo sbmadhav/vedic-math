@@ -103,6 +103,8 @@ export function streakDays() {
   if (!S.days[k(d)]) d.setDate(d.getDate() - 1);
   for (;;) { if (!S.days[k(d)]) return n; n++; d.setDate(d.getDate() - 1); }
 }
+/* Has this Player played on a day before today? (the home greeting says Welcome back only then) */
+export const playedBefore = () => { load(); const t = today(); return Object.keys(S.days || {}).some(d => d < t && S.days[d] > 0); };
 export function touchDay() { load(); S.days[today()] = (S.days[today()] || 0) + 1; save(); }
 export function setBest(game, score) { load(); const isBest = score > (S.best[game] || 0); if (isBest) { S.best[game] = score; save(); } return isBest; }
 export const best = game => (load(), S.best[game] || 0);
