@@ -33,6 +33,10 @@ const REQUIRED = [
   'Google reCAPTCHA',
   'Entries are not deleted automatically, and turning World boards off does not delete them.',
   'To have an entry removed, message Madhav on LinkedIn with the nickname, color and date.',
+  // anonymous usage counts (analytics spec), separate from World boards
+  'Separately from World boards, the site counts visits and',
+  '(pages opened, questions answered, rounds finished)',
+  'with GoatCounter, anonymously: no cookies, no IDs and no names.',
 ];
 async function expectNote(page: import('@playwright/test').Page, summary: string, now?: string) {
   const note = page.locator('details', { has: page.locator('summary', { hasText: summary }) }).first();
