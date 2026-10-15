@@ -3,7 +3,7 @@
    Nothing here leaves the device except what cloud.js posts to World boards (nickname, color, score). */
 const LEGACY = 'mathquest.v1', PKEY = 'vm.players', BOARD = 'vm.board';
 let S = null, P = null;
-const blank = () => ({ v: 2, skills: {}, xp: 0, days: {}, best: {}, last: null, grade: null, badges: {}, counts: {}, seen: {}, stars: {}, ratings: {}, weekXp: {}, questDay: null });
+const blank = () => ({ v: 3, skills: {}, sparks: 0, days: {}, best: {}, last: null, grade: null, badges: {}, counts: {}, seen: {}, medals: {}, katasDone: {}, ratings: {}, weekSparks: {}, questDay: null });
 const get = k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
 const put = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
 const listeners = new Set();
@@ -49,8 +49,33 @@ export function removePlayer(id) { players(); if (P.list.length < 2) return; con
 
 /* ---------- Progress for the active player ---------- */
 const key = () => LEGACY + '.' + player().id;
-export function load() { if (S) return S; S = { ...blank(), ...(get(key()) || {}) }; return S; }
-export function save() { put(key(), S); }
+/* Saved progress from before Sparks (schema v2: xp, weekXp, stars) becomes v3 (docs/adr/0003): XP carries over
+   1:1 as Sparks, game Level and tower stars become Medals (1 bronze, 2 silver, 3 gold), and a Kata with any star
+   is done. Runs on the saved record before blank() fills the gaps, so it can tell old from new; running it
+   again changes nothing. stars is left as it was and never read again (a rollback keeps every result). */
+export function migrate(d) {
+  if (!d || typeof d !== 'object') return d;
+  if (!('sparks' in d) && 'xp' in d) d.sparks = Number(d.xp) || 0;
+  if (!('weekSparks' in d) && 'weekXp' in d) d.weekSparks = { ...(d.weekXp || {}) };
+  if (!('medals' in d) && d.stars && typeof d.stars === 'object') {
+    const e = Object.entries(d.stars);
+    d.medals = Object.fromEntries(e.filter(([k, v]) => /^[ag]:/.test(k) && v > 0).map(([k, v]) => [k, Math.min(3, v)]));
+    d.katasDone = { ...Object.fromEntries(e.filter(([k, v]) => k.startsWith('k:') && v > 0).map(([k]) => [k, 1])), ...(d.katasDone || {}) };
+  }
+  if (!(d.v >= 3)) d.v = 3;
+  return d;
+}
+/* Every Player's saved record on this device, migrated once per page load (each is also migrated when read) */
+let migratedAll = false;
+function migrateDevice() {
+  if (migratedAll) return; migratedAll = true;
+  for (const p of players().list) { const k = LEGACY + '.' + p.id, d = get(k); if (d && !(d.v >= 3)) put(k, mirror(migrate(d))); }
+}
+/* TODO(remove after 2026-11-15): xp and weekXp mirror Sparks for one release, so a rollback to the XP
+   version keeps every total. Nothing reads them. */
+const mirror = d => { d.xp = d.sparks || 0; d.weekXp = d.weekSparks || {}; return d; };
+export function load() { if (S) return S; migrateDevice(); S = { ...blank(), ...(migrate(get(key())) || {}) }; return S; }
+export function save() { put(key(), mirror(S)); }
 export const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 
 export function skill(id) { load(); return S.skills[id] || { n: 0, c: 0, m: 0, streak: 0, last: 0 }; }
@@ -59,16 +84,17 @@ export const mastered = id => { const s = skill(id); return s.m >= 0.85 && s.n >
 export const started = id => skill(id).n > 0;
 export function level(id) { const s = skill(id); return s.m < 0.4 || s.n < 3 ? 1 : s.m < 0.75 ? 2 : 3; }
 
-export function addXP(n, why = '') { load(); const before = S.xp; S.xp += n; S.weekXp = S.weekXp || {}; const wk = isoWeek(); S.weekXp = { [wk]: (S.weekXp[wk] || 0) + n }; save(); emit('xp', { before, after: S.xp, n, why }); }
+/* Sparks: the one progress number, earned by everything (Practice included). Only this ISO week's total is kept. */
+export function addSparks(n, why = '') { load(); const before = S.sparks; S.sparks += n; S.weekSparks = S.weekSparks || {}; const wk = isoWeek(); S.weekSparks = { [wk]: (S.weekSparks[wk] || 0) + n }; save(); emit('sparks', { before, after: S.sparks, n, why }); }
 /* ISO week id like 2026-W42, in local time (matches cloud.weekId) */
 export function isoWeek(d = new Date()) {
   const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())), day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
   const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)), wk = Math.ceil(((t - y0) / 864e5 + 1) / 7);
   return `${t.getUTCFullYear()}-W${String(wk).padStart(2, '0')}`;
 }
-export const weekXP = () => (load(), (S.weekXp || {})[isoWeek()] || 0);
-/* This week's XP of any Player on this device (the weekly XP post reads the Player who earned it, not the active one) */
-export function weekXPOf(id) { if (id === player().id) return weekXP(); return ((get(LEGACY + '.' + id) || {}).weekXp || {})[isoWeek()] || 0; }
+export const weekSparks = () => (load(), (S.weekSparks || {})[isoWeek()] || 0);
+/* This week's Sparks of any Player on this device (the weekly Sparks post reads the Player who earned them, not the active one) */
+export function weekSparksOf(id) { if (id === player().id) return weekSparks(); return ((migrate(get(LEGACY + '.' + id)) || {}).weekSparks || {})[isoWeek()] || 0; }
 export const playerById = id => players().list.find(p => p.id === id) || null;
 /* Adaptive game ratings (difficulty 1 to 20), one per game */
 export const rating = k => (load(), (S.ratings || {})[k] || 0);
@@ -82,11 +108,15 @@ export const questDay = () => (load(), S.questDay || null);
 export function setQuestDay(q) { load(); S.questDay = q; save(); }
 export function award(badge) { load(); if (S.badges[badge]) return false; S.badges[badge] = Date.now(); save(); emit('badge', badge); return true; }
 export const badges = () => (load(), S.badges);
-/* Stars for numbered levels (Dojo katas, Arena challenges, game levels): keeps the best 0 to 3 */
-export const stars = k => (load(), (S.stars || {})[k] || 0);
-export function setStars(k, n) { load(); S.stars = S.stars || {}; const was = S.stars[k] || 0; if (n > was) { S.stars[k] = n; save(); emit('stars', { k, n, was }); } return n > was; }
-export const starsWhere = prefix => { load(); return Object.entries(S.stars || {}).filter(([k]) => k.startsWith(prefix)).reduce((t, [, v]) => t + v, 0); };
-export const doneWhere = prefix => { load(); return Object.entries(S.stars || {}).filter(([k, v]) => k.startsWith(prefix) && v > 0).length; };
+/* Medals for game Levels (g:<game>:<n>) and tower challenges (a:<id>): 0 none, 1 bronze, 2 silver, 3 gold; the best is kept */
+export const medal = k => (load(), (S.medals || {})[k] || 0);
+export function setMedal(k, n) { load(); S.medals = S.medals || {}; const was = S.medals[k] || 0; if (n > was) { S.medals[k] = n; save(); emit('medal', { k, n, was }); } return n > was; }
+/* How many bronze, silver and gold Medals under a key prefix, and how many results have any Medal */
+export const medalsWhere = prefix => { load(); const c = { bronze: 0, silver: 0, gold: 0, any: 0 }; for (const [k, v] of Object.entries(S.medals || {})) if (k.startsWith(prefix) && v > 0) { c[['bronze', 'silver', 'gold'][Math.min(3, v) - 1]]++; c.any++; } return c; };
+/* Katas (k:<trick>:<n>) have no rating: done or not done, and done stays done */
+export const kataDone = k => (load(), !!(S.katasDone || {})[k]);
+export function setKataDone(k) { load(); S.katasDone = S.katasDone || {}; if (S.katasDone[k]) return false; S.katasDone[k] = 1; save(); emit('kata', { k }); return true; }
+export const katasDoneWhere = prefix => { load(); return Object.keys(S.katasDone || {}).filter(k => k.startsWith(prefix)).length; };
 
 export function record(id, correct, hintsUsed) {
   load();
@@ -97,7 +127,7 @@ export function record(id, correct, hintsUsed) {
   S.counts.bestStreak = Math.max(S.counts.bestStreak || 0, s.streak);
   save();
   const gain = correct ? (hintsUsed ? 5 : 10 + Math.min(s.streak, 5)) : 0;
-  if (gain) addXP(gain, 'answer');
+  if (gain) addSparks(gain, 'answer');
   const justMastered = !was && mastered(id);
   emit('answer', { id, correct, streak: s.streak, justMastered });
   if (justMastered) emit('mastered', id);
@@ -115,13 +145,13 @@ export const playedBefore = () => { load(); const t = today(); return Object.key
 export function touchDay() { load(); S.days[today()] = (S.days[today()] || 0) + 1; save(); }
 export function setBest(game, score) { load(); const isBest = score > (S.best[game] || 0); if (isBest) { S.best[game] = score; save(); } return isBest; }
 export const best = game => (load(), S.best[game] || 0);
-export const xp = () => (load(), S.xp);
+export const sparks = () => (load(), S.sparks);
 export const lastSkill = () => (load(), S.last);
 export const setGrade = g => { load(); S.grade = String(g); save(); };
 export const savedGrade = () => (load(), S.grade);
 export function reset() { S = blank(); save(); emit('player', player()); }
 export function exportData() { load(); return JSON.stringify({ player: player(), data: S }); }
-export function importData(txt) { const d = JSON.parse(txt); const data = d.data || d; if (!data || typeof data.skills !== 'object') throw new Error('bad'); S = { ...blank(), ...data }; save(); }
+export function importData(txt) { const d = JSON.parse(txt); const data = d.data || d; if (!data || typeof data.skills !== 'object') throw new Error('bad'); S = { ...blank(), ...migrate(data) }; save(); }
 
 /* ---------- Device leaderboard: every player on this device ---------- */
 export function boardAdd(board, score) {

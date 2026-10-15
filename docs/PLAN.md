@@ -18,7 +18,7 @@ This plan rebases the Oct 13 review and action plan (a six-persona age panel plu
 | Area | Oct 13 review | Now |
 | --- | --- | --- |
 | Overall (age panel) | 5.9/10; motivation to return 4.7/10 | Unchanged until Phase 0 ships |
-| World leaderboards | "Coming soon" | Live on Firebase: Arena daily and weekly, a daily and weekly board per game, weekly XP. Rules enforce the nickname word list, score caps, date bounds, query limits. App Check registered, not enforced. |
+| World leaderboards | "Coming soon" | Live on Firebase: Arena daily and weekly, a daily and weekly board per game, weekly Sparks (formerly XP). Rules enforce the nickname word list, score caps, date bounds, query limits. App Check registered, not enforced. |
 | Difficulty fit | Wrong for 5 of 6 personas | Games adapt on a 1 to 20 Rating (right answers raise it, misses lower it), start by Mode (Explorer 1, Challenger 5, Pro 9), remember each Player's Rating, and score by difficulty. The Arena and Practice use Ratings too: an Arena Rating per League sets where Arena Practice rounds start and adapt, and a Rating per Skill picks each Practice question's generator level (1 to 3). Daily Arena rounds stay identical for a League on a fixed difficulty ramp. The Pro Arena is mental arithmetic only (2-digit products, squares, percents, near-base products, division), with Pro daily rounds switching over on Monday 2026-10-19 so no Board mixes question sets. |
 | Repeats | Many | No repeats within a game round |
 | Offline | Root service worker could mix module versions | Own repo and service worker, every module pinned with a `?v=` hash |
@@ -52,9 +52,9 @@ All items are S (under a day). Line numbers are as of commit `97181d9`.
 Also in Phase 0:
 
 - **View cleanup contract.** Every view returns `{ destroy }` and gets an `AbortSignal` for each listener, timer and animation-frame loop. This removes the root cause of bugs 1, 2 and 7 instead of patching each one.
-- **Age answer and Parent step for World boards** ([ADR 0001](adr/0001-parent-step-follows-the-age-answer.md)). Ask one neutral age question the first time a Score or XP total would be posted. Players under 13, in any Mode, keep everything on the device until a grown-up gives the Parent step (a simple adult check, stored locally). Reason: for under-13 players, a persistent identifier can count as personal information under COPPA. Get a legal read before promoting the site to schools.
+- **Age answer and Parent step for World boards** ([ADR 0001](adr/0001-parent-step-follows-the-age-answer.md)). Ask one neutral age question the first time a Score or weekly Sparks total would be posted. Players under 13, in any Mode, keep everything on the device until a grown-up gives the Parent step (a simple adult check, stored locally). Reason: for under-13 players, a persistent identifier can count as personal information under COPPA. Get a legal read before promoting the site to schools.
 - **No identity until the first post** ([ADR 0002](adr/0002-no-identity-until-the-first-post.md)). Viewing World boards reads without signing in; the anonymous ID is created only when something is actually posted.
-- **Parent note says exactly what is sent.** XP from all play, Practice included, adds up to one weekly total that is posted; Practice Scores never leave the device. Update `parentNote()` and `cloud/README.md` together.
+- **Parent note says exactly what is sent.** Sparks from all play, Practice included, adds up to one weekly total that is posted; Practice Scores never leave the device. Update `parentNote()` and `cloud/README.md` together.
 - **Pro Arena becomes mental arithmetic.** Replace algebra and logs in the Pro Arena sets with 2 × 2 digits, squares, percents, near-base products and division. Extend Ratings to Arena and Practice.
 - **Honest framing everywhere.** Footer and share text say "sutras from Bharati Krishna Tirtha's 1965 book", never "from the Vedas".
 - **Analytics.** Count hash routes as page views, plus anonymous `q_answered`, `round_end`, `first_win`, `share_click` and `return_d7` events through `window.siteTrack`. No user IDs.
@@ -78,7 +78,7 @@ The game-world direction (Star Quest) and its decisions so far are in `docs/star
 | Beat the calculator Hook | M | First screen dares "Square 85 before the calculator does". The player loses, sees a 20-second reveal, then wins 3 times. The mode question comes after. | The race must be honest (0.45s per key plus "="), using only problems humans really win |
 | Placement | S | One step after the Hook: the Age answer, a grade picker and 3 quick items set the starting Rating for every game and the Belt. League stays equal to Mode. Replaces the separate "light placement" and "full adaptive placement" items, since games already adapt. | Coarse, but the Rating corrects it within a round |
 | Trick page: When, Why, Prove it | S | Rename "How it works" to "When to use it". Pull the proof and scene from `DETAILS[sutra].why`. Add 3 check items before speed drills. | Keep it to 3 items so it never feels like a quiz wall |
-| Mistake Museum | S | Every round ends with missed items and a link to the right trick. Replaying them clears them for XP. | One more screen per round |
+| Mistake Museum | S | Every round ends with missed items and a link to the right trick. Replaying them clears them for Sparks. | One more screen per round |
 | Game shell and Calm mode | M | Full-screen fixed layout for every timed activity, keypad always visible on phones and Chromebooks. Calm toggle (no clocks, ghost race) and A/A+ text size. | Touches every game; needs the Phase 0 tests first |
 | Explorer narration | S | Explorer gets only Explorer sets and every prompt is read aloud. | Needs a content tag per skill set |
 

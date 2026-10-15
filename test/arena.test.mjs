@@ -3,7 +3,7 @@
    all the numbers; questions whose numbers live only in a picture get structural checks. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TOPICS, PER_CHAPTER, CHALLENGE_COUNT, challenge, challengeSet, challengeKey, challengeStars } from '../js/levels.js';
+import { TOPICS, PER_CHAPTER, CHALLENGE_COUNT, challenge, challengeSet, challengeKey, challengeMedal } from '../js/levels.js';
 import { makeSet, dailySet, practiceItem, MENTAL_FROM, PRO_RAMP, duelStart, duelAnswer, duelUnfreeze, duelNext, DUEL_GOAL } from '../js/arena.js';
 import { byId, SKILLS } from '../js/skills/index.js';
 import { checkOne } from '../js/check.js';
@@ -91,13 +91,13 @@ test('every challenge item is well formed and answer checking accepts it and rej
   });
 });
 
-test('challenge stars', () => {
+test('challenge Medals: one per target reached (1 bronze, 2 silver, 3 gold)', () => {
   const sprint = CH.find(c => c.format === 'sprint'), ta = CH.find(c => c.format === 'timeattack'), acc = CH.find(c => c.format === 'accuracy');
-  assert.equal(challengeStars(sprint, { score: sprint.targets[2] }), 3);
-  assert.equal(challengeStars(sprint, { score: sprint.targets[0] - 1 }), 0);
-  assert.equal(challengeStars(ta, { right: ta.total, finished: true, secs: ta.targets[2] }), 3);
-  assert.equal(challengeStars(ta, { right: 0, finished: true, secs: 1 }), 0);
-  assert.equal(challengeStars(acc, { right: acc.total }), 3);
+  assert.equal(challengeMedal(sprint, { score: sprint.targets[2] }), 3);
+  assert.equal(challengeMedal(sprint, { score: sprint.targets[0] - 1 }), 0);
+  assert.equal(challengeMedal(ta, { right: ta.total, finished: true, secs: ta.targets[2] }), 3);
+  assert.equal(challengeMedal(ta, { right: 0, finished: true, secs: 1 }), 0);
+  assert.equal(challengeMedal(acc, { right: acc.total }), 3);
 });
 
 /* Checks one daily or Practice item: a whole-number answer the keypad takes, choices that hold it, and an answer

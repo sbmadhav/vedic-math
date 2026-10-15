@@ -17,7 +17,7 @@ const PAGE_LISTENERS = [
   /addEventListener\('load', registerSW, \{ once: true \}\)/ // service worker registration
 ];
 const PAGE_TIMERS = [
-  /xpTimer = setTimeout\(/, /clearTimeout\(xpTimer\)/, // weekly XP post, at most once a minute
+  /sparksTimer = setTimeout\(/, /clearTimeout\(sparksTimer\)/, // weekly Sparks post, at most once a minute
   /playerDlg\._minute = setTimeout\(/, /clearTimeout\(playerDlg\._minute\)/ // the video player's one-minute badge
 ];
 const TIMERS = /\b(setTimeout|setInterval|requestAnimationFrame|cancelAnimationFrame|clearTimeout|clearInterval)\(/;

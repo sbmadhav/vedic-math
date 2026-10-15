@@ -416,7 +416,7 @@ export const GAMES = [
 ];
 
 /* ---------- Levels: 72 per game (1,008 in all). Each level starts the dial higher, never lets it fall more
-   than 3 steps below its start, and sets star goals in difficulty-weighted points. ---------- */
+   than 3 steps below its start, and sets Medal goals (bronze, silver, gold) in difficulty-weighted points. ---------- */
 export const LEVELS_PER_GAME = 72;
 const round10 = v => Math.max(10, Math.round(v / 10) * 10);
 export const LEVELS = Object.fromEntries(GAMES.map(g => [g.id, L => {
@@ -425,6 +425,7 @@ export const LEVELS = Object.fromEntries(GAMES.map(g => [g.id, L => {
   if (goal[1] <= goal[0]) goal[1] = goal[0] + 10; if (goal[2] <= goal[1]) goal[2] = goal[1] + 10;
   return { cfg: { start, floor: Math.max(1, start - 3) }, goal };
 }]));
-export const levelStars = (goal, score) => goal.filter(t => score >= t).length;
+/* Medal for a Level: 0 none, 1 bronze, 2 silver, 3 gold, one per goal reached */
+export const levelMedal = (goal, score) => goal.filter(t => score >= t).length;
 /* Board id prefix for a game's leaderboards: game ids use _ in board names (the rules list them) */
 export const boardGame = id => 'g_' + id.replace(/-/g, '_');

@@ -4,7 +4,8 @@ rules_version = '2';
 //   Arena daily round:   boards/daily-YYYY-MM-DD-<league>/scores/<uid> and boards/week-YYYY-Www-<league>/scores/<uid>
 //   Ranked game rounds:  boards/g_<game>-daily-YYYY-MM-DD-<league>/... and boards/g_<game>-week-YYYY-Www-<league>/...
 //                        (<game> is the game id with _ for -, from the list in validBoard)
-//   Weekly XP:           boards/xp-week-YYYY-Www-<league>/... (XP earned this week across everything)
+//   Weekly Sparks:       boards/xp-week-YYYY-Www-<league>/... (Sparks earned this week across everything;
+//                        the board id keeps its xp- prefix from when Sparks were called XP, docs/adr/0003)
 // Each signed-in (anonymous) player owns one entry per board; anyone may list a board's top 20. Allowed fields, nothing else:
 //   name   a generated nickname from the fixed word lists in vedic-math/js/store.js (never typed)
 //   avatar one of five colors
@@ -17,7 +18,7 @@ service cloud.firestore {
       function validBoard() {
         return board.matches('^((g_(balloons|more_less|make_ten|quick_look|bonds|times_sprint|target|frac_faceoff|line_snipe|pairs|check_it|rain|sequence|balance)-)?(daily-20[0-9]{2}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])|week-20[0-9]{2}-W(0[1-9]|[1-4][0-9]|5[0-3]))|xp-week-20[0-9]{2}-W(0[1-9]|[1-4][0-9]|5[0-3]))-(explorer|challenger|pro)$');
       }
-      // 'arena', 'game' or 'xp'; game and xp ids carry one extra leading part before daily-/week-.
+      // 'arena', 'game' or 'xp' (the weekly Sparks board); game and xp ids carry one extra leading part before daily-/week-.
       function kind() { return board.matches('^g_.*') ? 'game' : board.matches('^xp-.*') ? 'xp' : 'arena'; }
       function parts() { let p = board.split('-'); return kind() == 'arena' ? p : p[1:p.size()]; }
       function signedInAs() {
@@ -52,7 +53,7 @@ service cloud.firestore {
       //   challenger 1600 = 57 right in a row, one typed answer every 1.05 s (times tables, 2 to 4 digit answers)
       //   pro        1200 = 44 right in a row, one typed answer every 1.36 s (mental arithmetic: 2-digit products, squares, percents, near-base products, division)
       // Ranked game rounds score 10 to 143 points per right answer, weighted by how hard the question was
-      // (vedic-math/js/adapt.js); 12000 is about 85 hardest answers in one round. Weekly XP is capped at 60000.
+      // (vedic-math/js/adapt.js); 12000 is about 85 hardest answers in one round. Weekly Sparks are capped at 60000.
       function maxScore() {
         return kind() == 'game' ? 12000 : kind() == 'xp' ? 60000
           : { 'explorer': 2000, 'challenger': 1600, 'pro': 1200 }[board.split('-')[board.split('-').size() - 1]];

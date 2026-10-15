@@ -121,7 +121,7 @@ function playedBefore() {
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && k.startsWith('mathquest.v1')) { const d = JSON.parse(localStorage.getItem(k)); if (d && (d.xp > 0 || (d.counts && d.counts.answers > 0))) return true; }
+      if (k && k.startsWith('mathquest.v1')) { const d = JSON.parse(localStorage.getItem(k)); if (d && (d.sparks > 0 || d.xp > 0 || (d.counts && d.counts.answers > 0))) return true; /* xp: saved before Sparks */ }
     }
   } catch (e) {}
   return false;

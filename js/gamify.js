@@ -1,4 +1,4 @@
-/* Gamification: levels from XP, badges, belts and daily quests. Listens to store events and celebrates. */
+/* Gamification: Titles from Sparks, badges, belts and daily quests. Listens to store events and celebrates. */
 import * as store from './store.js';
 import { SKILLS } from './skills/index.js';
 import { TRICKS, BELTS } from './vedic.js';
@@ -8,12 +8,18 @@ import { seeded } from './levels.js';
 import { shuffle } from './lib.js';
 import { sfx, confetti, toast, mode } from './fx.js';
 
-/* Level n needs 50 * n * (n - 1) XP: 0, 100, 300, 600, 1000 ... */
-export const levelOf = xp => Math.floor((1 + Math.sqrt(1 + xp / 12.5)) / 2);
-export const xpFor = lv => 50 * lv * (lv - 1);
-export function levelInfo(xp = store.xp()) { const lv = levelOf(xp), lo = xpFor(lv), hi = xpFor(lv + 1); return { lv, into: xp - lo, need: hi - lo, pct: (xp - lo) / (hi - lo) }; }
-const TITLES = ['Number Rookie', 'Digit Dasher', 'Sum Sprinter', 'Times Tamer', 'Fraction Fighter', 'Sutra Scout', 'Mental Ninja', 'Equation Ace', 'Pattern Sage', 'Calculus Comet', 'Vedic Legend'];
-export const titleOf = lv => TITLES[Math.min(TITLES.length - 1, Math.floor((lv - 1) / 2))];
+/* Titles from total Sparks. The thresholds are where the old numbered levels (50 * n * (n - 1) XP, one Title
+   per two levels) changed Title, so carried-over totals keep their Title (docs/adr/0003). No number is shown. */
+export const TITLES = [[0, 'Number Rookie'], [300, 'Digit Dasher'], [1000, 'Sum Sprinter'], [2100, 'Times Tamer'], [3600, 'Fraction Fighter'], [5500, 'Sutra Scout'], [7800, 'Mental Ninja'], [10500, 'Equation Ace'], [13600, 'Pattern Sage'], [17100, 'Calculus Comet'], [21000, 'Vedic Legend']];
+/* { title, next, into, need, pct }: the Title for a total, the next Title (null at the top, bar full),
+   and the Sparks into and needed for the step to it */
+export function titleInfo(sparks = store.sparks()) {
+  const n = Math.max(0, sparks || 0); let i = 0;
+  while (i + 1 < TITLES.length && n >= TITLES[i + 1][0]) i++;
+  const [lo, title] = TITLES[i], nx = TITLES[i + 1];
+  if (!nx) return { title, next: null, into: n - lo, need: 0, pct: 1 };
+  return { title, next: nx[1], into: n - lo, need: nx[0] - lo, pct: (n - lo) / (nx[0] - lo) };
+}
 
 export function beltProgress() {
   return BELTS.map(b => ({ ...b, done: b.tricks.filter(t => store.mastered('v-' + t)).length, earned: b.tricks.every(t => store.mastered('v-' + t)) }));
@@ -48,8 +54,9 @@ export const BADGES = [
   { id: 'days7', name: 'Week warrior', how: 'Practice 7 days in a row.', test: () => store.streakDays() >= 7 },
   { id: 'sutras', name: 'Sutra scholar', how: 'Collect 10 Sutra cards.', test: () => collectedCount() >= 10 },
   { id: 'watch', name: 'Video learner', how: 'Watch a video in the player for a whole minute.', test: () => store.count('watchedMinute') >= 1 },
-  { id: 'level5', name: 'Level 5', how: 'Reach level 5.', test: () => levelOf(store.xp()) >= 5 },
-  { id: 'level10', name: 'Level 10', how: 'Reach level 10.', test: () => levelOf(store.xp()) >= 10 }
+  /* Title badges keep their old ids (level5, level10), so badges earned before Sparks stay earned */
+  { id: 'level5', name: 'Sum Sprinter', how: 'Reach the Sum Sprinter Title (1000 Sparks).', test: () => store.sparks() >= 1000 },
+  { id: 'level10', name: 'Fraction Fighter', how: 'Reach the Fraction Fighter Title (3600 Sparks).', test: () => store.sparks() >= 3600 }
 ];
 
 /* Daily quests: three a day from each Mode's pool, picked by a seeded draw on the local date, so every
@@ -100,7 +107,7 @@ function checkQuests() {
     if (q.done || q.prog < q.goal) return;
     const qd = store.questDay(); if (qd.done[q.id]) return;
     qd.done[q.id] = Date.now(); store.setQuestDay(qd);
-    store.addXP(25, 'quest'); toast(`<b>Quest complete</b> ${q.label} <span class="fx-xp">+25 XP</span>`, 'ok'); sfx('badge');
+    store.addSparks(25, 'quest'); toast(`<b>Quest complete</b> ${q.label} <span class="fx-sparks">+25 Sparks</span>`, 'ok'); sfx('badge');
   });
 }
 
@@ -109,7 +116,7 @@ function checkBadges() { if (busy) return; busy = true; BADGES.forEach(b => { if
 
 export function init() {
   store.on((type, d) => {
-    if (type === 'xp') { const a = levelOf(d.before), b = levelOf(d.after); if (b > a) { sfx('level'); confetti(110); toast(`<b>Level ${b}!</b> You are now a ${titleOf(b)}.`, 'win'); } checkBadges(); }
+    if (type === 'sparks') { const a = titleInfo(d.before).title, b = titleInfo(d.after).title; if (a !== b) { sfx('level'); confetti(110); toast(`<b>New Title: ${b}</b>`, 'win'); } checkBadges(); }
     if (type === 'badge') { const b = BADGES.find(x => x.id === d); if (b) { sfx('badge'); toast(`<span class="fx-badge"></span><b>Badge earned:</b> ${b.name}`, 'win'); } }
     if (type === 'mastered') { confetti(); toast('<b>Skill mastered!</b> A new ring is full.', 'win'); }
     if (type === 'answer' || type === 'count' || type === 'seen') { checkBadges(); if (type !== 'seen') checkQuests(); }

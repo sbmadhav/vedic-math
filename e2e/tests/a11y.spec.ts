@@ -9,7 +9,7 @@ import { test, expect, APP, open, chromiumOnly } from './fixtures';
 
 const ROUTES = ['#/', '#/learn', '#/dojo', '#/arena', '#/games', '#/sutras', '#/watch', '#/me', '#/skill/v-sq5', '#/game/times-sprint'];
 
-/* Known violations on the live site: { route, rule, target, note }. Empty: the XP bar is a progressbar and
+/* Known violations on the live site: { route, rule, target, note }. Empty: the Sparks bar is a progressbar and
    #prRun lost its label (both fixed in js/app.js). Add an entry when a new one is found and reported. */
 const KNOWN: { route: string; rule: string; target: string; note: string }[] = [];
 

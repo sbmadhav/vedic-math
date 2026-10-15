@@ -14,9 +14,9 @@ const SUMMARY = {
 const REQUIRED = [
   'World boards run on Google Firebase.',
   // every kind of post, and nothing else
-  "Three kinds of post go to boards for the player's league: the score of a Daily challenge in the Arena and the score of a Ranked round of a game (today's and this week's board for each), and the player's XP total for this week (one weekly board).",
-  // XP and Practice
-  'XP comes from all play, Practice included, so practice adds to that posted weekly total. Practice scores themselves never leave this device.',
+  "Three kinds of post go to boards for the player's league: the score of a Daily challenge in the Arena and the score of a Ranked round of a game (today's and this week's board for each), and the player's Sparks total for this week (one weekly board).",
+  // Sparks and Practice
+  'Sparks come from all play, Practice included, so practice adds to that posted weekly total. Practice scores themselves never leave this device.',
   // consent
   'Nothing is posted before a player answers one question about their age. The answer stays on this device and is never sent.',
   'Nothing is posted for a player under 13 until a grown-up turns on World boards for them on this device (Me page, World boards), and it can be turned off there at any time.',
@@ -45,8 +45,9 @@ async function expectNote(page: import('@playwright/test').Page, summary: string
   await expect(note).toHaveAttribute('open', '');
   for (const line of REQUIRED) await expect(note).toContainText(line);
   if (now) await expect(note.locator('.pn-now')).toHaveText(now);
-  // Practice is never described as staying on the device without its XP counting
+  // Practice is never described as staying on the device without its Sparks counting, and XP is gone
   await expect(note).not.toContainText('practice and endless rounds');
+  await expect(note).not.toContainText(/\bXP\b/);
   // The ID belongs to one Player, not to the browser
   await expect(note).not.toContainText('gives this browser');
   await expect(note).not.toContainText('share one entry');
@@ -57,7 +58,7 @@ const NOW = {
   noAnswer: 'Right now nothing is posted for this player. They have not answered the age question yet; it is asked the first time a score would be posted.',
   under13: 'Right now nothing is posted for this player, because their age answer is under 13. To turn on World boards for them, a grown-up opens the Me page and goes to World boards.',
   parentOk: 'A grown-up turned on World boards for this player on this device. They can turn it off again on the Me page, under World boards.',
-  posting: "This player's scores and weekly XP post to World boards.",
+  posting: "This player's scores and weekly Sparks post to World boards.",
 };
 
 test('the parent note is on the Me page, in the Arena and beside a game\'s World boards', async ({ page }) => {
@@ -137,8 +138,8 @@ test('an Arena score entry holds only the nickname, avatar color, score and two 
 
 /* Every write path in the app, run against the fake SDK. Together they are everything the note has to
    describe: js/app.js writes through cloud.submit from exactly three places (postScore for an Arena
-   Daily challenge and for a Ranked game round, and queueXpPost for weekly XP). The clock is faked so
-   60 second rounds and the once-a-minute XP post can be fast-forwarded. */
+   Daily challenge and for a Ranked game round, and queueSparksPost for weekly Sparks). The clock is faked so
+   60 second rounds and the once-a-minute Sparks post can be fast-forwarded. */
 const UID = 'e2e-fake-uid';
 const ENTRY_KEYS = ['avatar', 'exp', 'name', 'score', 'ts'];
 const ids = (page: import('@playwright/test').Page) => page.evaluate(async () => {
@@ -187,7 +188,7 @@ test('an Arena Daily challenge sends its score to today\'s and this week\'s Aren
     expect(Object.keys(x.data).sort()).toEqual(ENTRY_KEYS);
     expect(x.data).toMatchObject({ name: 'Swift Tiger 42', avatar: 'teal', score: 10 });
   }
-  // The round earned 2 XP, under the weekly XP board's minimum of 10: nothing else is sent
+  // The round earned 2 Sparks, under the weekly Sparks board's minimum of 10: nothing else is sent
   await page.clock.runFor(70_000);
   expect(await writes(page)).toHaveLength(2);
 });
@@ -214,24 +215,24 @@ test('a finished Ranked game round sends its score to that game\'s today and thi
     expect(e.data).toMatchObject({ name: 'Swift Tiger 42', avatar: 'teal' });
     expect(e.data.score).toBeGreaterThanOrEqual(10);
   }
-  // The round also earned at least 10 XP, so this week's XP follows 3 seconds later
+  // The round also earned at least 10 Sparks, so this week's Sparks follow 3 seconds later
   await page.clock.runFor(3_500);
   await expect.poll(async () => (await writes(page)).map(x => x.path)).toContain(`boards/xp-week-${wk}-challenger/scores/${UID}`);
   expect(await writes(page)).toHaveLength(3);
 });
 
-test('XP earned anywhere sends this week\'s XP total to the weekly XP board, at most once a minute', async ({ page }, testInfo) => {
+test('Sparks earned anywhere send this week\'s Sparks total to the weekly Sparks board (id xp-week-), at most once a minute', async ({ page }, testInfo) => {
   chromiumOnly(testInfo, 'app logic, the same in every engine');
   await page.clock.install();
   await open(page, '#/sutras');
   const { wk } = await ids(page);
   const board = `boards/xp-week-${wk}-challenger/scores/${UID}`;
   const card = (i: number) => page.locator('.sutra-card .sutra-face').nth(i);
-  // Collecting a sutra card is worth 5 XP: under the board's minimum of 10, so nothing is sent
+  // Collecting a sutra card is worth 5 Sparks: under the board's minimum of 10, so nothing is sent
   await card(0).click();
   await page.clock.runFor(70_000);
   expect(await writes(page)).toEqual([]);
-  // 10 XP this week: sent 3 seconds after the gain
+  // 10 Sparks this week: sent 3 seconds after the gain
   await card(1).click();
   await page.clock.runFor(3_500);
   await expect.poll(async () => (await writes(page)).length).toBe(1);
@@ -239,7 +240,7 @@ test('XP earned anywhere sends this week\'s XP total to the weekly XP board, at 
   expect(w[0].path).toBe(board);
   expect(Object.keys(w[0].data).sort()).toEqual(ENTRY_KEYS);
   expect(w[0].data).toMatchObject({ name: 'Swift Tiger 42', avatar: 'teal', score: 10 });
-  // More XP within the minute waits for the minute to pass, then sends the new total
+  // More Sparks within the minute waits for the minute to pass, then sends the new total
   await card(2).click();
   await page.clock.runFor(10_000);
   expect(await writes(page)).toHaveLength(1);
@@ -247,18 +248,18 @@ test('XP earned anywhere sends this week\'s XP total to the weekly XP board, at 
   await expect.poll(async () => (await writes(page)).length).toBe(2);
   w = await writes(page);
   expect(w[1].path).toBe(board);
-  expect(w[1].data.score).toBe(15); // weekly XP is not rounded to even (only Arena scores are)
+  expect(w[1].data.score).toBe(15); // weekly Sparks are not rounded to even (only Arena scores are)
 });
 }); // a Player who may post
 
 test.describe('a Player who may not post', () => {
   test.use({ seedConsent: { age: 9 } });
-  test('XP earned by an under-13 Player without the Parent step sends nothing and signs in nowhere', async ({ page }, testInfo) => {
+  test('Sparks earned by an under-13 Player without the Parent step sends nothing and signs in nowhere', async ({ page }, testInfo) => {
     chromiumOnly(testInfo, 'app logic, the same in every engine');
     await page.clock.install();
     await open(page, '#/sutras');
     for (const i of [0, 1, 2, 3]) await page.locator('.sutra-card .sutra-face').nth(i).click();
-    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1')!).xp)).toBe(20);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1')!).sparks)).toBe(20);
     await page.clock.runFor(130_000);
     const log = await cloudLog(page);
     expect(log.writes).toEqual([]);
@@ -330,14 +331,14 @@ test.describe('two Players on one device', () => {
     expect((await cloudLog(page)).signIns).toBe(2);
   });
 
-  test('XP earned by A and posted after a switch to B goes out as A\'s own total, under A\'s identity', async ({ page }, testInfo) => {
+  test('Sparks earned by A and posted after a switch to B goes out as A\'s own total, under A\'s identity', async ({ page }, testInfo) => {
     chromiumOnly(testInfo, 'app logic, the same in every engine');
     await seedSecondPlayer(page, { mode: 'pro' });
     await page.clock.install();
     await open(page, '#/sutras');
     const { wk } = await boardIds(page);
     await page.locator('.sutra-card .sutra-face').nth(0).click();
-    await page.locator('.sutra-card .sutra-face').nth(1).click(); // 10 XP for A: the post is due in 3 seconds
+    await page.locator('.sutra-card .sutra-face').nth(1).click(); // 10 Sparks for A: the post is due in 3 seconds
     await switchTo(page, PB);
     await page.clock.runFor(3_500);
     await expect.poll(async () => (await sent(page)).length).toBe(1);
@@ -399,7 +400,7 @@ test.describe('Ratings', () => {
     const box = page.locator('#practice');
     for (let k = 0; k < 10; k++) { await box.locator('#prShow').click(); await box.locator('#prCheck').click(); }
     await page.goto(`${APP}#/learn`);
-    await page.clock.runFor(70_000); // past the weekly XP post's wait
+    await page.clock.runFor(70_000); // past the weekly Sparks post's wait
     const ratings = await page.evaluate(async () => (await import('/vedic-math/js/store.js' as string)).load().ratings);
     expect(Object.keys(ratings)).toEqual(expect.arrayContaining(['arena:pro', 'skill:3-mult']));
     for (const r of out) { expect(r).not.toMatch(/rating/i); expect(r).not.toContain('arena:'); }

@@ -89,6 +89,9 @@ type Fixtures = {
   seedMode: Mode | null;
   /** Age answer (and Parent step) stored for that player. Default null: not answered, so nothing may be posted. */
   seedConsent: Consent | null;
+  /** Saved progress (mathquest.v1.p1) for that player before the page loads, for example a record from before
+      Sparks (v2: xp, weekXp, stars). Default null: a fresh start. */
+  seedProgress: Record<string, unknown> | null;
   /** Requests that broke the live-dependency rules. Checked automatically after each test. */
   violations: string[];
   issues: Issues;
@@ -98,20 +101,22 @@ export const test = base.extend<Fixtures>({
   liveFirebase: [false, { option: true }],
   seedMode: ['challenger', { option: true }],
   seedConsent: [null, { option: true }],
+  seedProgress: [null, { option: true }],
 
-  context: async ({ context, seedMode, seedConsent }, use) => {
+  context: async ({ context, seedMode, seedConsent, seedProgress }, use) => {
     await blockAnalytics(context);
     // The same no-op counter from the start, for pages whose queue flushes before the local count.js answer runs
     await context.addInitScript(() => { const w = window as any; w.goatcounter ||= {}; if (typeof w.goatcounter.count !== 'function') w.goatcounter.count = () => {}; });
     // A returning player with a mode, sound off. Only on an empty profile, so reloads keep progress.
-    await context.addInitScript(([mode, consent]) => {
+    await context.addInitScript(([mode, consent, progress]) => {
       try {
         if (!localStorage.getItem('vm.players')) {
           localStorage.setItem('vm.sound', '0');
           if (mode) localStorage.setItem('vm.players', JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode, created: Date.now(), ...(consent || {}) }] }));
+          if (mode && progress) localStorage.setItem('mathquest.v1.p1', JSON.stringify(progress));
         }
       } catch (e) { /* storage blocked: the app copes */ }
-    }, [seedMode, seedConsent] as const);
+    }, [seedMode, seedConsent, seedProgress] as const);
     await use(context);
   },
 

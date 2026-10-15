@@ -116,6 +116,11 @@ test('a device that played before these flags existed is not counted as new', ()
   const t0 = Date.now();
   M.returnCheck(t0); M.firstWinCheck(t0 + 5000); M.returnCheck(t0 + 864e5); M.returnCheck(t0 + 8 * 864e5);
   assert.deepEqual(sent, []);
+  /* a record saved after Sparks replaced XP (v3) counts the same way */
+  clear();
+  mem['mathquest.v1.p1'] = JSON.stringify({ v: 3, sparks: 40, counts: {} });
+  M.returnCheck(t0); M.firstWinCheck(t0 + 5000); M.returnCheck(t0 + 864e5); M.returnCheck(t0 + 8 * 864e5);
+  assert.deepEqual(sent, []);
 });
 
 test('share_click: fixed surfaces only', () => {

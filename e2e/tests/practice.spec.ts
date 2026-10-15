@@ -9,7 +9,7 @@ async function seedRandom(page: Page, seed: number) {
     Math.random = () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   }, seed);
 }
-const xp = (page: Page) => page.evaluate(async () => (await import('/vedic-math/js/store.js' as string)).load().xp as number);
+const sparks = (page: Page) => page.evaluate(async () => (await import('/vedic-math/js/store.js' as string)).sparks() as number);
 
 /* The like-fractions question on screen: a/d + b/d (or minus), as numbers */
 async function fracQuestion(page: Page) {
@@ -55,11 +55,11 @@ test('Show me on a fraction sum reveals a fraction and its mixed number, not a d
   await expect(ans).not.toContainText('.');
 });
 
-test('typing the question back is not an answer: no try, no score, no XP', async ({ page }) => {
+test('typing the question back is not an answer: no try, no score, no Sparks', async ({ page }) => {
   await seedRandom(page, 3);
   await open(page, '#/skill/3-mult');
   const box = page.locator('#practice');
-  const before = await xp(page);
+  const before = await sparks(page);
   const q = (await box.locator('#prQ').textContent()) || '';
   const [a, b] = q.match(/\d+/g)!.map(Number);
   await box.locator('.ans-in').fill(`${a}*${b}`);
@@ -68,12 +68,12 @@ test('typing the question back is not an answer: no try, no score, no XP', async
   await expect(box.locator('#prSay')).not.toHaveClass(/\bno\b/);
   await expect(box.locator('.pr-score')).toHaveText('0/0');
   await expect(box.locator('#prCheck')).toHaveText('Check');
-  expect(await xp(page)).toBe(before);
+  expect(await sparks(page)).toBe(before);
   // the plain answer still counts as a first try
   await box.locator('.ans-in').fill(String(a * b));
   await box.locator('#prCheck').click();
   await expect(box.locator('#prSay')).toHaveClass(/\bok\b/);
-  await expect(box.locator('#prSay')).toContainText(/\+\d+ XP/);
+  await expect(box.locator('#prSay')).toContainText(/\+\d+ Sparks/);
   await expect(box.locator('.pr-score')).toHaveText('1/1');
 });
 

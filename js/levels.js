@@ -51,8 +51,10 @@ export function kata(trickId, n) {
   const par = Math.round(count * (8 + Math.min(20, n * 0.4)) * (['crosswise', 'add-sub', 'ratio-zero', 'osculator', 'div9', 'cuberoot', 'sqroot'].includes(trickId) ? 1.6 : 1));
   return { trick: t, n, problems: probs, par };
 }
-/* Stars: 1 for at least 60% right, 2 for at least 85%, 3 for all right within par time without hints */
-export const kataStars = (right, total, secs, par, hints) => right === total && secs <= par && !hints ? 3 : right / total >= .85 ? 2 : right / total >= .6 ? 1 : 0;
+/* A Kata has no rating of its own: it is done at 60% right (the old one-star line), and done stays done */
+export const kataDoneFor = (right, total) => total > 0 && right / total >= .6;
+/* Kata Sparks: 5 per right answer, plus 10 when the Kata is done */
+export const kataSparks = (right, total) => 5 * right + (kataDoneFor(right, total) ? 10 : 0);
 
 /* ---------- Arena challenge tower ---------- */
 const g = id => byId[id] ? [id] : [];
@@ -118,7 +120,8 @@ export function challengeSet(ch, n = 90) {
     return out;
   });
 }
-export const challengeStars = (ch, r) => {
+/* Medal for a tower challenge: 0 none, 1 bronze, 2 silver, 3 gold, one per target reached */
+export const challengeMedal = (ch, r) => {
   if (ch.goal === 'seconds' && r.right < Math.ceil(ch.total * .8)) return 0;
   const v = ch.goal === 'points' ? r.score : ch.goal === 'seconds' ? (r.finished ? r.secs : Infinity) : r.right;
   return ch.goal === 'seconds' ? ch.targets.filter(t => v <= t).length : ch.targets.filter(t => v >= t).length;

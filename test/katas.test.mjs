@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { TRICKS, BELTS } from '../js/vedic.js';
-import { KATA_COUNT, KATAS_PER_TRICK, kata, kataKey, kataStars } from '../js/levels.js';
+import { KATA_COUNT, KATAS_PER_TRICK, kata, kataKey, kataDoneFor, kataSparks } from '../js/levels.js';
 import { checkOne } from '../js/check.js';
 import { verifyQuestion, solveFields, toRat } from './support/verify.mjs';
 
@@ -79,10 +79,19 @@ test('answer checking accepts each kata answer and rejects near misses', () => {
   });
 });
 
-test('kata stars', () => {
-  assert.equal(kataStars(5, 5, 10, 40, 0), 3);
-  assert.equal(kataStars(5, 5, 50, 40, 0), 2);
-  assert.equal(kataStars(5, 5, 10, 40, 1), 2);
-  assert.equal(kataStars(3, 5, 10, 40, 0), 1);
-  assert.equal(kataStars(2, 5, 10, 40, 0), 0);
+test('kata done at 60% right, with no rating of its own', () => {
+  assert.equal(kataDoneFor(5, 5), true);
+  assert.equal(kataDoneFor(3, 5), true);
+  assert.equal(kataDoneFor(2, 5), false);
+  assert.equal(kataDoneFor(5, 8), true);
+  assert.equal(kataDoneFor(4, 8), false);
+  assert.equal(kataDoneFor(0, 0), false);
+});
+
+test('kata Sparks: 5 per right answer, plus 10 when done', () => {
+  assert.equal(kataSparks(5, 6), 35); /* the medals spec scenario: 5 of 6 in Kata 3 */
+  assert.equal(kataSparks(8, 8), 50);
+  assert.equal(kataSparks(5, 5), 35);
+  assert.equal(kataSparks(2, 5), 10);
+  assert.equal(kataSparks(0, 5), 0);
 });
