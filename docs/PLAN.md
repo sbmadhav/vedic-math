@@ -2,13 +2,15 @@
 
 Updated Oct 14, 2026 · Owner: Madhav Srinivasan
 
+Terms are defined in [GLOSSARY.md](../GLOSSARY.md); decisions are in [docs/adr/](adr/).
+
 This plan rebases the Oct 13 review and action plan (a six-persona age panel plus an adversarial plan review) onto what has shipped since. The diagnosis carries over; the order of work changes, because world leaderboards and adaptive games are already live.
 
 ## TL;DR
 
 - **Big idea: "Become the human calculator."** Learn a trick in 60 seconds, then out-race your phone, your parents and your friends. Every feature serves one loop: **Dare → Reveal → Prove → Race → Brag → Return**.
 - **Primary audience for the next 90 days:** ages 9 to 14 and their parent. Explorer (about 4 to 7) and Pro (13 to adult) get targeted fixes, no new tracks.
-- **Next 3 weeks:** fix the 12 trust bugs, add a parent opt-in before Explorer and Challenger scores go online, instrument hash routes, then ship "Beat the calculator" as the first run.
+- **Next 3 weeks:** fix the 12 trust bugs, add the Age answer and the Parent step before anything from an under-13 Player goes online (in every Mode), instrument hash routes, then ship "Beat the calculator" as the Hook.
 - **Gates are real-kid sessions first, metrics second.** Traffic is too low for percentage gates to be more than directional.
 
 ## Where things stand
@@ -17,7 +19,7 @@ This plan rebases the Oct 13 review and action plan (a six-persona age panel plu
 | --- | --- | --- |
 | Overall (age panel) | 5.9/10; motivation to return 4.7/10 | Unchanged until Phase 0 ships |
 | World leaderboards | "Coming soon" | Live on Firebase: Arena daily and weekly, a daily and weekly board per game, weekly XP. Rules enforce the nickname word list, score caps, date bounds, query limits. App Check registered, not enforced. |
-| Difficulty fit | Wrong for 5 of 6 personas | Games adapt on a 1 to 20 dial (right answers raise it, misses lower it), start by mode (Explorer 1, Challenger 5, Pro 9), remember each player's rating, and score by difficulty. **Arena and practice still use fixed sets.** |
+| Difficulty fit | Wrong for 5 of 6 personas | Games adapt on a 1 to 20 Rating (right answers raise it, misses lower it), start by Mode (Explorer 1, Challenger 5, Pro 9), remember each Player's Rating, and score by difficulty. **Arena and practice still use fixed sets.** |
 | Repeats | Many | No repeats within a game round |
 | Offline | Root service worker could mix module versions | Own repo and service worker, every module pinned with a `?v=` hash |
 | Trust bugs | 12 open | 12 open (verified in code, see Phase 0) |
@@ -50,11 +52,13 @@ All items are S (under a day). Line numbers are as of commit `97181d9`.
 Also in Phase 0:
 
 - **View cleanup contract.** Every view returns `{ destroy }` and gets an `AbortSignal` for each listener, timer and animation-frame loop. This removes the root cause of bugs 1, 2 and 7 instead of patching each one.
-- **Parent opt-in for world boards.** In Explorer and Challenger, scores stay on the device until a parent taps "Allow world leaderboards" (a simple adult check, stored locally). Pro keeps posting by default. Update `parentNote()` and `cloud/README.md` to match. Reason: for under-13 players, a persistent identifier can count as personal information under COPPA. Get a legal read before promoting the site to schools.
-- **Pro Arena becomes mental arithmetic.** Replace algebra and logs in the Pro Arena sets with 2 × 2 digits, squares, percents, near-base products and division. Extend the adaptive dial to Arena and practice.
+- **Age answer and Parent step for World boards** ([ADR 0001](adr/0001-parent-step-follows-the-age-answer.md)). Ask one neutral age question the first time a Score or XP total would be posted. Players under 13, in any Mode, keep everything on the device until a grown-up gives the Parent step (a simple adult check, stored locally). Reason: for under-13 players, a persistent identifier can count as personal information under COPPA. Get a legal read before promoting the site to schools.
+- **No identity until the first post** ([ADR 0002](adr/0002-no-identity-until-the-first-post.md)). Viewing World boards reads without signing in; the anonymous ID is created only when something is actually posted.
+- **Parent note says exactly what is sent.** XP from all play, Practice included, adds up to one weekly total that is posted; Practice Scores never leave the device. Update `parentNote()` and `cloud/README.md` together.
+- **Pro Arena becomes mental arithmetic.** Replace algebra and logs in the Pro Arena sets with 2 × 2 digits, squares, percents, near-base products and division. Extend Ratings to Arena and Practice.
 - **Honest framing everywhere.** Footer and share text say "sutras from Bharati Krishna Tirtha's 1965 book", never "from the Vedas".
 - **Analytics.** Count hash routes as page views, plus anonymous `q_answered`, `round_end`, `first_win`, `share_click` and `return_d7` events through `window.siteTrack`. No user IDs.
-- **Regression net.** Node tests for `check.js` (mixed numbers, signs, plain-number rule) and seeded generators. Playwright specs (in the main site's `e2e/`) for 2 Arena rounds, 5 practice questions and day-1 quests.
+- **Regression net.** Node tests for `check.js` (mixed numbers, signs, plain-number rule) and seeded generators. Playwright specs in this repo's `e2e/` for 2 Arena rounds, 5 Practice questions and day-1 quests.
 - **Layout shift.** `#view { min-height: 100svh }` to bring mobile CLS from 0.33 to under 0.1.
 
 **Gate A:** no P0 bugs open, events flowing, baselines recorded.
@@ -69,8 +73,8 @@ Paper or Figma prototype of "Beat the calculator" with 3 to 5 kids aged 9 to 14,
 
 | Item | Effort | What it does | Tradeoff |
 | --- | --- | --- | --- |
-| Beat the calculator first run | M | First screen dares "Square 85 before the calculator does". The player loses, sees a 20-second reveal, then wins 3 times. The mode question comes after. | The race must be honest (0.45s per key plus "="), using only problems humans really win |
-| First-run placement | S | One step after the hook: grade picker plus 3 quick items set the starting dial for every game, the belt and the Arena league. Replaces the separate "light placement" and "full adaptive placement" items, since games already adapt. | Coarse, but the dial corrects it within a round |
+| Beat the calculator Hook | M | First screen dares "Square 85 before the calculator does". The player loses, sees a 20-second reveal, then wins 3 times. The mode question comes after. | The race must be honest (0.45s per key plus "="), using only problems humans really win |
+| Placement | S | One step after the Hook: the Age answer, a grade picker and 3 quick items set the starting Rating for every game and the Belt. League stays equal to Mode. Replaces the separate "light placement" and "full adaptive placement" items, since games already adapt. | Coarse, but the Rating corrects it within a round |
 | Trick page: When, Why, Prove it | S | Rename "How it works" to "When to use it". Pull the proof and scene from `DETAILS[sutra].why`. Add 3 check items before speed drills. | Keep it to 3 items so it never feels like a quiz wall |
 | Mistake Museum | S | Every round ends with missed items and a link to the right trick. Replaying them clears them for XP. | One more screen per round |
 | Game shell and Calm mode | M | Full-screen fixed layout for every timed activity, keypad always visible on phones and Chromebooks. Calm toggle (no clocks, ghost race) and A/A+ text size. | Touches every game; needs the Phase 0 tests first |
@@ -127,7 +131,7 @@ The north star is **weekly magic moments**: a trick learned and then used correc
 ## Privacy and integrity (every phase)
 
 - Generated nicknames only; links and share text carry only the nickname and a score.
-- A parent step before any online feature in Explorer and Challenger.
+- The Parent step before anything from a Player under 13 goes online, in every Mode (by the Age answer, never by Mode).
 - No user IDs in analytics: cookieless, aggregate events only.
 - `parentNote()` and `cloud/README.md` always describe exactly what is sent and kept.
 - Honest Vedic framing on every surface, share cards included. Sanskrit names come from `js/sutras.js` only.
@@ -136,7 +140,7 @@ The north star is **weekly magic moments**: a trick learned and then used correc
 
 - **Stay vanilla JS** with the view cleanup contract (recommended over Preact + htm or a framework rewrite: smallest change, fixes the root cause, keeps the build-free code).
 - **Seed everything with versions** (`v2:daily:2026-10-20`), so editing a generator never silently changes today's challenge. The same seeds power challenge links, the Daily Sutra and the fair Duel.
-- **Every behavior change ships with a test:** node tests here, Playwright specs in the main site's `e2e/`.
+- **Every behavior change ships with a test:** node tests in `test/`, Playwright specs in `e2e/`.
 
 ## Risks
 
@@ -144,6 +148,6 @@ The north star is **weekly magic moments**: a trick learned and then used correc
 | --- | --- |
 | Kids shrug at beating the calculator | Hook test during Phase 0, before building it |
 | Solo time alongside a full-time role | Phase 0 plus the hook is the minimum (about 3 weeks); Phase 2 social features wait for Gate B |
-| Child privacy on live boards | Parent opt-in in Phase 0; legal read before school outreach |
+| Child privacy on live boards | Age answer and Parent step in Phase 0; legal read before school outreach |
 | Cheating on public boards | Rules already cap scores and rate-limit; enforce App Check; Cloud Function only if needed |
 | AI panel overstates or misses fun | Real-kid sessions gate every phase |

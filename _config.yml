@@ -4,6 +4,7 @@
 exclude:
   - CLAUDE.md
   - README.md
+  - GLOSSARY.md
   - build.py
   - cloud/
   - test/

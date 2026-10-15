@@ -54,3 +54,9 @@ They are not `?v=` stamped (this repo cannot hash them). Do not copy them in; ch
 ## Leaderboards
 
 Firebase with Firestore security rules. Setup, rules and the rules tests live in `cloud/` (see `cloud/README.md`). The browser client is `js/cloud.js`; the config is `js/cloud-config.js`.
+
+## Language and decisions
+
+- Domain terms are defined in `GLOSSARY.md` (Player, Mode, League, Rating, Ranked round, Practice, Score, XP, Board and more). Use those words in code comments, docs and plans, and update the glossary when a term changes.
+- Decisions that are hard to reverse are recorded in `docs/adr/`. Read them before changing who can post, what is sent, or when an identity is created.
+- `docs/PLAN.md` is the product plan.
