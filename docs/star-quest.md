@@ -1,6 +1,6 @@
 # Star Quest: decisions so far
 
-The game-world direction for Phase 1 ("the magic moment" in `PLAN.md`). This file records what was decided in the 2026-10-15 session, what was only proposed, and the open questions for the next grilling round. Nothing here is built in the app yet.
+The game-world direction for Phase 1 ("the magic moment" in `PLAN.md`). This file records every decision, from the 2026-10-15 session and the grilling that followed it. Terms are defined in `GLOSSARY.md`; Sparks replacing XP is ADR 0003. Nothing here is built in the app yet: the next step is the OpenSpec changes listed at the end.
 
 - Prototype source: `docs/prototypes/star-quest/index.html` (open it in a browser; it is a single self-contained page). `docs/` is excluded from the published site.
 - Hosted copy (private to the owner): https://claude.ai/artifact/UGeYFXcehapmUL2nVzmbmU, version 2.
@@ -21,56 +21,58 @@ The game-world direction for Phase 1 ("the magic moment" in `PLAN.md`). This fil
 8. **Skipping is allowed and visible.** A Player can skip past a level at any time. A skipped level gets its own marker (dashed outline, skip badge, "skipped" label) so it reads as passed over, not completed. Completing it later clears the marker; skipping a completed level leaves it completed. (Prototype comment, applied.)
 9. **Watch round length.** Long rounds bore people. The prototype now uses 4 questions per round, tunable. (Prototype comment, applied.)
 
-## Proposed and shown in the prototype, not yet confirmed
+## Decided in the grilling (2026-10-15)
 
-These came from Claude's concept and the prototype. The owner said the prototype "looks good" but has not ruled on each one; treat them as the recommended answers going into grilling.
+Every recommended answer was accepted.
 
-- **World theme: the night sky.** Each Sutra is a constellation; each Trick is a star in it. Builds on the existing 27-nakshatra wheel and Bolt instead of a new art style.
-- **Bolt is a co-pilot and teacher, not a pet.** Six SVG poses (idle, think, surprised, explain, cheer, wink). He delivers the teaching so the screen has almost no text.
-- **A level is a short flight to light one star**, on one Trick.
-- **The mistake loop:** wrong answer, then a fast animated replay of the Trick on the Player's own number (skippable), then a rematch on a nearby number.
-- **Sparks** are the currency that lights stars. Prototype values: right answer +2, comeback (rematch right after a miss) +3, Dare +4. Target 8 sparks per star with 4-question rounds, so a clean round lights it.
-- **Anti-gaming:** comeback sparks only from a corrected mistake, at most once per question type (two-digit, three-digit) per round, so deliberate misses earn nothing extra.
-- **Dare:** an optional harder question each round (offered from question 2). Right pays double; a miss costs nothing and still shows the replay.
-- **Rating moves:** right +1, miss -1, comeback +2, Dare right +2. A corrected mistake nets the same as a first-time right answer.
-- **Answer boxes show the number of digits** of the answer.
-- **The first-time reveal** plays the Trick once (35 squared) before the first question of the first star.
-- **Calm mode:** the same world with motion off, defaulting to the system reduced-motion setting.
-- **Rendering stack:** SVG for the map, stars and Bolt; 2 or 3 parallax layers for depth; CSS and the Web Animations API for motion; the existing canvas confetti for sparks. No framework, no bundler, works offline. Rive for Bolt is a possible later upgrade.
-- **Tabs mostly disappear.** The map becomes home; Arena, Duel and Boards become places on the map (for example a race track, a duel ring, a tower).
-- **Return to the map after a lit star** happens automatically after 4.5 seconds (or by button).
+### The world
+1. **The Sky is the world.** Each Sutra is a Constellation; its Tricks' Stars sit in it. Built on the 27-nakshatra wheel and Bolt.
+2. **The Sky replaces the tile grid as home**, with an "All places" menu as the plain list.
+3. **Landmarks** around the Sky's edge lead to the other places: Arena (race track), Duel (ring), Games (arcade), Watch (observatory), the Skill map (library), Daily Sutra and Boards (tower).
+4. **The Sky holds Tricks only.** The 135 school Skills stay in the Skill map.
+5. **Challenger and Pro first.** Explorer keeps its current home until it has its own Constellations with every prompt read aloud (a later change).
+6. **Art at launch:** Constellations drawn as lines between Stars with the Sutra name, the nakshatra wheel and parallax star layers, Bolt's six poses. No per-Constellation illustration yet.
 
-## Tensions with the current plan and glossary
+### Stars
+7. **A Star is one of three steps of rising difficulty for one Trick**, each drawing from one third of that Trick's 50 Katas. 21 Tricks make 63 Stars across 17 Constellations.
+8. **Every Star is open.** Skipping is allowed, marked on the Sky, and earns nothing; lighting it later clears the mark. Placement picks the first Star Bolt suggests.
+9. **Bolt's suggested path follows Belt order**, white to black. A Belt is earned by lighting all 9 Stars of its 3 Tricks.
+10. **A Star round is 4 shuffled questions**, avoiding the previous round's numbers where the pool allows.
+11. **A Star adapts to its Trick's own Rating** (each Trick is already a Skill).
+12. **Stars are Practice**: Sparks, no Score, never posted to a Board.
+13. **Bolt is a teacher and co-pilot only**: no feeding, moods, outfits or collecting.
+14. **The answer boxes show the digit count** in Challenger and are hidden in Pro.
+15. **Back to the Sky by button only**, never automatically.
 
-- **"Not doing in 2026"** in `PLAN.md` rules out extra reward systems, an animal buddy and boss battles. Sparks, Bolt and Dares edge toward these. Proposed reading: Bolt is a teacher, not a buddy; a Dare is a harder question, not a battle; sparks replace a reward rather than adding one. Needs the owner's ruling.
-- **"Level"** in `GLOSSARY.md` means one of the 72 numbered stages of a game. In Star Quest a "level" is a star. One of them needs a new word.
-- **Sparks vs XP vs Score.** The glossary has XP (progress from everything) and Score (Ranked rounds only). Sparks are a third number unless they replace or feed one of these.
-- **Rating** in the glossary is per game, per Skill and for the Arena. The prototype keeps one Rating for the whole sky.
-- **Skip vs Placement.** Free skipping overlaps with Placement setting the starting point.
+### Mistakes, Comebacks and Dares
+16. **A miss shows the Trick replayed on the Player's own number** (skippable), then a rematch on a nearby number.
+17. **A Comeback** (rematch right after a miss) pays more than a first-time right answer, at most once per kind of question per round.
+18. **A Dare** is an optional harder question from question 2: right pays double, a miss costs nothing and still shows the replay.
+19. **After two misses in one Star, even after the replay, Bolt offers one short video** for that Trick, hand-matched from the Watch shelf, played in the page, skippable, earning nothing, at most once per round.
 
-## Open questions for the next grilling round
+### Sparks (ADR 0003)
+20. **Sparks replace XP everywhere**, including the weekly Board. Existing totals carry over 1:1.
+21. **Star values sit on the existing scale:** right 10, Comeback 15, Dare 20, and 40 lights a 4-question Star.
+22. **The numbered player level becomes a Title** (Number Rookie to Vedic Legend) with no number; the Level 5 and Level 10 badges are renamed to their Titles.
+23. **Watching videos earns nothing.** The +5 per new video goes; the Video learner badge stays.
+24. **Katas lose their own 0 to 3 stars; game Levels' 0 to 3 rating becomes Medals** (bronze, silver, gold).
 
-Rough order; the first group can be asked together.
+### Plan items absorbed
+25. **The Hook becomes the opening of the first Star.** Returning Players skip it.
+26. **The Mistake Museum is dropped**: the in-Star replay and rematch replace it.
+27. **The game shell and Calm mode apply to Stars**, and add an untimed Arena Practice (also closes WCAG 2.2.1).
 
-1. Is the night sky (Sutra = constellation, Trick = star) the world, or does the owner want a different theme?
-2. Does the map replace the current home and tabs, or sit beside them at first?
-3. Do sparks replace XP, feed XP, or stay separate? Do they ever reach World boards?
-4. Is Bolt a co-pilot (teacher only), and is that compatible with "no animal buddy"?
-5. Are the spark values (2 / 3 / 4, target 8, 4 questions) right after playing version 2?
-6. Is the comeback limit (once per question type per round) too stingy?
-7. Do the digit-count answer boxes stay, or are they too much of a hint?
-8. Auto-return to the map, or button only (kinder to screen readers)?
-9. What word replaces "level" for a star, given the glossary's Level?
-10. Does a skip count for anything (for example, does it advance Bolt and the path), and does Placement suggest where to start?
+### Rollout and measurement
+28. **Existing progress migrates:** a Star starts lit when at least half the Katas in its third are done; earned Belts stay earned.
+29. **Opt-in first:** a "Try the new Sky" switch for Challenger and Pro for about 2 weeks, then the default (Explorer keeps the old home).
+30. **Anonymous counts** for Star lit, Star skipped, Comeback, and Dare taken and won.
 
-Later, once those settle:
+## OpenSpec changes, in build order
 
-11. How do Arena, Duel, Daily Sutra and Boards appear on the map?
-12. How do Explorer, Challenger and Pro differ in the sky (density, wording, narration)?
-13. How do the 135 Skills and the Dojo Belts map onto constellations and stars?
-14. Which Phase 1 items from `PLAN.md` does Star Quest absorb (Hook, Mistake Museum, Game shell and Calm mode) and which stay separate?
-15. How is it split into OpenSpec changes (proposed: map, mistake loop, Bolt, game shell)?
+1. `sparks-replace-xp`: the rename, Titles, removing the video +5, carrying totals over, Medals.
+2. `star-round`: one Star end to end (mistake replay, Comeback, Dare, skip, Bolt, 4 shuffled Kata questions, Trick Rating, the video offer).
+3. `sky-home`: the Sky, Constellations, Landmarks, "All places", Belts, the opt-in switch, migrating progress, the new counts.
+4. `hook-first-star`: the Hook as the first Star's opening.
+5. `game-shell-and-calm`: full-screen play, Calm mode, untimed Arena Practice.
 
-## Next step
-
-Run `/grill-with-docs` on this file. Settle the answers in `GLOSSARY.md` and an ADR where needed, then write the OpenSpec changes.
+Explorer's own Constellations come after these, as a separate change.
