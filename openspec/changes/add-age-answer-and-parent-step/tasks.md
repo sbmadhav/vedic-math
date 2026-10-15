@@ -35,4 +35,4 @@
 ## Workflow follow-up
 
 - Archive this change with `/opsx:archive` after release, so the three capabilities move into `openspec/specs/`.
-- Propose a separate change for one World board entry per Player on shared devices.
+- One World board entry per Player on shared devices is proposed separately as `separate-identity-per-player`.
