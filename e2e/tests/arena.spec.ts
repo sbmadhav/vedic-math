@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog } from './fixtures';
+import { test, expect, APP, open, cloudLog, heldClock, appErrors } from './fixtures';
 
 /* Arena rounds start and take answers. Every test leaves before the 60 second round ends,
    so no score is ever submitted (and the fake SDK would record it if one were). */
@@ -93,7 +93,7 @@ const sideTexts = (page: import('@playwright/test').Page, p: number) => page.loc
 
 test('duel: both sides race the same question; a miss freezes one side; two misses reveal the answer', async ({ page }) => {
   await seedable(page);
-  await page.clock.install();
+  await heldClock(page);
   await open(page, '#/duel');
   const answer = await startSeededDuel(page, 'challenger');
   const p1 = page.locator('.duel-p1'), p2 = page.locator('.duel-p2');
@@ -222,7 +222,7 @@ async function practiceRound(page: import('@playwright/test').Page) {
 }
 
 test('second Arena round: keypad taps 1 then 2 enter 12', async ({ page, issues }) => {
-  await page.clock.install();
+  await heldClock(page);
   await open(page, '#/arena');
   await practiceRound(page);
   await endRound(page);
@@ -232,13 +232,13 @@ test('second Arena round: keypad taps 1 then 2 enter 12', async ({ page, issues 
   await page.locator('.ar-key[data-k="2"]').click();
   await expect(page.locator('#arEntry')).toHaveText('12');
   expect((await cloudLog(page)).writes).toEqual([]);
-  expect(issues.console, 'console errors').toEqual([]);
+  expect(appErrors(issues), 'console errors').toEqual([]);
 });
 
 test.describe('explorer, second round', () => {
   test.use({ seedMode: 'explorer' });
   test('one tap answers exactly one question', async ({ page }) => {
-    await page.clock.install();
+    await heldClock(page);
     await open(page, '#/arena');
     await practiceRound(page);
     await endRound(page);
@@ -253,7 +253,7 @@ test.describe('explorer, second round', () => {
 });
 
 test('challenge tower: Play again, then one keypad tap enters one digit', async ({ page }) => {
-  await page.clock.install();
+  await heldClock(page);
   await open(page, '#/challenge/1');
   await page.locator('#chGo').click();
   await page.clock.runFor(2000);
@@ -280,5 +280,5 @@ test('duel rematch: one right tap scores exactly 1', async ({ page, issues }) =>
   await page.locator(`.duel-p1 .ar-choice[data-v="${await answer()}"]`).click();
   await expect(page.locator('#dS0')).toHaveText('1');
   await expect(page.locator('#dS1')).toHaveText('0');
-  expect(issues.console, 'console errors').toEqual([]);
+  expect(appErrors(issues), 'console errors').toEqual([]);
 });
