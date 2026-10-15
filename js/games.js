@@ -1,7 +1,9 @@
 /* Strategy games, all adaptive.
    Every game reads one difficulty dial (adapt.js, 1 to 20) before each question: a right answer turns it up,
    a miss turns it down, and points are weighted by difficulty. No question repeats within a round.
-   Each game runs inside the shell in app.js and calls ctx.end(points) when a round is over. Play never starts on its own. */
+   Each game runs inside the shell in app.js and calls ctx.end(points) when a round is over. Play never starts on its own.
+   ctx.signal is the round's AbortSignal: every timer, loop and listener a game starts is tied to it (js/life.js),
+   so Stop, the end of the round or leaving the page stops all of it. */
 import { ri, pick, shuffle } from './lib.js';
 import { evalNum } from './check.js';
 import { factStrategy } from './skills/middle.js';
@@ -9,14 +11,14 @@ import * as V from './viz.js';
 import { sfx as tapSfx, speak as speakIt } from './fx.js';
 import { SUTRAS } from './sutras.js';
 import { pointsAt, levelStart } from './adapt.js';
+import { on, later, loop, child } from './life.js';
 
 const el = (tag, attrs = {}, html = '') => { const e = document.createElement(tag); Object.entries(attrs).forEach(([k, v]) => (k === 'class' ? (e.className = v) : e.setAttribute(k, v))); if (html) e.innerHTML = html; return e; };
-function timer(root, secs, onEnd) {
+/* The round clock: a bar that empties over secs, then onEnd(). Runs until signal aborts. */
+function timer(root, secs, onEnd, signal) {
   const bar = el('div', { class: 'g-timer', role: 'timer', 'aria-label': `${secs} seconds` }, '<span></span>'), fill = bar.firstChild; root.prepend(bar);
-  const t0 = performance.now(); let raf = 0, stopped = false;
-  const tick = () => { if (stopped) return; const left = Math.max(0, secs - (performance.now() - t0) / 1000); fill.style.width = (left / secs) * 100 + '%'; if (left <= 0) { stopped = true; onEnd(); return; } raf = requestAnimationFrame(tick); };
-  raf = requestAnimationFrame(tick);
-  return () => { stopped = true; cancelAnimationFrame(raf); };
+  const t0 = performance.now();
+  loop(() => { const left = Math.max(0, secs - (performance.now() - t0) / 1000); fill.style.width = (left / secs) * 100 + '%'; if (left <= 0) { onEnd(); return false; } }, signal);
 }
 const flash = (node, ok) => { tapSfx(ok ? 'ok' : 'no'); if (!node) return; node.classList.remove('g-ok', 'g-no'); void node.offsetWidth; node.classList.add(ok ? 'g-ok' : 'g-no'); };
 const fmt = n => (Number.isInteger(n) ? n.toLocaleString('en-US') : String(n)).replace('-', '&minus;');
@@ -25,14 +27,32 @@ const nd = d => ri(10 ** (d - 1), 10 ** d - 1);
 /* Four choices: the answer plus three nearby wrong ones */
 const near = (ans, spread, n = 4, ok = () => true) => { const s = new Set([ans]); let g = 0; while (s.size < n && g++ < 120) { const v = ans + pick([-1, 1]) * ri(1, spread); if (v !== ans && ok(v)) s.add(v); } return shuffle([...s]); };
 
-/* Shared plumbing: score an answer, update the HUD, count rounds */
-function kit(ctx) {
-  const { dial } = ctx;
+/* Shared plumbing: score an answer, update the HUD, count rounds, and wait on the round's signal */
+export const HOLD_MS = 1200;
+function kit(ctx, area = null, { tip = null } = {}) {
+  const { dial, signal } = ctx;
+  let holding = false;
+  /* The explanation line: tip (an element) if the game has one, else the say line in the game's header */
+  const explain = html => (tip ? (tip.innerHTML = html) : ctx.say(html));
+  /* While an answered item is held, taps and submits in the game area are ignored */
+  if (area) ['click', 'submit'].forEach(type => on(area, type, e => { if (holding) { e.preventDefault(); e.stopPropagation(); } }, signal, { capture: true }));
   return {
     mark(ok, node) { const pts = dial.hit(ok); flash(node, ok); ctx.hud && ctx.hud(dial, pts, ok); return pts; },
     over: rounds => !ctx.endless && dial.n >= rounds,
     finish: () => ctx.end(dial.points),
-    timed: (area, secs) => (ctx.endless ? null : timer(area, secs, () => ctx.end(dial.points)))
+    timed: (where, secs) => { if (!ctx.endless) timer(where, secs, () => ctx.end(dial.points), signal); },
+    later: (fn, ms) => later(fn, ms, signal),
+    /* After an answer: on a miss the question and its explanation stay together for HOLD_MS with the game's
+       inputs disabled, then the next question comes with the line cleared. On a right answer the next
+       question comes at once, with okHtml (praise that is about no question in particular) or nothing.
+       The round clock keeps running during the hold. */
+    answered(ok, explainHtml, next, okHtml = '') {
+      if (ok) { explain(okHtml); next(); return; }
+      explain(explainHtml); holding = true;
+      const off = area ? [...area.querySelectorAll('button, input')].filter(x => !x.disabled) : [];
+      off.forEach(x => (x.disabled = true));
+      later(() => { holding = false; off.forEach(x => (x.disabled = false)); explain(''); next(); }, HOLD_MS, signal);
+    }
   };
 }
 
@@ -121,7 +141,7 @@ export const GAMES = [
       const cols = ['coral', 'teal', 'sun', 'sky', 'plum'];
       const next = () => {
         if (k.over(8)) return k.finish();
-        const lv = dial.lv; popped = 0;
+        const lv = dial.lv; popped = 0; ctx.say('');
         const q = dial.fresh(() => { const n = ri(1, Math.min(20, 3 + lv));
           if (lv >= 12 && Math.random() < .6) { const t = pick(['more', 'less', 'double']); if (t === 'double' && n <= 10) return [`d${n}`, [n * 2, `double ${n}`]]; if (t === 'more') { const a = ri(1, 4); return [`m${n}+${a}`, [n + a, `${a} more than ${n}`]]; } const a = ri(1, 4); return [`l${n + a}-${a}`, [n, `${n + a} take away ${a}`]]; }
           return [`n${n}`, [n, String(n)]]; });
@@ -129,7 +149,7 @@ export const GAMES = [
         ask.innerHTML = `Pop <b>${q[1]}</b> balloon${want > 1 ? 's' : ''}!`; speakIt(`Pop ${q[1]} balloon${want > 1 ? 's' : ''}`);
         sky.innerHTML = ''; for (let i = 0; i < total; i++) { const b = el('button', { class: 'g-balloon', 'aria-label': 'Balloon', style: `--c: var(--${cols[i % 5]}); --d:${(i % 5) * 0.2}s` }, '<span></span>'); b.onclick = () => { if (b.disabled) return; b.disabled = true; b.classList.add('popped'); popped++; tapSfx('pop'); ctx.say(String(popped)); speakIt(String(popped)); }; sky.append(b); }
       };
-      done.onclick = () => { const ok = popped === want; k.mark(ok, sky); ctx.say(ok ? `Yes! ${want}!` : `You popped ${popped}. We needed ${want}.`); setTimeout(next, 900); };
+      done.onclick = () => { const ok = popped === want; k.mark(ok, sky); ctx.say(ok ? `Yes! ${want}!` : `You popped ${popped}. We needed ${want}.`); k.later(next, 900); };
       next();
     } },
   { id: 'more-less', modes: ['explorer', 'challenger', 'pro'], title: 'Which is more?', kid: 'More or less', color: 'sun', rounds: 12, perQ: 12,
@@ -139,8 +159,8 @@ export const GAMES = [
       const next = () => {
         if (k.over(12)) return k.finish();
         const q = dial.fresh(() => moreQ(dial.lv)), big = Math.max(q.va, q.vb);
-        row.innerHTML = '';
-        [[q.a, q.va], [q.b, q.vb]].forEach(([html, v]) => { const btn = el('button', { class: 'g-frac g-more' }, q.kind === 'dots' ? V.dots(v, v <= 6 ? 'dice' : 'line') : `<span class="g-big g-big-auto">${html}</span>`); btn.onclick = () => { const ok = v === big; k.mark(ok, row); ctx.say(ok ? 'Yes, that one is bigger!' : 'The other one was bigger.'); setTimeout(next, 650); }; row.append(btn); });
+        row.innerHTML = ''; ctx.say('');
+        [[q.a, q.va], [q.b, q.vb]].forEach(([html, v]) => { const btn = el('button', { class: 'g-frac g-more' }, q.kind === 'dots' ? V.dots(v, v <= 6 ? 'dice' : 'line') : `<span class="g-big g-big-auto">${html}</span>`); btn.onclick = () => { const ok = v === big; k.mark(ok, row); ctx.say(ok ? 'Yes, that one is bigger!' : 'The other one was bigger.'); k.later(next, 650); }; row.append(btn); });
         if (dial.lv <= 4) speakIt('Which has more?');
       };
       next();
@@ -162,26 +182,26 @@ export const GAMES = [
         if (ok) { const [p, q] = pair(); vals[a] = p; vals[i] = q; } draw();
       };
       setup();
-      return k.timed(area, ctx.secs || 60);
+      k.timed(area, ctx.secs || 60);
     } },
   { id: 'quick-look', modes: ['explorer', 'challenger'], title: 'Quick look', kid: 'Flash dots', color: 'sun', rounds: 12, perQ: 12,
     desc: 'Dots flash for a moment. Say how many without counting one by one. More dots and shorter flashes as you improve.',
     run(area, ctx) {
-      const k = kit(ctx), { dial } = ctx; let hideT = 0; const stage = el('div', { class: 'g-stage' }), opts = el('div', { class: 'g-opts', role: 'group', 'aria-label': 'How many dots?' }); area.append(stage, opts);
+      const k = kit(ctx), { dial } = ctx; let shown = null; const stage = el('div', { class: 'g-stage' }), opts = el('div', { class: 'g-opts', role: 'group', 'aria-label': 'How many dots?' }); area.append(stage, opts);
       const next = () => {
         if (k.over(12)) return k.finish();
         const lv = dial.lv, n = dial.fresh(() => { const hi = lv <= 8 ? 3 + lv : lv <= 14 ? 20 : 30, lo = lv <= 8 ? 1 : lv <= 14 ? 9 : 15, v = ri(lo, hi); return [`n${v}`, v]; });
-        stage.innerHTML = n <= 6 && lv <= 6 ? V.dots(n) : V.tenFrame(n, 0, Math.ceil(n / 10)); stage.classList.remove('g-hidden');
-        clearTimeout(hideT); hideT = setTimeout(() => stage.classList.add('g-hidden'), Math.max(350, 1600 - lv * 60));
-        opts.innerHTML = ''; near(n, lv > 10 ? 3 : 2, 4, v => v > 0).sort((a, b) => a - b).forEach(v => { const b = el('button', { class: 'md-chip' }, String(v)); b.onclick = () => { const ok = v === n; k.mark(ok, stage); ctx.say(ok ? `Yes, ${n}!` : `It was ${n}.`); stage.classList.remove('g-hidden'); opts.querySelectorAll('button').forEach(x => (x.disabled = true)); setTimeout(next, 800); }; opts.append(b); });
+        stage.innerHTML = n <= 6 && lv <= 6 ? V.dots(n) : V.tenFrame(n, 0, Math.ceil(n / 10)); stage.classList.remove('g-hidden'); ctx.say('');
+        if (shown) shown.abort(); shown = child(ctx.signal); /* this flash: answering early cancels the hide */
+        later(() => stage.classList.add('g-hidden'), Math.max(350, 1600 - lv * 60), shown.signal);
+        opts.innerHTML = ''; near(n, lv > 10 ? 3 : 2, 4, v => v > 0).sort((a, b) => a - b).forEach(v => { const b = el('button', { class: 'md-chip' }, String(v)); b.onclick = () => { const ok = v === n; k.mark(ok, stage); ctx.say(ok ? `Yes, ${n}!` : `It was ${n}.`); if (shown) shown.abort(); stage.classList.remove('g-hidden'); opts.querySelectorAll('button').forEach(x => (x.disabled = true)); k.later(next, 800); }; opts.append(b); });
       };
       next();
-      return () => clearTimeout(hideT);
     } },
   { id: 'bonds', modes: ['explorer', 'challenger', 'pro'], title: 'Number bonds', kid: 'Bond builder', color: 'teal', secs: 60, perQ: 16,
     desc: 'The whole is on top and one part is shown. Find the missing part fast. Wholes grow from 10 to 20, 100, 1,000 and then decimals.',
     run(area, ctx) {
-      const k = kit(ctx), { dial } = ctx; const fig = el('div', { class: 'bond' }), opts = el('div', { class: 'g-opts', role: 'group', 'aria-label': 'Missing part' }); area.append(fig, opts);
+      const k = kit(ctx, area), { dial } = ctx; const fig = el('div', { class: 'bond' }), opts = el('div', { class: 'g-opts', role: 'group', 'aria-label': 'Missing part' }); area.append(fig, opts);
       const next = () => {
         const lv = dial.lv;
         const [W, a, step] = dial.fresh(() => {
@@ -195,21 +215,21 @@ export const GAMES = [
         const b = Math.round((W - a) * 100) / 100;
         fig.innerHTML = `<span class="bond-w">${fmt(W)}</span><span class="bond-l"></span><span class="bond-r"></span><span class="bond-a">${fmt(a)}</span><span class="bond-b">?</span>`;
         const choices = new Set([b]); let g = 0; while (choices.size < 4 && g++ < 80) { const v = Math.round((b + pick([-1, 1]) * step * ri(1, 3)) * 100) / 100; if (v > 0 && v !== b) choices.add(v); }
-        opts.innerHTML = ''; shuffle([...choices]).forEach(v => { const btn = el('button', { class: 'md-chip' }, fmt(v)); btn.onclick = () => { const ok = v === b; k.mark(ok, fig); ctx.say(ok ? `${fmt(a)} + ${fmt(b)} = ${fmt(W)}` : `${fmt(a)} + ${fmt(b)} = ${fmt(W)}, so the part is ${fmt(b)}.`); next(); }; opts.append(btn); });
+        opts.innerHTML = ''; shuffle([...choices]).forEach(v => { const btn = el('button', { class: 'md-chip' }, fmt(v)); btn.onclick = () => { const ok = v === b; k.mark(ok, fig); k.answered(ok, `${fmt(a)} + ${fmt(b)} = ${fmt(W)}, so the part is ${fmt(b)}.`, next); }; opts.append(btn); });
       };
       next();
-      return k.timed(area, ctx.secs || 60);
+      k.timed(area, ctx.secs || 60);
     } },
   { id: 'times-sprint', modes: ['challenger', 'pro'], title: 'Times sprint', kid: 'Times rocket', color: 'sky', secs: 60, perQ: 12,
     desc: 'Multiplication against the clock. It climbs from the 2s table to teens, 2-digit, near-100, 3-digit and 4-digit products as you get them right. Miss one and you see a speed trick for it.',
     run(area, ctx) {
-      const k = kit(ctx), { dial } = ctx; let cur;
+      const { dial } = ctx; let cur;
       const q = el('div', { class: 'g-q', 'aria-live': 'polite' }), form = el('form', { class: 'g-form' }, '<input inputmode="numeric" autocomplete="off" aria-label="Answer" class="ans-in"><button class="md-btn md-btn--primary md-btn--sm">Go</button>'), tip = el('p', { class: 'g-tip', 'aria-live': 'polite' });
-      area.append(q, form, tip); const inp = form.querySelector('input');
+      area.append(q, form, tip); const inp = form.querySelector('input'); const k = kit(ctx, area, { tip });
       const next = () => { cur = dial.fresh(() => timesQ(dial.lv)); q.innerHTML = `${fmt(cur.a)} &times; ${fmt(cur.b)}`; inp.value = ''; inp.focus(); };
-      form.onsubmit = e => { e.preventDefault(); const v = inp.value.replace(/[,\s]/g, ''); if (!v) return; const ok = +v === cur.ans; k.mark(ok, q); tip.innerHTML = ok ? '' : `${fmt(cur.a)} &times; ${fmt(cur.b)} = ${fmt(cur.ans)}. ${timesTip(cur.a, cur.b)}`; next(); };
+      form.onsubmit = e => { e.preventDefault(); const v = inp.value.replace(/[,\s]/g, ''); if (!v) return; const ok = +v === cur.ans; k.mark(ok, q); k.answered(ok, `${fmt(cur.a)} &times; ${fmt(cur.b)} = ${fmt(cur.ans)}. ${timesTip(cur.a, cur.b)}`, next); };
       next();
-      return k.timed(area, ctx.secs || 60);
+      k.timed(area, ctx.secs || 60);
     } },
   { id: 'target', modes: ['challenger', 'pro'], title: 'Hit the target', kid: 'Number detective', color: 'plum', rounds: 5, perQ: 4,
     desc: 'Use all the numbers once each with + − × ÷ and brackets to make the target. Puzzles get bigger and harder as you solve them. Every puzzle has an answer.',
@@ -239,14 +259,14 @@ export const GAMES = [
         const used = (s.match(/\d+/g) || []).map(Number).sort((a, b) => a - b), want = puzzle.nums.slice().sort((a, b) => a - b);
         if (used.join() !== want.join()) { msg.textContent = `Use each of ${puzzle.nums.join(', ')} exactly once.`; flash(box, false); return; }
         const v = evalNum(s); if (Number.isNaN(v)) { msg.textContent = 'I could not read that. Use + - * / and brackets.'; return; }
-        if (Math.abs(v - puzzle.target) < 1e-9) { k.mark(true, box); ctx.say('Solved!'); setTimeout(fresh, 700); } else { msg.textContent = `That makes ${Math.round(v * 1000) / 1000}, not ${puzzle.target}. Keep trying.`; flash(box, false); } };
-      skip.onclick = () => { k.mark(false, box); msg.textContent = `One answer: ${puzzle.sol.replace(/^\((.*)\)$/, '$1')}`; setTimeout(fresh, 2200); };
+        if (Math.abs(v - puzzle.target) < 1e-9) { k.mark(true, box); ctx.say('Solved!'); k.later(fresh, 700); } else { msg.textContent = `That makes ${Math.round(v * 1000) / 1000}, not ${puzzle.target}. Keep trying.`; flash(box, false); } };
+      skip.onclick = () => { k.mark(false, box); msg.textContent = `One answer: ${puzzle.sol.replace(/^\((.*)\)$/, '$1')}`; k.later(fresh, 2200); };
       fresh();
     } },
   { id: 'frac-faceoff', modes: ['challenger', 'pro'], title: 'Fraction face-off', kid: 'Bigger slice', color: 'plum', secs: 60, perQ: 14,
     desc: 'Tap the bigger fraction. Pairs get closer together and the denominators grow as you get them right, then decimals join in.',
     run(area, ctx) {
-      const k = kit(ctx), { dial } = ctx; const row = el('div', { class: 'g-duel', role: 'group', 'aria-label': 'Pick the bigger one' }), fig = el('div', { class: 'g-fig' }); area.append(row, fig);
+      const k = kit(ctx, area), { dial } = ctx; const row = el('div', { class: 'g-duel', role: 'group', 'aria-label': 'Pick the bigger one' }), fig = el('div', { class: 'g-fig' }); area.append(row, fig);
       const next = () => {
         const lv = dial.lv;
         const q = dial.fresh(() => {
@@ -255,11 +275,11 @@ export const GAMES = [
           if (a * d === b * c) { a = 1; b = 2; c = 1; d = 3; }
           if (lv >= 13 && Math.random() < .4) { const dec = Math.round((c / d + pick([-1, 1]) * ri(1, 4) / 100) * 100) / 100; if (dec > 0 && dec < 1 && dec !== a / b) return [`fd${a}/${b}-${dec}`, [[frac(a, b), a / b, a, b], [String(dec), dec]]]; }
           return [`${a}/${b}-${c}/${d}`, [[frac(a, b), a / b, a, b], [frac(c, d), c / d, c, d]]]; });
-        row.innerHTML = '';
-        q.forEach(([html, v]) => { const btn = el('button', { class: 'g-frac' }, html); btn.onclick = () => { const ok = v >= Math.max(q[0][1], q[1][1]); k.mark(ok, row); fig.innerHTML = q[0][2] && q[1][2] ? V.fracBar(q[0][2], q[0][3], { w: 240 }) + V.fracBar(q[1][2], q[1][3], { w: 240, cls: 'vz-teal' }) : ''; ctx.say(ok ? 'Right!' : 'The other one was bigger.'); next(); }; row.append(btn); });
+        row.innerHTML = ''; fig.innerHTML = '';
+        q.forEach(([html, v]) => { const btn = el('button', { class: 'g-frac' }, html); btn.onclick = () => { const ok = v >= Math.max(q[0][1], q[1][1]); k.mark(ok, row); if (!ok && q[0][2] && q[1][2]) fig.innerHTML = V.fracBar(q[0][2], q[0][3], { w: 240 }) + V.fracBar(q[1][2], q[1][3], { w: 240, cls: 'vz-teal' }); k.answered(ok, 'The other one was bigger.', next, 'Right!'); }; row.append(btn); });
       };
       next();
-      return k.timed(area, ctx.secs || 60);
+      k.timed(area, ctx.secs || 60);
     } },
   { id: 'line-snipe', modes: ['explorer', 'challenger', 'pro'], title: 'Number line sniper', kid: 'Number line', color: 'sky', rounds: 10, perQ: 10,
     desc: 'Place the number on the line and land inside the target zone. Lines grow from 0 to 10 up to a million, then fractions, decimals and negatives, and the zone shrinks.',
@@ -269,7 +289,7 @@ export const GAMES = [
       const kindFor = lv => lv <= 3 ? [0, 10, 'int'] : lv <= 6 ? [0, 100, 'int'] : lv <= 9 ? [0, 1000, 'int'] : lv <= 12 ? [0, 1, 'frac'] : lv <= 15 ? [0, 1, 'dec'] : lv <= 18 ? [-100, 100, 'int'] : [0, 1000000, 'int'];
       const next = () => {
         if (k.over(10)) return k.finish();
-        const [lo, hi, type] = kindFor(dial.lv), tol = Math.max(0.015, 0.08 - dial.lv * 0.0035);
+        const [lo, hi, type] = kindFor(dial.lv), tol = Math.max(0.015, 0.08 - dial.lv * 0.0035); ctx.say('');
         cur = dial.fresh(() => { if (type === 'frac') { const d = pick([2, 3, 4, 5, 6, 8, 10, 12]), n = ri(1, d - 1); return [`${n}/${d}`, { v: n / d, html: frac(n, d) }]; } if (type === 'dec') { const v = ri(1, 99) / 100; return [`d${v}`, { v, html: String(v) }]; } const step = hi >= 1000000 ? 1000 : 1, v = ri(Math.ceil(lo / step) + 1, Math.floor(hi / step) - 1) * step; return [`i${v}`, { v, html: fmt(v) }]; });
         cur = { ...cur, lo, hi, tol };
         wrap.innerHTML = `<div class="g-line-track"><span class="g-line-zone" hidden></span><span class="g-line-true" hidden></span></div><input type="range" min="0" max="1000" value="500" aria-label="Position on the number line"><div class="g-line-labels"><span>${fmt(lo)}</span><span>${fmt(hi)}</span></div>`;
@@ -278,7 +298,7 @@ export const GAMES = [
       form.onsubmit = e => { e.preventDefault(); const r = wrap.querySelector('input'), guess = cur.lo + (r.value / 1000) * (cur.hi - cur.lo), err = Math.abs(guess - cur.v) / (cur.hi - cur.lo), ok = err <= cur.tol;
         const at = p => ((p - cur.lo) / (cur.hi - cur.lo)) * 100, mark = wrap.querySelector('.g-line-true'), zone = wrap.querySelector('.g-line-zone');
         mark.style.left = at(cur.v) + '%'; mark.hidden = false; zone.style.left = Math.max(0, at(cur.v) - cur.tol * 100) + '%'; zone.style.width = cur.tol * 200 + '%'; zone.hidden = false;
-        k.mark(ok, wrap); ctx.say(ok ? `On target! ${Math.round(err * 1000) / 10}% away.` : `${Math.round(err * 1000) / 10}% away. The zone was ${Math.round(cur.tol * 1000) / 10}% each side.`); setTimeout(next, 1200); };
+        k.mark(ok, wrap); ctx.say(ok ? `On target! ${Math.round(err * 1000) / 10}% away.` : `${Math.round(err * 1000) / 10}% away. The zone was ${Math.round(cur.tol * 1000) / 10}% each side.`); k.later(next, 1200); };
       next();
     } },
   { id: 'pairs', modes: ['explorer', 'challenger', 'pro'], title: 'Memory match', kid: 'Match the pairs', color: 'teal', rounds: 2, perQ: 10,
@@ -304,8 +324,8 @@ export const GAMES = [
         const flip = i => {
           const c = cards[i]; if (lock || c.done || open.includes(c)) return; c.el.classList.add('up'); c.el.setAttribute('aria-label', c.el.textContent); tapSfx('tap'); open.push(c);
           if (open.length < 2) return; lock = true; const [x, y] = open;
-          if (x.k === y.k) { x.done = y.done = true; x.el.classList.add('got'); y.el.classList.add('got'); matched++; k.mark(misses <= 1, null); misses = 0; open = []; lock = false; ctx.say(`Match! ${matched} of ${pairs.length}.`); if (matched === pairs.length) setTimeout(deal, 700); }
-          else { misses++; setTimeout(() => { x.el.classList.remove('up'); y.el.classList.remove('up'); x.el.setAttribute('aria-label', 'Hidden card'); y.el.setAttribute('aria-label', 'Hidden card'); open = []; lock = false; }, 900); }
+          if (x.k === y.k) { x.done = y.done = true; x.el.classList.add('got'); y.el.classList.add('got'); matched++; k.mark(misses <= 1, null); misses = 0; open = []; lock = false; ctx.say(`Match! ${matched} of ${pairs.length}.`); if (matched === pairs.length) k.later(deal, 700); }
+          else { misses++; k.later(() => { x.el.classList.remove('up'); y.el.classList.remove('up'); x.el.setAttribute('aria-label', 'Hidden card'); y.el.setAttribute('aria-label', 'Hidden card'); open = []; lock = false; }, 900); }
         };
         cards.forEach((c, i) => { const b = el('button', { class: 'g-card', 'aria-label': 'Hidden card' }, `<span class="g-card-in">${c.h}</span>`); c.el = b; b.onclick = () => flip(i); grid.append(b); });
       };
@@ -314,34 +334,33 @@ export const GAMES = [
   { id: 'check-it', modes: ['challenger', 'pro'], title: 'Answer checker', kid: 'Spot the mistake', color: 'coral', secs: 60, perQ: 14,
     desc: 'Is the answer right or wrong? Use the digit sum check (casting out nines) to decide in seconds. The products get bigger as you get them right.',
     run(area, ctx) {
-      const k = kit(ctx), { dial } = ctx; let cur; const q = el('div', { class: 'g-q' }), row = el('div', { class: 'g-duel', role: 'group', 'aria-label': 'Right or wrong' }), tip = el('p', { class: 'g-tip', 'aria-live': 'polite' }); area.append(q, row, tip);
+      const { dial } = ctx; let cur; const q = el('div', { class: 'g-q' }), row = el('div', { class: 'g-duel', role: 'group', 'aria-label': 'Right or wrong' }), tip = el('p', { class: 'g-tip', 'aria-live': 'polite' }); area.append(q, row, tip);
+      const k = kit(ctx, area, { tip });
       const ds = n => Math.abs(n) % 9;
       const next = () => {
         const lv = dial.lv, [da, db] = lv <= 3 ? [2, 1] : lv <= 7 ? [2, 2] : lv <= 11 ? [3, 2] : lv <= 15 ? [3, 3] : lv <= 18 ? [4, 3] : [4, 4];
         cur = dial.fresh(() => { const a = nd(da), b = nd(db), right = Math.random() < .5; let c = a * b; if (!right) { let off; do { off = pick(lv >= 12 ? [1, 2, 3, 10, 20, 100, 1000] : [1, 2, 10, 100]) * pick([1, -1]) * (lv >= 15 ? ri(1, 3) : 1); } while (off % 9 === 0); c += off; } return [`${a}x${b}=${c}`, { right, a, b, c }]; });
         q.innerHTML = `${fmt(cur.a)} &times; ${fmt(cur.b)} = ${fmt(cur.c)}`;
       };
-      ['Right', 'Wrong'].forEach(lab => { const btn = el('button', { class: 'md-btn' + (lab === 'Right' ? ' md-btn--primary' : '') }, lab); btn.onclick = () => { const ok = (lab === 'Right') === cur.right; k.mark(ok, q); tip.innerHTML = `Digit sums: ${ds(cur.a)} &times; ${ds(cur.b)} gives ${ds(ds(cur.a) * ds(cur.b))}; the answer gives ${ds(cur.c)}. ${cur.right ? 'It was right.' : 'It was wrong.'}`; next(); }; row.append(btn); });
+      ['Right', 'Wrong'].forEach(lab => { const btn = el('button', { class: 'md-btn' + (lab === 'Right' ? ' md-btn--primary' : '') }, lab); btn.onclick = () => { const ok = (lab === 'Right') === cur.right; k.mark(ok, q); k.answered(ok, `Digit sums: ${ds(cur.a)} &times; ${ds(cur.b)} gives ${ds(ds(cur.a) * ds(cur.b))}; the answer gives ${ds(cur.c)}. ${cur.right ? 'It was right.' : 'It was wrong.'}`, next); }; row.append(btn); });
       next();
-      return k.timed(area, ctx.secs || 60);
+      k.timed(area, ctx.secs || 60);
     } },
   { id: 'rain', modes: ['explorer', 'challenger', 'pro'], title: 'Multiple rain', kid: 'Number rain', color: 'sky', secs: 45, perQ: 14,
     desc: 'Numbers drift down. Tap only the multiples of the magic number. The magic number changes as you level up, from 2 to tricky ones like 13, 17 and 25, and the rain speeds up.',
     run(area, ctx) {
       const k = kit(ctx), { dial } = ctx; const K = [2, 5, 10, 3, 4, 6, 9, 8, 7, 11, 12, 15, 13, 25, 14, 17, 18, 19, 23, 27];
-      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; let raf = 0, last = performance.now(), spawnT = 0, stopped = false, kv = K[dial.lv - 1];
+      const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; let last = performance.now(), spawnT = 0, kv = K[dial.lv - 1];
       const head = el('p', { class: 'g-say' }), sky = el('div', { class: 'g-rain', role: 'group' }); area.append(head, sky);
       const setK = () => { kv = K[dial.lv - 1]; head.innerHTML = `Tap the multiples of <b>${kv}</b>.`; sky.setAttribute('aria-label', `Falling numbers. Tap multiples of ${kv}.`); };
       const check = () => { if (K[dial.lv - 1] !== kv) setK(); };
       setK(); const drops = [];
       const spawn = () => { const top = kv * (8 + dial.lv), mult = Math.random() < .5; let n; if (mult) n = kv * ri(1, Math.max(2, Math.floor(top / kv))); else { do { n = ri(2, top); } while (n % kv === 0); }
         const b = el('button', { class: 'g-drop' }, String(n)); b.style.left = ri(4, 84) + '%'; sky.append(b); const d = { b, y: -10, n, k: kv }; drops.push(d);
-        b.onclick = () => { if (d.gone) return; d.gone = true; const ok = n % d.k === 0; k.mark(ok, null); tapSfx(ok ? 'pop' : 'no'); ctx.say(ok ? `${n} = ${d.k} &times; ${n / d.k}` : `${n} is not a multiple of ${d.k}.`); b.classList.add(ok ? 'hit' : 'miss'); setTimeout(() => b.remove(), 250); check(); }; };
-      const step = now => { if (stopped) return; const dt = Math.min(.05, (now - last) / 1000); last = now; const speed = (0.8 + dial.lv * 0.07) * (reduced ? .6 : 1); spawnT -= dt; if (spawnT <= 0) { spawn(); spawnT = 1.35 / speed; }
-        const H = sky.clientHeight || 360; drops.forEach(d => { if (d.gone) return; d.y += dt * 60 * speed; d.b.style.transform = `translateY(${(d.y * H) / 100}px)`; if (d.y > 92) { d.gone = true; d.b.remove(); if (d.n % d.k === 0) { k.mark(false, null); ctx.say(`Missed ${d.n}, a multiple of ${d.k}.`); check(); } } }); raf = requestAnimationFrame(step); };
-      raf = requestAnimationFrame(step);
-      const stopT = ctx.endless ? null : timer(area, ctx.secs || 45, () => { stopped = true; cancelAnimationFrame(raf); k.finish(); });
-      return () => { stopped = true; cancelAnimationFrame(raf); if (stopT) stopT(); };
+        b.onclick = () => { if (d.gone) return; d.gone = true; const ok = n % d.k === 0; k.mark(ok, null); tapSfx(ok ? 'pop' : 'no'); ctx.say(ok ? `${n} = ${d.k} &times; ${n / d.k}` : `${n} is not a multiple of ${d.k}.`); b.classList.add(ok ? 'hit' : 'miss'); k.later(() => b.remove(), 250); check(); }; };
+      loop(now => { const dt = Math.min(.05, (now - last) / 1000); last = now; const speed = (0.8 + dial.lv * 0.07) * (reduced ? .6 : 1); spawnT -= dt; if (spawnT <= 0) { spawn(); spawnT = 1.35 / speed; }
+        const H = sky.clientHeight || 360; drops.forEach(d => { if (d.gone) return; d.y += dt * 60 * speed; d.b.style.transform = `translateY(${(d.y * H) / 100}px)`; if (d.y > 92) { d.gone = true; d.b.remove(); if (d.n % d.k === 0) { k.mark(false, null); ctx.say(`Missed ${d.n}, a multiple of ${d.k}.`); check(); } } }); }, ctx.signal);
+      k.timed(area, ctx.secs || 45);
     } },
   { id: 'sequence', modes: ['challenger', 'pro'], title: 'Pattern spotter', kid: 'What comes next?', color: 'sun', rounds: 12, perQ: 12,
     desc: 'Find the next number. Patterns climb from counting steps to squares, triangles, the Virahāṅka-Fibonacci numbers (described in India over 1,300 years ago), primes and interleaved patterns.',
@@ -350,23 +369,24 @@ export const GAMES = [
       const next = () => {
         if (k.over(12)) return k.finish();
         const s = dial.fresh(() => seqQ(dial.lv)), last = s.shown[s.shown.length - 1], prev = s.shown[s.shown.length - 2];
-        q.innerHTML = `${s.shown.map(fmt).join(', ')}, <b>?</b>`; opts.innerHTML = '';
+        q.innerHTML = `${s.shown.map(fmt).join(', ')}, <b>?</b>`; opts.innerHTML = ''; tip.textContent = '';
         const wrong = [...new Set([s.ans + 1, s.ans - 1, last + (last - prev), s.ans + (last - prev), s.ans * 2 - last, s.ans + 2])].filter(v => v !== s.ans && v !== last);
-        shuffle([s.ans, ...shuffle(wrong).slice(0, 3)]).forEach(v => { const b = el('button', { class: 'md-chip' }, fmt(v)); b.onclick = () => { const ok = v === s.ans; k.mark(ok, q); tip.textContent = `${s.ans}: ${s.rule}.`; setTimeout(next, 650); }; opts.append(b); });
+        shuffle([s.ans, ...shuffle(wrong).slice(0, 3)]).forEach(v => { const b = el('button', { class: 'md-chip' }, fmt(v)); b.onclick = () => { const ok = v === s.ans; k.mark(ok, q); tip.textContent = `${s.ans}: ${s.rule}.`; k.later(next, 650); }; opts.append(b); });
       };
       next();
     } },
   { id: 'balance', modes: ['challenger', 'pro'], title: 'Balance the scale', kid: 'Balance it', color: 'plum', secs: 60, perQ: 10,
     desc: 'Find the mystery number that keeps the scale level. It climbs from x + 3 = 9 to equations with x on both sides and brackets: Parāvartya Yojayet in action.',
     run(area, ctx) {
-      const k = kit(ctx), { dial } = ctx; const fig = el('div', { class: 'g-balance' }), opts = el('div', { class: 'g-opts', role: 'group', 'aria-label': 'Mystery number' }), tip = el('p', { class: 'g-tip', 'aria-live': 'polite' }); area.append(fig, opts, tip);
+      const { dial } = ctx; const fig = el('div', { class: 'g-balance' }), opts = el('div', { class: 'g-opts', role: 'group', 'aria-label': 'Mystery number' }), tip = el('p', { class: 'g-tip', 'aria-live': 'polite' }); area.append(fig, opts, tip);
+      const k = kit(ctx, area, { tip });
       const next = () => {
         const q = dial.fresh(() => balanceQ(dial.lv));
         fig.innerHTML = V.balance(q.L, q.R); opts.innerHTML = '';
-        near(q.x, 3, 4, v => dial.lv > 8 || v > 0).forEach(v => { const b = el('button', { class: 'md-chip' }, fmt(v)); b.onclick = () => { const ok = v === q.x; k.mark(ok, fig); tip.innerHTML = `x = ${fmt(q.x)}: ${q.how}.`; next(); }; opts.append(b); });
+        near(q.x, 3, 4, v => dial.lv > 8 || v > 0).forEach(v => { const b = el('button', { class: 'md-chip' }, fmt(v)); b.onclick = () => { const ok = v === q.x; k.mark(ok, fig); k.answered(ok, `x = ${fmt(q.x)}: ${q.how}.`, next); }; opts.append(b); });
       };
       next();
-      return k.timed(area, ctx.secs || 60);
+      k.timed(area, ctx.secs || 60);
     } }
 ];
 

@@ -1,4 +1,4 @@
-import { test, expect, APP, open } from './fixtures';
+import { test, expect, APP, open, cloudLog } from './fixtures';
 
 /* The app is a hash router (#/learn, #/dojo, ...). Every top-level route renders, deep links work,
    and Back / Forward move between views. */
@@ -108,4 +108,23 @@ test('a sutra card flips, then Learn more opens the dialog and Back closes it', 
 test('an unknown route falls back to home', async ({ page }) => {
   await page.goto(`${APP}#/no-such-page`);
   await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
+});
+
+/* view-lifecycle spec: leaving a page stops everything it started */
+test('leaving the Arena during the countdown never starts the round', async ({ page }) => {
+  // Record analytics events (the round start is one); the real siteTrack is never installed
+  await page.addInitScript(() => {
+    const calls: string[] = []; (window as any).__tracked = calls;
+    Object.defineProperty(window, 'siteTrack', { configurable: true, get: () => (name: string) => { calls.push(name); }, set: () => {} });
+  });
+  await page.clock.install();
+  await open(page, '#/arena');
+  await page.locator('#arGo').click();
+  await expect(page.locator('.ar-count')).toBeVisible();
+  await page.evaluate(() => { location.hash = '#/learn'; });
+  await expect(page.locator('#view h1')).toHaveText('Pick a level');
+  await page.clock.runFor(3000);
+  await expect(page.locator('#arQ')).toHaveCount(0);
+  expect(await page.evaluate(() => (window as any).__tracked.filter((n: string) => n.startsWith('math/arena/')))).toEqual([]);
+  expect((await cloudLog(page)).writes).toEqual([]);
 });

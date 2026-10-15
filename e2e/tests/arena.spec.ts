@@ -113,3 +113,96 @@ test('Duelist: starting a duel and leaving earns nothing, finishing one earns it
   await page.goto(`${APP}#/me`);
   await expect(duelist).toHaveClass(/\bgot\b/);
 });
+
+/* view-lifecycle spec: rounds run under their own signal, so a second round on the same page handles each
+   tap once. page.clock runs the 60 second rounds in milliseconds; Practice rounds never post a score. */
+/* Jumps past the end of a 60 second round, then lets a frame or two run so the round clock sees it */
+async function endRound(page: import('@playwright/test').Page) {
+  await page.clock.fastForward(61_000);
+  await page.clock.runFor(100);
+}
+async function practiceRound(page: import('@playwright/test').Page) {
+  await page.locator('[data-t="practice"]').click();
+  await page.locator('#arGo').click();
+  await page.clock.runFor(2200); // the 3, 2, 1 countdown
+  await expect(page.locator('#arQ')).not.toBeEmpty();
+}
+
+test('second Arena round: keypad taps 1 then 2 enter 12', async ({ page, issues }) => {
+  await page.clock.install();
+  await open(page, '#/arena');
+  await practiceRound(page);
+  await endRound(page);
+  await expect(page.locator('.ar-result')).toBeVisible();
+  await practiceRound(page);
+  await page.locator('.ar-key[data-k="1"]').click();
+  await page.locator('.ar-key[data-k="2"]').click();
+  await expect(page.locator('#arEntry')).toHaveText('12');
+  expect((await cloudLog(page)).writes).toEqual([]);
+  expect(issues.console, 'console errors').toEqual([]);
+});
+
+test.describe('explorer, second round', () => {
+  test.use({ seedMode: 'explorer' });
+  test('one tap answers exactly one question', async ({ page }) => {
+    await page.clock.install();
+    await open(page, '#/arena');
+    await practiceRound(page);
+    await endRound(page);
+    await expect(page.locator('.ar-result')).toBeVisible();
+    await practiceRound(page);
+    await page.locator('.ar-choice').first().click();
+    await expect(page.locator('#arPop')).toHaveText(/^(\+\d+|-?\d+)$/);
+    await endRound(page);
+    await expect(page.locator('.ar-result p').first()).toHaveText(/^(1 right · 0 missed|0 right · 1 missed)/);
+    expect((await cloudLog(page)).writes).toEqual([]);
+  });
+});
+
+test('challenge tower: Play again, then one keypad tap enters one digit', async ({ page }) => {
+  await page.clock.install();
+  await open(page, '#/challenge/1');
+  await page.locator('#chGo').click();
+  await page.clock.runFor(2000);
+  await expect(page.locator('#arQ')).not.toBeEmpty();
+  await endRound(page); // challenge 1 is a 60 second Sprint
+  await page.locator('.lv-result [data-retry]').click();
+  await page.locator('#chGo').click();
+  await page.clock.runFor(2000);
+  await expect(page.locator('#arQ')).not.toBeEmpty();
+  for (let k = 0; k < 30 && !(await page.locator('.ar-key').count()); k++) await page.locator('.ar-choice').first().click();
+  await page.locator('.ar-key[data-k="7"]').click();
+  await expect(page.locator('#arEntry')).toHaveText('7');
+  expect((await cloudLog(page)).writes).toEqual([]);
+});
+
+test('duel rematch: one right tap scores exactly 1', async ({ page, issues }) => {
+  await page.addInitScript(() => {
+    let a = 1;
+    (window as any).__seed = (s: number) => { a = s; };
+    Math.random = () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  });
+  await open(page, '#/duel');
+  const answers = new Map(await page.evaluate(async () => {
+    (window as any).__seed(4242);
+    const A = await import('/vedic-math/js/arena.js' as string);
+    const html = (h: string) => { const d = document.createElement('div'); d.innerHTML = h; return d.innerHTML; };
+    return A.makeSet('challenger', null, 120).map((q: { q: string; answer: number }) => [html(q.q), q.answer]);
+  }) as [string, number][]);
+  const tapRight = async () => {
+    const q = await page.locator('#dQ0').innerHTML();
+    expect(answers.has(q), `question ${q} is in the rebuilt set`).toBe(true);
+    await page.locator(`.duel-p1 .ar-choice[data-v="${answers.get(q)}"]`).first().click();
+  };
+  await page.evaluate(() => (window as any).__seed(4242));
+  await page.locator('#dGo').click();
+  for (let i = 0; i < 10; i++) { await tapRight(); if (i < 9) await expect(page.locator('#dS0')).toHaveText(String(i + 1)); }
+  await expect(page.locator('.ar-result')).toContainText('Player 1');
+  await page.evaluate(() => (window as any).__seed(4242));
+  await page.locator('#dGo').click();
+  await expect(page.locator('#dS0')).toHaveText('0');
+  await tapRight();
+  await expect(page.locator('#dS0')).toHaveText('1');
+  await expect(page.locator('#dS1')).toHaveText('0');
+  expect(issues.console, 'console errors').toEqual([]);
+});
