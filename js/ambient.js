@@ -51,9 +51,9 @@ function startBg() {
   const size = () => { W = innerWidth; H = innerHeight; c.width = W * dpr; c.height = H * dpr; c.style.width = W + 'px'; c.style.height = H + 'px'; g.setTransform(dpr, 0, 0, dpr, 0, 0); };
   size(); addEventListener('resize', size);
   const css = getComputedStyle(document.body);
-  const col = (name, a) => { const v = css.getPropertyValue(name).trim() || '#A88EEA'; const m = v.match(/^#(..)(..)(..)$/); return m ? `rgba(${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)},${a})` : v; };
+  const col = (name, a) => { const v = css.getPropertyValue(name).trim() || '#EE7A63'; const m = v.match(/^#(..)(..)(..)$/); return m ? `rgba(${parseInt(m[1], 16)},${parseInt(m[2], 16)},${parseInt(m[3], 16)},${a})` : v; };
   const dark = () => { const th = document.documentElement.dataset.theme; return th === 'dark' || (th !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches); };
-  const ink = a => (dark() ? `rgba(225,220,255,${a})` : col('--ink', a));
+  const ink = a => (dark() ? `rgba(233,237,243,${a})` : col('--ink', a));
   const caption = (txt, x, y, a, align = 'left') => { g.font = 'italic 600 12px Fredoka, "Nunito Sans", sans-serif'; g.textAlign = align; g.fillStyle = ink(a); g.fillText(txt, x, y); };
 
   /* ---- Drifters: Brahmi numerals, the zero dot, laghu-guru meters, power-of-ten names ---- */
@@ -140,7 +140,7 @@ function startBg() {
   const stars = Array.from({ length: 46 }, () => ({ x: Math.random(), y: Math.random(), p: Math.random() * 6.28, r: Math.random() * 1.2 + .3 }));
   function draw(dt) {
     const d = dark(); g.clearRect(0, 0, W, H);
-    if (d) stars.forEach(s => { const a = .2 + .3 * Math.sin(t * .8 + s.p); g.fillStyle = `rgba(230,225,255,${a})`; g.beginPath(); g.arc(s.x * W, s.y * H, s.r, 0, 6.283); g.fill(); });
+    if (d) stars.forEach(s => { const a = .2 + .3 * Math.sin(t * .8 + s.p); g.fillStyle = `rgba(233,237,243,${a})`; g.beginPath(); g.arc(s.x * W, s.y * H, s.r, 0, 6.283); g.fill(); });
     const wide = W > 900;
     wheel(W - Math.min(190, W * .22), Math.min(230, H * .3), Math.min(150, W * .2));
     sulba(wide ? Math.min(230, W * .18) : W * .5, H * .6, Math.min(240, W * .3));
