@@ -26,12 +26,14 @@ export function dots(n, style = 'dice') {
   const pts = [];
   if (style === 'dice' && n <= 6) {
     const P = { 1: [[1, 1]], 2: [[0, 0], [2, 2]], 3: [[0, 0], [1, 1], [2, 2]], 4: [[0, 0], [2, 0], [0, 2], [2, 2]], 5: [[0, 0], [2, 0], [1, 1], [0, 2], [2, 2]], 6: [[0, 0], [2, 0], [0, 1], [2, 1], [0, 2], [2, 2]] }[n] || [];
+    // dice pips on a 3 x 3 grid centred in the 100 x 100 frame (columns and rows at 20, 50, 80)
     P.forEach(([c, r]) => pts.push([20 + c * 30, 20 + r * 30]));
-    return svg(100, 100, `${n} dots`, `<rect x="2" y="2" width="96" height="96" rx="16" class="vz-frame"/>` + pts.map(([x, y]) => `<circle cx="${x + 10}" cy="${y + 10}" r="10" class="vz-coral vz-dot"/>`).join(''));
+    return svg(100, 100, `${n} dots`, `<rect x="2" y="2" width="96" height="96" rx="16" class="vz-frame"/>` + pts.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="10" class="vz-coral vz-dot"/>`).join(''));
   }
-  for (let i = 0; i < n; i++) { const g = Math.floor(i / 5), j = i % 5; pts.push([14 + g * 120 + (j % 3) * 34 + (j >= 3 ? 17 : 0), 18 + (j >= 3 ? 34 : 0)]); }
-  const w = Math.ceil(n / 5) * 120;
-  return svg(Math.max(w, 120), 72, `${n} dots`, pts.map(([x, y], i) => `<circle cx="${x + 4}" cy="${y + 4}" r="12" class="${Math.floor(i / 5) % 2 ? 'vz-teal' : 'vz-coral'} vz-dot"/>`).join(''));
+  // groups of five (three on top, two below and between them), 92 wide each, 20 apart, 8 of padding all round
+  for (let i = 0; i < n; i++) { const g = Math.floor(i / 5), j = i % 5; pts.push([8 + g * 112 + 12 + (j % 3) * 34 + (j >= 3 ? 17 : 0), 20 + (j >= 3 ? 32 : 0)]); }
+  const w = Math.max(...pts.map(([x]) => x)) + 12 + 8; // fits the last, possibly partial, group
+  return svg(w, 72, `${n} dots`, pts.map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="12" class="${Math.floor(i / 5) % 2 ? 'vz-teal' : 'vz-coral'} vz-dot"/>`).join(''));
 }
 
 /* Two rows of objects to compare */
