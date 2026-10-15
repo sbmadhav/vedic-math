@@ -11,6 +11,7 @@ Part of [sbmadhav.com](https://sbmadhav.com). The design system (`/design-system
 | `index.html`, `math.css` | The page and its styles |
 | `js/` | ES modules (`app.js` is the entry; `skills/` holds the skill map) |
 | `test/` | Unit tests (`node --test`) |
+| `e2e/` | Playwright end-to-end tests against the live site |
 | `cloud/` | Firebase setup, Firestore rules and the rules tests |
 | `build.py` | Stamps the import map and cache versions |
 
@@ -40,6 +41,7 @@ After one visit online, the app works offline: `sw.js` (scope `/vedic-math/`) sa
 | Stamped files are current | `python3 build.py && git diff --exit-code` |
 | Unit tests | `node --test 'test/**/*.test.{js,mjs}'` |
 | Firestore rules tests (emulator, needs Java) | `cd cloud/test && npm install && npm test` |
+| End-to-end tests (live site) | `cd e2e && npm ci && npx playwright install chromium webkit && npx playwright test` |
 
 The pre-commit hook in `.githooks/` runs the first two. Enable it once per clone:
 
@@ -47,4 +49,6 @@ The pre-commit hook in `.githooks/` runs the first two. Enable it once per clone
 git config core.hooksPath .githooks
 ```
 
-CI (`.github/workflows/ci.yml`) runs the same on every push and pull request to `main`.
+CI (`.github/workflows/ci.yml`) runs the same on every push and pull request to `main`. `.github/workflows/e2e.yml` runs the end-to-end suite against https://sbmadhav.com daily, on demand and after each push to `main` once Pages has deployed it.
+
+The end-to-end tests never write to production Firestore: the Firebase SDK is faked in all but one read-only leaderboard test, and any write-shaped Firestore request fails the run. To test this checkout before pushing, run `node e2e/local-server.mjs 8124` and then `BASE_URL=http://localhost:8124 npx playwright test` in `e2e/`.

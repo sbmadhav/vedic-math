@@ -28,7 +28,15 @@ They are not `?v=` stamped (this repo cannot hash them). Do not copy them in; ch
 - Tests: `node --test 'test/**/*.test.{js,mjs}'`.
 - Pre-commit hook in `.githooks/pre-commit` runs the build (fails if it changed a file: stage and commit again) and the tests. Enable once per clone: `git config core.hooksPath .githooks`.
 - `.github/workflows/ci.yml` runs the same checks on pushes and pull requests to `main`.
-- Repo-only files are listed in `exclude` in `_config.yml` (`cloud/`, `test/`, this file, the README, `build.py`). Add new ones there.
+
+## End-to-end tests (`e2e/`)
+
+- Every change that affects behavior updates or adds the matching Playwright test in `e2e/` in the same commit. Run `cd e2e && npx playwright test` before pushing (`BASE_URL=http://localhost:8124` for a local server: `node e2e/local-server.mjs 8124` serves this checkout at `/vedic-math/` and proxies the rest of the site from https://sbmadhav.com).
+- The suite targets the LIVE https://sbmadhav.com/vedic-math/ by default (projects chromium, webkit, mobile). First run: `cd e2e && npm ci && npx playwright install chromium webkit`.
+- Never write to production Firestore from a test. `e2e/tests/fixtures.ts` replaces the Firebase SDK with a fake that records attempted writes (`cloudLog(page)`), and aborts and fails the test on any write-shaped request to `firestore.googleapis.com`. Only `leaderboard.live.spec.ts` loads the real SDK (one anonymous sign-in, reads only, chromium, no retries). Never submit an Arena or game score against the live backend.
+- Known axe violations go in `KNOWN` in `e2e/tests/a11y.spec.ts` (each becomes a `test.fixme` with a note); remove the entry when fixed.
+- `.github/workflows/e2e.yml` runs the suite daily, on demand (optional `base_url`) and on pushes to `main` (after waiting for the Pages deploy).
+- Repo-only files are listed in `exclude` in `_config.yml` (`cloud/`, `test/`, `e2e/`, this file, the README, `build.py`). Add new ones there.
 
 ## Offline
 
