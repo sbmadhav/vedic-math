@@ -1,12 +1,28 @@
 /* Answer checking. A small, safe expression parser (no eval) lets learners type
    3/4, 2.5, -7, 3x+2, 2(x-1)^2, 4sqrt(3), pi/6 or 2+3i, and compares by value. */
 
+/* A whole input that is a mixed number: sign, whole part, a proper fraction (1 3/4, -2 1/2) */
+const MIXED = /^([+-]?)\s*(\d+)\s+(\d+)\s*\/\s*(\d+)$/;
+const foldMinus = s => String(s).replace(/[−–—]/g, '-');
+
 function normalize(s) {
-  return String(s).trim().toLowerCase()
-    .replace(/[−–—]/g, '-').replace(/[×·]/g, '*').replace(/÷/g, '/')
+  let v = foldMinus(String(s).trim().toLowerCase());
+  const m = v.match(MIXED);
+  // the sign applies to the whole value: -2 1/2 is -(2 + 1/2)
+  if (m && +m[3] < +m[4]) v = `${m[1]}(${m[2]}+${m[3]}/${m[4]})`;
+  return v
+    .replace(/[×·]/g, '*').replace(/÷/g, '/')
     .replace(/π/g, 'pi').replace(/√/g, 'sqrt').replace(/²/g, '^2').replace(/³/g, '^3')
-    .replace(/(\d),(?=\d{3}\b)/g, '$1').replace(/\s+/g, '');
+    .replace(/(\d),(?=\d{3}\b)/g, '$1')
+    // a space between two digits is never one number (1 225 is not 1225): leave a mark the parser refuses
+    .replace(/(\d)\s+(?=\d)/g, '$1#')
+    .replace(/\s+/g, '');
 }
+
+/* A plain number: optional sign, then an integer (thousands commas allowed), a decimal, a/b or a mixed number */
+const PLAIN = /^[+-]?\s*(?:\d+\s+\d+\s*\/\s*\d+|\d+\s*\/\s*\d+|(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d*)?|\.\d+)$/;
+export const isPlainNumber = s => PLAIN.test(foldMinus(String(s ?? '').trim()));
+export const NOT_ANSWER = 'Type just the answer, like 56 or 3/4.';
 
 const FUNCS = { sqrt: Math.sqrt, sin: Math.sin, cos: Math.cos, tan: Math.tan, ln: Math.log, log: Math.log10, abs: Math.abs };
 
@@ -56,7 +72,8 @@ export function compile(src) {
 export function evalNum(src, env = {}) { try { const v = compile(src)(env); return Number.isFinite(v) ? v : NaN; } catch (e) { return NaN; } }
 const close = (a, b, tol = 1e-6) => Math.abs(a - b) <= Math.max(tol, 1e-9 * Math.max(1, Math.abs(b)));
 
-/* Checks one answer. spec = { kind, answer, tol, simplest, vars }. Returns { ok, msg } where msg explains a near miss. */
+/* Checks one answer. spec = { kind, answer, tol, simplest, plain, vars }. Returns { ok, msg } where msg explains a near miss;
+   { notAnswer: true } when a plain-number spec gets something that is not a plain number (it is not a try). */
 export function checkOne(spec, input) {
   const raw = String(input ?? '').trim();
   if (!raw) return { ok: false, empty: true };
@@ -66,11 +83,14 @@ export function checkOne(spec, input) {
     return { ok: norm(raw) === norm(spec.answer) };
   }
   if (kind === 'num') {
+    if (spec.plain && !isPlainNumber(raw)) return { ok: false, notAnswer: true, msg: NOT_ANSWER };
     const v = evalNum(raw); if (Number.isNaN(v)) return { ok: false, msg: 'Type a number, like 12, -3, 0.5 or 3/4.' };
     const ok = close(v, spec.answer, spec.tol ?? 1e-6);
     if (ok && spec.simplest) {
       const m = normalize(raw).match(/^(-?)(\d+)\/(\d+)$/);
-      if (m) { let a = +m[2], b = +m[3]; while (b) [a, b] = [b, a % b]; if (a !== 1) return { ok: false, msg: 'Right value. Now simplify the fraction.' }; if (+m[3] === 1) return { ok: true }; }
+      const mx = normalize(raw).match(/^[+-]?\((\d+)\+(\d+)\/(\d+)\)$/);
+      const top = m ? +m[2] : mx ? +mx[2] : 0, bot = m ? +m[3] : mx ? +mx[3] : 0;
+      if (m || mx) { let a = top, b = bot; while (b) [a, b] = [b, a % b]; if (a !== 1) return { ok: false, msg: 'Right value. Now simplify the fraction.' }; if (bot === 1) return { ok: true }; }
       else if (/[.]/.test(raw) && !Number.isInteger(spec.answer)) return { ok: false, msg: 'Right value. Write it as a fraction.' };
     }
     return { ok };

@@ -1,7 +1,7 @@
 /* Vedic Math for Everyone: router and views.
    Modes: Explorer (about 4 to 7), Challenger (about 8 to 12), Pro (13 to adult). Everything is gamified:
    XP and levels, badges, Dojo belts, daily quests, the Arena with leaderboards, duels and games. */
-import { SKILLS, byId, skillsFor, GRADES, STRANDS, gradeOf } from './skills/index.js';
+import { SKILLS, byId, skillsFor, GRADES, STRANDS, gradeOf, withPlain } from './skills/index.js';
 import { TRICKS, BELTS } from './vedic.js';
 import { GAMES } from './games.js';
 import { SUTRAS, SUBSUTRAS, HISTORY } from './sutras.js';
@@ -9,6 +9,7 @@ import { DETAILS } from './sutra-details.js';
 import { mountScene } from './scenes.js';
 import { RESOURCES } from './resources.js';
 import { checkOne } from './check.js';
+import { answerText } from './answers.js';
 import { pick, shuffle } from './lib.js';
 import * as store from './store.js';
 import * as fx from './fx.js';
@@ -246,26 +247,18 @@ function videosFor(s, trick) {
 
 function showExample(s) {
   const box = $('#example'); const p = s.gen(1);
-  box.innerHTML = `<h2 class="mq-h3">Watch me do one</h2><div class="mq-q${plain(p.q).length > 60 ? ' long' : ''}">${p.q}</div>${p.viz ? `<div class="mq-viz">${p.viz}</div>` : ''}<ol class="mq-steps">${p.steps.map(x => `<li>${x}</li>`).join('')}</ol>${answerText(p) ? `<p class="mq-ans">Answer: <b>${answerText(p)}</b></p>` : ''}<button class="md-btn md-btn--sm" id="another">Another example</button>`;
+  box.innerHTML = `<h2 class="mq-h3">Watch me do one</h2><div class="mq-q${plain(p.q).length > 60 ? ' long' : ''}">${p.q}</div>${p.viz ? `<div class="mq-viz">${p.viz}</div>` : ''}<ol class="mq-steps">${p.steps.map(x => `<li>${x}</li>`).join('')}</ol>${answerText(p, s) ? `<p class="mq-ans">Answer: <b>${answerText(p, s)}</b></p>` : ''}<button class="md-btn md-btn--sm" id="another">Another example</button>`;
   $('#another', box).onclick = () => showExample(s);
 }
-function answerText(p) {
-  if (p.kind === 'fields') return p.fields.map(f => `${f.label} = ${f.answer}`).join(', ');
-  if (p.kind === 'set') return [...new Set(p.answer)].join(', ');
-  if (p.kind === 'ineq') return `x ${{ '<': '&lt;', '>': '&gt;', '<=': '&le;', '>=': '&ge;' }[p.answer.op]} ${p.answer.val}`;
-  if (p.kind === 'complex') return `${p.answer[0]} ${p.answer[1] < 0 ? '&minus;' : '+'} ${Math.abs(p.answer[1])}i`;
-  if (p.kind === 'num') { const a = p.answer; if (Number.isInteger(a) || !p.simplest) return String(Math.round(a * 1e6) / 1e6).replace('-', '&minus;'); for (let d = 2; d < 5000; d++) { const n = Math.round(a * d); if (Math.abs(n / d - a) < 1e-9) return `${n}/${d}`.replace('-', '&minus;'); } }
-  if (p.kind === 'expr') return esc(p.answer).replace(/sqrt\(([^)]+)\)/g, '&radic;$1').replace(/\*/g, '');
-  return esc(p.answer);
-}
-
 /* ---------- Practice engine ---------- */
+/* Typed something that is not a plain number on an arithmetic skill: not a try, no XP */
+const notAnswerMsg = () => fx.t({ explorer: 'Type just the answer, like 7.', challenger: 'Type just the answer, like 56 or 3/4.', pro: 'Type just the answer as a number, like 56 or 3/4.' });
 const KEYS = { basic: ['/', '-', '.'], alg: ['x', '^', '(', ')', '/', '-', '√', 'π'], set: [',', '-', '/', '√'], ineq: ['x', '<', '>', '<=', '>=', '-'], complex: ['i', '+', '-'] };
 function practice(root, pickSkill, { mix = null, lives = 0, onOver = null } = {}) {
   let s, p, tries = 0, hints = 0, done = false, right = 0, total = 0, run = 0, life = lives;
   const explorer = fx.mode() === 'explorer';
   const next = () => {
-    s = pickSkill(); p = s.gen(store.level(s.id)); tries = 0; hints = 0; done = false;
+    s = pickSkill(); p = withPlain(s, s.gen(store.level(s.id))); tries = 0; hints = 0; done = false;
     // Explorer mode: no typing; small whole-number answers become big buttons
     if (explorer && p.kind === 'num' && Number.isInteger(p.answer) && p.answer >= 0 && p.answer <= 200) { const near = [...new Set([p.answer + 1, p.answer - 1, p.answer + 2, p.answer + 10, p.answer - 2].filter(v => v >= 0))]; p = { ...p, kind: 'choice', choices: [p.answer, ...shuffle(near).slice(0, 3)].sort((a, b) => a - b).map(String), answer: String(p.answer) }; }
     const keyset = p.kind === 'expr' ? KEYS.alg : p.kind === 'set' ? KEYS.set : p.kind === 'ineq' ? KEYS.ineq : p.kind === 'complex' ? KEYS.complex : p.kind === 'num' && !['K', 1, 2].includes(s.grade) ? KEYS.basic : null;
@@ -282,7 +275,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null } = {}
     const first = root.querySelector('input, .pr-choice'); if (first && render.n > 1 && matchMedia('(pointer: fine)').matches) first.focus({ preventScroll: true });
   };
   const say = (html, tone = '') => { const b = $('#prSay', root); b.className = 'pr-say ' + tone; b.innerHTML = html ? `${BOLT}<div class="md-bubble">${html}</div>` : ''; };
-  const reveal = () => { const sol = $('#prSol', root); sol.hidden = false; sol.innerHTML = `<h3>Here is how</h3><ol class="mq-steps">${p.steps.map(x => `<li>${x}</li>`).join('')}</ol><p class="mq-ans">Answer: <b>${answerText(p)}</b></p>`; };
+  const reveal = () => { const sol = $('#prSol', root); sol.hidden = false; sol.innerHTML = `<h3>Here is how</h3><ol class="mq-steps">${p.steps.map(x => `<li>${x}</li>`).join('')}</ol><p class="mq-ans">Answer: <b>${answerText(p, s)}</b></p>`; };
   const finish = ok => {
     done = true; total++; if (ok) right++; run = ok && tries === 1 && !hints ? run + 1 : 0;
     const r = store.record(s.id, ok, hints > 0 || tries > 1);
@@ -300,6 +293,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null } = {}
       e.preventDefault();
       if ($('#prCheck', root).dataset.next) { fx.sfx('tap'); return next(); }
       const res = grade(); if (res.empty) { say('Type an answer first.'); return; }
+      if (res.notAnswer) { say(notAnswerMsg()); return; }
       tries++;
       if (res.ok) { fx.sfx('ok'); const first = tries === 1 && !hints; const msg = first ? pick(PRAISE[fx.mode()] || PRAISE.challenger) : 'You got it!'; say(msg + (first ? ` <span class="pr-xp">+${10 + Math.min(store.skill(s.id).streak + 1, 5)} XP</span>` : ''), 'ok'); if (explorer) fx.speak(msg, true); finish(true); return; }
       fx.sfx('no');
@@ -426,10 +420,10 @@ function kataView(trickId, n) {
       let ok;
       if (p.kind === 'choice') { const c = box.querySelector('.pr-choice[aria-pressed="true"]'); if (!c) return; ok = c.dataset.v === p.answer; }
       else if (p.kind === 'fields') { const ins = [...box.querySelectorAll('.ans-in')]; if (ins.some(x => !x.value.trim())) return; ok = ins.every((x, k) => checkOne({ kind: 'num', answer: p.fields[k].answer }, x.value).ok); }
-      else { const v = box.querySelector('.ans-in').value; if (!v.trim()) return; ok = checkOne(p, v).ok; }
+      else { const v = box.querySelector('.ans-in').value; if (!v.trim()) return; const res = checkOne(p, v); if (res.notAnswer) { $('#kSay').className = 'pr-say'; $('#kSay').innerHTML = `${BOLT}<div class="md-bubble">${notAnswerMsg()}</div>`; return; } ok = res.ok; }
       tried = true; if (ok) right++; fx.sfx(ok ? 'ok' : 'no');
       $('#kSay').className = 'pr-say ' + (ok ? 'ok' : 'no');
-      $('#kSay').innerHTML = `${BOLT}<div class="md-bubble">${ok ? pick(['Correct!', 'Clean!', 'Nailed it!', 'Yes!']) : `Not this time. Answer: <b>${answerText(p)}</b><br><small>${p.steps.slice(0, 3).join(' ')}</small>`}</div>`;
+      $('#kSay').innerHTML = `${BOLT}<div class="md-bubble">${ok ? pick(['Correct!', 'Clean!', 'Nailed it!', 'Yes!']) : `Not this time. Answer: <b>${answerText(p, byId['v-' + trickId])}</b><br><small>${p.steps.slice(0, 3).join(' ')}</small>`}</div>`;
       $('#kGo').textContent = i + 1 < K.problems.length ? 'Next' : 'Finish'; $('#kGo').focus({ preventScroll: true });
       box.querySelector('.pr-score').textContent = `${right}/${K.problems.length}`;
     };

@@ -41,3 +41,9 @@ export const SKILLS = [...early, ...middle, ...upper, ...high, ...TRICK_SKILLS];
 export const byId = Object.fromEntries(SKILLS.map(s => [s.id, s]));
 export const skillsFor = g => SKILLS.filter(s => String(s.grade) === String(g));
 export const gradeOf = g => GRADES.find(x => String(x.id) === String(g));
+
+/* Arithmetic skills (grades K to 8 and the speed tricks) take plain numbers only, so typing the
+   question back (44*72) is not an answer. A skill can opt out with exprOk: true. */
+const PLAIN_GRADES = new Set(['K', '1', '2', '3', '4', '5', '6', '7', '8', 'V']);
+export const isArithmetic = skill => !!skill && !skill.exprOk && PLAIN_GRADES.has(String(skill.grade));
+export const withPlain = (skill, p) => (p && p.kind === 'num' && isArithmetic(skill) ? { ...p, plain: true } : p);

@@ -1,7 +1,7 @@
 /* Numbered levels: 1,050 Dojo katas (50 per speed trick), 1,000 Arena challenges (40 chapters of 25).
    Every level is generated from a fixed seed, so level 37 is the same for everyone, every time. */
 import { TRICKS, problemFor } from './vedic.js';
-import { byId, SKILLS } from './skills/index.js';
+import { byId, SKILLS, withPlain } from './skills/index.js';
 import { shuffle } from './lib.js';
 
 /* ---------- seeded randomness ---------- */
@@ -46,7 +46,7 @@ export function kata(trickId, n) {
   const probs = seeded(`kata:${trickId}:${n}`, () => Array.from({ length: count }, (_, i) => {
     let vals, g = 0; do { vals = (CURVE[trickId] || (() => t.random()))(Math.min(50, n + (i > count / 2 ? 1 : 0))); } while (t.valid(vals) && ++g < 60);
     if (t.valid(vals)) do { vals = t.random(); } while (t.valid(vals));
-    return problemFor(t, vals);
+    return withPlain(byId['v-' + trickId], problemFor(t, vals));
   }));
   const par = Math.round(count * (8 + Math.min(20, n * 0.4)) * (['crosswise', 'add-sub', 'ratio-zero', 'osculator', 'div9', 'cuberoot', 'sqroot'].includes(trickId) ? 1.6 : 1));
   return { trick: t, n, problems: probs, par };
@@ -112,7 +112,7 @@ export function challengeSet(ch, n = 90) {
     while (out.length < n && guard++ < n * 40) {
       const s = byId[P(ch.topic.ids)]; if (!s) continue;
       let p; try { p = s.gen(ch.level); } catch (e) { continue; }
-      if (p.kind === 'num' && Number.isFinite(p.answer) && (Number.isInteger(p.answer) || p.simplest || Math.round(p.answer * 100) === p.answer * 100) && Math.abs(p.answer) < 1e7) out.push({ q: p.q, viz: p.viz || '', answer: p.answer, kind: 'num', skill: s.id, steps: p.steps });
+      if (p.kind === 'num' && Number.isFinite(p.answer) && (Number.isInteger(p.answer) || p.simplest || Math.round(p.answer * 100) === p.answer * 100) && Math.abs(p.answer) < 1e7) out.push({ q: p.q, viz: p.viz || '', answer: p.answer, kind: 'num', skill: s.id, steps: p.steps, ...(p.simplest && { simplest: true }), ...(p.asDecimal && { asDecimal: true }) });
       else if (p.kind === 'choice') out.push({ q: p.q, viz: p.viz || '', answer: p.answer, kind: 'choice', choices: p.choices, skill: s.id, steps: p.steps });
     }
     return out;
