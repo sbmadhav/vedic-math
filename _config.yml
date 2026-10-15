@@ -7,4 +7,5 @@ exclude:
   - build.py
   - cloud/
   - test/
+  - e2e/
   - node_modules/
