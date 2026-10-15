@@ -4,7 +4,7 @@ import { test, expect, open, chromiumOnly, FIRESTORE, FIREBASE_AUTH, FIREBASE_SD
    leaderboards shown in the Arena lobby and on a game page, as a fresh device that has never posted.
    Viewing needs no identity (docs/adr/0002), so it must not load Auth or make any sign-in request.
    It is read-only: the fixture aborts and fails on any write-shaped Firestore request, and the test
-   never plays a round or earns XP. Chromium only, serial, no retries. */
+   never plays a round or earns Sparks. Chromium only, serial, no retries. */
 
 test.use({ liveFirebase: true });
 test.describe.configure({ mode: 'serial', retries: 0 });
@@ -21,9 +21,9 @@ test('World leaderboards load from live Firestore (read-only)', async ({ page },
     if (FIREBASE_SDK.test(r.url())) sdk.push(r.url().split('/').pop()!);
   });
 
-  // Every board a visitor can open: Arena today / this week / weekly XP, and a game's today / this week
+  // Every board a visitor can open: Arena today / this week / weekly Sparks, and a game's today / this week
   const boards: [string, string, string][] = [
-    ['#/arena', '#lbDay', 'Arena today'], ['#/arena', '#lbWeek', 'Arena this week'], ['#/arena', '#lbXp', 'Most XP this week'],
+    ['#/arena', '#lbDay', 'Arena today'], ['#/arena', '#lbWeek', 'Arena this week'], ['#/arena', '#lbSparks', 'Most Sparks this week'],
     ['#/game/times-sprint', '#gbDay', 'Times sprint today'], ['#/game/times-sprint', '#gbWeek', 'Times sprint this week'],
   ];
   for (const [route, id, label] of boards) {

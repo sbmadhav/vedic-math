@@ -113,7 +113,7 @@ A ranked list for one League and one period (a day or a week). Arena, each game,
 _Avoid_: leaderboard (fine in copy, not in this glossary), ranking, table
 
 **World board**:
-A Board shared with every Player online. A Player only appears on it after posting a Score or XP total.
+A Board shared with every Player online. A Player only appears on it after posting a Score or weekly Sparks total.
 _Avoid_: global leaderboard, online board
 
 **Device board**:

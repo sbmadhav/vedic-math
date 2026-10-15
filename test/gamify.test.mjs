@@ -6,9 +6,12 @@ import assert from 'node:assert/strict';
 const mem = { 'vm.sound': '0' };
 globalThis.localStorage = { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; } };
 // toast() needs a little DOM; nothing here is rendered
-const node = () => ({ classList: { add() {}, toggle() {}, remove() {} }, setAttribute() {}, append() {}, remove() {} });
+const toasts = [];
+const node = () => { const n = { classList: { add() {}, toggle() {}, remove() {} }, setAttribute() {}, append() {}, remove() {}, getContext: () => null }; Object.defineProperty(n, 'innerHTML', { set: v => toasts.push(v), get: () => '' }); return n; };
 globalThis.document = { querySelector: () => node(), createElement: node, body: node(), hidden: true };
 globalThis.window = globalThis;
+// reduced motion, so a New Title's confetti draws nothing
+globalThis.matchMedia = () => ({ matches: true });
 
 const at = (y, m, d) => new Date(y, m - 1, d, 10).getTime();
 mock.timers.enable({ apis: ['Date'], now: at(2026, 10, 14) });
@@ -52,14 +55,18 @@ test('progress is floored and clamped to the goal', () => {
   assert.equal(answerQuest().prog, q.goal);
 });
 
-test('completing a quest adds 25 XP once', () => {
+test('completing a quest adds 25 Sparks once, and the message says Sparks', () => {
   fresh('challenger', 4);
-  const q = answerQuest(), xp0 = store.xp();
+  const q = answerQuest(), sp0 = store.sparks();
+  toasts.length = 0;
   store.bump(q.counter, q.goal);
-  assert.equal(store.xp() - xp0, 25);
+  assert.equal(store.sparks() - sp0, 25);
   assert.equal(answerQuest().done, true);
   store.bump(q.counter, q.goal);
-  assert.equal(store.xp() - xp0, 25, 'no more XP for the same quest that day');
+  assert.equal(store.sparks() - sp0, 25, 'no more Sparks for the same quest that day');
+  const msg = toasts.find(t => t.includes('Quest complete'));
+  assert.match(msg, /\+25 Sparks/);
+  assert.doesNotMatch(msg, /XP/);
 });
 
 test('a Mode switch after completing a Challenger quest marks no other quest done', () => {
@@ -142,4 +149,62 @@ test('a badge earned under the old rule stays earned', () => {
   store.bump('answers'); // runs every badge check
   ['duel', 'sutras', 'watch'].forEach(b => assert.ok(store.badges()[b], b));
   assert.equal(gm.BADGES.find(b => b.id === 'duel').test(), false, 'the new rule would not award it');
+});
+
+/* ---------- Titles from Sparks (sparks spec) ---------- */
+/* The old numbered level, copied here as the reference: Titles must change exactly where it changed Title */
+const oldLevelOf = xp => Math.floor((1 + Math.sqrt(1 + xp / 12.5)) / 2);
+const OLD_TITLES = ['Number Rookie', 'Digit Dasher', 'Sum Sprinter', 'Times Tamer', 'Fraction Fighter', 'Sutra Scout', 'Mental Ninja', 'Equation Ace', 'Pattern Sage', 'Calculus Comet', 'Vedic Legend'];
+const oldTitleOf = lv => OLD_TITLES[Math.min(OLD_TITLES.length - 1, Math.floor((lv - 1) / 2))];
+
+test('every total from 0 to 25000 has the Title it had under the old levels', () => {
+  for (let n = 0; n <= 25000; n += 10) assert.equal(gm.titleInfo(n).title, oldTitleOf(oldLevelOf(n)), `${n} Sparks`);
+  for (const [t] of gm.TITLES.slice(1)) { assert.equal(gm.titleInfo(t - 1).title, oldTitleOf(oldLevelOf(t - 1)), `${t - 1}`); assert.equal(gm.titleInfo(t).title, oldTitleOf(oldLevelOf(t)), `${t}`); }
+});
+
+test('the eleven Titles start where the spec says', () => {
+  assert.deepEqual(gm.TITLES, [[0, 'Number Rookie'], [300, 'Digit Dasher'], [1000, 'Sum Sprinter'], [2100, 'Times Tamer'], [3600, 'Fraction Fighter'], [5500, 'Sutra Scout'], [7800, 'Mental Ninja'], [10500, 'Equation Ace'], [13600, 'Pattern Sage'], [17100, 'Calculus Comet'], [21000, 'Vedic Legend']]);
+});
+
+test('titleInfo gives the Sparks into and needed for the next Title; Vedic Legend has a full bar and no next', () => {
+  assert.deepEqual(gm.titleInfo(0), { title: 'Number Rookie', next: 'Digit Dasher', into: 0, need: 300, pct: 0 });
+  assert.deepEqual(gm.titleInfo(2340), { title: 'Times Tamer', next: 'Fraction Fighter', into: 240, need: 1500, pct: 240 / 1500 });
+  const top = gm.titleInfo(30000);
+  assert.equal(top.title, 'Vedic Legend'); assert.equal(top.next, null); assert.equal(top.pct, 1);
+});
+
+test('crossing a Title line shows one New Title message; earning within a Title shows none', () => {
+  fresh('challenger', 30);
+  store.addSparks(3590);
+  toasts.length = 0;
+  store.addSparks(5);
+  assert.equal(toasts.filter(t => t.includes('New Title')).length, 0);
+  store.addSparks(7); /* 3590 + 12 = 3602 */
+  const msgs = toasts.filter(t => t.includes('New Title'));
+  assert.equal(msgs.length, 1);
+  assert.match(msgs[0], /New Title: Fraction Fighter/);
+  assert.ok(!toasts.some(t => /Level \d/.test(t)), 'no level number');
+});
+
+test('Title badges: Sum Sprinter at 1000 and Fraction Fighter at 3600, same ids as Level 5 and Level 10', () => {
+  const b5 = gm.BADGES.find(b => b.id === 'level5'), b10 = gm.BADGES.find(b => b.id === 'level10');
+  assert.equal(b5.name, 'Sum Sprinter'); assert.equal(b10.name, 'Fraction Fighter');
+  assert.match(b5.how, /Sum Sprinter Title \(1000 Sparks\)/); assert.match(b10.how, /Fraction Fighter Title \(3600 Sparks\)/);
+  fresh('pro', 31);
+  store.addSparks(999); assert.ok(!store.badges().level5);
+  store.addSparks(1); assert.ok(store.badges().level5);
+  store.addSparks(2599); assert.ok(!store.badges().level10);
+  store.addSparks(1); assert.ok(store.badges().level10, '3600 Sparks earns Fraction Fighter');
+});
+
+test('a Player who earned Level 10 before keeps it as Fraction Fighter', () => {
+  fresh('challenger', 32);
+  store.award('level10');
+  store.addSparks(20); /* runs every badge check, far below 3600 */
+  assert.ok(store.badges().level10);
+  assert.equal(gm.BADGES.find(b => b.id === 'level10').name, 'Fraction Fighter');
+});
+
+test('no badge text names a level number or XP', () => {
+  for (const b of gm.BADGES) { assert.doesNotMatch(b.how + ' ' + b.name, /level \d|\bXP\b/i, b.id); }
 });

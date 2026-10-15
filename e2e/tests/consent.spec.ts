@@ -214,7 +214,7 @@ test.describe('13 and over', () => {
   test.use({ seedConsent: { age: 13 } });
   test('the Me page says this player posts, with no Parent step to give', async ({ page }) => {
     await page.goto(`${APP}#/me`);
-    await expect(page.locator('#worldBoards')).toContainText('Your scores and weekly XP go on World boards.');
+    await expect(page.locator('#worldBoards')).toContainText('Your scores and weekly Sparks go on World boards.');
     await expect(page.locator('#worldBoards').getByRole('switch')).toHaveCount(0);
     await expect(page.locator('#wbCheck')).toHaveCount(0);
   });

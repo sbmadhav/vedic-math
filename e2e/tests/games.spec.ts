@@ -248,3 +248,39 @@ for (const p of PROMPTS) {
     }
   });
 }
+
+/* Medals (medals spec): a Player's game Level and tower stars from before the update become Medals 1:1,
+   and what was open stays open. The seed is a v2 record, so this also checks the migration on load. */
+test.describe('Medals from saved stars', () => {
+  test.use({ seedProgress: { v: 2, skills: {}, xp: 2340, days: {}, best: {}, last: null, grade: null, badges: {}, counts: {}, seen: {}, stars: { 'g:times-sprint:3': 3, 'g:times-sprint:2': 2, 'a:1': 1, 'k:sq5:1': 2 }, ratings: {}, weekXp: {}, questDay: null } });
+
+  test('a Level with 3 stars shows a gold Medal, and the next Level is open', async ({ page }) => {
+    await open(page, '#/game/times-sprint');
+    const lv3 = page.locator('a.lv-node[href="#/game/times-sprint/3"]');
+    await expect(lv3).toHaveAttribute('aria-label', 'Level 3, gold Medal');
+    await expect(lv3.locator('.medal')).toHaveClass(/medal--gold/);
+    await expect(page.locator('a.lv-node[href="#/game/times-sprint/2"]')).toHaveAttribute('aria-label', 'Level 2, silver Medal');
+    await expect(page.locator('a.lv-node[href="#/game/times-sprint/4"]')).toHaveAttribute('aria-label', 'Level 4');
+    await expect(page.locator('#view')).not.toContainText('★');
+    await page.locator('a.lv-node[href="#/game/times-sprint/3"]').click();
+    await expect(page.locator('.lv-best .medal')).toHaveAttribute('aria-label', 'Gold Medal');
+    await expect(page.locator('.lv-best').first()).toContainText(/Medals: Bronze [\d,]+ · Silver [\d,]+ · Gold [\d,]+ points/);
+  });
+
+  test('a tower challenge with 1 star shows bronze and keeps the next challenge open; old XP is Sparks with the same Title', async ({ page }) => {
+    await open(page, '#/tower/1');
+    await expect(page.locator('a.lv-node[href="#/challenge/1"]')).toHaveAttribute('aria-label', 'Level 1, bronze Medal');
+    await expect(page.locator('a.lv-node[href="#/challenge/2"]')).toBeVisible();
+    await expect(page.locator('.lv-node').nth(2)).toHaveClass(/locked/);
+    await open(page, '#/katas/sq5');
+    await expect(page.locator('a.lv-node[href="#/kata/sq5/1"]')).toHaveAttribute('aria-label', 'Kata 1, done');
+    await expect(page.locator('a.lv-node[href="#/kata/sq5/2"]')).toBeVisible();
+    await open(page, '#/me');
+    await expect(page.locator('.me-head')).toContainText('Times Tamer · 2340 Sparks');
+    await expect(page.locator('#mqChip a.mq-chip')).toHaveAttribute('aria-label', 'Swift Tiger 42, Times Tamer');
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1')!));
+    expect(saved.v).toBe(3);
+    expect(saved.sparks).toBe(2340);
+    expect(saved.medals).toEqual({ 'g:times-sprint:3': 3, 'g:times-sprint:2': 2, 'a:1': 1 });
+  });
+});

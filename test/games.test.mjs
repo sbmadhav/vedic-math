@@ -1,8 +1,8 @@
 /* Strategy game levels: 14 games x 72 levels = 1,008. Levels set where the adaptive dial starts and the
-   star goals in difficulty-weighted points. The question ladders are checked in adapt.test.mjs. */
+   Medal goals in difficulty-weighted points. The question ladders are checked in adapt.test.mjs. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { GAMES, LEVELS, LEVELS_PER_GAME, levelStars } from '../js/games.js';
+import { GAMES, LEVELS, LEVELS_PER_GAME, levelMedal } from '../js/games.js';
 
 test('there are 1,008 game levels: 14 games x 72', () => {
   assert.equal(GAMES.length, 14);
@@ -35,13 +35,13 @@ test('every level has settings and three rising goals', () => {
 });
 
 const ties = Object.entries(LEVELS).flatMap(([id, fn]) => Array.from({ length: LEVELS_PER_GAME }, (_, i) => [id, i + 1, fn(i + 1).goal]).filter(([, , g]) => g[1] === g[2]).map(([id, L, g]) => `${id} level ${L} (${g})`));
-test('every level has a separate two-star and three-star goal', { todo: ties.length ? `${ties.length} levels give 3 stars at the 2-star score, e.g. ${ties[0]}, ${ties[ties.length - 1]}` : false }, () => {
+test('every level has a separate silver and gold goal', { todo: ties.length ? `${ties.length} levels give gold at the silver score, e.g. ${ties[0]}, ${ties[ties.length - 1]}` : false }, () => {
   assert.deepEqual(ties, []);
 });
 
-test('level stars', () => {
-  assert.equal(levelStars([5, 8, 10], 4), 0);
-  assert.equal(levelStars([5, 8, 10], 5), 1);
-  assert.equal(levelStars([5, 8, 10], 9), 2);
-  assert.equal(levelStars([5, 8, 10], 10), 3);
+test('level Medals: one per goal reached (1 bronze, 2 silver, 3 gold)', () => {
+  assert.equal(levelMedal([5, 8, 10], 4), 0);
+  assert.equal(levelMedal([5, 8, 10], 5), 1);
+  assert.equal(levelMedal([5, 8, 10], 9), 2);
+  assert.equal(levelMedal([5, 8, 10], 10), 3);
 });

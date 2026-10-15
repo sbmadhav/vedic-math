@@ -2,7 +2,7 @@ import { test, expect, APP, open, cloudLog } from './fixtures';
 
 /* Progress lives in localStorage (vm.players, mathquest.v1.<player>) and survives a reload. */
 
-test('XP, collected sutra cards, answers and the nickname survive a reload', async ({ page }) => {
+test('Sparks, collected sutra cards, answers and the nickname survive a reload', async ({ page }) => {
   await open(page, '#/sutras');
   const card = page.locator('.sutra-card').first();
   await card.locator('.sutra-face').click();
@@ -15,7 +15,13 @@ test('XP, collected sutra cards, answers and the nickname survive a reload', asy
   await page.reload();
   await open(page, '#/me');
   await expect(page.locator('#view h1')).toHaveText('Swift Tiger 42');
-  await expect(page.locator('.me-head')).toContainText('5 XP');
+  await expect(page.locator('.me-head')).toContainText('Number Rookie · 5 Sparks');
+  await expect(page.locator('.me-head')).toContainText('295 Sparks to Digit Dasher');
+  await expect(page.locator('.me-head')).not.toContainText('XP');
+  // The nav chip names the Player and their Title, with no level number
+  const chip = page.locator('#mqChip a.mq-chip');
+  await expect(chip).toHaveAttribute('aria-label', 'Swift Tiger 42, Number Rookie');
+  await expect(chip).not.toContainText(/Lv|\d/);
   await page.goto(`${APP}#/sutras`);
   await expect(page.locator('.sutra-card').first()).toHaveClass(/got/);
   await expect(page.locator('.sutra-card').first()).toContainText('Collected');
@@ -24,7 +30,8 @@ test('XP, collected sutra cards, answers and the nickname survive a reload', asy
   await page.goto(`${APP}#/dojo`);
   await expect(page.locator('a.dojo-node[href="#/skill/v-sq5"]')).toHaveClass(/mq-going/);
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1') || 'null'));
-  expect(saved.xp).toBe(5);
+  expect(saved.sparks).toBe(5);
+  expect(saved.v).toBe(3);
   expect(saved.skills['v-sq5'].n).toBe(1);
 });
 
@@ -88,7 +95,7 @@ test('Sutra scholar: opening the Sutras page earns nothing, collecting 10 cards 
   await expect(badge(page, 'Sutra scholar')).toHaveClass(/\bgot\b/);
 });
 
-test('Video learner: closing a video after 5 seconds earns nothing, a minute in the player earns it', async ({ page }) => {
+test('Video learner: closing a video after 5 seconds earns nothing, a minute in the player earns it; videos earn no Sparks', async ({ page }) => {
   // The player's YouTube frame gets an empty page: no third-party load in the test
   await page.route(/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>video</title>' }));
   await page.route(/^https:\/\/i\.ytimg\.com\//, r => r.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg"/>' }));
@@ -104,6 +111,9 @@ test('Video learner: closing a video after 5 seconds earns nothing, a minute in 
   await page.clock.runFor(70_000);
   const badges = () => page.evaluate(async () => (await import('/vedic-math/js/store.js' as string)).badges());
   expect((await badges()).watch).toBeUndefined();
+  // Opening a video the Player never opened before earns no Sparks
+  const sparks = () => page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1') || '{}').sparks || 0);
+  expect(await sparks()).toBe(0);
   await card.click();
   await expect(dlg).toBeVisible();
   await page.clock.runFor(61_000);

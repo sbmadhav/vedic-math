@@ -68,12 +68,20 @@ test('deeper routes: grade, skill, katas, tower, chapter, challenge, game, duel'
   await expect(page.locator('#anim')).toBeVisible();
   await open(page, '#/katas/sq5');
   await expect(page.locator('.lv-node')).toHaveCount(50);
+  await expect(page.locator('#view')).not.toContainText('★');
   await open(page, '#/tower');
   expect(await page.locator('.tower-ch').count()).toBeGreaterThan(1);
+  // Medals, not stars: the counts say cleared and gold
+  await expect(page.locator('#view')).not.toContainText('★');
+  await expect(page.locator('#view .mq-small').first()).toContainText(/0 of 1000 cleared · 0 gold/);
   await open(page, '#/tower/1');
   await expect(page.locator('.lv-node')).toHaveCount(25);
+  await expect(page.locator('#view')).not.toContainText('★');
   await open(page, '#/challenge/1');
   await expect(page.locator('#chGo')).toBeVisible();
+  await expect(page.locator('.md-lede')).toContainText(/Medals: Bronze \d+ · Silver \d+ · Gold \d+/);
+  await expect(page.locator('.lv-best .medal')).toHaveAttribute('aria-label', 'No Medal yet');
+  await expect(page.locator('#view')).not.toContainText('★');
   await open(page, '#/game/times-sprint');
   await expect(page.locator('#gStart')).toBeVisible();
   await open(page, '#/duel');

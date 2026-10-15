@@ -39,3 +39,24 @@ test('the footer credits the 1965 book', () => {
   const html = readFileSync(join(root, 'index.html'), 'utf8');
   assert.match(html, /Speed tricks use sutras from Bharati Krishna Tirtha's 1965 book; lessons, problems and visuals are original\./);
 });
+
+/* Sparks replace XP (sparks spec): no Player-facing text says XP or experience points. Comments are left out,
+   so code may still explain the migration from xp; the weekly Board id keeps its lowercase xp-week- prefix. */
+const saysXP = l => /\bXP\b/.test(l) || /experience points/i.test(l);
+const stripComments = t => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/<!--[\s\S]*?-->/g, '').replace(/(^|[^:'"`\\])\/\/.*$/gm, '$1');
+test('no XP shown to Players', () => {
+  assert.ok(saysXP('<span class="fx-sparks">+5 XP</span>') && !saysXP("startsWith('xp-')") && !saysXP('d.xp > 0'), 'the scan itself');
+  const hits = FILES.flatMap(f => stripComments(readFileSync(f, 'utf8')).split('\n').map((l, i) => [l, i]).filter(([l]) => saysXP(l)).map(([l]) => `${relative(root, f)}: ${l.trim().slice(0, 120)}`));
+  assert.deepEqual(hits, []);
+});
+
+test('the XP and star calls are gone, not aliased', () => {
+  const OLD = /\b(addXP|weekXP|weekXPOf|postWeekXP|MAX_WEEK_XP|setStars|starsWhere|doneWhere|levelOf|xpFor|levelInfo|starHTML|kataStars|challengeStars|levelStars|queueXpPost)\b|store\.(xp|stars)\(/;
+  const hits = FILES.filter(f => f.endsWith('.js')).flatMap(f => readFileSync(f, 'utf8').split('\n').map((l, i) => [l, i]).filter(([l]) => OLD.test(l)).map(([, i]) => `${relative(root, f)}:${i + 1}`));
+  assert.deepEqual(hits, []);
+});
+
+test('no star counts or star glyphs for Katas, game Levels or the tower', () => {
+  const app = readFileSync(join(root, 'js', 'app.js'), 'utf8');
+  assert.doesNotMatch(app, /&#9733;|★|\\u2605|lv-stars/);
+});

@@ -44,9 +44,11 @@ test.describe('explorer', () => {
   });
 });
 
-test('the lobby shows today, this week and weekly XP boards with World and This device tabs', async ({ page }) => {
+test('the lobby shows today, this week and weekly Sparks boards with World and This device tabs', async ({ page }) => {
   await open(page, '#/arena');
-  for (const id of ['#lbDay', '#lbWeek', '#lbXp']) {
+  await expect(page.locator('#arShell h2').filter({ hasText: 'Most Sparks this week' })).toBeVisible();
+  await expect(page.locator('#arShell')).not.toContainText('XP');
+  for (const id of ['#lbDay', '#lbWeek', '#lbSparks']) {
     await expect(page.locator(`${id} [data-src="world"]`)).toBeVisible();
     await page.locator(`${id} [data-src="device"]`).click();
     await expect(page.locator(`${id} [data-src="device"]`)).toHaveAttribute('aria-selected', 'true');

@@ -1,6 +1,6 @@
 /* Vedic Math for Everyone: router and views.
    Modes: Explorer (about 4 to 7), Challenger (about 8 to 12), Pro (13 to adult). Everything is gamified:
-   XP and levels, badges, Dojo belts, daily quests, the Arena with leaderboards, duels and games. */
+   Sparks and Titles, badges, Dojo belts, daily quests, the Arena with leaderboards, duels and games. */
 import { SKILLS, byId, skillsFor, GRADES, STRANDS, gradeOf, withPlain } from './skills/index.js';
 import { TRICKS, BELTS } from './vedic.js';
 import { GAMES, keepFocus } from './games.js';
@@ -18,7 +18,7 @@ import * as gm from './gamify.js';
 import * as cloud from './cloud.js';
 import { runArena, runDuel, runChallenge } from './arena.js';
 import * as LV from './levels.js';
-import { LEVELS, LEVELS_PER_GAME, levelStars, boardGame } from './games.js';
+import { LEVELS, LEVELS_PER_GAME, levelMedal, boardGame } from './games.js';
 import * as AD from './adapt.js';
 import { initAmbient, bgOn, setBg, BG_NOTES, stop as stopMusic, isPlaying as musicOn } from './ambient.js';
 import { on, later, every, child } from './life.js';
@@ -108,12 +108,17 @@ function render() {
 render.n = 0;
 window.addEventListener('hashchange', render);
 
-/* Player chip in the nav: avatar, level, XP bar */
+/* Player chip in the nav: avatar and the bar to the next Title (no number) */
 function chip() {
-  const el = $('#mqChip'); if (!el) return; const p = store.player(), L = gm.levelInfo();
-  el.innerHTML = `<a href="#/me" class="mq-chip" aria-label="${esc(p.name)}, level ${L.lv}">${avatar(p, 30)}<span class="mq-chip-t"><b>Lv ${L.lv}</b><span class="mq-xpbar"><i style="width:${pct(L.pct)}%"></i></span></span></a>`;
+  const el = $('#mqChip'); if (!el) return; const p = store.player(), T = gm.titleInfo();
+  el.innerHTML = `<a href="#/me" class="mq-chip" aria-label="${esc(p.name)}, ${T.title}">${avatar(p, 30)}<span class="mq-chip-t"><span class="mq-sparkbar"><i style="width:${pct(T.pct)}%"></i></span></span></a>`;
 }
-store.on(type => { if (type === 'xp' || type === 'player') chip(); });
+store.on(type => { if (type === 'sparks' || type === 'player') chip(); });
+/* The bar to the next Title, as a progressbar with its Sparks in words */
+function titleBar(T, cls = 'mq-sparkbar mq-sparkbar--big') {
+  const text = T.next ? `${T.into} of ${T.need} Sparks to ${T.next}` : 'Top Title reached';
+  return `<span class="${cls}" role="progressbar" aria-label="Sparks to the next Title" aria-valuemin="0" aria-valuemax="${T.next ? T.need : 1}" aria-valuenow="${T.next ? T.into : 1}" aria-valuetext="${text}"><i style="width:${pct(T.pct)}%"></i></span>`;
+}
 
 /* ---------- Mode picker (first visit, and from Me) ---------- */
 function modePicker() {
@@ -136,12 +141,12 @@ function modeIcon(id) {
 /* ---------- Home: one per mode ---------- */
 function questsHTML() {
   const qs = gm.quests();
-  return `<div class="md-card quest-card"><h2 class="mq-h3">Daily quests</h2><ul class="quests">${qs.map(q => `<li class="${q.done ? 'done' : ''}"><span class="q-check" aria-hidden="true">${q.done ? '&#10003;' : ''}</span><span class="q-t">${q.label}<span class="mq-bar"><i style="width:${pct(q.prog / q.goal)}%"></i></span></span><span class="q-n">${q.prog}/${q.goal}</span></li>`).join('')}</ul><p class="mq-small">Each quest is worth 25 bonus XP. New quests every day.</p></div>`;
+  return `<div class="md-card quest-card"><h2 class="mq-h3">Daily quests</h2><ul class="quests">${qs.map(q => `<li class="${q.done ? 'done' : ''}"><span class="q-check" aria-hidden="true">${q.done ? '&#10003;' : ''}</span><span class="q-t">${q.label}<span class="mq-bar"><i style="width:${pct(q.prog / q.goal)}%"></i></span></span><span class="q-n">${q.prog}/${q.goal}</span></li>`).join('')}</ul><p class="mq-small">Each quest is worth 25 bonus Sparks. New quests every day.</p></div>`;
 }
 function heroStats() {
-  const p = store.player(), L = gm.levelInfo();
-  return `<div class="me-strip">${avatar(p, 54)}<div class="me-strip-t"><small>${fx.t({ explorer: 'Hello,', challenger: store.playedBefore() ? 'Welcome back,' : 'Welcome,', pro: store.playedBefore() ? 'Welcome back,' : 'Welcome,' })}</small><b>${esc(p.name)}</b><span>Level ${L.lv} · ${gm.titleOf(L.lv)}</span><span class="mq-xpbar mq-xpbar--big" role="progressbar" aria-label="XP to the next level" aria-valuemin="0" aria-valuemax="${L.need}" aria-valuenow="${L.into}" aria-valuetext="${L.into} of ${L.need} XP to the next level"><i style="width:${pct(L.pct)}%"></i></span></div>
-    <div class="me-nums"><div><b>${store.xp()}</b><small>XP</small></div><div><b>${store.streakDays()}</b><small>day streak</small></div><div><b>${Object.keys(store.badges()).length}</b><small>badges</small></div></div></div>`;
+  const p = store.player(), T = gm.titleInfo();
+  return `<div class="me-strip">${avatar(p, 54)}<div class="me-strip-t"><small>${fx.t({ explorer: 'Hello,', challenger: store.playedBefore() ? 'Welcome back,' : 'Welcome,', pro: store.playedBefore() ? 'Welcome back,' : 'Welcome,' })}</small><b>${esc(p.name)}</b><span>${T.title}</span>${titleBar(T)}</div>
+    <div class="me-nums"><div><b>${store.sparks()}</b><small>Sparks</small></div><div><b>${store.streakDays()}</b><small>day streak</small></div><div><b>${Object.keys(store.badges()).length}</b><small>badges</small></div></div></div>`;
 }
 const tile = (href, title, sub, color, ic) => `<a class="play-tile play-tile--${color}" href="${href}"><span class="play-ic" aria-hidden="true">${icon(ic)}</span><b>${title}</b><small>${sub}</small></a>`;
 
@@ -272,7 +277,7 @@ function showExample(s) {
   $('#another', box).onclick = () => showExample(s);
 }
 /* ---------- Practice engine ---------- */
-/* Typed something that is not a plain number on an arithmetic skill: not a try, no XP */
+/* Typed something that is not a plain number on an arithmetic skill: not a try, no Sparks */
 const notAnswerMsg = () => fx.t({ explorer: 'Type just the answer, like 7.', challenger: 'Type just the answer, like 56 or 3/4.', pro: 'Type just the answer as a number, like 56 or 3/4.' });
 const KEYS = { basic: ['/', '-', '.'], alg: ['x', '^', '(', ')', '/', '-', '√', 'π'], set: [',', '-', '/', '√'], ineq: ['x', '<', '>', '<=', '>=', '-'], complex: ['i', '+', '-'] };
 /* One Practice session in root. signal: the view's. Each question runs under its own child signal, aborted by the next one. */
@@ -335,7 +340,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
       const res = grade(); if (res.empty) { say('Type an answer first.'); return; }
       if (res.notAnswer) { say(notAnswerMsg()); return; }
       tries++;
-      if (res.ok) { fx.sfx('ok'); const first = tries === 1 && !hints; const msg = first ? pick(PRAISE[fx.mode()] || PRAISE.challenger) : 'You got it!'; say(msg + (first ? ` <span class="pr-xp">+${10 + Math.min(store.skill(s.id).streak + 1, 5)} XP</span>` : ''), 'ok'); if (explorer) fx.speak(msg, true); finish(true); return; }
+      if (res.ok) { fx.sfx('ok'); const first = tries === 1 && !hints; const msg = first ? pick(PRAISE[fx.mode()] || PRAISE.challenger) : 'You got it!'; say(msg + (first ? ` <span class="pr-sparks">+${10 + Math.min(store.skill(s.id).streak + 1, 5)} Sparks</span>` : ''), 'ok'); if (explorer) fx.speak(msg, true); finish(true); return; }
       fx.sfx('no');
       if (lives) { life--; reveal(); say(life ? `Oops! ${life} ${life === 1 ? 'life' : 'lives'} left. See how it works, then keep going.` : 'Out of lives!', 'no'); finish(false); const lv = root.querySelector('.pr-lives'); lv.innerHTML = '<i class="on"></i>'.repeat(life) + '<i></i>'.repeat(lives - life); lv.setAttribute('aria-label', `${life} lives left`); if (!life && onOver) { const b = $('#prCheck', root); b.textContent = 'See my score'; b.onclick = e => { e.preventDefault(); onOver(right); }; } return; }
       if (tries === 1) { say((res.msg ? res.msg + ' ' : '') + 'Not quite. Try once more.' + (p.hints[0] && !hints ? ' <button type="button" class="linkbtn" data-hint>Want a hint?</button>' : ''), 'no'); if (explorer) fx.speak('Not quite. Try again!', true); }
@@ -376,8 +381,8 @@ function mixView(g, isRun = false, { signal } = {}) {
     const going = list.filter(s => store.started(s.id) && !store.mastered(s.id)), pool = (going.length >= 2 && Math.random() < .7 ? going : list).filter(s => s.id !== lastId);
     const s = pick(pool.length ? pool : list); lastId = s.id; return s;
   }, { mix: true, lives: isRun ? 3 : 0, onOver: right => {
-    store.bump('runs'); const isBest = store.setBest('run-' + g, right), xp = 10 + right * 3; store.addXP(xp, 'run'); if (isBest && right) fx.confetti(90);
-    $('#practice').innerHTML = `<div class="ar-result"><div class="md-stat"><div class="md-kicker">You reached</div><div class="md-value">${right}</div><p>${isBest && right ? 'New best run!' : `Best: ${store.best('run-' + g)}`} <span class="fx-xp">+${xp} XP</span></p></div></div><p><button class="md-btn md-btn--primary" id="again">${icon('bolt')} Run again</button> <a class="md-btn" href="#/grade/${g}">Back to ${gradeLabel(g)}</a></p>`;
+    store.bump('runs'); const isBest = store.setBest('run-' + g, right), sp = 10 + right * 3; store.addSparks(sp, 'run'); if (isBest && right) fx.confetti(90);
+    $('#practice').innerHTML = `<div class="ar-result"><div class="md-stat"><div class="md-kicker">You reached</div><div class="md-value">${right}</div><p>${isBest && right ? 'New best run!' : `Best: ${store.best('run-' + g)}`} <span class="fx-sparks">+${sp} Sparks</span></p></div></div><p><button class="md-btn md-btn--primary" id="again">${icon('bolt')} Run again</button> <a class="md-btn" href="#/grade/${g}">Back to ${gradeLabel(g)}</a></p>`;
     $('#again').onclick = () => mount(ctx => mixView(g, true, ctx));
   }, signal });
 }
@@ -390,31 +395,46 @@ function dojoView() {
     ${crumbs([null, 'Dojo'])}
     <span class="md-tag md-tag--plum">Vedic Dojo</span>
     <h1 class="md-heading">From white belt to <span class="hl-word">black belt</span></h1>
-    <p class="md-lede">${TRICKS.length} speed tricks from the sutras in Bharati Krishna Tirtha's 1965 book, in seven belts. Master all three tricks in a belt to earn it. Each trick has a step-by-step animator, endless practice and <b>${LV.KATAS_PER_TRICK} katas</b>: numbered drills that get harder, ${LV.KATA_COUNT.toLocaleString('en-US')} in all. Earn up to 3 stars on each.</p>
-    <p class="mq-small">Kata stars: ${store.starsWhere('k:')} of ${LV.KATA_COUNT * 3} &#9733; · ${store.doneWhere('k:')} of ${LV.KATA_COUNT.toLocaleString('en-US')} katas done</p>
+    <p class="md-lede">${TRICKS.length} speed tricks from the sutras in Bharati Krishna Tirtha's 1965 book, in seven belts. Master all three tricks in a belt to earn it. Each trick has a step-by-step animator, endless practice and <b>${LV.KATAS_PER_TRICK} katas</b>: numbered drills that get harder, ${LV.KATA_COUNT.toLocaleString('en-US')} in all. Finish one to open the next.</p>
+    <p class="mq-small">${store.katasDoneWhere('k:')} of ${LV.KATA_COUNT.toLocaleString('en-US')} katas done</p>
     <div class="belt-row">${bp.map(b => `<span class="belt-chip${b.earned ? ' on' : ''}" style="--belt:${b.color}"><span class="belt-knot" aria-hidden="true"></span>${b.name}</span>`).join('')}</div>
     <p class="mq-small">${earned} of ${BELTS.length} belts earned.</p>
     <div class="dojo-path">${bp.map((b, i) => `<section class="dojo-belt${b.earned ? ' earned' : ''}">
       <h2 class="dojo-h"><span class="belt-swatch" style="--belt:${b.color}" aria-hidden="true"></span>${b.name}<small>${b.done}/3</small></h2>
-      <div class="dojo-nodes">${b.tricks.map(id => { const t = TRICKS.find(x => x.id === id), sid = 'v-' + id, [cls, lab] = status(sid); return `<div class="dojo-cell"><a class="dojo-node mq-${cls}" href="#/skill/${sid}">${ring(store.mastery(sid), 52)}<span><b>${t.title}</b><small lang="sa-Latn">${t.sutra}</small><em>${lab}</em></span></a><a class="dojo-katas" href="#/katas/${id}">${icon('belt')} Katas ${store.doneWhere(`k:${id}:`)}/${LV.KATAS_PER_TRICK} <span class="star-n">${store.starsWhere(`k:${id}:`)}&#9733;</span></a></div>`; }).join('')}</div></section>`).join('')}</div>
+      <div class="dojo-nodes">${b.tricks.map(id => { const t = TRICKS.find(x => x.id === id), sid = 'v-' + id, [cls, lab] = status(sid); return `<div class="dojo-cell"><a class="dojo-node mq-${cls}" href="#/skill/${sid}">${ring(store.mastery(sid), 52)}<span><b>${t.title}</b><small lang="sa-Latn">${t.sutra}</small><em>${lab}</em></span></a><a class="dojo-katas" href="#/katas/${id}">${icon('belt')} Katas ${store.katasDoneWhere(`k:${id}:`)}/${LV.KATAS_PER_TRICK} done</a></div>`; }).join('')}</div></section>`).join('')}</div>
     <p class="mq-cta"><a class="md-btn" href="#/sutras">Read about all 29 sutras</a> <a class="md-btn" href="#/arena">Test your speed in the Arena</a></p>
   </div></section>`;
 }
 
 /* ---------- Numbered levels: shared map ---------- */
-const starHTML = n => `<span class="lv-stars" role="img" aria-label="${n} of 3 stars">${[1, 2, 3].map(i => `<i class="${i <= n ? 'on' : ''}">&#9733;</i>`).join('')}</span>`;
-function levelMap(count, keyOf, hrefOf, { openAll = false, perRow = 0, isOpen = null, suggest = 0 } = {}) {
+/* Medals (game Levels and tower challenges): 1 bronze, 2 silver, 3 gold. Always named in text, never stars. */
+const MEDALS = ['none', 'bronze', 'silver', 'gold'];
+const medalName = n => (n ? `${MEDALS[n]} Medal` : 'no Medal yet');
+const cap = t => t[0].toUpperCase() + t.slice(1);
+/* A disc in the Medal's colour with its name in it (its first letter on a map node, whose label says it in full) */
+const medalHTML = (n, { label = true } = {}) => `<span class="medal medal--${MEDALS[n] || 'none'}${label ? '' : ' medal--sm'}"${label ? ` role="img" aria-label="${cap(medalName(n))}"` : ' aria-hidden="true"'}>${n ? (label ? cap(MEDALS[n]) : MEDALS[n][0].toUpperCase()) : ''}</span>`;
+const medalCounts = c => `${c.any} cleared · ${c.gold} gold`;
+/* resultOf(n) is { done } for a Kata or { medal } for a game Level or tower challenge. The next one opens when
+   this one is done or has a Medal (the old "any star" rule). */
+function levelMap(count, resultOf, hrefOf, { openAll = false, perRow = 0, isOpen = null, suggest = 0, noun = 'Level' } = {}) {
   let unlocked = true, flagged = false;
   return `<div class="lv-map${perRow ? ' lv-map--rows' : ''}">${Array.from({ length: count }, (_, i) => {
-    const n = i + 1, st = store.stars(keyOf(n)), open = openAll || (isOpen ? isOpen(n) : unlocked); unlocked = st > 0;
-    const next = suggest ? n === suggest : open && !st && !flagged; if (next) flagged = true;
-    return open ? `<a class="lv-node${st ? ' done' : ''}${next ? ' next' : ''}" href="${hrefOf(n)}" aria-label="Level ${n}${st ? `, ${st} stars` : ''}"><b>${n}</b>${starHTML(st)}</a>` : `<span class="lv-node locked" role="img" aria-label="Level ${n}, locked"><b>${n}</b>${icon('lock')}</span>`;
+    const n = i + 1, res = resultOf(n), cleared = 'medal' in res ? res.medal > 0 : !!res.done, open = openAll || (isOpen ? isOpen(n) : unlocked); unlocked = cleared;
+    const next = suggest ? n === suggest : open && !cleared && !flagged; if (next) flagged = true;
+    const said = 'medal' in res ? (res.medal ? `, ${medalName(res.medal)}` : '') : (res.done ? ', done' : '');
+    const mark = 'medal' in res ? medalHTML(res.medal, { label: false }) : `<span class="kata-mark${res.done ? ' on' : ''}" aria-hidden="true">${res.done ? '&#10003;' : ''}</span>`;
+    return open ? `<a class="lv-node${cleared ? ' done' : ''}${next ? ' next' : ''}" href="${hrefOf(n)}" aria-label="${noun} ${n}${said}"><b>${n}</b>${mark}</a>` : `<span class="lv-node locked" role="img" aria-label="${noun} ${n}, locked"><b>${n}</b>${icon('lock')}</span>`;
   }).join('')}</div>`;
 }
-function resultHTML(stars, lines, nextHref, retryHref, backHref, backLabel) {
-  return `<div class="lv-result"><div class="lv-big">${starHTML(stars)}</div><h2 class="mq-h3">${stars === 3 ? 'Perfect!' : stars === 2 ? 'Great work!' : stars === 1 ? 'Level cleared!' : 'Not quite. Try again!'}</h2>${lines.map(l => `<p>${l}</p>`).join('')}
-    <p class="lv-acts">${stars && nextHref ? `<a class="md-btn md-btn--primary" href="${nextHref}">${icon('bolt')} Next level</a>` : ''}<a class="md-btn" href="${retryHref}" data-retry>Play again</a><a class="md-btn" href="${backHref}">${backLabel}</a></p></div>`;
+/* A finished Kata ({ done }) or game Level or tower challenge ({ medal }) */
+function resultHTML(res, lines, nextHref, retryHref, backHref, backLabel) {
+  const kata = !('medal' in res), cleared = kata ? res.done : res.medal > 0;
+  const head = kata ? (res.done ? 'Kata done!' : 'Not quite. Try again!') : ['Not quite. Try again!', 'Bronze Medal', 'Silver Medal', 'Gold Medal!'][res.medal];
+  const big = kata ? `<span class="kata-mark kata-mark--big${res.done ? ' on' : ''}" aria-hidden="true">${res.done ? '&#10003;' : ''}</span>` : medalHTML(res.medal);
+  return `<div class="lv-result"><div class="lv-big">${big}</div><h2 class="mq-h3">${head}</h2>${lines.map(l => `<p>${l}</p>`).join('')}
+    <p class="lv-acts">${cleared && nextHref ? `<a class="md-btn md-btn--primary" href="${nextHref}">${icon('bolt')} Next level</a>` : ''}<a class="md-btn" href="${retryHref}" data-retry>Play again</a><a class="md-btn" href="${backHref}">${backLabel}</a></p></div>`;
 }
+const goalsText = (targets, unit) => `Bronze ${targets[0].toLocaleString('en-US')} · Silver ${targets[1].toLocaleString('en-US')} · Gold ${targets[2].toLocaleString('en-US')} ${unit}`;
 
 /* ---------- Dojo katas ---------- */
 function katasView(trickId) {
@@ -424,14 +444,14 @@ function katasView(trickId) {
     ${crumbs(['#/dojo', 'Dojo'], [null, `${t.title}: katas`])}
     <span class="md-tag md-tag--plum">${t.sutra}</span>
     <h1 class="md-heading">${t.title}: ${LV.KATAS_PER_TRICK} katas</h1>
-    <p class="md-lede">Each kata is a short drill of 5 to 8 problems that gets harder as you climb: bigger numbers, new bases, trickier cases. Clear one to unlock the next. Three stars means every answer right, inside the par time, with no hints.</p>
-    <p class="mq-small">${store.doneWhere(`k:${trickId}:`)} of ${LV.KATAS_PER_TRICK} done · ${store.starsWhere(`k:${trickId}:`)} of ${LV.KATAS_PER_TRICK * 3} &#9733; · <a href="#/skill/v-${trickId}">Learn the trick first</a></p>
-    ${levelMap(LV.KATAS_PER_TRICK, n => LV.kataKey(trickId, n), n => `#/kata/${trickId}/${n}`)}
+    <p class="md-lede">Each kata is a short drill of 5 to 8 problems that gets harder as you climb: bigger numbers, new bases, trickier cases. Get at least 60% right to finish one and unlock the next.</p>
+    <p class="mq-small">${store.katasDoneWhere(`k:${trickId}:`)} of ${LV.KATAS_PER_TRICK} done · <a href="#/skill/v-${trickId}">Learn the trick first</a></p>
+    ${levelMap(LV.KATAS_PER_TRICK, n => ({ done: store.kataDone(LV.kataKey(trickId, n)) }), n => `#/kata/${trickId}/${n}`, { noun: 'Kata' })}
   </div></section>`;
 }
 function kataView(trickId, n, { signal } = {}) {
   const t = TRICKS.find(x => x.id === trickId); if (!t || n < 1 || n > LV.KATAS_PER_TRICK) return dojoView();
-  if (n > 1 && !store.stars(LV.kataKey(trickId, n - 1))) { location.replace(`#/katas/${trickId}`); return; }
+  if (n > 1 && !store.kataDone(LV.kataKey(trickId, n - 1))) { location.replace(`#/katas/${trickId}`); return; }
   const K = LV.kata(trickId, n);
   document.title = `Kata ${n}: ${t.title} · ${BRAND}`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
@@ -468,10 +488,10 @@ function kataView(trickId, n, { signal } = {}) {
   };
   const done = () => {
     question.abort();
-    const secs = Math.round((performance.now() - t0) / 1000), stars = LV.kataStars(right, K.problems.length, secs, K.par, hints), key = LV.kataKey(trickId, n), improved = store.setStars(key, stars);
-    const xp = stars * 10 + right * 2; if (xp) store.addXP(xp, 'kata'); store.bump('katas'); store.touchDay(); track('kata/' + trickId, 'Kata ' + n);
-    if (stars === 3) fx.confetti(90); else if (stars) fx.confetti(40);
-    box.innerHTML = resultHTML(stars, [`${right} of ${K.problems.length} right in ${secs} seconds (par ${K.par})${hints ? `, ${hints} hint${hints > 1 ? 's' : ''}` : ''}.`, `<span class="fx-xp">+${xp} XP</span>${improved ? ' New best for this kata.' : ''}`], n < LV.KATAS_PER_TRICK ? `#/kata/${trickId}/${n + 1}` : null, `#/kata/${trickId}/${n}`, `#/katas/${trickId}`, 'All katas');
+    const secs = Math.round((performance.now() - t0) / 1000), done = LV.kataDoneFor(right, K.problems.length), key = LV.kataKey(trickId, n), first = done && store.setKataDone(key);
+    const sp = LV.kataSparks(right, K.problems.length); if (sp) store.addSparks(sp, 'kata'); store.bump('katas'); store.touchDay(); track('kata/' + trickId, 'Kata ' + n);
+    if (done) fx.confetti(right === K.problems.length ? 90 : 40);
+    box.innerHTML = resultHTML({ done }, [`${right} of ${K.problems.length} right in ${secs} seconds${hints ? `, ${hints} hint${hints > 1 ? 's' : ''}` : ''}.`, `<span class="fx-sparks">+${sp} Sparks</span>${first ? ` Kata ${n} is done.` : ''}`], n < LV.KATAS_PER_TRICK ? `#/kata/${trickId}/${n + 1}` : null, `#/kata/${trickId}/${n}`, `#/katas/${trickId}`, 'All katas');
     const rt = box.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); mount(ctx => kataView(trickId, n, ctx)); };
   };
   show();
@@ -485,9 +505,9 @@ function towerView() {
     <span class="md-tag md-tag--coral">Challenge tower</span>
     <h1 class="md-heading">${LV.CHALLENGE_COUNT.toLocaleString('en-US')} Arena challenges</h1>
     <p class="md-lede">${LV.TOPICS.length} chapters, ${LV.PER_CHAPTER} challenges each, in five formats: Sprint, Sharpshooter, Survival, Time attack and Boss rounds. Pick any chapter; inside a chapter, clear each challenge to unlock the next.</p>
-    <p class="mq-small">${store.doneWhere('a:')} of ${LV.CHALLENGE_COUNT} cleared · ${store.starsWhere('a:')} of ${LV.CHALLENGE_COUNT * 3} &#9733;</p>
-    <div class="tower">${LV.TOPICS.map((tp, c) => { const lo = c * LV.PER_CHAPTER + 1, done = Array.from({ length: LV.PER_CHAPTER }, (_, k) => store.stars(LV.challengeKey(lo + k))).filter(Boolean).length, st = Array.from({ length: LV.PER_CHAPTER }, (_, k) => store.stars(LV.challengeKey(lo + k))).reduce((a, b) => a + b, 0);
-      return `<a class="tower-ch${done === LV.PER_CHAPTER ? ' done' : ''}" href="#/tower/${c + 1}"><span class="tower-n">${c + 1}</span><span class="tower-t"><b>${tp.name}</b><small>Challenges ${lo} to ${lo + LV.PER_CHAPTER - 1}</small><span class="mq-bar"><i style="width:${pct(done / LV.PER_CHAPTER)}%"></i></span></span><span class="star-n">${st}&#9733;</span></a>`; }).join('')}</div>
+    <p class="mq-small">${store.medalsWhere('a:').any} of ${LV.CHALLENGE_COUNT} cleared · ${store.medalsWhere('a:').gold} gold</p>
+    <div class="tower">${LV.TOPICS.map((tp, c) => { const lo = c * LV.PER_CHAPTER + 1, ms = Array.from({ length: LV.PER_CHAPTER }, (_, k) => store.medal(LV.challengeKey(lo + k))), done = ms.filter(Boolean).length, gold = ms.filter(v => v === 3).length;
+      return `<a class="tower-ch${done === LV.PER_CHAPTER ? ' done' : ''}" href="#/tower/${c + 1}"><span class="tower-n">${c + 1}</span><span class="tower-t"><b>${tp.name}</b><small>Challenges ${lo} to ${lo + LV.PER_CHAPTER - 1}</small><span class="mq-bar"><i style="width:${pct(done / LV.PER_CHAPTER)}%"></i></span></span><span class="medal-n">${gold} gold</span></a>`; }).join('')}</div>
   </div></section>`;
 }
 function chapterView(c) {
@@ -499,22 +519,22 @@ function chapterView(c) {
     <span class="md-tag md-tag--coral">Chapter ${c} of ${LV.TOPICS.length}</span>
     <h1 class="md-heading">${tp.name}</h1>
     <div class="fmt-legend">${Object.values(LV.FORMATS).map(f => `<span><b>${f.name}</b> ${f.how}</span>`).join('')}</div>
-    ${levelMap(LV.PER_CHAPTER, n => LV.challengeKey(lo + n), n => `#/challenge/${lo + n}`)}
+    ${levelMap(LV.PER_CHAPTER, n => ({ medal: store.medal(LV.challengeKey(lo + n)) }), n => `#/challenge/${lo + n}`)}
     <p class="mq-cta">${c > 1 ? `<a class="md-btn" href="#/tower/${c - 1}">&larr; Chapter ${c - 1}</a>` : ''}${c < LV.TOPICS.length ? `<a class="md-btn" href="#/tower/${c + 1}">Chapter ${c + 1} &rarr;</a>` : ''}</p>
   </div></section>`;
 }
 function challengeView(id, { signal } = {}) {
   if (id < 1 || id > LV.CHALLENGE_COUNT) return towerView();
   const ch = LV.challenge(id), chapterStart = ch.chapter * LV.PER_CHAPTER + 1;
-  if (id > chapterStart && !store.stars(LV.challengeKey(id - 1))) { location.replace(`#/tower/${ch.chapter + 1}`); return; }
-  const F = LV.FORMATS[ch.format], goalText = ch.goal === 'seconds' ? `Finish ${ch.total} with at least ${Math.ceil(ch.total * .8)} right. Stars at ${ch.targets.join(', ')} seconds or faster.` : `Stars at ${ch.targets.join(', ')} ${ch.goal}.`;
+  if (id > chapterStart && !store.medal(LV.challengeKey(id - 1))) { location.replace(`#/tower/${ch.chapter + 1}`); return; }
+  const F = LV.FORMATS[ch.format], goalText = ch.goal === 'seconds' ? `Finish ${ch.total} with at least ${Math.ceil(ch.total * .8)} right. Medals: ${goalsText(ch.targets, 'seconds or faster')}.` : `Medals: ${goalsText(ch.targets, ch.goal)}.`;
   document.title = `Challenge ${id}: ${BRAND}`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs(['#/tower', 'Challenge tower'], [`#/tower/${ch.chapter + 1}`, ch.topic.name], [null, `Challenge ${id}`])}
     <span class="md-tag md-tag--coral">${F.name}</span>
     <h1 class="md-heading">Challenge ${id}</h1>
     <p class="md-lede">${ch.topic.name}. ${F.how} ${ch.secs ? `${ch.secs} seconds.` : ''}${ch.total ? ` ${ch.total} questions.` : ''}${ch.lives ? ` ${ch.lives} lives.` : ''} ${goalText}</p>
-    <div class="md-card ar-shell" id="chShell"><p class="lv-best">Your best: ${starHTML(store.stars(LV.challengeKey(id)))}</p><button class="md-btn md-btn--primary ar-go" id="chGo">${icon('bolt')} Start</button></div></div></section>`;
+    <div class="md-card ar-shell" id="chShell"><p class="lv-best">Your best: ${medalHTML(store.medal(LV.challengeKey(id)))}</p><button class="md-btn md-btn--primary ar-go" id="chGo">${icon('bolt')} Start</button></div></div></section>`;
   const shell = $('#chShell');
   $('#chGo').onclick = () => {
     let n = 3; shell.innerHTML = `<div class="ar-count" aria-live="assertive">${n}</div>`; fx.sfx('tick');
@@ -525,10 +545,10 @@ function challengeView(id, { signal } = {}) {
     track('challenge/' + ch.format, 'Challenge ' + id); metrics.roundStart('tower');
     runChallenge(shell, ch, LV.challengeSet(ch), { tap: fx.mode() === 'explorer', signal, onEnd: r => {
       metrics.roundEnd('tower', fx.MODES[fx.mode()].league);
-      const stars = LV.challengeStars(ch, r), improved = store.setStars(LV.challengeKey(id), stars), xp = stars * 15 + r.right * 2;
-      if (xp) store.addXP(xp, 'challenge'); store.bump('arena'); store.touchDay(); if (stars === 3) fx.confetti(100); else if (stars) fx.confetti(40);
+      const medal = LV.challengeMedal(ch, r), improved = store.setMedal(LV.challengeKey(id), medal), sp = medal * 15 + r.right * 2;
+      if (sp) store.addSparks(sp, 'challenge'); store.bump('arena'); store.touchDay(); if (medal === 3) fx.confetti(100); else if (medal) fx.confetti(40);
       const nextId = id % LV.PER_CHAPTER ? id + 1 : null;
-      shell.innerHTML = resultHTML(stars, [`${r.right} right, ${r.wrong} missed${ch.goal === 'points' ? `, ${r.score} points` : ''}${ch.goal === 'seconds' ? `, ${r.secs} seconds` : ''}.`, `<span class="fx-xp">+${xp} XP</span>${improved ? ' New best.' : ''}`], nextId ? `#/challenge/${nextId}` : `#/tower/${ch.chapter + 2 <= LV.TOPICS.length ? ch.chapter + 2 : 1}`, `#/challenge/${id}`, `#/tower/${ch.chapter + 1}`, 'Chapter map');
+      shell.innerHTML = resultHTML({ medal }, [`${r.right} right, ${r.wrong} missed${ch.goal === 'points' ? `, ${r.score} points` : ''}${ch.goal === 'seconds' ? `, ${r.secs} seconds` : ''}.`, `<span class="fx-sparks">+${sp} Sparks</span>${improved ? ' New best.' : ''}`], nextId ? `#/challenge/${nextId}` : `#/tower/${ch.chapter + 2 <= LV.TOPICS.length ? ch.chapter + 2 : 1}`, `#/challenge/${id}`, `#/tower/${ch.chapter + 1}`, 'Chapter map');
       const rt = shell.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); mount(ctx => challengeView(id, ctx)); };
     } });
   };
@@ -560,7 +580,7 @@ function sutrasView() {
   const flip = (art, open) => { art.classList.toggle('flipped', open); art.querySelector('.sutra-face').setAttribute('aria-expanded', String(open)); fx.sfx('tap'); if (open) { collect(art.dataset.name); art.classList.add('got'); art.querySelector('.sutra-more').focus({ preventScroll: true }); } else art.querySelector('.sutra-face').focus({ preventScroll: true }); };
   view.querySelectorAll('.sutra-card').forEach(art => { art.querySelector('.sutra-face').onclick = () => flip(art, true); art.querySelector('.sutra-flipback').onclick = () => flip(art, false); });
 }
-function collect(name) { if (store.markSeen('sutra:' + name)) store.addXP(5, 'sutra'); }
+function collect(name) { if (store.markSeen('sutra:' + name)) store.addSparks(5, 'sutra'); }
 
 /* ---------- Sutra deep-dive modal: the card grows into it ---------- */
 let sutraDlg = null, sutraScene = null, sutraFrom = null, openedInPage = false; /* sutraScene: the open scene's controller */
@@ -630,10 +650,10 @@ function parentNote() {
     : gate === 'needs-age' ? 'Right now nothing is posted for this player. They have not answered the age question yet; it is asked the first time a score would be posted.'
     : gate === 'needs-parent' ? 'Right now nothing is posted for this player, because their age answer is under 13. To turn on World boards for them, a grown-up opens the Me page and goes to World boards.'
     : p.parentOk ? 'A grown-up turned on World boards for this player on this device. They can turn it off again on the Me page, under World boards.'
-    : "This player's scores and weekly XP post to World boards.";
+    : "This player's scores and weekly Sparks post to World boards.";
   return `<details class="mq-small pn"><summary class="linkbtn">${sum}</summary>
     <p class="pn-now"><b>${now}</b></p>
-    <p>World boards run on Google Firebase. Three kinds of post go to boards for the player's league: the score of a Daily challenge in the Arena and the score of a Ranked round of a game (today's and this week's board for each), and the player's XP total for this week (one weekly board). XP comes from all play, Practice included, so practice adds to that posted weekly total. Practice scores themselves never leave this device.</p>
+    <p>World boards run on Google Firebase. Three kinds of post go to boards for the player's league: the score of a Daily challenge in the Arena and the score of a Ranked round of a game (today's and this week's board for each), and the player's Sparks total for this week (one weekly board). Sparks come from all play, Practice included, so practice adds to that posted weekly total. Practice scores themselves never leave this device.</p>
     <p>Nothing is posted before a player answers one question about their age. The answer stays on this device and is never sent. Nothing is posted for a player under 13 until a grown-up turns on World boards for them on this device (Me page, World boards), and it can be turned off there at any time.</p>
     <p>No identity exists until the first post: looking at World boards needs no sign-in. ${fx.t({
       explorer: "When a player first posts, Firebase gives that player their own random ID on this browser and keeps it with the dates it was created and last used. Each player on this device who posts has their own ID and their own entry on each board. Removing a player on the Me page forgets their ID on this device; entries they already posted stay until you ask for them to be removed.",
@@ -676,7 +696,7 @@ async function sendScore(boards, score, label, p) {
     const res = await Promise.all(boards.map(b => cloud.submit(b, { name: p.name, avatar: p.avatar, score }, p)));
     if (res.some(r => r.posted)) return fx.toast(`<b>Posted to the world leaderboard</b> ${label}`, 'ok');
     const why = res.find(r => r.reason === 'needs-age' || r.reason === 'needs-parent')?.reason;
-    if (why === 'needs-age') askAge({ onAnswer: () => { const q = store.playerById(p.id); if (q && cloud.canPost(q) === 'ok') { sendScore(boards, score, label, q); queueXpPost(); } }, onDismiss: () => savedHere('needs-age') });
+    if (why === 'needs-age') askAge({ onAnswer: () => { const q = store.playerById(p.id); if (q && cloud.canPost(q) === 'ok') { sendScore(boards, score, label, q); queueSparksPost(); } }, onDismiss: () => savedHere('needs-age') });
     else if (why) savedHere(why);
   } catch (err) { fx.toast(`Could not reach the world leaderboard${err && err.code ? ` (${esc(err.code)})` : ''}. Your score is saved on this device.`); }
 }
@@ -685,27 +705,27 @@ function savedHere(why) {
   const how = why === 'needs-parent' ? ' ' + fx.t({ explorer: 'A grown-up can turn on World boards on the Me page.', challenger: 'Ask a grown-up to turn on World boards on the Me page.', pro: 'A parent or guardian can turn on World boards on the Me page.' }) : '';
   fx.toast(`<b>Saved on this device.</b> ${fx.t({ explorer: 'Your score is on the This device board.', challenger: 'It is on the This device board.', pro: 'It ranks on the This device board.' })}${how}`);
 }
-/* Weekly XP board: everything you do earns XP, so this ranks all activity. Sent at most once a minute.
-   The Players who earned XP are remembered by id, so after a Player switch each one's own weekly total
+/* Weekly Sparks Board: everything you do earns Sparks, so this ranks all activity. Sent at most once a minute.
+   The Players who earned Sparks are remembered by id, so after a Player switch each one's own weekly total
    still goes out under their own identity (never another Player's), and a removed Player's is dropped. */
-let xpTimer = 0, xpLast = 0;
-const xpWho = new Set();
-function queueXpPost() {
+let sparksTimer = 0, sparksLast = 0;
+const sparksWho = new Set();
+function queueSparksPost() {
   if (!cloud.enabled() || cloud.canPost() !== 'ok') return; /* no Age answer, or under 13 without the Parent step: nothing is sent (submit checks again) */
-  xpWho.add(store.player().id);
-  clearTimeout(xpTimer);
-  const wait = Math.max(3000, 65000 - (Date.now() - xpLast));
-  xpTimer = setTimeout(() => {
-    xpLast = Date.now();
-    for (const id of [...xpWho]) {
-      xpWho.delete(id);
+  sparksWho.add(store.player().id);
+  clearTimeout(sparksTimer);
+  const wait = Math.max(3000, 65000 - (Date.now() - sparksLast));
+  sparksTimer = setTimeout(() => {
+    sparksLast = Date.now();
+    for (const id of [...sparksWho]) {
+      sparksWho.delete(id);
       const p = store.playerById(id); if (!p) continue;
-      const w = store.weekXPOf(id), L = fx.MODES[p.mode]?.league;
-      if (L && w >= 10) cloud.postWeekXP(L, w, p).catch(() => {});
+      const w = store.weekSparksOf(id), L = fx.MODES[p.mode]?.league;
+      if (L && w >= 10) cloud.postWeekSparks(L, w, p).catch(() => {});
     }
   }, wait);
 }
-store.on(type => { if (type === 'xp') queueXpPost(); });
+store.on(type => { if (type === 'sparks') queueSparksPost(); });
 function arenaView({ signal } = {}) {
   document.title = `Arena: ${BRAND} · Madhav`;
   const league = fx.MODES[fx.mode()].league, day = cloud.dayId(), wk = cloud.weekId();
@@ -715,7 +735,7 @@ function arenaView({ signal } = {}) {
     <span class="md-tag md-tag--coral">Arena</span>
     <h1 class="md-heading">60 seconds. Same questions for everyone.</h1>
     <p class="md-lede">Answer as many as you can. Each right answer is worth 10, and every answer in a row adds a combo bonus. The daily round uses the same questions for every ${fx.MODES[fx.mode()].name}, so it is a fair race.</p>
-    <a class="tower-promo" href="#/tower">${icon('trophy')}<span><b>Challenge tower: ${LV.CHALLENGE_COUNT.toLocaleString('en-US')} levels</b><small>${store.doneWhere('a:')} cleared · ${store.starsWhere('a:')} &#9733; · Sprint, Survival, Sharpshooter, Time attack, Boss</small></span><span aria-hidden="true">&rarr;</span></a>
+    <a class="tower-promo" href="#/tower">${icon('trophy')}<span><b>Challenge tower: ${LV.CHALLENGE_COUNT.toLocaleString('en-US')} levels</b><small>${medalCounts(store.medalsWhere('a:'))} · Sprint, Survival, Sharpshooter, Time attack, Boss</small></span><span aria-hidden="true">&rarr;</span></a>
     <div class="md-card ar-shell" id="arShell"></div></div></section>`;
   const shell = $('#arShell'), rKey = 'arena:' + league, mode = fx.mode();
   const arenaRating = () => Math.round(AD.rating(rKey, mode));
@@ -729,10 +749,10 @@ function arenaView({ signal } = {}) {
       <p class="g-best">League: <b>${fx.MODES[fx.mode()].name}</b> · Your best today: <b>${store.best('arena-' + day)}</b><br>${arenaRatingLine()}</p>
       <button class="md-btn md-btn--primary ar-go" id="arGo">${icon('bolt')} Start</button>
       <div class="lb-cols"><div><h2 class="mq-h3">Today</h2><div id="lbDay" class="lb-wrap"></div></div><div><h2 class="mq-h3">This week</h2><div id="lbWeek" class="lb-wrap"></div></div></div>
-      <h2 class="mq-h3">Most XP this week <small class="mq-small">everything you play counts</small></h2><div id="lbXp" class="lb-wrap"></div>${parentNote()}`;
+      <h2 class="mq-h3">Most Sparks this week <small class="mq-small">everything you play counts</small></h2><div id="lbSparks" class="lb-wrap"></div>${parentNote()}`;
     shell.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { type = b.dataset.t; lobby(result); });
     $('#arGo', shell).onclick = countdown;
-    loadBoard($('#lbDay', shell), `daily-${day}-${league}`); loadBoard($('#lbWeek', shell), `week-${wk}-${league}`); loadBoard($('#lbXp', shell), `xp-week-${wk}-${league}`);
+    loadBoard($('#lbDay', shell), `daily-${day}-${league}`); loadBoard($('#lbWeek', shell), `week-${wk}-${league}`); loadBoard($('#lbSparks', shell), cloud.weekSparksBoard(wk, league));
   };
   const countdown = () => {
     let n = 3; shell.innerHTML = `<div class="ar-count" aria-live="assertive">${n}</div>`; fx.sfx('tick');
@@ -753,7 +773,7 @@ function arenaView({ signal } = {}) {
       });
       store.bump('arena'); store.touchDay();
       if (r.score > store.count('arenaBest')) store.bump('arenaBest', r.score - store.count('arenaBest'));
-      const xp = Math.round(r.score / 5); if (xp) store.addXP(xp, 'arena');
+      const sp = Math.round(r.score / 5); if (sp) store.addSparks(sp, 'arena');
       let msg = '';
       if (type === 'daily') {
         const isBest = store.setBest('arena-' + day, r.score);
@@ -761,7 +781,7 @@ function arenaView({ signal } = {}) {
         if (isBest) { fx.confetti(100); msg = 'New personal best for today!'; }
         postScore([`daily-${day}-${league}`, `week-${wk}-${league}`], r.score, `for today's ${fx.MODES[fx.mode()].name} race.`);
       }
-      lobby(`<div class="ar-result"><div class="md-stat"><div class="md-kicker">Score</div><div class="md-value">${r.score}</div><p>${r.right} right · ${r.wrong} missed · best combo ${r.bestCombo}x${moved}</p></div><p class="ar-msg">${msg || (type === 'practice' ? 'Practice rounds do not count for the leaderboard.' : 'Play again to beat your best.')} <span class="fx-xp">+${xp} XP</span></p></div>`);
+      lobby(`<div class="ar-result"><div class="md-stat"><div class="md-kicker">Score</div><div class="md-value">${r.score}</div><p>${r.right} right · ${r.wrong} missed · best combo ${r.bestCombo}x${moved}</p></div><p class="ar-msg">${msg || (type === 'practice' ? 'Practice rounds do not count for the leaderboard.' : 'Play again to beat your best.')} <span class="fx-sparks">+${sp} Sparks</span></p></div>`);
     } });
   };
   lobby();
@@ -779,7 +799,7 @@ function duelView({ signal } = {}) {
   const lobby = (res = '') => {
     shell.innerHTML = `${res}<div class="g-optrow" role="group" aria-label="Level">${Object.entries(fx.MODES).map(([id, m]) => `<button class="md-chip" aria-pressed="${id === lg}" data-l="${id}">${m.name}</button>`).join('')}</div><label class="duel-flip"><input type="checkbox" id="dFlip"> Face to face (flip the top player)</label><p><button class="md-btn md-btn--primary" id="dGo">${icon('duel')} Start the duel</button></p>`;
     shell.querySelectorAll('[data-l]').forEach(b => b.onclick = () => { lg = b.dataset.l; lobby(res); });
-    $('#dGo', shell).onclick = () => { const flip = $('#dFlip', shell).checked; store.bump('duels'); track('duel/' + lg, 'Duel'); metrics.roundStart('duel'); shell.classList.toggle('duel-flipped', flip); runDuel(shell, { league: lg, names: ['Player 1', 'Player 2'], signal, onEnd: w => { metrics.roundEnd('duel', lg); store.bump('duelsDone'); store.addXP(20, 'duel'); later(() => lobby(`<div class="ar-result"><div class="md-stat"><div class="md-kicker">Winner</div><div class="md-value">Player ${w + 1}</div><p>Great duel! Rematch?</p></div></div>`), 600, signal); } }); };
+    $('#dGo', shell).onclick = () => { const flip = $('#dFlip', shell).checked; store.bump('duels'); track('duel/' + lg, 'Duel'); metrics.roundStart('duel'); shell.classList.toggle('duel-flipped', flip); runDuel(shell, { league: lg, names: ['Player 1', 'Player 2'], signal, onEnd: w => { metrics.roundEnd('duel', lg); store.bump('duelsDone'); store.addSparks(20, 'duel'); later(() => lobby(`<div class="ar-result"><div class="md-stat"><div class="md-kicker">Winner</div><div class="md-value">Player ${w + 1}</div><p>Great duel! Rematch?</p></div></div>`), 600, signal); } }); };
   };
   lobby();
 }
@@ -788,12 +808,12 @@ function duelView({ signal } = {}) {
 function gamesView() {
   document.title = `Games: ${BRAND} · Madhav`;
   const m = fx.mode(), mine = GAMES.filter(g => g.modes.includes(m)), rest = GAMES.filter(g => !g.modes.includes(m));
-  const card = g => `<a class="md-card mq-game" href="#/game/${g.id}"><div class="md-icon-tile" style="background:color-mix(in srgb,var(--${g.color}) 18%,transparent);color:var(--${g.color}-strong)">${icon('game')}</div><h3>${both(g.title, g.kid)}</h3><p>${g.desc.split('. ')[0]}.</p><small class="mq-game-f">Skill ${Math.round(AD.rating('game:' + g.id, m))}/20 · ${store.doneWhere(`g:${g.id}:`)}/${LEVELS_PER_GAME} levels · ${store.starsWhere(`g:${g.id}:`)} &#9733; · leaderboard</small></a>`;
+  const card = g => `<a class="md-card mq-game" href="#/game/${g.id}"><div class="md-icon-tile" style="background:color-mix(in srgb,var(--${g.color}) 18%,transparent);color:var(--${g.color}-strong)">${icon('game')}</div><h3>${both(g.title, g.kid)}</h3><p>${g.desc.split('. ')[0]}.</p><small class="mq-game-f">Skill ${Math.round(AD.rating('game:' + g.id, m))}/20 · ${store.medalsWhere(`g:${g.id}:`).any}/${LEVELS_PER_GAME} levels · ${store.medalsWhere(`g:${g.id}:`).gold} gold · leaderboard</small></a>`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs([null, 'Games'])}
     <span class="md-tag md-tag--plum">Games</span>
     <h1 class="md-heading">Games that build number sense</h1>
-    <p class="md-lede">${GAMES.length} games, each with its own world leaderboard. Every game adapts to you: right answers make it harder, misses make it easier, and points are weighted by difficulty. ${LEVELS_PER_GAME} levels per game (${(GAMES.length * LEVELS_PER_GAME).toLocaleString('en-US')} in all) open up as your skill grows. Every game earns XP, and playing all of them unlocks a badge. Want a real race? Try the <a href="#/arena">Arena</a> or a <a href="#/duel">Duel</a>.</p>
+    <p class="md-lede">${GAMES.length} games, each with its own world leaderboard. Every game adapts to you: right answers make it harder, misses make it easier, and points are weighted by difficulty. ${LEVELS_PER_GAME} levels per game (${(GAMES.length * LEVELS_PER_GAME).toLocaleString('en-US')} in all) open up as your skill grows. Every game earns Sparks, and playing all of them unlocks a badge. Want a real race? Try the <a href="#/arena">Arena</a> or a <a href="#/duel">Duel</a>.</p>
     <h2 class="mq-strand">Picked for ${fx.MODES[m].name}</h2><div class="md-grid">${mine.map(card).join('')}</div>
     ${rest.length ? `<h2 class="mq-strand">More games</h2><div class="md-grid">${rest.map(card).join('')}</div>` : ''}
   </div></section>`;
@@ -802,7 +822,7 @@ function gameView(id, lvl = 0, { signal } = {}) {
   const g = GAMES.find(x => x.id === id); if (!g) return gamesView();
   const m = fx.mode(), league = fx.MODES[m].league, gkey = n => `g:${g.id}:${n}`, rate = AD.rating('game:' + g.id, m);
   const ratedLevel = AD.levelForDifficulty(rate, LEVELS_PER_GAME);
-  const isOpen = n => n <= ratedLevel || n === 1 || store.stars(gkey(n - 1)) > 0;
+  const isOpen = n => n <= ratedLevel || n === 1 || store.medal(gkey(n - 1)) > 0;
   if (lvl && (lvl > LEVELS_PER_GAME || !isOpen(lvl))) { location.replace(`#/game/${g.id}`); return; }
   const L = lvl ? LEVELS[g.id](lvl) : null, bDay = `${boardGame(g.id)}-daily-${cloud.dayId()}-${league}`, bWeek = `${boardGame(g.id)}-week-${cloud.weekId()}-${league}`;
   const lengthText = g.secs ? `${g.secs} seconds` : `${g.rounds} ${g.id === 'pairs' ? 'boards' : g.id === 'target' ? 'puzzles' : 'questions'}`;
@@ -813,12 +833,12 @@ function gameView(id, lvl = 0, { signal } = {}) {
     <h1 class="md-heading">${both(g.title, g.kid)}${lvl ? ` <small class="kata-of">level ${lvl} of ${LEVELS_PER_GAME}</small>` : ''}</h1><p class="md-lede">${g.desc}</p>
     <div class="md-card g-shell" id="gShell"></div>
     ${lvl ? '' : `<div class="lb-cols"><div><h2 class="mq-h3">Today's best</h2><div id="gbDay" class="lb-wrap"></div></div><div><h2 class="mq-h3">This week</h2><div id="gbWeek" class="lb-wrap"></div></div></div>${parentNote()}
-    <h2 class="mq-strand">Levels <small class="mq-small">${store.doneWhere(`g:${g.id}:`)} of ${LEVELS_PER_GAME} cleared · ${store.starsWhere(`g:${g.id}:`)} &#9733; · levels up to ${ratedLevel} are open at your skill (level ${Math.round(rate)} of 20)</small></h2>${levelMap(LEVELS_PER_GAME, gkey, n => `#/game/${g.id}/${n}`, { isOpen, suggest: Math.max(ratedLevel, ...Array.from({ length: LEVELS_PER_GAME }, (_, i) => (store.stars(gkey(i + 1)) ? Math.min(LEVELS_PER_GAME, i + 2) : 0))) })}`}
+    <h2 class="mq-strand">Levels <small class="mq-small">${store.medalsWhere(`g:${g.id}:`).any} of ${LEVELS_PER_GAME} cleared · ${store.medalsWhere(`g:${g.id}:`).gold} gold · levels up to ${ratedLevel} are open at your skill (level ${Math.round(rate)} of 20)</small></h2>${levelMap(LEVELS_PER_GAME, n => ({ medal: store.medal(gkey(n)) }), n => `#/game/${g.id}/${n}`, { isOpen, suggest: Math.max(ratedLevel, ...Array.from({ length: LEVELS_PER_GAME }, (_, i) => (store.medal(gkey(i + 1)) ? Math.min(LEVELS_PER_GAME, i + 2) : 0))) })}`}
   </div></section>`;
   const shell = $('#gShell');
   const dialMeter = d => `<span class="dial" role="img" aria-label="Difficulty ${d} of 20"><span class="dial-bar"><i style="width:${(d / 20) * 100}%"></i></span><b>Level ${d}</b></span>`;
   const lobby = (msg = '') => {
-    if (L) { shell.innerHTML = `${msg}<p class="lv-best">Starts at difficulty ${L.cfg.start} of 20 and adapts as you play. Goal: ${L.goal.map((t, i) => `${'&#9733;'.repeat(i + 1)} ${t.toLocaleString('en-US')}`).join(' · ')} points.</p><p class="lv-best">Your best: ${starHTML(store.stars(gkey(lvl)))}</p><button class="md-btn md-btn--primary ar-go" id="gStart">${icon('play')} Play level ${lvl}</button>`; $('#gStart', shell).onclick = start; return; }
+    if (L) { shell.innerHTML = `${msg}<p class="lv-best">Starts at difficulty ${L.cfg.start} of 20 and adapts as you play. Medals: ${goalsText(L.goal, 'points')}.</p><p class="lv-best">Your best: ${medalHTML(store.medal(gkey(lvl)))}</p><button class="md-btn md-btn--primary ar-go" id="gStart">${icon('play')} Play level ${lvl}</button>`; $('#gStart', shell).onclick = start; return; }
     shell.innerHTML = `${msg}<div class="g-optrow" role="group" aria-label="How to play"><button class="md-chip" aria-pressed="${mode === 'ranked'}" data-m="ranked">${icon('trophy')} Ranked round (${lengthText})</button><button class="md-chip" aria-pressed="${mode === 'endless'}" data-m="endless">Endless practice</button></div>
       <p class="g-best">Your skill in this game: ${dialMeter(Math.round(AD.rating('game:' + g.id, m)))}<br><small>Every round adapts: right answers make it harder, misses make it easier. Points are worth more at higher difficulty, so the leaderboard is fair across levels.</small></p>
       <button class="md-btn md-btn--primary ar-go" id="gStart">${icon('play')} ${mode === 'ranked' ? 'Play ranked' : 'Practice'}</button>`;
@@ -842,16 +862,16 @@ function gameView(id, lvl = 0, { signal } = {}) {
       const skillLine = `Difficulty: started at ${Math.round(startD)}, reached ${Math.round(dial.peak)}, settled at ${Math.round(dial.settled())} of 20. ${dial.right} of ${dial.n} right.`;
       const skillMove = dial.n >= 4 ? (moved > 0 ? ` Your skill rose to ${Math.round(after)}.` : moved < 0 ? ` Your skill is now ${Math.round(after)}.` : '') : '';
       if (L) {
-        const stars = levelStars(L.goal, score), improved = store.setStars(gkey(lvl), stars), xp = 10 + stars * 10 + Math.min(60, Math.round(score / 40)); store.addXP(xp, 'game');
-        if (stars === 3) fx.confetti(100); else if (stars) fx.confetti(40);
-        shell.innerHTML = resultHTML(stars, [`${score.toLocaleString('en-US')} points. Goals: ${L.goal.map(v => v.toLocaleString('en-US')).join(', ')}.`, skillLine + skillMove, `<span class="fx-xp">+${xp} XP</span>${improved ? ' New best.' : ''}`], lvl < LEVELS_PER_GAME ? `#/game/${g.id}/${lvl + 1}` : null, `#/game/${g.id}/${lvl}`, `#/game/${g.id}`, 'Game home');
+        const medal = levelMedal(L.goal, score), improved = store.setMedal(gkey(lvl), medal), sp = 10 + medal * 10 + Math.min(60, Math.round(score / 40)); store.addSparks(sp, 'game');
+        if (medal === 3) fx.confetti(100); else if (medal) fx.confetti(40);
+        shell.innerHTML = resultHTML({ medal }, [`${score.toLocaleString('en-US')} points. Goals: ${L.goal.map(v => v.toLocaleString('en-US')).join(', ')}.`, skillLine + skillMove, `<span class="fx-sparks">+${sp} Sparks</span>${improved ? ' New best.' : ''}`], lvl < LEVELS_PER_GAME ? `#/game/${g.id}/${lvl + 1}` : null, `#/game/${g.id}/${lvl}`, `#/game/${g.id}`, 'Game home');
         const rt = shell.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); mount(ctx => gameView(g.id, lvl, ctx)); };
         return;
       }
-      const xp = 10 + Math.min(80, Math.round(score / 30)); store.addXP(xp, 'game');
+      const sp = 10 + Math.min(80, Math.round(score / 30)); store.addSparks(sp, 'game');
       let note = '';
       if (mode === 'ranked') { const isBest = store.setBest(`${g.id}-ranked-${cloud.dayId()}`, score); if (isBest && score) fx.confetti(80); note = isBest && score ? 'Your best today!' : `Today's best: ${store.best(`${g.id}-ranked-${cloud.dayId()}`).toLocaleString('en-US')}.`; postScore([bDay, bWeek], score, `for ${g.title}.`); }
-      lobby(`<div class="g-result"><div class="md-stat"><div class="md-kicker">${mode === 'ranked' ? 'Ranked score' : 'Practice score'}</div><div class="md-value">${score.toLocaleString('en-US')}</div><p>${note} <span class="fx-xp">+${xp} XP</span></p></div><p class="mq-small">${skillLine}${skillMove}</p></div>`);
+      lobby(`<div class="g-result"><div class="md-stat"><div class="md-kicker">${mode === 'ranked' ? 'Ranked score' : 'Practice score'}</div><div class="md-value">${score.toLocaleString('en-US')}</div><p>${note} <span class="fx-sparks">+${sp} Sparks</span></p></div><p class="mq-small">${skillLine}${skillMove}</p></div>`);
       if (mode === 'ranked') later(() => { loadBoard($('#gbDay'), bDay); loadBoard($('#gbWeek'), bWeek); }, 1500, signal);
     };
     keepFocus($('#gArea', shell), roundSignal, focusWasHere);
@@ -912,7 +932,6 @@ function openPlayer(r, em, opener) {
   playerDlg.showModal();
   // Video learner: the player has stayed open for a whole minute (cancelled when it closes)
   clearTimeout(playerDlg._minute); playerDlg._minute = setTimeout(() => { if (playerDlg.open) store.bump('watchedMinute'); }, 60000);
-  if (!store.seen('vid:' + r.url) && store.markSeen('vid:' + r.url)) store.addXP(5, 'video');
 }
 
 /* ---------- Posting consent: the Age answer and the Parent step (docs/adr/0001) ----------
@@ -968,7 +987,7 @@ function worldBoardsHTML(p) {
   const gate = cloud.canPost(p);
   if (!cloud.enabled()) return '<p>World boards are switched off on this site, so every score stays on this device.</p>';
   if (gate === 'needs-age') return `<p>${fx.t({ explorer: 'Before a score goes on a World board, there is one question to answer.', challenger: 'Before a score goes on a World board, there is one question to answer.', pro: 'Before anything is posted to a World board, each player answers one question.' })}</p><button type="button" class="md-btn md-btn--sm" id="wbAsk">Answer the question</button>`;
-  if (!cloud.isUnder13(p)) return `<p>${fx.t({ explorer: 'Your scores and weekly XP go on World boards.', challenger: 'Your scores and weekly XP go on World boards.', pro: "This player's scores and weekly XP post to World boards." })}</p>`;
+  if (!cloud.isUnder13(p)) return `<p>${fx.t({ explorer: 'Your scores and weekly Sparks go on World boards.', challenger: 'Your scores and weekly Sparks go on World boards.', pro: "This player's scores and weekly Sparks post to World boards." })}</p>`;
   const sw = on => `<button type="button" class="md-switch" role="switch" id="wbSwitch" aria-checked="${on}"><span>Allow World boards for ${esc(p.name)}</span><span class="md-track" aria-hidden="true"><span class="md-knob"></span></span></button>`;
   if (p.parentOk) return `<p>A grown-up turned on World boards for this player on ${new Date(p.parentOk).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}. Turning it off stops posting; entries already on World boards stay until removed on request.</p>${sw(true)}`;
   const n = 1001 + Math.floor(Math.random() * 8999);
@@ -976,12 +995,12 @@ function worldBoardsHTML(p) {
     <form class="wb-check" id="wbCheck" data-n="${n}" novalidate><p class="wb-for"><b>For grown-ups</b></p><label for="wbIn">Type this number in digits: <b class="wb-words">${inWords(n)}</b></label>
       <span class="wb-row"><input id="wbIn" inputmode="numeric" autocomplete="off" aria-describedby="wbErr"><button class="md-btn md-btn--sm md-btn--primary">Check</button></span>
       <span class="wb-err" id="wbErr" role="alert"></span></form>
-    <div id="wbOk" hidden><p>Thanks. Turn this on to let ${esc(p.name)} post scores and weekly XP to World boards.</p>${sw(false)}</div>`;
+    <div id="wbOk" hidden><p>Thanks. Turn this on to let ${esc(p.name)} post scores and weekly Sparks to World boards.</p>${sw(false)}</div>`;
 }
 function wireWorldBoards(root) {
   const box = $('#worldBoards', root); if (!box) return;
   const redraw = (say = '') => { box.querySelector('.wb-body').innerHTML = worldBoardsHTML(store.player()); wireWorldBoards(root); if (say) $('#wbMsg', root).textContent = say; };
-  const ask = $('#wbAsk', box); if (ask) ask.onclick = () => askAge({ onAnswer: () => { redraw(); queueXpPost(); }, onDismiss: () => {} });
+  const ask = $('#wbAsk', box); if (ask) ask.onclick = () => askAge({ onAnswer: () => { redraw(); queueSparksPost(); }, onDismiss: () => {} });
   const form = $('#wbCheck', box);
   if (form) form.onsubmit = e => {
     e.preventDefault();
@@ -992,7 +1011,7 @@ function wireWorldBoards(root) {
   const sw = $('#wbSwitch', box);
   if (sw) sw.onclick = () => {
     if (sw.getAttribute('aria-checked') === 'true') { store.setParentOk(false); track('parent-step/off', 'Vedic Math: World boards turned off'); redraw('World boards are off for this player. Nothing more is posted; entries already posted stay.'); }
-    else { store.setParentOk(true); track('parent-step/on', 'Vedic Math: World boards turned on'); redraw('World boards are on for this player.'); queueXpPost(); }
+    else { store.setParentOk(true); track('parent-step/on', 'Vedic Math: World boards turned on'); redraw('World boards are on for this player.'); queueSparksPost(); }
     const again = $('#wbSwitch', box) || $('#wbIn', box); if (again) again.focus();
   };
 }
@@ -1000,10 +1019,10 @@ function wireWorldBoards(root) {
 /* ---------- Me: profile, badges, players, settings ---------- */
 function meView() {
   document.title = `Me: ${BRAND} · Madhav`;
-  const p = store.player(), L = gm.levelInfo(), got = store.badges(), done = SKILLS.filter(s => store.mastered(s.id)).length;
+  const p = store.player(), T = gm.titleInfo(), got = store.badges(), done = SKILLS.filter(s => store.mastered(s.id)).length;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs([null, 'Me'])}
-    <div class="me-head md-card">${avatar(p, 84)}<div><h1 class="mq-h1">${esc(p.name)}</h1><p>Level ${L.lv} · ${gm.titleOf(L.lv)} · ${store.xp()} XP</p><span class="mq-xpbar mq-xpbar--big"><i style="width:${pct(L.pct)}%"></i></span><p class="mq-small">${L.need - L.into} XP to level ${L.lv + 1}</p>
+    <div class="me-head md-card">${avatar(p, 84)}<div><h1 class="mq-h1">${esc(p.name)}</h1><p>${T.title} · ${store.sparks()} Sparks</p>${titleBar(T)}<p class="mq-small">${T.next ? `${T.need - T.into} Sparks to ${T.next}` : 'You hold the top Title.'}</p>
       <div class="me-acts"><button class="md-btn md-btn--sm" id="meName">New nickname</button>${store.AVATARS.map(c => `<button class="av-pick av av-${c}" data-c="${c}" aria-label="Color ${c}" aria-pressed="${c === p.avatar}"></button>`).join('')}</div>${parentNote()}</div></div>
     <h2 class="mq-strand" id="wbH">World boards</h2>
     <div class="md-card wb-card" id="worldBoards" role="region" aria-labelledby="wbH"><div class="wb-body">${worldBoardsHTML(p)}</div><p class="pr-say" id="wbMsg" role="status" aria-live="polite"></p></div>
@@ -1057,7 +1076,7 @@ function mountAnimator(t, signal) {
   const form = $('#animForm'), ins = [...form.querySelectorAll('input')], board = $('#animBoard'), nav = $('#animNav'), err = $('#animErr'); let steps = [], i = 0, counted = false;
   const fill = vals => ins.forEach((x, k) => (x.value = vals[k]));
   const show = (all = false) => { board.innerHTML = steps.slice(0, all ? steps.length : i + 1).map((s, k) => `<div class="anim-step${k === (all ? steps.length - 1 : i) ? ' cur' : ''}"><div class="anim-show">${s.show}</div><p>${s.say}</p></div>`).join(''); $('#animPos').textContent = `${all ? steps.length : i + 1} / ${steps.length}`; $('#animPrev').disabled = i === 0 && !all; $('#animNext').disabled = all || i === steps.length - 1;
-    if ((all || i === steps.length - 1) && !counted) { counted = true; store.bump('tricksWatched'); if (store.markSeen('trick:' + t.id)) store.addXP(5, 'trick'); } };
+    if ((all || i === steps.length - 1) && !counted) { counted = true; store.bump('tricksWatched'); if (store.markSeen('trick:' + t.id)) store.addSparks(5, 'trick'); } };
   const run = (user = true) => { const vals = ins.map(x => Number(x.value)); if (ins.some(x => x.value === '') || vals.some(v => !Number.isFinite(v))) { err.textContent = 'Fill in every number.'; return; } const bad = t.valid(vals); err.textContent = bad || ''; if (bad) { board.innerHTML = ''; nav.hidden = true; return; } steps = t.steps(vals); i = 0; counted = !user; nav.hidden = false; show(); if (user) track('trick/' + t.id, 'Trick: ' + t.title); };
   on(form, 'submit', e => { e.preventDefault(); fx.sfx('tap'); run(); }, signal);
   on($('#animRand'), 'click', () => { let v; do { v = t.random(); } while (t.valid(v)); fill(v); fx.sfx('pop'); run(); }, signal);

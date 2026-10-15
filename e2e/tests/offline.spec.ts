@@ -139,8 +139,8 @@ test('a Dojo kata and a game play offline, and the progress persists', async ({ 
     await expect(page.locator('#kSay')).toHaveClass(/\bok\b/);
     await page.locator('#kGo').click();
   }
-  await expect(page.locator('.lv-result h2')).toHaveText('Perfect!');
-  await expect(page.locator('.lv-result .lv-stars')).toHaveAttribute('aria-label', '3 of 3 stars');
+  await expect(page.locator('.lv-result h2')).toHaveText('Kata done!');
+  await expect(page.locator('.lv-result')).toContainText('+35 Sparks');
 
   // A game: one right answer in Endless practice
   await page.goto(`${APP}#/game/times-sprint`);
@@ -155,14 +155,14 @@ test('a Dojo kata and a game play offline, and the progress persists', async ({ 
   await expect(page.locator('.g-result .md-kicker')).toHaveText('Practice score');
 
   // Still offline: reload, and everything is still there
-  const xp = await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1')!).xp);
-  expect(xp).toBeGreaterThan(30);
+  const sparks = await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1')!).sparks);
+  expect(sparks).toBeGreaterThan(30);
   await page.reload();
   await page.goto(`${APP}#/katas/sq5`);
   await expect(page.locator('a.lv-node[href="#/kata/sq5/2"]')).toBeVisible();
-  await expect(page.locator('a.lv-node[href="#/kata/sq5/1"] .lv-stars')).toHaveAttribute('aria-label', '3 of 3 stars');
+  await expect(page.locator('a.lv-node[href="#/kata/sq5/1"]')).toHaveAttribute('aria-label', 'Kata 1, done');
   await page.goto(`${APP}#/me`);
-  await expect(page.locator('.me-head')).toContainText(`${xp} XP`);
+  await expect(page.locator('.me-head')).toContainText(`${sparks} Sparks`);
   await page.goto(`${APP}#/game/times-sprint`);
   await expect(page.locator('#gShell')).toBeVisible();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1')!).seen['game:times-sprint'])).toBeTruthy();
@@ -170,7 +170,7 @@ test('a Dojo kata and a game play offline, and the progress persists', async ({ 
 });
 
 test.describe('a Player who may post', () => {
-// A grown-up's XP would post when online, so this checks that nothing earned offline is saved up to send later
+// A grown-up's Sparks would post when online, so this checks that nothing earned offline is saved up to send later
 test.use({ seedConsent: { age: 'adult' } });
 test('offline, the leaderboards fall back to this device, and nothing is queued or written', async ({ page, context }) => {
   test.setTimeout(90_000);
@@ -182,20 +182,20 @@ test('offline, the leaderboards fall back to this device, and nothing is queued 
 
   const FALLBACK = 'World scores are not reachable right now. Showing this device.';
   await page.goto(`${APP}#/arena`);
-  for (const id of ['#lbDay', '#lbWeek', '#lbXp']) await expect(page.locator(`${id} .lb-body`)).toContainText(FALLBACK);
+  for (const id of ['#lbDay', '#lbWeek', '#lbSparks']) await expect(page.locator(`${id} .lb-body`)).toContainText(FALLBACK);
   await page.goto(`${APP}#/game/times-sprint`);
   for (const id of ['#gbDay', '#gbWeek']) await expect(page.locator(`${id} .lb-body`)).toContainText(FALLBACK);
 
-  // Earn 10 XP offline (two sutra cards), past the 3 second wait of the weekly XP post
+  // Earn 10 Sparks offline (two sutra cards), past the 3 second wait of the weekly Sparks post
   await page.goto(`${APP}#/sutras`);
   for (const i of [0, 1]) await page.locator('.sutra-card .sutra-face').nth(i).click();
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1')!).xp)).toBe(10);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1')!).sparks)).toBe(10);
   await page.waitForTimeout(4_500);
   let log = await cloudLog(page);
   expect(log.signIns).toBe(0);
   expect(log.writes).toEqual([]);
 
-  // Back online, the offline XP is not saved up to send later: not by this page (in memory) ...
+  // Back online, the offline Sparks are not saved up to send later: not by this page (in memory) ...
   await goOnline(context);
   await page.waitForTimeout(4_500);
   expect((await cloudLog(page)).writes).toEqual([]);

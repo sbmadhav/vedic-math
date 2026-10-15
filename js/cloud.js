@@ -10,9 +10,9 @@ import * as store from './store.js';
 
 const V = '10.12.2', CDN = `https://www.gstatic.com/firebasejs/${V}`;
 /* Score caps and the entry lifetime, mirrored from cloud/firestore.rules (the rules are the authority):
-   Arena boards per league, Ranked game boards (g_...) and weekly XP boards (xp-week-...) one cap each. */
+   Arena boards per league, Ranked game boards (g_...) and weekly Sparks boards (xp-week-...) one cap each. */
 export const MAX_SCORE = { explorer: 2000, challenger: 1600, pro: 1200 };
-export const MAX_GAME_SCORE = 12000, MAX_WEEK_XP = 60000;
+export const MAX_GAME_SCORE = 12000, MAX_WEEK_SPARKS = 60000;
 export const KEEP_DAYS = 30;
 export const enabled = () => !!(FIREBASE && FIREBASE.projectId);
 export const appCheckOn = () => enabled() && !!appCheckSiteKey;
@@ -132,7 +132,7 @@ export async function forget(p) {
 }
 store.on((type, data) => { if (type === 'removed') forget(data); });
 
-/* May this Player's Scores and XP leave the device? 'ok', 'needs-age' or 'needs-parent' (docs/adr/0001).
+/* May this Player's Scores and weekly Sparks leave the device? 'ok', 'needs-age' or 'needs-parent' (docs/adr/0001).
    age is a number or 'adult'; parentOk is when a grown-up gave the Parent step, or null. Both stay on the device. */
 export const isUnder13 = p => typeof p?.age === 'number' && p.age < 13;
 export function canPost(p = store.player()) {
@@ -144,7 +144,7 @@ export function canPost(p = store.player()) {
 /* The score a board accepts, as the rules check it: an integer from 10 to the board's cap, and even on
    Arena boards (every right answer in the Arena earns an even amount). 0 means the board takes none. */
 export function boardScore(board, raw) {
-  const cap = board.startsWith('g_') ? MAX_GAME_SCORE : board.startsWith('xp-') ? MAX_WEEK_XP : MAX_SCORE[board.split('-').pop()] || 0;
+  const cap = board.startsWith('g_') ? MAX_GAME_SCORE : board.startsWith('xp-') ? MAX_WEEK_SPARKS : MAX_SCORE[board.split('-').pop()] || 0;
   let score = Math.min(cap, Math.round(Number(raw) || 0));
   if (!board.startsWith('g_') && !board.startsWith('xp-')) score -= score % 2;
   return score >= 10 ? score : 0;
@@ -167,10 +167,13 @@ export async function submit(board, entry, p = store.player()) {
   await fs.setDoc(ref, { name: entry.name, avatar: entry.avatar, score, ts: fs.serverTimestamp(), exp });
   return { posted: true };
 }
-/* This week's XP total (all play, Practice included) for a Player (the active one by default), to their
-   League's weekly XP board, under that Player's own identity. Goes through submit, so the same consent check applies. */
-export const postWeekXP = (league, xp, p = store.player()) =>
-  submit(`xp-week-${weekId()}-${league}`, { name: p.name, avatar: p.avatar, score: Math.min(MAX_WEEK_XP, xp) }, p);
+/* The weekly Sparks Board of a League. Its id keeps the xp- prefix it had when Sparks were called XP: the id
+   is never shown, and keeping it needs no rules change and carries this week's entries over (docs/adr/0003). */
+export const weekSparksBoard = (week = weekId(), league) => `xp-week-${week}-${league}`;
+/* This week's Sparks total (all play, Practice included) for a Player (the active one by default), to their
+   League's weekly Sparks Board, under that Player's own identity. Goes through submit, so the same consent check applies. */
+export const postWeekSparks = (league, sparks, p = store.player()) =>
+  submit(weekSparksBoard(weekId(), league), { name: p.name, avatar: p.avatar, score: Math.min(MAX_WEEK_SPARKS, sparks) }, p);
 /* A World board's top entries, read without signing in. "me" marks only that Player's own entry (the active
    Player by default), and only if they have posted from this browser before. */
 export async function top(board, n = 20, p = store.player()) {

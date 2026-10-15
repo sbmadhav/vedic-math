@@ -1,14 +1,14 @@
 /* cloud.boardScore must send what cloud/firestore.rules accept: Arena boards take an even score up to
-   the league cap, Ranked game boards up to 12000 and weekly XP boards up to 60000 (any integer). */
+   the league cap, Ranked game boards up to 12000 and weekly Sparks boards (id xp-week-...) up to 60000 (any integer). */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { boardScore, MAX_SCORE, MAX_GAME_SCORE, MAX_WEEK_XP } from '../js/cloud.js';
+import { boardScore, MAX_SCORE, MAX_GAME_SCORE, MAX_WEEK_SPARKS, weekSparksBoard } from '../js/cloud.js';
 
 const rules = readFileSync(new URL('../cloud/firestore.rules', import.meta.url), 'utf8');
 
 test('the caps match cloud/firestore.rules', () => {
-  assert.match(rules, new RegExp(`kind\\(\\) == 'game' \\? ${MAX_GAME_SCORE} : kind\\(\\) == 'xp' \\? ${MAX_WEEK_XP}`));
+  assert.match(rules, new RegExp(`kind\\(\\) == 'game' \\? ${MAX_GAME_SCORE} : kind\\(\\) == 'xp' \\? ${MAX_WEEK_SPARKS}`));
   for (const [league, cap] of Object.entries(MAX_SCORE)) assert.match(rules, new RegExp(`'${league}': ${cap}`));
 });
 
@@ -27,7 +27,8 @@ test('Ranked game boards: any integer from 10 to 12000, whatever the league', ()
   assert.equal(boardScore('g_rain-daily-2026-10-14-explorer', 9.4), 0);
 });
 
-test('weekly XP boards: any integer from 10 to 60000', () => {
+test('weekly Sparks boards: any integer from 10 to 60000, under the kept xp-week- id', () => {
+  assert.equal(weekSparksBoard('2026-W42', 'pro'), 'xp-week-2026-W42-pro');
   assert.equal(boardScore('xp-week-2026-W42-challenger', 15), 15);
   assert.equal(boardScore('xp-week-2026-W42-pro', 4321), 4321);
   assert.equal(boardScore('xp-week-2026-W42-explorer', 70000), 60000);
@@ -154,16 +155,16 @@ test('after the first post, top() marks this device\'s row as "me", still withou
   assert.equal(log.signIns, 0);
 });
 
-test('weekly XP: an under-13 Player without the Parent step sends nothing; with it, the total posts', async () => {
+test('weekly Sparks: an under-13 Player without the Parent step sends nothing; with it, the total posts', async () => {
   let log = stubSdk(); as(10);
-  assert.deepEqual(await cloud.postWeekXP('explorer', 250), { posted: false, reason: 'needs-parent' });
+  assert.deepEqual(await cloud.postWeekSparks('explorer', 250), { posted: false, reason: 'needs-parent' });
   assert.deepEqual(log.files, []);
   assert.equal(log.signIns, 0);
   log = stubSdk(); as(undefined);
-  assert.deepEqual(await cloud.postWeekXP('explorer', 250), { posted: false, reason: 'needs-age' });
+  assert.deepEqual(await cloud.postWeekSparks('explorer', 250), { posted: false, reason: 'needs-age' });
   assert.deepEqual(log.files, []);
   log = stubSdk(); as(10, Date.now());
-  assert.deepEqual(await cloud.postWeekXP('explorer', 70000), { posted: true });
+  assert.deepEqual(await cloud.postWeekSparks('explorer', 70000), { posted: true });
   assert.equal(log.writes[0].path, `boards/xp-week-${cloud.weekId()}-explorer/scores/uid-1`);
   assert.equal(log.writes[0].data.score, 60000);
 });
@@ -269,9 +270,9 @@ test('a Player who has never posted creates no identity by viewing a board', asy
   store.switchPlayer('p1');
 });
 
-test('weekly XP posts under the identity of the Player passed in', async () => {
+test('weekly Sparks post under the identity of the Player passed in', async () => {
   const [, b] = family(), log = stubSdk();
-  assert.deepEqual(await cloud.postWeekXP('challenger', 120, b), { posted: true });
+  assert.deepEqual(await cloud.postWeekSparks('challenger', 120, b), { posted: true });
   assert.equal(log.writes[0].app, 'vm-' + b.id);
   assert.equal(log.writes[0].data.name, 'Lucky Otter 17');
   assert.ok(!('[DEFAULT]' in log.saved), 'the active Player (p1) got no identity');
