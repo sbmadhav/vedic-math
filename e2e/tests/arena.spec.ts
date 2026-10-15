@@ -91,11 +91,14 @@ async function startSeededDuel(page: import('@playwright/test').Page, league: st
 }
 const sideTexts = (page: import('@playwright/test').Page, p: number) => page.locator(`#dQ${p}, #dC${p}`).allTextContents();
 
-test('duel: both sides race the same question; a miss freezes one side; two misses reveal the answer', async ({ page }) => {
+for (const league of ['challenger', 'pro'] as const) test(`duel (${league}): both sides race the same question; a miss freezes one side; two misses reveal the answer`, async ({ page }) => {
   await seedable(page);
   await heldClock(page);
   await open(page, '#/duel');
-  const answer = await startSeededDuel(page, 'challenger');
+  await page.locator(`[data-l="${league}"]`).click();
+  const answer = await startSeededDuel(page, league);
+  // A Pro Duel deals mental arithmetic only (arena spec)
+  if (league === 'pro') expect(await page.locator('#dQ0').textContent()).toMatch(MENTAL);
   const p1 = page.locator('.duel-p1'), p2 = page.locator('.duel-p2');
   // Same question and the same choices in the same order on both sides
   expect(await sideTexts(page, 0)).toEqual(await sideTexts(page, 1));
@@ -281,4 +284,116 @@ test('duel rematch: one right tap scores exactly 1', async ({ page, issues }) =>
   await expect(page.locator('#dS0')).toHaveText('1');
   await expect(page.locator('#dS1')).toHaveText('0');
   expect(appErrors(issues), 'console errors').toEqual([]);
+});
+
+/* Pro Arena: mental arithmetic, identical daily rounds and adaptive Practice rounds (arena and ratings specs) */
+const MENTAL = /^(\d+ × \d+ = \?|\d+2 = \?|What is \d+(\.5)?% of \d+\?|\d+ ÷ \d+ = \?)$/;
+/* Works out the answer to a Pro Arena question from its text */
+function mentalAnswer(text: string) {
+  let m;
+  if ((m = /^(\d+) × (\d+) = \?$/.exec(text))) return +m[1] * +m[2];
+  if ((m = /^(\d+) ÷ (\d+) = \?$/.exec(text))) return +m[1] / +m[2];
+  if ((m = /^What is (\d+(?:\.5)?)% of (\d+)\?$/.exec(text))) return Math.round(+m[1] * 10 * +m[2]) / 1000;
+  if ((m = /^(\d+)2 = \?$/.exec(text))) return +m[1] * +m[1];
+  throw new Error('not a Pro Arena question: ' + text);
+}
+/* A Player's saved progress before the page loads (only on a fresh profile, like the fixtures' Player) */
+async function seedProgress(page: import('@playwright/test').Page, id: string, data: Record<string, unknown>) {
+  await page.addInitScript(([k, v]) => { if (!localStorage.getItem(k)) localStorage.setItem(k, v); }, [`mathquest.v1.${id}`, JSON.stringify(data)] as const);
+}
+const savedRating = (page: import('@playwright/test').Page, key: string) =>
+  page.evaluate(async k => (await import('/vedic-math/js/store.js' as string)).rating(k) as number, key);
+
+test.describe('pro', () => {
+  test.use({ seedMode: 'pro' });
+
+  test('Practice round starts at the Arena Rating, adapts, and the lobby shows the new Rating', async ({ page, issues }) => {
+    await seedProgress(page, 'p1', { ratings: { 'arena:pro': 15 } });
+    await heldClock(page);
+    await open(page, '#/arena');
+    await expect(page.locator('#arRating')).toHaveAttribute('data-rating', '15');
+    await expect(page.locator('#arRating')).toContainText('Arena Rating: 15/20');
+    await practiceRound(page);
+    const q = page.locator('#arQ');
+    await expect(q).toHaveAttribute('data-d', '15');
+    // Six right answers in a row: the questions get harder
+    for (let k = 0; k < 6; k++) {
+      const text = (await q.textContent()) || '';
+      expect(text).toMatch(MENTAL);
+      await page.locator('#arType').fill(String(mentalAnswer(text)));
+      await page.locator('#arForm button').click();
+      await expect(q).not.toHaveText(text);
+    }
+    expect(Number(await q.getAttribute('data-d'))).toBeGreaterThan(15);
+    await endRound(page);
+    await expect(page.locator('.ar-result')).toContainText('6 right · 0 missed');
+    await expect(page.locator('.ar-result')).toContainText(/Arena Rating up to (1[6-9]|20)\./);
+    const after = await savedRating(page, 'arena:pro');
+    expect(after).toBeGreaterThan(15);
+    await expect(page.locator('#arRating')).toHaveAttribute('data-rating', String(Math.round(after)));
+    // Practice rounds never leave the device
+    expect((await cloudLog(page)).writes).toEqual([]);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('vm.board') || '[]'))).toEqual([]);
+    expect(appErrors(issues), 'console errors').toEqual([]);
+  });
+
+  test('a new Pro Player starts Practice at difficulty 9', async ({ page }) => {
+    await heldClock(page);
+    await open(page, '#/arena');
+    await expect(page.locator('#arRating')).toHaveAttribute('data-rating', '9');
+    await practiceRound(page);
+    await expect(page.locator('#arQ')).toHaveAttribute('data-d', '9');
+  });
+
+  test('the daily round deals the same questions to two Players with different Arena Ratings', async ({ page }) => {
+    // A date after the switch to mental arithmetic (MENTAL_FROM, Monday 2026-10-19), the same for both Players
+    await page.clock.setFixedTime(new Date('2026-10-21T10:00:00'));
+    await seedProgress(page, 'p1', { ratings: { 'arena:pro': 3 } });
+    await seedProgress(page, 'p2', { ratings: { 'arena:pro': 18 } });
+    const firstQuestions = async () => {
+      await open(page, '#/arena');
+      await expect(page.locator('[data-t="daily"]')).toHaveAttribute('aria-pressed', 'true');
+      await page.locator('#arGo').click();
+      const q = page.locator('#arQ');
+      await expect(q).not.toBeEmpty({ timeout: 6000 });
+      const seen: string[] = [];
+      for (let k = 0; k < 3; k++) {
+        const text = (await q.textContent()) || '';
+        expect(text).toMatch(MENTAL);
+        seen.push(`${await q.getAttribute('data-d')} ${text}`);
+        await page.locator('#arType').fill(String(mentalAnswer(text)));
+        await page.locator('#arForm button').click();
+        await expect(q).not.toHaveText(text);
+      }
+      await page.goto(`${APP}#/learn`); // leave before the round ends: nothing is posted
+      return seen;
+    };
+    const one = await firstQuestions();
+    expect(one[0].startsWith('6 '), 'the daily ramp starts at 6 whatever the Rating').toBe(true);
+    // A second Player on this device with a much higher Arena Rating
+    await page.evaluate(() => {
+      const P = JSON.parse(localStorage.getItem('vm.players')!);
+      P.list.push({ id: 'p2', name: 'Calm Otter 17', avatar: 'sky', mode: 'pro', created: Date.now() }); P.active = 'p2';
+      localStorage.setItem('vm.players', JSON.stringify(P));
+    });
+    await page.reload();
+    const two = await firstQuestions();
+    expect(two).toEqual(one);
+    expect(await savedRating(page, 'arena:pro')).toBe(18);
+    expect((await cloudLog(page)).writes).toEqual([]);
+  });
+
+  test('before the switch day, the Pro daily round keeps the old questions for this week\'s Boards', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-10-15T10:00:00'));
+    await open(page, '#/arena');
+    await page.locator('#arGo').click();
+    await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
+    // Old Pro daily items are skill questions with no difficulty step
+    await expect(page.locator('#arQ')).not.toHaveAttribute('data-d', /.*/);
+    const expected = await page.evaluate(async () => (await import('/vedic-math/js/arena.js' as string)).dailySet('pro', '2026-10-15')[0].q as string);
+    const html = await page.evaluate(h => { const d = document.createElement('div'); d.innerHTML = h; return d.innerHTML; }, expected);
+    expect(await page.locator('#arQ').innerHTML()).toBe(html);
+    await page.goto(`${APP}#/learn`);
+    expect((await cloudLog(page)).writes).toEqual([]);
+  });
 });

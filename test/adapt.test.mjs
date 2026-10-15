@@ -6,6 +6,7 @@ globalThis.matchMedia ??= () => ({ matches: false });
 globalThis.localStorage ??= { _: {}, getItem(k) { return this._[k] ?? null; }, setItem(k, v) { this._[k] = String(v); }, removeItem(k) { delete this._[k]; } };
 const A = await import('../js/adapt.js');
 const G = await import('../js/games.js');
+const store = await import('../js/store.js');
 
 test('right answers raise the dial, misses lower it, within 1 to 20', () => {
   let d = new A.Dial(9); for (let i = 0; i < 30; i++) d.hit(true); assert.equal(d.lv, 20);
@@ -30,7 +31,7 @@ test('points grow with difficulty, so harder rounds score more', () => {
 
 test('play modes start at different difficulties', () => {
   assert.ok(A.START.explorer < A.START.challenger && A.START.challenger < A.START.pro);
-  assert.ok(A.rating('times-sprint', 'pro') >= 9, 'a 13-year-old in Pro mode does not start on the 2s table');
+  assert.ok(A.rating('game:times-sprint', 'pro') >= 9, 'a 13-year-old in Pro mode does not start on the 2s table');
 });
 
 test('fresh() avoids repeats within a round', () => {
@@ -56,4 +57,64 @@ test('times sprint gets objectively harder: bigger products at the top than the 
 test('every game has a leaderboard id the rules accept', () => {
   const allowed = 'balloons|more_less|make_ten|quick_look|bonds|times_sprint|target|frac_faceoff|line_snipe|pairs|check_it|rain|sequence|balance'.split('|');
   for (const g of G.GAMES) assert.ok(allowed.includes(G.boardGame(g.id).slice(2)), g.id);
+});
+
+/* Ratings for games, the Arena and Skills (openspec ratings spec): full keys, Mode starts, the 4-answer rule */
+const fresh = () => { localStorage._ = {}; store.reset(); };
+const dialWith = (start, answers) => { const d = new A.Dial(start); answers.forEach(ok => d.hit(ok)); return d; };
+
+test('Ratings: each key starts at the Mode start (Explorer 1, Challenger 5, Pro 9)', () => {
+  fresh();
+  for (const key of ['game:times-sprint', 'arena:pro', 'arena:explorer', 'skill:3-mult']) {
+    assert.equal(A.rating(key, 'explorer'), 1, key); assert.equal(A.rating(key, 'challenger'), 5, key); assert.equal(A.rating(key, 'pro'), 9, key);
+  }
+});
+
+test('Ratings: saving one key leaves the others alone; under 4 answers changes nothing', () => {
+  fresh();
+  assert.equal(A.saveRating('arena:pro', dialWith(9, [true, true, true])), 0, 'three answers: not saved');
+  assert.equal(store.rating('arena:pro'), 0);
+  const up = A.saveRating('arena:pro', dialWith(15, Array(10).fill(true)));
+  assert.ok(up > 15, `arena:pro ${up}`);
+  assert.equal(A.rating('arena:pro', 'pro'), up);
+  assert.equal(A.rating('game:times-sprint', 'pro'), 9, 'the game Rating is unchanged');
+  assert.equal(A.rating('skill:3-mult', 'pro'), 9, 'Skill Ratings are unchanged');
+  assert.equal(A.rating('arena:challenger', 'pro'), 9, 'another League is separate');
+  const sk = A.saveRating('skill:3-mult', dialWith(5, [true, true, true, true, false, true, true, true, true, true]));
+  assert.ok(sk > 5, `skill ${sk}`);
+  assert.equal(A.rating('arena:pro', 'pro'), up, 'the Arena Rating is unchanged by a Skill');
+  // Moving average: a bad round pulls the Rating down only part way
+  const down = A.saveRating('arena:pro', dialWith(up, Array(6).fill(false)));
+  assert.ok(down < up && down > 1, `${up} -> ${down}`);
+});
+
+test('Ratings: existing game values read the same under their game: keys', () => {
+  fresh();
+  store.setRating('game:times-sprint', 13.4);
+  assert.equal(A.rating('game:times-sprint', 'explorer'), 13.4);
+  assert.equal(store.load().ratings['game:times-sprint'], 13.4, 'stored data under game: keys is unchanged');
+});
+
+test('Skill Ratings: the band picks generator levels 1 to 3; started Skills fall back to their mastery level', () => {
+  for (let d = 1; d <= 20; d++) assert.equal(A.levelFor(d), d <= 7 ? 1 : d <= 13 ? 2 : 3, `d ${d}`);
+  [1, 2, 3].forEach(lv => assert.equal(A.levelFor(A.ratingFromLevel(lv)), lv, `level ${lv} keeps its level`));
+  fresh();
+  assert.equal(A.skillRating('3-mult', 'pro'), 9, 'never practiced: the Mode start');
+  for (let i = 0; i < 3; i++) store.record('3-mult', false, false);
+  assert.equal(store.level('3-mult'), 1);
+  assert.equal(A.skillRating('3-mult', 'pro'), A.ratingFromLevel(1), 'started at level 1: stays at level 1, not the Pro start');
+  for (let i = 0; i < 12; i++) store.record('3-mult', true, false);
+  assert.equal(store.level('3-mult'), 3);
+  assert.equal(A.levelFor(A.skillRating('3-mult', 'explorer')), 3, 'mastered: stays at level 3');
+  store.setRating('skill:3-mult', 6.2);
+  assert.equal(A.skillRating('3-mult', 'pro'), 6.2, 'a saved Skill Rating wins');
+});
+
+test('Skill Ratings: a good session raises the Rating and moves the questions up a level', () => {
+  fresh();
+  const d = new A.Dial(A.skillRating('3-mult', 'challenger'));
+  assert.equal(A.levelFor(d.lv), 1);
+  [true, true, true, false, true, true, true, true, true, true].forEach(ok => d.hit(ok));
+  assert.ok(A.levelFor(d.lv) >= 2, `dial ${d.lv}`);
+  assert.ok(A.saveRating('skill:3-mult', d) > 5);
 });

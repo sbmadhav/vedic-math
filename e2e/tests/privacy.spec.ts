@@ -171,7 +171,7 @@ test('an Arena Daily challenge sends its score to today\'s and this week\'s Aren
   await open(page, '#/arena');
   const { day, wk } = await ids(page);
   // The daily round is seeded, so the first question's answer comes from the app's own module
-  const answer = await page.evaluate(async seed => (await import('/vedic-math/js/arena.js' as string)).makeSet('challenger', seed)[0].answer, `daily-${day}-challenger`);
+  const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
   await page.locator('#arGo').click();
   await page.clock.runFor(2_500); // 3, 2, 1
   await page.locator('#arType').fill(String(answer));
@@ -302,7 +302,7 @@ test.describe('two Players on one device', () => {
     await page.clock.install();
     await open(page, '#/arena');
     const { day, wk } = await boardIds(page);
-    const answer = await page.evaluate(async seed => (await import('/vedic-math/js/arena.js' as string)).makeSet('challenger', seed)[0].answer, `daily-${day}-challenger`);
+    const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
     const play = async () => {
       await page.locator('#arGo').click();
       await page.clock.runFor(2_500);
@@ -364,5 +364,45 @@ test.describe('two Players on one device', () => {
     const log = await cloudLog(page);
     expect(log.authLoaded).toBe(false);
     expect(log.signIns).toBe(0);
+  });
+});
+
+/* Ratings stay on the device (ratings spec): after Arena rounds and skill Practice, no request carries one */
+test.describe('Ratings', () => {
+  test.use({ seedMode: 'pro', seedConsent: { age: 'adult' } });
+  test('no request after Arena daily and Practice rounds and skill Practice contains a Rating', async ({ page }, testInfo) => {
+    chromiumOnly(testInfo, 'app logic, the same in every engine');
+    const out: string[] = [];
+    page.on('request', r => out.push(`${r.method()} ${r.url()}\n${r.postData() || ''}`));
+    await page.clock.install();
+    await open(page, '#/arena');
+    const { day } = await boardIds(page);
+    // A finished daily round: it posts, and its entries hold no Rating
+    const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('pro', d)[0].answer, day);
+    await page.locator('#arGo').click();
+    await page.clock.runFor(2_500);
+    await page.locator('#arType').fill(String(answer));
+    await page.locator('#arForm button').click();
+    for (let k = 0; k < 4; k++) { await page.locator('#arType').fill('1'); await page.locator('#arForm button').click(); }
+    await page.clock.runFor(61_000);
+    await expect(page.locator('.ar-result')).toBeVisible();
+    await expect.poll(async () => (await sent(page)).length).toBe(2);
+    // A finished Practice round with enough answers to save the Arena Rating
+    await page.locator('[data-t="practice"]').click();
+    await page.locator('#arGo').click();
+    await page.clock.runFor(2_500);
+    for (let k = 0; k < 5; k++) { await page.locator('#arType').fill('1'); await page.locator('#arForm button').click(); }
+    await page.clock.runFor(61_000);
+    await expect(page.locator('.ar-result')).toBeVisible();
+    // Skill Practice: 10 answers save a Skill Rating
+    await page.goto(`${APP}#/skill/3-mult`);
+    const box = page.locator('#practice');
+    for (let k = 0; k < 10; k++) { await box.locator('#prShow').click(); await box.locator('#prCheck').click(); }
+    await page.goto(`${APP}#/learn`);
+    await page.clock.runFor(70_000); // past the weekly XP post's wait
+    const ratings = await page.evaluate(async () => (await import('/vedic-math/js/store.js' as string)).load().ratings);
+    expect(Object.keys(ratings)).toEqual(expect.arrayContaining(['arena:pro', 'skill:3-mult']));
+    for (const r of out) { expect(r).not.toMatch(/rating/i); expect(r).not.toContain('arena:'); }
+    for (const w of await sent(page)) { expect(JSON.stringify(w)).not.toMatch(/rating|arena:/i); expect(Object.keys(w.data).sort()).toEqual(['avatar', 'exp', 'name', 'score', 'ts']); }
   });
 });

@@ -14,7 +14,18 @@ export const pointsAt = d => 10 + 7 * (Math.max(DMIN, Math.min(DMAX, Math.round(
 export const levelStart = (n, perGame = 72) => Math.min(DMAX, 1 + Math.round(((n - 1) * (DMAX - 1)) / (perGame - 1)));
 export const levelForDifficulty = (d, perGame = 72) => 1 + Math.round(((Math.max(DMIN, Math.min(DMAX, d)) - 1) * (perGame - 1)) / (DMAX - 1));
 
-export const rating = (gameId, mode) => store.rating('game:' + gameId) || START[mode] || START.challenger;
+/* Ratings (GLOSSARY.md): one 1 to 20 number per Player for each game, the Arena in each League and each Skill,
+   kept with the rest of progress on this device. key is the full key: 'game:<id>', 'arena:<league>' or 'skill:<id>'.
+   A Player with no Rating yet starts at their Mode's start (fallback, when given, replaces that start). */
+export const rating = (key, mode, fallback = 0) => store.rating(key) || fallback || START[mode] || START.challenger;
+
+/* Skill generators have levels 1 to 3. A Rating picks one: 1 to 7 is level 1, 8 to 13 level 2, 14 to 20 level 3. */
+export const levelFor = d => (d <= 7 ? 1 : d <= 13 ? 2 : 3);
+/* A Skill Rating for a Player who practiced the Skill before Skill Ratings existed: the middle of the band for
+   their mastery level (js/store.js level), so their questions stay at the level they had */
+export const ratingFromLevel = lv => ({ 1: 4, 2: 10, 3: 17 })[lv] || 4;
+/* A Player's Rating for a Skill: saved, else from their mastery level if they have started it, else their Mode's start */
+export const skillRating = (id, mode) => rating('skill:' + id, mode, store.started(id) ? ratingFromLevel(store.level(id)) : 0);
 
 export class Dial {
   constructor(start, { floor = DMIN, ceil = DMAX } = {}) {
@@ -56,11 +67,12 @@ export class Dial {
   }
 }
 
-/* Save the round's settled level as the player's new rating for that game (a moving average, so one bad round does not erase progress) */
-export function saveRating(gameId, dial) {
-  if (dial.n < 4) return store.rating('game:' + gameId);
-  const prev = store.rating('game:' + gameId), now = dial.settled();
+/* Save the round's settled level as the Player's new Rating under key (a moving average, so one bad round does not
+   erase progress). A round with fewer than 4 answers changes nothing. */
+export function saveRating(key, dial) {
+  if (dial.n < 4) return store.rating(key);
+  const prev = store.rating(key), now = dial.settled();
   const next = prev ? Math.round((prev * 0.4 + now * 0.6) * 10) / 10 : now;
-  store.setRating('game:' + gameId, next);
+  store.setRating(key, next);
   return next;
 }

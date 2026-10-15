@@ -51,7 +51,7 @@ A Dojo rank, white to black, earned by completing Katas.
 _Avoid_: level, rank, grade
 
 **Rating**:
-A Player's 1 to 20 number for one game. Right answers raise it, misses lower it, and it picks how hard the next question is.
+A Player's 1 to 20 number for one game, the Arena, or one Skill. Right answers raise it, misses lower it, and it picks how hard the next question is.
 _Avoid_: skill (that is a topic), dial, difficulty, level
 
 **Level**:
