@@ -58,3 +58,41 @@ test('removing a Player removes their Age answer and Parent step', () => {
   assert.equal(store.allPlayers().length, 1);
   assert.equal(store.player().age, 8);
 });
+
+/* Stars (openspec star-round): lit, skipped and the last round's keys, on the device only */
+test('a Star is open, then skipped, then lit; lighting clears skipped and skipping a lit Star changes nothing', () => {
+  assert.equal(store.starState('sq5', 2), 'open');
+  assert.equal(store.skipStar('sq5', 2), true);
+  assert.equal(store.starState('sq5', 2), 'skipped');
+  assert.equal(store.lightStar('sq5', 2), true);
+  assert.equal(store.starState('sq5', 2), 'lit');
+  assert.equal(store.load().sky.skipped['sq5:2'], undefined);
+  assert.equal(store.skipStar('sq5', 2), false);
+  assert.equal(store.starState('sq5', 2), 'lit');
+  assert.equal(store.load().sky.skipped['sq5:2'], undefined);
+  assert.equal(store.lightStar('sq5', 2), false, 'already lit');
+});
+
+test('the last round keys are kept per Star, and exportData includes the sky', () => {
+  store.setStarLast('sq5', 1, ['3:1', '5:0']);
+  assert.deepEqual(store.starLast('sq5', 1), ['3:1', '5:0']);
+  assert.deepEqual(store.starLast('sq5', 3), []);
+  const out = JSON.parse(store.exportData());
+  assert.ok(out.data.sky.lit['sq5:2']);
+  assert.deepEqual(out.data.sky.last['sq5:1'], ['3:1', '5:0']);
+});
+
+test('record(..., { sparks: false }) updates counts and mastery and emits no sparks event', () => {
+  const seen = [], off = store.on(type => seen.push(type));
+  const before = store.sparks(), answers = store.load().counts.answers || 0, n = store.skill('v-sq5').n;
+  const r = store.record('v-sq5', true, false, { sparks: false });
+  off();
+  assert.equal(r.gain, 0);
+  assert.equal(store.sparks(), before);
+  assert.equal(store.load().counts.answers, answers + 1);
+  assert.equal(store.skill('v-sq5').n, n + 1);
+  assert.ok(store.mastery('v-sq5') > 0);
+  assert.ok(seen.includes('answer') && !seen.includes('sparks'), seen.join());
+  store.record('v-sq5', true, false);
+  assert.ok(store.sparks() > before, 'the default still pays Practice Sparks');
+});

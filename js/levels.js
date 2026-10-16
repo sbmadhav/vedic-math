@@ -46,7 +46,7 @@ export function kata(trickId, n) {
   const probs = seeded(`kata:${trickId}:${n}`, () => Array.from({ length: count }, (_, i) => {
     let vals, g = 0; do { vals = (CURVE[trickId] || (() => t.random()))(Math.min(50, n + (i > count / 2 ? 1 : 0))); } while (t.valid(vals) && ++g < 60);
     if (t.valid(vals)) do { vals = t.random(); } while (t.valid(vals));
-    return withPlain(byId['v-' + trickId], problemFor(t, vals));
+    return { ...withPlain(byId['v-' + trickId], problemFor(t, vals)), vals }; /* vals: the numbers, for a Star's replay and kind */
   }));
   const par = Math.round(count * (8 + Math.min(20, n * 0.4)) * (['crosswise', 'add-sub', 'ratio-zero', 'osculator', 'div9', 'cuberoot', 'sqroot'].includes(trickId) ? 1.6 : 1));
   return { trick: t, n, problems: probs, par };
@@ -55,6 +55,46 @@ export function kata(trickId, n) {
 export const kataDoneFor = (right, total) => total > 0 && right / total >= .6;
 /* Kata Sparks: 5 per right answer, plus 10 when the Kata is done */
 export const kataSparks = (right, total) => 5 * right + (kataDoneFor(right, total) ? 10 : 0);
+
+/* ---------- Stars: three per Trick, each drawing from one third of its 50 Katas (openspec star-round) ---------- */
+export const STARS_PER_TRICK = 3;
+export const STAR_THIRDS = [[1, 17], [18, 34], [35, 50]];
+/* The kind of a question: the digit count of each of its numbers (2 for 85 squared, 2x2 for 97 x 94).
+   A rematch asks a question of the same kind as the one missed. */
+export const kindOf = p => p.vals.map(v => String(Math.abs(Math.trunc(v))).length).join('x');
+/* Two problems with the same numbers are the same question, whichever Kata they came from */
+export const sigOf = p => p.vals.join(',');
+/* Problems of Katas a to b, one per distinct question, each with its key (<kata>:<index>), numbers and kind of question (qkind; kind stays the answer kind) */
+function katasPool(trick, a, b) {
+  const out = [], seen = new Set();
+  for (let n = a; n <= b; n++) kata(trick, n).problems.forEach((p, i) => {
+    const sig = sigOf(p); if (seen.has(sig)) return; seen.add(sig);
+    out.push({ ...p, key: `${n}:${i}`, kata: n, qkind: kindOf(p) });
+  });
+  return out;
+}
+/* The band of 7 Katas inside a Star's third that a Rating (1 to 20) picks: low Ratings the easy end, high the hard end */
+export function starBand(star, rating) {
+  const [lo, hi] = STAR_THIRDS[star - 1], r = Math.max(1, Math.min(20, Math.round(Number(rating) || 1)));
+  const p = lo + Math.round(((r - 1) * (hi - lo)) / 19), a = Math.max(lo, Math.min(p - 3, hi - 6));
+  return [a, a + 6];
+}
+/* The problems a Star round deals from at a Rating */
+export const starPool = (trick, star, rating) => katasPool(trick, ...starBand(star, rating));
+/* Every problem of the Star's whole third (a rematch falls back to it for a question of the same kind) */
+export const starThird = (trick, star) => katasPool(trick, ...STAR_THIRDS[star - 1]);
+/* A key saved by an earlier round, back to its question's numbers (keys are stable: Katas are seeded) */
+export function sigOfKey(trick, key) {
+  const [n, i] = String(key).split(':').map(Number), p = n >= 1 && n <= KATAS_PER_TRICK ? kata(trick, n).problems[i] : null;
+  return p ? sigOf(p) : null;
+}
+/* The Katas a Dare comes from: just above the Star's third (Stars 1 and 2), or the Trick's hardest (Star 3) */
+export const dareKatas = star => (star < 3 ? [STAR_THIRDS[star - 1][1] + 1, STAR_THIRDS[star - 1][1] + 5] : [46, 50]);
+/* A Dare: a random harder problem, not one whose numbers are in exclude (a Set of sigOf values) */
+export function dareFor(trick, star, exclude = new Set(), rand = Math.random) {
+  const pool = katasPool(trick, ...dareKatas(star)), fresh = pool.filter(p => !exclude.has(sigOf(p))), from = fresh.length ? fresh : pool;
+  return from[Math.floor(rand() * from.length)];
+}
 
 /* ---------- Arena challenge tower ---------- */
 const g = id => byId[id] ? [id] : [];
