@@ -3,9 +3,11 @@
    Himalayan dawn pad, temple chimes). Music never starts on its own and pauses when the tab is hidden.
    Everything is drawn and synthesized in the browser: no audio files, no extra downloads. */
 
-/* Reduced motion: the device setting, or Pause motion in the site's Explore menu (html.motion-paused, WCAG 2.2.2).
-   Either one, or this page's own Moving background switch, stops the background. */
-const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.classList.contains('motion-paused');
+import { noMotion, onMotionChange } from './fx.js';
+
+/* No motion (fx.noMotion: reduced motion on the device, Pause motion in the site's Explore menu, or Calm) draws the
+   background still. The Moving background switch decides whether it is drawn at all. */
+const reduced = noMotion;
 const pref = (k, d) => { try { const v = localStorage.getItem('vm.' + k); return v === null ? d : v; } catch (e) { return d; } };
 const setPref = (k, v) => { try { localStorage.setItem('vm.' + k, v); } catch (e) {} };
 
@@ -153,13 +155,16 @@ function startBg() {
   const vis = () => { if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else if (!raf && !reduced()) { last = performance.now(); raf = requestAnimationFrame(frame); } };
   document.addEventListener('visibilitychange', vis);
   if (reduced()) { t = 40; cStart = 0; mStart = 0; draw(0); } else raf = requestAnimationFrame(frame);
-  /* Theme changes redraw a still frame; Pause motion (the class on <html>) stops or restarts the loop live */
-  const mo = new MutationObserver(() => {
+  /* Theme changes redraw a still frame. A motion change (Pause motion, its sitemotion event, Calm, the device
+     setting) stops the loop on one still frame, or restarts it when motion is back on. */
+  const motion = () => {
     if (reduced()) { cancelAnimationFrame(raf); raf = 0; draw(0); }
     else if (!raf && !document.hidden) { last = performance.now(); raf = requestAnimationFrame(frame); }
-  });
+  };
+  const mo = new MutationObserver(motion);
   mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
-  bg = () => { cancelAnimationFrame(raf); removeEventListener('resize', size); document.removeEventListener('visibilitychange', vis); mo.disconnect(); c.remove(); bg = null; };
+  const life = new AbortController(); onMotionChange(motion, life.signal);
+  bg = () => { cancelAnimationFrame(raf); removeEventListener('resize', size); document.removeEventListener('visibilitychange', vis); mo.disconnect(); life.abort(); c.remove(); bg = null; };
 }
 function stopBg() { if (bg) bg(); }
 

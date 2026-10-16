@@ -273,3 +273,14 @@ test('Play again deals a fresh round of different questions', async ({ page }) =
   expect((await cloudLog(page)).writes).toEqual([]);
   await expect(page).toHaveURL(/#\/star\/sq5\/1$/);
 });
+
+/* Calm (openspec game-shell-and-calm): with motion allowed on the device, Calm alone stops every animation */
+test.describe('Calm', () => {
+  test.use({ reducedMotion: 'no-preference' });
+  test('vm.calm: nothing moves through a miss and a Comeback, anywhere on the page', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('vm.calm', '1'));
+    await missAndComeback(page);
+    await expect(page.locator('body')).toHaveClass(/\bcalm\b/);
+    expect(await page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running').map(a => String((a.effect as KeyframeEffect | null)?.target && ((a.effect as KeyframeEffect).target as Element).className)))).toEqual([]);
+  });
+});
