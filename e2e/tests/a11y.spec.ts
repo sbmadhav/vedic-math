@@ -154,3 +154,24 @@ for (const scheme of ['light', 'dark'] as const) {
     });
   }
 }
+
+/* The play shell and the Me page's Calm and motion group (openspec game-shell-and-calm), both schemes */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, play shell`, () => {
+    test.use({ colorScheme: scheme });
+    test('an open play shell and the Calm settings have no serious or critical axe violations', async ({ page }, testInfo) => {
+      chromiumOnly(testInfo);
+      await open(page, '#/arena');
+      await page.locator('[data-t="untimed"]').click();
+      await page.locator('#arGo').click();
+      await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
+      expect(await serious(page, 'shell')).toEqual([]);
+      await page.locator('.play-shell .play-calm').click();
+      await page.locator('.play-shell [data-size="a+"]').click();
+      expect(await serious(page, 'shell')).toEqual([]);
+      await open(page, '#/me');
+      await page.waitForLoadState('networkidle');
+      expect(await serious(page, '#/me')).toEqual([]);
+    });
+  });
+}

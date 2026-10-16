@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, chromiumOnly, ANALYTICS } from './fixtures';
+import { test, expect, APP, open, cloudLog, chromiumOnly, ANALYTICS, typeAnswer } from './fixtures';
 
 /* The note for grown-ups is shown beside every World board (Arena, game pages, Pro home) and on the Me
    page, and what it promises must match what the app sends (openspec parent-note spec). The fake Firebase
@@ -195,7 +195,7 @@ test('an Arena Daily challenge sends its score to today\'s and this week\'s Aren
   const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
   await page.locator('#arGo').click();
   await page.clock.runFor(2_500); // 3, 2, 1
-  await page.locator('#arType').fill(String(answer));
+  await typeAnswer(page, String(answer));
   await page.locator('#arForm button').click();
   await expect(page.locator('#arScore')).toHaveText('10');
   expect(await writes(page)).toEqual([]);
@@ -327,7 +327,7 @@ test.describe('two Players on one device', () => {
     const play = async () => {
       await page.locator('#arGo').click();
       await page.clock.runFor(2_500);
-      await page.locator('#arType').fill(String(answer));
+      await typeAnswer(page, String(answer));
       await page.locator('#arForm button').click();
       await expect(page.locator('#arScore')).toHaveText('10');
       await page.clock.runFor(61_000);
@@ -453,6 +453,7 @@ test.describe('Ratings', () => {
   test.use({ seedMode: 'pro', seedConsent: { age: 'adult' } });
   test('no request after Arena daily and Practice rounds and skill Practice contains a Rating', async ({ page }, testInfo) => {
     chromiumOnly(testInfo, 'app logic, the same in every engine');
+    test.slow(); // two 60 second rounds, a skill Practice and the weekly Sparks wait on the fake clock
     const out: string[] = [];
     page.on('request', r => out.push(`${r.method()} ${r.url()}\n${r.postData() || ''}`));
     await page.clock.install();
@@ -462,17 +463,18 @@ test.describe('Ratings', () => {
     const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('pro', d)[0].answer, day);
     await page.locator('#arGo').click();
     await page.clock.runFor(2_500);
-    await page.locator('#arType').fill(String(answer));
+    await typeAnswer(page, String(answer));
     await page.locator('#arForm button').click();
-    for (let k = 0; k < 4; k++) { await page.locator('#arType').fill('1'); await page.locator('#arForm button').click(); }
+    for (let k = 0; k < 4; k++) { await typeAnswer(page, '1'); await page.locator('#arForm button').click(); }
     await page.clock.runFor(61_000);
     await expect(page.locator('.ar-result')).toBeVisible();
     await expect.poll(async () => (await sent(page)).length).toBe(2);
+    await page.locator('#arDone').click(); // leave the result in the play shell
     // A finished Practice round with enough answers to save the Arena Rating
     await page.locator('[data-t="practice"]').click();
     await page.locator('#arGo').click();
     await page.clock.runFor(2_500);
-    for (let k = 0; k < 5; k++) { await page.locator('#arType').fill('1'); await page.locator('#arForm button').click(); }
+    for (let k = 0; k < 5; k++) { await typeAnswer(page, '1'); await page.locator('#arForm button').click(); }
     await page.clock.runFor(61_000);
     await expect(page.locator('.ar-result')).toBeVisible();
     // Skill Practice: 10 answers save a Skill Rating
@@ -486,4 +488,25 @@ test.describe('Ratings', () => {
     for (const r of out) { expect(r).not.toMatch(/rating/i); expect(r).not.toContain('arena:'); }
     for (const w of await sent(page)) { expect(JSON.stringify(w)).not.toMatch(/rating|arena:/i); expect(Object.keys(w.data).sort()).toEqual(['avatar', 'exp', 'name', 'score', 'ts']); }
   });
+});
+
+/* Calm and text size are device preferences (openspec game-shell-and-calm): no request carries them */
+test('Calm, text size and an untimed round send nothing about them', async ({ page }, testInfo) => {
+  chromiumOnly(testInfo, 'app logic, the same in every engine');
+  const out: string[] = [];
+  page.on('request', r => out.push(`${r.url()}\n${r.postData() || ''}`));
+  await open(page, '#/arena');
+  await page.locator('[data-t="untimed"]').click();
+  await page.locator('#arGo').click();
+  await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
+  await page.locator('.play-shell .play-calm').click();
+  await page.locator('.play-shell [data-size="a+"]').click();
+  for (let k = 0; k < 3; k++) { await page.locator('.ar-key[data-k="2"]').click(); await page.locator('#arForm button').click(); }
+  await page.locator('#arFinish').click();
+  await expect(page.locator('.ar-result')).toBeVisible();
+  await page.goto(`${APP}#/me`);
+  await page.locator('#setCalm').click();
+  await page.waitForLoadState('networkidle');
+  for (const r of out) { expect(r).not.toMatch(/calm/i); expect(r).not.toMatch(/vm\.text|text-plus|"a\+"/); }
+  expect((await cloudLog(page)).writes).toEqual([]);
 });

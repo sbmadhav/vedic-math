@@ -212,3 +212,11 @@ export async function openExplore(page: Page) {
   await expect(dlg).toBeVisible();
   return dlg;
 }
+
+/** Types an answer into the Arena's hidden entry. On touch screens it is read-only (no system keyboard over the
+    keypad, openspec game-shell-and-calm), so the answer goes in as physical key presses, as a keyboard would. */
+export async function typeAnswer(page: Page, value: string) {
+  const typ = page.locator('#arType');
+  if (await typ.evaluate(e => (e as HTMLInputElement).readOnly)) await page.keyboard.type(value);
+  else await typ.fill(value);
+}

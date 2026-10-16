@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, heldClock, appErrors } from './fixtures';
+import { test, expect, APP, open, cloudLog, heldClock, appErrors, typeAnswer } from './fixtures';
 
 /* Arena rounds start and take answers. Every test leaves before the 60 second round ends,
    so no score is ever submitted (and the fake SDK would record it if one were). */
@@ -231,7 +231,8 @@ test('second Arena round: keypad taps 1 then 2 enter 12', async ({ page, issues 
   await open(page, '#/arena');
   await practiceRound(page);
   await endRound(page);
-  await expect(page.locator('.ar-result')).toBeVisible();
+  await expect(page.locator('.play-shell .ar-result')).toBeVisible();
+  await page.locator('#arDone').click(); // the result shows in the play shell; Back to the Arena
   await practiceRound(page);
   await page.locator('.ar-key[data-k="1"]').click();
   await page.locator('.ar-key[data-k="2"]').click();
@@ -247,7 +248,8 @@ test.describe('explorer, second round', () => {
     await open(page, '#/arena');
     await practiceRound(page);
     await endRound(page);
-    await expect(page.locator('.ar-result')).toBeVisible();
+    await expect(page.locator('.play-shell .ar-result')).toBeVisible();
+    await page.locator('#arDone').click();
     await practiceRound(page);
     await page.locator('.ar-choice').first().click();
     await expect(page.locator('#arPop')).toHaveText(/^(\+\d+|-?\d+)$/);
@@ -322,7 +324,7 @@ test.describe('pro', () => {
     for (let k = 0; k < 6; k++) {
       const text = (await q.textContent()) || '';
       expect(text).toMatch(MENTAL);
-      await page.locator('#arType').fill(String(mentalAnswer(text)));
+      await typeAnswer(page, String(mentalAnswer(text)));
       await page.locator('#arForm button').click();
       await expect(q).not.toHaveText(text);
     }
@@ -330,6 +332,7 @@ test.describe('pro', () => {
     await endRound(page);
     await expect(page.locator('.ar-result')).toContainText('6 right · 0 missed');
     await expect(page.locator('.ar-result')).toContainText(/Arena Rating up to (1[6-9]|20)\./);
+    await page.locator('#arDone').click();
     const after = await savedRating(page, 'arena:pro');
     expect(after).toBeGreaterThan(15);
     await expect(page.locator('#arRating')).toHaveAttribute('data-rating', String(Math.round(after)));
@@ -363,7 +366,7 @@ test.describe('pro', () => {
         const text = (await q.textContent()) || '';
         expect(text).toMatch(MENTAL);
         seen.push(`${await q.getAttribute('data-d')} ${text}`);
-        await page.locator('#arType').fill(String(mentalAnswer(text)));
+        await typeAnswer(page, String(mentalAnswer(text)));
         await page.locator('#arForm button').click();
         await expect(q).not.toHaveText(text);
       }
@@ -396,6 +399,71 @@ test.describe('pro', () => {
     const html = await page.evaluate(h => { const d = document.createElement('div'); d.innerHTML = h; return d.innerHTML; }, expected);
     expect(await page.locator('#arQ').innerHTML()).toBe(html);
     await page.goto(`${APP}#/learn`);
+    expect((await cloudLog(page)).writes).toEqual([]);
+  });
+});
+
+/* Untimed Arena Practice (openspec game-shell-and-calm, arena spec): 20 questions, no clock, Finish at any time,
+   never posted. With Calm on it is the default, and the lobby says the daily challenge keeps its clock. */
+test('Practice, no clock: no timer, ends after 20 answers, nothing is posted', async ({ page, issues }) => {
+  await open(page, '#/arena');
+  await expect(page.locator('[data-t="daily"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#arCalmNote')).toHaveCount(0);
+  await page.locator('[data-t="untimed"]').click();
+  await expect(page.locator('[data-t="untimed"]')).toHaveText('Practice, no clock');
+  await page.locator('#arGo').click();
+  await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
+  await expect(page.locator('#arTime')).toHaveCount(0);
+  await expect(page.locator('.ar-bar')).toHaveCount(0);
+  await expect(page.locator('#arNum')).toHaveText('1/20');
+  for (let k = 0; k < 20; k++) {
+    if (k < 19) await expect(page.locator('#arNum')).toHaveText(`${k + 1}/20`);
+    await page.locator('.ar-key[data-k="1"]').click();
+    await page.locator('#arForm button').click();
+  }
+  await expect(page.locator('.play-shell .ar-result')).toContainText('Practice rounds do not count for the leaderboard.');
+  const [, right, missed] = (await page.locator('.play-shell .ar-result .md-stat p').textContent())!.match(/^(\d+) right · (\d+) missed/)!;
+  expect(Number(right) + Number(missed), 'every one of the 20 answers counted').toBe(20);
+  await page.locator('#arDone').click();
+  await expect(page.locator('#arGo')).toBeFocused();
+  expect((await cloudLog(page)).writes.filter(w => /^boards\/(daily|week)-/.test(w.path))).toEqual([]);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('vm.board') || '[]'))).toEqual([]);
+  expect(appErrors(issues), 'console errors').toEqual([]);
+});
+
+test('Practice, no clock: Finish ends the round at once', async ({ page }) => {
+  await open(page, '#/arena');
+  await page.locator('[data-t="untimed"]').click();
+  await page.locator('#arGo').click();
+  await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
+  await page.locator('.ar-key[data-k="4"]').click();
+  await page.locator('#arForm button').click();
+  await expect(page.locator('#arNum')).toHaveText('2/20');
+  await page.locator('#arFinish').click();
+  await expect(page.locator('.play-shell .ar-result .md-stat p')).toHaveText(/^(1 right · 0 missed|0 right · 1 missed)/);
+  expect((await cloudLog(page)).writes).toEqual([]);
+});
+
+test.describe('Calm on', () => {
+  test.beforeEach(async ({ page }) => { await page.addInitScript(() => localStorage.setItem('vm.calm', '1')); });
+  test('the lobby picks Practice, no clock, and says the daily challenge is a timed race', async ({ page }) => {
+    await open(page, '#/arena');
+    await expect(page.locator('[data-t="untimed"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#arCalmNote')).toHaveText('The daily challenge is a timed race for everyone. Practice has no clock in Calm.');
+    // The daily challenge keeps its clock in Calm
+    await page.locator('[data-t="daily"]').click();
+    await expect(page.locator('#arCalmNote')).toBeVisible();
+    await page.locator('#arGo').click();
+    await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
+    await expect(page.locator('#arTime')).toHaveText(/^(60|59|58|57)$/);
+    await page.locator('#arStop').click();
+    // A timed Practice round loses its clock in Calm
+    await page.locator('[data-t="practice"]').click();
+    await page.locator('#arGo').click();
+    await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
+    await expect(page.locator('#arTime')).toHaveCount(0);
+    await expect(page.locator('#arNum')).toHaveText('1/20');
+    await page.locator('#arStop').click();
     expect((await cloudLog(page)).writes).toEqual([]);
   });
 });

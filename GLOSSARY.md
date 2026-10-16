@@ -96,6 +96,10 @@ _Avoid_: resource, external site
 A round whose result counts on Boards: an Arena daily round, a ranked game round, the first attempt at the Daily Sutra, or a challenge-link round.
 _Avoid_: competitive round, official round
 
+**Calm**:
+A setting for play with no clocks in Practice and no motion. Ranked rounds keep their clock. It is saved per device, like sound.
+_Avoid_: zen mode, relaxed mode, reduced motion (that is the device setting)
+
 **Practice**:
 Any round that is not a Ranked round, including every Star and replays of the same Daily Sutra. Its Score never leaves the device; the Sparks it earns still count.
 _Avoid_: training, free play, unranked

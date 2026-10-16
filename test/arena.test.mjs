@@ -222,3 +222,22 @@ test('duel: a Pro Duel deals only mental arithmetic (it uses makeSet like the da
   assert.equal(set.length, 120);
   set.forEach((p, i) => { assert.ok(FAMILIES.includes(p.family), `#${i + 1}`); assert.equal(checkItem('pro', p, `duel #${i + 1}`).status, 'ok'); });
 });
+
+/* Untimed Arena Practice (openspec game-shell-and-calm): 20 questions, each drawn at the Dial's difficulty, with no
+   repeats in the round, and the difficulty follows the answers */
+test('untimed Practice draws 20 adapting questions with no repeats', async () => {
+  const { UNTIMED_QS, practiceNext } = await import('../js/arena.js');
+  const { Dial } = await import('../js/adapt.js');
+  assert.equal(UNTIMED_QS, 20);
+  for (const league of ['explorer', 'challenger', 'pro']) {
+    const dial = new Dial(8), seen = new Set(), ds = [];
+    for (let k = 0; k < UNTIMED_QS; k++) {
+      const it = practiceNext(league, dial);
+      assert.ok(!seen.has(it.q), `${league}: ${it.q} repeated`); seen.add(it.q);
+      ds.push(dial.lv); dial.hit(k < 10); /* ten right, then ten missed */
+    }
+    assert.equal(seen.size, 20, league);
+    assert.ok(Math.max(...ds.slice(0, 11)) > ds[0], `${league}: right answers raise the difficulty (${ds})`);
+    assert.ok(ds[19] < Math.max(...ds), `${league}: misses lower it (${ds})`);
+  }
+});

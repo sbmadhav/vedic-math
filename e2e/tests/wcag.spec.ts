@@ -35,7 +35,7 @@ test.describe('focus stays in the game after an answer (2.4.3)', () => {
     await open(page, '#/game/more-less');
     await page.locator('#gShell [data-m="endless"]').click();
     await page.locator('#gStart').click();
-    await page.locator('#view h1').click();
+    await page.locator('.play-title').click(); // outside the game, in the play shell's header
     await page.locator('.g-more').first().dispatchEvent('click');
     await page.waitForTimeout(900);
     expect(await focusInGame(page)).toBe(false);

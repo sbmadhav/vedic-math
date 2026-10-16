@@ -112,6 +112,8 @@ async function twoMisses(page: Page) {
   await question(page, 1);
   await enter(page, '1');
   await page.locator('#stRSkip').click();
+  // In the play shell the Next button can appear under the spot just tapped; its hover lift then jitters at the edge
+  await page.mouse.move(0, 0);
   await expect(tag(page)).toHaveText('Rematch');
   await enter(page, '1'); // a missed rematch: the answer, then on
   await expect(page.locator('#stSay')).toContainText('Close! It is');
@@ -272,4 +274,15 @@ test('Play again deals a fresh round of different questions', async ({ page }) =
   expect(second.filter((k: string) => first.includes(k))).toEqual([]);
   expect((await cloudLog(page)).writes).toEqual([]);
   await expect(page).toHaveURL(/#\/star\/sq5\/1$/);
+});
+
+/* Calm (openspec game-shell-and-calm): with motion allowed on the device, Calm alone stops every animation */
+test.describe('Calm', () => {
+  test.use({ reducedMotion: 'no-preference' });
+  test('vm.calm: nothing moves through a miss and a Comeback, anywhere on the page', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('vm.calm', '1'));
+    await missAndComeback(page);
+    await expect(page.locator('body')).toHaveClass(/\bcalm\b/);
+    expect(await page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running').map(a => String((a.effect as KeyframeEffect | null)?.target && ((a.effect as KeyframeEffect).target as Element).className)))).toEqual([]);
+  });
 });

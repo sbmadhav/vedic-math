@@ -45,3 +45,22 @@ test('level Medals: one per goal reached (1 bronze, 2 silver, 3 gold)', () => {
   assert.equal(levelMedal([5, 8, 10], 9), 2);
   assert.equal(levelMedal([5, 8, 10], 10), 3);
 });
+
+/* Calm (openspec game-shell-and-calm): an untimed round of a timed game starts no clock and ends after perQ answers */
+test('untimed Times sprint ends after perQ answers, once, with no clock', async () => {
+  globalThis.document ??= { hidden: true }; /* sounds are skipped */
+  const { kit } = await import('../js/games.js');
+  const { Dial } = await import('../js/adapt.js');
+  const g = GAMES.find(x => x.id === 'times-sprint');
+  const ends = [], ctl = new AbortController(), dial = new Dial(4);
+  const k = kit({ dial, signal: ctl.signal, untimed: true, perQ: g.perQ, end: p => ends.push(p) });
+  k.timed(null, g.secs); /* would throw on the null area if it started a clock */
+  for (let i = 0; i < g.perQ - 1; i++) k.mark(true, null);
+  await new Promise(r => setTimeout(r, 450));
+  assert.deepEqual(ends, [], 'not before its questions are done');
+  k.mark(true, null); k.mark(true, null);
+  await new Promise(r => setTimeout(r, 450));
+  assert.equal(ends.length, 1);
+  assert.equal(ends[0], dial.points);
+  ctl.abort();
+});

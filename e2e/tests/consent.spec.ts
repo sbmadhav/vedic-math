@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, type Mode } from './fixtures';
+import { test, expect, APP, open, cloudLog, type Mode, typeAnswer } from './fixtures';
 import type { Page } from '@playwright/test';
 
 /* Posting consent (openspec posting-consent spec, docs/adr/0001): the Age answer is asked the first time a
@@ -28,6 +28,8 @@ const savedPlayer = (page: Page) => page.evaluate(() => JSON.parse(localStorage.
 /** Plays today's Arena Daily challenge with one right answer (score 10) and lets the 60 seconds run out. */
 async function arenaRound(page: Page, mode: Mode) {
   if (!page.url().endsWith('#/arena')) await open(page, '#/arena');
+  // The last round's result is still in the play shell: Back to the Arena
+  if (await page.locator('#arDone').isVisible()) await page.locator('#arDone').click();
   const answer = await page.evaluate(async m => {
     const cloud = await import('/vedic-math/js/cloud.js' as string), arena = await import('/vedic-math/js/arena.js' as string);
     return String(arena.dailySet(m, cloud.dayId())[0].answer);
@@ -37,7 +39,7 @@ async function arenaRound(page: Page, mode: Mode) {
   if (mode === 'explorer') await page.locator(`.ar-choice[data-v="${answer}"]`).click();
   else {
     // Typed, not tapped: the keypad enters each tap twice from round 2 (PLAN.md Phase 0, bug 1)
-    await page.locator('#arType').fill(answer);
+    await typeAnswer(page, answer);
     await page.locator('#arForm button').click();
   }
   await expect(page.locator('#arScore')).toHaveText('10');
