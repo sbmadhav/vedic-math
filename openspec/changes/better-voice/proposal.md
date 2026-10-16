@@ -16,11 +16,11 @@ The inventory in `design.md` shows that what the game says is very regular. Expl
 - When only poor voices exist, Me settings shows one note on how to add a better system voice.
 
 **B. Studio voice: one paid neural voice, recorded ahead of time and served as audio files (the new default).**
-- The owner picks one voice by listening. The shortlist is Google Chirp 3 HD, Azure neural, OpenAI gpt-4o-mini-tts and ElevenLabs Flash. The listening page plays any of them next to today's voices once a provider key is set (`tools/make-clips.mjs`). A repo-only script records with it, once:
+- The voice is Google Chirp 3 HD (the owner's choice; one voice such as Aoede, picked by ear on the listening page). A repo-only script records with it, once:
   - **whole lines** for every Explorer line except three-digit adding and comparing (about 19,700 lines), and every fixed line (praise, feedback, toggles, digit-free questions and hints);
   - **clips** for everything else: the numbers 0 to 99 in a mid-sentence and an end-of-sentence take, hundred, thousand, million, point, negative, and about 1,100 word frames ("plus", "equals what?", "Count up from").
 - Format: AAC in `.m4a`, mono, 24 kHz, 32 kbps. About 210 MB of whole lines plus about 11 MB of clip packs.
-- **Audio as a service:** the audio is not committed to this repo. It is published as its own static site, a separate repo `vedic-math-voice` served by GitHub Pages at `https://sbmadhav.com/vedic-math-voice/`. That is the same origin as the game, free, with no new third party and nothing new sent. The game fetches a line's file by the hash of its words, or its clip pack. The service worker keeps what was played, and Explorer's clip pack downloads while idle once read aloud is on.
+- **Audio as a service, in this repo:** the audio is served by this site at `/vedic-math/voice/` but is never committed to git. `make-clips.mjs` uploads it as one archive to a GitHub Release of this repo (tag `voice-<id>`), and `js/voice-index.js` (committed, small) names that release and the archive's SHA-256. The CI deploy downloads the archive, checks the hash and unpacks it into `_site/voice/` next to the app. It is free, on the same origin, adds no third party and sends nothing new. The game fetches a line's file by the hash of its words, or its clip pack. The service worker keeps what was played, and Explorer's clip pack downloads while idle once read aloud is on.
 - `speak()` order: the natural voice if the Player turned it on, then a whole studio line, then studio clips, then the built-in voice. One line is always said by one voice. If a whole line has not arrived within 600 ms, the clips say it.
 - A node test fails when an Explorer line has no studio audio. Overall coverage must stay at or above 99%.
 
@@ -49,8 +49,8 @@ None. `accessibility` keeps its "voice picker fits a 320px screen" scenario unch
 
 - `js/voice.js`: built-in tuning and rating (A); `speakStudio()` for whole lines and clips, line hashing and pack loading (B); Me settings gain the voice choice and the poor-voice note.
 - New generated `js/voice-index.js`: the studio voice id, base URL, pack names and hashes, the clip index, and the list of Skills and fixed lines covered by whole lines. It is imported only when read aloud first plays.
-- New repo `sbmadhav/vedic-math-voice` (GitHub Pages, published by a workflow from a build artifact, so the audio never piles up in git history). This repo gets no audio.
-- `sw.js`: `/vedic-math-voice/` files are cache first (their names hold their hash), and on install the worker carries them into the next deploy's cache.
+- GitHub Releases of this repo hold the audio archive (`voice-<id>`); git holds no audio. `.github/workflows/ci.yml` downloads and verifies it before the deploy; `build.py --out` fails if `voice/` is missing or its hash does not match `js/voice-index.js`.
+- `sw.js`: `/vedic-math/voice/` files are cache first (their names hold their hash), and on install the worker carries them into the next deploy's cache.
 - New repo-only `tools/voice/` (moved from `docs/prototypes/voice/tools/`): `inventory.mjs`, `stitch-plan.mjs`, `voice-lib.mjs` (Kokoro and the four paid providers, keys only from the environment), `make-clips.mjs`, `publish.mjs`. `_config.yml` excludes `tools/`.
 - Tests: new `test/voice.test.mjs`, new `test/voice-coverage.test.mjs`; new Playwright `e2e/tests/voice.spec.ts`; `e2e/tests/offline.spec.ts`; `e2e/tests/games.spec.ts` (balloon stop and start still cancels).
 - `GLOSSARY.md`: Read aloud, Built-in voice, Studio voice, Natural voice.

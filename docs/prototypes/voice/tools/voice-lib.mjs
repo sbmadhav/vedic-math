@@ -77,8 +77,11 @@ const wavData = buf => { const b = Buffer.from(buf); let o = 12; while (o < b.le
 const ok = async r => { if (!r.ok) throw new Error(`${r.status} ${await r.text()}`); return r; };
 export const CLOUD = {
   /* Google Cloud Text-to-Speech, e.g. en-US-Chirp3-HD-Aoede ($30 per million characters after 1 million free a month), en-US-Neural2-F, en-US-Wavenet-F */
-  google: { env: 'GOOGLE_TTS_KEY', say: async (text, voice, speed) => {
-    const r = await ok(await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${process.env.GOOGLE_TTS_KEY}`, { method: 'POST', headers: { 'content-type': 'application/json' },
+  /* Auth: GOOGLE_TTS_KEY, a classic API key (AIza...) restricted to Cloud Text-to-Speech, or GOOGLE_TTS_TOKEN, an OAuth token
+     (for example from `gcloud auth print-access-token` with a service account). "AQ." keys are refused by this API. */
+  google: { env: ['GOOGLE_TTS_KEY', 'GOOGLE_TTS_TOKEN'], say: async (text, voice, speed) => {
+    const auth = process.env.GOOGLE_TTS_TOKEN ? { authorization: `Bearer ${process.env.GOOGLE_TTS_TOKEN}` } : { 'x-goog-api-key': process.env.GOOGLE_TTS_KEY };
+    const r = await ok(await fetch('https://texttospeech.googleapis.com/v1/text:synthesize', { method: 'POST', headers: { 'content-type': 'application/json', ...auth },
       body: JSON.stringify({ input: { text }, voice: { languageCode: voice.slice(0, 5), name: voice }, audioConfig: { audioEncoding: 'LINEAR16', sampleRateHertz: RATE, speakingRate: speed } }) }));
     return pcm16(wavData(Buffer.from((await r.json()).audioContent, 'base64')));
   } },

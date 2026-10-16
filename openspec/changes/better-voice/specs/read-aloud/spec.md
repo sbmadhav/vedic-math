@@ -7,7 +7,7 @@ When read aloud says a line, the system SHALL use the first voice that can say a
 
 #### Scenario: Explorer question from a whole line
 - **WHEN** an Explorer Player with read aloud on gets the question "7 + 5 = ?"
-- **THEN** the line plays from its whole studio file under `/vedic-math-voice/` and the built-in voice says nothing
+- **THEN** the line plays from its whole studio file under `/vedic-math/voice/` and the built-in voice says nothing
 
 #### Scenario: A line said from clips
 - **WHEN** a Challenger Player with read aloud on and the needed pack loaded gets "4368 ÷ 16 = ?"
@@ -22,18 +22,18 @@ When read aloud says a line, the system SHALL use the first voice that can say a
 - **THEN** lines are read by the natural voice, as today
 
 ### Requirement: Studio audio is files on this site
-Studio audio SHALL be prerecorded files on this site's origin under `/vedic-math-voice/`: one AAC `.m4a` per whole line, named by a hash of the voice and the words, and content-hashed clip packs. No text SHALL be sent anywhere to say a line.
+Studio audio SHALL be prerecorded files on this site's origin under `/vedic-math/voice/`: one AAC `.m4a` per whole line, named by a hash of the voice and the words, and content-hashed clip packs. No text SHALL be sent anywhere to say a line.
 
 #### Scenario: Nothing sent
 - **WHEN** an Explorer Player hears ten questions
-- **THEN** every voice request is a GET under `https://sbmadhav.com/vedic-math-voice/` with no query text, and no request goes to a speech provider
+- **THEN** every voice request is a GET under `https://sbmadhav.com/vedic-math/voice/` with no query text, and no request goes to a speech provider
 
 ### Requirement: Studio audio loads lazily
 No studio file SHALL be fetched until read aloud is on. The core clip pack SHALL load while the page is idle once read aloud is on, and other files SHALL load the first time a line needs them.
 
 #### Scenario: Read aloud off
 - **WHEN** a Challenger Player with read aloud off plays a whole Practice round
-- **THEN** no request is made for `/vedic-math-voice/`
+- **THEN** no request is made for `/vedic-math/voice/`
 
 ### Requirement: Studio audio plays offline once saved
 Studio files, once fetched, SHALL play offline, including after the next deploy.

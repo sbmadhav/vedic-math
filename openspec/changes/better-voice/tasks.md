@@ -2,9 +2,9 @@
 
 Prerequisites (owner):
 - Approve this change.
-- Pick the studio voice by listening (`docs/prototypes/voice/` with a provider key, or the providers' demos linked there).
-- Create the provider key.
-- Create the empty repo `sbmadhav/vedic-math-voice` with Settings > Pages > Source set to "GitHub Actions".
+- Approved by the owner on 2026-10-16 with Google Chirp 3 HD and the audio in this repo's releases, not a new repo.
+- A Google credential the Text-to-Speech API accepts (a classic `AIza` key restricted to Cloud Text-to-Speech, or a service account), set only as `GOOGLE_TTS_KEY` in the shell that records.
+- The Chirp 3 HD voice name, picked by ear on `docs/prototypes/voice/`.
 
 Part A (tasks 1) can ship on its own before part B.
 
@@ -40,9 +40,9 @@ Part A (tasks 1) can ship on its own before part B.
   - the generated module `js/voice-index.js` in this repo (voice id, base URL, pack names, sizes and clip offsets, covered Skills and fixed lines).
   - Verify: a second run makes no request and changes no file.
   - Verify: the total recorded characters and the provider's bill are in the PR, within 10% of design decision 4.
-- [ ] 2.4 `publish.mjs` builds the audio site as a Pages artifact and starts the `vedic-math-voice` workflow, so the audio is never committed.
-  - Verify: after a publish, `curl -I https://sbmadhav.com/vedic-math-voice/<voice>/p/core.<hash>.m4a` returns 200 with `content-type: audio/mp4`.
-  - Verify: the repo's git history holds no `.m4a`.
+- [ ] 2.4 `publish.mjs` packs the audio into `voice-<id>.tar` and uploads it with `gh release create voice-<id>` (or `gh release upload` to replace), and writes the archive's SHA-256 and tag into `js/voice-index.js`. `.github/workflows/ci.yml` downloads it with `gh release download`, checks the hash and unpacks it into `_site/voice/` before the deploy; `build.py --out` fails if `voice/` is missing or does not match the index, and never precaches it.
+  - Verify: `test/build.test.mjs` cases for a missing archive and a wrong hash; `git log --all -- '*.m4a'` shows no audio added outside `docs/prototypes/`.
+  - Verify: after deploy, `curl -I https://sbmadhav.com/vedic-math/voice/p/core.<hash>.m4a` returns 200 with `content-type: audio/mp4`.
 
 ## 3. Studio voice (B, app)
 
@@ -57,7 +57,7 @@ Part A (tasks 1) can ship on its own before part B.
   - Whole lines are fetched when needed; other packs load on first need.
   - Timers and listeners that belong to a view go through `js/life.js`.
   - Verify: `voice.spec.ts`:
-    - "no audio when read aloud is off": a Challenger Practice round makes no request to `/vedic-math-voice/`.
+    - "no audio when read aloud is off": a Challenger Practice round makes no request to `/vedic-math/voice/`.
     - "Explorer whole line": an Explorer Practice question logs `studio:line` in `window.__voiceLog`, and `speechSynthesis.speak` is not called.
     - "clips for a three-digit sum": a `2-add1000` question logs `studio:clips`.
     - "slow line falls back": with the line request held for 2 s, the line logs `studio:clips`.
@@ -72,7 +72,7 @@ Part A (tasks 1) can ship on its own before part B.
 
 ## 4. Offline and coverage
 
-- [ ] 4.1 `sw.js`: `/vedic-math-voice/` requests are cache first. On install, those entries are copied from the previous `vedic-math-*` cache. `build.py` needs no change (the audio is another site).
+- [ ] 4.1 `sw.js`: `/vedic-math/voice/` requests are cache first. On install, those entries are copied from the previous `vedic-math-*` cache. `build.py` leaves `voice/` out of `PRECACHE` (task 2.4).
   - Verify: `e2e/tests/offline.spec.ts` (built `_site`, chromium), new test: an Explorer Player hears two lines online, goes offline and reloads. A heard line logs `studio:line`, and a new line logs `studio:clips` or `builtin`.
 - [ ] 4.2 New `test/voice-coverage.test.mjs`:
   - samples every generator (seeded: 300 per Skill and level, all Katas, Arena sets for each League, towers, games, fixed lines);
@@ -82,7 +82,7 @@ Part A (tasks 1) can ship on its own before part B.
 
 ## 5. Words and docs
 
-- [ ] 5.1 `GLOSSARY.md`: Read aloud, Built-in voice, Studio voice, Natural voice (added with this proposal). `README.md` and `CLAUDE.md`: how to re-record and publish after a wording change, and that the audio lives in `vedic-math-voice`. `cloud/README.md` Privacy: one line saying read aloud plays files from this site and sends no text.
+- [ ] 5.1 `GLOSSARY.md`: Read aloud, Built-in voice, Studio voice, Natural voice (added with this proposal). `README.md` and `CLAUDE.md`: how to re-record and publish after a wording change, and that the audio archive lives in this repo's releases. `cloud/README.md` Privacy: one line saying read aloud plays files from this site and sends no text.
   - Verify: `test/copy.test.mjs` (no em dashes) passes over the new copy.
 - [ ] 5.2 Delete `docs/prototypes/voice/` audio once the studio voice ships.
   - Verify: the PR that ships 3.x lists it.

@@ -15,13 +15,14 @@ import { speakerFor, CLOUD, trim, m4a, medianF0, RATE, BITRATE } from './voice-l
 const OUT = new URL('../', import.meta.url).pathname;
 const GAP = 0.25; // seconds of silence between clips in the sprite, so the decoder's start offset never cuts a word
 /* The voices on the page. Kokoro is free and local. The paid cloud voices are made only when their key is set
-   (for example GOOGLE_TTS_KEY=... node make-clips.mjs); voices already made stay in items.json.
+   (for example GOOGLE_TTS_KEY=... or GOOGLE_TTS_TOKEN=$(gcloud auth print-access-token) node make-clips.mjs); voices already made stay in items.json.
    ONLY=key1,key2 limits a run to those voices. */
 export const VOICES = [
   { key: 'heart', name: 'Kokoro Heart (free)', engine: 'kokoro', spec: 'af_heart', speed: 0.92 },
-  { key: 'google-chirp3', name: 'Google Chirp 3 HD Aoede', engine: 'google', spec: 'en-US-Chirp3-HD-Aoede', speed: 0.95 },
-  { key: 'google-neural2', name: 'Google Neural2 F', engine: 'google', spec: 'en-US-Neural2-F', speed: 0.95 },
-  { key: 'google-wavenet', name: 'Google WaveNet F', engine: 'google', spec: 'en-US-Wavenet-F', speed: 0.95 },
+  { key: 'chirp3-aoede', name: 'Google Chirp 3 HD Aoede', engine: 'google', spec: 'en-US-Chirp3-HD-Aoede', speed: 0.95 },
+  { key: 'chirp3-leda', name: 'Google Chirp 3 HD Leda', engine: 'google', spec: 'en-US-Chirp3-HD-Leda', speed: 0.95 },
+  { key: 'chirp3-kore', name: 'Google Chirp 3 HD Kore', engine: 'google', spec: 'en-US-Chirp3-HD-Kore', speed: 0.95 },
+  { key: 'chirp3-achernar', name: 'Google Chirp 3 HD Achernar', engine: 'google', spec: 'en-US-Chirp3-HD-Achernar', speed: 0.95 },
   { key: 'azure-ava', name: 'Azure Ava (multilingual neural)', engine: 'azure', spec: 'en-US-AvaMultilingualNeural', speed: 0.95 },
   { key: 'openai-coral', name: 'OpenAI gpt-4o-mini-tts Coral', engine: 'openai', spec: 'coral', speed: 0.95 },
   { key: 'elevenlabs', name: 'ElevenLabs Flash v2.5', engine: 'elevenlabs', spec: process.env.ELEVENLABS_VOICE || '21m00Tcm4TlvDq8ikWAM', speed: 0.95 }
@@ -58,7 +59,7 @@ items.forEach(it => it.plan.forEach(p => { if (p.clip) clipText.set(p.clip, p.cl
 
 const prev = existsSync(OUT + 'items.json') ? JSON.parse(readFileSync(OUT + 'items.json', 'utf8')) : { voices: [], items: [] };
 const only = process.env.ONLY ? process.env.ONLY.split(',') : null;
-const todo = VOICES.filter(v => (!only || only.includes(v.key)) && (v.engine === 'kokoro' || process.env[CLOUD[v.engine].env]));
+const todo = VOICES.filter(v => (!only || only.includes(v.key)) && (v.engine === 'kokoro' || [CLOUD[v.engine].env].flat().some(e => process.env[e])));
 /* keep what earlier runs made for voices this run skips */
 const voices = prev.voices.filter(v => !todo.some(t => t.key === v.key) && VOICES.some(t => t.key === v.key));
 for (const it of items) { const old = prev.items.find(x => x.id === it.id); if (old) for (const v of voices) if (old.whole[v.key]) it.whole[v.key] = old.whole[v.key]; }
