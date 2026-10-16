@@ -64,6 +64,22 @@ test('Practice answers send q_answered each, and first_win once per device', asy
   expect(flags[1]).toMatch(/^\d+$/);
 });
 
+test('a Star miss then a right rematch sends q_answered/star/miss then right, and the route is star/<trick>/star', async ({ page }, testInfo) => {
+  chromiumOnly(testInfo, 'app logic, the same in every engine');
+  await open(page, '#/star/sq5/2');
+  await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
+  await page.keyboard.type('1'); await page.keyboard.press('Enter');
+  await expect(page.locator('.star-step').first()).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#stMain .star-tag')).toHaveText('Rematch');
+  const n = Number((await page.locator('#stQ').innerHTML()).match(/^(\d+)<sup>/)![1]);
+  await page.keyboard.type(String(n * n)); await page.keyboard.press('Enter');
+  await expect(page.locator('#stSay')).toContainText('Comeback');
+  const ev = await events(page);
+  expect(ev.filter(e => e.startsWith('math/q_answered/'))).toEqual(['math/q_answered/star/miss', 'math/q_answered/star/right']);
+  expect(ev).toContain('math/view/star/sq5/star');
+});
+
 test('two Arena Practice rounds: round_end r1 and r2 and one round2_start, no per-answer events', async ({ page }, testInfo) => {
   chromiumOnly(testInfo, 'app logic, the same in every engine');
   test.slow(); // two 60 second rounds on the fake clock

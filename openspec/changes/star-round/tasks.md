@@ -32,10 +32,10 @@ Prerequisites: `sparks-replace-xp` is merged (`addSparks()`, Medals instead of s
 
 ## 5. Ratings, analytics and privacy
 
-- [ ] 5.1 Dial per round from `AD.skillRating('v-' + trick)`, saved at round end and on destroy; lost Dare not counted. Verify: `test/star.test.mjs` (Dial hits per event); Playwright `star.spec.ts`: after a round of 4 rights, saved `ratings['skill:v-sq5']` is higher than before.
-- [ ] 5.2 `js/metrics.js`: `ANSWER_AREAS` gains `star`; route template `star/{trick:1}/star`. Verify: `test/metrics.test.mjs` route sample for `#/star/sq5/2`, answer area `star`; "every analytics call site in js/ builds paths only from allowed values" covers `js/star.js`; Playwright `e2e/tests/analytics.spec.ts` new test: a miss then a right rematch sends `math/q_answered/star/miss` then `.../right`.
-- [ ] 5.3 Stars post nothing. Verify: Playwright `e2e/tests/privacy.spec.ts` new test (adult Player): a full Star round leaves `cloudLog(page).writes` holding at most the weekly `xp-week-` total, and no request body contains `sky` or a Star key; record in the PR that `parentNote()` and `cloud/README.md` need no change.
-- [ ] 5.4 Accessibility. Verify: `e2e/tests/a11y.spec.ts` adds `#/star/sq5/1` (both schemes), during a question and during a replay, with no serious or critical axe violations.
+- [x] 5.1 Dial per round from `AD.skillRating('v-' + trick)`, saved at round end and on destroy; lost Dare not counted. Verify: `test/star.test.mjs` (Dial hits per event); Playwright `star.spec.ts`: after a round of 4 rights, saved `ratings['skill:v-sq5']` is higher than before.
+- [x] 5.2 `js/metrics.js`: `ANSWER_AREAS` gains `star`; route template `star/{trick:1}/star`. Verify: `test/metrics.test.mjs` route sample for `#/star/sq5/2`, answer area `star`; "every analytics call site in js/ builds paths only from allowed values" covers `js/star.js`; Playwright `e2e/tests/analytics.spec.ts` new test: a miss then a right rematch sends `math/q_answered/star/miss` then `.../right`.
+- [x] 5.3 Stars post nothing. Verify: Playwright `e2e/tests/privacy.spec.ts` new test (adult Player): a full Star round leaves `cloudLog(page).writes` holding at most the weekly `xp-week-` total, and no request body contains `sky` or a Star key; record in the PR that `parentNote()` and `cloud/README.md` need no change.
+- [x] 5.4 Accessibility. Verify: `e2e/tests/a11y.spec.ts` adds `#/star/sq5/1` (both schemes), during a question and during a replay, with no serious or critical axe violations.
 
 ## 6. Release check
 

@@ -90,6 +90,18 @@ test('deeper routes: grade, skill, katas, tower, chapter, challenge, game, duel'
   await expect(page.locator('#practice .pr-q')).toBeVisible();
 });
 
+test('a Star deep link renders its round, and an unknown Star falls back to the Dojo', async ({ page }) => {
+  await open(page, '#/star/sq5/3');
+  await expect(page.locator('#view h1')).toHaveText('Square numbers ending in 5');
+  await expect(page.locator('.star-top .md-tag')).toHaveText('Star 3 of 3');
+  await expect(page.locator('#stQ')).toBeVisible();
+  await expect(page).toHaveTitle(/^Star 3: Square numbers ending in 5/);
+  await page.goto(`${APP}#/star/nope/1`);
+  await expect(page.locator('#view h1')).toHaveText('From white belt to black belt');
+  await page.goto(`${APP}#/star/sq5/4`);
+  await expect(page.locator('#view h1')).toHaveText('From white belt to black belt');
+});
+
 test('a sutra deep link opens the deep-dive dialog over the sutras page', async ({ page }) => {
   await page.goto(`${APP}#/sutras/s1`);
   const dlg = page.locator('dialog.sutra-modal');

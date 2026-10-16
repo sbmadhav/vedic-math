@@ -37,6 +37,23 @@ for (const scheme of ['light', 'dark'] as const) {
   });
 }
 
+/* A Star round (star-round spec 5.4): during a question and during a replay */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, Star`, () => {
+    test.use({ colorScheme: scheme });
+    test('#/star/sq5/1 during a question and a replay has no serious or critical axe violations', async ({ page }, testInfo) => {
+      chromiumOnly(testInfo);
+      await open(page, '#/star/sq5/1');
+      await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
+      await page.waitForLoadState('networkidle');
+      expect(await serious(page, '#/star/sq5/1')).toEqual([]);
+      await page.keyboard.type('1'); await page.keyboard.press('Enter');
+      await expect(page.locator('.star-step').nth(1)).toBeVisible();
+      expect(await serious(page, '#/star/sq5/1')).toEqual([]);
+    });
+  });
+}
+
 /* The Duel after Start (duel spec): both sides show the same question, picture and choices */
 for (const scheme of ['light', 'dark'] as const) {
   test.describe(`${scheme} scheme, explorer`, () => {

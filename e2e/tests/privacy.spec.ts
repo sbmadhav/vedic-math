@@ -368,6 +368,30 @@ test.describe('two Players on one device', () => {
   });
 });
 
+/* Stars post nothing (star-round spec, Stars are Practice): only the weekly Sparks total may go */
+test.describe('Stars', () => {
+  test.use({ seedConsent: { age: 'adult' } });
+  test('a full Star round sends at most the weekly Sparks total, and no request carries Star progress', async ({ page }, testInfo) => {
+    chromiumOnly(testInfo, 'app logic, the same in every engine');
+    const out: string[] = [];
+    page.on('request', r => out.push(`${r.method()} ${r.url()}\n${r.postData() || ''}`));
+    await page.clock.install();
+    await open(page, '#/star/sq5/1');
+    for (let i = 1; i <= 4; i++) {
+      await expect(page.locator('#stMain .star-tag')).toHaveText(`Question ${i} of 4`);
+      const n = Number((await page.locator('#stQ').innerHTML()).match(/^(\d+)<sup>/)![1]);
+      await page.keyboard.type(String(n * n)); await page.keyboard.press('Enter');
+      await page.clock.runFor(1_500);
+    }
+    await expect(page.locator('.star-end-h')).toHaveText('Star 1 is lit!');
+    await page.clock.runFor(70_000); // past the weekly Sparks post's wait
+    const w = (await cloudLog(page)).writes;
+    expect(w.length).toBeLessThanOrEqual(1);
+    for (const x of w) { expect(x.path).toMatch(/^boards\/xp-week-/); expect(x.data.score).toBe(40); }
+    for (const x of [...out, ...w.map(x => JSON.stringify(x))]) { expect(x).not.toMatch(/\bsky\b/); expect(x).not.toContain('sq5:'); }
+  });
+});
+
 /* Ratings stay on the device (ratings spec): after Arena rounds and skill Practice, no request carries one */
 test.describe('Ratings', () => {
   test.use({ seedMode: 'pro', seedConsent: { age: 'adult' } });
