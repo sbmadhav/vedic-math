@@ -148,13 +148,16 @@ test('hundredths show a 10 by 10 grid with the right squares shaded, in both sch
   }
 });
 
-test('a percent lesson links no counting videos', async ({ page }) => {
-  await open(page, '#/skill/7-pctchange');
-  await expect(page.locator('#view h1')).toBeVisible();
-  await expect(page.locator('#view h1')).toHaveText(/Discounts, tax and percent change/);
-  await expect(page.locator('.rel-links a', { hasText: /Numberblocks/i })).toHaveCount(0);
-  await open(page, '#/skill/k-count');
-  await expect(page.locator('.rel-links')).toContainText(/Numberblocks/);
+test.describe('explorer', () => {
+  test.use({ seedMode: 'explorer' });
+  test('a percent lesson links no counting videos; the counting lesson does', async ({ page }) => {
+    await open(page, '#/skill/7-pctchange');
+    await expect(page.locator('#view h1')).toHaveText(/Discounts, tax and percent change/);
+    await page.waitForFunction(() => import('/vedic-math/js/videos.js' as string));
+    await expect(page.locator('.rel-links button', { hasText: /count/i })).toHaveCount(0);
+    await open(page, '#/skill/k-count');
+    await expect(page.locator('.rel-links')).toContainText(/Count/);
+  });
 });
 
 /* Skill Ratings (ratings spec): the Rating picks each Practice question's generator level; mastery is unchanged */

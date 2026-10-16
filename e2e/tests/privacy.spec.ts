@@ -37,6 +37,8 @@ const REQUIRED = [
   'Separately from World boards, the site counts visits and',
   '(pages opened, questions answered, rounds finished)',
   'with GoatCounter, anonymously: no cookies, no IDs and no names.',
+  // videos (watch-shelf)
+  "Videos play from YouTube in privacy-enhanced mode, and YouTube's own rules apply once one plays.",
 ];
 async function expectNote(page: import('@playwright/test').Page, summary: string, now?: string) {
   const note = page.locator('details', { has: page.locator('summary', { hasText: summary }) }).first();
@@ -76,6 +78,24 @@ test.describe('under 13 without the Parent step', () => {
   test('the note says nothing is posted for this player and how to turn World boards on', async ({ page }) => {
     await open(page, '#/arena');
     await expectNote(page, SUMMARY.pro, NOW.under13);
+  });
+  test('an under-13 Player without the Parent step can open and play a video; nothing is sent but the embed', async ({ page }, testInfo) => {
+    chromiumOnly(testInfo);
+    const events: string[] = [];
+    await page.route(/\/assets\/analytics\.js(\?.*)?$/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body: 'window.siteTrack = (p) => { (window.__ev ||= []).push(p); };' }));
+    await page.route(/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>video</title>' }));
+    await page.route(/^https:\/\/i\.ytimg\.com\//, r => r.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg"/>' }));
+    const sent: string[] = [];
+    page.on('request', r => { const u = r.url(); if (!/^https?:\/\/(localhost|127\.0\.0\.1|sbmadhav\.com)/.test(u)) sent.push(u + ' ' + (r.postData() || '')); });
+    await open(page, '#/watch');
+    await page.locator('#view button.watch-card').first().click();
+    await expect(page.locator('dialog.vm-player iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\//);
+    events.push(...await page.evaluate(() => (window as any).__ev || []));
+    expect(events.filter(e => e.startsWith('math/watch/'))).toEqual([expect.stringMatching(/^math\/watch\/(video|short)$/)]);
+    expect(sent.filter(u => /firestore|identitytoolkit|securetoken/.test(u))).toEqual([]);
+    expect(sent.filter(u => u.includes('Swift') || u.includes('Tiger'))).toEqual([]);
+    expect(sent.every(u => /youtube-nocookie\.com|i\.ytimg\.com|fonts\.(googleapis|gstatic)\.com/.test(u)), sent.join('\n')).toBe(true);
+    expect((await cloudLog(page)).writes).toEqual([]);
   });
 });
 test.describe('under 13 with the Parent step', () => {

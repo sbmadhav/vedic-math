@@ -7,8 +7,7 @@ import { GAMES, keepFocus } from './games.js';
 import { SUTRAS, SUBSUTRAS, HISTORY } from './sutras.js';
 import { DETAILS } from './sutra-details.js';
 import { mountScene } from './scenes.js';
-import { RESOURCES } from './resources.js';
-import { relatedTo } from './related.js';
+import * as W from './watch.js';
 import { checkOne } from './check.js';
 import { answerText } from './answers.js';
 import { pick, shuffle } from './lib.js';
@@ -36,9 +35,11 @@ const gradeShort = g => (g === 'K' ? 'K' : g === 'V' ? 'Tricks' : g);
 const pct = x => Math.round(x * 100);
 const plain = h => String(h).replace(/<[^>]+>/g, '').replace(/&[a-z]+;/g, ' ');
 const BRAND = 'Vedic Math';
-/* Videos and playlists play inside the page (privacy-enhanced YouTube embed); channels and websites open in a new tab */
-const embedOf = r => { if (r.yt) return { src: `https://www.youtube-nocookie.com/embed/${r.yt}?autoplay=1&rel=0&modestbranding=1&playsinline=1`, tall: r.type === 'short' }; const m = r.url.match(/[?&]list=([\w-]+)/); return m ? { src: `https://www.youtube-nocookie.com/embed/videoseries?list=${m[1]}&autoplay=1&rel=0&modestbranding=1&playsinline=1`, tall: false } : null; };
-const wa = r => ` href="${r.url}" target="_blank" rel="noopener noreferrer" data-watch data-ri="${RESOURCES.indexOf(r)}"`;
+/* Watch (openspec watch-shelf): every video plays inside the page (privacy-enhanced embed, js/watch.js). Links that
+   leave the site are for Pro only, and outLink() is the one place that writes one. */
+const linksOut = () => W.linksOut(fx.mode());
+const outLink = (url, inner, cls = '') => (linksOut() ? `<a${cls ? ` class="${cls}"` : ''} href="${esc(url)}" target="_blank" rel="noopener noreferrer" data-link>${inner}</a>` : '');
+const playBtn = (yt, inner, cls = '') => `<button type="button"${cls ? ` class="${cls}"` : ''} data-watch="${esc(yt)}">${inner}</button>`;
 
 const ring = (m, size = 44) => { const r = size / 2 - 4, c = 2 * Math.PI * r; return `<svg class="ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle cx="${size / 2}" cy="${size / 2}" r="${r}" class="ring-bg"/><circle cx="${size / 2}" cy="${size / 2}" r="${r}" class="ring-fg" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - m)}" transform="rotate(-90 ${size / 2} ${size / 2})"/></svg>`; };
 const status = id => (store.mastered(id) ? ['done', both('Mastered', 'Got it!')] : store.started(id) ? ['going', both('Practicing', 'Learning')] : ['new', 'New']);
@@ -266,15 +267,24 @@ function skillView(id, { signal } = {}) {
     </div>
   </div></section>`;
   if (trick) mountAnimator(trick, signal); else showExample(s);
+  fillWatch($('[data-watch-for]'), s, trick, signal);
   return practice($('#practice'), () => s, { signal });
 }
-/* Related videos: whole trick or skill words against the Watch shelf tags and titles (js/related.js) */
-function videosFor(s, trick) {
-  const words = (trick ? `${trick.title} ${trick.sutra} vedic` : `${s.title} ${s.strand}`).toLowerCase();
-  const hits = relatedTo(words, RESOURCES);
-  if (!hits.length) return '';
-  return `<h2 class="mq-h3">Watch it explained</h2><div class="rel-links">${hits.map(r => `<a${wa(r)}>${icon(embedOf(r) ? 'play' : 'link')}<span>${esc(r.title)}</span>${embedOf(r) ? '' : '<small class="rel-ext">opens site</small>'}</a>`).join('')}</div>`;
+/* "Watch it explained": a placeholder filled once the list loads (fillWatch), so the page never waits on it */
+const videosFor = () => '<div class="watch-for" data-watch-for></div>';
+/* Hand-matched picks first, whole-word keywords only when there are none (js/watch.js picksFor) */
+function fillWatch(box, s, trick, signal) {
+  if (!box) return;
+  W.loadVideos().then(({ VIDEOS }) => {
+    if (signal && signal.aborted) return;
+    const words = (trick ? `${trick.title} ${trick.sutra} vedic` : `${s.title} ${s.strand}`).toLowerCase();
+    const { how, picks } = W.picksFor(VIDEOS, { skill: trick ? null : s.id, trick: trick ? trick.id : null, mode: fx.mode() || 'challenger', words });
+    if (!picks.length) return;
+    box.dataset.how = how;
+    box.innerHTML = `<h2 class="mq-h3">Watch it explained</h2><div class="rel-links">${picks.map(v => playBtn(v.yt, `${icon('play')}<span>${esc(v.title)}</span><small class="rel-ext">${mins(v.duration)}</small>`)).join('')}</div>`;
+  }).catch(() => {});
 }
+const mins = d => (d < 60 ? `${d} s` : `${Math.floor(d / 60)}:${String(d % 60).padStart(2, '0')}`);
 
 function showExample(s) {
   const box = $('#example'); const p = s.gen(1);
@@ -595,13 +605,15 @@ function sutrasView() {
     <p class="md-lede">Each sutra is a short word formula that packs a whole method into a phrase. Flip a card for the short version, then open <b>Learn more</b> for the full story: animated diagrams, why it works, worked examples and further reading. You have collected <b>${got} of ${ALL_SUTRAS.length}</b>.</p>
     <div class="mq-bar mq-bar--big sutra-bar"><i style="width:${pct(got / ALL_SUTRAS.length)}%"></i></div>
     <div class="md-card history"><h2 class="mq-h3">Where Vedic math comes from</h2>${HISTORY.map(h => `<p>${h}</p>`).join('')}
-      <p class="mq-small">Read more: ${RESOURCES.filter(r => r.vedic && r.tags.includes('history')).map(r => `<a${wa(r)}>${esc(r.title)}</a>`).join(' · ')}</p></div>
+      <p class="mq-small" data-history-links hidden></p></div>
     <div class="md-card history roots"><h2 class="mq-h3">Older roots: what you see in the background</h2><p>The 1965 sutras stand on a much older tradition of Indian mathematics. The moving background draws real pieces of it.</p><ul>${BG_NOTES.map(([h, b]) => `<li><b>${h}.</b> ${b}</li>`).join('')}</ul></div>
     <h2 class="mq-strand">The 16 sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => !c.sub).map(card).join('')}</div>
     <h2 class="mq-strand">The 13 sub-sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => c.sub).map(card).join('')}</div>
   </div></section>`;
   const flip = (art, open) => { art.classList.toggle('flipped', open); art.querySelector('.sutra-face').setAttribute('aria-expanded', String(open)); fx.sfx('tap'); if (open) { collect(art.dataset.name); art.classList.add('got'); art.querySelector('.sutra-more').focus({ preventScroll: true }); } else art.querySelector('.sutra-face').focus({ preventScroll: true }); };
   view.querySelectorAll('.sutra-card').forEach(art => { art.querySelector('.sutra-face').onclick = () => flip(art, true); art.querySelector('.sutra-flipback').onclick = () => flip(art, false); });
+  // Outside reading on where the sutras come from, critiques included: Pro only
+  if (linksOut()) W.loadVideos().then(({ LINKS }) => { const p = $('[data-history-links]'); if (!p) return; p.innerHTML = 'Read more: ' + LINKS.filter(l => l.history).map(l => outLink(l.url, esc(l.title))).join(' · '); p.hidden = false; }).catch(() => {});
 }
 function collect(name) { if (store.markSeen('sutra:' + name)) store.addSparks(5, 'sutra'); }
 
@@ -611,7 +623,8 @@ const reducedMotion = () => fx.motionOff();
 function sutraHTML(c) {
   const d = DETAILS[c.name], i = ALL_SUTRAS.indexOf(c), prev = ALL_SUTRAS[i - 1], next = ALL_SUTRAS[i + 1];
   const tricks = c.tricks.map(t => TRICKS.find(x => x.id === t)).filter(Boolean);
-  const readLink = ([label, url]) => { const r = RESOURCES.find(x => x.url === url); return r ? `<a${wa(r)}>${icon(embedOf(r) ? 'play' : 'link')}<span>${esc(label)}</span></a>` : `<a href="${url}" target="_blank" rel="noopener noreferrer">${icon('link')}<span>${esc(label)}</span></a>`; };
+  // Learn more: videos play in the page for every Mode; pages on other sites only for Pro
+  const reads = d.read.map(([label, to]) => (typeof to === 'object' ? playBtn(to.yt, `${icon('play')}<span>${esc(label)}</span>`) : outLink(to, `${icon('link')}<span>${esc(label)}</span>`))).filter(Boolean);
   return `<header class="sd-head"><div><span class="md-tag md-tag--plum">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n} of ${c.sub ? 13 : 16}</span><h2 id="sdTitle" lang="sa-Latn">${c.name}</h2><p class="sd-mean">${c.meaning}</p></div><button class="vp-x sd-x" aria-label="Close">${icon('close')}</button></header>
   <div class="sd-body">
     <div class="sd-fig"><div class="sd-scene"></div><p class="mq-small">Diagram plays by itself. Use Back and Next to go at your own pace.</p></div>
@@ -621,7 +634,7 @@ function sutraHTML(c) {
       <h3>Worked examples</h3><ul class="sd-ex">${d.examples.map(([q, a]) => `<li><b>${q}</b><span>${a}</span></li>`).join('')}</ul>
       <h3>Where it is used</h3><p class="sd-uses">${d.uses.map(u => `<span>${u}</span>`).join('')}</p>
       ${tricks.length ? `<h3>Try it yourself</h3><p class="sd-try">${tricks.map(t => `<a class="md-btn md-btn--sm md-btn--primary" href="#/skill/v-${t.id}">${icon('bolt')} ${t.title}</a>`).join(' ')}</p>` : ''}
-      <h3>Learn more</h3><div class="rel-links">${d.read.map(readLink).join('')}</div>
+      ${reads.length ? `<h3>Learn more</h3><div class="rel-links">${reads.join('')}</div>` : ''}
     </div>
   </div>
   <footer class="sd-foot">${prev ? `<a class="md-btn md-btn--sm" href="#/sutras/${prev.id}" data-swap>&larr; ${prev.name}</a>` : '<span></span>'}${next ? `<a class="md-btn md-btn--sm" href="#/sutras/${next.id}" data-swap>${next.name} &rarr;</a>` : ''}</footer>`;
@@ -688,6 +701,11 @@ function parentNote() {
       explorer: 'Separately from World boards, the site counts visits and things done in the app (pages opened, questions answered, rounds finished) to make it better, with GoatCounter, anonymously: no cookies, no IDs and no names.',
       challenger: 'Separately from World boards, the site counts visits and actions in the app (pages opened, questions answered, rounds finished) to improve it, with GoatCounter, anonymously: no cookies, no IDs and no names.',
       pro: 'Separately from World boards, the site counts visits and actions in the app (pages opened, questions answered, rounds finished) to improve it, with GoatCounter, anonymously: no cookies, no IDs and no names.',
+    })}</p>
+    <p class="pn-video">${fx.t({
+      explorer: "Videos play from YouTube in privacy-enhanced mode, and YouTube's own rules apply once one plays. Watching needs no grown-up step and posts nothing.",
+      challenger: "Videos play from YouTube in privacy-enhanced mode, and YouTube's own rules apply once one plays. Watching needs no parent step and posts nothing.",
+      pro: "Videos play from YouTube in privacy-enhanced mode, and YouTube's own rules apply once one plays. Watching needs no Parent step and posts nothing.",
     })}</p>
     <p>A board stops taking scores when its day or week ends. Entries are not deleted automatically, and turning World boards off does not delete them. To have an entry removed, message Madhav on <a href="https://www.linkedin.com/in/sbmadhav/" target="_blank" rel="noopener">LinkedIn</a> with the nickname, color and date.</p></details>`;
 }
@@ -905,53 +923,79 @@ function gameView(id, lvl = 0, { signal } = {}) {
   if (!lvl) { loadBoard($('#gbDay'), bDay); loadBoard($('#gbWeek'), bWeek); }
 }
 
-/* ---------- Watch shelf ---------- */
-function watchView() {
+/* ---------- Watch shelf (openspec watch-shelf) ---------- */
+/* The list loads when the shelf opens. Filters: the Player's Mode first, then Skill area, Tricks, length and kind
+   (Links too for Pro). Videos and Shorts play in the page; only Pro sees sites, which open in a new tab. */
+const LENGTH_LABEL = { short: 'Under 2 min', mid: '2 to 5 min', long: '5 to 8 min' };
+function watchView({ signal } = {}) {
   document.title = `Watch and learn: ${BRAND} · Madhav`;
-  const m = fx.mode() || 'challenger'; let filter = 'mine';
-  const FILTERS = [['mine', `For ${fx.MODES[m].name}`], ['vedic', 'Vedic math'], ['short', 'Shorts'], ['video', 'Videos'], ['channel', 'Channels'], ['site', 'Sites and games'], ['all', 'Everything']];
-  const match = r => filter === 'all' ? true : filter === 'mine' ? (r.mode === m || r.mode === 'all') : filter === 'vedic' ? r.vedic : filter === 'site' ? (r.type === 'website' || r.type === 'game') : filter === 'video' ? (r.type === 'video' || r.type === 'playlist') : r.type === filter;
-  const draw = () => {
-    const list = RESOURCES.filter(match);
-    view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
-      ${crumbs([null, 'Watch'])}
-      <span class="md-tag md-tag--teal">Watch and learn</span>
-      <h1 class="md-heading">The best math trick videos and sites</h1>
-      <p class="md-lede">${RESOURCES.length} free picks from around the web, every link checked: songs for early counters, trick channels, Vedic math lessons, and deep visual math for teens and adults.</p>
-      <div class="g-optrow" role="group" aria-label="Filter">${FILTERS.map(([id, l]) => `<button class="md-chip" aria-pressed="${id === filter}" data-f="${id}">${l}</button>`).join('')}</div>
-      <p class="mq-note">Videos and playlists play right here. Channels and websites open in a new tab. Grown-ups: videos use YouTube's privacy-enhanced mode, and younger learners still do best with you nearby.</p>
-      <div class="watch-grid">${list.map(r => `<a class="watch-card${embedOf(r) ? ' plays' : ''}"${wa(r)}>
-        <span class="watch-th${r.yt ? '' : ' watch-th--' + r.type}">${r.yt ? `<img src="https://i.ytimg.com/vi/${r.yt}/mqdefault.jpg" alt="" loading="lazy" width="320" height="180">` : icon(r.type === 'website' || r.type === 'game' ? 'link' : 'play')}<span class="watch-type">${{ channel: 'Channel', playlist: 'Playlist', video: 'Video', short: 'Short', website: 'Site', game: 'Game' }[r.type]}</span>${embedOf(r) ? `<span class="watch-play" aria-hidden="true">${icon('play')}</span>` : '<span class="watch-ext">Opens in a new tab</span>'}</span>
-        <b>${esc(r.title)}</b><small>${esc(r.desc)}</small><span class="watch-tags">${r.vedic ? '<span class="tagv">Vedic</span>' : ''}${r.tags.slice(0, 2).map(t => `<span>${esc(t)}</span>`).join('')}</span></a>`).join('')}</div>
-    </div></section>`;
-    view.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { filter = b.dataset.f; fx.sfx('tap'); draw(); });
-  };
-  draw();
+  const m = fx.mode() || 'challenger', pro = linksOut();
+  const f = { mode: m, level: m, strand: null, tricks: false, length: null, kind: null };
+  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
+    ${crumbs([null, 'Watch'])}
+    <span class="md-tag md-tag--teal">Watch and learn</span>
+    <h1 class="md-heading">Short videos that show how</h1>
+    <p class="md-lede">Every video plays right here, and none is longer than 8 minutes. Each one is checked by hand and matched to the skills and tricks it teaches.${pro ? ' Sites open in a new tab.' : ''}</p>
+    <div id="watchBody"><p class="mq-small">Loading videos…</p></div>
+  </div></section>`;
+  const body = $('#watchBody');
+  W.loadVideos().then(({ VIDEOS, LINKS }) => {
+    if (signal && signal.aborted) return;
+    const visible = VIDEOS.filter(v => W.visibleTo(v, m));
+    const strands = Object.keys(STRANDS).filter(id => visible.some(v => W.strandsOf(v, byId).includes(id)));
+    const chips = (key, opts, label) => opts.length < 2 ? '' : `<div class="g-optrow watch-filter" role="group" aria-label="${label}"><span class="watch-flab" aria-hidden="true">${label}</span>${opts.map(([val, l]) => `<button type="button" class="md-chip" data-k="${key}" data-v="${val}" aria-pressed="${String(f[key]) === String(val)}">${l}</button>`).join('')}</div>`;
+    const card = v => `<button type="button" class="watch-card plays${v.kind === 'short' ? ' watch-card--short' : ''}" data-watch="${esc(v.yt)}" data-modes="${v.modes.join(' ')}" data-kind="${v.kind}" data-tricks="${v.tricks.join(' ')}"${navigator.onLine === false ? ' disabled' : ''}>
+      <span class="watch-th"><img src="${W.thumbSrc(v)}" alt="" loading="lazy" width="320" height="180"><span class="watch-type">${v.kind === 'short' ? 'Short' : 'Video'} · ${mins(v.duration)}</span><span class="watch-play" aria-hidden="true">${icon('play')}</span></span>
+      <b>${esc(v.title)}</b><small>${esc(v.why)}</small><span class="watch-tags"><span>${esc(v.channel)}</span>${v.tricks.length ? '<span class="tagv">Trick</span>' : ''}</span></button>`;
+    const linkCard = l => outLink(l.url, `<span class="watch-th watch-th--${l.kind === 'game' ? 'game' : 'website'}">${icon('link')}<span class="watch-type">${l.kind === 'game' ? 'Game' : 'Site'}</span><span class="watch-ext">Opens in a new tab</span></span><b>${esc(l.title)}</b><small>${esc(l.why)}</small>`, 'watch-card');
+    const draw = () => {
+      const list = f.kind === 'link' ? [] : W.filterShelf(VIDEOS, f, byId);
+      const links = pro && (f.kind === null || f.kind === 'link') && !f.tricks && !f.length && !f.strand ? LINKS : [];
+      body.innerHTML = `${W.MODE_SEES[m].length > 1 ? chips('level', [...W.MODE_SEES[m].map(x => [x, fx.MODES[x].name]), ['all', 'Both']], 'Mode') : ''}
+        ${chips('strand', [['null', 'Any area'], ...strands.map(id => [id, STRANDS[id].pro])], 'Skill area')}
+        ${chips('tricks', [['false', 'Any'], ['true', 'Tricks only']], 'Tricks')}
+        ${chips('length', [['null', 'Any length'], ...Object.entries(LENGTH_LABEL)], 'Length')}
+        ${chips('kind', [['null', 'Everything'], ['video', 'Videos'], ['short', 'Shorts'], ...(pro ? [['link', 'Links']] : [])], 'Videos or Shorts')}
+        ${navigator.onLine === false ? '<p class="mq-note watch-offline">Videos need a connection. Connect to play them.</p>' : ''}
+        ${list.length ? `<div class="watch-grid">${list.map(card).join('')}</div>` : f.kind === 'link' ? '' : '<p class="mq-small">No videos match these filters yet.</p>'}
+        ${links.length ? `<section class="watch-links" aria-labelledby="watchLinksH"><h2 class="mq-h3" id="watchLinksH">Sites and games</h2><p class="mq-note">Opens in a new tab.</p><div class="watch-grid">${links.map(linkCard).join('')}</div></section>` : ''}`;
+      body.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { const v = b.dataset.v; f[b.dataset.k] = v === 'null' ? null : v === 'true' ? true : v === 'false' ? false : v; fx.sfx('tap'); draw(); });
+    };
+    draw();
+    on(window, 'online', draw, signal); on(window, 'offline', draw, signal);
+  }).catch(() => { if (!(signal && signal.aborted)) body.innerHTML = '<p class="mq-note watch-offline">The video list could not load. Videos need a connection.</p>'; });
 }
+/* Play buttons ([data-watch], a YouTube id) open the in-page player; Pro links ([data-link]) open a new tab */
 document.addEventListener('click', e => {
-  const a = e.target.closest('a[data-watch]'); if (!a) return;
-  store.bump('watched'); track('watch/' + a.hostname, 'Watch: ' + a.textContent.trim().slice(0, 60));
-  const r = RESOURCES[+a.dataset.ri], em = r && embedOf(r);
-  if (em && !e.metaKey && !e.ctrlKey && !e.shiftKey) { e.preventDefault(); openPlayer(r, em, a); }
+  const b = e.target.closest('[data-watch]'), a = !b && e.target.closest('a[data-link]');
+  if (a) { store.bump('watched'); track('watch/link', 'Watch: link'); return; }
+  if (!b) return;
+  e.preventDefault();
+  W.loadVideos().then(({ VIDEOS }) => {
+    const v = VIDEOS.find(x => x.yt === b.dataset.watch); if (!v) return;
+    store.bump('watched'); track('watch/' + v.kind, 'Watch: ' + v.title);
+    openPlayer(v, b);
+  }).catch(() => {});
 });
 let playerDlg = null;
-function openPlayer(r, em, opener) {
+function openPlayer(v, opener) {
   if (musicOn()) stopMusic();
   if (!playerDlg) {
     playerDlg = document.createElement('dialog'); playerDlg.className = 'vm-player'; playerDlg.setAttribute('aria-labelledby', 'vpTitle');
-    playerDlg.innerHTML = `<div class="vp-head"><h2 id="vpTitle"></h2><button class="vp-x" aria-label="Close video">${'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>'}</button></div><div class="vp-frame"></div><p class="vp-desc"></p><p class="vp-foot"><a class="vp-yt" target="_blank" rel="noopener noreferrer">Open on YouTube</a></p>`;
+    playerDlg.innerHTML = `<div class="vp-head"><h2 id="vpTitle"></h2><button class="vp-x" aria-label="Close video">${'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>'}</button></div><div class="vp-frame"></div><p class="vp-desc"></p><p class="vp-foot"></p>`;
     document.body.append(playerDlg);
     const close = () => playerDlg.close();
     playerDlg.querySelector('.vp-x').onclick = close;
     playerDlg.addEventListener('click', ev => { if (ev.target === playerDlg) close(); });
-    playerDlg.addEventListener('close', () => { clearTimeout(playerDlg._minute); playerDlg.querySelector('.vp-frame').innerHTML = ''; if (playerDlg._opener) playerDlg._opener.focus({ preventScroll: true }); });
+    playerDlg.addEventListener('close', () => { clearTimeout(playerDlg._minute); playerDlg.querySelector('.vp-frame').innerHTML = ''; if (playerDlg._opener && document.body.contains(playerDlg._opener)) playerDlg._opener.focus({ preventScroll: true }); });
   }
   playerDlg._opener = opener;
-  playerDlg.querySelector('#vpTitle').textContent = r.title;
-  playerDlg.querySelector('.vp-desc').textContent = r.desc;
-  playerDlg.querySelector('.vp-yt').href = r.url;
-  playerDlg.classList.toggle('tall', em.tall);
-  playerDlg.querySelector('.vp-frame').innerHTML = `<iframe src="${em.src}" title="${esc(r.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+  playerDlg.querySelector('#vpTitle').textContent = v.title;
+  playerDlg.querySelector('.vp-desc').textContent = `${v.why} (${v.channel})`;
+  // Open on YouTube: Pro only (Explorer and Challenger get no link that leaves the site)
+  playerDlg.querySelector('.vp-foot').innerHTML = outLink(`https://www.youtube.com/watch?v=${v.yt}`, 'Open on YouTube', 'vp-yt');
+  playerDlg.classList.toggle('tall', v.kind === 'short');
+  playerDlg.querySelector('.vp-frame').innerHTML = `<iframe src="${W.embedSrc(v)}" title="${esc(v.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
   playerDlg.showModal();
   // Video learner: the player has stayed open for a whole minute (cancelled when it closes)
   clearTimeout(playerDlg._minute); playerDlg._minute = setTimeout(() => { if (playerDlg.open) store.bump('watchedMinute'); }, 60000);

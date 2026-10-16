@@ -9,7 +9,7 @@ const ROUTES = [
   { hash: '#/arena', nav: 'Arena', h1: '60 seconds. Same questions for everyone.', title: /^Arena/ },
   { hash: '#/games', nav: 'Games', h1: 'Games that build number sense', title: /^Games/ },
   { hash: '#/sutras', nav: 'Sutras', h1: 'The 16 sutras and 13 sub-sutras', title: /^The sutras:/ },
-  { hash: '#/watch', nav: 'Watch', h1: 'The best math trick videos and sites', title: /^Watch and learn/ },
+  { hash: '#/watch', nav: 'Watch', h1: 'Short videos that show how', title: /^Watch and learn/ },
   { hash: '#/me', nav: null, h1: 'Swift Tiger 42', title: /^Me: Vedic Math/ },
 ];
 
@@ -33,8 +33,9 @@ test('route content: learn levels, dojo belts, games, sutra cards, watch shelf, 
   await open(page, '#/sutras');
   await expect(page.locator('.sutra-card')).toHaveCount(29);
   await open(page, '#/watch');
+  await expect(page.locator('.watch-card').first()).toBeVisible();
   expect(await page.locator('.watch-card').count()).toBeGreaterThan(3);
-  await page.locator('.g-optrow [data-f="all"]').click();
+  await page.locator('.g-optrow [data-k="level"][data-v="all"]').click();
   expect(await page.locator('.watch-card').count()).toBeGreaterThan(10);
   await open(page, '#/me');
   expect(await page.locator('.badge-grid .badge').count()).toBeGreaterThan(10);
@@ -48,7 +49,7 @@ test('nav links move between views, and Back / Forward follow', async ({ page })
   await nav.getByRole('link', { name: 'Games', exact: true }).click();
   await expect(page.locator('#view h1')).toHaveText('Games that build number sense');
   await nav.getByRole('link', { name: 'Watch', exact: true }).click();
-  await expect(page.locator('#view h1')).toHaveText('The best math trick videos and sites');
+  await expect(page.locator('#view h1')).toHaveText('Short videos that show how');
   await page.goBack();
   await expect(page).toHaveURL(/#\/games$/);
   await expect(page.locator('#view h1')).toHaveText('Games that build number sense');

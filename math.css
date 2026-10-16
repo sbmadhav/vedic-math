@@ -904,3 +904,16 @@ body.calm .bolt *, body.calm .star-round *, .star-round.still *, .star-round.sti
   .star-dare-t b { font-size: 1.2rem; }
   .star-key { height: 46px; font-size: 1.4rem; }
 }
+
+/* ---------- Watch shelf (openspec watch-shelf): play buttons, Short tiles, filters ---------- */
+button.watch-card { font: inherit; text-align: left; cursor: pointer; width: 100%; }
+button.watch-card[disabled] { opacity: .55; cursor: not-allowed; transform: none; }
+.watch-card--short .watch-th { aspect-ratio: 9 / 16; }
+.watch-filter { margin-bottom: var(--space-2); }
+.watch-links { margin-top: var(--space-6); }
+.rel-links button { display: flex; gap: 10px; align-items: center; width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-md); background: none; color: var(--ink); font: inherit; font-weight: 600; font-size: 15px; text-align: left; cursor: pointer; }
+.rel-links button:hover { border-color: var(--edge); }
+.watch-grid:has(.watch-card--short) { align-items: start; }
+.watch-filter { align-items: center; }
+.watch-flab { min-width: 7.5em; color: var(--ink-muted); font-size: 13px; font-weight: 700; }
+@media (max-width: 600px) { .watch-flab { min-width: 0; flex-basis: 100%; } }
