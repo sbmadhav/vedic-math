@@ -3,7 +3,7 @@
 ## State
 
 - Branch `sky-home`, worktree `/Users/sbmadhav/Documents/codebase/wt-sky-home`, rebased on origin/main `d7e9ba0` (star-round and watch-shelf merged and archived; CI actions pinned).
-- PR: PR_URL (open, not merged).
+- PR: https://github.com/sbmadhav/vedic-math/pull/29 (open, not merged).
 - Done and ticked: tasks 1.1 to 5.2.
 - Not done: **6.1 release check**. After deploy: the live E2E run (workflow `e2e.yml` on the push to `main`), then the owner's manual check on a phone and a Chromebook (the Sky scrolls inside its frame, every Star reachable by touch and by keyboard, All places with VoiceOver). Then `docs/PLAN.md` "Where things stand" and archive the change.
 
