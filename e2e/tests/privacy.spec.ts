@@ -453,6 +453,7 @@ test.describe('Ratings', () => {
   test.use({ seedMode: 'pro', seedConsent: { age: 'adult' } });
   test('no request after Arena daily and Practice rounds and skill Practice contains a Rating', async ({ page }, testInfo) => {
     chromiumOnly(testInfo, 'app logic, the same in every engine');
+    test.slow(); // two 60 second rounds, a skill Practice and the weekly Sparks wait on the fake clock
     const out: string[] = [];
     page.on('request', r => out.push(`${r.method()} ${r.url()}\n${r.postData() || ''}`));
     await page.clock.install();

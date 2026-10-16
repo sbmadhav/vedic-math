@@ -50,11 +50,19 @@ Built. Tasks 1.1 to 6.3 are done and ticked; the PR to main is open (not merged)
   with the view and `#view h1` still finds a Star's heading.
 - A and A+ scale play screens only: question, entry, keys and choices; game areas scale by font size.
 
-## Test results (local, before the PR)
+## Test results (local, on main at 71f89e8 plus this branch)
 
-- `node --test 'test/**/*.test.{js,mjs}'`: 239 passed.
-- `python3 build.py --out <scratch>`: OK (35 modules pinned, 38 own + 13 shared files precached).
+- `node --test 'test/**/*.test.{js,mjs}'`: 270 passed.
+- `python3 build.py --out <scratch>`: OK (37 modules pinned, 40 own + 13 shared files precached).
 - `openspec validate game-shell-and-calm --strict`: valid.
-- Playwright, `BASE_URL=http://localhost:8160`, `--grep-invert '@live|offline'`, chromium, webkit and mobile: see the PR.
+- Full Playwright suite, `BASE_URL=http://localhost:8160`, `--grep-invert '@live|offline'`, chromium, webkit and
+  mobile (before the rebase onto #30 and #31): 597 passed, 197 skipped, 0 failed, 4 flaky (passed on retry):
+  `consent.spec.ts` "the age question after a Daily challenge" (explorer, challenger) and "under 13 in Pro", and
+  `load.spec.ts` "Daybreak and Deep Space switch the palette". The consent ones run 60 second rounds on a faked
+  clock and slow down under six workers.
+- After the clean rebase onto #30 and #31: the specs this change touches plus `watch.spec.ts` on chromium and mobile:
+  all passed except the same consent flake (passes on retry). `privacy.spec.ts` "no request after Arena daily and
+  Practice rounds" is now marked `test.slow()`: it plays two 60 second rounds and waits out the weekly Sparks post,
+  and timed out at 45 s once under load.
 - `tests/offline.spec.ts --project=chromium` against the built `_site`: 4 passed, 1 skipped, 1 flaky ("offline, the
   leaderboards fall back to this device", passed on retry; it touches no code from this change).
