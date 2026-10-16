@@ -123,6 +123,18 @@ test.describe('first visit', () => {
       }
       await tab.close();
     }
+
+    // The Sky home and All places (sky-home 5.1): the Player turns the Sky on, and both render offline
+    await page.evaluate(() => { const k = 'vm.players', P = JSON.parse(localStorage.getItem(k)!); P.list[0].sky = true; localStorage.setItem(k, JSON.stringify(P)); });
+    for (const [hash, title, sel] of [['#/', /^Vedic Math for Everyone/, '.sky-star'], ['#/places', /^All places/, 'a.places-star']] as const) {
+      const tab = await context.newPage();
+      const res = await tab.goto(`${APP}${hash === '#/' ? '' : hash}`);
+      expect(res?.fromServiceWorker(), `${hash}: the page came from the worker`).toBe(true);
+      await expect(tab.locator('#view h1')).toHaveText(hash === '#/' ? 'Your Sky' : 'All places');
+      await expect(tab).toHaveTitle(title);
+      await expect(tab.locator(sel)).toHaveCount(63);
+      await tab.close();
+    }
   });
 });
 

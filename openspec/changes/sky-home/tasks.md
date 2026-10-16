@@ -31,8 +31,8 @@ Prerequisites: `sparks-replace-xp` (`katasDone`) and `star-round` (`S.sky`, `run
 
 ## 5. Offline and privacy
 
-- [ ] 5.1 Offline. Verify: `e2e/tests/offline.spec.ts` "every route renders offline after one visit" includes `#/places` and the Sky home (new modules are precached by `build.py` as part of `js/`).
-- [ ] 5.2 Nothing new is sent to World boards. Verify: `e2e/tests/privacy.spec.ts` new test: turning the Sky on and lighting a Star writes nothing but the weekly `xp-week-` total for an adult Player, and the Player record's `sky` flag is in no request; record in the PR that `parentNote()` and `cloud/README.md` need no change.
+- [x] 5.1 Offline. Verify: `e2e/tests/offline.spec.ts` "every route renders offline after one visit" includes `#/places` and the Sky home (new modules are precached by `build.py` as part of `js/`).
+- [x] 5.2 Nothing new is sent to World boards. Verify: `e2e/tests/privacy.spec.ts` new test: turning the Sky on and lighting a Star writes nothing but the weekly `xp-week-` total for an adult Player, and the Player record's `sky` flag is in no request; record in the PR that `parentNote()` and `cloud/README.md` need no change.
 
 ## 6. Release check
 

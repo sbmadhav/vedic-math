@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, chromiumOnly } from './fixtures';
+import { test, expect, APP, open, cloudLog, chromiumOnly, ANALYTICS } from './fixtures';
 
 /* The note for grown-ups is shown beside every World board (Arena, game pages, Pro home) and on the Me
    page, and what it promises must match what the app sends (openspec parent-note spec). The fake Firebase
@@ -388,13 +388,16 @@ test.describe('two Players on one device', () => {
   });
 });
 
+/* The app's own files (js/sky.js, js/sky-view.js) are named after the Sky; a GET for one carries nothing */
+const sameOriginFile = (r: import('@playwright/test').Request) => r.method() === 'GET' && new URL(r.url()).pathname.startsWith('/vedic-math/') && /\.(js|css|json|webmanifest|png|svg|woff2)$/.test(new URL(r.url()).pathname);
+
 /* Stars post nothing (star-round spec, Stars are Practice): only the weekly Sparks total may go */
 test.describe('Stars', () => {
   test.use({ seedConsent: { age: 'adult' } });
   test('a full Star round sends at most the weekly Sparks total, and no request carries Star progress', async ({ page }, testInfo) => {
     chromiumOnly(testInfo, 'app logic, the same in every engine');
     const out: string[] = [];
-    page.on('request', r => out.push(`${r.method()} ${r.url()}\n${r.postData() || ''}`));
+    page.on('request', r => { if (!sameOriginFile(r)) out.push(`${r.method()} ${r.url()}\n${r.postData() || ''}`); });
     await page.clock.install();
     await open(page, '#/star/sq5/1');
     for (let i = 1; i <= 4; i++) {
@@ -409,6 +412,39 @@ test.describe('Stars', () => {
     expect(w.length).toBeLessThanOrEqual(1);
     for (const x of w) { expect(x.path).toMatch(/^boards\/xp-week-/); expect(x.data.score).toBe(40); }
     for (const x of [...out, ...w.map(x => JSON.stringify(x))]) { expect(x).not.toMatch(/\bsky\b/); expect(x).not.toContain('sq5:'); }
+  });
+});
+
+/* The Sky sends nothing new (sky-home 5.2): turning it on and lighting a Star from it writes only the weekly Sparks
+   total, and the Player record's sky flag is in no request */
+test.describe('the Sky', () => {
+  test.use({ seedConsent: { age: 'adult' } });
+  test('turning the Sky on and lighting a Star writes nothing but the weekly xp-week- total; the sky flag is in no request', async ({ page }, testInfo) => {
+    chromiumOnly(testInfo, 'app logic, the same in every engine');
+    const out: string[] = [];
+    // Anonymous route views (math/view/sky, analytics spec) are not the flag; everything else is checked
+    page.on('request', r => { if (!sameOriginFile(r) && !ANALYTICS.test(r.url())) out.push(`${r.method()} ${r.url()}\n${r.postData() || ''}`); });
+    await page.clock.install();
+    await open(page, '#/me');
+    await page.getByRole('switch', { name: 'Try the new Sky' }).click();
+    await expect(page.getByRole('switch', { name: 'Try the new Sky' })).toHaveAttribute('aria-checked', 'true');
+    await page.goto(`${APP}#/`);
+    await page.locator('.sky-star[data-star="sq5:1"]').click();
+    for (let i = 1; i <= 4; i++) {
+      await expect(page.locator('#stMain .star-tag')).toHaveText(`Question ${i} of 4`);
+      const n = Number((await page.locator('#stQ').innerHTML()).match(/^(\d+)<sup>/)![1]);
+      await page.keyboard.type(String(n * n)); await page.keyboard.press('Enter');
+      await page.clock.runFor(1_500);
+    }
+    await expect(page.locator('.star-end-h')).toHaveText('Star 1 is lit!');
+    await page.locator('#stBack').click();
+    await expect(page.locator('.sky-star[data-star="sq5:1"]')).toHaveClass(/sky-star--lit/);
+    await page.clock.runFor(70_000); // past the weekly Sparks post's wait
+    const w = (await cloudLog(page)).writes;
+    expect(w.length).toBeLessThanOrEqual(1);
+    for (const x of w) { expect(x.path).toMatch(/^boards\/xp-week-/); expect(Object.keys(x.data)).not.toContain('sky'); }
+    for (const x of [...out, ...w.map(x => JSON.stringify(x))]) { expect(x).not.toMatch(/\bsky\b/i); expect(x).not.toContain('sq5:'); }
+    expect(JSON.parse((await page.evaluate(() => localStorage.getItem('vm.players')))!).list[0].sky).toBe(true);
   });
 });
 
