@@ -96,6 +96,7 @@ export function skyView(root, { signal, focus = null } = {}) {
   on(window, 'scroll', scrolled, signal, { passive: true });
   on(frame, 'scroll', scrolled, signal, { passive: true });
   on(document, 'sitemotion', still, signal);
+  on(document, 'vmcalm', still, signal); /* Calm (game-shell-and-calm) */
   try { on(matchMedia('(prefers-reduced-motion: reduce)'), 'change', still, signal); } catch (e) {}
 
   /* A narrow frame starts with Bolt's Star (or, back from a Star, that Star) in the middle. Back to the Sky focuses
