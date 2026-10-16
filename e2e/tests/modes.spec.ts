@@ -93,3 +93,51 @@ test.describe('the home greeting', () => {
     });
   }
 });
+
+/* "Try the new Sky" (sky-home): Challenger and Pro only, per Player, off until turned on */
+test.describe('the Sky switch', () => {
+  test.describe('Explorer', () => {
+    test.use({ seedMode: 'explorer' });
+    test('Explorer has no switch on the Me page and keeps the Explorer home', async ({ page }) => {
+      await page.goto(`${APP}#/me`);
+      await expect(page.locator('#view h1')).toHaveText('Swift Tiger 42');
+      await expect(page.locator('#skySwitch')).toHaveCount(0);
+      await expect(page.getByRole('switch', { name: 'Try the new Sky' })).toHaveCount(0);
+      await page.goto(APP);
+      await expect(page.locator('h1.home-h')).toHaveText('What do you want to play?');
+    });
+  });
+  test.describe('Pro', () => {
+    test.use({ seedMode: 'pro' });
+    test('turning it on shows the Sky at #/, a second Player still gets the tile home, and turning it off restores it', async ({ page }) => {
+      await page.goto(APP);
+      await expect(page.locator('h1.home-h')).toHaveText('Train your mental math');
+      await page.goto(`${APP}#/me`);
+      const sw = page.getByRole('switch', { name: 'Try the new Sky' });
+      await expect(sw).toHaveAttribute('aria-checked', 'false');
+      await sw.click();
+      await expect(sw).toHaveAttribute('aria-checked', 'true');
+      await expect(sw).toBeFocused();
+      await expect(page.locator('#skyMsg')).toHaveText('The Sky is your home now.');
+      expect(JSON.parse((await page.evaluate(() => localStorage.getItem('vm.players')))!).list[0].sky).toBe(true);
+      await page.locator('.mq-nav').getByRole('link', { name: 'Home', exact: true }).click();
+      await expect(page.locator('#view h1')).toHaveText('Your Sky');
+      await expect(page.locator('h1.home-h')).toHaveCount(0);
+      // A second Player on this device has not turned it on
+      await page.goto(`${APP}#/me`);
+      await page.locator('#meAdd').click();
+      await page.locator('.mode-card[data-mode="pro"]').click();
+      await expect(page.locator('h1.home-h')).toHaveText('Train your mental math');
+      // Back to the first Player: still the Sky; turning it off brings the tile home back
+      await page.goto(`${APP}#/me`);
+      await page.locator('[data-switch="p1"]').click();
+      await page.goto(APP);
+      await expect(page.locator('#view h1')).toHaveText('Your Sky');
+      await page.goto(`${APP}#/me`);
+      await page.getByRole('switch', { name: 'Try the new Sky' }).click();
+      await expect(page.getByRole('switch', { name: 'Try the new Sky' })).toHaveAttribute('aria-checked', 'false');
+      await page.goto(APP);
+      await expect(page.locator('h1.home-h')).toHaveText('Train your mental math');
+    });
+  });
+});

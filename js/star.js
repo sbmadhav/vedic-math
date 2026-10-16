@@ -216,7 +216,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     else if (e.key === 'Enter' && !(tg && tg.closest && tg.closest('button, a'))) { e.preventDefault(); go(); }
   }, rs);
   on($('#stSkip'), 'click', () => skipStar(), rs);
-  on(dareBtn, 'click', () => { if (!canDare(st) || !dareP) return; st = starDare(st, dareP).state; fx.sfx('pop'); ask(); }, rs);
+  on(dareBtn, 'click', () => { if (!canDare(st) || !dareP) return; st = starDare(st, dareP).state; metrics.starEvent('dare_taken', trick); fx.sfx('pop'); ask(); }, rs);
 
   /* ---------- Phases ---------- */
   function ask() {
@@ -245,7 +245,11 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     store.record('v-' + trick, ok, false, { sparks: false }); /* counts, mastery and quests; the Star pays its own Sparks */
     metrics.answered('star', ok);
     const r = starAnswer(st, ok); st = r.state;
-    for (const e of r.events) { if (e.dial !== undefined) dial.hit(e.dial); if (e.sparks) store.addSparks(e.sparks, 'star'); }
+    for (const e of r.events) {
+      if (e.dial !== undefined) dial.hit(e.dial); if (e.sparks) store.addSparks(e.sparks, 'star');
+      /* Star Quest counts (sky-home analytics spec): anonymous, the Trick id only */
+      if (e.type === 'comeback') metrics.starEvent('comeback', trick); else if (e.type === 'dare-won') metrics.starEvent('dare_won', trick); else if (e.type === 'lit') metrics.starEvent('lit', trick);
+    }
     hud(); fx.sfx(ok ? 'ok' : 'no');
     const ty = r.events.map(e => e.type), ans = ansOf(p), pop = $('#stPop'), bx = $('#stBoxes');
     if (bx) bx.classList.add(ok ? 'ok' : 'no');
@@ -316,7 +320,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
 
   function skipStar() {
     if (st.mode === 'end') return;
-    const marked = store.skipStar(trick, star);
+    const marked = store.skipStar(trick, star); if (marked) metrics.starEvent('skipped', trick);
     st = { ...st, mode: 'end', current: null, lit: false };
     fx.announce(marked ? `Star ${star} skipped.` : `Star ${star} stays lit.`);
     end(true);

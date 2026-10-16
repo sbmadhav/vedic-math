@@ -24,7 +24,7 @@ const SAMPLES = {
   '#/katas/sq5': 'katas/sq5', '#/kata/sq5/4': 'kata/sq5/kata', '#/star/sq5/2': 'star/sq5/star', '#/tower': 'tower', '#/tower/7': 'tower/chapter',
   '#/challenge/123': 'challenge/challenge', '#/sutras': 'sutras', '#/sutras/s1': 'sutras/s1', '#/arena': 'arena',
   '#/duel': 'duel', '#/games': 'games', '#/game/times-sprint': 'game/times-sprint', '#/game/times-sprint/12': 'game/times-sprint/level',
-  '#/watch': 'watch', '#/me': 'me', '#/progress': 'progress',
+  '#/watch': 'watch', '#/me': 'me', '#/progress': 'progress', '#/places': 'places', '#/tiles': 'tiles',
 };
 const known = (kind, id) => ({ grade: ['5', 'K', '3'], skill: ['v-sq5'], trick: ['sq5'], sutra: ['s1'], game: ['times-sprint'] }[kind] || []).includes(id);
 
@@ -51,6 +51,36 @@ test('view() sends one math/view/<route> event; the Mode picker is pick-mode', (
   clear();
   M.view('#/arena', known); M.view('#/game/times-sprint/12', known); M.view('#/arena', known, true);
   assert.deepEqual(paths(), ['math/view/arena', 'math/view/game/times-sprint/level', 'math/view/pick-mode']);
+});
+
+test('view() names home with the Sky on sky, never home; other routes keep their name', () => {
+  clear();
+  M.view('#/', known, false, true); M.view('', known, false, true); M.view('#/', known); M.view('#/places', known, false, true); M.view('#/arena', known, false, true);
+  assert.deepEqual(paths(), ['math/view/sky', 'math/view/sky', 'math/view/home', 'math/view/places', 'math/view/arena']);
+  clear(); M.view('#/', known, true, true);
+  assert.deepEqual(paths(), ['math/view/pick-mode']);
+});
+
+/* ---------- Star Quest counts (sky-home) ---------- */
+test('starEvent: each kind with a known Trick sends math/star/<kind>/<trick>', () => {
+  clear();
+  for (const k of M.STAR_EVENTS) M.starEvent(k, 'sq5');
+  M.starEvent('lit', 'zero-sum');
+  assert.deepEqual(paths(), ['math/star/lit/sq5', 'math/star/skipped/sq5', 'math/star/comeback/sq5', 'math/star/dare_taken/sq5', 'math/star/dare_won/sq5', 'math/star/lit/zero-sum']);
+  assert.ok(sent.every(([, t]) => t === 'Vedic Math: star quest'));
+});
+test('starEvent: an unknown Trick or kind sends nothing', () => {
+  clear();
+  M.starEvent('lit', 'v-sq5'); M.starEvent('lit', 'Swift Tiger 42'); M.starEvent('lit', undefined); M.starEvent('dare-won', 'sq5'); M.starEvent('won', 'sq5'); M.starEvent('lit/sq5', 'sq5');
+  assert.deepEqual(paths(), []);
+});
+test('the Star round calls starEvent on lit, skipped, comeback, dare taken and dare won, and the Sky view sends no event of its own', () => {
+  const star = readFileSync(new URL('../js/star.js', import.meta.url), 'utf8');
+  const kinds = callSites(star).filter(c => c.fn === 'metrics.starEvent').map(c => c.args.match(/^'([a-z_]+)'/)[1]).sort();
+  assert.deepEqual(kinds, [...M.STAR_EVENTS].sort());
+  const sky = readFileSync(new URL('../js/sky-view.js', import.meta.url), 'utf8');
+  assert.deepEqual(callSites(sky).filter(c => c.fn !== 'track' || !/^name, title$/.test(c.args.trim())), []);
+  for (const f of ['../js/sky.js', '../js/gamify.js']) assert.doesNotMatch(readFileSync(new URL(f, import.meta.url), 'utf8'), /starEvent|siteTrack/, f);
 });
 
 /* ---------- Answers and rounds ---------- */
@@ -134,6 +164,8 @@ test('no event or title carries anything but fixed words, route names, catalog i
   for (const a of M.ANSWER_AREAS) { M.answered(a, true); M.answered(a, false); }
   for (const a of M.ROUND_AREAS) for (const l of M.LEAGUES) { M.roundStart(a); M.roundEnd(a, l); }
   for (const s of M.SHARE_SURFACES) M.shareClick(s);
+  for (const k of M.STAR_EVENTS) M.starEvent(k, 'sq5');
+  M.view('#/', known, false, true);
   for (const [p, t] of sent) {
     assert.match(p, PATH, p);
     assert.match(t, /^Vedic Math: [a-z ]+$/, t);
@@ -147,12 +179,14 @@ const ALLOWED = new Set([
   'name', 'title',             // track()'s own wrapper in app.js passes its arguments on
   's.id', 's.title',           // skill id and title (catalog)
   'trickId', 't.id', 't.title', 'n', // trick ids and titles, Kata number (catalog)
+  'trick',                     // a Star round's Trick id (catalog; metrics.starEvent checks it against TRICKS)
   'ch.format', 'id',           // challenge format, challenge number, sutra id, music track id (catalog)
   'c.name',                    // sutra name (catalog)
   'league', 'lg', 'type', 'mode', 'm', // Leagues, round type, game mode, play Mode (fixed sets)
   'g.id', 'g.title',           // game id and title (catalog)
   'v.kind', 'v.title',          // Watch: a video's kind (video or short) and title (catalog, js/videos.js)
   'h', 'knownId', 'picker',    // route views: the hash goes through metrics.routePath and the catalog check
+  'asSky',                     // route views: true when home showed the Sky (a fixed word, sky)
   'ok', "lives ? '' : ''", 'fx.MODES[fx.mode()].league', // right or miss; 'run' or 'practice'; the League
 ]);
 /* Every call of track(, siteTrack( and metrics.<fn>( with its argument text */

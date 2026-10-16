@@ -111,3 +111,51 @@ test('a stopped game round sends no round_end', async ({ page }, testInfo) => {
   expect(ev).toContain('math/game/times-sprint/ranked'); // the round did start
   expect(ev.filter(e => e.includes('round_end') || e.includes('q_answered'))).toEqual([]);
 });
+
+/* Star Quest counts and Sky views (sky-home 4.1) */
+test.describe('with the Sky on', () => {
+  test.use({ seedMode: 'pro', seedPlayer: { sky: true } });
+  test('#/ sends math/view/sky, never home; All places is places', async ({ page }) => {
+    await open(page);
+    await expect(page.locator('.sky-star')).toHaveCount(63);
+    await expect.poll(() => events(page)).toContain('math/view/sky');
+    await page.locator('#skyPlaces').click();
+    await expect(page.locator('a.places-star')).toHaveCount(63);
+    const ev = (await events(page)).filter(e => e.startsWith('math/view/'));
+    expect(ev).toEqual(['math/view/sky', 'math/view/places']);
+  });
+  test('a round with a miss, a Comeback, a Dare taken and lost, and a lit Star sends comeback, dare_taken and lit once each, no dare_won', async ({ page }, testInfo) => {
+    chromiumOnly(testInfo, 'app logic, the same in every engine');
+    const sq = async () => { const n = Number((await page.locator('#stQ').innerHTML()).match(/^(\d+)<sup>/)![1]); return String(n * n); };
+    const tag = page.locator('#stMain .star-tag');
+    await open(page, '#/star/sq5/1');
+    await expect(tag).toHaveText('Question 1 of 4');
+    await page.keyboard.type('1'); await page.keyboard.press('Enter'); // a miss
+    await expect(page.locator('.star-step').first()).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(tag).toHaveText('Rematch');
+    await page.keyboard.type(await sq()); await page.keyboard.press('Enter'); // a Comeback: 15
+    await expect(page.locator('#stSay')).toContainText('Comeback');
+    await expect(tag).toHaveText('Question 2 of 4');
+    await page.locator('#stDare').click();
+    await expect(tag).toHaveText('Dare');
+    await page.keyboard.type('1'); await page.keyboard.press('Enter'); // the Dare lost: 0
+    await expect(page.locator('.star-step').first()).toBeVisible();
+    await page.keyboard.press('Escape');
+    for (const q of [2, 3, 4]) {
+      await expect(tag).toHaveText(`Question ${q} of 4`);
+      await page.keyboard.type(await sq()); await page.keyboard.press('Enter'); // 10 each: 45 in all
+      await expect(page.locator('#stSay')).toContainText('+10 Sparks');
+    }
+    await expect(page.locator('.star-end-h')).toHaveText('Star 1 is lit!');
+    const star = (await events(page)).filter(e => e.startsWith('math/star/'));
+    expect(star.sort()).toEqual(['math/star/comeback/sq5', 'math/star/dare_taken/sq5', 'math/star/lit/sq5']);
+  });
+  test('skipping a Star sends star/skipped once', async ({ page }, testInfo) => {
+    chromiumOnly(testInfo, 'app logic, the same in every engine');
+    await open(page, '#/star/by11/2');
+    await page.locator('#stSkip').click();
+    await expect(page.locator('.star-end-h')).toHaveText('Star 2 skipped');
+    expect((await events(page)).filter(e => e.startsWith('math/star/'))).toEqual(['math/star/skipped/by11']);
+  });
+});

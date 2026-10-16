@@ -24,6 +24,8 @@ import { on, later, every, child } from './life.js';
 import * as metrics from './metrics.js';
 import { boltHTML } from './bolt.js';
 import { runStar } from './star.js';
+import * as SKY from './sky.js';
+import { skyView, placesHTML } from './sky-view.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const view = $('#view');
@@ -74,6 +76,8 @@ const routes = [
   [/^#\/game\/([\w-]+)$/, (m, ctx) => gameView(m[1], 0, ctx)],
   [/^#\/game\/([\w-]+)\/(\d+)$/, (m, ctx) => gameView(m[1], +m[2], ctx)],
   [/^#\/watch$/, (m, ctx) => watchView(ctx)],
+  [/^#\/places$/, (m, ctx) => placesView(ctx)],
+  [/^#\/tiles$/, (m, ctx) => home(ctx, { tiles: true })],
   [/^#\/(me|progress)$/, (m, ctx) => meView(ctx)]
 ];
 /* The view on screen: its AbortController and the destroy() it returned, if any */
@@ -105,10 +109,12 @@ function render() {
   if (sutraDlg && sutraDlg.open) closeSutra(true);
   const hit = routes.find(([re]) => re.test(h)), picker = !fx.mode() && !/^#\/(watch|sutras)$/.test(h);
   mount(ctx => (picker ? modePicker(ctx) : hit ? hit[1](h.match(hit[0]), ctx) : home(ctx)));
-  if ((location.hash || '#/') === h) metrics.view(h, knownId, picker); /* one anonymous route view (analytics spec); a view that redirected is counted when its target renders */
+  const asSky = !picker && /^#?\/?$/.test(h) && SKY.skyOn(store.player()); /* home showed the Sky: the route view is sky */
+  if ((location.hash || '#/') === h) metrics.view(h, knownId, picker, asSky); /* one anonymous route view (analytics spec); a view that redirected is counted when its target renders */
   document.querySelectorAll('.mq-nav a[href]').forEach(a => a.setAttribute('aria-current', String(h === a.getAttribute('href') || (!!a.dataset.match && new RegExp(a.dataset.match).test(h)))));
   chip();
-  const head = view.querySelector('h1, h2'); if (head) { head.setAttribute('tabindex', '-1'); if (render.n++) head.focus({ preventScroll: true }); }
+  /* Focus the new view's heading, unless the view already put focus somewhere in itself (the Sky, back from a Star) */
+  const head = view.querySelector('h1, h2'); if (head) { head.setAttribute('tabindex', '-1'); if (render.n++ && !view.contains(document.activeElement)) head.focus({ preventScroll: true }); }
   if (render.n > 1) window.scrollTo({ top: 0 });
 }
 render.n = 0;
@@ -156,7 +162,10 @@ function heroStats() {
 }
 const tile = (href, title, sub, color, ic) => `<a class="play-tile play-tile--${color}" href="${href}"><span class="play-ic" aria-hidden="true">${icon(ic)}</span><b>${title}</b><small>${sub}</small></a>`;
 
-function home() {
+/* Home: the Sky for a Challenger or Pro Player who turned it on (openspec sky-home), else the tile home of their Mode.
+   tiles: the tile home whatever the switch says (#/tiles, from All places). */
+function home(ctx = {}, { tiles = false } = {}) {
+  if (!tiles && SKY.skyOn(store.player())) return skyHome(ctx);
   const m = fx.mode(); document.title = `${BRAND} for Everyone · Madhav`;
   const last = store.lastSkill() && byId[store.lastSkill()];
   const cont = last ? `<a class="mq-continue" href="#/skill/${last.id}">${ring(store.mastery(last.id), 40)}<span><small>Keep going</small><b>${both(last.title, last.kid)}</b></span><span class="mq-go" aria-hidden="true">&rarr;</span></a>` : '';
@@ -174,10 +183,11 @@ function home() {
     </div>
     <p class="mq-cta"><button class="md-btn" id="voiceBtn" aria-pressed="${fx.voiceOn()}">${icon('speaker')} Read questions aloud: ${fx.voiceOn() ? 'on' : 'off'}</button> <a class="md-btn" href="#/watch">${icon('play')} Watch and sing</a></p>`;
   } else if (m === 'challenger') {
-    const belt = gm.currentBelt(), bp = gm.beltProgress(), next = bp.find(b => !b.earned), nextTrick = next && TRICKS.find(t => t.id === next.tricks.find(x => !store.mastered('v-' + x)));
+    const belt = gm.currentBelt(), bp = gm.beltProgress(), next = bp.find(b => !b.earned), nk = SKY.suggested(store.starStates(), SKY.startBeltOf(store.player())), ns = nk && SKY.parseKey(nk), nt = ns && TRICKS.find(t => t.id === ns.trick);
     body = `<div class="home-2"><div class="md-card dojo-card"><span class="md-tag md-tag--plum">Dojo</span><h2 class="mq-h3">${belt ? `You hold the ${belt.name}` : 'Earn your white belt'}</h2>
       <div class="belts-mini">${bp.map(b => `<span class="belt-mini${b.earned ? ' on' : ''}" style="--belt:${b.color}" title="${b.name}"></span>`).join('')}</div>
-      ${nextTrick ? `<p>Next trick: <b>${nextTrick.title}</b></p><a class="md-btn md-btn--primary" href="#/skill/v-${nextTrick.id}">Train this trick</a>` : '<p>All belts earned. Legend!</p>'} <a class="md-btn" href="#/dojo">Open the Dojo</a></div>
+      ${next ? `<p class="mq-small">${next.name}: ${next.lit} of ${gm.STARS_PER_BELT} Stars lit</p>` : ''}
+      ${nt ? `<p>Next Star: <b>${nt.title}, Star ${ns.n}</b></p><a class="md-btn md-btn--primary" href="#/star/${nt.id}/${ns.n}">Play this Star</a>` : '<p>Every Star is lit. Legend!</p>'} <a class="md-btn" href="#/dojo">Open the Dojo</a></div>
       ${questsHTML()}</div>
       <div class="play-grid">
         ${tile('#/arena', 'Daily Arena', '60 seconds, same questions for everyone', 'coral', 'trophy')}
@@ -191,7 +201,7 @@ function home() {
     const collected = gm.collectedCount();
     body = `<div class="home-2"><div class="md-card"><span class="md-tag md-tag--coral">Arena</span><h2 class="mq-h3">Today's leaderboard</h2><div id="homeBoard" class="lb-wrap"><p class="mq-small">Loading…</p></div>${parentNote()}<a class="md-btn md-btn--primary" href="#/arena">Play today's round</a></div>${questsHTML()}</div>
       <div class="play-grid">
-        ${tile('#/dojo', 'Vedic Dojo', `${gm.beltProgress().filter(b => b.earned).length} of ${BELTS.length} belts`, 'plum', 'belt')}
+        ${tile('#/dojo', 'Vedic Dojo', `${gm.beltProgress().filter(b => b.earned).length} of ${BELTS.length} belts · ${litStars()} of ${SKY.PATH.length} Stars lit`, 'plum', 'belt')}
         ${tile('#/sutras', 'Sutra deep dive', `${collected} of ${SUTRAS.length + SUBSUTRAS.length} cards collected`, 'sun', 'cards')}
         ${tile('#/learn', 'Skill map', 'Algebra, geometry, calculus', 'sky', 'map')}
         ${tile('#/duel', 'Duel', 'Head to head', 'coral', 'duel')}
@@ -207,6 +217,26 @@ function home() {
   </div></section>`;
   const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); home(); };
   if (m === 'pro') loadBoard($('#homeBoard'), `daily-${cloud.dayId()}-pro`, 5);
+}
+
+/* The Sky as home (openspec sky-home). Back from a Star (the route before was #/star/<trick>/<n>): that Star is focused. */
+const litStars = () => { const { lit } = store.starStates(); return SKY.PATH.filter(k => lit[k]).length; };
+function skyHome({ signal } = {}) {
+  document.title = `${BRAND} for Everyone · Madhav`;
+  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}<div id="skyHome"></div>
+    <p class="mode-line">Mode: <b>${fx.MODES[fx.mode()].name}</b> <a href="#/me">Change</a></p></div></section>`;
+  const back = (render.from || '').match(/^#\/star\/([\w-]+)\/(\d)$/);
+  return skyView($('#skyHome'), { signal, focus: back ? `${back[1]}:${back[2]}` : null });
+}
+/* All places: the Sky as a plain list (#/places) */
+function placesView() {
+  document.title = `All places: ${BRAND} · Madhav`;
+  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow places">
+    ${crumbs([null, 'All places'])}
+    <span class="md-tag md-tag--plum">Star Quest</span>
+    <h1 class="md-heading">All places</h1>
+    ${placesHTML()}
+  </div></section>`;
 }
 
 /* ---------- Learn ---------- */
@@ -410,12 +440,12 @@ function dojoView() {
     ${crumbs([null, 'Dojo'])}
     <span class="md-tag md-tag--plum">Vedic Dojo</span>
     <h1 class="md-heading">From white belt to <span class="hl-word">black belt</span></h1>
-    <p class="md-lede">${TRICKS.length} speed tricks from the sutras in Bharati Krishna Tirtha's 1965 book, in seven belts. Master all three tricks in a belt to earn it. Each trick has a step-by-step animator, endless practice and <b>${LV.KATAS_PER_TRICK} katas</b>: numbered drills that get harder, ${LV.KATA_COUNT.toLocaleString('en-US')} in all. Finish one to open the next.</p>
+    <p class="md-lede">${TRICKS.length} speed tricks from the sutras in Bharati Krishna Tirtha's 1965 book, in seven belts. Each trick has three Stars. Light all 9 Stars of a belt's three tricks to earn it. Each trick also has a step-by-step animator, endless practice and <b>${LV.KATAS_PER_TRICK} katas</b>: numbered drills that get harder, ${LV.KATA_COUNT.toLocaleString('en-US')} in all. Finish one to open the next.</p>
     <p class="mq-small">${store.katasDoneWhere('k:')} of ${LV.KATA_COUNT.toLocaleString('en-US')} katas done</p>
     <div class="belt-row">${bp.map(b => `<span class="belt-chip${b.earned ? ' on' : ''}" style="--belt:${b.color}"><span class="belt-knot" aria-hidden="true"></span>${b.name}</span>`).join('')}</div>
     <p class="mq-small">${earned} of ${BELTS.length} belts earned.</p>
     <div class="dojo-path">${bp.map((b, i) => `<section class="dojo-belt${b.earned ? ' earned' : ''}">
-      <h2 class="dojo-h"><span class="belt-swatch" style="--belt:${b.color}" aria-hidden="true"></span>${b.name}<small>${b.done}/3</small></h2>
+      <h2 class="dojo-h"><span class="belt-swatch" style="--belt:${b.color}" aria-hidden="true"></span>${b.name}<small>${b.lit}/${gm.STARS_PER_BELT} Stars</small></h2>
       <div class="dojo-nodes">${b.tricks.map(id => { const t = TRICKS.find(x => x.id === id), sid = 'v-' + id, [cls, lab] = status(sid); return `<div class="dojo-cell"><a class="dojo-node mq-${cls}" href="#/skill/${sid}">${ring(store.mastery(sid), 52)}<span><b>${t.title}</b><small lang="sa-Latn">${t.sutra}</small><em>${lab}</em></span></a><a class="dojo-katas" href="#/katas/${id}">${icon('belt')} Katas ${store.katasDoneWhere(`k:${id}:`)}/${LV.KATAS_PER_TRICK} done</a>${dojoStars(t)}</div>`; }).join('')}</div></section>`).join('')}</div>
     <p class="mq-cta"><a class="md-btn" href="#/sutras">Read about all 29 sutras</a> <a class="md-btn" href="#/arena">Test your speed in the Arena</a></p>
   </div></section>`;
@@ -522,7 +552,8 @@ const dojoStars = t => (fx.mode() === 'explorer' ? '' : `<span class="dojo-stars
 function starView(trick, n, { signal } = {}, back = null) {
   const t = TRICKS.find(x => x.id === trick); if (!t || !(n >= 1 && n <= 3)) return dojoView();
   const from = render.from || '';
-  back = back || (from === '#/skill/v-' + trick ? { href: from, label: `Back to ${t.title}` } : { href: '#/dojo', label: 'Back to the Dojo' });
+  /* For a Player whose home is the Sky, Back always goes to the Sky (which then focuses this Star) */
+  back = back || (SKY.skyOn(store.player()) ? { href: '#/', label: 'Back to the Sky' } : from === '#/skill/v-' + trick ? { href: from, label: `Back to ${t.title}` } : { href: '#/dojo', label: 'Back to the Dojo' });
   document.title = `Star ${n}: ${t.title} · ${BRAND}`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs(['#/dojo', 'Dojo'], ['#/skill/v-' + trick, t.title], [null, `Star ${n}`])}
@@ -1090,6 +1121,14 @@ function wireWorldBoards(root) {
 }
 
 /* ---------- Me: profile, badges, players, settings ---------- */
+/* "Try the new Sky" (openspec sky-home): Challenger and Pro only, per Player, off until turned on */
+function skySwitchHTML(p) {
+  if (p.mode !== 'challenger' && p.mode !== 'pro') return '';
+  const on = SKY.skyOn(p);
+  return `<div class="me-sky md-card"><button type="button" class="md-switch" role="switch" id="skySwitch" aria-checked="${on}" aria-describedby="skyAbout"><span>Try the new Sky</span><span class="md-track" aria-hidden="true"><span class="md-knob"></span></span></button>
+    <p class="mq-small" id="skyAbout">${fx.t({ challenger: 'Your home becomes a sky of Stars: one Constellation for each Sutra, three Stars for each Trick, and Bolt to show the way.', pro: 'Home becomes a map of every Trick\'s three Stars, grouped by Sutra, with a suggested path in Belt order.' })} Prefer a list? <a href="#/places">All places</a></p>
+    <p class="pr-say" id="skyMsg" role="status" aria-live="polite"></p></div>`;
+}
 function meView() {
   document.title = `Me: ${BRAND} · Madhav`;
   const p = store.player(), T = gm.titleInfo(), got = store.badges(), done = SKILLS.filter(s => store.mastered(s.id)).length;
@@ -1099,7 +1138,7 @@ function meView() {
       <div class="me-acts"><button class="md-btn md-btn--sm" id="meName">New nickname</button>${store.AVATARS.map(c => `<button class="av-pick av av-${c}" data-c="${c}" aria-label="Color ${c}" aria-pressed="${c === p.avatar}"></button>`).join('')}</div>${parentNote()}</div></div>
     <h2 class="mq-strand" id="wbH">World boards</h2>
     <div class="md-card wb-card" id="worldBoards" role="region" aria-labelledby="wbH"><div class="wb-body">${worldBoardsHTML(p)}</div><p class="pr-say" id="wbMsg" role="status" aria-live="polite"></p></div>
-    <div class="mq-stats me-stats"><div class="md-stat"><div class="md-kicker">Skills mastered</div><div class="md-value">${done}</div><p>of ${SKILLS.length}</p></div><div class="md-stat"><div class="md-kicker">Day streak</div><div class="md-value">${store.streakDays()}</div><p>days</p></div><div class="md-stat"><div class="md-kicker">Belts</div><div class="md-value">${gm.beltProgress().filter(b => b.earned).length}</div><p>of ${BELTS.length}</p></div></div>
+    <div class="mq-stats me-stats"><div class="md-stat"><div class="md-kicker">Skills mastered</div><div class="md-value">${done}</div><p>of ${SKILLS.length}</p></div><div class="md-stat"><div class="md-kicker">Day streak</div><div class="md-value">${store.streakDays()}</div><p>days</p></div><div class="md-stat"><div class="md-kicker">Belts</div><div class="md-value">${gm.beltProgress().filter(b => b.earned).length}</div><p>of ${BELTS.length} · ${litStars()} of ${SKY.PATH.length} Stars lit</p></div></div>
     <h2 class="mq-strand">Badges <small class="mq-small">${Object.keys(got).length} of ${gm.BADGES.length}</small></h2>
     <div class="badge-grid">${gm.BADGES.map(b => `<div class="badge${got[b.id] ? ' got' : ''}"><span class="badge-medal" aria-hidden="true">${icon(got[b.id] ? 'star' : 'lock')}</span><b>${b.name}</b><small>${b.how}</small></div>`).join('')}</div>
     <h2 class="mq-strand">Play mode</h2>
@@ -1108,6 +1147,7 @@ function meView() {
     <div class="players">${store.allPlayers().map(q => `<div class="player${q.id === p.id ? ' on' : ''}">${avatar(q, 40)}<span><b>${esc(q.name)}</b><small>${q.mode ? fx.MODES[q.mode].name : 'No mode yet'}</small></span>${q.id === p.id ? '<em>Playing</em>' : `<button class="md-btn md-btn--sm" data-switch="${q.id}">Switch</button><button class="md-btn md-btn--sm" data-del="${q.id}" aria-label="Remove ${esc(q.name)}">Remove</button>`}</div>`).join('')}
       <button class="md-btn md-btn--sm" id="meAdd">${icon('plus')} Add a player</button></div>
     <h2 class="mq-strand">Settings</h2>
+    ${skySwitchHTML(p)}
     <div class="me-set"><label><input type="checkbox" id="setSound" ${fx.soundOn() ? 'checked' : ''}> Sound effects</label><label><input type="checkbox" id="setVoice" ${fx.voiceOn() ? 'checked' : ''}> Read questions aloud</label><label><input type="checkbox" id="setBg" ${bgOn() ? 'checked' : ''}> Moving background</label></div>
     ${fx.voiceSettingsHTML()}
     <p class="mq-small">Calm music: use the note button at the top right of the menu bar (singing bowls, tanpura drone, Himalayan dawn, temple chimes).</p>
@@ -1125,6 +1165,7 @@ function meView() {
   view.querySelectorAll('[data-switch]').forEach(b => b.onclick = () => { store.switchPlayer(b.dataset.switch); fx.applyMode(); fx.sfx('pop'); meView(); });
   view.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { if (confirm('Remove this player and their progress from this device?')) { store.removePlayer(b.dataset.del); meView(); } });
   $('#meAdd').onclick = () => { store.addPlayer(); fx.applyMode(); location.hash = '#/'; render(); };
+  const sky = $('#skySwitch'); if (sky) sky.onclick = () => { store.updatePlayer({ sky: sky.getAttribute('aria-checked') !== 'true' }); fx.sfx('pop'); meView(); $('#skySwitch').focus(); $('#skyMsg').textContent = SKY.skyOn(store.player()) ? 'The Sky is your home now.' : 'Your home is the tile home again.'; };
   $('#setSound').onchange = e => { fx.setSound(e.target.checked); fx.sfx('ok'); };
   $('#setBg').onchange = e => { setBg(e.target.checked); const t = document.getElementById('vmBg'); if (t) t.checked = e.target.checked; };
   $('#setVoice').onchange = e => { fx.setVoice(e.target.checked); if (e.target.checked) fx.speak('Read aloud is on.', true); else fx.stopSpeaking(); };

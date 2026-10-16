@@ -7,12 +7,15 @@
    Two device-level flags stay in this browser and are never sent: vm.firstSeen (when this device first
    opened the app) and vm.metrics (which once-per-device events have gone). */
 
+import { TRICKS } from './vedic.js';
+
 const FIRST = 'vm.firstSeen', FLAGS = 'vm.metrics';
 export const LEAGUES = ['explorer', 'challenger', 'pro'];
 export const ANSWER_AREAS = ['practice', 'run', 'kata', 'star'];
 export const ROUND_AREAS = ['arena', 'game', 'tower', 'duel'];
 export const SHARE_SURFACES = ['result', 'challenge-link'];
 export const WIN_BUCKETS = ['under-30', '30-60', '60-90', '90-180', 'over-180'];
+export const STAR_EVENTS = ['lit', 'skipped', 'comeback', 'dare_taken', 'dare_won'];
 const ID = /^[a-z0-9][a-z0-9_-]{0,40}$/;
 
 const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -62,6 +65,8 @@ const ROUTES = [
   [/^#\/game\/([\w-]+)$/, 'game/{game:1}'],
   [/^#\/game\/([\w-]+)\/\d+$/, 'game/{game:1}/level'],
   [/^#\/watch$/, 'watch'],
+  [/^#\/places$/, 'places'],
+  [/^#\/tiles$/, 'tiles'],
   [/^#\/me$/, 'me'],
   [/^#\/progress$/, 'progress'],
 ];
@@ -78,9 +83,19 @@ export function routePath(hash, known = () => false) {
   }
   return 'other';
 }
-/* One route view per rendered route. picker: the Mode picker was shown instead of the route. */
-export function view(hash, known, picker = false) {
-  send('view/' + (picker ? 'pick-mode' : routePath(hash, known)), 'Vedic Math: page view');
+/* One route view per rendered route. picker: the Mode picker was shown instead of the route; sky: home showed the
+   Sky (openspec sky-home), so the view is sky instead of home. */
+export function view(hash, known, picker = false, sky = false) {
+  const p = picker ? 'pick-mode' : routePath(hash, known);
+  send('view/' + (p === 'home' && sky ? 'sky' : p), 'Vedic Math: page view');
+}
+
+/* ---------- Star Quest (openspec sky-home) ---------- */
+/* A Star lit or skipped, a Comeback, a Dare taken or won in a Star round, on one Trick. Stars lit by the one-time
+   migration of Kata progress send nothing (js/sky.js migrateSky never calls this). */
+export function starEvent(kind, trick) {
+  if (!STAR_EVENTS.includes(kind) || !TRICKS.some(t => t.id === trick)) return;
+  send(`star/${kind}/${trick}`, 'Vedic Math: star quest');
 }
 
 /* ---------- Answers in untimed play (Practice, Endless runs, Katas, Star rounds) ---------- */

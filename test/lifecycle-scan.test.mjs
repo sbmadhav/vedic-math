@@ -35,6 +35,14 @@ test('no bare addEventListener in the Star round (js/star.js)', () => {
   assert.deepEqual(hits('star.js', /\.?addEventListener\(/), []);
 });
 
+test('the Sky (js/sky-view.js): no bare listeners, timers or frame loops; its listeners go through life.on', () => {
+  assert.deepEqual(hits('sky-view.js', /\.?addEventListener\(/), []);
+  assert.deepEqual(hits('sky-view.js', TIMERS), []);
+  const src = readFileSync(new URL('../js/sky-view.js', import.meta.url), 'utf8');
+  assert.match(src, /import \{[^}]*\bon\b[^}]*\} from '\.\/life\.js'/);
+  assert.ok((src.match(/\bon\([^;]*\bsignal\b/g) || []).length >= 4, 'pointer, scroll and motion listeners on the view signal');
+});
+
 test('view timers in js/app.js go through js/life.js', () => {
   assert.deepEqual(hits('app.js', TIMERS, PAGE_TIMERS), []);
 });

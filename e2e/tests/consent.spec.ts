@@ -195,11 +195,11 @@ test.describe('keyboard', () => {
     await expect(input).toBeFocused();
     await page.keyboard.type((await page.locator('#wbCheck').getAttribute('data-n'))!);
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('switch')).toBeFocused();
+    await expect(page.locator('#worldBoards').getByRole('switch')).toBeFocused();
     await page.keyboard.press('Space');
-    await expect(page.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+    await expect(page.locator('#worldBoards').getByRole('switch')).toHaveAttribute('aria-checked', 'true');
     expect(typeof (await savedPlayer(page)).parentOk).toBe('number');
-    await expect(page.getByRole('switch')).toBeFocused();
+    await expect(page.locator('#worldBoards').getByRole('switch')).toBeFocused();
   });
 });
 
