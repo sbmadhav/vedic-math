@@ -40,3 +40,5 @@ Decided in the 2026-10-15 grilling; every recommended answer was accepted. Nothi
 ## Next
 
 One OpenSpec change for the shelf (data file, filters, hand matching, in-page only, Mode and made-for-kids rules, the daily check, the parent note, migrating the 67 entries), then the channel list for the owner to approve, then batch 1 (Tricks).
+
+Batch 1 (Tricks), 2026-10-15: 23 videos from the approved channels, each checked as in `openspec/changes/archive/2026-10-15-watch-shelf/HANDOFF.md`. Tricks still without a video that meets the bar: `by9s` (beyond the nines table), `duplex`, `osculator`, `zero-sum`, `add-sub` and `ratio-zero`.
