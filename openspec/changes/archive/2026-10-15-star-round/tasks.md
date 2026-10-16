@@ -39,4 +39,4 @@ Prerequisites: `sparks-replace-xp` is merged (`addSparks()`, Medals instead of s
 
 ## 6. Release check
 
-- [ ] 6.1 Node, build and Playwright suites pass locally; after deploy the live E2E run is green. Manual check on a phone: a Star round is playable with the on-screen keypad without scrolling, in both color schemes.
+- [x] 6.1 Node, build and Playwright suites pass locally; after deploy the live E2E run is green (0718dd1). Manual check on a phone: a Star round is playable with the on-screen keypad without scrolling, in both color schemes. Owner checked on a phone 2026-10-16: looks good. On Pixel 7 sized screens the bottom keypad rows can sit below the fold; game-shell-and-calm removes the page chrome.

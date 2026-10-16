@@ -16,8 +16,12 @@ The system SHALL send one anonymous route-view event each time a hash route is r
 - **WHEN** a Player opens `#/game/times-sprint/12`
 - **THEN** the event is `math/view/game/times-sprint/level`, without the level number
 
+#### Scenario: A Star
+- **WHEN** a Player opens `#/star/sq5/2`
+- **THEN** the event is `math/view/star/sq5/star`, without the Star number
+
 ### Requirement: Answer events in untimed play
-The system SHALL send one `math/q_answered/<area>/<right|miss>` event for each answered question in Practice, Endless runs and Katas, and SHALL NOT send per-answer events during timed rounds.
+The system SHALL send one `math/q_answered/<area>/<right|miss>` event for each answered question in Practice, Endless runs, Katas and Star rounds (main questions, rematches and Dares), and SHALL NOT send per-answer events during timed rounds.
 
 #### Scenario: Practice answer
 - **WHEN** a Player answers a Practice question right on the first try
@@ -26,6 +30,10 @@ The system SHALL send one `math/q_answered/<area>/<right|miss>` event for each a
 #### Scenario: Arena answers
 - **WHEN** a Player answers 30 questions in an Arena round
 - **THEN** no per-answer event is sent, and one `round_end` event is sent when the round ends
+
+#### Scenario: Star answer
+- **WHEN** a Player misses a main question in a Star and gets the rematch right
+- **THEN** `math/q_answered/star/miss` and then `math/q_answered/star/right` are sent
 
 ### Requirement: Round events
 The system SHALL send `math/round_end/<area>/<league>/<r1|r2|r3plus>` when a timed round ends, and `math/round2_start/<area>` when a Player starts a second round in the same visit.
