@@ -47,6 +47,24 @@ test('Shorts plus Tricks shows only Short tiles matched to a Trick', async ({ pa
   }
 });
 
+test('the shelf promises 12 minutes at most, and each length chip keeps only videos of that length', async ({ page }) => {
+  await openShelf(page);
+  await expect(page.locator('#view .md-lede')).toContainText('none is longer than 12 minutes');
+  await chip(page, 'Mode', 'Both').click();
+  const group = page.getByRole('group', { name: 'Length', exact: true });
+  await expect(group.getByRole('button')).toHaveText(['Any length', 'Under 2 min', '2 to 5 min', '5 to 8 min', '8 to 12 min']);
+  const all = await cards(page).evaluateAll(els => els.map(e => Number((e as HTMLElement).dataset.secs)));
+  for (const s of all) expect(s).toBeLessThan(720);
+  for (const [name, lo, hi] of [['Under 2 min', 0, 120], ['2 to 5 min', 120, 300], ['5 to 8 min', 300, 480], ['8 to 12 min', 480, 720]] as const) {
+    await chip(page, 'Length', name).click();
+    await expect(chip(page, 'Length', name)).toHaveAttribute('aria-pressed', 'true');
+    const secs = await cards(page).evaluateAll(els => els.map(e => Number((e as HTMLElement).dataset.secs)));
+    expect(secs.length, name).toBe(all.filter(s => s >= lo && s < hi).length);
+    for (const s of secs) { expect(s, name).toBeGreaterThanOrEqual(lo); expect(s, name).toBeLessThan(hi); }
+    if (!secs.length) await expect(page.locator('#view')).toContainText('No videos match these filters yet.');
+  }
+});
+
 test('Challenger gets no link that leaves the site; the player has no Open on YouTube', async ({ page }) => {
   await openShelf(page);
   await chip(page, 'Mode', 'Both').click();

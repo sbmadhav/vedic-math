@@ -4,7 +4,7 @@
    VIDEOS: every entry plays in the page (youtube-nocookie.com embed). Fields:
    - id: our own slug, unique. yt: the 11-character YouTube id, unique.
    - title: our wording (no clickbait, and never a claim that the methods come from the old scriptures). channel: the YouTube channel's name.
-   - duration: seconds, under 480 (under 240 when modes include explorer). kind: 'video' or 'short' (vertical).
+   - duration: seconds, under 720 (12 minutes, MAX_LENGTH in js/watch.js) for every Mode. kind: 'video' or 'short' (vertical).
    - modes: the Modes it suits; a Mode sees its own and the Mode below (Explorer only its own).
    - skills: Skill ids from js/skills (not the v- Trick skills). tricks: Trick ids from js/vedic.js. Both hand-matched.
    - madeForKids: YouTube marks it "made for kids". captions: has English captions (auto-generated count).
