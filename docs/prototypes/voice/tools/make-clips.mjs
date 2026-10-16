@@ -7,17 +7,24 @@
    need, numbers in mid-sentence and end-of-sentence takes), then ../items.json.
    Every generated clip is cached in .cache/ (git-ignored), so a stopped run resumes where it left off.
    ALL=1 also makes every number 0 to 99 in both takes (slow on a busy machine; about 210 clips per voice). */
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { normalize } from '../../../../js/voice.js';
 import { numClips, splitParts } from './stitch-plan.mjs';
-import { speaker, trim, m4a, medianF0, RATE, BITRATE } from './voice-lib.mjs';
+import { speakerFor, CLOUD, trim, m4a, medianF0, RATE, BITRATE } from './voice-lib.mjs';
 
 const OUT = new URL('../', import.meta.url).pathname;
 const GAP = 0.25; // seconds of silence between clips in the sprite, so the decoder's start offset never cuts a word
-/* The voices on the page. "kid" is the proposed Explorer voice: a blend of stock Kokoro voices, no pitch shifting. */
+/* The voices on the page. Kokoro is free and local. The paid cloud voices are made only when their key is set
+   (for example GOOGLE_TTS_KEY=... node make-clips.mjs); voices already made stay in items.json.
+   ONLY=key1,key2 limits a run to those voices. */
 export const VOICES = [
-  { key: 'heart', name: 'Heart', spec: 'af_heart', speed: 0.92 },
-  { key: 'kid', name: 'Kid blend (Heart and Alpha)', spec: process.env.KID || 'af_heart*0.7+jf_alpha*0.3', speed: 0.95 }
+  { key: 'heart', name: 'Kokoro Heart (free)', engine: 'kokoro', spec: 'af_heart', speed: 0.92 },
+  { key: 'google-chirp3', name: 'Google Chirp 3 HD Aoede', engine: 'google', spec: 'en-US-Chirp3-HD-Aoede', speed: 0.95 },
+  { key: 'google-neural2', name: 'Google Neural2 F', engine: 'google', spec: 'en-US-Neural2-F', speed: 0.95 },
+  { key: 'google-wavenet', name: 'Google WaveNet F', engine: 'google', spec: 'en-US-Wavenet-F', speed: 0.95 },
+  { key: 'azure-ava', name: 'Azure Ava (multilingual neural)', engine: 'azure', spec: 'en-US-AvaMultilingualNeural', speed: 0.95 },
+  { key: 'openai-coral', name: 'OpenAI gpt-4o-mini-tts Coral', engine: 'openai', spec: 'coral', speed: 0.95 },
+  { key: 'elevenlabs', name: 'ElevenLabs Flash v2.5', engine: 'elevenlabs', spec: process.env.ELEVENLABS_VOICE || '21m00Tcm4TlvDq8ikWAM', speed: 0.95 }
 ];
 
 export const ITEMS = [
@@ -35,7 +42,6 @@ export const ITEMS = [
   { id: 'algebra', mode: 'Pro', label: 'Equation', html: '&minus;8<i>x</i> &minus; 14 = 42' }
 ];
 
-const say = await speaker();
 const ONES = 'zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen'.split(' ');
 const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
 const word = n => n < 20 ? ONES[n] : TENS[Math.floor(n / 10)] + (n % 10 ? ' ' + ONES[n % 10] : '');
@@ -50,8 +56,14 @@ const clipText = new Map(); // clip id -> text to synthesize
 if (process.env.ALL) { for (let n = 0; n < 100; n++) for (const e of ['', '.']) clipText.set(`n:${n}${e}`, clipFor(`n:${n}${e}`)); for (const w of ['hundred', 'thousand', 'million', 'point', 'negative']) for (const e of ['', '.']) clipText.set(`w:${w}${e}`, clipFor(`w:${w}${e}`)); }
 items.forEach(it => it.plan.forEach(p => { if (p.clip) clipText.set(p.clip, p.clip.startsWith('f:') ? p.clip.slice(2) : clipFor(p.clip)); }));
 
-const voices = [];
-for (const v of VOICES) {
+const prev = existsSync(OUT + 'items.json') ? JSON.parse(readFileSync(OUT + 'items.json', 'utf8')) : { voices: [], items: [] };
+const only = process.env.ONLY ? process.env.ONLY.split(',') : null;
+const todo = VOICES.filter(v => (!only || only.includes(v.key)) && (v.engine === 'kokoro' || process.env[CLOUD[v.engine].env]));
+/* keep what earlier runs made for voices this run skips */
+const voices = prev.voices.filter(v => !todo.some(t => t.key === v.key) && VOICES.some(t => t.key === v.key));
+for (const it of items) { const old = prev.items.find(x => x.id === it.id); if (old) for (const v of voices) if (old.whole[v.key]) it.whole[v.key] = old.whole[v.key]; }
+for (const v of todo) {
+  const say = await speakerFor(v.engine);
   const dir = `${OUT}audio/${v.key}/`; mkdirSync(dir + 'whole', { recursive: true });
   let wholeBytes = 0, wholeSecs = 0; const f0s = [];
   for (const it of items) {
@@ -74,4 +86,5 @@ for (const v of VOICES) {
     wholeBytes, wholeSecs: +wholeSecs.toFixed(1), f0: f0s[Math.floor(f0s.length / 2)] });
   console.log(v.key, voices.at(-1));
 }
+voices.sort((a, b) => VOICES.findIndex(v => v.key === a.key) - VOICES.findIndex(v => v.key === b.key));
 writeFileSync(OUT + 'items.json', JSON.stringify({ bitrateKbps: BITRATE / 1000, voices, items }, null, 1));

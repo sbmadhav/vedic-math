@@ -3,7 +3,8 @@
  "voices": [
   {
    "key": "heart",
-   "name": "Heart",
+   "name": "Kokoro Heart (free)",
+   "engine": "kokoro",
    "spec": "af_heart",
    "speed": 0.92,
    "sprite": "audio/heart/stitch.m4a",
@@ -14,20 +15,6 @@
    "wholeBytes": 180249,
    "wholeSecs": 28.8,
    "f0": 202
-  },
-  {
-   "key": "kid",
-   "name": "Kid blend (Heart and Alpha)",
-   "spec": "af_heart*0.7+jf_alpha*0.3",
-   "speed": 0.95,
-   "sprite": "audio/kid/stitch.m4a",
-   "map": "audio/kid/stitch.json",
-   "spriteBytes": 186789,
-   "spriteSecs": 45.1,
-   "clips": 45,
-   "wholeBytes": 179736,
-   "wholeSecs": 28.6,
-   "f0": 216
   }
  ],
  "items": [
@@ -56,11 +43,6 @@
      "file": "audio/heart/whole/add.m4a",
      "bytes": 12853,
      "secs": 1.83
-    },
-    "kid": {
-     "file": "audio/kid/whole/add.m4a",
-     "bytes": 12851,
-     "secs": 1.87
     }
    }
   },
@@ -89,11 +71,6 @@
      "file": "audio/heart/whole/bond.m4a",
      "bytes": 13994,
      "secs": 2.06
-    },
-    "kid": {
-     "file": "audio/kid/whole/bond.m4a",
-     "bytes": 13647,
-     "secs": 2.04
     }
    }
   },
@@ -125,11 +102,6 @@
      "file": "audio/heart/whole/story.m4a",
      "bytes": 17662,
      "secs": 3.09
-    },
-    "kid": {
-     "file": "audio/kid/whole/story.m4a",
-     "bytes": 17981,
-     "secs": 3.14
     }
    }
   },
@@ -155,11 +127,6 @@
      "file": "audio/heart/whole/balloon.m4a",
      "bytes": 9701,
      "secs": 1.18
-    },
-    "kid": {
-     "file": "audio/kid/whole/balloon.m4a",
-     "bytes": 9745,
-     "secs": 1.15
     }
    }
   },
@@ -200,11 +167,6 @@
      "file": "audio/heart/whole/hint.m4a",
      "bytes": 18036,
      "secs": 3.03
-    },
-    "kid": {
-     "file": "audio/kid/whole/hint.m4a",
-     "bytes": 18220,
-     "secs": 3.03
     }
    }
   },
@@ -224,11 +186,6 @@
      "file": "audio/heart/whole/praise.m4a",
      "bytes": 9037,
      "secs": 0.97
-    },
-    "kid": {
-     "file": "audio/kid/whole/praise.m4a",
-     "bytes": 9220,
-     "secs": 1
     }
    }
   },
@@ -248,11 +205,6 @@
      "file": "audio/heart/whole/retry.m4a",
      "bytes": 10393,
      "secs": 1.33
-    },
-    "kid": {
-     "file": "audio/kid/whole/retry.m4a",
-     "bytes": 10546,
-     "secs": 1.35
     }
    }
   },
@@ -293,11 +245,6 @@
      "file": "audio/heart/whole/sub3.m4a",
      "bytes": 20912,
      "secs": 3.81
-    },
-    "kid": {
-     "file": "audio/kid/whole/sub3.m4a",
-     "bytes": 20715,
-     "secs": 3.79
     }
    }
   },
@@ -338,11 +285,6 @@
      "file": "audio/heart/whole/divide.m4a",
      "bytes": 20041,
      "secs": 3.64
-    },
-    "kid": {
-     "file": "audio/kid/whole/divide.m4a",
-     "bytes": 19387,
-     "secs": 3.55
     }
    }
   },
@@ -377,11 +319,6 @@
      "file": "audio/heart/whole/percent.m4a",
      "bytes": 13021,
      "secs": 1.93
-    },
-    "kid": {
-     "file": "audio/kid/whole/percent.m4a",
-     "bytes": 13384,
-     "secs": 1.94
     }
    }
   },
@@ -413,11 +350,6 @@
      "file": "audio/heart/whole/frac.m4a",
      "bytes": 16554,
      "secs": 2.74
-    },
-    "kid": {
-     "file": "audio/kid/whole/frac.m4a",
-     "bytes": 16331,
-     "secs": 2.68
     }
    }
   },
@@ -452,11 +384,6 @@
      "file": "audio/heart/whole/algebra.m4a",
      "bytes": 18045,
      "secs": 3.19
-    },
-    "kid": {
-     "file": "audio/kid/whole/algebra.m4a",
-     "bytes": 17709,
-     "secs": 3.07
     }
    }
   }

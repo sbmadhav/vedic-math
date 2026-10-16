@@ -2,157 +2,204 @@
 
 ## Context
 
-- `js/fx.js` `speak(text, force)` is the only way into speech; it calls `js/voice.js` `speak()` when read aloud is on (`fx.voiceOn()`, default on for Explorer only) or `force` is set.
-- `voice.speak()` normalizes question HTML to words (`normalize()`), cancels anything playing, then uses the natural voice (Tier 2, Kokoro in `js/voice-worker.js`, opt-in, about 92 MB) or the built-in voice (Tier 1, Web Speech). Tier 1 today: pitch 1.04 to 1.15 (1.15 for Explorer on a non-neural voice), rate 0.9 to 0.96, a score table that prefers neural, online, Google and Siri names but still picks compact and Windows desktop voices when they are all there is.
-- Call sites of `fx.speak()` (all follow a tap): `js/app.js` Practice question (`:325`), Kata question (`:486`), "Hear it" button (`:367`), Explorer praise (`:358`), Explorer "Not quite. Try again!" and hint (`:361`, `:362`, `:365`), the read-aloud toggles (`:208`, `:1130`); `js/arena.js` Explorer Arena tap rounds and tower tap rounds (`:100`, `:219`); `js/star.js` Star question (`:238`); `js/games.js` Balloon pop prompt and each popped count (`:173`, `:174`) and "Which has more?" (`:188`); `js/voice.js` Me samples. Bolt's lines, menus and Sky labels are never spoken.
-- `sw.js`: `?v=` files cache first, own files network first, shared files stale while revalidate; caches `vedic-math-<VERSION>`, current and previous kept, older ones searched for `?v=` hits.
-- The prototype `docs/prototypes/voice/` (this change) plays 12 real lines four ways; its tools are the starting point for `tools/voice/`.
+- `js/fx.js` `speak(text, force)` is the only way into speech. It calls `js/voice.js` `speak()` when read aloud is on (`fx.voiceOn()`, default on for Explorer only) or when `force` is set.
+- `voice.speak()` turns question HTML into words (`normalize()`) and cancels anything playing. It then uses the natural voice (Tier 2: Kokoro in `js/voice-worker.js`, opt-in, about 92 MB) or the built-in voice (Tier 1: Web Speech, pitch 1.04 to 1.15, and a ranking that still picks compact and Windows desktop voices when those are all there is).
+- Call sites of `fx.speak()` all follow a tap:
+  - `js/app.js`: the Practice question (`:325`), the Kata question (`:486`), "Hear it" (`:367`), Explorer praise (`:358`), Explorer "Not quite. Try again!" and hints (`:361`, `:362`, `:365`), and the read-aloud toggles (`:208`, `:1130`).
+  - `js/arena.js`: Explorer Arena and tower tap rounds (`:100`, `:219`).
+  - `js/star.js`: the Star question (`:238`).
+  - `js/games.js`: the Balloon pop prompt and counts (`:173`, `:174`), and "Which has more?" (`:188`).
+  - Bolt's lines, menus and Sky labels are never spoken.
+- `sw.js` caching:
+  - `?v=` files are cache first, own files network first, shared files stale while revalidate.
+  - The worker intercepts every fetch from the pages it controls, including other paths on sbmadhav.com.
+  - Caches are `vedic-math-<VERSION>`; the current and previous ones are kept.
+- Owner decisions after the first prototype:
+  - The browser voice and Kokoro are both not good enough; the owner will pay a little for a good voice.
+  - Skip kid voices for now.
+  - Pick whichever bitrate sounds better: 32 kbps.
+  - Do not commit audio to this repo; reconsider "audio as a service".
+  - A 99% coverage floor is fine.
+  - Network built-in voices are fine to keep.
 
-## Inventory (task 1 of the brief)
+## Inventory
 
-Run: `node docs/prototypes/voice/tools/inventory.mjs 1000 1` (writes `inventory.json`). It samples every source of spoken text, normalizes each line with the real `normalize()`, and splits it with `stitch-plan.mjs` into numbers, word frames and pauses.
+Run `node docs/prototypes/voice/tools/inventory.mjs 1000 1`. It writes `inventory.json`. It samples every source of spoken text, normalizes each line with the real `normalize()`, and splits it with `stitch-plan.mjs` into numbers, word frames and pauses.
 
-Sample: 1,000 lines per Skill and generator level (135 Skills x 3 levels, question and first hint), all 1,050 Katas (which Stars deal), 60 Explorer and 20 Challenger and Pro Arena daily sets, every 7th tower challenge, the Balloon pop prompts and counts, and the fixed lines.
+The sample covers:
+- 1,000 lines per Skill and generator level (135 Skills x 3 levels, question and first hint);
+- all 1,050 Katas, which are what Stars deal;
+- 60 Explorer daily sets, and 20 each for Challenger and Pro;
+- every 7th tower challenge;
+- the Balloon pop prompts and counts, and the fixed lines.
 
 | | Count |
 |---|---|
 | Lines sampled | 829,442 |
 | Distinct lines | 202,336 |
 | Sentence templates (numbers replaced by #) | 4,189 |
-| Fixed lines (no digits): one whole clip each | 245 lines, 9,448 characters |
+| Fixed lines (no digits) | 245 lines, 9,448 characters |
 | Word frames between numbers | 1,098 frames, 28,133 characters |
-| Number clips | 0 to 99, plus hundred, thousand, million, point, negative: 105, times two takes |
+| Number clips | 0 to 99 plus hundred, thousand, million, point and negative: 105, times two takes |
 
-Share of lines the clip voice can say:
+In the sample, 12.5% of lines are fixed lines, 87.5% can be stitched, and 0% cannot be said.
 
-| How | Share of sampled lines |
-|---|---|
-| Whole clip (fixed line) | 12.5% |
-| Stitched (numbers plus frames) | 87.5% |
-| Cannot say | 0.0% in the sample (the frame set is nearly closed: 1,032 frames at 300 samples, 1,098 at 1,000, 1,110 at 1,500; the tail is long Pro algebra and calculus frames) |
+The frame set is nearly closed: 1,032 frames at 300 samples per Skill and level, 1,098 at 1,000 and 1,110 at 1,500. The tail is long Pro algebra and calculus frames. The top 300 frames cover 87% of frame uses and the top 800 cover 99.7%.
 
-By source (whole / stitched): Explorer Arena 13.6% / 86.4%; K to 2 Practice questions 21.3% / 78.7%, hints 22.6% / 77.4%; Balloon pop 0 / 100%; praise, feedback and toggles 100% whole; Katas, Stars, Challenger and Pro Arena 0 / 100%; grades 6 to 12 Practice 4 to 23% whole, the rest stitched.
+### Every Explorer line, enumerated
 
-Frame frequency is steep: the top 50 frames cover 55% of frame uses, 300 cover 87%, 600 cover 98.2%, 800 cover 99.7%. The most used: ".", ",", "times", "equals what?", "equals", "plus", "x plus", "over", "and", "minus", "divided by".
+Each K to 2 Skill was sampled until 200,000 draws in a row added no new line.
 
-Why not whole clips for everything: K to 2 Practice alone has about 97,000 distinct questions (2-digit and 3-digit adding dominate), and the Explorer Arena pool about 5,200 (4 hours of audio, about 60 MB). Stitching is the only free option that covers every line.
+| | Lines (questions and first hints) | Characters |
+|---|---|---|
+| All K to 2 Skills | 1,213,060 | 34.4 million |
+| `2-add1000` (three-digit adding and subtracting) | 840,338 | most of the rest |
+| `1-compare` (compare two numbers) | 352,997 | |
+| Every other K to 2 Skill, the Explorer Arena pool and the games | **19,725** | **720,457** |
 
-Findings to fix in `normalize()` (task 2.2): ordinal denominators are read as digits plus "ths" ("Keep the 12ths"), 50 frames carry digits because of this; the number bond prompt "3 and how many more make 10?" is read "make 10 what?" because `?` after a number becomes "what".
+The Explorer Arena pool (`k-add10`, `k-sub10`, `k-bonds`, `k-count`, `1-doubles`, `1-maketen`, `k-teens`) is inside the last row. So whole studio lines cover every Explorer line except those two Skills, which are stitched like everything else.
+
+### Findings to fix in `normalize()` (task 2.2)
+
+- Ordinal denominators are read as digits plus "ths" ("Keep the 12ths"). 50 frames carry digits because of this.
+- The number bond prompt "3 and how many more make 10?" is read as "make 10 what?", because a `?` after a number becomes "what".
 
 ## Goals / Non-Goals
 
 **Goals:**
-- One good voice for every Explorer line on every device, offline once loaded, at no running cost.
-- Never worse than today: anything the clips cannot say is read by a better-tuned built-in voice.
-- Nothing new leaves the device.
+- A voice the owner is happy with, the same on every device, for every Explorer line, for at most tens of dollars once and nothing a month.
+- Never worse than today: anything not recorded is read by a better-tuned built-in voice.
+- Nothing new leaves the device; offline once saved.
 
 **Non-Goals:**
-- A choice of clip voices, other languages, or reading text that is not read today.
-- Removing the natural voice (Tier 2).
+- Kid voices (deferred by the owner).
+- A Player-facing voice picker for the studio voice.
+- Other languages.
+- Removing the natural voice.
 
 ## Decisions
 
-**1. Voice order: natural voice, clip voice, built-in voice, one voice per line.**
-The natural voice stays first because it says any line whole, and only Players who chose a 92 MB download have it. Mixing the clip voice and a built-in voice inside one line sounds broken, so a line with any missing clip goes whole to the built-in voice.
+**1. Voice order: natural voice, whole studio line, studio clips, built-in voice. One voice per line.**
+- The natural voice stays first, because only Players who chose its download have it.
+- A whole line beats clips. If the whole line has not arrived within 600 ms (a slow network), the clips say it, so a line never waits long.
+- Mixing voices inside a line sounds broken. A line with any missing clip goes whole to the built-in voice.
 
 **2. Built-in voice rating (A).**
-Good: name or `voiceURI` matches neural or natural, Microsoft "Online", Siri, Premium, Enhanced (Apple's `com.apple.voice.enhanced.*` and `.premium.*`), or starts with Google. Poor: the novelty list (Albert, Bad News, Zarvox and the rest), eSpeak, Apple `com.apple.voice.compact.*`, and Microsoft voices without "Online" (Windows desktop SAPI voices). Ok: anything else (for example Android's "English United States", or "Samantha" in Chrome on a Mac). Within a tier, English US then UK, India, others. Pitch is always 1 (the raised pitch is what made voices strained); rate 0.9 for Explorer, 0.95 otherwise. The prototype's `rateVoice()` in `docs/prototypes/voice/proto.js` is the reference.
-
-**2b. A child voice for Explorer when the device has one.**
-The only real child voices any browser offers are Microsoft's online neural voices in Edge: "Microsoft Ana Online (Natural)" (US) and "Microsoft Maisie Online (Natural)" (UK). They are rated good, and for Explorer lines best available prefers them; Challenger and Pro never get them first. Apple, Google and Android ship no child voice (Apple's "Junior" is a novelty voice and stays poor). No pitch shifting anywhere: a raised pitch is what made today's voice sound strained.
-
-Note for the owner: Microsoft "Online" voices in Edge and the "Google" voices in Chrome are network voices: the browser sends the spoken text to Microsoft or Google. Today's ranking already prefers them, so this is not new, and the clip voice (the new default) sends nothing. A keeps allowing them; dropping them would make the built-in voice worse on Windows.
+- **Good:** the name or `voiceURI` matches neural or natural, Microsoft "Online", Siri, Premium, Enhanced (Apple `com.apple.voice.enhanced.*` and `.premium.*`), or starts with Google.
+- **Poor:** novelty voices, eSpeak, Apple `com.apple.voice.compact.*`, and Microsoft voices without "Online".
+- **Ok:** anything else.
+- Within a tier the order is English US, then UK, India, others.
+- Pitch is always 1. Rate is 0.9 for Explorer and 0.95 otherwise.
+- `rateVoice()` in `docs/prototypes/voice/proto.js` is the reference.
+- Network voices stay rated good (owner decision). With the studio voice as the default, they are only a fallback.
 
 **3. The poor-voice note.**
-Copy (no em dashes): "The voices on this device sound robotic. The game uses its own recorded voice where it can. For a clearer voice everywhere, add an Enhanced English voice: on iPhone or iPad, Settings, Accessibility, Spoken Content, Voices; on a Mac, System Settings, Accessibility, Spoken Content, System voice, Manage Voices; on Windows, Settings, Time and language, Speech, Add voices; on Android, Settings, Text-to-speech output, Speech Services by Google." Shown in Me only, once per Player until "Got it".
+Copy, with no em dashes:
 
-**4. Clips are made at dev time with Kokoro, not in the browser and not in the cloud.**
-`kokoro-js` 1.2.1 (Apache-2.0, the model the natural voice already uses) runs in Node on the developer's machine. Voice `af_heart` at speed 0.92 for Challenger and Pro, the kid blend for Explorer (decision 4b). Numbers 0 to 99 are one clip each (no "seventy" plus "three" joins) in two takes: mid-sentence (said as "seventy three,") and end of sentence (said as "seventy three."), so a final number falls in pitch. Frames are said on their own with their punctuation, so "equals what?" keeps its question rise. Every clip is cached by text, voice and speed, so a wording change only makes the clips it touches. On a quiet laptop a short clip takes well under a second; on the busy build machine used for the prototype it took 10 to 25 seconds, so a full set is minutes to an hour, done rarely.
+> The voices on this device sound robotic. The game uses its own studio voice where it can. For a clearer voice everywhere, add an Enhanced English voice: on iPhone or iPad, Settings, Accessibility, Spoken Content, Voices; on a Mac, System Settings, Accessibility, Spoken Content, System voice, Manage Voices; on Windows, Settings, Time and language, Speech, Add voices; on Android, Settings, Text-to-speech output, Speech Services by Google.
 
-**4b. The Explorer clip voice: the most kid-like voice that still sounds natural.**
-The owner asked for a kid's voice. What exists for free (October 2026):
-- Open models with real child voices: none usable. Kokoro v1.0 (54 voices), Piper (about 900 voices), Kitten TTS and MeloTTS have only adult speakers. Research child voices (FastPitch fine-tuned on the MyST children's corpus, `C3Imaging/child_tts_fastpitch`) are research quality, and MyST is licensed for non-commercial research only. Voice-cloning models (Chatterbox, F5-TTS, XTTS-v2) would need a recording of a real child, which raises consent questions for a children's site, and F5-TTS and XTTS-v2 weights are non-commercial.
-- Kokoro blends: Kokoro voices are style vectors, and a weighted average of two is a new voice with no retraining and no pitch shift. The prototype tries 8 candidates on four Explorer lines and measures each one's typical pitch (median F0; adult women speak around 180 to 230 Hz, children of 6 to 10 around 230 to 300 Hz):
+It shows in Me only, once per Player, until "Got it".
 
-| Candidate | Voices | Speed | Median F0 |
-|---|---|---|---|
-| heart | af_heart | 0.92 | 202 Hz |
-| bella | af_bella | 0.95 | 193 Hz |
-| sky | af_sky | 0.95 | 160 Hz |
-| nicole | af_nicole | 0.95 | 150 Hz |
-| bella-sky | af_bella 50%, af_sky 50% | 0.95 | 180 Hz |
-| heart-sky | af_heart 40%, af_sky 60% | 0.95 | 179 Hz |
-| heart-bella | af_heart 50%, af_bella 50% | 1.0 | 201 Hz |
-| heart-alpha | af_heart 70%, jf_alpha 30% | 0.95 | 217 Hz |
+**4. The studio voice is a paid neural voice, recorded once at dev time.**
+Prices are list prices found in October 2026. Check them before buying.
 
-Sky and Nicole are often called young-sounding, but they are breathier and lower, not higher. No candidate reaches a child's pitch range; heart-alpha (Heart with 30% of Kokoro's lighter Japanese voice, saying English) is the highest and keeps Heart's clarity in the measures, so it is the proposed Explorer clip voice, with the full prototype rows made in it ("Kid blend"). It needs the owner's ears for one risk a number cannot show: a trace of accent from the Japanese voice. If the owner hears one, the fallback is plain Heart, which is already the brightest stock voice.
+The one-time recording is about 770,000 characters per voice: 720,457 for whole Explorer lines, about 9,400 for fixed lines and about 40,000 for clips. A wording change re-records only the lines it touches.
 
-Proposed: Explorer packs (core) in the kid blend; Challenger and Pro lines (grades 3 and up, Tricks) in Heart, because a childlike voice reading "4368 divided by 16" to a 12 year old or an adult sounds patronizing. That means the number clips exist twice (one set per voice, about 0.65 MB each), adding about 0.65 MB in all. If the owner prefers one voice everywhere, use the kid blend everywhere or Heart everywhere and save that.
+| Voice | Price after the free tier | Free each month | One-time recording (770K characters) | If called at play time, 10.5M characters a month (plan C) |
+|---|---|---|---|---|
+| Google Chirp 3 HD | $30 per million | 1M characters | $0 (inside the free tier) | about $285 a month |
+| Google Neural2 | $16 per million | 1M | $0 | about $152 a month |
+| Google WaveNet | $4 per million | 4M | $0 | about $26 a month |
+| Azure neural (e.g. Ava) | $15 per million | 0.5M | about $4 | about $150 a month |
+| OpenAI gpt-4o-mini-tts | about 1.5 cents a minute | none | about $11 (about 760 minutes) | about $155 a month |
+| ElevenLabs Flash v2.5 | about $50 per million | plan credits | about $40 | about $525 a month |
 
-Honest summary: there is no free, natural-sounding, genuine child voice to ship. The closest real one is Microsoft Ana in Edge only; the closest everywhere is a brighter Kokoro blend that sounds like a young woman, not a child.
+The plan C column assumes 100 Players a day x 100 lines x 35 characters. It grows with every Player.
 
-**5. Format: AAC in `.m4a`, mono, 24 kHz, 32 kbps.**
-Opus is about 30% smaller, but Safari plays Ogg Opus only from Safari 18.4 (2025) and older iPhones are common with children; AAC in MP4 plays in every current browser, including iOS Safari since the first iPhone. Both Playwright Chromium and WebKit report `probably` for `audio/mp4; codecs="mp4a.40.2"`. Encoded with macOS `afconvert` (or `ffmpeg -c:a aac` elsewhere). 24 kbps saves 25% and is worth one listening check by the owner.
+The recommendation is to shortlist Google Chirp 3 HD (Google's newest and most natural, and free at this size) and Azure Ava, and let the owner pick by ear.
+- `voice-lib.mjs` already has adapters for all four providers. They read keys only from the environment.
+- With a key set, `make-clips.mjs` adds the voice to the listening page. The 12 sample lines and their clips come to about 1,500 characters, inside every free tier.
+- Before buying, read the provider's terms on storing and serving generated audio. The voice must be licensed for a public website. ElevenLabs needs a paid plan for that.
 
-**6. Packs and size.**
-Clips go into sprites (one `.m4a` per pack, 0.25 s of silence between clips, a JSON or module index of start and length). One file per pack avoids about 4 KB of container overhead per clip and hundreds of requests, and decoding a pack once with `decodeAudioData` lets clips be scheduled gaplessly on one `AudioContext`. Because AAC decoders add a short start offset, the player searches for sound around each clip's stored start (the prototype does this in `clipBounds()`).
+**5. Kokoro stays only as the natural voice.**
+The prototype showed that free Kokoro clips are not good enough for the owner, so it is not the studio voice. Its tools stay, because `voice-lib.mjs` makes test clips for free.
 
-Sizes below are for one voice; the Explorer kid blend adds a second set of number clips (about 0.65 MB, decision 4b). Measured from the prototype clips: about 0.059 seconds of speech per character (numbers spelled out), and 4,000 bytes per second of audio at 32 kbps inside a pack. Estimates per pack, at 32 kbps, gaps included:
+**6. Format: AAC in `.m4a`, mono, 24 kHz, 32 kbps.**
+- Every current browser plays it, including older iPhones that cannot play Ogg Opus (Safari added that in 18.4).
+- 32 kbps is the better-sounding of the two options (owner: "whichever is better").
+- Providers return 24 kHz PCM, and `afconvert` (or `ffmpeg -c:a aac`) encodes it.
+- Playwright Chromium and WebKit both decode it through Web Audio.
 
-| Pack | Clips | Characters | Size |
-|---|---|---|---|
-| Core (numbers, Explorer: K to 2, Explorer Arena, games, praise, toggles) | 210 numbers + 117 | about 2,000 + numbers | about 1.2 MB |
-| Grades 3 to 5 | 294 | 7,470 | about 2.0 MB |
-| Tricks (Katas, Stars, Challenger and Pro Arena, towers) | 308 | 7,622 | about 2.1 MB |
-| Grades 6 to 8 | 216 | 5,734 | about 1.6 MB |
-| Grades 9 to 12 | 408 | 14,739 | about 3.9 MB |
-| All | about 1,550 | about 37,600 | about 11 MB (about 8 MB at 24 kbps) |
+**7. Audio as a service: a separate static site on the same origin.**
+- **Whole lines.** One file per line, named by the first 16 hex characters of SHA-1 over the voice id and the normalized words: `/vedic-math-voice/<voice>/l/<hash>.m4a`. That is about 19,900 files and about 210 MB (2.15 s average at 4 KB/s, plus about 2 KB of container overhead per file).
+- **Clips.** Five content-hashed packs, about 11 MB (decision 8).
+- **Where the files live.** A new repo `sbmadhav/vedic-math-voice` serves them as GitHub Pages project pages at `sbmadhav.com/vedic-math-voice/`. A workflow publishes them with actions/deploy-pages from a build artifact, so the audio is never in any git history. The tools upload the artifact; only an index (`index.json`) and the workflow live in that repo.
+- **Why this host.** It is the same origin as the game, so there is no CORS, no new third party, no parent-note change, and the service worker can cache it. It is free, and well inside the Pages limits (1 GB per site, about 100 GB a month).
+- Other hosts considered:
 
-An Explorer Player downloads about 1.2 MB once. Dropping the rarest 300 frames (those covering 0.3% of frame uses, mostly Pro calculus) would save about 2 MB if 11 MB in the repo is too much.
+| Host | Free allowance | Drawback |
+|---|---|---|
+| Firebase Hosting (same Firebase project) | 10 GB stored, 360 MB a day | A new request to Google from every Player |
+| Cloudflare R2 behind a custom domain | 10 GB, free egress | A new vendor and DNS |
+| This repo | none needed | Rejected by the owner: about 220 MB of binaries in history |
 
-**7. Loading and offline.**
-`js/voice-clips.js` (generated: pack names with hash, clip index) is imported only when read aloud first plays. The core pack loads on idle once read aloud is on; other packs on first need; a line whose pack is not ready yet is read by the built-in voice, so nothing ever waits on a download. Packs are named `voice/<pack>.<hash>.m4a`, so `sw.js` can serve them cache first, and on install it copies packs from the previous cache whose names are still in the new index (so a deploy that does not change clips never drops them). They are not in `PRECACHE`: only Players who use read aloud pay for them.
+**8. Clips, for the lines with no whole recording.**
+- Numbers 0 to 99 are one clip each, in a mid-sentence take ("seventy three,") and an end-of-sentence take ("seventy three."). Frames are said alone with their punctuation.
+- Clips are packed into sprites with 0.25 s of silence between them. Each pack is decoded once with `decodeAudioData`, and its clips are scheduled on one `AudioContext` with 40 ms gaps, 120 ms after a comma, 260 ms after a sentence end, and 6 ms fades.
+- Each clip's real start and end are found by searching for sound around its stored start, because AAC decoders add a start offset (`clipBounds()` in the prototype).
 
-**8. iOS.**
-Web Audio, unlike `speechSynthesis`, is silenced by the iPhone ringer switch. Set `navigator.audioSession.type = 'playback'` (Safari 16.4 and later) before the first clip; the owner checks on a real iPhone (task 3.3). The `AudioContext` is created or resumed inside the tap that leads to speech, as the natural voice does today.
+| Pack | Clips | Size at 32 kbps |
+|---|---|---|
+| Core (numbers, Explorer frames and fixed lines) | 210 numbers + 117 | about 1.2 MB |
+| Grades 3 to 5 | 294 | about 2.0 MB |
+| Tricks (Katas, Stars, Challenger and Pro Arena, towers) | 308 | about 2.1 MB |
+| Grades 6 to 8 | 216 | about 1.6 MB |
+| Grades 9 to 12 | 408 | about 3.9 MB |
+| All | about 1,550 | about 11 MB |
 
-**9. Coverage is a test, not a hope.**
-`test/voice-clips.test.mjs` fails on any Explorer line without clips and when overall coverage falls below 99%. A wording change to an Explorer line therefore needs `node tools/voice/make-clips.mjs` in the same commit; other lines can wait, falling back to the built-in voice.
+**9. Loading and offline.**
+- `js/voice-index.js` is imported only when read aloud first plays. It is generated, and holds the voice id, the base URL, the pack names, the clip index and the covered Skills.
+- When a line comes from a covered Skill or is a fixed line, `speak()` fetches its file. Otherwise it plans clips.
+- The core pack loads on idle once read aloud is on.
+- Files and packs are cache first in `sw.js`, because their names change with their bytes. On install, the worker copies `/vedic-math-voice/` entries from the previous cache, so a deploy never drops audio a Player already has.
+- Offline, a line the device never fetched falls back to clips (core pack saved) or the built-in voice.
+- Nothing is precached at install: only Players who use read aloud download audio. An Explorer Player downloads about 1.2 MB once, plus about 10 KB per new line.
 
-**10. Packs are committed to git.**
-About 11 MB now, plus a few hundred KB per later regeneration of one pack. Building them in CI would need Kokoro and 30 to 60 minutes per deploy and could change bytes between runs. Rejected: Git LFS (GitHub Pages does not serve LFS files from the branch).
+**10. iOS.**
+- Web Audio, unlike `speechSynthesis`, is silenced by the iPhone ringer switch. Set `navigator.audioSession.type = 'playback'` (Safari 16.4 and later) before the first line, and check on a real iPhone (task 3.3).
+- The `AudioContext` is resumed inside the tap that leads to speech.
+
+**11. Coverage is a test.**
+- `test/voice-coverage.test.mjs` fails on any Explorer line without studio audio (its hash missing from the index, or a missing clip) and when overall coverage falls below 99% (owner decision).
+- A wording change to an Explorer line therefore needs `node tools/voice/make-clips.mjs` and a publish, before or with the commit that changes the wording.
 
 ## Alternatives
 
-**C. A cloud neural voice with a cache (deferred).**
-Google Cloud Text-to-Speech Neural2 (about 1 million characters a month free, then $16 per million) or Azure Neural (500,000 free, then $16 per million), through a server function that caches each line's audio. Deferred because:
-- Question text would be sent from the Player's device to a server and a third party. Not personal data, but it reveals use and the Player's IP address to a new party, so it needs an ADR, `parentNote()` and `cloud/README.md` changes, and a decision about under-13 Players without the Parent step.
-- It needs a server function (Firebase Functions needs the Blaze plan), abuse limits (App Check, per-IP quotas) and a spend cap.
-- A cache saves little: about 200,000 distinct lines in the sample, and far more possible.
-- Cost: 100 Players a day x 100 lines x 35 characters is about 10.5 million characters a month, about $150 a month; it grows with every Player.
-- It needs a connection; the clip voice works offline.
+**C. A live cloud voice at play time (audio as a service, live).**
+A small server function (Cloud Functions or a Cloudflare Worker) would call the provider for each new line, store the result, and serve it to everyone after that.
+- **For:** any line works whole, including three-digit sums, with no stitching.
+- **Against:**
+  - A monthly cost that grows with Players (decision 4, last column), and little help from the cache, because most Explorer lines are three-digit sums or comparisons that rarely repeat.
+  - A function host, abuse limits (App Check, per-IP quotas) and a spend cap to build.
+  - Question text and every Player's IP address go to the function and the provider, which needs an ADR, `parentNote()` and `cloud/README.md` changes, and a decision about under-13 Players without the Parent step.
+  - No offline.
+- **Revisit when:** after B ships, the owner finds the stitched lines (mainly three-digit sums and comparisons) too choppy. First try recording those two Skills whole as well. That is about 33.7 million characters: about $100 once with Google WaveNet, about $980 once with Chirp 3 HD, and about 12 GB of audio. Choose C only if that is worse, and then with Google WaveNet or Neural2 and a hard monthly cap.
 
-Trigger to revisit: the owner listens to the prototype (and later the real packs) and finds the stitched lines too choppy for Explorer, and the tuned built-in voice is not good enough either. Then first try cheaper fixes (word frames recorded in context, whole clips for the 1,000 most played Explorer lines), and only then C, with an ADR and a spend cap.
+**Free voices only (the first version of this change).** The browser voice, tuned, and Kokoro clips. Tried in the prototype; the owner rejected both.
 
-**Whole Kokoro clips for every line.** Too big: the Explorer Arena pool alone is about 60 MB and K to 2 Practice is about 97,000 lines.
+**Natural voice for everyone.** A 92 MB download and a fast device, and the same Kokoro voice the owner rejected.
 
-**Natural voice for everyone (Tier 2 by default).** 92 MB download and a fast device; slow on older phones and tablets, which is what many children use.
-
-**Piper or another open model.** Kokoro sounds better at its size, is already in the app, and keeps the clip voice and the natural voice sounding the same.
+**Kid voices.** Deferred by the owner. The first prototype found no free, natural child voice. Kokoro and Piper are adult only, research child models are non-commercial, and cloning would need a real child's recording. The only real child voices in browsers are Edge's online Ana and Maisie. Paid providers have some child-like voices (for example Azure's Ana), to revisit with the studio voice later.
 
 ## Risks / Trade-offs
 
-- Stitched lines sound less smooth than whole lines. Mitigation: the two number takes, 40 ms gaps, fades; the owner judges in the prototype. Trigger above if not good enough.
-- Repo size grows by about 11 MB. Mitigation: per-pack regeneration, optional 24 kbps, optional tail trimming.
-- Clips go stale after a wording change. Mitigation: the coverage test for Explorer; built-in fallback elsewhere.
-- The ringer switch on iPhone. Mitigation: decision 8 and a real device check.
-- Decoding a 4 MB pack uses about 30 MB of memory (24 kHz Float32) on a phone. Mitigation: only the packs a Player uses are decoded, and Explorer only ever needs the core pack.
+- **Stitched lines sound less smooth.** Mitigation: whole lines for almost every Explorer line, two number takes, and the owner judging the chosen voice's clips in the prototype.
+- **A second repo and a publish step for audio.** Mitigation: one script (`publish.mjs`) builds the artifact and starts the workflow, and the coverage test catches a forgotten publish.
+- **The provider changes or retires the voice.** Mitigation: the audio is ours once recorded, and a full re-record costs at most about $40.
+- **Terms of use for stored audio.** Mitigation: check before buying (decision 4).
+- **The iPhone ringer switch.** Mitigation: decision 10 and a real-device check.
 
 ## Open decisions for the owner
 
-1. Approve A and B as written, or A only for now.
-2. The Explorer clip voice: the kid blend (heart-alpha), plain Heart, or another candidate from the kid-voice panel; and whether Challenger and Pro use Heart (proposed) or the same voice.
-3. 32 kbps or 24 kbps.
-4. Committing about 11 MB of packs to the repo, or trimming the rarest frames first.
-5. The 99% coverage floor and the hard fail for Explorer lines.
-6. Keep allowing network built-in voices (Edge Online, Chrome Google) that send the spoken text to Microsoft or Google, as today, or rate them ok instead of good so local voices win.
+1. Which studio voice. Listen on the prototype after setting a key, or on the providers' demos linked there. Recommended shortlist: Google Chirp 3 HD and Azure Ava.
+2. Create the provider account and key (Google Cloud with the Text-to-Speech API, or Azure Speech), and the empty `sbmadhav/vedic-math-voice` repo with Pages set to "GitHub Actions".

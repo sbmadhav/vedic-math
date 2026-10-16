@@ -68,3 +68,48 @@ export function medianF0(a) {
   }
   f0s.sort((x, y) => x - y); return f0s.length ? Math.round(f0s[Math.floor(f0s.length / 2)]) : 0;
 }
+
+/* ---------- Paid cloud voices, for dev-time generation only (never called from the app) ----------
+   Each returns 24 kHz mono Float32 PCM. Keys come from the environment and are never written anywhere.
+   The prototype's 12 lines plus their clips are about 1,500 characters per voice: inside every free tier. */
+const pcm16 = buf => { const b = Buffer.from(buf), out = new Float32Array(b.length >> 1); for (let i = 0; i < out.length; i++) out[i] = b.readInt16LE(i * 2) / 32768; return out; };
+const wavData = buf => { const b = Buffer.from(buf); let o = 12; while (o < b.length - 8) { const id = b.toString('ascii', o, o + 4), n = b.readUInt32LE(o + 4); if (id === 'data') return b.subarray(o + 8, o + 8 + n); o += 8 + n; } return b; };
+const ok = async r => { if (!r.ok) throw new Error(`${r.status} ${await r.text()}`); return r; };
+export const CLOUD = {
+  /* Google Cloud Text-to-Speech, e.g. en-US-Chirp3-HD-Aoede ($30 per million characters after 1 million free a month), en-US-Neural2-F, en-US-Wavenet-F */
+  google: { env: 'GOOGLE_TTS_KEY', say: async (text, voice, speed) => {
+    const r = await ok(await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${process.env.GOOGLE_TTS_KEY}`, { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ input: { text }, voice: { languageCode: voice.slice(0, 5), name: voice }, audioConfig: { audioEncoding: 'LINEAR16', sampleRateHertz: RATE, speakingRate: speed } }) }));
+    return pcm16(wavData(Buffer.from((await r.json()).audioContent, 'base64')));
+  } },
+  /* Azure AI Speech neural voices, e.g. en-US-AvaMultilingualNeural ($15 per million after 0.5 million free a month). AZURE_TTS_REGION, e.g. eastus */
+  azure: { env: 'AZURE_TTS_KEY', say: async (text, voice, speed) => {
+    const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    const r = await ok(await fetch(`https://${process.env.AZURE_TTS_REGION || 'eastus'}.tts.speech.microsoft.com/cognitiveservices/v1`, { method: 'POST',
+      headers: { 'Ocp-Apim-Subscription-Key': process.env.AZURE_TTS_KEY, 'Content-Type': 'application/ssml+xml', 'X-Microsoft-OutputFormat': 'riff-24khz-16bit-mono-pcm' },
+      body: `<speak version="1.0" xml:lang="en-US"><voice name="${voice}"><prosody rate="${Math.round((speed - 1) * 100)}%">${esc(text)}</prosody></voice></speak>` }));
+    return pcm16(wavData(await r.arrayBuffer()));
+  } },
+  /* OpenAI gpt-4o-mini-tts, e.g. voice "coral" (about 1.5 cents a minute of audio) */
+  openai: { env: 'OPENAI_API_KEY', say: async (text, voice, speed) => {
+    const r = await ok(await fetch('https://api.openai.com/v1/audio/speech', { method: 'POST', headers: { authorization: `Bearer ${process.env.OPENAI_API_KEY}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ model: 'gpt-4o-mini-tts', voice, input: text, response_format: 'pcm', speed, instructions: 'A warm, clear, friendly teacher reading a math question to a young child. Calm pace.' }) }));
+    return pcm16(await r.arrayBuffer());
+  } },
+  /* ElevenLabs, a voice id from their library, model eleven_flash_v2_5 (about $50 per million characters) */
+  elevenlabs: { env: 'ELEVENLABS_API_KEY', say: async (text, voice, speed) => {
+    const r = await ok(await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}?output_format=pcm_24000`, { method: 'POST', headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY, 'content-type': 'application/json' },
+      body: JSON.stringify({ text, model_id: 'eleven_flash_v2_5', voice_settings: { speed } }) }));
+    return pcm16(await r.arrayBuffer());
+  } }
+};
+/* say(text, spec, speed) for an engine, cached like Kokoro. Kokoro loads only when a Kokoro voice is used. */
+export async function speakerFor(engine) {
+  if (!engine || engine === 'kokoro') return speaker();
+  const c = CLOUD[engine]; mkdirSync(CACHE, { recursive: true });
+  return async (text, spec, speed) => {
+    const f = CACHE + createHash('sha1').update(`${engine}|${spec}|${speed}|${text}`).digest('hex') + '.f32';
+    if (existsSync(f)) { const b = readFileSync(f); return new Float32Array(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength)); }
+    const a = await c.say(text, spec, speed); writeFileSync(f, Buffer.from(a.buffer)); console.log(`  made "${text}" (${engine} ${spec})`); return a;
+  };
+}

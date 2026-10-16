@@ -29,11 +29,9 @@ body { background: var(--page, var(--bg)); color: var(--ink); font-family: var(-
 .vp-kv legend { font-weight: 700; padding: 0; margin-bottom: var(--space-1); }
 .vp-kv #vpKV { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
 .vp-kv input { accent-color: var(--teal-strong); }
-.vp-kid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); padding: var(--space-3) 0; border-top: 1px solid var(--line); }
-.vp-kids { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
-.vp-kids [aria-pressed=true] { outline: 3px solid var(--focus); outline-offset: 2px; }
-@media (min-width: 700px) { .vp-kid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); align-items: center; } }
-.vp-ctrl input[type=range] { width: 160px; accent-color: var(--teal-strong); }
+.vp-links { margin: var(--space-2) 0 0; padding-left: var(--space-5); font-size: 14px; line-height: 1.6; }
+.vp-links a { color: var(--sky-strong); }
+@media (min-width: 700px) { .vp-ctrl input[type=range] { width: 160px; accent-color: var(--teal-strong); }
 .vp-items { display: grid; gap: var(--space-4); }
 .vp-item { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-4); box-shadow: var(--shadow-card); }
 .vp-item header { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: baseline; justify-content: space-between; }
@@ -67,20 +65,19 @@ details.vp-panel summary { cursor: pointer; font-weight: 700; }
     </div>
   </div>
   <h1>Voice listening test</h1>
-  <p class="vp-lede">Twelve real lines from the game, each in four ways. Listen on a phone and a laptop, then pick. Nothing here is sent anywhere: the Kokoro clips were made on a laptop ahead of time and are plain audio files.</p>
+  <p class="vp-lede">Twelve real lines from the game, each in four ways. Listen on a phone and a laptop, then pick. Nothing here is sent anywhere: every clip was made ahead of time and is a plain audio file.</p>
 
   <section class="vp-panel" aria-labelledby="keyH">
     <h2 id="keyH">The four voices</h2>
     <ul class="vp-key">
       <li class="k1"><b>1. Today</b>The built-in voice exactly as the game uses it now (raised pitch).</li>
       <li class="k2"><b>2. Tuned built-in (A)</b>Best good voice on this device, normal pitch, a calm rate.</li>
-      <li class="k3"><b>3. Kokoro stitched (B)</b>Prerecorded clips joined at play time: numbers plus short word frames.</li>
-      <li class="k4"><b>4. Kokoro whole (B ceiling)</b>The same voice saying the whole line in one go.</li>
-      <li class="k2"><b>Child built-in voice</b>Row 2 for Explorer lines uses a real child voice when the device has one (only Edge: Microsoft Ana or Maisie).</li>
+      <li class="k3"><b>3. Stitched clips</b>Prerecorded clips joined at play time: numbers plus short word frames.</li>
+      <li class="k4"><b>4. Whole line</b>The same voice saying the whole line in one go, as most Explorer lines would play.</li>
     </ul>
     <p class="vp-voice" id="vpVoice">Looking for voices on this device...</p>
     <div class="vp-warn" id="vpWarn" hidden></div>
-    <fieldset class="vp-ctrl vp-kv"><legend>Kokoro voice for rows 3 and 4</legend><div id="vpKV"></div></fieldset>
+    <fieldset class="vp-ctrl vp-kv"><legend>Clip voice for rows 3 and 4</legend><div id="vpKV"></div></fieldset>
     <div class="vp-ctrl">
       <label for="vpGap">Gap between stitched clips: <b id="vpGapOut">40</b> ms</label>
       <input type="range" id="vpGap" min="0" max="160" step="10" value="40">
@@ -90,10 +87,15 @@ details.vp-panel summary { cursor: pointer; font-weight: 700; }
 
   <div class="vp-items" id="vpItems"><p>Loading the lines...</p></div>
 
-  <section class="vp-panel" aria-labelledby="kidH">
-    <h2 id="kidH">Kid voice candidates</h2>
-    <p class="vp-voice">No free model has a real child voice that sounds natural (see the design notes). These are Kokoro's own voices and blends of them, mixed from their voice settings, never pitch shifted. The number is the voice's typical pitch: adult women speak around 180 to 230 Hz, children around 230 to 300 Hz. Let your ears decide.</p>
-    <div id="vpKids"><p class="vp-voice">The candidates are still being made.</p></div>
+  <section class="vp-panel" aria-labelledby="paidH">
+    <h2 id="paidH">Paid voices</h2>
+    <p class="vp-voice">Paid cloud voices show up as extra choices above once they are made with that provider's key (<code>GOOGLE_TTS_KEY=... node tools/make-clips.mjs</code>; Azure, OpenAI and ElevenLabs work the same way). The 12 lines here are about 1,500 characters per voice, inside every free tier. Until then, each provider's own demo:</p>
+    <ul class="vp-links">
+      <li><a href="https://cloud.google.com/text-to-speech">Google Cloud Text-to-Speech</a>: try a Chirp 3 HD voice such as Aoede, Leda or Kore</li>
+      <li><a href="https://speech.microsoft.com/portal/voicegallery">Azure Voice Gallery</a>: Ava, Andrew, Emma (sign-in needed)</li>
+      <li><a href="https://www.openai.fm">OpenAI.fm</a>: gpt-4o-mini-tts voices with a style prompt</li>
+      <li><a href="https://elevenlabs.io/text-to-speech">ElevenLabs</a>: Flash v2.5 voices</li>
+    </ul>
   </section>
 
   <details class="vp-panel" id="vpAll">
@@ -102,8 +104,8 @@ details.vp-panel summary { cursor: pointer; font-weight: 700; }
   </details>
 
   <section class="vp-panel" aria-labelledby="cH">
-    <h2 id="cH">Plan C is not on this page</h2>
-    <p class="vp-voice">A cloud neural voice (Google Neural2 or Azure Neural) would send question text to a third party and needs a server function, abuse limits and an ADR. It is only worth a test if the stitched Kokoro lines sound too choppy. The sample sizes and the reasoning are in <code>openspec/changes/better-voice/design.md</code>.</p>
+    <h2 id="cH">Why the paid voice is made ahead of time</h2>
+    <p class="vp-voice">Calling a paid voice every time a line plays costs money every month and sends question text from each Player's device. Making the audio once ahead of time costs a few dollars at most, sends nothing, and still works offline. The numbers are in <code>openspec/changes/better-voice/design.md</code>.</p>
   </section>
 </main>
 <script type="module" src="./proto.js"></script>

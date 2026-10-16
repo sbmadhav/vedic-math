@@ -3,8 +3,8 @@
    2. Tuned built-in (A): the proposed ranking (good, ok, poor), pitch 1, a calm rate.
    3. Kokoro stitched (B): one AAC sprite decoded with Web Audio, clips joined at play time.
    4. Kokoro whole: one AAC file per line, the quality ceiling for B.
-   B plays in the Kokoro voice picked at the top (Heart, or the kid blend proposed for Explorer).
-   The kid-voice panel plays four lines in each Kokoro candidate (stock voices and blends, never pitch shifted). */
+   Rows 3 and 4 play in the clip voice picked at the top: free Kokoro Heart, plus any paid cloud voice that
+   tools/make-clips.mjs has made (it needs that provider's key; nothing here calls a provider at play time). */
 import { speak as speakToday, stop as stopToday, normalize, sentences } from '../../../js/voice.js';
 
 const $ = s => document.querySelector(s);
@@ -30,8 +30,6 @@ export function rateVoice(v) {
   if (NOVELTY.test(name) || NOVELTY.test(uri)) return { tier: 'poor', why: 'novelty or eSpeak', pts: 0 };
   if (/\bcompact\b/i.test(uri)) return { tier: 'poor', why: 'compact (small, robotic)', pts: 5 };
   if (/^microsoft\b/i.test(name) && !/\bonline\b/i.test(name)) return { tier: 'poor', why: 'Windows desktop voice', pts: 8 };
-  /* Real child voices exist only as Microsoft's online neural voices (Edge): Ana (US) and Maisie (UK) */
-  if (/\b(ana|maisie)\b/i.test(name) && /\bonline\b/i.test(name)) return { tier: 'good', why: 'child neural voice (Edge)', pts: 96 + lang(v), kid: true };
   const good = [[/\b(natural|neural)\b/i, 100, 'neural'], [/\bonline\b/i, 95, 'Microsoft online neural'], [/\bsiri\b/i, 90, 'Siri'],
     [/\bpremium\b/i, 88, 'Premium'], [/\benhanced\b/i, 84, 'Enhanced'], [/^google\b/i, 75, 'Google']];
   for (const [re, pts, why] of good) if (re.test(name) || re.test(uri)) return { tier: 'good', why, pts: pts + lang(v) };
@@ -39,28 +37,25 @@ export function rateVoice(v) {
 }
 const lang = v => { const l = (v.lang || '').replace('_', '-').toLowerCase(); return l === 'en-us' ? 4 : l === 'en-gb' ? 3 : l === 'en-in' ? 2 : 1; };
 const voices = () => ('speechSynthesis' in window ? speechSynthesis.getVoices() : []);
-/* Explorer prefers a child voice when the device has one; everyone else never gets one first */
-function ranked(explorer = false) {
-  const pts = x => x.r.pts + (x.r.kid ? (explorer ? 50 : -50) : 0);
-  return voices().map(v => ({ v, r: rateVoice(v) })).filter(x => x.r).sort((a, b) => pts(b) - pts(a) || a.v.name.localeCompare(b.v.name));
+function ranked() {
+  return voices().map(v => ({ v, r: rateVoice(v) })).filter(x => x.r).sort((a, b) => b.r.pts - a.r.pts || a.v.name.localeCompare(b.v.name));
 }
 function showVoices() {
-  const list = ranked(), best = list[0], kid = ranked(true)[0];
-  $('#vpVoice').innerHTML = best ? `Tuned voice on this device: <b>${esc(best.v.name)}</b> (${esc(best.v.lang)}), rated <b>${best.r.tier}</b>: ${esc(best.r.why)}.`
-    + (kid && kid.r.kid ? ` For Explorer lines it uses the child voice <b>${esc(kid.v.name)}</b>.` : ' No child voice on this device (only Edge has them: Microsoft Ana and Maisie).') : 'This browser has no English built-in voice. Only the Kokoro rows can play.';
+  const list = ranked(), best = list[0];
+  $('#vpVoice').innerHTML = best ? `Tuned voice on this device: <b>${esc(best.v.name)}</b> (${esc(best.v.lang)}), rated <b>${best.r.tier}</b>: ${esc(best.r.why)}.` : 'This browser has no English built-in voice. Only the clip rows can play.';
   const warn = $('#vpWarn');
   if (best && best.r.tier === 'poor') {
     warn.hidden = false;
     warn.innerHTML = 'Plan A would show this once in Me settings: <i>"The voices on this device sound robotic. For a clearer voice, add an Enhanced English voice: on iPhone or iPad, Settings, Accessibility, Spoken Content, Voices; on a Mac, System Settings, Accessibility, Spoken Content, System voice, Manage Voices; on Windows, Settings, Time and language, Speech."</i>';
   } else warn.hidden = true;
-  $('#vpList').innerHTML = list.map(x => `<li class="${x.r.tier}">${esc(x.v.name)} (${esc(x.v.lang)}): ${x.r.tier}, ${esc(x.r.why)}${x.r.kid ? ', child' : ''}</li>`).join('') || '<li>None</li>';
+  $('#vpList').innerHTML = list.map(x => `<li class="${x.r.tier}">${esc(x.v.name)} (${esc(x.v.lang)}): ${x.r.tier}, ${esc(x.r.why)}</li>`).join('') || '<li>None</li>';
 }
 showVoices();
 if ('speechSynthesis' in window) speechSynthesis.addEventListener('voiceschanged', showVoices);
 
 let token = 0;
 function speakTuned(html, explorer) {
-  const list = ranked(explorer); if (!list.length) return;
+  const list = ranked(); if (!list.length) return;
   const v = list[0].v, parts = sentences(normalize(html)), my = token;
   let i = 0;
   const next = () => {
@@ -121,7 +116,7 @@ function stopAll() {
   token++; stopToday();
   try { speechSynthesis.cancel(); } catch (e) {}
   playingNodes.forEach(n => { try { n.stop(); } catch (e) {} }); playingNodes = [];
-  document.querySelectorAll('.vp-btns [aria-pressed=true], .vp-kids [aria-pressed=true]').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  document.querySelectorAll('.vp-btns [aria-pressed=true]').forEach(b => b.setAttribute('aria-pressed', 'false'));
 }
 $('#vpStop').addEventListener('click', stopAll);
 $('#vpGap').addEventListener('input', e => { $('#vpGapOut').textContent = e.target.value; });
@@ -157,13 +152,5 @@ document.querySelectorAll('.vp-item').forEach(card => {
   }));
 });
 
-/* ---------- Kid-voice candidates ---------- */
-const kids = await fetch('kids.json').then(r => r.ok ? r.json() : null).catch(() => null);
-if (kids) {
-  $('#vpKids').innerHTML = `<div class="vp-kids-table" role="table" aria-label="Kid voice candidates">
-    ${kids.candidates.map(c => `<div class="vp-kid" role="row"><div role="rowheader"><b>${esc(c.id)}</b> <span class="vp-size">${esc(c.spec)}, speed ${c.speed}, about ${c.f0} Hz</span><br><span class="vp-size">${esc(c.note)}</span></div>
-      <div class="vp-kids">${kids.lines.map(l => `<button type="button" class="md-btn md-btn--sm" role="cell" data-k="${c.files[l.id]}" title="${esc(l.text)}">${esc(l.id)}</button>`).join('')}</div></div>`).join('')}</div>`;
-  document.querySelectorAll('[data-k]').forEach(b => b.addEventListener('click', () => { stopAll(); b.setAttribute('aria-pressed', 'true'); playWhole(b.dataset.k).catch(e => console.warn(e)); }));
-}
-window.__voiceProto = { KV, items, kids, decodeWhole: url => fetch(url).then(r => r.arrayBuffer()).then(decode).then(x => x.duration),
+window.__voiceProto = { KV, items, decodeWhole: url => fetch(url).then(r => r.arrayBuffer()).then(decode).then(x => x.duration),
   loadSprite: key => loadSprite(KV.find(v => v.key === key)).then(sp => ({ duration: sp.buf.duration, clips: Object.keys(sp.map.clips).length })) };

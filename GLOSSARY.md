@@ -95,12 +95,12 @@ The setting that speaks questions, hints and praise. On by default for Explorer,
 _Avoid_: TTS, narration, voice mode
 
 **Built-in voice**:
-The speech voice that comes with the Player's browser or device. The fallback for anything the Clip voice cannot say.
+The speech voice that comes with the Player's browser or device. The fallback for anything the Studio voice cannot say.
 _Avoid_: system TTS, robot voice, default voice
 
-**Clip voice**:
-The default read-aloud voice: short Kokoro recordings made ahead of time, shipped with the app in packs and joined at play time. The same on every device and offline once a pack is saved.
-_Avoid_: recorded voice (no person recorded it), audio files, TTS
+**Studio voice**:
+The default read-aloud voice: one paid neural voice recorded ahead of time and served as audio files, whole lines for Explorer and short clips joined at play time for the rest. Nothing is sent to say a line, and it plays offline once saved.
+_Avoid_: TTS, cloud voice (it is not called at play time), recorded voice (no person recorded it)
 
 **Natural voice**:
 The opt-in voice that runs the Kokoro model on the device after a one-time download of about 100 MB. It can say any line whole.
