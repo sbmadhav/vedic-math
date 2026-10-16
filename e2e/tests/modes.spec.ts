@@ -55,7 +55,7 @@ test.describe('mode picker', () => {
     await page.goto(`${APP}#/games`);
     await expect(page.locator('.mode-pick .mode-card')).toHaveCount(3);
     await page.goto(`${APP}#/watch`);
-    await expect(page.locator('h1')).toHaveText('The best math trick videos and sites');
+    await expect(page.locator('h1')).toHaveText('Short videos that show how');
     await page.goto(`${APP}#/sutras`);
     await expect(page.locator('h1')).toHaveText('The 16 sutras and 13 sub-sutras');
   });

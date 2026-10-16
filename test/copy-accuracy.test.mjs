@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { ordinal } from '../js/lib.js';
 import { hundredGrid } from '../js/viz.js';
 import { relatedTo } from '../js/related.js';
-import { RESOURCES } from '../js/resources.js';
+import { VIDEOS } from '../js/videos.js';
 import { byId } from '../js/skills/index.js';
 import { seeded } from '../js/levels.js';
 
@@ -35,9 +35,9 @@ test('hundredths show a 10 by 10 grid with the right squares shaded', () => {
 
 test('related videos match whole words only', () => {
   const words = s => `${s.title} ${s.strand}`;
-  const pct = relatedTo(words(byId['7-pctchange']), RESOURCES);
-  assert.ok(!pct.some(r => /numberblocks/i.test(r.title)), pct.map(r => r.title).join(', '));
-  assert.ok(relatedTo('Count to 10 number', RESOURCES).some(r => /numberblocks/i.test(r.title)));
-  assert.ok(relatedTo(words(byId['k-count']), RESOURCES).some(r => /numberblocks/i.test(r.title)));
-  assert.deepEqual(relatedTo('discounts', RESOURCES), []);
+  const pct = relatedTo(words(byId['7-pctchange']), VIDEOS);
+  assert.ok(!pct.some(v => v.skills.includes('k-count')), pct.map(v => v.title).join(', '));
+  assert.ok(relatedTo('Count to 10 number', VIDEOS).some(v => v.id === 'count-to-20'));
+  assert.ok(relatedTo(words(byId['k-count']), VIDEOS).some(v => v.skills.includes('k-count')));
+  assert.deepEqual(relatedTo('discounts', VIDEOS), []);
 });

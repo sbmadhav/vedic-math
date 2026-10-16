@@ -82,3 +82,11 @@
 - Deleted: `js/resources.js`
 - `js/app.js`, `js/related.js`, `js/sutra-details.js`, `math.css`, `cloud/README.md`, `.github/workflows/e2e.yml` (daily job includes `@live-videos`)
 - Tests: `test/copy-accuracy.test.mjs`, `test/lifecycle-scan.test.mjs`; `e2e/tests/progress.spec.ts`, `offline.spec.ts`, `privacy.spec.ts`, `routes.spec.ts`, `star.spec.ts` (if `star-round` has shipped)
+
+## Implementation notes (as built)
+
+- `js/watch.js` functions take the list as their first argument so the node tests run them over a fixture: `picksFor(list, { skill, trick, mode, words }, n)` returns `{ how: 'hand' | 'keyword' | 'none', picks }`; `pickForTrick(list, trick, mode)` is the pure rule; `videoForTrick(trick, mode, { list })` is the async `findVideo` (loads the list itself, `null` offline or on a failed import). `filterShelf(list, { mode, level, strand, tricks, length, kind }, byId)`: `level` is the Mode chip (own Mode by default, `'all'` for both visible Modes).
+- `LINKS` entries carry `history: true` when the Sutras history card lists them (the five history and origin pages). That card and its links load with the list, for Pro only.
+- Video cards and Watch picks are `<button data-watch="<yt>">`, not links: nothing to open in a new tab. `outLink()` in `js/app.js` is the only place that writes `target="_blank"` for the shelf, player and deep dives, and it returns nothing unless Pro.
+- The daily check must embed the player in an iframe on a page with a referrer: YouTube answers a top-level or referrer-less embed with "Video player configuration error". The spec answers a page at the site's own origin locally and waits for the player to settle (`unstarted-mode` or `ytp-embed-error`).
+- `captions` is true when any English track exists, auto-generated included (every migrated video has at least auto-generated English).

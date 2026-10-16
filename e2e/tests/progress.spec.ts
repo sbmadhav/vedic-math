@@ -101,7 +101,7 @@ test('Video learner: closing a video after 5 seconds earns nothing, a minute in 
   await page.route(/^https:\/\/i\.ytimg\.com\//, r => r.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg"/>' }));
   await page.clock.install();
   await open(page, '#/watch');
-  const card = page.locator('a.watch-card.plays').first();
+  const card = page.locator('button.watch-card.plays').first();
   const dlg = page.locator('dialog.vm-player');
   await card.click();
   await expect(dlg).toBeVisible();

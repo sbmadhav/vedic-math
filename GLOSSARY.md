@@ -78,6 +78,18 @@ _Avoid_: mascot, buddy, pet, avatar
 A Trick learned and then used correctly in a timed round. The thing the product exists to produce.
 _Avoid_: aha, win
 
+**Watch shelf**:
+The checked list of videos, Shorts and (for Pro) Links in `js/videos.js`, shown on the Watch page and in each Skill or Trick's "Watch it explained". Every video plays in the page.
+_Avoid_: resources, library, feed
+
+**Short**:
+A vertical video of a minute or so, shown as a tall tile and played one at a time in the page. Never a swipe feed.
+_Avoid_: reel, clip
+
+**Link**:
+A website or game on the Watch shelf that opens in a new tab. Pro only, like every link that leaves the site.
+_Avoid_: resource, external site
+
 ## Rounds and results
 
 **Ranked round**:

@@ -151,7 +151,7 @@ const ALLOWED = new Set([
   'c.name',                    // sutra name (catalog)
   'league', 'lg', 'type', 'mode', 'm', // Leagues, round type, game mode, play Mode (fixed sets)
   'g.id', 'g.title',           // game id and title (catalog)
-  'a.hostname', 'a.textContent.trim().slice(0, 60)', // Watch shelf link: a catalog resource's host and label
+  'v.kind', 'v.title',          // Watch: a video's kind (video or short) and title (catalog, js/videos.js)
   'h', 'knownId', 'picker',    // route views: the hash goes through metrics.routePath and the catalog check
   'ok', "lives ? '' : ''", 'fx.MODES[fx.mode()].league', // right or miss; 'run' or 'practice'; the League
 ]);

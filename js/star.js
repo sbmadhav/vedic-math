@@ -114,7 +114,7 @@ const pickOne = a => a[Math.floor(Math.random() * a.length)];
 
 /* Plays one Star round in root. trick: a Trick id; star: 1 to 3; signal: the view's (everything stops when it aborts).
    back: { href, label } for the end screen's way out; again(): Play again; findVideo(trickId, mode): a Promise of
-   { title, src } (an embeddable video URL) or null. Returns { destroy }, which saves the Rating. */
+   { title, src, open? } (src: an embeddable video URL; open(opener): plays it elsewhere and resolves when closed) or null. Returns { destroy }, which saves the Rating. */
 export function runStar(root, { trick, star, signal, back = { href: '#/dojo', label: 'Back to the Dojo' }, again = null, findVideo = async () => null } = {}) {
   const t = TRICKS.find(x => x.id === trick), skill = byId['v-' + trick], mode = fx.mode() || 'challenger', boxes = mode !== 'pro';
   const round = child(signal), rs = round.signal;
@@ -306,6 +306,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
       <div class="star-video" id="stVideo"></div><p class="star-acts"><button type="button" class="md-btn md-btn--primary" id="stWatch">Watch</button><button type="button" class="md-btn" id="stNoVid">No thanks</button></p></div>`;
     const close = () => { st = starNext(st).state; ask(); };
     on($('#stWatch'), 'click', () => {
+      if (video.open) { video.open($('#stWatch')).then(() => { if (!ps.aborted) close(); }); return; } /* the in-page player; closing it goes back to the round */
       $('#stVideo').innerHTML = `<iframe src="${esc(video.src)}" title="${esc(video.title || t.title)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
       $('#stWatch').remove(); $('#stNoVid').textContent = 'Back to the round';
     }, ps);

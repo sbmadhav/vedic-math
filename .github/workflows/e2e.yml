@@ -1,7 +1,8 @@
 name: E2E (live site)
 
 # Playwright end-to-end tests against the LIVE https://sbmadhav.com/vedic-math/ and its real
-# dependencies (main-site design system, fonts, Explore menu, Firebase reads). Production Firestore
+# dependencies (main-site design system, fonts, Explore menu, Firebase reads, and on the daily and manual
+# runs every Watch shelf video on YouTube). Production Firestore
 # is never written to: the suite aborts and fails on any write-shaped request (e2e/tests/fixtures.ts).
 # No pull_request trigger: a PR is not live yet. No secrets.
 
@@ -65,8 +66,10 @@ jobs:
 
       - run: npx playwright install --with-deps chromium webkit
 
+      # The daily run and a manual run also check every Watch shelf video on YouTube (tests/videos.live.spec.ts,
+      # tagged @live-videos, chromium only); the run after a push leaves that check out
       - name: Playwright tests
-        run: npx playwright test
+        run: npx playwright test ${{ github.event_name == 'push' && '--grep-invert @live-videos' || '' }}
 
       - uses: actions/upload-artifact@v4
         if: failure()

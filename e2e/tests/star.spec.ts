@@ -107,8 +107,8 @@ test.describe('Pro', () => {
   });
 });
 
-test('two misses show no video offer (none is available yet) and the rematch follows the replay', async ({ page }) => {
-  await open(page, '#/star/sq5/1');
+/** Misses question 1 and its rematch, then misses question 2 and skips its replay (the offer's moment) */
+async function twoMisses(page: Page) {
   await question(page, 1);
   await enter(page, '1');
   await page.locator('#stRSkip').click();
@@ -120,8 +120,51 @@ test('two misses show no video offer (none is available yet) and the rematch fol
   await enter(page, '1');
   await expect(page.locator('.star-step').first()).toBeVisible();
   await page.keyboard.press('Escape');
+}
+const noYouTube = (page: Page) => page.route(/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>video</title>' }));
+
+test('two misses offer the hand-matched video once; it plays in the in-page player and closing it returns to the rematch', async ({ page }) => {
+  await noYouTube(page);
+  await open(page, '#/star/sq5/1');
+  await twoMisses(page);
+  await expect(page.locator('.star-offer')).toBeVisible();
+  await expect(page.locator('#stSay')).toContainText('short video');
+  await page.locator('#stWatch').click();
+  const player = page.locator('dialog.vm-player');
+  await expect(player).toBeVisible();
+  await expect(player.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\//);
+  await player.locator('.vp-x').click();
+  await expect(player).toBeHidden();
+  await expect(tag(page)).toHaveText('Rematch');
+  // A third miss: the replay, then the rematch, and no second offer
+  await enter(page, '1');
+  await expect(page.locator('#stSay')).toContainText('Close! It is');
+  await page.locator('#stNext').click();
+  await question(page, 3);
+  await enter(page, '1');
+  await expect(page.locator('.star-step').first()).toBeVisible();
+  await page.keyboard.press('Escape');
   await expect(tag(page)).toHaveText('Rematch');
   await expect(page.locator('.star-offer')).toHaveCount(0);
+});
+
+test('No thanks skips the video and the rematch follows', async ({ page }) => {
+  await noYouTube(page);
+  await open(page, '#/star/sq5/1');
+  await twoMisses(page);
+  await page.locator('#stNoVid').click();
+  await expect(tag(page)).toHaveText('Rematch');
+  await expect(page.locator('dialog.vm-player')).toHaveCount(0);
+});
+
+test('offline, two misses show no video offer and the rematch follows the replay', async ({ page, context }) => {
+  await open(page, '#/');
+  await context.setOffline(true);
+  await page.evaluate(() => { location.hash = '#/star/sq5/1'; });
+  await twoMisses(page);
+  await expect(tag(page)).toHaveText('Rematch');
+  await expect(page.locator('.star-offer')).toHaveCount(0);
+  await context.setOffline(false);
 });
 
 test.describe('skip', () => {

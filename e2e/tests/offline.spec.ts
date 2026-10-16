@@ -115,6 +115,12 @@ test.describe('first visit', () => {
       await expect(tab.locator('#view h1, #view h2').first(), `${hash} renders offline`).toBeVisible();
       await expect(tab).toHaveTitle(title);
       await expect(tab.locator('body')).toHaveClass(/mode-pro/);
+      if (hash === '#/watch') {
+        // The saved list is shown; the videos themselves need a connection (watch-shelf spec)
+        await expect(tab.locator('#view button.watch-card').first()).toBeVisible();
+        await expect(tab.locator('#view button.watch-card').first()).toBeDisabled();
+        await expect(tab.locator('.watch-offline')).toContainText('Videos need a connection');
+      }
       await tab.close();
     }
   });

@@ -1,5 +1,7 @@
 /* Deep dives for all 16 sutras and 13 sub-sutras: a longer explanation, the algebra behind it,
    worked examples, where it is used, an animated diagram and further reading.
+   read: [label, url] for a page that opens in a new tab (Pro only), or [label, { yt }] for a video in js/videos.js
+   that plays in the page for every Mode.
    Every worked example here was checked numerically. Text is original. */
 import { R, T, L, P, C, DOT, BOX } from './scenes.js';
 
@@ -15,7 +17,7 @@ export const DETAILS = {
     why: `A number ending in 5 is 10a + 5. Squaring it: (10a + 5)² = 100a² + 100a + 25 = 100 × a(a + 1) + 25. So the answer is always a × (a + 1) followed by 25. The picture shows the same thing with areas: the two thin strips of 5 slide together into one strip of 10.`,
     examples: [['65²', `6 × 7 = 42, then 25 → ${hl('4225')}`], ['115²', `11 × 12 = 132, then 25 → ${hl('13225')}`], ['1/19', 'One more than 1 is 2. Write 1 at the right, keep doubling leftwards with carries: …789473684210526315 → 0.052631578947368421…']],
     uses: ['Squares ending in 5', 'Recurring decimals', 'Divisibility tests'],
-    read: [['Square numbers ending in 5 (video)', 'https://www.youtube.com/watch?v=oV7Kxm3Zr_c'], VM],
+    read: [['How to square numbers ending in 5 (video)', { yt: 'oV7Kxm3Zr_c' }], VM],
     scene: { w: 460, h: 340, steps: [
       { add: `${R(40, 30, 280, 280, 'sc-none')}${T(180, 20, '60', 'vz-tb')}${T(340, 20, '5', 'vz-tb')}${T(25, 170, '60', 'vz-tb')}${T(25, 290, '5', 'vz-tb')}`, say: 'Picture 65 × 65 as a square, cut into 60 and 5 along each side.' },
       { add: R(40, 30, 220, 220, 'vz-sky', '60 × 60 = 3600'), say: 'The big piece is 60 × 60 = 3600.' },
@@ -31,7 +33,7 @@ export const DETAILS = {
     why: '10000 − 368 equals 9999 − 368 + 1. Subtracting from 9999 never needs borrowing because every digit is 9, so each digit simply becomes 9 minus itself. The final +1 is the same as taking the last digit from 10 instead of 9.',
     examples: [['1000 − 368', `9 − 3 = 6, 9 − 6 = 3, 10 − 8 = 2 → ${hl('632')}`], ['97 × 94 (near 100)', `Distances −3 and −6. Cross: 97 − 6 = 91. Multiply: 3 × 6 = 18 → ${hl('9118')}`], ['$100 − $47.35 change', `Digits from 9, last from 10: ${hl('$52.65')}`]],
     uses: ['Change at the shop', 'Near-base multiplication', 'Division by 9, 8, 89'],
-    read: [['Nikhilam multiplication for beginners (video)', 'https://www.youtube.com/watch?v=f0W32SwhAwM'], VM],
+    read: [['Nikhilam multiplication for beginners (video)', { yt: 'f0W32SwhAwM' }], VM],
     scene: { w: 420, h: 250, steps: [
       { add: `${T(30, 40, '1000', 'sc-big', 'start')}${T(30, 110, '−', 'sc-big', 'start')}${BOX(150, 85, '3')}${BOX(210, 85, '6')}${BOX(270, 85, '8', 'sc-digit sc-last')}`, say: 'Subtract 368 from 1000.' },
       { add: `${BOX(150, 170, '6', 'sc-digit sc-new')}${T(172, 160, '9 − 3', 'vz-ts')}`, say: 'First digit from 9: 9 − 3 = 6.' },
@@ -45,7 +47,7 @@ export const DETAILS = {
     why: '(10a + b)(10c + d) = 100ac + 10(ad + bc) + bd. The units come from b × d (vertical), the tens from ad + bc (the cross), and the hundreds from a × c (vertical). Carries move left exactly as in ordinary place value.',
     examples: [['23 × 41', `3 × 1 = 3; 2×1 + 3×4 = 14 (write 4, carry 1); 2 × 4 + 1 = 9 → ${hl('943')}`], ['(2x + 3)(x + 4)', `2x·x = 2x²; 2x·4 + 3·x = 11x; 3·4 = 12 → ${hl('2x² + 11x + 12')}`]],
     uses: ['Any multiplication', 'Algebra products', 'Squares (duplex)'],
-    read: [['tecmath: fast multiplication with Vedic math (video)', 'https://www.youtube.com/watch?v=kvLjpQ0XGao'], ['Multiplication algorithm (Wikipedia)', W + 'Multiplication_algorithm']],
+    read: [['tecmath: fast multiplication with Vedic math (video)', { yt: 'kvLjpQ0XGao' }], ['Multiplication algorithm (Wikipedia)', W + 'Multiplication_algorithm']],
     scene: { w: 420, h: 280, steps: [
       { add: `${BOX(150, 30, '2')}${BOX(220, 30, '3')}${BOX(150, 120, '4')}${BOX(220, 120, '1')}${T(110, 145, '×', 'sc-big')}`, say: '23 × 41. Line the digits up.' },
       { add: `${L(242, 82, 242, 118, 'sc-line sc-c1')}${BOX(290, 210, '3', 'sc-digit sc-new')}`, say: 'Vertical on the right: 3 × 1 = 3. That is the units digit.' },
@@ -194,7 +196,7 @@ export const DETAILS = {
     why: 'n × 99 = n × 100 − n = (n − 1) × 100 + (100 − n). The left part n − 1 is "one less"; the right part 100 − n equals 99 − (n − 1), which is the "all from 9" complement.',
     examples: [['67 × 99', `66 | 99 − 66 = 33 → ${hl('6633')}`], ['357 × 999', `356 | 643 → ${hl('356643')}`], ['8 × 9', `7 | 2 → ${hl('72')} (the nines finger trick)`]],
     uses: ['Times 9, 99, 999', 'The 9s times table'],
-    read: [['9 times table finger trick (video)', 'https://www.youtube.com/watch?v=c8hyYXepGvI'], VM],
+    read: [['Easy 9 times table trick (video)', { yt: 'c8hyYXepGvI' }], VM],
     scene: { kind: 'eq', steps: [
       { add: `67 × 99`, say: 'Multiply by 99.' },
       { add: `left: one less than 67 = ${hl('66')}`, say: 'One less than the number.' },
