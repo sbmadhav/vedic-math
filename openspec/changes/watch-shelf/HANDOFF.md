@@ -2,7 +2,7 @@
 
 ## State
 
-- Branch `watch-shelf`, worktree `/Users/sbmadhav/Documents/codebase/wt-watch-shelf`, rebased on origin/main `d74c21a`. PR open to `main` (not merged); its body has the 67-entry migration table.
+- Branch `watch-shelf`, worktree `/Users/sbmadhav/Documents/codebase/wt-watch-shelf`, rebased on origin/main `d74c21a`. PR https://github.com/sbmadhav/vedic-math/pull/26 open to `main` (not merged); its body has the 67-entry migration table.
 - Done: tasks 1.1 to 3.4, 4.1, 4.3 and 5.1 (ticked in tasks.md).
 - Not done:
   - **4.2 (follow-up after `star-round` merges):** pass `videoForTrick` from `js/watch.js` as `findVideo` in `starView()`, and add the `star.spec.ts` test that tasks.md describes. `videoForTrick(trickId, mode)` already exists with the seam's signature: a Promise of a `VIDEOS` entry or `null`, `null` offline or when the list fails to load. To open the offer's video, call `openPlayer(v, opener)` in `js/app.js`.
@@ -44,7 +44,7 @@ The scripts were scratch files and are not in the repo.
 ## Tests (last run)
 
 - Node: all pass. Build: OK. `openspec validate --strict`: valid.
-- Playwright against the local checkout (port 8131; port 8124 belongs to the star-round worktree's server): see the PR.
+- Playwright against the local checkout (port 8131; port 8124 belongs to the star-round worktree's server), chromium, webkit and mobile, all specs except `@live-videos` and tests with "offline" in the title: 449 passed, 151 skipped, 0 failed.
 - `offline.spec.ts` against a built `_site`: green.
 - `videos.live.spec.ts`: 20 of 20 green. The deliberate-failure check (a deleted id) failed as expected on both the oEmbed step and the embed step, and the entry was removed.
 
