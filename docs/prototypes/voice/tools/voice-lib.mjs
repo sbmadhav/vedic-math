@@ -81,6 +81,7 @@ export const CLOUD = {
      (for example from `gcloud auth print-access-token` with a service account). "AQ." keys are refused by this API. */
   google: { env: ['GOOGLE_TTS_KEY', 'GOOGLE_TTS_TOKEN'], say: async (text, voice, speed) => {
     const auth = process.env.GOOGLE_TTS_TOKEN ? { authorization: `Bearer ${process.env.GOOGLE_TTS_TOKEN}` } : { 'x-goog-api-key': process.env.GOOGLE_TTS_KEY };
+    if (process.env.GOOGLE_CLOUD_PROJECT) auth['x-goog-user-project'] = process.env.GOOGLE_CLOUD_PROJECT; // bills a user token to this project
     const r = await ok(await fetch('https://texttospeech.googleapis.com/v1/text:synthesize', { method: 'POST', headers: { 'content-type': 'application/json', ...auth },
       body: JSON.stringify({ input: { text }, voice: { languageCode: voice.slice(0, 5), name: voice }, audioConfig: { audioEncoding: 'LINEAR16', sampleRateHertz: RATE, speakingRate: speed } }) }));
     return pcm16(wavData(Buffer.from((await r.json()).audioContent, 'base64')));
