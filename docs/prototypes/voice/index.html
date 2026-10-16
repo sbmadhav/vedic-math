@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice Listening Test</title>
+<meta name="robots" content="noindex">
+<script>try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}</script>
+<link rel="stylesheet" href="/design-system/tokens.css">
+<link rel="stylesheet" href="/design-system/components.css">
+<style>
+/* Throwaway prototype for the better-voice change. Repo-only (docs/ is excluded from the build). */
+body { background: var(--page, var(--bg)); color: var(--ink); font-family: var(--font-sans); margin: 0; }
+.vp { max-width: 880px; margin: 0 auto; padding: var(--space-6) var(--space-4) var(--space-9); }
+.vp h1 { font-family: var(--font-display); font-size: clamp(28px, 6vw, 40px); margin: 0 0 var(--space-2); }
+.vp-lede { color: var(--ink-muted); margin: 0 0 var(--space-5); line-height: 1.5; }
+.vp-top { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
+.vp-panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-4); margin-bottom: var(--space-5); box-shadow: var(--shadow-card); }
+.vp-panel h2 { font-family: var(--font-display); font-size: 20px; margin: 0 0 var(--space-2); }
+.vp-key { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.vp-key li { border-left: 4px solid var(--line); padding-left: var(--space-2); font-size: 14px; color: var(--ink-muted); }
+.vp-key b { color: var(--ink); display: block; }
+.vp-key .k1 { border-color: var(--ink-muted); } .vp-key .k2 { border-color: var(--teal); } .vp-key .k3 { border-color: var(--coral); } .vp-key .k4 { border-color: var(--sun); }
+.vp-voice { font-size: 14px; color: var(--ink-muted); margin: var(--space-2) 0 0; }
+.vp-voice b { color: var(--ink); }
+.vp-warn { background: var(--bg-alt); border-radius: var(--radius-md); padding: var(--space-3); margin-top: var(--space-3); font-size: 14px; }
+.vp-ctrl { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; margin-top: var(--space-3); font-size: 14px; }
+.vp-kv { border: 0; padding: 0; margin: var(--space-3) 0 0; }
+.vp-kv legend { font-weight: 700; padding: 0; margin-bottom: var(--space-1); }
+.vp-kv #vpKV { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); }
+.vp-kv input { accent-color: var(--teal-strong); }
+.vp-kid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-2); padding: var(--space-3) 0; border-top: 1px solid var(--line); }
+.vp-kids { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
+.vp-kids [aria-pressed=true] { outline: 3px solid var(--focus); outline-offset: 2px; }
+@media (min-width: 700px) { .vp-kid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); align-items: center; } }
+.vp-ctrl input[type=range] { width: 160px; accent-color: var(--teal-strong); }
+.vp-items { display: grid; gap: var(--space-4); }
+.vp-item { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-4); box-shadow: var(--shadow-card); }
+.vp-item header { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: baseline; justify-content: space-between; }
+.vp-item h3 { font-family: var(--font-display); font-size: 18px; margin: 0; }
+.vp-tag { font-size: 12px; font-weight: 700; border-radius: var(--radius-pill); padding: 2px var(--space-2); background: var(--bg-alt); color: var(--ink-muted); }
+.vp-q { font-family: var(--font-display); font-size: 26px; margin: var(--space-3) 0 var(--space-1); overflow-wrap: anywhere; }
+.vp-said { font-family: var(--font-mono); font-size: 13px; color: var(--ink-muted); margin: 0 0 var(--space-3); overflow-wrap: anywhere; }
+.vp-plan { font-family: var(--font-mono); font-size: 12px; color: var(--ink-muted); margin: 0 0 var(--space-3); overflow-wrap: anywhere; }
+.vp-plan span { display: inline-block; border: 1px solid var(--line); border-radius: 6px; padding: 0 4px; margin: 0 2px 2px 0; }
+.vp-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
+.vp-btns .md-btn { justify-content: center; text-align: center; white-space: normal; min-height: 44px; }
+.vp-btns .md-btn[data-v=current] { border-left: 4px solid var(--ink-muted); }
+.vp-btns .md-btn[data-v=tuned] { border-left: 4px solid var(--teal); }
+.vp-btns .md-btn[data-v=stitch] { border-left: 4px solid var(--coral); }
+.vp-btns .md-btn[data-v=whole] { border-left: 4px solid var(--sun); }
+.vp-btns .md-btn[aria-pressed=true] { outline: 3px solid var(--focus); outline-offset: 2px; }
+.vp-row2 { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+.vp-size { font-size: 12px; color: var(--ink-muted); }
+details.vp-panel summary { cursor: pointer; font-weight: 700; }
+.vp-list { font-size: 13px; columns: 2 260px; margin: var(--space-3) 0 0; padding-left: var(--space-5); }
+.vp-list .good { color: var(--teal-strong); } .vp-list .poor { color: var(--coral-strong); }
+@media (max-width: 560px) { .vp-btns { grid-template-columns: 1fr 1fr; } .vp-q { font-size: 22px; } }
+</style>
+</head>
+<body class="md-page md-root">
+<main class="vp">
+  <div class="vp-top">
+    <a href="/vedic-math/" class="md-btn md-btn--sm">Back to Vedic Math</a>
+    <div class="md-modes" role="group" aria-label="Color mode">
+      <button data-mode="system" aria-pressed="true">System</button><button data-mode="light" aria-pressed="false">Daybreak</button><button data-mode="dark" aria-pressed="false">Deep Space</button>
+    </div>
+  </div>
+  <h1>Voice listening test</h1>
+  <p class="vp-lede">Twelve real lines from the game, each in four ways. Listen on a phone and a laptop, then pick. Nothing here is sent anywhere: the Kokoro clips were made on a laptop ahead of time and are plain audio files.</p>
+
+  <section class="vp-panel" aria-labelledby="keyH">
+    <h2 id="keyH">The four voices</h2>
+    <ul class="vp-key">
+      <li class="k1"><b>1. Today</b>The built-in voice exactly as the game uses it now (raised pitch).</li>
+      <li class="k2"><b>2. Tuned built-in (A)</b>Best good voice on this device, normal pitch, a calm rate.</li>
+      <li class="k3"><b>3. Kokoro stitched (B)</b>Prerecorded clips joined at play time: numbers plus short word frames.</li>
+      <li class="k4"><b>4. Kokoro whole (B ceiling)</b>The same voice saying the whole line in one go.</li>
+      <li class="k2"><b>Child built-in voice</b>Row 2 for Explorer lines uses a real child voice when the device has one (only Edge: Microsoft Ana or Maisie).</li>
+    </ul>
+    <p class="vp-voice" id="vpVoice">Looking for voices on this device...</p>
+    <div class="vp-warn" id="vpWarn" hidden></div>
+    <fieldset class="vp-ctrl vp-kv"><legend>Kokoro voice for rows 3 and 4</legend><div id="vpKV"></div></fieldset>
+    <div class="vp-ctrl">
+      <label for="vpGap">Gap between stitched clips: <b id="vpGapOut">40</b> ms</label>
+      <input type="range" id="vpGap" min="0" max="160" step="10" value="40">
+      <button type="button" class="md-btn md-btn--sm" id="vpStop">Stop</button>
+    </div>
+  </section>
+
+  <div class="vp-items" id="vpItems"><p>Loading the lines...</p></div>
+
+  <section class="vp-panel" aria-labelledby="kidH">
+    <h2 id="kidH">Kid voice candidates</h2>
+    <p class="vp-voice">No free model has a real child voice that sounds natural (see the design notes). These are Kokoro's own voices and blends of them, mixed from their voice settings, never pitch shifted. The number is the voice's typical pitch: adult women speak around 180 to 230 Hz, children around 230 to 300 Hz. Let your ears decide.</p>
+    <div id="vpKids"><p class="vp-voice">The candidates are still being made.</p></div>
+  </section>
+
+  <details class="vp-panel" id="vpAll">
+    <summary>Every English voice on this device, and how plan A rates it</summary>
+    <ol class="vp-list" id="vpList"></ol>
+  </details>
+
+  <section class="vp-panel" aria-labelledby="cH">
+    <h2 id="cH">Plan C is not on this page</h2>
+    <p class="vp-voice">A cloud neural voice (Google Neural2 or Azure Neural) would send question text to a third party and needs a server function, abuse limits and an ADR. It is only worth a test if the stitched Kokoro lines sound too choppy. The sample sizes and the reasoning are in <code>openspec/changes/better-voice/design.md</code>.</p>
+  </section>
+</main>
+<script type="module" src="./proto.js"></script>
+</body>
+</html>

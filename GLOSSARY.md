@@ -90,6 +90,22 @@ _Avoid_: reel, clip
 A website or game on the Watch shelf that opens in a new tab. Pro only, like every link that leaves the site.
 _Avoid_: resource, external site
 
+**Read aloud**:
+The setting that speaks questions, hints and praise. On by default for Explorer, off for Challenger and Pro. Speech only ever follows a tap.
+_Avoid_: TTS, narration, voice mode
+
+**Built-in voice**:
+The speech voice that comes with the Player's browser or device. The fallback for anything the Clip voice cannot say.
+_Avoid_: system TTS, robot voice, default voice
+
+**Clip voice**:
+The default read-aloud voice: short Kokoro recordings made ahead of time, shipped with the app in packs and joined at play time. The same on every device and offline once a pack is saved.
+_Avoid_: recorded voice (no person recorded it), audio files, TTS
+
+**Natural voice**:
+The opt-in voice that runs the Kokoro model on the device after a one-time download of about 100 MB. It can say any line whole.
+_Avoid_: AI voice, neural voice, premium voice
+
 ## Rounds and results
 
 **Ranked round**:

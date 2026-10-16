@@ -1,0 +1,130 @@
+{
+ "lines": [
+  {
+   "id": "add",
+   "html": "7 + 5 = ?",
+   "text": "7 plus 5 equals what?"
+  },
+  {
+   "id": "story",
+   "html": "Leo has 8 cards and gets 2 more. How many now?",
+   "text": "Leo has 8 cards and gets 2 more. How many now?"
+  },
+  {
+   "id": "praise",
+   "html": "Yay! You got it!",
+   "text": "Yay! You got it!"
+  },
+  {
+   "id": "hint",
+   "html": "Count up from 9 to 16. First get to 10.",
+   "text": "Count up from 9 to 16. First get to 10."
+  }
+ ],
+ "candidates": [
+  {
+   "id": "heart",
+   "spec": "af_heart",
+   "speed": 0.92,
+   "note": "Proposed for Challenger and Pro: warm, clear adult",
+   "f0": 203,
+   "files": {
+    "add": "audio/kids/heart/add.m4a",
+    "story": "audio/kids/heart/story.m4a",
+    "praise": "audio/kids/heart/praise.m4a",
+    "hint": "audio/kids/heart/hint.m4a"
+   }
+  },
+  {
+   "id": "bella",
+   "spec": "af_bella",
+   "speed": 0.95,
+   "note": "Bright, energetic",
+   "f0": 194,
+   "files": {
+    "add": "audio/kids/bella/add.m4a",
+    "story": "audio/kids/bella/story.m4a",
+    "praise": "audio/kids/bella/praise.m4a",
+    "hint": "audio/kids/bella/hint.m4a"
+   }
+  },
+  {
+   "id": "sky",
+   "spec": "af_sky",
+   "speed": 0.95,
+   "note": "Often called young-sounding, but breathier and lower; rated lower for clarity",
+   "f0": 162,
+   "files": {
+    "add": "audio/kids/sky/add.m4a",
+    "story": "audio/kids/sky/story.m4a",
+    "praise": "audio/kids/sky/praise.m4a",
+    "hint": "audio/kids/sky/hint.m4a"
+   }
+  },
+  {
+   "id": "nicole",
+   "spec": "af_nicole",
+   "speed": 0.95,
+   "note": "Soft, close to the microphone",
+   "f0": 150,
+   "files": {
+    "add": "audio/kids/nicole/add.m4a",
+    "story": "audio/kids/nicole/story.m4a",
+    "praise": "audio/kids/nicole/praise.m4a",
+    "hint": "audio/kids/nicole/hint.m4a"
+   }
+  },
+  {
+   "id": "bella-sky",
+   "spec": "af_bella*0.5+af_sky*0.5",
+   "speed": 0.95,
+   "note": "Blend: Bella and Sky, half each",
+   "f0": 182,
+   "files": {
+    "add": "audio/kids/bella-sky/add.m4a",
+    "story": "audio/kids/bella-sky/story.m4a",
+    "praise": "audio/kids/bella-sky/praise.m4a",
+    "hint": "audio/kids/bella-sky/hint.m4a"
+   }
+  },
+  {
+   "id": "heart-sky",
+   "spec": "af_heart*0.4+af_sky*0.6",
+   "speed": 0.95,
+   "note": "Blend: Heart 40%, Sky 60%",
+   "f0": 179,
+   "files": {
+    "add": "audio/kids/heart-sky/add.m4a",
+    "story": "audio/kids/heart-sky/story.m4a",
+    "praise": "audio/kids/heart-sky/praise.m4a",
+    "hint": "audio/kids/heart-sky/hint.m4a"
+   }
+  },
+  {
+   "id": "heart-bella",
+   "spec": "af_heart*0.5+af_bella*0.5",
+   "speed": 1,
+   "note": "Blend: Heart and Bella, half each, a little quicker",
+   "f0": 202,
+   "files": {
+    "add": "audio/kids/heart-bella/add.m4a",
+    "story": "audio/kids/heart-bella/story.m4a",
+    "praise": "audio/kids/heart-bella/praise.m4a",
+    "hint": "audio/kids/heart-bella/hint.m4a"
+   }
+  },
+  {
+   "id": "heart-alpha",
+   "spec": "af_heart*0.7+jf_alpha*0.3",
+   "speed": 0.95,
+   "note": "Proposed Explorer voice: Heart 70% with 30% of a lighter Japanese voice (jf_alpha), English words. Listen for any accent",
+   "f0": 218,
+   "files": {
+    "add": "audio/kids/heart-alpha/add.m4a",
+    "story": "audio/kids/heart-alpha/story.m4a",
+    "praise": "audio/kids/heart-alpha/praise.m4a",
+    "hint": "audio/kids/heart-alpha/hint.m4a"
+   }
+  }
+ ]
+}

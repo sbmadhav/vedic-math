@@ -1,0 +1,4956 @@
+{
+ "summary": {
+  "sampledUtterances": 829442,
+  "distinctUtterances": 202336,
+  "distinctTemplates": 4189,
+  "classes": {
+   "whole": 103723,
+   "stitch": 725719,
+   "none": 0
+  },
+  "share": {
+   "whole": 12.5,
+   "stitch": 87.5,
+   "none": 0
+  },
+  "wholeClips": 245,
+  "wholeClipChars": 9448,
+  "frameMinCount": 1,
+  "framesSeen": 1098,
+  "framesKept": 1098,
+  "framesKeptChars": 28133,
+  "numberClipsUsed": [
+   "n:0",
+   "n:1",
+   "n:10",
+   "n:11",
+   "n:12",
+   "n:13",
+   "n:14",
+   "n:15",
+   "n:16",
+   "n:17",
+   "n:18",
+   "n:19",
+   "n:2",
+   "n:20",
+   "n:21",
+   "n:22",
+   "n:23",
+   "n:24",
+   "n:25",
+   "n:26",
+   "n:27",
+   "n:28",
+   "n:29",
+   "n:3",
+   "n:30",
+   "n:31",
+   "n:32",
+   "n:33",
+   "n:34",
+   "n:35",
+   "n:36",
+   "n:37",
+   "n:38",
+   "n:39",
+   "n:4",
+   "n:40",
+   "n:41",
+   "n:42",
+   "n:43",
+   "n:44",
+   "n:45",
+   "n:46",
+   "n:47",
+   "n:48",
+   "n:49",
+   "n:5",
+   "n:50",
+   "n:51",
+   "n:52",
+   "n:53",
+   "n:54",
+   "n:55",
+   "n:56",
+   "n:57",
+   "n:58",
+   "n:59",
+   "n:6",
+   "n:60",
+   "n:61",
+   "n:62",
+   "n:63",
+   "n:64",
+   "n:65",
+   "n:66",
+   "n:67",
+   "n:68",
+   "n:69",
+   "n:7",
+   "n:70",
+   "n:71",
+   "n:72",
+   "n:73",
+   "n:74",
+   "n:75",
+   "n:76",
+   "n:77",
+   "n:78",
+   "n:79",
+   "n:8",
+   "n:80",
+   "n:81",
+   "n:82",
+   "n:83",
+   "n:84",
+   "n:85",
+   "n:86",
+   "n:87",
+   "n:88",
+   "n:89",
+   "n:9",
+   "n:90",
+   "n:91",
+   "n:92",
+   "n:93",
+   "n:94",
+   "n:95",
+   "n:96",
+   "n:97",
+   "n:98",
+   "n:99",
+   "w:hundred",
+   "w:million",
+   "w:negative",
+   "w:point",
+   "w:thousand"
+  ],
+  "bySource": {
+   "practice.q.K-2": {
+    "total": 75000,
+    "whole": 15986,
+    "stitch": 59014,
+    "none": 0,
+    "chars": 2020008
+   },
+   "practice.hint.K-2": {
+    "total": 75000,
+    "whole": 16949,
+    "stitch": 58051,
+    "none": 0,
+    "chars": 2668532
+   },
+   "practice.q.3-5": {
+    "total": 75000,
+    "whole": 13090,
+    "stitch": 61910,
+    "none": 0,
+    "chars": 2637134
+   },
+   "practice.hint.3-5": {
+    "total": 75000,
+    "whole": 9851,
+    "stitch": 65149,
+    "none": 0,
+    "chars": 2560566
+   },
+   "practice.q.6-8": {
+    "total": 87000,
+    "whole": 3528,
+    "stitch": 83472,
+    "none": 0,
+    "chars": 4492947
+   },
+   "practice.hint.6-8": {
+    "total": 87000,
+    "whole": 19886,
+    "stitch": 67114,
+    "none": 0,
+    "chars": 2812827
+   },
+   "practice.q.9-12": {
+    "total": 105000,
+    "whole": 6086,
+    "stitch": 98914,
+    "none": 0,
+    "chars": 6566266
+   },
+   "practice.hint.9-12": {
+    "total": 105000,
+    "whole": 17376,
+    "stitch": 87624,
+    "none": 0,
+    "chars": 4412365
+   },
+   "practice.q.V": {
+    "total": 63000,
+    "whole": 0,
+    "stitch": 63000,
+    "none": 0,
+    "chars": 2284844
+   },
+   "practice.hint.V": {
+    "total": 63000,
+    "whole": 0,
+    "stitch": 63000,
+    "none": 0,
+    "chars": 3692963
+   },
+   "kata.q": {
+    "total": 6930,
+    "whole": 0,
+    "stitch": 6930,
+    "none": 0,
+    "chars": 263230
+   },
+   "arena.explorer": {
+    "total": 4800,
+    "whole": 655,
+    "stitch": 4145,
+    "none": 0,
+    "chars": 120130
+   },
+   "arena.challenger": {
+    "total": 1600,
+    "whole": 0,
+    "stitch": 1600,
+    "none": 0,
+    "chars": 42319
+   },
+   "arena.pro": {
+    "total": 1600,
+    "whole": 0,
+    "stitch": 1600,
+    "none": 0,
+    "chars": 41789
+   },
+   "tower.q": {
+    "total": 4290,
+    "whole": 305,
+    "stitch": 3985,
+    "none": 0,
+    "chars": 165799
+   },
+   "games.balloon": {
+    "total": 190,
+    "whole": 0,
+    "stitch": 190,
+    "none": 0,
+    "chars": 4759
+   },
+   "games.count": {
+    "total": 20,
+    "whole": 0,
+    "stitch": 20,
+    "none": 0,
+    "chars": 31
+   },
+   "fixed.praiseExplorer": {
+    "total": 4,
+    "whole": 4,
+    "stitch": 0,
+    "none": 0,
+    "chars": 60
+   },
+   "fixed.feedback": {
+    "total": 2,
+    "whole": 2,
+    "stitch": 0,
+    "none": 0,
+    "chars": 32
+   },
+   "fixed.toggles": {
+    "total": 2,
+    "whole": 2,
+    "stitch": 0,
+    "none": 0,
+    "chars": 54
+   },
+   "fixed.settings": {
+    "total": 3,
+    "whole": 2,
+    "stitch": 1,
+    "none": 0,
+    "chars": 97
+   },
+   "fixed.games": {
+    "total": 1,
+    "whole": 1,
+    "stitch": 0,
+    "none": 0,
+    "chars": 15
+   }
+  },
+  "packs": [
+   {
+    "name": "core (Explorer: K-2, Explorer Arena, games, fixed lines)",
+    "clips": 117,
+    "chars": 2016
+   },
+   {
+    "name": "grades 3 to 5",
+    "clips": 294,
+    "chars": 7470
+   },
+   {
+    "name": "tricks (Katas, Stars, Challenger and Pro Arena, towers)",
+    "clips": 308,
+    "chars": 7622
+   },
+   {
+    "name": "grades 6 to 8",
+    "clips": 216,
+    "chars": 5734
+   },
+   {
+    "name": "grades 9 to 12",
+    "clips": 408,
+    "chars": 14739
+   }
+  ],
+  "framesWithDigits": 50
+ },
+ "framesKept": [
+  [
+   "times",
+   130900
+  ],
+  [
+   "equals what?",
+   115362
+  ],
+  [
+   "equals",
+   98768
+  ],
+  [
+   "plus",
+   74124
+  ],
+  [
+   "x plus",
+   61444
+  ],
+  [
+   "over",
+   60168
+  ],
+  [
+   "and",
+   51639
+  ],
+  [
+   "minus",
+   33389
+  ],
+  [
+   "is",
+   31098
+  ],
+  [
+   "divided by",
+   30608
+  ],
+  [
+   "x minus",
+   29555
+  ],
+  [
+   "negative",
+   27834
+  ],
+  [
+   "y equals",
+   23078
+  ],
+  [
+   "decimal places.",
+   17128
+  ],
+  [
+   "times x plus",
+   14632
+  ],
+  [
+   "to",
+   13640
+  ],
+  [
+   "equals negative",
+   13613
+  ],
+  [
+   "times negative",
+   12197
+  ],
+  [
+   "squared equals what?",
+   11960
+  ],
+  [
+   "degrees.",
+   10463
+  ],
+  [
+   "Solve:",
+   9039
+  ],
+  [
+   "Count up from",
+   8988
+  ],
+  [
+   "blank",
+   8172
+  ],
+  [
+   "Round to",
+   8063
+  ],
+  [
+   "what?",
+   7962
+  ],
+  [
+   "by",
+   7948
+  ],
+  [
+   "Solve:.",
+   7811
+  ],
+  [
+   "Add",
+   7638
+  ],
+  [
+   "There are",
+   7522
+  ],
+  [
+   "Is",
+   7440
+  ],
+  [
+   "to the power of",
+   7401
+  ],
+  [
+   "x squared plus",
+   7241
+  ],
+  [
+   "y equals negative",
+   6742
+  ],
+  [
+   "and negative",
+   6694
+  ],
+  [
+   "equals x plus",
+   6553
+  ],
+  [
+   "is plus",
+   6438
+  ],
+  [
+   "percent of",
+   6363
+  ],
+  [
+   "equals what remainder what?",
+   6330
+  ],
+  [
+   "x squared minus",
+   6247
+  ],
+  [
+   "and height",
+   6054
+  ],
+  [
+   "in",
+   6038
+  ],
+  [
+   "squared equals",
+   5828
+  ],
+  [
+   "is negative",
+   5562
+  ],
+  [
+   "the square root of",
+   5384
+  ],
+  [
+   "Subtract",
+   5265
+  ],
+  [
+   "What is",
+   5176
+  ],
+  [
+   "A circle has radius",
+   5127
+  ],
+  [
+   "minus negative",
+   5012
+  ],
+  [
+   "on both sides.",
+   5004
+  ],
+  [
+   "Multiply by",
+   4996
+  ],
+  [
+   "plus negative",
+   4934
+  ],
+  [
+   "rows of",
+   4692
+  ],
+  [
+   "Find the sum:",
+   4550
+  ],
+  [
+   "Write",
+   4531
+  ],
+  [
+   "the cube root of",
+   4440
+  ],
+  [
+   "x",
+   4169
+  ],
+  [
+   "plus, and so on",
+   4059
+  ],
+  [
+   "f of x equals negative",
+   4026
+  ],
+  [
+   "f of x equals",
+   3891
+  ],
+  [
+   "of",
+   3803
+  ],
+  [
+   "Start at",
+   3746
+  ],
+  [
+   "and how many more make",
+   3716
+  ],
+  [
+   "Solve: x plus",
+   3594
+  ],
+  [
+   "f prime of x equals",
+   3584
+  ],
+  [
+   "divisible by",
+   3403
+  ],
+  [
+   "Casting out nines answer",
+   3375
+  ],
+  [
+   "what is the digit sum of",
+   3375
+  ],
+  [
+   "squared plus",
+   3372
+  ],
+  [
+   "and add to",
+   3191
+  ],
+  [
+   "Double",
+   3105
+  ],
+  [
+   "What is the first decimal digit of",
+   3067
+  ],
+  [
+   "that is not",
+   3067
+  ],
+  [
+   "plus blank equals",
+   3062
+  ],
+  [
+   "to the power of what?",
+   3055
+  ],
+  [
+   "over x",
+   3051
+  ],
+  [
+   "and so on, What is term number",
+   3049
+  ],
+  [
+   "What comes next?",
+   3041
+  ],
+  [
+   "What is the value of the digit",
+   3038
+  ],
+  [
+   "Scores have mean",
+   3036
+  ],
+  [
+   "and standard deviation",
+   3036
+  ],
+  [
+   "What is the z-score of",
+   3036
+  ],
+  [
+   "How many dots in all?",
+   3034
+  ],
+  [
+   "percent per year. What is it worth after",
+   3030
+  ],
+  [
+   "years? Round to the cent.",
+   3030
+  ],
+  [
+   "What is its area?",
+   3029
+  ],
+  [
+   "What fraction is shaded? Type it like",
+   3021
+  ],
+  [
+   "log base",
+   3016
+  ],
+  [
+   "in each pack, then gives away",
+   3015
+  ],
+  [
+   "How many are left?",
+   3015
+  ],
+  [
+   "degrees. Round to",
+   3015
+  ],
+  [
+   "even or odd?",
+   3014
+  ],
+  [
+   "Round",
+   3014
+  ],
+  [
+   "to the nearest",
+   3014
+  ],
+  [
+   "d x",
+   3014
+  ],
+  [
+   "A right triangle has hypotenuse",
+   3013
+  ],
+  [
+   "and an angle of",
+   3013
+  ],
+  [
+   "and count on",
+   3000
+  ],
+  [
+   "The teal dots are the",
+   3000
+  ],
+  [
+   "taken away. Count the coral dots.",
+   3000
+  ],
+  [
+   "One full frame is",
+   3000
+  ],
+  [
+   "Count the dots in the second frame.",
+   3000
+  ],
+  [
+   "needs",
+   3000
+  ],
+  [
+   "more to make",
+   3000
+  ],
+  [
+   "Each tall rod is",
+   3000
+  ],
+  [
+   "Each small cube is",
+   3000
+  ],
+  [
+   "The ones digit stays",
+   3000
+  ],
+  [
+   "The long hand points to",
+   3000
+  ],
+  [
+   "Tens:",
+   3000
+  ],
+  [
+   "First jump to",
+   3000
+  ],
+  [
+   "Each number is",
+   3000
+  ],
+  [
+   "more than the one before.",
+   3000
+  ],
+  [
+   "The ones digit is",
+   3000
+  ],
+  [
+   "a total of",
+   3000
+  ],
+  [
+   "times.",
+   3000
+  ],
+  [
+   "What time is it? Type it like 3:25.",
+   3000
+  ],
+  [
+   "The long hand points at",
+   3000
+  ],
+  [
+   "Count by fives.",
+   3000
+  ],
+  [
+   "The",
+   3000
+  ],
+  [
+   "Think:",
+   3000
+  ],
+  [
+   "times what equals",
+   3000
+  ],
+  [
+   "is between",
+   3000
+  ],
+  [
+   "Which is closer?",
+   3000
+  ],
+  [
+   "equal parts in all.",
+   3000
+  ],
+  [
+   "First find how many in all:",
+   3000
+  ],
+  [
+   "Split:",
+   3000
+  ],
+  [
+   "How many groups of",
+   3000
+  ],
+  [
+   "A common denominator of",
+   3000
+  ],
+  [
+   "Top:",
+   3000
+  ],
+  [
+   "Bottom:",
+   3000
+  ],
+  [
+   "Move the decimal point",
+   3000
+  ],
+  [
+   "First:",
+   3000
+  ],
+  [
+   "Base:",
+   3000
+  ],
+  [
+   "so multiply",
+   3000
+  ],
+  [
+   "too.",
+   3000
+  ],
+  [
+   "Count how many places the point moves to reach",
+   3000
+  ],
+  [
+   "Type the right side of y equals, and so on",
+   3000
+  ],
+  [
+   "a equals",
+   3000
+  ],
+  [
+   "Discriminant equals",
+   3000
+  ],
+  [
+   "Simplify: the square root of",
+   3000
+  ],
+  [
+   "x is",
+   3000
+  ],
+  [
+   "each year:",
+   3000
+  ],
+  [
+   "Fraction of the circle:",
+   3000
+  ],
+  [
+   "i equals what?",
+   3000
+  ],
+  [
+   "to what power is",
+   3000
+  ],
+  [
+   "Plugging in gives",
+   3000
+  ],
+  [
+   "Factor the top.",
+   3000
+  ],
+  [
+   "The part before the",
+   3000
+  ],
+  [
+   "Base",
+   3000
+  ],
+  [
+   "from it and",
+   3000
+  ],
+  [
+   "Column",
+   3000
+  ],
+  [
+   "times straight down :",
+   3000
+  ],
+  [
+   "write the digits of",
+   3000
+  ],
+  [
+   "One less than",
+   3000
+  ],
+  [
+   "That is the left part.",
+   3000
+  ],
+  [
+   "Shared start:",
+   3000
+  ],
+  [
+   "Last digits",
+   3000
+  ],
+  [
+   "so the trick works.",
+   3000
+  ],
+  [
+   "Write the first digit",
+   3000
+  ],
+  [
+   "and the last digit",
+   3000
+  ],
+  [
+   "apart.",
+   3000
+  ],
+  [
+   "Digits:",
+   3000
+  ],
+  [
+   "Running totals, leaving out the last digit:",
+   3000
+  ],
+  [
+   "Digit sum of",
+   3000
+  ],
+  [
+   "and of",
+   3000
+  ],
+  [
+   "times casting out nines.",
+   3000
+  ],
+  [
+   "One more than",
+   3000
+  ],
+  [
+   "That is the multiplier.",
+   3000
+  ],
+  [
+   "Equation:",
+   3000
+  ],
+  [
+   "Check the constants:",
+   3000
+  ],
+  [
+   "Equal.",
+   3000
+  ],
+  [
+   "Working base",
+   3000
+  ],
+  [
+   "from it.",
+   3000
+  ],
+  [
+   "Digits",
+   3000
+  ],
+  [
+   "Middle:",
+   3000
+  ],
+  [
+   "It ends in",
+   3000
+  ],
+  [
+   "so the root ends in",
+   3000
+  ],
+  [
+   "Last digit",
+   3000
+  ],
+  [
+   "to root ends in",
+   3000
+  ],
+  [
+   "swap,",
+   3000
+  ],
+  [
+   "swap, the rest stay.",
+   3000
+  ],
+  [
+   "The magic multiplier for",
+   3000
+  ],
+  [
+   "The numbers are swapped.",
+   3000
+  ],
+  [
+   "x plus negative",
+   2926
+  ],
+  [
+   "and add to negative",
+   2809
+  ],
+  [
+   "or",
+   2662
+  ],
+  [
+   "plus what?",
+   2603
+  ],
+  [
+   "x from both sides.",
+   2602
+  ],
+  [
+   "Count the sides. It has",
+   2566
+  ],
+  [
+   "Convert",
+   2559
+  ],
+  [
+   "equals what over",
+   2394
+  ],
+  [
+   "Simplify: x to the power of",
+   2242
+  ],
+  [
+   "Find",
+   2165
+  ],
+  [
+   "A bag has",
+   2139
+  ],
+  [
+   "red,",
+   2139
+  ],
+  [
+   "dollars grows",
+   2130
+  ],
+  [
+   "Solve: x squared minus",
+   2123
+  ],
+  [
+   "marbles in all.",
+   2111
+  ],
+  [
+   "Triangles are similar. Matching sides:",
+   2088
+  ],
+  [
+   "Another side of the small triangle is",
+   2088
+  ],
+  [
+   "What is the matching side of the big one?",
+   2088
+  ],
+  [
+   "equals x to the power of what?",
+   2085
+  ],
+  [
+   "Scale factor:",
+   2080
+  ],
+  [
+   "Solve: x squared plus",
+   2051
+  ],
+  [
+   "Find the hypotenuse.",
+   2047
+  ],
+  [
+   "dollars with a",
+   2025
+  ],
+  [
+   "sides make",
+   2020
+  ],
+  [
+   "triangles.",
+   2020
+  ],
+  [
+   "Sorted:",
+   2014
+  ],
+  [
+   "An angle is",
+   2013
+  ],
+  [
+   "Replace x with",
+   2007
+  ],
+  [
+   "x equals negative",
+   2005
+  ],
+  [
+   "A 30-60-90 triangle has short leg",
+   1981
+  ],
+  [
+   "c equals negative",
+   1966
+  ],
+  [
+   "when x equals",
+   1925
+  ],
+  [
+   "x cubed plus",
+   1886
+  ],
+  [
+   "blue and",
+   1859
+  ],
+  [
+   "carry",
+   1848
+  ],
+  [
+   "A triangle has base",
+   1818
+  ],
+  [
+   "Then add",
+   1813
+  ],
+  [
+   "What number comes right after",
+   1803
+  ],
+  [
+   "Exponent comes down, then subtract",
+   1794
+  ],
+  [
+   "from the exponent.",
+   1794
+  ],
+  [
+   "to the power of x plus",
+   1729
+  ],
+  [
+   "Write the equation of the line through",
+   1718
+  ],
+  [
+   "is divided by x plus",
+   1681
+  ],
+  [
+   "times x minus",
+   1665
+  ],
+  [
+   "i squared, and i squared equals negative",
+   1663
+  ],
+  [
+   "squares.",
+   1658
+  ],
+  [
+   "Evaluate p",
+   1657
+  ],
+  [
+   "is over",
+   1647
+  ],
+  [
+   "Factor: two numbers that multiply to",
+   1626
+  ],
+  [
+   "x times x equals x squared, outer plus inner equals",
+   1621
+  ],
+  [
+   "Rise:",
+   1617
+  ],
+  [
+   "Run:",
+   1616
+  ],
+  [
+   "the limit as x approaches",
+   1612
+  ],
+  [
+   "b equals",
+   1592
+  ],
+  [
+   "Find the determinant of the matrix with rows",
+   1582
+  ],
+  [
+   "How many ways can you choose",
+   1574
+  ],
+  [
+   "books from",
+   1574
+  ],
+  [
+   "pieces of size",
+   1569
+  ],
+  [
+   "Find f of",
+   1569
+  ],
+  [
+   "Find f prime of",
+   1567
+  ],
+  [
+   "Solve: the absolute value of x minus",
+   1559
+  ],
+  [
+   "away from",
+   1559
+  ],
+  [
+   "The top frame is full. That is",
+   1551
+  ],
+  [
+   "Count on from",
+   1551
+  ],
+  [
+   "Find the length of the arc with central angle",
+   1550
+  ],
+  [
+   "What is the greatest common factor of",
+   1540
+  ],
+  [
+   "Point",
+   1540
+  ],
+  [
+   "item?",
+   1536
+  ],
+  [
+   "degrees. Find the side adjacent to that angle. Round to",
+   1533
+  ],
+  [
+   "Which numbers divide both",
+   1532
+  ],
+  [
+   "as a decimal.",
+   1531
+  ],
+  [
+   "plus, and so on, plus",
+   1529
+  ],
+  [
+   "times x.",
+   1529
+  ],
+  [
+   "Solve for y.",
+   1529
+  ],
+  [
+   "x, last equals negative",
+   1527
+  ],
+  [
+   "The two angles make a straight line:",
+   1524
+  ],
+  [
+   "What is its area? Round to",
+   1524
+  ],
+  [
+   "terms.",
+   1522
+  ],
+  [
+   "Divide:",
+   1519
+  ],
+  [
+   "Expand: x plus",
+   1519
+  ],
+  [
+   "Slope m equals",
+   1517
+  ],
+  [
+   "Find the slope of the line through negative",
+   1514
+  ],
+  [
+   "What is its circumference? Round to",
+   1513
+  ],
+  [
+   "Find the slope of the line through",
+   1510
+  ],
+  [
+   "Read it:",
+   1508
+  ],
+  [
+   "Evaluate the integral from negative",
+   1508
+  ],
+  [
+   "equals what to",
+   1507
+  ],
+  [
+   "then divide by negative",
+   1506
+  ],
+  [
+   "Dividing by a negative flips the sign.",
+   1506
+  ],
+  [
+   "Find the exact value of sin",
+   1506
+  ],
+  [
+   "degrees to radians.",
+   1506
+  ],
+  [
+   "times pi over",
+   1506
+  ],
+  [
+   "Evaluate the integral from",
+   1506
+  ],
+  [
+   "equal parts.",
+   1505
+  ],
+  [
+   "or subtract place by place.",
+   1503
+  ],
+  [
+   "x cubed minus",
+   1498
+  ],
+  [
+   "Hundreds:",
+   1497
+  ],
+  [
+   "Across",
+   1496
+  ],
+  [
+   "up or down",
+   1496
+  ],
+  [
+   "then divide by",
+   1494
+  ],
+  [
+   "Find the exact value of cos",
+   1494
+  ],
+  [
+   "Replace pi with",
+   1494
+  ],
+  [
+   "Find the sum of the first",
+   1490
+  ],
+  [
+   "terms:",
+   1490
+  ],
+  [
+   "and move",
+   1488
+  ],
+  [
+   "First get to",
+   1485
+  ],
+  [
+   "Slope m equals negative",
+   1483
+  ],
+  [
+   "was multiplied by",
+   1481
+  ],
+  [
+   "Expand: x minus",
+   1481
+  ],
+  [
+   "degrees. Find the side opposite that angle. Round to",
+   1480
+  ],
+  [
+   "more. How many now?",
+   1478
+  ],
+  [
+   "Ratio",
+   1478
+  ],
+  [
+   "Use a r to the power of n minus",
+   1478
+  ],
+  [
+   "divided by r minus",
+   1478
+  ],
+  [
+   "The two angles make a right angle:",
+   1476
+  ],
+  [
+   "x, last equals",
+   1473
+  ],
+  [
+   "What is the least common multiple of",
+   1472
+  ],
+  [
+   "Multiples of",
+   1468
+  ],
+  [
+   "and so on",
+   1468
+  ],
+  [
+   "In how many ways can",
+   1468
+  ],
+  [
+   "Find the area of the sector with central angle",
+   1465
+  ],
+  [
+   "Point negative",
+   1460
+  ],
+  [
+   "Count the top row first. A full row is",
+   1449
+  ],
+  [
+   "Find f to the power of negative",
+   1444
+  ],
+  [
+   "Solve: the absolute value of x plus",
+   1441
+  ],
+  [
+   "away from negative",
+   1441
+  ],
+  [
+   "Find the determinant of the matrix with rows negative",
+   1432
+  ],
+  [
+   "squared plus negative",
+   1427
+  ],
+  [
+   "the limit as x approaches minus",
+   1413
+  ],
+  [
+   "b equals negative",
+   1408
+  ],
+  [
+   "Simplify:",
+   1405
+  ],
+  [
+   "of x2 minus",
+   1398
+  ],
+  [
+   "x equals negative negative",
+   1386
+  ],
+  [
+   "Run: negative",
+   1384
+  ],
+  [
+   "Rise: negative",
+   1383
+  ],
+  [
+   "x times x equals x squared, outer plus inner equals negative",
+   1379
+  ],
+  [
+   "Simplify: negative",
+   1375
+  ],
+  [
+   "Factor: two numbers that multiply to negative",
+   1374
+  ],
+  [
+   "is short of",
+   1353
+  ],
+  [
+   "Evaluate p negative",
+   1343
+  ],
+  [
+   "Go around:",
+   1342
+  ],
+  [
+   "radians to degrees.",
+   1325
+  ],
+  [
+   "Find f of negative",
+   1318
+  ],
+  [
+   "Subtract minus",
+   1302
+  ],
+  [
+   "over x plus",
+   1297
+  ],
+  [
+   "cubed equals what?",
+   1286
+  ],
+  [
+   "Write the equation of the line through negative",
+   1282
+  ],
+  [
+   "to the power of x minus",
+   1281
+  ],
+  [
+   "over x minus",
+   1266
+  ],
+  [
+   "Solve: negative",
+   1262
+  ],
+  [
+   "What number comes right before",
+   1229
+  ],
+  [
+   "A parallelogram has base",
+   1211
+  ],
+  [
+   "squared minus",
+   1201
+  ],
+  [
+   "times each term inside.",
+   1184
+  ],
+  [
+   "Where does it go after you rotate",
+   1181
+  ],
+  [
+   "x equals",
+   1175
+  ],
+  [
+   "of x2 plus",
+   1171
+  ],
+  [
+   "is divided by x minus",
+   1166
+  ],
+  [
+   "Solve:. minus",
+   1109
+  ],
+  [
+   "Find f prime of negative",
+   1109
+  ],
+  [
+   "What number times itself three times is",
+   1054
+  ],
+  [
+   "Find the surface area of a cylinder with radius",
+   1051
+  ],
+  [
+   "of negative",
+   1050
+  ],
+  [
+   "is in the hundreds place.",
+   1049
+  ],
+  [
+   "Find the volume of a sphere with radius",
+   1046
+  ],
+  [
+   "pi r squared plus",
+   1045
+  ],
+  [
+   "pi rh",
+   1045
+  ],
+  [
+   "Find the median :",
+   1043
+  ],
+  [
+   "places to the right.",
+   1038
+  ],
+  [
+   "The 1st is",
+   1035
+  ],
+  [
+   "c equals",
+   1034
+  ],
+  [
+   "How many tens are in",
+   1033
+  ],
+  [
+   "Find the vertex of y equals",
+   1032
+  ],
+  [
+   "Circumference equals",
+   1031
+  ],
+  [
+   "pi r",
+   1031
+  ],
+  [
+   "percent discount. What is the final price?",
+   1026
+  ],
+  [
+   "prime or composite?",
+   1023
+  ],
+  [
+   "Two lines cross. One angle is",
+   1023
+  ],
+  [
+   "degrees. What is the angle vertically opposite it?",
+   1023
+  ],
+  [
+   "Each term adds",
+   1021
+  ],
+  [
+   "Try dividing by",
+   1019
+  ],
+  [
+   "A 45-45-90 triangle has legs of",
+   1019
+  ],
+  [
+   "Multiply the leg by the square root of",
+   1019
+  ],
+  [
+   "to the power of negative",
+   1018
+  ],
+  [
+   "A price goes from",
+   1017
+  ],
+  [
+   "dollars to",
+   1017
+  ],
+  [
+   "dollars. What is the percent change? Use a negative number for a decrease.",
+   1017
+  ],
+  [
+   "degrees. What is its complement?",
+   1012
+  ],
+  [
+   "half past. The short hand is just past the hour.",
+   1010
+  ],
+  [
+   "How many ones are in",
+   1007
+  ],
+  [
+   "Two numbers that multiply to",
+   1005
+  ],
+  [
+   "Find the range :",
+   1004
+  ],
+  [
+   "degrees. What is its supplement?",
+   1001
+  ],
+  [
+   "Find the mean :",
+   1000
+  ],
+  [
+   "Complements add to",
+   1000
+  ],
+  [
+   "Factor:",
+   1000
+  ],
+  [
+   "AC method: find two numbers that multiply to",
+   1000
+  ],
+  [
+   "percent sales tax. What is the final price?",
+   999
+  ],
+  [
+   "Divide both sides by",
+   996
+  ],
+  [
+   "Two numbers that multiply to negative",
+   995
+  ],
+  [
+   "Find the distance between negative",
+   995
+  ],
+  [
+   "Find the midpoint of negative",
+   995
+  ],
+  [
+   "Replace x with negative",
+   993
+  ],
+  [
+   "What number times itself is",
+   992
+  ],
+  [
+   "Find the surface area of a sphere with radius",
+   992
+  ],
+  [
+   "Find the remainder when",
+   992
+  ],
+  [
+   "Find the remainder when negative",
+   991
+  ],
+  [
+   "is in the tens place.",
+   990
+  ],
+  [
+   "Supplements add to",
+   989
+  ],
+  [
+   "Find the volume of a cylinder with radius",
+   988
+  ],
+  [
+   "pi r squared",
+   988
+  ],
+  [
+   "The total is",
+   986
+  ],
+  [
+   "Find the volume of a cone with radius",
+   986
+  ],
+  [
+   "places to the left.",
+   985
+  ],
+  [
+   "Exterior angles add to",
+   980
+  ],
+  [
+   "friends. How many does each friend get?",
+   975
+  ],
+  [
+   "is between which two whole numbers? Give the smaller one.",
+   975
+  ],
+  [
+   "Find the surface area of a box",
+   974
+  ],
+  [
+   "Find the vertex of y equals negative",
+   973
+  ],
+  [
+   "Faces:",
+   967
+  ],
+  [
+   "each twice.",
+   967
+  ],
+  [
+   "How many factors does",
+   966
+  ],
+  [
+   "have?",
+   966
+  ],
+  [
+   "is in the ones place.",
+   961
+  ],
+  [
+   "pi over",
+   959
+  ],
+  [
+   "when x equals negative",
+   957
+  ],
+  [
+   "List factor pairs:",
+   955
+  ],
+  [
+   "then",
+   955
+  ],
+  [
+   "and, and so on",
+   955
+  ],
+  [
+   "Find the long leg.",
+   953
+  ],
+  [
+   "Multiply the short leg by the square root of",
+   953
+  ],
+  [
+   "one half equals what over",
+   947
+  ],
+  [
+   "x squared plus negative",
+   939
+  ],
+  [
+   "Factor: x squared minus",
+   935
+  ],
+  [
+   "Numbers: negative",
+   927
+  ],
+  [
+   "Two similar shapes have matching sides",
+   927
+  ],
+  [
+   "The small one has area",
+   927
+  ],
+  [
+   "What is the area of the big one?",
+   927
+  ],
+  [
+   "A circle has diameter",
+   925
+  ],
+  [
+   "Scale factor",
+   920
+  ],
+  [
+   "so areas scale by",
+   920
+  ],
+  [
+   "Radius equals",
+   915
+  ],
+  [
+   "x terms:",
+   910
+  ],
+  [
+   "x terms: negative",
+   906
+  ],
+  [
+   "i times",
+   902
+  ],
+  [
+   "dollars loses",
+   900
+  ],
+  [
+   "equally likely outcomes.",
+   889
+  ],
+  [
+   "Numbers:",
+   889
+  ],
+  [
+   "Find x squared plus",
+   877
+  ],
+  [
+   "How many",
+   872
+  ],
+  [
+   "pieces fit in one whole?",
+   872
+  ],
+  [
+   "Split each",
+   864
+  ],
+  [
+   "into",
+   864
+  ],
+  [
+   "plus one more",
+   850
+  ],
+  [
+   "Multiply out: you get",
+   847
+  ],
+  [
+   "Factor: x squared plus",
+   846
+  ],
+  [
+   "First g of",
+   825
+  ],
+  [
+   "Each term is multiplied by",
+   823
+  ],
+  [
+   "Multiply out: you get minus",
+   816
+  ],
+  [
+   "y plus",
+   808
+  ],
+  [
+   "Find the magnitude of the vector the vector negative",
+   797
+  ],
+  [
+   "Find the dot product the vector",
+   780
+  ],
+  [
+   "hundredths.",
+   778
+  ],
+  [
+   "times the vector",
+   777
+  ],
+  [
+   "Swap: x equals negative",
+   768
+  ],
+  [
+   "Add the opposite:",
+   763
+  ],
+  [
+   "i times negative",
+   761
+  ],
+  [
+   "Swap: x equals",
+   761
+  ],
+  [
+   "Each term adds minus",
+   760
+  ],
+  [
+   "Add the opposite: negative",
+   749
+  ],
+  [
+   "to the left.",
+   747
+  ],
+  [
+   "Start at negative",
+   742
+  ],
+  [
+   "to the right.",
+   741
+  ],
+  [
+   "Find f g of",
+   733
+  ],
+  [
+   "times because",
+   731
+  ],
+  [
+   "and one more than",
+   731
+  ],
+  [
+   "tenths.",
+   730
+  ],
+  [
+   "times the vector negative",
+   724
+  ],
+  [
+   "y minus",
+   721
+  ],
+  [
+   "Find the dot product the vector negative",
+   721
+  ],
+  [
+   "Find the magnitude of the vector the vector",
+   721
+  ],
+  [
+   "i plus",
+   720
+  ],
+  [
+   "Find the derivative of f of x equals negative",
+   716
+  ],
+  [
+   "Find the derivative of f of x equals",
+   685
+  ],
+  [
+   "squared",
+   681
+  ],
+  [
+   "the slope at x equals",
+   680
+  ],
+  [
+   "First g of negative",
+   646
+  ],
+  [
+   "Change:",
+   644
+  ],
+  [
+   "Multiply",
+   641
+  ],
+  [
+   "first.",
+   641
+  ],
+  [
+   "green marbles. You pick one without looking. What is the probability it is blue? Give a fraction.",
+   631
+  ],
+  [
+   "green marbles. You pick one without looking. What is the probability it is green? Give a fraction.",
+   625
+  ],
+  [
+   "f prime of x equals negative",
+   622
+  ],
+  [
+   "F x equals",
+   622
+  ],
+  [
+   "cubed",
+   619
+  ],
+  [
+   "degrees about the origin?",
+   618
+  ],
+  [
+   "i plus negative",
+   617
+  ],
+  [
+   "Where does it go after you reflect over the y-axis?",
+   615
+  ],
+  [
+   "divided by negative",
+   612
+  ],
+  [
+   "F x equals negative",
+   610
+  ],
+  [
+   "Where does it go after you reflect over the x-axis?",
+   605
+  ],
+  [
+   "green marbles. You pick one without looking. What is the probability it is red? Give a fraction.",
+   603
+  ],
+  [
+   "Where does it go after you translate",
+   599
+  ],
+  [
+   "to y.",
+   599
+  ],
+  [
+   "Find f g of negative",
+   597
+  ],
+  [
+   "Distribute:",
+   594
+  ],
+  [
+   "Distribute: negative",
+   590
+  ],
+  [
+   "degrees counterclockwise about the origin?",
+   563
+  ],
+  [
+   "times x to the power of",
+   544
+  ],
+  [
+   "the slope at x equals negative",
+   530
+  ],
+  [
+   "times one half equals what?",
+   529
+  ],
+  [
+   "Find the midpoint of",
+   509
+  ],
+  [
+   "Find the distance between",
+   507
+  ],
+  [
+   "runners finish 1st through 4th?",
+   504
+  ],
+  [
+   "place to the right.",
+   495
+  ],
+  [
+   "Double again: what?",
+   492
+  ],
+  [
+   "pieces of size one quarter",
+   487
+  ],
+  [
+   "runners finish 1st through 2nd?",
+   487
+  ],
+  [
+   "place to the left.",
+   482
+  ],
+  [
+   "pieces of size one third",
+   481
+  ],
+  [
+   "runners finish 1st through 3rd?",
+   477
+  ],
+  [
+   "divided by x to the power of",
+   464
+  ],
+  [
+   "pieces of size one half",
+   463
+  ],
+  [
+   "and g of x equals",
+   461
+  ],
+  [
+   "and g of x equals negative",
+   457
+  ],
+  [
+   "Keep the 12ths.",
+   443
+  ],
+  [
+   "Keep the 6ths.",
+   440
+  ],
+  [
+   "Keep the 10ths.",
+   437
+  ],
+  [
+   "Keep the 4ths.",
+   437
+  ],
+  [
+   "Keep the 8ths.",
+   429
+  ],
+  [
+   "dollars for",
+   422
+  ],
+  [
+   "items. How many dollars for",
+   422
+  ],
+  [
+   "cubed. Find f prime of",
+   422
+  ],
+  [
+   "Keep the 3ths.",
+   417
+  ],
+  [
+   "two thirds equals what over",
+   414
+  ],
+  [
+   "is less than",
+   413
+  ],
+  [
+   "is greater than",
+   412
+  ],
+  [
+   "one third equals what over",
+   401
+  ],
+  [
+   "Half of that is what?",
+   400
+  ],
+  [
+   "Keep the 5ths.",
+   397
+  ],
+  [
+   "Each term is multiplied by negative",
+   396
+  ],
+  [
+   "squared. Find f prime of",
+   392
+  ],
+  [
+   "is less than or equal to",
+   379
+  ],
+  [
+   "cups for",
+   377
+  ],
+  [
+   "items. How many cups for",
+   377
+  ],
+  [
+   "is less than or equal to negative",
+   377
+  ],
+  [
+   "pages for",
+   372
+  ],
+  [
+   "items. How many pages for",
+   372
+  ],
+  [
+   "Left: 9² equals",
+   370
+  ],
+  [
+   "x squared minus x minus",
+   368
+  ],
+  [
+   "Convert pi over",
+   366
+  ],
+  [
+   "miles for",
+   365
+  ],
+  [
+   "items. How many miles for",
+   365
+  ],
+  [
+   "is less than negative",
+   363
+  ],
+  [
+   "x squared plus x minus",
+   363
+  ],
+  [
+   "Change: negative",
+   360
+  ],
+  [
+   "Left: 3² equals",
+   360
+  ],
+  [
+   "is greater than or equal to",
+   358
+  ],
+  [
+   "squared times",
+   358
+  ],
+  [
+   "Left: 6² equals",
+   355
+  ],
+  [
+   "Left: 4² equals",
+   350
+  ],
+  [
+   "is greater than or equal to negative",
+   349
+  ],
+  [
+   "is greater than negative",
+   349
+  ],
+  [
+   "cubed times",
+   341
+  ],
+  [
+   "x squared plus x plus",
+   337
+  ],
+  [
+   "Left: 8² equals",
+   334
+  ],
+  [
+   "Left: 5² equals",
+   334
+  ],
+  [
+   "cubed times negative",
+   333
+  ],
+  [
+   "x minus y equals",
+   330
+  ],
+  [
+   "equals 0., and so on, What is digit number",
+   330
+  ],
+  [
+   "after the decimal point?",
+   330
+  ],
+  [
+   "packs of blocks with",
+   328
+  ],
+  [
+   "Left: 7² equals",
+   328
+  ],
+  [
+   "Right: 3² equals",
+   328
+  ],
+  [
+   "f of x equals negative x minus",
+   327
+  ],
+  [
+   "Right: 4² equals",
+   327
+  ],
+  [
+   "times two thirds equals what?",
+   326
+  ],
+  [
+   "packs of cards with",
+   323
+  ],
+  [
+   "x plus y equals",
+   323
+  ],
+  [
+   "squared times negative",
+   323
+  ],
+  [
+   "x cubed plus negative",
+   322
+  ],
+  [
+   "Left: 2² equals",
+   321
+  ],
+  [
+   "Right: 5² equals",
+   320
+  ],
+  [
+   "packs of pencils with",
+   319
+  ],
+  [
+   "Right: 6² equals",
+   319
+  ],
+  [
+   "f of x equals negative x plus",
+   317
+  ],
+  [
+   "packs of shells with",
+   316
+  ],
+  [
+   "Right: 8² equals",
+   316
+  ],
+  [
+   "packs of apples with",
+   313
+  ],
+  [
+   "f of x equals x plus",
+   310
+  ],
+  [
+   "down?",
+   306
+  ],
+  [
+   "to x and negative",
+   306
+  ],
+  [
+   "Right: 9² equals",
+   304
+  ],
+  [
+   "left and",
+   303
+  ],
+  [
+   "x squared minus x plus",
+   301
+  ],
+  [
+   "x plus y equals negative",
+   300
+  ],
+  [
+   "equals one quarter",
+   297
+  ],
+  [
+   "right and",
+   296
+  ],
+  [
+   "f of x equals x minus",
+   295
+  ],
+  [
+   "one half plus",
+   294
+  ],
+  [
+   "up?",
+   293
+  ],
+  [
+   "to x and",
+   293
+  ],
+  [
+   "packs of stickers with",
+   288
+  ],
+  [
+   "x minus y equals negative",
+   288
+  ],
+  [
+   "equals one half",
+   287
+  ],
+  [
+   "Right: 2² equals",
+   285
+  ],
+  [
+   "packs of marbles with",
+   283
+  ],
+  [
+   "packs of cookies with",
+   283
+  ],
+  [
+   "Find the vertex of y equals x squared minus",
+   282
+  ],
+  [
+   "packs of stars with",
+   281
+  ],
+  [
+   "packs of beads with",
+   281
+  ],
+  [
+   "times one third equals what?",
+   281
+  ],
+  [
+   "divided by one third equals what?",
+   278
+  ],
+  [
+   "squared. Find f prime of negative",
+   278
+  ],
+  [
+   "x, over x plus",
+   275
+  ],
+  [
+   "equals three quarters",
+   274
+  ],
+  [
+   "Ivy buys",
+   271
+  ],
+  [
+   "one quarter divided by",
+   271
+  ],
+  [
+   "Right: 7² equals",
+   270
+  ],
+  [
+   "Right: 1² equals",
+   269
+  ],
+  [
+   "times three quarters equals what?",
+   267
+  ],
+  [
+   "one third divided by",
+   267
+  ],
+  [
+   "Kai buys",
+   265
+  ],
+  [
+   "one half divided by",
+   262
+  ],
+  [
+   "cubed. Find f prime of negative",
+   262
+  ],
+  [
+   "Right: 0² equals",
+   262
+  ],
+  [
+   "Ravi buys",
+   261
+  ],
+  [
+   "Find the vertex of y equals x squared plus",
+   259
+  ],
+  [
+   "equals two thirds",
+   258
+  ],
+  [
+   "Lena buys",
+   256
+  ],
+  [
+   "Theo buys",
+   252
+  ],
+  [
+   "Maya buys",
+   252
+  ],
+  [
+   "Sam buys",
+   252
+  ],
+  [
+   "Zoe buys",
+   248
+  ],
+  [
+   "Left: 1² equals",
+   248
+  ],
+  [
+   "Leo buys",
+   244
+  ],
+  [
+   "to negative",
+   244
+  ],
+  [
+   "Nia buys",
+   243
+  ],
+  [
+   "Omar buys",
+   242
+  ],
+  [
+   "divided by one half equals what?",
+   242
+  ],
+  [
+   "Find the vertex of y equals negative x squared minus",
+   242
+  ],
+  [
+   "equals one third",
+   241
+  ],
+  [
+   "You roll a fair six-sided die. What is the probability of a number less than",
+   238
+  ],
+  [
+   "divided by one quarter equals what?",
+   237
+  ],
+  [
+   "one third plus",
+   234
+  ],
+  [
+   "Aria buys",
+   229
+  ],
+  [
+   "times two quarters equals what?",
+   229
+  ],
+  [
+   "times one quarter equals what?",
+   227
+  ],
+  [
+   "three quarters equals what over",
+   222
+  ],
+  [
+   "How many one third pieces fit in one whole?",
+   221
+  ],
+  [
+   "Find the remainder when x cubed minus",
+   221
+  ],
+  [
+   "Together what?",
+   219
+  ],
+  [
+   "times negative x plus",
+   218
+  ],
+  [
+   "You roll a fair six-sided die. What is the probability of a",
+   217
+  ],
+  [
+   "Split each one quarter into",
+   216
+  ],
+  [
+   "Split each one third into",
+   216
+  ],
+  [
+   "times negative x minus",
+   214
+  ],
+  [
+   "Split each one half into",
+   209
+  ],
+  [
+   "How many one half pieces fit in one whole?",
+   208
+  ],
+  [
+   "Solve: x squared plus x minus",
+   208
+  ],
+  [
+   "Find the remainder when negative x cubed minus",
+   208
+  ],
+  [
+   "Find the vertex of y equals negative x squared plus",
+   207
+  ],
+  [
+   "f of x equals x squared plus",
+   206
+  ],
+  [
+   "Find the remainder when negative x cubed plus",
+   206
+  ],
+  [
+   "f of x equals x squared minus",
+   204
+  ],
+  [
+   "You roll a fair six-sided die. What is the probability of a number greater than",
+   203
+  ],
+  [
+   "x to the power of",
+   202
+  ],
+  [
+   "minus x plus",
+   200
+  ],
+  [
+   "Find the remainder when x cubed plus",
+   198
+  ],
+  [
+   "one quarter equals what over",
+   196
+  ],
+  [
+   "How many one quarter pieces fit in one whole?",
+   194
+  ],
+  [
+   "f of x equals negative x squared minus",
+   191
+  ],
+  [
+   "balloons",
+   189
+  ],
+  [
+   "negative x minus",
+   188
+  ],
+  [
+   "of x2 minus x minus",
+   186
+  ],
+  [
+   "F x equals negative two thirds x cubed plus",
+   185
+  ],
+  [
+   "of negative x squared plus",
+   185
+  ],
+  [
+   "F x equals negative one third x cubed plus",
+   184
+  ],
+  [
+   "plus two thirds equals what?",
+   183
+  ],
+  [
+   "Solve: x squared minus x minus",
+   181
+  ],
+  [
+   "minus x minus",
+   180
+  ],
+  [
+   "Pop",
+   180
+  ],
+  [
+   "of x2 plus x minus",
+   174
+  ],
+  [
+   "plus one third equals what?",
+   173
+  ],
+  [
+   "two thirds plus",
+   173
+  ],
+  [
+   "f of x equals negative x squared plus",
+   172
+  ],
+  [
+   "three times:",
+   171
+  ],
+  [
+   "F x equals two thirds x cubed plus",
+   169
+  ],
+  [
+   "stickers and gets",
+   166
+  ],
+  [
+   "stars and gets",
+   164
+  ],
+  [
+   "F x equals two thirds x cubed plus negative",
+   159
+  ],
+  [
+   "What is the 7th multiple of",
+   158
+  ],
+  [
+   "blue marbles. You pick one without looking. What is the probability it is red? Give a fraction.",
+   158
+  ],
+  [
+   "Solve:. x minus",
+   158
+  ],
+  [
+   "of x squared minus",
+   158
+  ],
+  [
+   "F x equals one third x cubed plus negative",
+   158
+  ],
+  [
+   "F x equals negative two thirds x cubed plus negative",
+   158
+  ],
+  [
+   "cards and gets",
+   156
+  ],
+  [
+   "beads and gets",
+   153
+  ],
+  [
+   "Solve:. minus x plus",
+   151
+  ],
+  [
+   "of negative x squared minus",
+   151
+  ],
+  [
+   "three quarters times",
+   150
+  ],
+  [
+   "F x equals negative one third x cubed plus negative",
+   150
+  ],
+  [
+   "blocks and gets",
+   147
+  ],
+  [
+   "shells and gets",
+   147
+  ],
+  [
+   "apples and gets",
+   147
+  ],
+  [
+   "marbles and gets",
+   143
+  ],
+  [
+   "two quarters plus",
+   143
+  ],
+  [
+   "Theo has",
+   142
+  ],
+  [
+   "Solve:. x plus",
+   142
+  ],
+  [
+   "negative x plus",
+   141
+  ],
+  [
+   "of x squared plus",
+   141
+  ],
+  [
+   "F x equals one third x cubed plus",
+   141
+  ],
+  [
+   "What is the 4th multiple of",
+   140
+  ],
+  [
+   "two quarters times",
+   139
+  ],
+  [
+   "Leo has",
+   138
+  ],
+  [
+   "cookies and gets",
+   134
+  ],
+  [
+   "Lena has",
+   131
+  ],
+  [
+   "Nia has",
+   131
+  ],
+  [
+   "Kai has",
+   130
+  ],
+  [
+   "What is the 9th multiple of",
+   129
+  ],
+  [
+   "Solve: negative x minus",
+   129
+  ],
+  [
+   "What is the 3rd multiple of",
+   128
+  ],
+  [
+   "cubed equals x to the power of what?",
+   128
+  ],
+  [
+   "one quarter plus",
+   127
+  ],
+  [
+   "Aria has",
+   126
+  ],
+  [
+   "two thirds times",
+   126
+  ],
+  [
+   "squared equals x to the power of what?",
+   126
+  ],
+  [
+   "Solve:. minus x minus",
+   126
+  ],
+  [
+   "x.",
+   126
+  ],
+  [
+   "divided by x cubed equals x to the power of what?",
+   124
+  ],
+  [
+   "What is the 5th multiple of",
+   123
+  ],
+  [
+   "one quarter times",
+   123
+  ],
+  [
+   "blue marbles. You pick one without looking. What is the probability it is blue? Give a fraction.",
+   122
+  ],
+  [
+   "Ivy has",
+   121
+  ],
+  [
+   "pencils and gets",
+   121
+  ],
+  [
+   "plus two quarters equals what?",
+   121
+  ],
+  [
+   "What is the 8th multiple of",
+   120
+  ],
+  [
+   "three quarters plus",
+   120
+  ],
+  [
+   "What is the 6th multiple of",
+   119
+  ],
+  [
+   "What is the 2nd multiple of",
+   118
+  ],
+  [
+   "Omar has",
+   117
+  ],
+  [
+   "Zoe has",
+   117
+  ],
+  [
+   "Take away one",
+   117
+  ],
+  [
+   "times x squared equals x to the power of what?",
+   117
+  ],
+  [
+   "Maya has",
+   116
+  ],
+  [
+   "x when x equals",
+   115
+  ],
+  [
+   "Solve: negative x plus",
+   115
+  ],
+  [
+   "x cubed plus x squared minus",
+   115
+  ],
+  [
+   "and g of x equals negative x plus",
+   115
+  ],
+  [
+   "one half times",
+   114
+  ],
+  [
+   "x cubed plus x squared plus",
+   114
+  ],
+  [
+   "and g of x equals x plus",
+   114
+  ],
+  [
+   "one third times",
+   113
+  ],
+  [
+   "Ravi has",
+   111
+  ],
+  [
+   "cookies equally among",
+   111
+  ],
+  [
+   "Factor: x squared plus x minus",
+   110
+  ],
+  [
+   "Solve: x minus",
+   109
+  ],
+  [
+   "divided by x squared equals x to the power of what?",
+   109
+  ],
+  [
+   "Factor: x squared minus x minus",
+   109
+  ],
+  [
+   "plus one half plus, and so on",
+   109
+  ],
+  [
+   "times x cubed equals x to the power of what?",
+   108
+  ],
+  [
+   "x cubed minus x squared minus",
+   108
+  ],
+  [
+   "marbles equally among",
+   107
+  ],
+  [
+   "plus one quarter equals what?",
+   107
+  ],
+  [
+   "plus three quarters equals what?",
+   107
+  ],
+  [
+   "x cubed minus x squared plus",
+   107
+  ],
+  [
+   "stickers equally among",
+   106
+  ],
+  [
+   "and g of x equals negative x minus",
+   105
+  ],
+  [
+   "beads equally among",
+   100
+  ],
+  [
+   "and g of x equals x minus",
+   100
+  ],
+  [
+   "plus three quarters plus, and so on",
+   100
+  ],
+  [
+   "apples equally among",
+   99
+  ],
+  [
+   "Simplify: x squared divided by x to the power of",
+   99
+  ],
+  [
+   "Simplify: x cubed to the power of",
+   99
+  ],
+  [
+   "of one third equals what?",
+   99
+  ],
+  [
+   "Sam has",
+   98
+  ],
+  [
+   "equals negative x plus",
+   98
+  ],
+  [
+   "Simplify: x squared times x to the power of",
+   97
+  ],
+  [
+   "blocks equally among",
+   95
+  ],
+  [
+   "cards equally among",
+   95
+  ],
+  [
+   "equals negative x minus",
+   95
+  ],
+  [
+   "Simplify: x cubed divided by x to the power of",
+   94
+  ],
+  [
+   "pi radians to degrees.",
+   94
+  ],
+  [
+   "Maya shares",
+   93
+  ],
+  [
+   "Simplify: x cubed times x to the power of",
+   93
+  ],
+  [
+   "equals x minus",
+   93
+  ],
+  [
+   "x, over x minus",
+   91
+  ],
+  [
+   "shells equally among",
+   89
+  ],
+  [
+   "Ravi shares",
+   88
+  ],
+  [
+   "Zoe shares",
+   88
+  ],
+  [
+   "Leo shares",
+   88
+  ],
+  [
+   "Aria shares",
+   87
+  ],
+  [
+   "stars equally among",
+   87
+  ],
+  [
+   "Nia shares",
+   86
+  ],
+  [
+   "pencils equally among",
+   86
+  ],
+  [
+   "Omar shares",
+   83
+  ],
+  [
+   "Theo shares",
+   83
+  ],
+  [
+   "plus two thirds plus",
+   80
+  ],
+  [
+   "more than",
+   80
+  ],
+  [
+   "less than",
+   80
+  ],
+  [
+   "of one quarter equals what?",
+   79
+  ],
+  [
+   "plus two thirds plus, and so on",
+   78
+  ],
+  [
+   "x is divided by x plus",
+   77
+  ],
+  [
+   "Ten groups: put a zero on",
+   76
+  ],
+  [
+   "Ivy shares",
+   76
+  ],
+  [
+   "Sam shares",
+   73
+  ],
+  [
+   "Simplify: x squared to the power of",
+   73
+  ],
+  [
+   "of one half equals what?",
+   72
+  ],
+  [
+   "Lena shares",
+   70
+  ],
+  [
+   "Find the derivative of f of x equals x cubed plus",
+   70
+  ],
+  [
+   "x. Find f to the power of negative",
+   69
+  ],
+  [
+   "plus three quarters plus",
+   69
+  ],
+  [
+   "x. Find f of",
+   68
+  ],
+  [
+   "Simplify: negative x minus",
+   66
+  ],
+  [
+   "plus one third plus, and so on",
+   66
+  ],
+  [
+   "plus negative x",
+   63
+  ],
+  [
+   "minus one third equals what?",
+   61
+  ],
+  [
+   "one half minus",
+   61
+  ],
+  [
+   "Find the derivative of f of x equals negative x cubed minus",
+   61
+  ],
+  [
+   "Kai shares",
+   60
+  ],
+  [
+   "three quarters blank",
+   60
+  ],
+  [
+   "plus x",
+   59
+  ],
+  [
+   "Find the derivative of f of x equals negative x cubed plus",
+   59
+  ],
+  [
+   "two thirds divided by",
+   58
+  ],
+  [
+   "minus two thirds equals what?",
+   57
+  ],
+  [
+   "divided by two thirds equals what?",
+   57
+  ],
+  [
+   "two quarters divided by",
+   56
+  ],
+  [
+   "x. Find f g of",
+   56
+  ],
+  [
+   "divided by two quarters equals what?",
+   55
+  ],
+  [
+   "Simplify: negative x plus",
+   55
+  ],
+  [
+   "x. Find f of negative",
+   53
+  ],
+  [
+   "times two thirds",
+   52
+  ],
+  [
+   "three quarters divided by",
+   52
+  ],
+  [
+   "x is divided by x minus",
+   52
+  ],
+  [
+   "minus one quarter equals what?",
+   51
+  ],
+  [
+   "times two quarters",
+   51
+  ],
+  [
+   "x cubed plus negative one half x squared plus negative",
+   51
+  ],
+  [
+   "Simplify: x minus",
+   50
+  ],
+  [
+   "x cubed plus one half x squared plus",
+   50
+  ],
+  [
+   "Simplify: x plus",
+   49
+  ],
+  [
+   "x cubed plus one half x squared plus negative",
+   49
+  ],
+  [
+   "x cubed plus negative one half x squared plus",
+   48
+  ],
+  [
+   "blank two quarters",
+   47
+  ],
+  [
+   "plus x plus",
+   47
+  ],
+  [
+   "two quarters blank",
+   45
+  ],
+  [
+   "minus two quarters equals what?",
+   45
+  ],
+  [
+   "two thirds minus",
+   45
+  ],
+  [
+   "x when x equals negative",
+   45
+  ],
+  [
+   "Find the derivative of f of x equals x cubed minus",
+   45
+  ],
+  [
+   "plus negative two thirds plus",
+   44
+  ],
+  [
+   "blank three quarters",
+   43
+  ],
+  [
+   "plus negative one third plus",
+   43
+  ],
+  [
+   "one third blank",
+   42
+  ],
+  [
+   "divided by three quarters equals what?",
+   42
+  ],
+  [
+   "plus x minus",
+   42
+  ],
+  [
+   "x cubed. Find f prime of",
+   42
+  ],
+  [
+   "blank two thirds",
+   41
+  ],
+  [
+   "one quarter blank",
+   41
+  ],
+  [
+   "times three quarters",
+   41
+  ],
+  [
+   "f of x equals x cubed minus",
+   41
+  ],
+  [
+   "blank one third",
+   40
+  ],
+  [
+   "plus one half plus",
+   38
+  ],
+  [
+   "x. Find f g of negative",
+   37
+  ],
+  [
+   "Find the derivative of f of x equals negative x squared minus",
+   37
+  ],
+  [
+   "x squared times negative",
+   37
+  ],
+  [
+   "plus negative one half plus one quarter plus, and so on",
+   36
+  ],
+  [
+   "two thirds blank",
+   35
+  ],
+  [
+   "one half blank",
+   35
+  ],
+  [
+   "two quarters equals",
+   35
+  ],
+  [
+   "two thirds equals",
+   34
+  ],
+  [
+   "of x2 plus x, over x plus",
+   34
+  ],
+  [
+   "plus one quarter plus, and so on",
+   34
+  ],
+  [
+   "x. Find f prime of",
+   33
+  ],
+  [
+   "x cubed times negative",
+   33
+  ],
+  [
+   "of x plus",
+   33
+  ],
+  [
+   "F x equals one half x squared plus",
+   33
+  ],
+  [
+   "minus x minus y equals",
+   31
+  ],
+  [
+   "f of x equals x cubed plus",
+   31
+  ],
+  [
+   "x squared. Find f prime of",
+   31
+  ],
+  [
+   "Find the derivative of f of x equals x squared minus",
+   30
+  ],
+  [
+   "plus one quarter plus",
+   30
+  ],
+  [
+   "blank one half",
+   29
+  ],
+  [
+   "f of x equals negative x cubed plus",
+   29
+  ],
+  [
+   "of negative x plus",
+   29
+  ],
+  [
+   "F x equals negative one half x squared plus",
+   29
+  ],
+  [
+   "plus one half plus one quarter plus, and so on",
+   29
+  ],
+  [
+   "three quarters minus",
+   28
+  ],
+  [
+   "Find the derivative of f of x equals x squared plus",
+   28
+  ],
+  [
+   "Solve:. minus x plus y equals",
+   27
+  ],
+  [
+   "f of x equals negative x cubed minus",
+   27
+  ],
+  [
+   "x cubed times",
+   27
+  ],
+  [
+   "F x equals two thirds x cubed plus negative one half x squared plus negative",
+   26
+  ],
+  [
+   "of x minus",
+   26
+  ],
+  [
+   "F x equals negative two thirds x cubed plus one half x squared plus",
+   26
+  ],
+  [
+   "of negative x squared minus x plus",
+   26
+  ],
+  [
+   "F x equals negative one third x cubed plus negative one half x squared plus",
+   26
+  ],
+  [
+   "blank one quarter",
+   25
+  ],
+  [
+   "of x squared minus x minus",
+   25
+  ],
+  [
+   "F x equals one third x cubed plus negative one half x squared plus negative",
+   25
+  ],
+  [
+   "F x equals one half x squared plus negative",
+   25
+  ],
+  [
+   "minus three quarters equals what?",
+   24
+  ],
+  [
+   "Solve:. minus x minus y equals",
+   24
+  ],
+  [
+   "Solve:. x minus y equals",
+   24
+  ],
+  [
+   "Find the derivative of f of x equals negative x squared plus",
+   24
+  ],
+  [
+   "F x equals negative two thirds x cubed plus negative one half x squared plus negative",
+   24
+  ],
+  [
+   "of negative x squared plus x minus",
+   24
+  ],
+  [
+   "F x equals negative one third x cubed plus one half x squared plus negative",
+   24
+  ],
+  [
+   "of negative x minus",
+   24
+  ],
+  [
+   "F x equals negative one half x squared plus negative",
+   24
+  ],
+  [
+   "two quarters minus",
+   23
+  ],
+  [
+   "Solve: x squared minus x equals",
+   23
+  ],
+  [
+   "x and g of x equals negative",
+   23
+  ],
+  [
+   "of x2 minus x, over x minus",
+   23
+  ],
+  [
+   "of x2 minus x, over x plus",
+   23
+  ],
+  [
+   "x. Find f prime of negative",
+   23
+  ],
+  [
+   "x squared times",
+   23
+  ],
+  [
+   "of x squared plus x plus",
+   23
+  ],
+  [
+   "F x equals one third x cubed plus one half x squared plus",
+   23
+  ],
+  [
+   "of negative x squared minus x minus",
+   23
+  ],
+  [
+   "F x equals negative one third x cubed plus negative one half x squared plus negative",
+   23
+  ],
+  [
+   "of negative x squared plus x plus",
+   23
+  ],
+  [
+   "F x equals negative one third x cubed plus one half x squared plus",
+   23
+  ],
+  [
+   "minus x plus y equals",
+   22
+  ],
+  [
+   "minus x minus y equals negative",
+   22
+  ],
+  [
+   "Find the remainder when negative x cubed plus x squared plus",
+   22
+  ],
+  [
+   "and g of x equals negative x. Find f g of",
+   22
+  ],
+  [
+   "F x equals two thirds x cubed plus one half x squared plus",
+   22
+  ],
+  [
+   "of x squared plus x minus",
+   22
+  ],
+  [
+   "F x equals one third x cubed plus one half x squared plus negative",
+   22
+  ],
+  [
+   "minus x plus y equals negative",
+   21
+  ],
+  [
+   "and g of x equals x. Find f g of",
+   21
+  ],
+  [
+   "f of x equals x to the power of",
+   21
+  ],
+  [
+   "plus one third plus",
+   21
+  ],
+  [
+   "Solve: x squared plus x equals",
+   20
+  ],
+  [
+   "Find the remainder when x cubed plus x squared plus",
+   20
+  ],
+  [
+   "Find the remainder when negative x cubed minus x squared plus",
+   20
+  ],
+  [
+   "x and g of x equals",
+   20
+  ],
+  [
+   "F x equals negative two thirds x cubed plus one half x squared plus negative",
+   20
+  ],
+  [
+   "F x equals negative two thirds x cubed plus negative one half x squared plus",
+   20
+  ],
+  [
+   "one third minus",
+   19
+  ],
+  [
+   "Solve:. minus x minus y equals negative",
+   19
+  ],
+  [
+   "Solve:. x plus y equals",
+   19
+  ],
+  [
+   "Solve:. x minus y equals negative",
+   19
+  ],
+  [
+   "Find the remainder when negative x cubed minus x squared minus",
+   19
+  ],
+  [
+   "three quarters equals",
+   18
+  ],
+  [
+   "x cubed. Find f prime of negative",
+   18
+  ],
+  [
+   "F x equals two thirds x cubed plus one half x squared plus negative",
+   18
+  ],
+  [
+   "Find the remainder when x cubed minus x squared minus",
+   17
+  ],
+  [
+   "x squared. Find f prime of negative",
+   17
+  ],
+  [
+   "F x equals two thirds x cubed plus negative one half x squared plus",
+   17
+  ],
+  [
+   "Solve:. minus x plus y equals negative",
+   16
+  ],
+  [
+   "Find the remainder when x cubed plus x squared minus",
+   16
+  ],
+  [
+   "of x2, over x plus",
+   16
+  ],
+  [
+   "Solve:. x plus y equals negative",
+   15
+  ],
+  [
+   "Find the remainder when negative x cubed plus x squared minus",
+   15
+  ],
+  [
+   "x cubed plus x squared minus x plus",
+   14
+  ],
+  [
+   "times negative x to the power of",
+   14
+  ],
+  [
+   "f of x equals negative x to the power of",
+   14
+  ],
+  [
+   "of x squared minus x plus",
+   14
+  ],
+  [
+   "F x equals one third x cubed plus negative one half x squared plus",
+   14
+  ],
+  [
+   "f of x equals x squared minus x plus",
+   13
+  ],
+  [
+   "f of x equals negative x squared plus x plus",
+   13
+  ],
+  [
+   "f of x equals negative x squared minus x minus",
+   13
+  ],
+  [
+   "x cubed minus x squared minus x plus",
+   12
+  ],
+  [
+   "x cubed minus x squared plus x plus",
+   12
+  ],
+  [
+   "Find the remainder when x cubed minus x squared plus",
+   12
+  ],
+  [
+   "x cubed plus x plus",
+   12
+  ],
+  [
+   "x cubed minus x squared plus x minus",
+   12
+  ],
+  [
+   "one quarter minus",
+   11
+  ],
+  [
+   "f of x equals x squared plus x minus",
+   11
+  ],
+  [
+   "x squared.",
+   11
+  ],
+  [
+   "f of x equals x. Find f to the power of negative",
+   11
+  ],
+  [
+   "f of x equals x squared plus x plus",
+   10
+  ],
+  [
+   "f of x equals negative x squared minus x plus",
+   10
+  ],
+  [
+   "x cubed minus x squared minus x minus",
+   10
+  ],
+  [
+   "x cubed plus x squared plus x minus",
+   10
+  ],
+  [
+   "times x cubed times",
+   10
+  ],
+  [
+   "Pop double",
+   10
+  ],
+  [
+   "and g of x equals x. Find f g of negative",
+   9
+  ],
+  [
+   "f of x equals x squared minus x minus",
+   8
+  ],
+  [
+   "x squared plus x is divided by x minus",
+   8
+  ],
+  [
+   "x cubed plus x squared minus x minus",
+   8
+  ],
+  [
+   "Solve: x squared equals",
+   7
+  ],
+  [
+   "x squared minus x equals",
+   7
+  ],
+  [
+   "x squared is divided by x plus",
+   7
+  ],
+  [
+   "x squared plus x is divided by x plus",
+   7
+  ],
+  [
+   "x cubed minus x minus",
+   7
+  ],
+  [
+   "times x squared times",
+   7
+  ],
+  [
+   "times negative x cubed times negative",
+   7
+  ],
+  [
+   "x equals x minus",
+   6
+  ],
+  [
+   "x squared minus x. Find f of negative",
+   6
+  ],
+  [
+   "Find the remainder when x cubed plus x squared minus x plus",
+   6
+  ],
+  [
+   "x cubed plus x squared plus x plus",
+   6
+  ],
+  [
+   "x cubed minus x plus",
+   6
+  ],
+  [
+   "f of x equals x and g of x equals negative",
+   6
+  ],
+  [
+   "times negative x squared times negative",
+   6
+  ],
+  [
+   "f of x equals negative x squared plus x minus",
+   5
+  ],
+  [
+   "Find the remainder when x cubed minus x squared plus x plus",
+   5
+  ],
+  [
+   "f of x equals negative x. Find f to the power of negative",
+   5
+  ],
+  [
+   "Find the derivative of f of x equals x cubed plus x squared plus",
+   5
+  ],
+  [
+   "f of x equals negative x cubed. Find f prime of",
+   5
+  ],
+  [
+   "x equals negative x minus",
+   4
+  ],
+  [
+   "negative x equals",
+   4
+  ],
+  [
+   "x squared plus x equals",
+   4
+  ],
+  [
+   "f of x equals negative x squared plus x. Find f of negative",
+   4
+  ],
+  [
+   "x squared. Find f of negative",
+   4
+  ],
+  [
+   "x squared. Find f of",
+   4
+  ],
+  [
+   "x squared minus x is divided by x plus",
+   4
+  ],
+  [
+   "Find the remainder when x cubed minus x minus",
+   4
+  ],
+  [
+   "x cubed plus x minus",
+   4
+  ],
+  [
+   "Find the remainder when x cubed plus x minus",
+   4
+  ],
+  [
+   "Find the remainder when negative x cubed minus x squared plus x plus",
+   4
+  ],
+  [
+   "Find the remainder when negative x cubed plus x squared plus x plus",
+   4
+  ],
+  [
+   "Find the remainder when x cubed plus x squared minus x minus",
+   4
+  ],
+  [
+   "f of x equals negative x and g of x equals",
+   4
+  ],
+  [
+   "x and g of x equals negative x minus",
+   4
+  ],
+  [
+   "x squared plus x.",
+   4
+  ],
+  [
+   "Find the derivative of f of x equals x squared minus x minus",
+   4
+  ],
+  [
+   "Find the derivative of f of x equals x cubed plus x squared minus",
+   4
+  ],
+  [
+   "f of x equals x cubed minus x squared plus",
+   4
+  ],
+  [
+   "f of x equals x cubed plus x squared minus",
+   4
+  ],
+  [
+   "f of x equals negative x squared. Find f prime of",
+   4
+  ],
+  [
+   "f of x equals x cubed. Find f prime of negative",
+   4
+  ],
+  [
+   "f of x equals x squared. Find f prime of",
+   4
+  ],
+  [
+   "x equals negative x plus",
+   3
+  ],
+  [
+   "x squared plus x. Find f of",
+   3
+  ],
+  [
+   "x squared minus x. Find f of",
+   3
+  ],
+  [
+   "Find the remainder when negative x cubed minus x minus",
+   3
+  ],
+  [
+   "Find the remainder when x cubed plus x squared plus x plus",
+   3
+  ],
+  [
+   "Find the remainder when negative x cubed plus x squared minus x plus",
+   3
+  ],
+  [
+   "x and g of x equals x plus",
+   3
+  ],
+  [
+   "x and g of x equals x minus",
+   3
+  ],
+  [
+   "f of x equals x and g of x equals negative x plus",
+   3
+  ],
+  [
+   "x and g of x equals negative x plus",
+   3
+  ],
+  [
+   "x squared minus x. Find f prime of",
+   3
+  ],
+  [
+   "x squared minus x.",
+   3
+  ],
+  [
+   "x squared plus x. Find f prime of negative",
+   3
+  ],
+  [
+   "f of x equals negative x cubed minus x squared plus",
+   3
+  ],
+  [
+   "Find the derivative of f of x equals x cubed minus x squared minus",
+   3
+  ],
+  [
+   "Find the derivative of f of x equals negative x cubed plus x squared minus",
+   3
+  ],
+  [
+   "f of x equals x cubed. Find f prime of",
+   3
+  ],
+  [
+   "f of x equals negative x squared. Find f prime of negative",
+   3
+  ],
+  [
+   "equals x",
+   2
+  ],
+  [
+   "equals negative x",
+   2
+  ],
+  [
+   "x equals x plus",
+   2
+  ],
+  [
+   "f of x equals x squared minus x. Find f of negative",
+   2
+  ],
+  [
+   "Find the remainder when x cubed plus x plus",
+   2
+  ],
+  [
+   "x squared is divided by x minus",
+   2
+  ],
+  [
+   "Find the remainder when negative x cubed minus x plus",
+   2
+  ],
+  [
+   "x squared minus x is divided by x minus",
+   2
+  ],
+  [
+   "Find the remainder when x cubed plus x squared plus x minus",
+   2
+  ],
+  [
+   "and g of x equals negative x. Find f g of negative",
+   2
+  ],
+  [
+   "Find the derivative of f of x equals negative x squared plus x minus",
+   2
+  ],
+  [
+   "x squared",
+   2
+  ],
+  [
+   "f of x equals negative x cubed plus x squared plus",
+   2
+  ],
+  [
+   "Find the derivative of f of x equals x cubed minus x squared plus",
+   2
+  ],
+  [
+   "Find the derivative of f of x equals negative x cubed minus x squared plus",
+   2
+  ],
+  [
+   "f of x equals x squared. Find f prime of negative",
+   2
+  ],
+  [
+   "negative x equals x minus",
+   1
+  ],
+  [
+   "negative x equals x plus",
+   1
+  ],
+  [
+   "negative x equals negative",
+   1
+  ],
+  [
+   "f of x equals x squared plus x. Find f of",
+   1
+  ],
+  [
+   "f of x equals x squared. Find f of",
+   1
+  ],
+  [
+   "f of x equals negative x squared. Find f of negative",
+   1
+  ],
+  [
+   "f of x equals x squared plus x. Find f of negative",
+   1
+  ],
+  [
+   "f of x equals negative x squared. Find f of",
+   1
+  ],
+  [
+   "f of x equals negative x squared plus x. Find f of",
+   1
+  ],
+  [
+   "f of x equals x squared minus x. Find f of",
+   1
+  ],
+  [
+   "Find the remainder when negative x cubed minus x squared minus x plus",
+   1
+  ],
+  [
+   "Find the remainder when negative x cubed minus x squared plus x is divided by x plus",
+   1
+  ],
+  [
+   "x cubed plus x squared minus x is divided by x minus",
+   1
+  ],
+  [
+   "Find the remainder when x cubed minus x squared minus x minus",
+   1
+  ],
+  [
+   "Find the remainder when negative x cubed plus x squared plus x minus",
+   1
+  ],
+  [
+   "Find the remainder when negative x cubed plus x plus",
+   1
+  ],
+  [
+   "x cubed is divided by x plus",
+   1
+  ],
+  [
+   "Find the remainder when negative x cubed minus x squared minus x minus",
+   1
+  ],
+  [
+   "x cubed minus x squared plus x is divided by x plus",
+   1
+  ],
+  [
+   "Find the remainder when negative x cubed plus x minus",
+   1
+  ],
+  [
+   "x cubed minus x squared plus x is divided by x minus",
+   1
+  ],
+  [
+   "Find the remainder when x cubed minus x squared minus x plus",
+   1
+  ],
+  [
+   "Find the remainder when negative x cubed plus x squared minus x minus",
+   1
+  ],
+  [
+   "x cubed minus x squared is divided by x plus",
+   1
+  ],
+  [
+   "f of x equals x and g of x equals x. Find f g of negative",
+   1
+  ],
+  [
+   "f of x equals x and g of x equals negative x minus",
+   1
+  ],
+  [
+   "x and g of x equals x. Find f g of negative",
+   1
+  ],
+  [
+   "x and g of x equals x. Find f g of",
+   1
+  ],
+  [
+   "f of x equals negative x and g of x equals negative x plus",
+   1
+  ],
+  [
+   "Find the derivative of f of x equals negative x squared minus x minus",
+   1
+  ],
+  [
+   "f of x equals negative x squared minus x. Find f prime of",
+   1
+  ],
+  [
+   "Find the derivative of f of x equals negative x squared plus x plus",
+   1
+  ],
+  [
+   "Find the derivative of f of x equals negative x squared minus x plus",
+   1
+  ],
+  [
+   "Find the derivative of f of x equals x squared minus x plus",
+   1
+  ],
+  [
+   "Find the derivative of f of x equals x squared plus x minus",
+   1
+  ],
+  [
+   "Find the derivative of f of x equals x cubed minus x squared minus x plus",
+   1
+  ],
+  [
+   "f of x equals negative x cubed minus x squared minus x minus",
+   1
+  ],
+  [
+   "f of x equals x cubed plus x minus",
+   1
+  ],
+  [
+   "Find the derivative of f of x equals x cubed plus x squared minus x minus",
+   1
+  ],
+  [
+   "Find the derivative of f of x equals x cubed plus x plus",
+   1
+  ],
+  [
+   "f of x equals negative x cubed minus x squared plus x plus",
+   1
+  ],
+  [
+   "f of x equals x cubed minus x squared minus x minus",
+   1
+  ],
+  [
+   "f of x equals negative x cubed plus x minus",
+   1
+  ],
+  [
+   "Find the derivative of f of x equals negative x cubed minus x squared minus",
+   1
+  ],
+  [
+   "x squared minus x. Find f prime of negative",
+   1
+  ],
+  [
+   "Find the derivative of f of x equals x cubed plus x squared plus x plus",
+   1
+  ],
+  [
+   "Find the derivative of f of x equals x cubed plus x minus",
+   1
+  ],
+  [
+   "f of x equals negative x cubed minus x minus",
+   1
+  ],
+  [
+   "Find the derivative of f of x equals negative x cubed plus x squared plus",
+   1
+  ],
+  [
+   "f of x equals negative x cubed plus x squared plus x minus",
+   1
+  ],
+  [
+   "Find the derivative of f of x equals x cubed minus x squared minus x minus",
+   1
+  ],
+  [
+   "f of x equals x cubed minus x squared plus x plus",
+   1
+  ],
+  [
+   "f of x equals negative x cubed. Find f prime of negative",
+   1
+  ],
+  [
+   "Find the remainder when negative x cubed plus x squared is divided by x plus",
+   1
+  ],
+  [
+   "balloon",
+   1
+  ],
+  [
+   "Hi there!",
+   1
+  ],
+  [
+   "Great job!",
+   1
+  ]
+ ],
+ "framesDropped": [],
+ "wholeLines": [
+  "Across first x, then up or down y.",
+  "Add real parts, then imaginary parts.",
+  "Add the exponents.",
+  "Area equals pi r squared",
+  "Average the x values, then the y values.",
+  "Base times height.",
+  "Change both signs.",
+  "Change the sign of x, keep y.",
+  "Convert pi radians to degrees.",
+  "Cosine is the across x of the point.",
+  "Count the empty boxes in the frame.",
+  "Different signs: negative.",
+  "Double the short leg.",
+  "Find the derivative of f of x equals x squared minus x.",
+  "Find the hypotenuse c.",
+  "Find the missing angle.",
+  "Find the missing leg a.",
+  "Find the vertex of y equals negative x squared.",
+  "Find the vertex of y equals x squared.",
+  "Half of base times height.",
+  "Hi! I am your new reading voice.",
+  "Hi! I will read the questions to you.",
+  "Hi! This is how I sound.",
+  "How many cents are these coins worth?",
+  "How many dots are there?",
+  "It has no straight sides or corners.",
+  "Keep x, change the sign of y.",
+  "Line up the decimal points.",
+  "Match the dots one to one, left to right.",
+  "Multiply one equation so a variable has opposite coefficients, then add.",
+  "Multiply the exponents.",
+  "Not quite. Try again!",
+  "One less. Hop one step to the left.",
+  "One more. Hop one step to the right on the number line.",
+  "One place after the point for tenths.",
+  "Order does not matter: combination.",
+  "Order matters: permutation.",
+  "Ratio r equals negative one half.",
+  "Ratio r equals negative one third.",
+  "Ratio r equals one half.",
+  "Ratio r equals one quarter.",
+  "Ratio r equals one third.",
+  "Ratio r equals three quarters.",
+  "Ratio r equals two thirds.",
+  "Read aloud is on.",
+  "Same number of parts. Whose parts are bigger?",
+  "Same signs: positive.",
+  "Same size parts. Who has more of them?",
+  "Simplify: x cubed cubed equals x to the power of what?",
+  "Simplify: x cubed divided by x cubed equals x to the power of what?",
+  "Simplify: x cubed divided by x squared equals x to the power of what?",
+  "Simplify: x cubed squared equals x to the power of what?",
+  "Simplify: x cubed times x cubed equals x to the power of what?",
+  "Simplify: x cubed times x squared equals x to the power of what?",
+  "Simplify: x squared cubed equals x to the power of what?",
+  "Simplify: x squared divided by x cubed equals x to the power of what?",
+  "Simplify: x squared divided by x squared equals x to the power of what?",
+  "Simplify: x squared squared equals x to the power of what?",
+  "Simplify: x squared times x cubed equals x to the power of what?",
+  "Simplify: x squared times x squared equals x to the power of what?",
+  "Sine is the height y of the point.",
+  "Start at the bigger number and jump.",
+  "Start with the biggest coin and count on.",
+  "Subtract from both sides.",
+  "Subtract minus x from both sides.",
+  "Subtract the exponents.",
+  "Subtract x from both sides.",
+  "Super star!",
+  "The open side of the sign faces the bigger number.",
+  "Two places after the point for hundredths.",
+  "Vertical angles are equal.",
+  "What are the coordinates of the point?",
+  "What do the interior angles of a decagon add up to?",
+  "What do the interior angles of a dodecagon add up to?",
+  "What do the interior angles of a hexagon add up to?",
+  "What do the interior angles of a nonagon add up to?",
+  "What do the interior angles of a octagon add up to?",
+  "What do the interior angles of a pentagon add up to?",
+  "What is each exterior angle of a regular decagon?",
+  "What is each exterior angle of a regular dodecagon?",
+  "What is each exterior angle of a regular hexagon?",
+  "What is each exterior angle of a regular nonagon?",
+  "What is each exterior angle of a regular octagon?",
+  "What is each exterior angle of a regular pentagon?",
+  "What is each interior angle of a regular decagon?",
+  "What is each interior angle of a regular dodecagon?",
+  "What is each interior angle of a regular hexagon?",
+  "What is each interior angle of a regular nonagon?",
+  "What is each interior angle of a regular octagon?",
+  "What is each interior angle of a regular pentagon?",
+  "What is the area of the rectangle? square units",
+  "What is the missing angle?",
+  "What is the perimeter of the rectangle? units",
+  "What is the volume of the box in cubic units?",
+  "What is this shape called?",
+  "What number do the blocks show?",
+  "What time does the clock show?",
+  "Which has more?",
+  "Which row has more dots?",
+  "Woohoo! Correct!",
+  "Yay! You got it!",
+  "You are so smart!",
+  "You got it!",
+  "You roll a fair six-sided die. What is the probability of an even number?",
+  "cos equals adjacent divided by hypotenuse",
+  "one half blank one half",
+  "one half blank one quarter",
+  "one half blank one third",
+  "one half divided by one half equals what?",
+  "one half divided by one quarter equals what?",
+  "one half divided by one third equals what?",
+  "one half divided by three quarters equals what?",
+  "one half divided by two quarters equals what?",
+  "one half minus one quarter equals what?",
+  "one half minus one third equals what?",
+  "one half plus one quarter equals what?",
+  "one half plus one third equals what?",
+  "one half plus three quarters equals what?",
+  "one half plus two quarters equals what?",
+  "one half plus two thirds equals what?",
+  "one half times one quarter equals what?",
+  "one half times one third equals what?",
+  "one half times three quarters equals what?",
+  "one half times two quarters equals what?",
+  "one half times two thirds",
+  "one half times two thirds equals what?",
+  "one quarter blank one half",
+  "one quarter blank one quarter",
+  "one quarter blank one third",
+  "one quarter blank three quarters",
+  "one quarter blank two quarters",
+  "one quarter divided by one half equals what?",
+  "one quarter divided by one quarter equals what?",
+  "one quarter divided by three quarters equals what?",
+  "one quarter divided by two quarters equals what?",
+  "one quarter plus one quarter equals what?",
+  "one quarter plus one third equals what?",
+  "one quarter plus three quarters equals what?",
+  "one quarter plus two quarters equals what?",
+  "one quarter plus two thirds equals what?",
+  "one quarter times one half equals what?",
+  "one quarter times one quarter equals what?",
+  "one quarter times three quarters equals what?",
+  "one quarter times two quarters",
+  "one quarter times two quarters equals what?",
+  "one quarter times two thirds",
+  "one quarter times two thirds equals what?",
+  "one third blank one half",
+  "one third blank one quarter",
+  "one third blank one third",
+  "one third divided by one half equals what?",
+  "one third divided by one quarter equals what?",
+  "one third divided by one third equals what?",
+  "one third divided by three quarters equals what?",
+  "one third divided by two thirds equals what?",
+  "one third minus one quarter equals what?",
+  "one third pi r squared h",
+  "one third plus one quarter equals what?",
+  "one third plus one third equals what?",
+  "one third plus three quarters equals what?",
+  "one third plus two quarters equals what?",
+  "one third plus two thirds equals what?",
+  "one third times one half equals what?",
+  "one third times one quarter equals what?",
+  "one third times one third equals what?",
+  "one third times three quarters",
+  "one third times three quarters equals what?",
+  "one third times two quarters",
+  "one third times two quarters equals what?",
+  "one third times two thirds",
+  "pi r cubed",
+  "pi r squared h",
+  "sin equals opposite divided by hypotenuse",
+  "the square root of x squared plus y squared",
+  "three quarters blank one quarter",
+  "three quarters blank three quarters",
+  "three quarters blank two quarters",
+  "three quarters divided by one quarter equals what?",
+  "three quarters divided by one third equals what?",
+  "three quarters divided by three quarters equals what?",
+  "three quarters divided by two quarters equals what?",
+  "three quarters divided by two thirds equals what?",
+  "three quarters minus one quarter equals what?",
+  "three quarters minus one third equals what?",
+  "three quarters minus two quarters equals what?",
+  "three quarters minus two thirds equals what?",
+  "three quarters plus one quarter equals what?",
+  "three quarters plus one third equals what?",
+  "three quarters plus three quarters equals what?",
+  "three quarters plus two quarters equals what?",
+  "three quarters plus two thirds equals what?",
+  "three quarters times one half equals what?",
+  "three quarters times one quarter equals what?",
+  "three quarters times three quarters",
+  "three quarters times three quarters equals what?",
+  "three quarters times two quarters equals what?",
+  "three quarters times two thirds equals what?",
+  "two quarters blank one quarter",
+  "two quarters blank three quarters",
+  "two quarters blank two quarters",
+  "two quarters blank two thirds",
+  "two quarters divided by one quarter equals what?",
+  "two quarters divided by three quarters equals what?",
+  "two quarters divided by two quarters equals what?",
+  "two quarters divided by two thirds equals what?",
+  "two quarters minus one quarter equals what?",
+  "two quarters minus one third equals what?",
+  "two quarters plus one quarter equals what?",
+  "two quarters plus one third equals what?",
+  "two quarters plus three quarters equals what?",
+  "two quarters plus two quarters equals what?",
+  "two quarters plus two thirds equals what?",
+  "two quarters times one half equals what?",
+  "two quarters times one quarter equals what?",
+  "two quarters times one third equals what?",
+  "two quarters times three quarters",
+  "two quarters times three quarters equals what?",
+  "two quarters times two quarters",
+  "two quarters times two quarters equals what?",
+  "two quarters times two thirds",
+  "two quarters times two thirds equals what?",
+  "two thirds blank two quarters",
+  "two thirds blank two thirds",
+  "two thirds divided by one half equals what?",
+  "two thirds divided by one quarter equals what?",
+  "two thirds divided by three quarters equals what?",
+  "two thirds divided by two thirds equals what?",
+  "two thirds minus one quarter equals what?",
+  "two thirds minus one third equals what?",
+  "two thirds minus two quarters equals what?",
+  "two thirds plus one quarter equals what?",
+  "two thirds plus one third equals what?",
+  "two thirds plus three quarters equals what?",
+  "two thirds plus two quarters equals what?",
+  "two thirds plus two thirds equals what?",
+  "two thirds times one half equals what?",
+  "two thirds times one quarter equals what?",
+  "two thirds times one third equals what?",
+  "two thirds times three quarters",
+  "two thirds times three quarters equals what?",
+  "two thirds times two quarters",
+  "two thirds times two quarters equals what?",
+  "two thirds times two thirds",
+  "two thirds times two thirds equals what?",
+  "x, y becomes negative y, x."
+ ]
+}
