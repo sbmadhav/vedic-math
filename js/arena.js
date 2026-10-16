@@ -8,6 +8,7 @@ import { mentalQ, FAMILIES } from './mental.js';
 import { levelFor } from './adapt.js';
 import { sfx, speak, confetti, t } from './fx.js';
 import { on, later, loop, child } from './life.js';
+import { keypadOnly } from './shell.js';
 
 /* Question pools by League. The Pro League draws from the mental arithmetic families (js/mental.js) instead;
    proV1 is the Pro pool before that change, kept only for Pro daily rounds dated before MENTAL_FROM. */
@@ -17,6 +18,8 @@ const POOLS = {
   proV1: ['v-near-base', 'v-duplex', '6-percent', '7-twostep', '8-exprules', 'v-sqroot', '6-exp', '8-multistep', '11-logs', 'v-square-near']
 };
 export const ROUND_SECS = 60;
+/* Untimed Arena Practice (openspec game-shell-and-calm): 20 questions, no clock, Finish at any time */
+export const UNTIMED_QS = 20;
 /* Pro daily rounds switch to mental arithmetic on Monday 2026-10-19, the first day of ISO week 2026-W43. Boards are
    named after the Player's local date and ISO week, and the switch uses the same date, so no day's or week's Pro
    Board mixes the old and new question sets. The Pro daily seed gains a version prefix at the same time. */
@@ -73,23 +76,43 @@ export function practiceItem(league, d) {
   return makeSet(league, null, 1)[0];
 }
 
+/* The next Practice question: dial picks the difficulty, and Dial.fresh() keeps it from repeating this round */
+export const practiceNext = (league, dial) => dial.fresh(() => { const it = practiceItem(league, dial.lv); return [it.q, it]; });
+
 const PAD = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '-', '0', 'del'];
+/* A physical keyboard on a touch screen, where the hidden input is read-only (js/shell.js keypadOnly): digits,
+   the keys in allowed, Backspace and Enter type into it. One listener for the round, on its signal. */
+function physicalKeys(root, allowed, max, rs, submit) {
+  on(document, 'keydown', e => {
+    if (e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return;
+    const typ = root.querySelector('#arType'); if (!typ || !typ.readOnly) return;
+    const tg = e.target; if (tg && tg !== typ && (tg.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName))) return;
+    if (e.key === 'Backspace') typ.value = typ.value.slice(0, -1);
+    else if (e.key === 'Enter') { if (tg && tg.closest && tg.closest('button, a')) return; e.preventDefault(); if (typ.value.trim()) submit(typ.value); return; }
+    else if (/^[0-9]$/.test(e.key) || allowed.includes(e.key)) { if (typ.value.length < max) typ.value += e.key; }
+    else return;
+    e.preventDefault(); const out = root.querySelector('#arEntry'); if (out) out.textContent = typ.value;
+  }, rs);
+}
 
 /* Arena round. opts: { league, day, dial, signal, onEnd({ score, right, wrong, bestCombo }) }.
    day (YYYY-MM-DD): a daily round, dailySet(league, day), the same for everyone; dial (js/adapt.js Dial) only
    records the answers. No day: a Practice round, where dial picks each next question's difficulty and moves with
    every answer (openspec arena spec). The round runs under a child of signal, aborted when it ends or by destroy(),
-   so its handlers never act on the next round drawn into the same root. */
-export function runArena(root, { league, day = null, dial, signal, onEnd }) {
+   so its handlers never act on the next round drawn into the same root.
+   untimed (Practice only): UNTIMED_QS questions with no clock, a question counter and a Finish button. */
+export function runArena(root, { league, day = null, dial, signal, onEnd, untimed = false }) {
   const set = day ? dailySet(league, day) : null, tapMode = league === 'explorer';
-  const draw = () => dial.fresh(() => { const it = practiceItem(league, dial.lv); return [it.q, it]; });
+  if (set) untimed = false; /* the daily round is a Ranked race: it always has its clock */
+  const draw = () => practiceNext(league, dial);
   let cur = set ? null : draw();
   const at = () => (set ? set[i % set.length] : cur);
   const round = child(signal), rs = round.signal;
   let i = 0, score = 0, right = 0, wrong = 0, combo = 0, bestCombo = 0, over = false;
-  root.innerHTML = `<div class="ar">
-    <div class="ar-top"><div class="ar-score"><small>Score</small><b id="arScore">0</b></div><div class="ar-combo" id="arCombo" aria-live="polite"></div><div class="ar-time"><small>Time</small><b id="arTime">${ROUND_SECS}</b></div></div>
-    <div class="g-timer ar-bar"><span id="arBar"></span></div>
+  const clock = untimed ? `<div class="ar-time"><small>Question</small><b id="arNum">1/${UNTIMED_QS}</b></div>` : `<div class="ar-time"><small>Time</small><b id="arTime">${ROUND_SECS}</b></div>`;
+  root.innerHTML = `<div class="ar${untimed ? ' ar--untimed' : ''}">
+    <div class="ar-top"><div class="ar-score"><small>Score</small><b id="arScore">0</b></div><div class="ar-combo" id="arCombo" aria-live="polite"></div>${clock}</div>
+    ${untimed ? '<p class="ar-fin"><button type="button" class="md-btn md-btn--sm" id="arFinish">Finish</button></p>' : '<div class="g-timer ar-bar"><span id="arBar"></span></div>'}
     <div class="ar-q" id="arQ" aria-live="polite"></div><div class="ar-viz" id="arViz"></div>
     <div id="arIn"></div><div class="ar-pop" id="arPop" aria-hidden="true"></div><p class="vm-sr" id="arSay" role="status"></p></div>`;
   const $ = s => root.querySelector(s);
@@ -99,7 +122,7 @@ export function runArena(root, { league, day = null, dial, signal, onEnd }) {
     if (p.d) qEl.dataset.d = p.d; else delete qEl.dataset.d;
     if (tapMode) { $('#arIn').innerHTML = `<div class="ar-choices">${p.choices.map(c => `<button class="ar-choice" data-v="${c}">${c}</button>`).join('')}</div>`; speak(p.q); }
     else { $('#arIn').innerHTML = `<form class="ar-form" id="arForm"><output class="ar-entry" id="arEntry" aria-label="Your answer"></output><input class="ar-hidden" id="arType" inputmode="numeric" autocomplete="off" aria-label="Type your answer"><button class="md-btn md-btn--primary">Go</button></form><div class="ar-pad">${PAD.map(k => `<button type="button" class="ar-key" data-k="${k}">${k === 'del' ? 'Del' : k === '-' ? '&minus;' : k}</button>`).join('')}</div>`;
-      const typ = $('#arType'); if (matchMedia('(pointer: fine)').matches) typ.focus({ preventScroll: true });
+      const typ = $('#arType'); keypadOnly(typ); if (matchMedia('(pointer: fine)').matches) typ.focus({ preventScroll: true });
       on(typ, 'input', () => { typ.value = typ.value.replace(/[^0-9-]/g, '').slice(0, 7); $('#arEntry').textContent = typ.value; }, rs);
       $('#arForm').onsubmit = e => { e.preventDefault(); if (typ.value.trim()) answer(typ.value); };
     }
@@ -114,8 +137,12 @@ export function runArena(root, { league, day = null, dial, signal, onEnd }) {
     /* The pop is visual only; screen readers get one short status message per answer (WCAG 4.1.3) */
     $('#arSay').textContent = ok ? `Right, plus ${10 + Math.min(combo - 1, 10) * 2}. Score ${score}.` : `Not quite. It was ${p.answer}.`;
     $('#arScore').textContent = score; $('#arCombo').innerHTML = combo >= 2 ? `<b>${combo}x</b> combo` : '';
-    i++; if (!set) cur = draw(); show();
+    i++;
+    if (untimed && i >= UNTIMED_QS) return end();
+    if (untimed) $('#arNum').textContent = `${i + 1}/${UNTIMED_QS}`;
+    if (!set) cur = draw(); show();
   };
+  const end = () => { if (over) return; over = true; round.abort(); onEnd({ score, right, wrong, bestCombo, untimed }); };
   on(root, 'click', e => {
     const c = e.target.closest('.ar-choice'); if (c) return answer(c.dataset.v);
     const k = e.target.closest('.ar-key'); if (!k) return; sfx('tap');
@@ -123,12 +150,14 @@ export function runArena(root, { league, day = null, dial, signal, onEnd }) {
     if (k.dataset.k === 'del') typ.value = typ.value.slice(0, -1); else if (k.dataset.k === '-') typ.value = typ.value.startsWith('-') ? typ.value.slice(1) : '-' + typ.value; else if (typ.value.length < 7) typ.value += k.dataset.k;
     $('#arEntry').textContent = typ.value; if (matchMedia('(pointer: fine)').matches) typ.focus({ preventScroll: true });
   }, rs);
+  if (!tapMode) physicalKeys(root, ['-'], 7, rs, v => answer(v));
   show();
+  if (untimed) { on($('#arFinish'), 'click', end, rs); return { destroy: () => { over = true; round.abort(); } }; }
   const t0 = performance.now(); let lastSec = ROUND_SECS;
   loop(() => {
     if (over) return false; const left = Math.max(0, ROUND_SECS - (performance.now() - t0) / 1000), sec = Math.ceil(left);
     $('#arBar').style.width = (left / ROUND_SECS) * 100 + '%'; if (sec !== lastSec) { lastSec = sec; $('#arTime').textContent = sec; if (sec <= 5) sfx('tick'); }
-    if (left <= 0) { over = true; round.abort(); onEnd({ score, right, wrong, bestCombo }); return false; }
+    if (left <= 0) { end(); return false; }
   }, rs);
   return { destroy: () => { over = true; round.abort(); } };
 }
@@ -196,20 +225,23 @@ export function runDuel(root, { league, names = ['Player 1', 'Player 2'], signal
 
 /* Arena challenge runner for the 1,000-level tower: sprint, survival, sharpshooter, time attack and boss formats. */
 const PAD2 = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '-', '0', '.', '/', 'del'];
-/* opts.signal: as in runArena */
-export function runChallenge(root, ch, set, { onEnd, tap = false, signal }) {
+/* opts.signal: as in runArena. untimed (Calm, openspec game-shell-and-calm): a Sprint runs UNTIMED_QS questions with
+   no clock and a Finish button; the other formats run as they are (their Medal rules live in js/app.js). */
+export function runChallenge(root, ch, set, { onEnd, tap = false, signal, untimed = false }) {
   const round = child(signal), rs = round.signal;
   let i = 0, score = 0, right = 0, wrong = 0, combo = 0, lives = ch.lives, over = false;
   const t0 = performance.now(), secs = () => (performance.now() - t0) / 1000;
+  const sprintUntimed = untimed && !!ch.secs;
+  if (sprintUntimed) ch = { ...ch, secs: 0, total: UNTIMED_QS };
   const total = ch.total || Infinity;
   root.innerHTML = `<div class="ar">
     <div class="ar-top"><div class="ar-score"><small>${ch.goal === 'points' ? 'Score' : 'Right'}</small><b id="arScore">0</b></div><div class="ar-combo" id="arCombo" aria-live="polite"></div>
       <div class="ar-time"><small>${ch.secs ? 'Time' : ch.lives ? 'Lives' : 'Question'}</small><b id="arTime">${ch.secs || (ch.lives ? '&#9679;'.repeat(lives) : `1/${total}`)}</b></div></div>
-    ${ch.secs ? '<div class="g-timer ar-bar"><span id="arBar"></span></div>' : ''}
+    ${ch.secs ? '<div class="g-timer ar-bar"><span id="arBar"></span></div>' : ''}${sprintUntimed ? '<p class="ar-fin"><button type="button" class="md-btn md-btn--sm" id="arFinish">Finish</button></p>' : ''}
     <div class="ar-q" id="arQ" aria-live="polite"></div><div class="ar-viz" id="arViz"></div>
     <div id="arIn"></div><p class="ar-fix" id="arFix" aria-live="polite"></p><div class="ar-pop" id="arPop" aria-hidden="true"></div><p class="vm-sr" id="arSay" role="status"></p></div>`;
   const $ = s => root.querySelector(s);
-  const finish = () => { if (over) return; over = true; round.abort(); onEnd({ score, right, wrong, secs: Math.round(secs()), finished: right + wrong >= total || ch.goal !== 'seconds' ? true : false }); };
+  const finish = () => { if (over) return; over = true; round.abort(); onEnd({ score, right, wrong, secs: Math.round(secs()), finished: right + wrong >= total || ch.goal !== 'seconds' ? true : false, untimed }); };
   const show = () => {
     if (i >= set.length) return finish();
     const p = set[i];
@@ -219,7 +251,7 @@ export function runChallenge(root, ch, set, { onEnd, tap = false, signal }) {
       $('#arIn').innerHTML = `<div class="ar-choices">${ch2.map(c => `<button class="ar-choice" data-v="${c}">${c}</button>`).join('')}</div>`; if (tap) speak(p.q);
     } else {
       $('#arIn').innerHTML = `<form class="ar-form" id="arForm"><output class="ar-entry" id="arEntry" aria-label="Your answer"></output><input class="ar-hidden" id="arType" inputmode="decimal" autocomplete="off" aria-label="Type your answer"><button class="md-btn md-btn--primary">Go</button></form><div class="ar-pad ar-pad--wide">${PAD2.map(k => `<button type="button" class="ar-key" data-k="${k}">${k === 'del' ? 'Del' : k === '-' ? '&minus;' : k}</button>`).join('')}</div>`;
-      const typ = $('#arType'); if (matchMedia('(pointer: fine)').matches) typ.focus({ preventScroll: true });
+      const typ = $('#arType'); keypadOnly(typ); if (matchMedia('(pointer: fine)').matches) typ.focus({ preventScroll: true });
       on(typ, 'input', () => { typ.value = typ.value.replace(/[^0-9./-]/g, '').slice(0, 9); $('#arEntry').textContent = typ.value; }, rs);
       $('#arForm').onsubmit = e => { e.preventDefault(); if (typ.value.trim()) answer(typ.value); };
     }
@@ -246,6 +278,8 @@ export function runChallenge(root, ch, set, { onEnd, tap = false, signal }) {
     if (k.dataset.k === 'del') typ.value = typ.value.slice(0, -1); else if (k.dataset.k === '-') typ.value = typ.value.startsWith('-') ? typ.value.slice(1) : '-' + typ.value; else if (typ.value.length < 9) typ.value += k.dataset.k;
     $('#arEntry').textContent = typ.value; if (matchMedia('(pointer: fine)').matches) typ.focus({ preventScroll: true });
   }, rs);
+  physicalKeys(root, ['-', '.', '/'], 9, rs, v => answer(v));
+  if (sprintUntimed) on($('#arFinish'), 'click', finish, rs);
   show();
   if (ch.secs) { let lastSec = ch.secs; loop(() => { if (over) return false; const left = Math.max(0, ch.secs - secs()), sec = Math.ceil(left); $('#arBar').style.width = (left / ch.secs) * 100 + '%'; if (sec !== lastSec) { lastSec = sec; $('#arTime').textContent = sec; if (sec <= 5) sfx('tick'); } if (left <= 0) { finish(); return false; } }, rs); }
   return { destroy: () => { over = true; round.abort(); } };

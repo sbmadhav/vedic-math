@@ -28,6 +28,8 @@ const savedPlayer = (page: Page) => page.evaluate(() => JSON.parse(localStorage.
 /** Plays today's Arena Daily challenge with one right answer (score 10) and lets the 60 seconds run out. */
 async function arenaRound(page: Page, mode: Mode) {
   if (!page.url().endsWith('#/arena')) await open(page, '#/arena');
+  // The last round's result is still in the play shell: Back to the Arena
+  if (await page.locator('#arDone').isVisible()) await page.locator('#arDone').click();
   const answer = await page.evaluate(async m => {
     const cloud = await import('/vedic-math/js/cloud.js' as string), arena = await import('/vedic-math/js/arena.js' as string);
     return String(arena.dailySet(m, cloud.dayId())[0].answer);

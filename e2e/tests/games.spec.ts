@@ -284,3 +284,42 @@ test.describe('Medals from saved stars', () => {
     expect(saved.medals).toEqual({ 'g:times-sprint:3': 3, 'g:times-sprint:2': 2, 'a:1': 1 });
   });
 });
+
+/* Calm (openspec game-shell-and-calm): a Level of a timed game has no clock and ends after its questions, with
+   Sparks and no Medal; a Ranked round keeps its clock */
+const timesAnswer = async (page: import('@playwright/test').Page) => {
+  const [x, y] = ((await page.locator('#gArea .g-q').textContent()) || '').replace(/,/g, '').split('×').map(v => Number(v.trim()));
+  return String(x * y);
+};
+test.describe('Calm on', () => {
+  test.use({ seedProgress: { medals: { 'g:times-sprint:3': 1 } } });
+  test.beforeEach(async ({ page }) => { await page.addInitScript(() => localStorage.setItem('vm.calm', '1')); });
+  test('Times sprint Level 4: no timer bar, ends after its questions, Sparks and no Medal', async ({ page }) => {
+    await open(page, '#/game/times-sprint/4');
+    await page.locator('#gStart').click();
+    await expect(page.locator('#gArea .g-q')).toContainText('×');
+    await expect(page.locator('.g-timer')).toHaveCount(0);
+    const perQ = await page.evaluate(async () => (await import('/vedic-math/js/games.js' as string)).GAMES.find((g: { id: string }) => g.id === 'times-sprint').perQ);
+    for (let k = 0; k < perQ; k++) {
+      const q = await page.locator('#gArea .g-q').textContent();
+      await page.locator('#gArea .ans-in').fill(await timesAnswer(page));
+      await page.locator('#gArea .ans-in').press('Enter');
+      if (k < perQ - 1) await expect(page.locator('#gArea .g-q')).not.toHaveText(q!);
+    }
+    await expect(page.locator('.lv-result h2')).toHaveText('Round done');
+    await expect(page.locator('.lv-result')).toContainText('Medals for this game need the clock');
+    await expect(page.locator('.lv-result .fx-sparks')).toContainText('Sparks');
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1')!).medals['g:times-sprint:4'])).toBeUndefined();
+    expect((await cloudLog(page)).writes).toEqual([]);
+  });
+
+  test('a ranked Times sprint round keeps its clock', async ({ page }) => {
+    await open(page, '#/game/times-sprint');
+    await expect(page.locator('#gShell [data-m="ranked"]')).toHaveAttribute('aria-pressed', 'true');
+    await page.locator('#gStart').click();
+    await expect(page.locator('#gArea .g-timer')).toBeAttached();
+    await page.locator('#gQuit').click();
+    await expect(page.locator('#gStart')).toBeFocused();
+    expect((await cloudLog(page)).writes).toEqual([]);
+  });
+});

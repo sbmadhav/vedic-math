@@ -8,7 +8,7 @@ import { ri, pick, shuffle } from './lib.js';
 import { evalNum } from './check.js';
 import { factStrategy } from './skills/middle.js';
 import * as V from './viz.js';
-import { sfx as tapSfx, speak as speakIt, motionOff } from './fx.js';
+import { sfx as tapSfx, speak as speakIt, noMotion } from './fx.js';
 import { SUTRAS } from './sutras.js';
 import { pointsAt, levelStart } from './adapt.js';
 import { on, later, loop, child, onAbort } from './life.js';
@@ -51,26 +51,34 @@ export function keepFocus(area, signal, startInside = false) {
   onAbort(signal, () => mo.disconnect());
 }
 
-/* Shared plumbing: score an answer, update the HUD, count rounds, and wait on the round's signal */
+/* Shared plumbing: score an answer, update the HUD, count rounds, and wait on the round's signal.
+   ctx.untimed (Calm, a Practice round of a timed game; openspec game-shell-and-calm): timed() starts no clock, and the
+   round ends after ctx.perQ answers instead, once the last answer has been shown (a miss keeps its HOLD_MS). */
 export const HOLD_MS = 1200;
-function kit(ctx, area = null, { tip = null } = {}) {
+export function kit(ctx, area = null, { tip = null } = {}) {
   const { dial, signal } = ctx;
-  let holding = false;
+  const cap = ctx.untimed && !ctx.endless && ctx.perQ ? ctx.perQ : 0;
+  let holding = false, ending = false;
   /* The explanation line: tip (an element) if the game has one, else the say line in the game's header */
   const explain = html => (tip ? (tip.innerHTML = html) : ctx.say(html));
   /* While an answered item is held, taps and submits in the game area are ignored */
   if (area) ['click', 'submit'].forEach(type => on(area, type, e => { if (holding) { e.preventDefault(); e.stopPropagation(); } }, signal, { capture: true }));
   return {
-    mark(ok, node) { const pts = dial.hit(ok); flash(node, ok); ctx.hud && ctx.hud(dial, pts, ok); return pts; },
+    mark(ok, node) {
+      const pts = dial.hit(ok); flash(node, ok); ctx.hud && ctx.hud(dial, pts, ok);
+      if (cap && !ending && dial.n >= cap) { ending = true; holding = true; later(() => ctx.end(dial.points), ok ? 400 : HOLD_MS, signal); }
+      return pts;
+    },
     over: rounds => !ctx.endless && dial.n >= rounds,
     finish: () => ctx.end(dial.points),
-    timed: (where, secs) => { if (!ctx.endless) timer(where, secs, () => ctx.end(dial.points), signal); },
+    timed: (where, secs) => { if (!ctx.endless && !ctx.untimed) timer(where, secs, () => ctx.end(dial.points), signal); },
     later: (fn, ms) => later(fn, ms, signal),
     /* After an answer: on a miss the question and its explanation stay together for HOLD_MS with the game's
        inputs disabled, then the next question comes with the line cleared. On a right answer the next
        question comes at once, with okHtml (praise that is about no question in particular) or nothing.
        The round clock keeps running during the hold. */
     answered(ok, explainHtml, next, okHtml = '') {
+      if (ending) { explain(ok ? okHtml : explainHtml); return; } /* the last answer of an untimed round: the round ends from mark() */
       if (ok) { explain(okHtml); next(); return; }
       explain(explainHtml); holding = true;
       const off = area ? [...area.querySelectorAll('button, input')].filter(x => !x.disabled) : [];
@@ -375,7 +383,7 @@ export const GAMES = [
     desc: 'Numbers drift down. Tap only the multiples of the magic number. The magic number changes as you level up, from 2 to tricky ones like 13, 17 and 25, and the rain speeds up.',
     run(area, ctx) {
       const k = kit(ctx), { dial } = ctx; const K = [2, 5, 10, 3, 4, 6, 9, 8, 7, 11, 12, 15, 13, 25, 14, 17, 18, 19, 23, 27];
-      const reduced = motionOff(); let last = performance.now(), spawnT = 0, kv = K[dial.lv - 1];
+      const reduced = noMotion(); let last = performance.now(), spawnT = 0, kv = K[dial.lv - 1];
       const head = el('p', { class: 'g-say' }), sky = el('div', { class: 'g-rain', role: 'group' }); area.append(head, sky);
       const setK = () => { kv = K[dial.lv - 1]; head.innerHTML = `Tap the multiples of <b>${kv}</b>.`; sky.setAttribute('aria-label', `Falling numbers. Tap multiples of ${kv}.`); };
       const check = () => { if (K[dial.lv - 1] !== kv) setK(); };

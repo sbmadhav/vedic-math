@@ -43,6 +43,11 @@ test('the Sky (js/sky-view.js): no bare listeners, timers or frame loops; its li
   assert.ok((src.match(/\bon\([^;]*\bsignal\b/g) || []).length >= 4, 'pointer, scroll and motion listeners on the view signal');
 });
 
+test('no bare listeners or timers in the play shell (js/shell.js)', () => {
+  assert.deepEqual(hits('shell.js', /\.?addEventListener\(/), []);
+  assert.deepEqual(hits('shell.js', TIMERS), []);
+});
+
 test('view timers in js/app.js go through js/life.js', () => {
   assert.deepEqual(hits('app.js', TIMERS, PAGE_TIMERS), []);
 });

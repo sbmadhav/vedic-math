@@ -26,6 +26,7 @@ import { boltHTML } from './bolt.js';
 import { runStar } from './star.js';
 import * as SKY from './sky.js';
 import { skyView, placesHTML } from './sky-view.js';
+import { openShell } from './shell.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const view = $('#view');
@@ -471,10 +472,11 @@ function levelMap(count, resultOf, hrefOf, { openAll = false, perRow = 0, isOpen
     return open ? `<a class="lv-node${cleared ? ' done' : ''}${next ? ' next' : ''}" href="${hrefOf(n)}" aria-label="${noun} ${n}${said}"><b>${n}</b>${mark}</a>` : `<span class="lv-node locked" role="img" aria-label="${noun} ${n}, locked"><b>${n}</b>${icon('lock')}</span>`;
   }).join('')}</div>`;
 }
-/* A finished Kata ({ done }) or game Level or tower challenge ({ medal }) */
+/* A finished Kata ({ done }) or game Level or tower challenge ({ medal }); noClock: played without the clock in Calm,
+   where Medals measured against the clock are not given */
 function resultHTML(res, lines, nextHref, retryHref, backHref, backLabel) {
   const kata = !('medal' in res), cleared = kata ? res.done : res.medal > 0;
-  const head = kata ? (res.done ? 'Kata done!' : 'Not quite. Try again!') : ['Not quite. Try again!', 'Bronze Medal', 'Silver Medal', 'Gold Medal!'][res.medal];
+  const head = kata ? (res.done ? 'Kata done!' : 'Not quite. Try again!') : res.noClock ? 'Round done' : ['Not quite. Try again!', 'Bronze Medal', 'Silver Medal', 'Gold Medal!'][res.medal];
   const big = kata ? `<span class="kata-mark kata-mark--big${res.done ? ' on' : ''}" aria-hidden="true">${res.done ? '&#10003;' : ''}</span>` : medalHTML(res.medal);
   return `<div class="lv-result"><div class="lv-big">${big}</div><h2 class="mq-h3">${head}</h2>${lines.map(l => `<p>${l}</p>`).join('')}
     <p class="lv-acts">${cleared && nextHref ? `<a class="md-btn md-btn--primary" href="${nextHref}">${icon('bolt')} Next level</a>` : ''}<a class="md-btn" href="${retryHref}" data-retry>Play again</a><a class="md-btn" href="${backHref}">${backLabel}</a></p></div>`;
@@ -556,9 +558,11 @@ function starView(trick, n, { signal } = {}, back = null) {
   back = back || (SKY.skyOn(store.player()) ? { href: '#/', label: 'Back to the Sky' } : from === '#/skill/v-' + trick ? { href: from, label: `Back to ${t.title}` } : { href: '#/dojo', label: 'Back to the Dojo' });
   document.title = `Star ${n}: ${t.title} · ${BRAND}`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
-    ${crumbs(['#/dojo', 'Dojo'], ['#/skill/v-' + trick, t.title], [null, `Star ${n}`])}
-    <div id="star"></div></div></section>`;
-  return runStar($('#star'), { trick, star: n, signal, back, again: () => mount(ctx => starView(trick, n, ctx, back)), findVideo: starVideo });
+    ${crumbs(['#/dojo', 'Dojo'], ['#/skill/v-' + trick, t.title], [null, `Star ${n}`])}</div></section>`;
+  /* The round plays in the full-screen shell (openspec game-shell-and-calm); Back leaves the Star */
+  const play = openShell(`Star ${n}: ${t.title}`, { signal, exit: 'Back', exitId: 'stExit', onExit: () => { location.hash = back.href; } });
+  play.area.id = 'star';
+  return runStar(play.area, { trick, star: n, signal, back, again: () => mount(ctx => starView(trick, n, ctx, back)), findVideo: starVideo });
 }
 /* star-round's findVideo seam: the Trick's hand-matched video (null offline or when the list fails to load), opened
    in the in-page player. open(opener) resolves when the player closes. */
@@ -605,21 +609,32 @@ function challengeView(id, { signal } = {}) {
     <h1 class="md-heading">Challenge ${id}</h1>
     <p class="md-lede">${ch.topic.name}. ${F.how} ${ch.secs ? `${ch.secs} seconds.` : ''}${ch.total ? ` ${ch.total} questions.` : ''}${ch.lives ? ` ${ch.lives} lives.` : ''} ${goalText}</p>
     <div class="md-card ar-shell" id="chShell"><p class="lv-best">Your best: ${medalHTML(store.medal(LV.challengeKey(id)))}</p><button class="md-btn md-btn--primary ar-go" id="chGo">${icon('bolt')} Start</button></div></div></section>`;
-  const shell = $('#chShell');
+  /* The countdown, the round and its result play in the full-screen shell; Stop or Back closes it and focus
+     returns to Start. run: this round's controller (the shell closes when it aborts). */
+  let run = null, play = null;
+  const stop = () => { const r = run, p = play; run = play = null; if (p) p.close(); if (r) r.abort(); };
   $('#chGo').onclick = () => {
-    let n = 3; shell.innerHTML = `<div class="ar-count" aria-live="assertive">${n}</div>`; fx.sfx('tick');
-    const count = child(signal); /* the countdown stops when it reaches 0 or the view is left */
-    every(() => { n--; if (n === 0) { count.abort(); fx.sfx('ok'); go(); } else { shell.firstChild.textContent = n; fx.sfx('tick'); } }, 650, count.signal);
+    stop(); run = child(signal);
+    play = openShell(`Challenge ${id}: ${F.name}`, { signal: run.signal, exitId: 'chStop', onExit: stop, focusBack: () => $('#chGo') });
+    const area = play.area;
+    let n = 3; area.innerHTML = `<div class="ar-count" aria-live="assertive">${n}</div>`; fx.sfx('tick');
+    const count = child(run.signal); /* the countdown stops when it reaches 0, on Stop or when the view is left */
+    every(() => { n--; if (n === 0) { count.abort(); fx.sfx('ok'); go(area, run.signal); } else { area.firstChild.textContent = n; fx.sfx('tick'); } }, 650, count.signal);
   };
-  const go = () => {
+  const go = (area, rsig) => {
     track('challenge/' + ch.format, 'Challenge ' + id); metrics.roundStart('tower');
-    runChallenge(shell, ch, LV.challengeSet(ch), { tap: fx.mode() === 'explorer', signal, onEnd: r => {
+    /* Calm: the tower is Practice, so no clock. Sprint and Time attack Medals are measured against the clock. */
+    const untimed = fx.calmOn(), clockMedal = ch.format === 'sprint' || ch.format === 'timeattack';
+    runChallenge(area, ch, LV.challengeSet(ch), { tap: fx.mode() === 'explorer', signal: rsig, untimed, onEnd: r => {
       metrics.roundEnd('tower', fx.MODES[fx.mode()].league);
-      const medal = LV.challengeMedal(ch, r), improved = store.setMedal(LV.challengeKey(id), medal), sp = medal * 15 + r.right * 2;
+      const noClock = r.untimed && clockMedal;
+      const medal = noClock ? 0 : LV.challengeMedal(ch, r), improved = store.setMedal(LV.challengeKey(id), medal), sp = medal * 15 + r.right * 2;
       if (sp) store.addSparks(sp, 'challenge'); store.bump('arena'); store.touchDay(); if (medal === 3) fx.confetti(100); else if (medal) fx.confetti(40);
       const nextId = id % LV.PER_CHAPTER ? id + 1 : null;
-      shell.innerHTML = resultHTML({ medal }, [`${r.right} right, ${r.wrong} missed${ch.goal === 'points' ? `, ${r.score} points` : ''}${ch.goal === 'seconds' ? `, ${r.secs} seconds` : ''}.`, `<span class="fx-sparks">+${sp} Sparks</span>${improved ? ' New best.' : ''}`], nextId ? `#/challenge/${nextId}` : `#/tower/${ch.chapter + 2 <= LV.TOPICS.length ? ch.chapter + 2 : 1}`, `#/challenge/${id}`, `#/tower/${ch.chapter + 1}`, 'Chapter map');
-      const rt = shell.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); mount(ctx => challengeView(id, ctx)); };
+      area.innerHTML = resultHTML({ medal, noClock }, [`${r.right} right, ${r.wrong} missed${ch.goal === 'points' ? `, ${r.score} points` : ''}${ch.goal === 'seconds' && !noClock ? `, ${r.secs} seconds` : ''}.`, `<span class="fx-sparks">+${sp} Sparks</span>${improved ? ' New best.' : ''}`, ...(noClock ? [`<span class="lv-noclock">Medals for ${F.name} need the clock. Turn Calm off to play for one.</span>`] : [])], nextId ? `#/challenge/${nextId}` : `#/tower/${ch.chapter + 2 <= LV.TOPICS.length ? ch.chapter + 2 : 1}`, `#/challenge/${id}`, `#/tower/${ch.chapter + 1}`, 'Chapter map');
+      const rt = area.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); mount(ctx => challengeView(id, ctx)); };
+      if (play) play.setExit('Back');
+      const h = area.querySelector('h2'); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
     } });
   };
 }
@@ -656,7 +671,7 @@ function collect(name) { if (store.markSeen('sutra:' + name)) store.addSparks(5,
 
 /* ---------- Sutra deep-dive modal: the card grows into it ---------- */
 let sutraDlg = null, sutraScene = null, sutraFrom = null, openedInPage = false; /* sutraScene: the open scene's controller */
-const reducedMotion = () => fx.motionOff();
+const reducedMotion = () => fx.noMotion();
 function sutraHTML(c) {
   const d = DETAILS[c.name], i = ALL_SUTRAS.indexOf(c), prev = ALL_SUTRAS[i - 1], next = ALL_SUTRAS[i + 1];
   const tricks = c.tricks.map(t => TRICKS.find(x => x.id === t)).filter(Boolean);
@@ -807,7 +822,9 @@ store.on(type => { if (type === 'sparks') queueSparksPost(); });
 function arenaView({ signal } = {}) {
   document.title = `Arena: ${BRAND} · Madhav`;
   const league = fx.MODES[fx.mode()].league, day = cloud.dayId(), wk = cloud.weekId();
-  let type = 'daily';
+  /* Round type: daily (Ranked, always timed), practice (timed, untimed in Calm) or untimed (Practice, no clock).
+     With Calm on, the untimed Practice round is picked until the Player picks another this visit. */
+  let type = fx.calmOn() ? 'untimed' : 'daily';
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs([null, 'Arena'])}
     <span class="md-tag md-tag--coral">Arena</span>
@@ -823,7 +840,8 @@ function arenaView({ signal } = {}) {
     pro: `Arena Rating: <b>${arenaRating()}</b>/20. Practice rounds start there and adapt to every answer; the daily round is the same for everyone.`
   })}</small>`;
   const lobby = (result = '') => {
-    shell.innerHTML = `${result}<div class="g-optrow" role="group" aria-label="Round type"><button class="md-chip" aria-pressed="${type === 'daily'}" data-t="daily">Daily challenge</button><button class="md-chip" aria-pressed="${type === 'practice'}" data-t="practice">Practice round</button></div>
+    shell.innerHTML = `${result}<div class="g-optrow" role="group" aria-label="Round type"><button class="md-chip" aria-pressed="${type === 'daily'}" data-t="daily">Daily challenge</button><button class="md-chip" aria-pressed="${type === 'practice'}" data-t="practice">Practice round</button><button class="md-chip" aria-pressed="${type === 'untimed'}" data-t="untimed">Practice, no clock</button></div>
+      ${fx.calmOn() ? '<p class="ar-calm" id="arCalmNote">The daily challenge is a timed race for everyone. Practice has no clock in Calm.</p>' : ''}
       <p class="g-best">League: <b>${fx.MODES[fx.mode()].name}</b> · Your best today: <b>${store.best('arena-' + day)}</b><br>${arenaRatingLine()}</p>
       <button class="md-btn md-btn--primary ar-go" id="arGo">${icon('bolt')} Start</button>
       <div class="lb-cols"><div><h2 class="mq-h3">Today</h2><div id="lbDay" class="lb-wrap"></div></div><div><h2 class="mq-h3">This week</h2><div id="lbWeek" class="lb-wrap"></div></div></div>
@@ -832,16 +850,26 @@ function arenaView({ signal } = {}) {
     $('#arGo', shell).onclick = countdown;
     loadBoard($('#lbDay', shell), `daily-${day}-${league}`); loadBoard($('#lbWeek', shell), `week-${wk}-${league}`); loadBoard($('#lbSparks', shell), cloud.weekSparksBoard(wk, league));
   };
+  /* The countdown, the round and its result play in the full-screen shell (openspec game-shell-and-calm).
+     run: this round's controller; Stop, or Back on the result, closes the shell and focus returns to Start. */
+  let run = null, play = null;
+  const stop = () => { const r = run, p = play; run = play = null; if (p) p.close(); if (r) r.abort(); };
   const countdown = () => {
-    let n = 3; shell.innerHTML = `<div class="ar-count" aria-live="assertive">${n}</div>`; fx.sfx('tick');
-    const count = child(signal); /* leaving during the countdown means the round never starts */
-    every(() => { n--; if (n === 0) { count.abort(); fx.sfx('ok'); start(); } else { shell.firstChild.textContent = n; fx.sfx('tick'); } }, 700, count.signal);
+    stop(); run = child(signal);
+    const old = shell.querySelector('.ar-result'); if (old) old.remove(); /* the last result goes; the new one shows in the shell */
+    play = openShell(type === 'daily' ? 'Arena: daily challenge' : 'Arena: Practice', { signal: run.signal, exitId: 'arStop', onExit: stop, focusBack: () => $('#arGo', shell) });
+    const area = play.area, rsig = run.signal;
+    let n = 3; area.innerHTML = `<div class="ar-count" aria-live="assertive">${n}</div>`; fx.sfx('tick');
+    const count = child(rsig); /* leaving or stopping during the countdown means the round never starts */
+    every(() => { n--; if (n === 0) { count.abort(); fx.sfx('ok'); start(area, rsig); } else { area.firstChild.textContent = n; fx.sfx('tick'); } }, 700, count.signal);
   };
-  const start = () => {
+  const start = (area, rsig) => {
     track('arena/' + league + '/' + type, 'Arena round'); metrics.roundStart('arena');
-    /* Practice: the Dial picks each question. Daily: it only records the answers (the questions are the same for everyone). */
+    /* Practice: the Dial picks each question. Daily: it only records the answers (the questions are the same for everyone).
+       Untimed: the Practice round with no clock, chosen or (for a Practice round) set by Calm. The daily round keeps its clock. */
     const before = arenaRating(), dial = new AD.Dial(AD.rating(rKey, mode));
-    runArena(shell, { league, day: type === 'daily' ? day : null, dial, signal, onEnd: async r => {
+    const untimed = type === 'untimed' || (type === 'practice' && fx.calmOn());
+    runArena(area, { league, day: type === 'daily' ? day : null, dial, signal: rsig, untimed, onEnd: async r => {
       metrics.roundEnd('arena', league);
       const after = Math.round(AD.saveRating(rKey, dial) || before);
       const moved = dial.n < 4 ? '' : fx.t({
@@ -859,7 +887,13 @@ function arenaView({ signal } = {}) {
         if (isBest) { fx.confetti(100); msg = 'New personal best for today!'; }
         postScore([`daily-${day}-${league}`, `week-${wk}-${league}`], r.score, `for today's ${fx.MODES[fx.mode()].name} race.`);
       }
-      lobby(`<div class="ar-result"><div class="md-stat"><div class="md-kicker">Score</div><div class="md-value">${r.score}</div><p>${r.right} right · ${r.wrong} missed · best combo ${r.bestCombo}x${moved}</p></div><p class="ar-msg">${msg || (type === 'practice' ? 'Practice rounds do not count for the leaderboard.' : 'Play again to beat your best.')} <span class="fx-sparks">+${sp} Sparks</span></p></div>`);
+      const res = `<div class="ar-result"><div class="md-stat"><div class="md-kicker">Score</div><div class="md-value">${r.score}</div><p>${r.right} right · ${r.wrong} missed · best combo ${r.bestCombo}x${moved}</p></div><p class="ar-msg">${msg || (type !== 'daily' ? 'Practice rounds do not count for the leaderboard.' : 'Play again to beat your best.')} <span class="fx-sparks">+${sp} Sparks</span></p></div>`;
+      /* The result shows in the shell; leaving it shows the lobby with the same result and focuses Start */
+      const back = () => { lobby(res); stop(); };
+      if (!play || rsig.aborted) { lobby(res); return; }
+      area.innerHTML = `${res}<p class="lv-acts"><button type="button" class="md-btn md-btn--primary" id="arDone">Back to the Arena</button></p>`;
+      play.setExit('Back', back);
+      const done = $('#arDone', area); done.onclick = back; done.focus({ preventScroll: true });
     } });
   };
   lobby();
@@ -877,8 +911,28 @@ function duelView({ signal } = {}) {
   const lobby = (res = '') => {
     shell.innerHTML = `${res}<div class="g-optrow" role="group" aria-label="Level">${Object.entries(fx.MODES).map(([id, m]) => `<button class="md-chip" aria-pressed="${id === lg}" data-l="${id}">${m.name}</button>`).join('')}</div><label class="duel-flip"><input type="checkbox" id="dFlip"> Face to face (flip the top player)</label><p><button class="md-btn md-btn--primary" id="dGo">${icon('duel')} Start the duel</button></p>`;
     shell.querySelectorAll('[data-l]').forEach(b => b.onclick = () => { lg = b.dataset.l; lobby(res); });
-    $('#dGo', shell).onclick = () => { const flip = $('#dFlip', shell).checked; store.bump('duels'); track('duel/' + lg, 'Duel'); metrics.roundStart('duel'); shell.classList.toggle('duel-flipped', flip); runDuel(shell, { league: lg, names: ['Player 1', 'Player 2'], signal, onEnd: w => { metrics.roundEnd('duel', lg); store.bump('duelsDone'); store.addSparks(20, 'duel'); later(() => lobby(`<div class="ar-result"><div class="md-stat"><div class="md-kicker">Winner</div><div class="md-value">Player ${w + 1}</div><p>Great duel! Rematch?</p></div></div>`), 600, signal); } }); };
+    $('#dGo', shell).onclick = () => {
+      const flip = $('#dFlip', shell).checked; store.bump('duels'); track('duel/' + lg, 'Duel'); metrics.roundStart('duel');
+      stop(); run = child(signal); const rsig = run.signal;
+      const old = shell.querySelector('.ar-result'); if (old) old.remove();
+      play = openShell('Duel', { signal: rsig, exitId: 'dStop', onExit: stop, focusBack: () => $('#dGo', shell) });
+      const area = play.area; area.classList.add('duel-area'); area.classList.toggle('duel-flipped', flip);
+      runDuel(area, { league: lg, names: ['Player 1', 'Player 2'], signal: rsig, onEnd: w => {
+        metrics.roundEnd('duel', lg); store.bump('duelsDone'); store.addSparks(20, 'duel');
+        const res = `<div class="ar-result"><div class="md-stat"><div class="md-kicker">Winner</div><div class="md-value">Player ${w + 1}</div><p>Great duel! Rematch?</p></div></div>`;
+        const back = () => { lobby(res); stop(); };
+        later(() => {
+          area.classList.remove('duel-flipped');
+          area.innerHTML = `${res}<p class="lv-acts"><button type="button" class="md-btn md-btn--primary" id="dDone">Back to the Duel</button></p>`;
+          if (play) play.setExit('Back', back);
+          const done = $('#dDone', area); done.onclick = back; done.focus({ preventScroll: true });
+        }, 600, rsig);
+      } });
+    };
   };
+  /* The duel plays in the full-screen shell; Stop, or Back on the result, closes it and focus returns to Start */
+  let run = null, play = null;
+  const stop = () => { const r = run, p = play; run = play = null; if (p) p.close(); if (r) r.abort(); };
   lobby();
 }
 
@@ -923,13 +977,23 @@ function gameView(id, lvl = 0, { signal } = {}) {
     shell.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { mode = b.dataset.m; lobby(msg); });
     $('#gStart', shell).onclick = start;
   };
+  /* The round and its result play in the full-screen shell (openspec game-shell-and-calm). session: the shell's
+     controller; round: the game's, a child of it, so the round can end while its result stays on screen. */
+  let session = null, play = null;
+  const close = () => { const s = session, p = play; session = play = null; if (p) p.close(); if (s) s.abort(); };
   const start = () => {
     track('game/' + g.id + '/' + mode, 'Game: ' + g.title); metrics.roundStart('game'); fx.sfx('tap');
-    round = child(signal); const roundSignal = round.signal;
     const focusWasHere = shell.contains(document.activeElement); /* Start pressed from the keyboard: focus goes to the first option */
+    close(); session = child(signal);
+    const old = shell.querySelector('.g-result'); if (old) old.remove();
+    play = openShell(`${g.title}${lvl ? ` level ${lvl}` : ''}`, { signal: session.signal, exit: mode === 'endless' ? 'Finish' : 'Stop', exitId: 'gQuit', onExit: () => quit(), focusBack: () => $('#gStart', shell) });
+    const area = play.area;
+    round = child(session.signal); const roundSignal = round.signal;
+    /* Calm: a Practice round (a Level) of a timed game has no clock and ends after its questions; Ranked keeps the clock */
+    const untimed = !!g.secs && mode !== 'ranked' && fx.calmOn();
     const startD = L ? L.cfg.start : AD.rating('game:' + g.id, m), dial = new AD.Dial(startD, { floor: L ? L.cfg.floor : 1 });
-    shell.innerHTML = `<div class="g-head"><span class="g-hud" id="gHud">${dialMeter(dial.lv)}<span class="g-pts"><b id="gPts">0</b> pts</span></span><span class="g-sayline" id="gSay" role="status" aria-live="polite"></span><button class="md-btn md-btn--sm" id="gQuit">${mode === 'endless' ? 'Finish' : 'Stop'}</button></div><div class="g-area" id="gArea"></div>`;
-    const sayEl = $('#gSay', shell), hudEl = $('#gHud', shell);
+    area.innerHTML = `<div class="g-head"><span class="g-hud" id="gHud">${dialMeter(dial.lv)}<span class="g-pts"><b id="gPts">0</b> pts</span></span><span class="g-sayline" id="gSay" role="status" aria-live="polite"></span></div><div class="g-area" id="gArea"></div>`;
+    const sayEl = $('#gSay', area), hudEl = $('#gHud', area);
     const hud = (d, pts, ok) => { hudEl.innerHTML = `${dialMeter(d.lv)}<span class="g-pts"><b id="gPts">${d.points.toLocaleString('en-US')}</b> pts</span>${ok && pts ? `<span class="g-gain">+${pts}</span>` : ''}${d.trend > 0 ? '<span class="g-trend up" role="img" aria-label="Getting harder">&#9650;</span>' : d.trend < 0 ? '<span class="g-trend down" role="img" aria-label="Getting easier">&#9660;</span>' : ''}`; };
     let ended = false;
     const finish = score => {
@@ -939,22 +1003,33 @@ function gameView(id, lvl = 0, { signal } = {}) {
       const before = AD.rating('game:' + g.id, m), after = AD.saveRating('game:' + g.id, dial), moved = Math.round((after - before) * 10) / 10;
       const skillLine = `Difficulty: started at ${Math.round(startD)}, reached ${Math.round(dial.peak)}, settled at ${Math.round(dial.settled())} of 20. ${dial.right} of ${dial.n} right.`;
       const skillMove = dial.n >= 4 ? (moved > 0 ? ` Your skill rose to ${Math.round(after)}.` : moved < 0 ? ` Your skill is now ${Math.round(after)}.` : '') : '';
+      const showResult = (html, back) => {
+        area.innerHTML = html; play.setExit('Back', back);
+        const h = area.querySelector('h2, .md-kicker'); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
+      };
       if (L) {
-        const medal = levelMedal(L.goal, score), improved = store.setMedal(gkey(lvl), medal), sp = 10 + medal * 10 + Math.min(60, Math.round(score / 40)); store.addSparks(sp, 'game');
+        /* A Level of a timed game played without the clock earns Sparks but no Medal */
+        const noClock = untimed, medal = noClock ? 0 : levelMedal(L.goal, score), improved = store.setMedal(gkey(lvl), medal), sp = 10 + medal * 10 + Math.min(60, Math.round(score / 40)); store.addSparks(sp, 'game');
         if (medal === 3) fx.confetti(100); else if (medal) fx.confetti(40);
-        shell.innerHTML = resultHTML({ medal }, [`${score.toLocaleString('en-US')} points. Goals: ${L.goal.map(v => v.toLocaleString('en-US')).join(', ')}.`, skillLine + skillMove, `<span class="fx-sparks">+${sp} Sparks</span>${improved ? ' New best.' : ''}`], lvl < LEVELS_PER_GAME ? `#/game/${g.id}/${lvl + 1}` : null, `#/game/${g.id}/${lvl}`, `#/game/${g.id}`, 'Game home');
-        const rt = shell.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); mount(ctx => gameView(g.id, lvl, ctx)); };
+        showResult(resultHTML({ medal, noClock }, [`${score.toLocaleString('en-US')} points.${noClock ? '' : ` Goals: ${L.goal.map(v => v.toLocaleString('en-US')).join(', ')}.`}`, skillLine + skillMove, `<span class="fx-sparks">+${sp} Sparks</span>${improved ? ' New best.' : ''}`, ...(noClock ? ['<span class="lv-noclock">Medals for this game need the clock. Turn Calm off to play for one.</span>'] : [])], lvl < LEVELS_PER_GAME ? `#/game/${g.id}/${lvl + 1}` : null, `#/game/${g.id}/${lvl}`, `#/game/${g.id}`, 'Game home'), close);
+        const rt = area.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); mount(ctx => gameView(g.id, lvl, ctx)); };
         return;
       }
       const sp = 10 + Math.min(80, Math.round(score / 30)); store.addSparks(sp, 'game');
       let note = '';
       if (mode === 'ranked') { const isBest = store.setBest(`${g.id}-ranked-${cloud.dayId()}`, score); if (isBest && score) fx.confetti(80); note = isBest && score ? 'Your best today!' : `Today's best: ${store.best(`${g.id}-ranked-${cloud.dayId()}`).toLocaleString('en-US')}.`; postScore([bDay, bWeek], score, `for ${g.title}.`); }
-      lobby(`<div class="g-result"><div class="md-stat"><div class="md-kicker">${mode === 'ranked' ? 'Ranked score' : 'Practice score'}</div><div class="md-value">${score.toLocaleString('en-US')}</div><p>${note} <span class="fx-sparks">+${sp} Sparks</span></p></div><p class="mq-small">${skillLine}${skillMove}</p></div>`);
+      const res = `<div class="g-result"><div class="md-stat"><div class="md-kicker">${mode === 'ranked' ? 'Ranked score' : 'Practice score'}</div><div class="md-value">${score.toLocaleString('en-US')}</div><p>${note} <span class="fx-sparks">+${sp} Sparks</span></p></div><p class="mq-small">${skillLine}${skillMove}</p></div>`;
+      const back = () => { lobby(res); close(); };
+      showResult(`${res}<p class="lv-acts"><button type="button" class="md-btn md-btn--primary" id="gDone">Back to ${esc(g.title)}</button></p>`, back);
+      $('#gDone', area).onclick = back;
       if (mode === 'ranked') later(() => { loadBoard($('#gbDay'), bDay); loadBoard($('#gbWeek'), bWeek); }, 1500, signal);
     };
-    keepFocus($('#gArea', shell), roundSignal, focusWasHere);
-    g.run($('#gArea', shell), { dial, hud, endless: mode === 'endless', secs: g.secs, signal: roundSignal, say: m2 => (sayEl.innerHTML = m2), end: finish });
-    $('#gQuit', shell).onclick = () => { if (mode === 'endless') return finish(dial.points); round.abort(); ended = true; lobby(); };
+    /* The exit button: Finish ends an endless round with its result; Stop leaves any other round with nothing saved */
+    const quit = () => { if (ended) return close(); if (mode === 'endless') return finish(dial.points); ended = true; round.abort(); close(); };
+    keepFocus($('#gArea', area), roundSignal, focusWasHere);
+    g.run($('#gArea', area), { dial, hud, endless: mode === 'endless', secs: g.secs, ranked: mode === 'ranked', untimed, perQ: g.perQ, signal: roundSignal, say: m2 => (sayEl.innerHTML = m2), end: finish });
+    /* Started from the keyboard: focus moves from the shell to the game's first option (WCAG 2.4.3) */
+    if (focusWasHere) { const list = [...$('#gArea', area).querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), [tabindex="0"]')].filter(x => x.getClientRects().length); const f = list.find(x => x.closest('[role="group"]')) || list[0]; if (f) f.focus({ preventScroll: true }); }
   };
   lobby();
   if (!lvl) { loadBoard($('#gbDay'), bDay); loadBoard($('#gbWeek'), bWeek); }
@@ -1148,7 +1223,15 @@ function meView() {
       <button class="md-btn md-btn--sm" id="meAdd">${icon('plus')} Add a player</button></div>
     <h2 class="mq-strand">Settings</h2>
     ${skySwitchHTML(p)}
-    <div class="me-set"><label><input type="checkbox" id="setSound" ${fx.soundOn() ? 'checked' : ''}> Sound effects</label><label><input type="checkbox" id="setVoice" ${fx.voiceOn() ? 'checked' : ''}> Read questions aloud</label><label><input type="checkbox" id="setBg" ${bgOn() ? 'checked' : ''}> Moving background</label></div>
+    <div class="me-set"><label><input type="checkbox" id="setSound" ${fx.soundOn() ? 'checked' : ''}> Sound effects</label><label><input type="checkbox" id="setVoice" ${fx.voiceOn() ? 'checked' : ''}> Read questions aloud</label></div>
+    <h3 class="mq-h3" id="calmH">Calm and motion</h3>
+    <div class="me-calm" role="group" aria-labelledby="calmH">
+      <button type="button" class="md-switch" role="switch" id="setCalm" aria-checked="${fx.calmOn()}" aria-describedby="calmNote"><span>Calm</span><span class="md-track" aria-hidden="true"><span class="md-knob"></span></span></button>
+      <p class="mq-small" id="calmNote">No clocks in Practice and nothing moves. Ranked rounds keep their clock. Saved on this device.</p>
+      <label class="me-bg"><input type="checkbox" id="setBg" ${bgOn() ? 'checked' : ''}> Moving background</label>
+      <div class="me-size"><span id="sizeL">Text size in play</span><div class="play-size" role="group" aria-labelledby="sizeL"><button type="button" class="play-size-b" data-size="a" aria-pressed="${fx.textSize() === 'a'}" aria-label="Normal text">A</button><button type="button" class="play-size-b" data-size="a+" aria-pressed="${fx.textSize() === 'a+'}" aria-label="Larger text">A+</button></div></div>
+      <p class="mq-small">Pause motion in the Explore menu stops motion on every page of sbmadhav.com.</p>
+    </div>
     ${fx.voiceSettingsHTML()}
     <p class="mq-small">Calm music: use the note button at the top right of the menu bar (singing bowls, tanpura drone, Himalayan dawn, temple chimes).</p>
     <h2 class="mq-strand">Progress by level</h2>
@@ -1168,6 +1251,8 @@ function meView() {
   const sky = $('#skySwitch'); if (sky) sky.onclick = () => { store.updatePlayer({ sky: sky.getAttribute('aria-checked') !== 'true' }); fx.sfx('pop'); meView(); $('#skySwitch').focus(); $('#skyMsg').textContent = SKY.skyOn(store.player()) ? 'The Sky is your home now.' : 'Your home is the tile home again.'; };
   $('#setSound').onchange = e => { fx.setSound(e.target.checked); fx.sfx('ok'); };
   $('#setBg').onchange = e => { setBg(e.target.checked); const t = document.getElementById('vmBg'); if (t) t.checked = e.target.checked; };
+  $('#setCalm').onclick = e => { fx.setCalm(!fx.calmOn()); e.currentTarget.setAttribute('aria-checked', String(fx.calmOn())); };
+  view.querySelectorAll('.me-size [data-size]').forEach(b => b.onclick = () => { fx.setTextSize(b.dataset.size); view.querySelectorAll('.me-size [data-size]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.size === fx.textSize()))); });
   $('#setVoice').onchange = e => { fx.setVoice(e.target.checked); if (e.target.checked) fx.speak('Read aloud is on.', true); else fx.stopSpeaking(); };
   fx.wireVoiceSettings(view);
   wireWorldBoards(view);
@@ -1233,6 +1318,7 @@ function icon(n) {
 /* ---------- Boot ---------- */
 const rm = $('#resetMode'); if (rm) rm.onclick = () => { store.updatePlayer({ mode: null }); fx.applyMode(); location.hash = '#/'; render(); window.scrollTo({ top: 0 }); };
 fx.applyMode();
+fx.applyPrefs(); /* body.calm and body.text-plus from this device's Calm and text size */
 gm.init();
 metrics.returnCheck(); /* before the first route view: remembers this device's first visit */
 render();
