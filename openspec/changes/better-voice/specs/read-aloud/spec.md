@@ -28,6 +28,17 @@ Studio audio SHALL be prerecorded files on this site's origin under `/vedic-math
 - **WHEN** an Explorer Player hears ten questions
 - **THEN** every voice request is a GET under `https://sbmadhav.com/vedic-math/voice/` with no query text, and no request goes to a speech provider
 
+### Requirement: No speech provider at play time
+The published site SHALL contain no speech provider key, token or endpoint, and the game SHALL make no request to a speech provider. When studio audio cannot play a line for any reason, the built-in voice SHALL read it.
+
+#### Scenario: Built site
+- **WHEN** the site is built with `build.py --out`
+- **THEN** no published file contains `texttospeech.googleapis.com` or a string shaped like a Google API key or OAuth token
+
+#### Scenario: Audio fails
+- **WHEN** a studio file returns an error or cannot be decoded
+- **THEN** the built-in voice reads the line
+
 ### Requirement: Studio audio loads lazily
 No studio file SHALL be fetched until read aloud is on. The core clip pack SHALL load while the page is idle once read aloud is on, and other files SHALL load the first time a line needs them.
 

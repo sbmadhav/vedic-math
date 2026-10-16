@@ -106,6 +106,32 @@ export const CLOUD = {
     return pcm16(await r.arrayBuffer());
   } }
 };
+/* ---------- Spend guard ----------
+   Every paid request is counted in .cache/ledger.json by calendar month (UTC), at list price and ignoring free tiers,
+   so the count can only overstate the bill. A request that would take the month past BUDGET_USD (default 300, the
+   owner's cap) or this run past RUN_USD (default 50) is refused before it is sent. Requests are also paced to
+   RATE_PER_MIN (default 300) so a bug can never fire a burst. This guards this machine; the Google Cloud budget and
+   API quota (design decision 12) guard the account. */
+export const PRICE_PER_CHAR = { google: 30e-6, azure: 15e-6, openai: 20e-6, elevenlabs: 50e-6 }; // Chirp 3 HD $30/M; OpenAI about 1.5 cents a minute
+const LEDGER = CACHE + 'ledger.json';
+const month = () => new Date().toISOString().slice(0, 7);
+let runUsd = 0, lastAt = 0;
+function charge(engine, chars) {
+  const budget = +(process.env.BUDGET_USD || 300), runCap = +(process.env.RUN_USD || 50), cost = chars * (PRICE_PER_CHAR[engine] || 50e-6);
+  const led = existsSync(LEDGER) ? JSON.parse(readFileSync(LEDGER, 'utf8')) : {};
+  const m = led[month()] ||= { usd: 0, chars: {} };
+  if (m.usd + cost > budget) throw new Error(`budget: this month is at $${m.usd.toFixed(2)} of $${budget}; refusing a $${cost.toFixed(4)} request`);
+  if (runUsd + cost > runCap) throw new Error(`budget: this run is at $${runUsd.toFixed(2)} of RUN_USD $${runCap}; refusing`);
+  m.usd += cost; m.chars[engine] = (m.chars[engine] || 0) + chars; runUsd += cost;
+  writeFileSync(LEDGER, JSON.stringify(led, null, 1));
+}
+async function pace() {
+  const gap = 60000 / +(process.env.RATE_PER_MIN || 300), wait = lastAt + gap - Date.now();
+  if (wait > 0) await new Promise(r => setTimeout(r, wait));
+  lastAt = Date.now();
+}
+export const spentThisMonth = () => { const led = existsSync(LEDGER) ? JSON.parse(readFileSync(LEDGER, 'utf8')) : {}; return (led[month()] || { usd: 0 }).usd; };
+
 /* say(text, spec, speed) for an engine, cached like Kokoro. Kokoro loads only when a Kokoro voice is used. */
 export async function speakerFor(engine) {
   if (!engine || engine === 'kokoro') return speaker();
@@ -113,6 +139,7 @@ export async function speakerFor(engine) {
   return async (text, spec, speed) => {
     const f = CACHE + createHash('sha1').update(`${engine}|${spec}|${speed}|${text}`).digest('hex') + '.f32';
     if (existsSync(f)) { const b = readFileSync(f); return new Float32Array(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength)); }
+    charge(engine, text.length); await pace();
     const a = await c.say(text, spec, speed); writeFileSync(f, Buffer.from(a.buffer)); console.log(`  made "${text}" (${engine} ${spec})`); return a;
   };
 }

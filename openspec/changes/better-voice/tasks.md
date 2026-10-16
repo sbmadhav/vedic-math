@@ -44,6 +44,11 @@ Part A (tasks 1) can ship on its own before part B.
   - Verify: `test/build.test.mjs` cases for a missing archive and a wrong hash; `git log --all -- '*.m4a'` shows no audio added outside `docs/prototypes/`.
   - Verify: after deploy, `curl -I https://sbmadhav.com/vedic-math/voice/p/core.<hash>.m4a` returns 200 with `content-type: audio/mp4`.
 
+- [ ] 2.5 Spend guard (prototyped in `voice-lib.mjs`): the ledger, `BUDGET_USD` (default 300), `RUN_USD` (default 50) and `RATE_PER_MIN` (default 300); keys only from the environment.
+  - Verify: new `test/voice-tools.test.mjs` runs `charge()` with a stub provider: a request past the monthly or run cap throws before the stub is called; cached lines are not charged; the ledger keys by month.
+- [ ] 2.6 Owner steps on Google Cloud, before the full recording: restrict the key to Cloud Text-to-Speech; a $300 monthly budget with alerts at 50%, 90% and 100%; a Text-to-Speech quota cap (300 requests a minute, 50,000 a day).
+  - Verify: the owner confirms in the PR; the full recording run's ledger total is in the PR.
+
 ## 3. Studio voice (B, app)
 
 - [ ] 3.1 `js/voice.js`:
@@ -61,6 +66,8 @@ Part A (tasks 1) can ship on its own before part B.
     - "Explorer whole line": an Explorer Practice question logs `studio:line` in `window.__voiceLog`, and `speechSynthesis.speak` is not called.
     - "clips for a three-digit sum": a `2-add1000` question logs `studio:clips`.
     - "slow line falls back": with the line request held for 2 s, the line logs `studio:clips`.
+    - "broken audio falls back": with `/vedic-math/voice/` requests answered 404, the line logs `builtin`.
+    - "no provider calls": across an Explorer round, no request goes to `googleapis.com` or another speech provider.
   - Verify: `test/lifecycle-scan.test.mjs` passes.
   - E2E tests fetch the real audio site read-only. That is a static GET and is allowed (no Firestore, no counting).
 - [ ] 3.3 `stop()` stops scheduled sources and bumps the token, so a file that finishes loading late never plays a stale line. On iOS, set `navigator.audioSession.type = 'playback'` where it exists.
@@ -74,6 +81,8 @@ Part A (tasks 1) can ship on its own before part B.
 
 - [ ] 4.1 `sw.js`: `/vedic-math/voice/` requests are cache first. On install, those entries are copied from the previous `vedic-math-*` cache. `build.py` leaves `voice/` out of `PRECACHE` (task 2.4).
   - Verify: `e2e/tests/offline.spec.ts` (built `_site`, chromium), new test: an Explorer Player hears two lines online, goes offline and reloads. A heard line logs `studio:line`, and a new line logs `studio:clips` or `builtin`.
+- [ ] 4.1b `test/build.test.mjs`: the built `_site` contains no `texttospeech.googleapis.com` (or other provider host) and nothing shaped like a Google key or token.
+  - Verify: adding a fake `AIza...` string to a published file makes it fail.
 - [ ] 4.2 New `test/voice-coverage.test.mjs`:
   - samples every generator (seeded: 300 per Skill and level, all Katas, Arena sets for each League, towers, games, fixed lines);
   - fails on any Explorer-surface line without a whole hash in `js/voice-index.js` or clips (naming the line);

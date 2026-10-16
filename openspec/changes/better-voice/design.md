@@ -177,6 +177,18 @@ The prototype showed that free Kokoro clips are not good enough for the owner, s
 - `test/voice-coverage.test.mjs` fails on any Explorer line without studio audio (its hash missing from the index, or a missing clip) and when overall coverage falls below 99% (owner decision).
 - A wording change to an Explorer line therefore needs `node tools/voice/make-clips.mjs` and a publish, before or with the commit that changes the wording.
 
+**12. Guardrails: the key never ships, spend is capped at $300 a month, the device voice is the fallback.**
+The owner asked for rate limits, bot protection, a fallback to the computer's own voice and a $300 a month budget, because an API key is involved.
+- **No key is exposed, by design.** The key is used only on the owner's machine, in the shell that runs `make-clips.mjs`, read from `GOOGLE_TTS_KEY` or `GOOGLE_TTS_TOKEN`. It is never written to a file, a commit, the release archive or the site. The game makes no request to Google or any speech provider: it only fetches static audio files from its own site. So there is no endpoint for a bot to abuse and nothing to rate limit at play time. Downloading the audio, even by a scraper, costs nothing (GitHub Pages serves it).
+  - Enforced by a test: `test/build.test.mjs` scans the built `_site` (and `voice/` index) and fails on `texttospeech.googleapis.com`, any other provider host, or anything shaped like a Google key (`AIza`, `AQ.`) or OAuth token.
+- **Fallback to the device voice.** Every line the studio audio cannot play (not recorded, not yet downloaded, offline and not saved, a decode error) is read by the tuned built-in voice (decision 1, A). That is also the answer if Google ever stops working for us: the game keeps talking.
+- **Spend limits, in three layers:**
+  1. On the machine: `voice-lib.mjs` counts every paid request in `.cache/ledger.json` at list price, ignoring the free tier (so it can only overstate), and refuses any request that would take the month past `BUDGET_USD` (default $300) or one run past `RUN_USD` (default $50). It paces requests to `RATE_PER_MIN` (default 300). Cached lines are never paid for twice.
+  2. On the Google Cloud project (owner step): a billing budget of $300 a month with alerts at 50%, 90% and 100%, and a quota cap on the Text-to-Speech API (for example 300 requests a minute and 50,000 a day), so even a leaked key cannot run up a bill quickly. Google budgets alert but do not stop spending by themselves; the quota is the hard stop. Optionally, Google's documented budget-to-Pub/Sub function can disable billing at 100%.
+  3. On the key: restricted to the Cloud Text-to-Speech API only, and rotated after any exposure (the first pasted key was).
+- **Expected spend:** about 770,000 characters once, about $0 inside the 1 million free characters a month (at most about $23 at list price). Re-recording after wording changes is a few thousand characters. $300 a month is far above what B can spend.
+- **If plan C (live calls) is ever chosen,** the guardrails become essential and change shape: the key moves to a server function, Firebase App Check (reCAPTCHA Enterprise or Play Integrity) on every request, per-IP and per-Player rate limits (for example 30 lines a minute), a server-side cache, the $300 budget with a quota hard stop, and the device voice when any limit trips.
+
 ## Alternatives
 
 **C. A live cloud voice at play time (audio as a service, live).**

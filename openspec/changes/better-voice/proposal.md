@@ -24,6 +24,8 @@ The inventory in `design.md` shows that what the game says is very regular. Expl
 - `speak()` order: the natural voice if the Player turned it on, then a whole studio line, then studio clips, then the built-in voice. One line is always said by one voice. If a whole line has not arrived within 600 ms, the clips say it.
 - A node test fails when an Explorer line has no studio audio. Overall coverage must stay at or above 99%.
 
+**Guardrails (owner request).** The key is used only on the owner's machine to record, and never ships: the game calls no speech provider, so there is nothing for a bot to abuse at play time, and a test fails the build if a key or provider endpoint ever appears in the site. Spend is capped three ways: the recording tool refuses any request past $300 in a month or $50 in a run and paces requests; a $300 Google Cloud budget with alerts plus an API quota as the hard stop; and a key restricted to Text-to-Speech. Any line the studio audio cannot play is read by the device's own voice.
+
 **C. A live cloud voice at play time ("audio as a service" in the other sense) is the alternative, not the plan.** A small server function would ask the provider for each new line and cache the result. It would cover any line with no stitching. But it costs every month: about 10 million characters for 100 Players a day comes to about $25 a month (Google WaveNet) up to $525 (ElevenLabs). It also needs a function host, abuse limits and a spend cap, sends question text and Players' IP addresses through a server, and does not work offline. `design.md` has the numbers and when to revisit it.
 
 Out of scope:
