@@ -27,8 +27,8 @@ jobs:
       - name: Unit tests
         run: node --test 'test/**/*.test.{js,mjs}'
 
-      # Also fails if the source carries stamps (an import map, ?v= on app.js or math.css, or a
-      # sw.js VERSION other than 'dev')
+      # Also fails if the source carries stamps (an import map, ?v= on app.js or math.css, a
+      # sw.js VERSION other than 'dev', or a Content-Security-Policy <meta>)
       - name: Build _site with cache stamps
         run: python3 build.py --out _site
 
@@ -40,6 +40,7 @@ jobs:
           grep -Eq '"/vedic-math/js/app\.js": "/vedic-math/js/app\.js\?v=[0-9a-f]{10}"' _site/index.html || err "_site/index.html does not pin app.js in the import map"
           grep -Eq '<script type="module" src="/vedic-math/js/app\.js\?v=[0-9a-f]{10}"></script>' _site/index.html || err "_site/index.html loads app.js without a ?v= stamp"
           grep -Eq 'href="/vedic-math/math\.css\?v=[0-9a-f]{10}"' _site/index.html || err "_site/index.html loads math.css without a ?v= stamp"
+          grep -q '<meta http-equiv="Content-Security-Policy" content="default-src' _site/index.html || err "_site/index.html has no Content-Security-Policy <meta>"
           grep -Eq "^const VERSION = '[0-9a-f]{10}';" _site/sw.js || err "_site/sw.js VERSION is not a stamped hash"
           grep -q '"/vedic-math/", "' _site/sw.js || err "_site/sw.js does not precache the shell"
           grep -q "^const VERSION = 'dev';" sw.js || err "sw.js in git must keep VERSION = 'dev'"

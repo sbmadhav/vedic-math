@@ -12,9 +12,10 @@ import { test as base, expect, type Page, type BrowserContext, type TestInfo } f
      Requests to identitytoolkit / securetoken are aborted and recorded as violations in those tests.
    - Only tests that opt in with test.use({ liveFirebase: true }) load the real SDK (world leaderboard
      read). They still go through the write guard.
-   - GoatCounter is answered locally so test runs do not count as visits. */
+   - GoatCounter is answered locally so test runs do not count as visits. Its count.js is served from the main
+     site (/assets/count.js); gc.zgo.at stays in the pattern for a main site that still loads it from there. */
 
-export const ANALYTICS = /(^https:\/\/[^/]*goatcounter\.com\/)|(^https:\/\/gc\.zgo\.at\/)/;
+export const ANALYTICS = /(^https:\/\/[^/]*goatcounter\.com\/)|(^https:\/\/gc\.zgo\.at\/)|(^https?:\/\/[^/]+\/assets\/count\.js(\?|$))/;
 export const FIREBASE_SDK = /^https:\/\/www\.gstatic\.com\/firebasejs\//;
 export const FIREBASE_AUTH = /^https:\/\/(identitytoolkit|securetoken)\.googleapis\.com\//;
 export const FIRESTORE = /^https:\/\/firestore\.googleapis\.com\//;
