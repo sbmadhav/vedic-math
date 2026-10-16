@@ -468,6 +468,7 @@ test.describe('Ratings', () => {
     await page.clock.runFor(61_000);
     await expect(page.locator('.ar-result')).toBeVisible();
     await expect.poll(async () => (await sent(page)).length).toBe(2);
+    await page.locator('#arDone').click(); // leave the result in the play shell
     // A finished Practice round with enough answers to save the Arena Rating
     await page.locator('[data-t="practice"]').click();
     await page.locator('#arGo').click();
@@ -486,4 +487,25 @@ test.describe('Ratings', () => {
     for (const r of out) { expect(r).not.toMatch(/rating/i); expect(r).not.toContain('arena:'); }
     for (const w of await sent(page)) { expect(JSON.stringify(w)).not.toMatch(/rating|arena:/i); expect(Object.keys(w.data).sort()).toEqual(['avatar', 'exp', 'name', 'score', 'ts']); }
   });
+});
+
+/* Calm and text size are device preferences (openspec game-shell-and-calm): no request carries them */
+test('Calm, text size and an untimed round send nothing about them', async ({ page }, testInfo) => {
+  chromiumOnly(testInfo, 'app logic, the same in every engine');
+  const out: string[] = [];
+  page.on('request', r => out.push(`${r.url()}\n${r.postData() || ''}`));
+  await open(page, '#/arena');
+  await page.locator('[data-t="untimed"]').click();
+  await page.locator('#arGo').click();
+  await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
+  await page.locator('.play-shell .play-calm').click();
+  await page.locator('.play-shell [data-size="a+"]').click();
+  for (let k = 0; k < 3; k++) { await page.locator('.ar-key[data-k="2"]').click(); await page.locator('#arForm button').click(); }
+  await page.locator('#arFinish').click();
+  await expect(page.locator('.ar-result')).toBeVisible();
+  await page.goto(`${APP}#/me`);
+  await page.locator('#setCalm').click();
+  await page.waitForLoadState('networkidle');
+  for (const r of out) { expect(r).not.toMatch(/calm/i); expect(r).not.toMatch(/vm\.text|text-plus|"a\+"/); }
+  expect((await cloudLog(page)).writes).toEqual([]);
 });
