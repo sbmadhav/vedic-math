@@ -1,0 +1,77 @@
+import { test, expect, open } from './fixtures';
+
+/* Play experiences (openspec play-experiences): twelve pages inside the Dojo, Arena, Games and Sutras sections,
+   listed on each section's shelf. Party Mode replaces the Duel. */
+
+const PAGES = [
+  { hash: '#/dojo/spells', h1: 'Sutra Spellbook', back: 'Dojo' },
+  { hash: '#/dojo/locks', h1: 'Discovery Locks', back: 'Dojo' },
+  { hash: '#/arena/party', h1: 'Party Mode', back: 'Arena' },
+  { hash: '#/arena/ghosts', h1: 'Ghost Races', back: 'Arena' },
+  { hash: '#/arena/daily-number', h1: 'Daily Number', back: 'Arena' },
+  { hash: '#/games/tala', h1: 'Tala Lab', back: 'Games' },
+  { hash: '#/games/art', h1: 'Mandala Studio', back: 'Games' },
+  { hash: '#/games/wall', h1: 'Pattern Wall', back: 'Games' },
+  { hash: '#/games/apprentice', h1: 'Teach the Apprentice', back: 'Games' },
+  { hash: '#/games/bets', h1: 'Estimation Bets', back: 'Games' },
+  { hash: '#/games/lens', h1: 'Math Lens', back: 'Games' },
+  { hash: '#/sutras/lost-scroll', h1: 'The Lost Śulba Scroll', back: 'Sutras' }
+];
+
+for (const p of PAGES) test(`${p.hash} opens ${p.h1} inside ${p.back}, with no errors and no sideways scroll`, async ({ page, issues }) => {
+  await open(page, p.hash);
+  await expect(page.locator('#view h1').first()).toHaveText(p.h1);
+  await expect(page.locator('.px-back').first()).toHaveText(new RegExp(p.back));
+  await expect(page).toHaveTitle(new RegExp(`^${p.h1}: Vedic Math`));
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+  await page.locator('.px-back').first().click();
+  await expect(page).toHaveURL(new RegExp(`#/${p.back.toLowerCase()}$`));
+  expect(issues.console).toEqual([]);
+});
+
+test('section shelves list the experiences for the Mode', async ({ page }) => {
+  for (const [hash, n] of [['#/dojo', 2], ['#/arena', 3], ['#/games', 6], ['#/sutras', 1]] as const) {
+    await open(page, hash);
+    await expect(page.locator('.play-shelf .play-card')).toHaveCount(n);
+  }
+  await page.locator('.play-card', { hasText: 'The Lost Śulba Scroll' }).click();
+  await expect(page).toHaveURL(/#\/sutras\/lost-scroll$/);
+});
+
+test.describe('explorer', () => {
+  test.use({ seedMode: 'explorer' });
+  test('Games and Arena shelves show, and nothing from the hidden Dojo and Sutras', async ({ page }) => {
+    await open(page, '#/games');
+    await expect(page.locator('.play-shelf .play-card')).toHaveCount(6);
+    await open(page, '#/arena');
+    await expect(page.locator('.play-shelf .play-card')).toHaveCount(3);
+    await open(page, '#/dojo');
+    await expect(page.locator('.play-shelf')).toHaveCount(0);
+  });
+});
+
+test('#/duel opens Party Mode, and the Arena tile and Sky place point there', async ({ page }) => {
+  await open(page, '#/duel');
+  await expect(page).toHaveURL(/#\/arena\/party$/);
+  await expect(page.locator('#view h1').first()).toHaveText('Party Mode');
+  await expect(page.locator('.pt-start')).toBeVisible();
+});
+
+test('Party Mode: Start the party begins the first round', async ({ page, issues }) => {
+  await open(page, '#/arena/party');
+  await page.locator('.pt-start').click();
+  await expect(page.locator('.pt-start')).toHaveCount(0);
+  await expect(page.locator('#view')).toContainText(/round|Round|buzz|Buzz/);
+  expect(issues.console).toEqual([]);
+});
+
+test('play state is kept per Player, under vm.play.<player id>', async ({ page }) => {
+  await open(page, '#/arena/daily-number');
+  const keys = await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('vm.play.') || k.startsWith('vp.')));
+  expect(keys.every(k => k.startsWith('vm.play.'))).toBe(true);
+});
+
+test('the badge for Party Mode is listed on Me', async ({ page }) => {
+  await open(page, '#/me');
+  await expect(page.locator('.badge-grid .badge').filter({ has: page.locator('b', { hasText: /^Party host$/ }) })).toContainText('Finish a Party Mode game');
+});

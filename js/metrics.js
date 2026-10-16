@@ -69,6 +69,8 @@ const ROUTES = [
   [/^#\/tiles$/, 'tiles'],
   [/^#\/me$/, 'me'],
   [/^#\/progress$/, 'progress'],
+  /* Play experiences: the page name inside its section (js/play/catalog.js), never the params after it */
+  [/^#\/(dojo|arena|games|sutras)\/([a-z-]+)(?:\/.*)?$/, 'play/{play:2}'],
 ];
 /* The route-view path for a hash, or 'other'. known(kind, id) says whether id is in that catalog; an id
    that is not (a typed or stale link) becomes 'unknown', so nothing typed is ever sent. */

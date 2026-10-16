@@ -83,7 +83,7 @@ def publishable(out):
 
 
 def check_source(html, sw):
-    if 'type="importmap"' in html or MAP_START in html:
+    if 'type="importmap"' in html or MAP_START in html or 'id="vm-css"' in html:
         fail("index.html carries an import map; the source must not (the build adds it)")
     for url in [BASE + "js/app.js", BASE + "math.css", *SHARED]:
         if re.search(r'(?:src|href)="' + re.escape(url) + r'\?v=', html):
@@ -131,7 +131,10 @@ def main():
 
     # ---------- index.html: import map and stamps ----------
     imports = {u: f"{u}?v={v}" for u, v in versions.items()}
-    map_block = MAP_START + '\n<script type="importmap">\n' + json.dumps({"imports": imports}, indent=1) + "\n</script>\n" + MAP_END + "\n"
+    # Stylesheets the play experiences load on demand (css/play/*.css): js/app.js reads their hashes from #vm-css
+    play_css = {BASE + f: fhash(f) for f in files if f.startswith("css/") and f.endswith(".css")}
+    map_block = (MAP_START + '\n<script type="importmap">\n' + json.dumps({"imports": imports}, indent=1) + "\n</script>\n"
+                 + '<script type="application/json" id="vm-css">' + json.dumps(play_css) + "</script>\n" + MAP_END + "\n")
     entry = re.search(r'<script type="module" src="/vedic-math/js/app\.js"></script>', html)
     if not entry:
         fail("index.html: module entry script not found")
@@ -148,6 +151,7 @@ def main():
     # ---------- sw.js: precache list and VERSION ----------
     own_files = {BASE: "index.html", f"{BASE}math.css?v={own[BASE + 'math.css']}": "math.css", BASE + "manifest.webmanifest": "manifest.webmanifest"}
     own_files.update({imports[BASE + p]: p for p in js})
+    own_files.update({f"{u}?v={v}": u[len(BASE):] for u, v in play_css.items()})
     refs = set(re.findall(r'(?:src|href)="(/[^"]*)"', html)) | set(re.findall(r'url\((/[^)]+)\)', html))
     manifest = json.loads(src("manifest.webmanifest"))
     refs |= {posixpath.join(BASE, i["src"]) for i in manifest.get("icons", [])}

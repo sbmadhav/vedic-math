@@ -61,7 +61,7 @@ export const BADGES = [
   { id: 'arena1', name: 'Arena debut', how: 'Finish an Arena round.', test: () => store.count('arena') >= 1 },
   { id: 'arena200', name: 'Arena star', how: 'Score 200 or more in one Arena round.', test: () => store.count('arenaBest') >= 200 },
   { id: 'daily3', name: 'Daily habit', how: 'Finish the daily challenge on 3 days.', test: () => store.count('dailyDays') >= 3 },
-  { id: 'duel', name: 'Duelist', how: 'Finish a two-player duel.', test: () => store.count('duelsDone') >= 1 },
+  { id: 'duel', name: 'Party host', how: 'Finish a Party Mode game with family or friends.', test: () => store.count('duelsDone') >= 1 },
   { id: 'games', name: 'Game explorer', how: 'Play every game once.', test: () => GAMES.every(g => store.seen('game:' + g.id)) },
   { id: 'days7', name: 'Week warrior', how: 'Practice 7 days in a row.', test: () => store.streakDays() >= 7 },
   { id: 'sutras', name: 'Sutra scholar', how: 'Collect 10 Sutra cards.', test: () => collectedCount() >= 10 },

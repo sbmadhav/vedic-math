@@ -105,7 +105,7 @@ test.describe('first visit', () => {
       ['#/games', /^Games/], ['#/sutras', /^The sutras:/], ['#/watch', /^Watch and learn/], ['#/me', /^Me:/],
       ['#/grade/3', /./], ['#/skill/v-sq5', /./], ['#/katas/sq5', /./], ['#/kata/sq5/1', /./], ['#/tower', /./], ['#/tower/1', /./],
       ['#/challenge/1', /./], ['#/game/times-sprint', /^Times sprint/], ['#/game/times-sprint/1', /^Times sprint level 1/],
-      ['#/duel', /^Duel/], ['#/mix/3', /./], ['#/sutras/s1', /: Vedic Math · Madhav$/],
+      ['#/arena/party', /^Party Mode/], ['#/games/tala', /^Tala Lab/], ['#/mix/3', /./], ['#/sutras/s1', /: Vedic Math · Madhav$/],
     ];
     for (const [hash, title] of ROUTES) {
       // A fresh tab per route: a real page load, answered by the worker

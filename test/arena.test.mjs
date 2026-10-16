@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { TOPICS, PER_CHAPTER, CHALLENGE_COUNT, challenge, challengeSet, challengeKey, challengeMedal } from '../js/levels.js';
-import { makeSet, dailySet, practiceItem, MENTAL_FROM, PRO_RAMP, duelStart, duelAnswer, duelUnfreeze, duelNext, DUEL_GOAL } from '../js/arena.js';
+import { makeSet, dailySet, practiceItem, MENTAL_FROM, PRO_RAMP } from '../js/arena.js';
 import { byId, SKILLS } from '../js/skills/index.js';
 import { checkOne } from '../js/check.js';
 import { verifyQuestion } from './support/verify.mjs';
@@ -172,55 +172,6 @@ test('Arena Practice items: Pro are mental at the asked difficulty, other League
     assert.equal(checkItem('pro', p, `pro practice d${d}`).status, 'ok');
     for (const league of ['explorer', 'challenger']) { const c = practiceItem(league, d); assert.ok(byId[c.skill], c.skill); assert.equal(c.d, d); checkItem(league, c, `${league} practice d${d}`); }
   }
-});
-
-/* Duel question flow (duel spec): both sides share each question; the first right answer wins it */
-test('duel: both sides share item 0 at start, and a point moves both to item 1', () => {
-  const set = makeSet('challenger', 'duel-test', 20), st = duelStart();
-  assert.equal(st.item, 0); assert.deepEqual(st.pts, [0, 0]);
-  const r = duelAnswer(st, set[0], 1, String(set[0].answer));
-  assert.equal(r.event, 'point');
-  assert.deepEqual(r.state.pts, [0, 1]);
-  assert.equal(r.state.item, 1);
-  assert.deepEqual(st.pts, [0, 0], 'the old state is not changed');
-});
-
-test('duel: a miss freezes only that side, and the other can still win the question', () => {
-  const set = makeSet('explorer', 'duel-test', 20), q = set[0], wrong = q.choices.find(c => c !== q.answer);
-  const m = duelAnswer(duelStart(), q, 0, wrong);
-  assert.equal(m.event, 'miss');
-  assert.deepEqual(m.state.frozen, [true, false]);
-  assert.equal(m.state.item, 0);
-  assert.equal(duelAnswer(m.state, q, 0, q.answer).event, 'ignored', 'frozen side cannot answer');
-  assert.equal(duelAnswer(duelUnfreeze(m.state, 0), q, 0, q.answer).event, 'ignored', 'one try per side per question');
-  const p = duelAnswer(m.state, q, 1, q.answer);
-  assert.equal(p.event, 'point'); assert.deepEqual(p.state.pts, [0, 1]); assert.equal(p.state.item, 1);
-  assert.deepEqual(p.state.missed, [false, false]);
-  assert.deepEqual(duelUnfreeze(p.state, 0).frozen, [false, false]);
-});
-
-test('duel: two misses reveal the answer and move both on with no points', () => {
-  const set = makeSet('pro', 'duel-test', 20), q = set[0], wrong = q.choices.find(c => c !== q.answer);
-  const a = duelAnswer(duelStart(), q, 0, wrong), b = duelAnswer(a.state, q, 1, wrong);
-  assert.equal(b.event, 'both-missed'); assert.equal(b.state.reveal, true); assert.deepEqual(b.state.pts, [0, 0]);
-  assert.equal(duelAnswer(duelUnfreeze(duelUnfreeze(b.state, 0), 1), q, 0, q.answer).event, 'ignored', 'no answers while revealing');
-  const n = duelNext(b.state);
-  assert.equal(n.item, 1); assert.equal(n.reveal, false); assert.deepEqual(n.pts, [0, 0]); assert.deepEqual(n.missed, [false, false]);
-});
-
-test('duel: the 10th point ends the duel and later answers are ignored', () => {
-  const set = makeSet('challenger', 'duel-test', 40); let st = duelStart(), last;
-  for (let i = 0; i < DUEL_GOAL; i++) { last = duelAnswer(st, set[st.item], 0, set[st.item].answer); st = last.state; }
-  assert.equal(DUEL_GOAL, 10);
-  assert.equal(last.event, 'win'); assert.equal(st.winner, 0); assert.deepEqual(st.pts, [10, 0]);
-  assert.equal(duelAnswer(st, set[st.item], 1, set[st.item].answer).event, 'ignored');
-  assert.equal(duelAnswer(st, set[st.item], 0, set[st.item].answer).event, 'ignored');
-});
-
-test('duel: a Pro Duel deals only mental arithmetic (it uses makeSet like the daily round)', () => {
-  const set = makeSet('pro', null, 120);
-  assert.equal(set.length, 120);
-  set.forEach((p, i) => { assert.ok(FAMILIES.includes(p.family), `#${i + 1}`); assert.equal(checkItem('pro', p, `duel #${i + 1}`).status, 'ok'); });
 });
 
 /* Untimed Arena Practice (openspec game-shell-and-calm): 20 questions, each drawn at the Dial's difficulty, with no
