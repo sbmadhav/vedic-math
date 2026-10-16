@@ -14,12 +14,12 @@ Prerequisites: `sparks-replace-xp` is merged (`addSparks()`, Medals instead of s
 
 ## 3. Bolt, no motion and announcements
 
-- [ ] 3.1 `js/bolt.js`: `BOLT_SVG`, `boltHTML(pose)`, `pose(el, name)` for idle, think, surprised, explain, cheer, wink; pose CSS in `math.css`; replace the `BOLT` constant in `js/app.js`. Verify: new `test/bolt.test.mjs`: the SVG has no `#` color literals, is `aria-hidden="true"`, and `pose()` rejects unknown names; Playwright `e2e/tests/dojo.spec.ts` practice-hint test still finds Bolt in the bubble.
-- [ ] 3.2 `js/fx.js`: `noMotion()` and `announce(text)`; `#vmLive` in `index.html`; `confetti()` uses `noMotion()`. Verify: node test with a stubbed `matchMedia`, `documentElement.classList` and `localStorage` for each of the three sources; Playwright `e2e/tests/star.spec.ts` (below) runs once with `reducedMotion: 'reduce'` and once with `html.motion-paused` set before load.
+- [x] 3.1 `js/bolt.js`: `BOLT_SVG`, `boltHTML(pose)`, `pose(el, name)` for idle, think, surprised, explain, cheer, wink; pose CSS in `math.css`; replace the `BOLT` constant in `js/app.js`. Verify: new `test/bolt.test.mjs`: the SVG has no `#` color literals, is `aria-hidden="true"`, and `pose()` rejects unknown names; Playwright `e2e/tests/dojo.spec.ts` practice-hint test still finds Bolt in the bubble.
+- [x] 3.2 `js/fx.js`: `noMotion()` and `announce(text)`; `#vmLive` in `index.html`; `confetti()` uses `noMotion()`. Verify: node test with a stubbed `matchMedia`, `documentElement.classList` and `localStorage` for each of the three sources; Playwright `e2e/tests/star.spec.ts` (below) runs once with `reducedMotion: 'reduce'` and once with `html.motion-paused` set before load.
 
 ## 4. The Star view
 
-- [ ] 4.1 `js/star.js` `runStar()` and `starView()` in `js/app.js` with route `#/star/<trick>/<n>`; keypad, keyboard, digit boxes (Challenger, Explorer) or plain entry (Pro), `fields` and `choice` problems; replay with Skip and Escape; spark meter; Dare card; end screen with Play again and Back; all listeners and timers on the round signal. Verify: `test/lifecycle-scan.test.mjs` covers `js/star.js`; new Playwright `e2e/tests/star.spec.ts`:
+- [x] 4.1 `js/star.js` `runStar()` and `starView()` in `js/app.js` with route `#/star/<trick>/<n>`; keypad, keyboard, digit boxes (Challenger, Explorer) or plain entry (Pro), `fields` and `choice` problems; replay with Skip and Escape; spark meter; Dare card; end screen with Play again and Back; all listeners and timers on the round signal. Verify: `test/lifecycle-scan.test.mjs` covers `js/star.js`; new Playwright `e2e/tests/star.spec.ts`:
   - four right answers on Star 1 of `sq5` (each answer computed in the test from the question text: n² for `sq5`) light the Star, show "+40 Sparks", and saved progress has `sky.lit['sq5:1']`;
   - a wrong answer shows the replay with the missed number in its first step, Escape skips it, a right rematch shows "Comeback" and the meter reads 15 more;
   - the Dare card is absent on question 1, present on question 2, a wrong Dare answer leaves the meter unchanged;
@@ -27,8 +27,8 @@ Prerequisites: `sparks-replace-xp` is merged (`addSparks()`, Medals instead of s
   - "Skip this Star" marks `sky.skipped['sq5:2']`, earns nothing, and the end screen waits: after `page.clock.fastForward(120_000)` the URL is unchanged;
   - with `reducedMotion: 'reduce'` no element in `.star-stage` has a running animation (`document.getAnimations()` empty) through a miss and a Comeback;
   - the live region announces "Comeback" and "15 Sparks".
-- [ ] 4.2 Video offer seam: `findVideo` option, `async () => null` from `starView()` (or `videoForTrick` from `js/watch.js` if `watch-shelf` has shipped). Verify: `test/star.test.mjs` (`offer` never fires when `videoAvailable` is false); Playwright `star.spec.ts`: two misses show no offer and the rematch follows.
-- [ ] 4.3 Entry points: Stars row on Trick pages (`skillView()`) and three Star links per Trick in `dojoView()`, hidden in Explorer. Verify: Playwright `e2e/tests/star.spec.ts`: Pro Trick page for `sq5` shows three Stars with states lit, skipped, open from seeded progress; Explorer Trick page shows none; `e2e/tests/routes.spec.ts` deep link `#/star/sq5/3` renders, `#/star/nope/1` falls back to the Dojo.
+- [x] 4.2 Video offer seam: `findVideo` option, `async () => null` from `starView()` (or `videoForTrick` from `js/watch.js` if `watch-shelf` has shipped). Verify: `test/star.test.mjs` (`offer` never fires when `videoAvailable` is false); Playwright `star.spec.ts`: two misses show no offer and the rematch follows.
+- [x] 4.3 Entry points: Stars row on Trick pages (`skillView()`) and three Star links per Trick in `dojoView()`, hidden in Explorer. Verify: Playwright `e2e/tests/star.spec.ts`: Pro Trick page for `sq5` shows three Stars with states lit, skipped, open from seeded progress; Explorer Trick page shows none; `e2e/tests/routes.spec.ts` deep link `#/star/sq5/3` renders, `#/star/nope/1` falls back to the Dojo.
 
 ## 5. Ratings, analytics and privacy
 

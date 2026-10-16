@@ -21,7 +21,7 @@ const PATH = /^math\/[a-z0-9_/:-]+$/;
 const SAMPLES = {
   '': 'home', '#/': 'home', '#/learn': 'learn', '#/grade/5': 'grade/5', '#/grade/K': 'grade/k',
   '#/skill/v-sq5': 'skill/v-sq5', '#/mix/3': 'mix/3', '#/run/3': 'run/3', '#/dojo': 'dojo', '#/tricks': 'tricks',
-  '#/katas/sq5': 'katas/sq5', '#/kata/sq5/4': 'kata/sq5/kata', '#/tower': 'tower', '#/tower/7': 'tower/chapter',
+  '#/katas/sq5': 'katas/sq5', '#/kata/sq5/4': 'kata/sq5/kata', '#/star/sq5/2': 'star/sq5/star', '#/tower': 'tower', '#/tower/7': 'tower/chapter',
   '#/challenge/123': 'challenge/challenge', '#/sutras': 'sutras', '#/sutras/s1': 'sutras/s1', '#/arena': 'arena',
   '#/duel': 'duel', '#/games': 'games', '#/game/times-sprint': 'game/times-sprint', '#/game/times-sprint/12': 'game/times-sprint/level',
   '#/watch': 'watch', '#/me': 'me', '#/progress': 'progress',
@@ -56,8 +56,8 @@ test('view() sends one math/view/<route> event; the Mode picker is pick-mode', (
 /* ---------- Answers and rounds ---------- */
 test('answers: one q_answered per answer in untimed areas only', () => {
   clear(); mem['vm.metrics'] = JSON.stringify({ firstWin: true });
-  M.answered('practice', true); M.answered('run', false); M.answered('kata', true); M.answered('arena', true);
-  assert.deepEqual(paths(), ['math/q_answered/practice/right', 'math/q_answered/run/miss', 'math/q_answered/kata/right']);
+  M.answered('practice', true); M.answered('run', false); M.answered('kata', true); M.answered('arena', true); M.answered('star', false); M.answered('star', true);
+  assert.deepEqual(paths(), ['math/q_answered/practice/right', 'math/q_answered/run/miss', 'math/q_answered/kata/right', 'math/q_answered/star/miss', 'math/q_answered/star/right']);
 });
 
 test('rounds: round2_start only when the second round of an area starts; r1, r2, r3plus', () => {

@@ -33,7 +33,20 @@ export const voiceOn = () => pref('voice', mode() === 'explorer');
 export const setVoice = v => setPref('voice', v);
 /* Reduced motion: the device setting, or Pause motion in the site's Explore menu (html.motion-paused, WCAG 2.2.2) */
 export const motionOff = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.classList.contains('motion-paused');
-const reduced = motionOff;
+/* No motion at all (Star rounds, confetti): reduced motion, the site's motion pause, or Calm (vm.calm, the preference
+   game-shell-and-calm will switch; nothing writes it yet). The same steps and messages appear, without movement. */
+export const noMotion = () => { try { return motionOff() || localStorage.getItem('vm.calm') === '1'; } catch (e) { return motionOff(); } };
+const reduced = noMotion;
+
+/* ---------- Screen-reader announcements ---------- */
+/* One polite live region (#vmLive in index.html). Cleared first so a repeat is read again; messages sent in the same
+   moment are read together, once. */
+let said = [], sayTimer = 0;
+export function announce(text) {
+  const el = document.getElementById('vmLive'); if (!el || !text) return;
+  said.push(String(text).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()); el.textContent = '';
+  clearTimeout(sayTimer); sayTimer = setTimeout(() => { el.textContent = said.join(' '); said = []; }, 50);
+}
 
 /* ---------- Sound ---------- */
 let ctx = null;

@@ -27,8 +27,12 @@ test('no bare addEventListener on a view or round root in js/app.js and js/arena
   assert.deepEqual(hits('arena.js', /\.?addEventListener\(/), []);
 });
 
-test('no bare timers or frame loops in js/games.js, js/arena.js and js/scenes.js', () => {
-  for (const f of ['games.js', 'arena.js', 'scenes.js']) assert.deepEqual(hits(f, TIMERS), [], f);
+test('no bare timers or frame loops in js/games.js, js/arena.js, js/scenes.js and js/star.js', () => {
+  for (const f of ['games.js', 'arena.js', 'scenes.js', 'star.js']) assert.deepEqual(hits(f, TIMERS), [], f);
+});
+
+test('no bare addEventListener in the Star round (js/star.js)', () => {
+  assert.deepEqual(hits('star.js', /\.?addEventListener\(/), []);
 });
 
 test('view timers in js/app.js go through js/life.js', () => {

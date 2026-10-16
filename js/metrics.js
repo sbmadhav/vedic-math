@@ -9,7 +9,7 @@
 
 const FIRST = 'vm.firstSeen', FLAGS = 'vm.metrics';
 export const LEAGUES = ['explorer', 'challenger', 'pro'];
-export const ANSWER_AREAS = ['practice', 'run', 'kata'];
+export const ANSWER_AREAS = ['practice', 'run', 'kata', 'star'];
 export const ROUND_AREAS = ['arena', 'game', 'tower', 'duel'];
 export const SHARE_SURFACES = ['result', 'challenge-link'];
 export const WIN_BUCKETS = ['under-30', '30-60', '60-90', '90-180', 'over-180'];
@@ -50,6 +50,7 @@ const ROUTES = [
   [/^#\/tricks$/, 'tricks'],
   [/^#\/katas\/([\w-]+)$/, 'katas/{trick:1}'],
   [/^#\/kata\/([\w-]+)\/\d+$/, 'kata/{trick:1}/kata'],
+  [/^#\/star\/([\w-]+)\/\d+$/, 'star/{trick:1}/star'],
   [/^#\/tower$/, 'tower'],
   [/^#\/tower\/\d+$/, 'tower/chapter'],
   [/^#\/challenge\/\d+$/, 'challenge/challenge'],
@@ -82,7 +83,7 @@ export function view(hash, known, picker = false) {
   send('view/' + (picker ? 'pick-mode' : routePath(hash, known)), 'Vedic Math: page view');
 }
 
-/* ---------- Answers in untimed play (Practice, Endless runs, Katas) ---------- */
+/* ---------- Answers in untimed play (Practice, Endless runs, Katas, Star rounds) ---------- */
 export function answered(area, ok) {
   if (!ANSWER_AREAS.includes(area)) return;
   send(`q_answered/${area}/${ok ? 'right' : 'miss'}`, 'Vedic Math: question answered');
