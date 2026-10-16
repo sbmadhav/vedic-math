@@ -1,6 +1,6 @@
 # Handoff: game-shell-and-calm
 
-Built. Tasks 1.1 to 6.3 are done and ticked; the PR to main is open (not merged).
+Built. Tasks 1.1 to 6.3 are done and ticked; the PR to main is open, not merged: https://github.com/sbmadhav/vedic-math/pull/33
 
 ## Left
 
