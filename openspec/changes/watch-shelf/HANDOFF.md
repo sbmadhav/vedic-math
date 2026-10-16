@@ -2,10 +2,10 @@
 
 ## State
 
-- Branch `watch-shelf`, worktree `/Users/sbmadhav/Documents/codebase/wt-watch-shelf`, rebased on origin/main `d74c21a`. PR https://github.com/sbmadhav/vedic-math/pull/26 open to `main` (not merged); its body has the 67-entry migration table.
-- Done: tasks 1.1 to 3.4, 4.1, 4.3 and 5.1 (ticked in tasks.md).
+- Branch `watch-shelf`, worktree `/Users/sbmadhav/Documents/codebase/wt-watch-shelf`, rebased on origin/main `8d83fb9` (star-round merged). PR https://github.com/sbmadhav/vedic-math/pull/26 open to `main` (not merged); its body has the 67-entry migration table.
+- Done: tasks 1.1 to 5.1 (ticked in tasks.md).
 - Not done:
-  - **4.2 (follow-up after `star-round` merges):** pass `videoForTrick` from `js/watch.js` as `findVideo` in `starView()`, and add the `star.spec.ts` test that tasks.md describes. `videoForTrick(trickId, mode)` already exists with the seam's signature: a Promise of a `VIDEOS` entry or `null`, `null` offline or when the list fails to load. To open the offer's video, call `openPlayer(v, opener)` in `js/app.js`.
+  - 4.2 is done (after star-round merged in #25): `starView()` passes `starVideo`, which wraps `videoForTrick`; Watch opens the in-page player (`openPlayer(v, opener, onClose)`) and closing it goes back to the round. Tests in `star.spec.ts`.
   - **6.1 (release check):** after deploy, a manual E2E run (workflow_dispatch) with `@live-videos` green. Then the channel list for the owner (candidates are in the PR), then batch 1 (Tricks).
 
 ## What was built

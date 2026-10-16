@@ -527,7 +527,13 @@ function starView(trick, n, { signal } = {}, back = null) {
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs(['#/dojo', 'Dojo'], ['#/skill/v-' + trick, t.title], [null, `Star ${n}`])}
     <div id="star"></div></div></section>`;
-  return runStar($('#star'), { trick, star: n, signal, back, again: () => mount(ctx => starView(trick, n, ctx, back)), findVideo: async () => null /* watch-shelf plugs in videoForTrick */ });
+  return runStar($('#star'), { trick, star: n, signal, back, again: () => mount(ctx => starView(trick, n, ctx, back)), findVideo: starVideo });
+}
+/* star-round's findVideo seam: the Trick's hand-matched video (null offline or when the list fails to load), opened
+   in the in-page player. open(opener) resolves when the player closes. */
+async function starVideo(trick, mode) {
+  const v = await W.videoForTrick(trick, mode);
+  return v && { title: v.title, src: W.embedSrc(v), open: opener => { store.bump('watched'); track('watch/' + v.kind, 'Watch: ' + v.title); return new Promise(done => openPlayer(v, opener, done)); } };
 }
 
 /* ---------- Arena challenge tower ---------- */
@@ -978,7 +984,7 @@ document.addEventListener('click', e => {
   }).catch(() => {});
 });
 let playerDlg = null;
-function openPlayer(v, opener) {
+function openPlayer(v, opener, onClose = null) {
   if (musicOn()) stopMusic();
   if (!playerDlg) {
     playerDlg = document.createElement('dialog'); playerDlg.className = 'vm-player'; playerDlg.setAttribute('aria-labelledby', 'vpTitle');
@@ -987,9 +993,9 @@ function openPlayer(v, opener) {
     const close = () => playerDlg.close();
     playerDlg.querySelector('.vp-x').onclick = close;
     playerDlg.addEventListener('click', ev => { if (ev.target === playerDlg) close(); });
-    playerDlg.addEventListener('close', () => { clearTimeout(playerDlg._minute); playerDlg.querySelector('.vp-frame').innerHTML = ''; if (playerDlg._opener && document.body.contains(playerDlg._opener)) playerDlg._opener.focus({ preventScroll: true }); });
+    playerDlg.addEventListener('close', () => { clearTimeout(playerDlg._minute); playerDlg.querySelector('.vp-frame').innerHTML = ''; const done = playerDlg._onClose; playerDlg._onClose = null; if (playerDlg._opener && document.body.contains(playerDlg._opener)) playerDlg._opener.focus({ preventScroll: true }); if (done) done(); });
   }
-  playerDlg._opener = opener;
+  playerDlg._opener = opener; playerDlg._onClose = onClose;
   playerDlg.querySelector('#vpTitle').textContent = v.title;
   playerDlg.querySelector('.vp-desc').textContent = `${v.why} (${v.channel})`;
   // Open on YouTube: Pro only (Explorer and Challenger get no link that leaves the site)
