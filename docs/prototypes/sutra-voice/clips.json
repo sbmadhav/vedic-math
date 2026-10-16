@@ -1,0 +1,1768 @@
+{
+ "rate": 24000,
+ "bitrateKbps": 32,
+ "speed": 0.85,
+ "sets": [
+  {
+   "id": "hf_alpha",
+   "mix": {
+    "hf_alpha": 1
+   },
+   "label": "Alpha (Hindi, woman)",
+   "src": "iast"
+  },
+  {
+   "id": "hf_beta",
+   "mix": {
+    "hf_beta": 1
+   },
+   "label": "Beta (Hindi, woman)",
+   "src": "iast"
+  },
+  {
+   "id": "hm_omega",
+   "mix": {
+    "hm_omega": 1
+   },
+   "label": "Omega (Hindi, man)",
+   "src": "iast"
+  },
+  {
+   "id": "hm_psi",
+   "mix": {
+    "hm_psi": 1
+   },
+   "label": "Psi (Hindi, man)",
+   "src": "iast"
+  },
+  {
+   "id": "kid_beta_jalpha",
+   "mix": {
+    "hf_beta": 0.7,
+    "jf_alpha": 0.3
+   },
+   "label": "Kid blend: Beta 70%, Kokoro's lighter Japanese voice 30%",
+   "src": "iast"
+  },
+  {
+   "id": "kid_alpha_jalpha",
+   "mix": {
+    "hf_alpha": 0.7,
+    "jf_alpha": 0.3
+   },
+   "label": "Kid blend: Alpha 70%, Kokoro's lighter Japanese voice 30%",
+   "src": "iast"
+  },
+  {
+   "id": "hf_alpha_espeak",
+   "mix": {
+    "hf_alpha": 1
+   },
+   "label": "Alpha reading with Hindi rules (eSpeak), for comparison",
+   "src": "espeak"
+  }
+ ],
+ "perSet": {
+  "hf_alpha": {
+   "bytes": 382501,
+   "secs": 58.1,
+   "f0": 231
+  },
+  "hf_beta": {
+   "bytes": 352765,
+   "secs": 51.6,
+   "f0": 188
+  },
+  "hm_omega": {
+   "bytes": 374775,
+   "secs": 56.7,
+   "f0": 128
+  },
+  "hm_psi": {
+   "bytes": 359108,
+   "secs": 53.5,
+   "f0": 140
+  },
+  "kid_beta_jalpha": {
+   "bytes": 359267,
+   "secs": 52.6,
+   "f0": 216
+  },
+  "kid_alpha_jalpha": {
+   "bytes": 378269,
+   "secs": 57.1,
+   "f0": 247
+  },
+  "hf_alpha_espeak": {
+   "bytes": 371086,
+   "secs": 55.6,
+   "f0": 231
+  }
+ },
+ "clips": [
+  {
+   "id": "s01",
+   "kind": "Sutra",
+   "n": 1,
+   "app": "Ekādhikena Pūrveṇa",
+   "iast": "Ekādhikena Pūrveṇa",
+   "say": "Ekādhikena Pūrveṇa",
+   "meaning": "By one more than the one before",
+   "note": "js/vedic.js spells it 'Ekādhikena Pūrvena' (Tricks sq5 and recip): the last n should be ṇ, as here and in js/sutras.js.",
+   "deva": "एकाधिकेन पूर्वेण",
+   "respell": "ay-kah-dhi-KAY-nuh poor-VAY-nuh",
+   "ipa": "eːkaːdʰɪkˈeːnə puːrʋˈeːɳə",
+   "espeak": "ˌeːkaːdʰɪkˈeːn pˈuːrʋeːɳ",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/s01.m4a",
+     "bytes": 13527,
+     "secs": 2.08,
+     "f0": 222
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/s01.m4a",
+     "bytes": 12368,
+     "secs": 1.81,
+     "f0": 185
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/s01.m4a",
+     "bytes": 13073,
+     "secs": 1.95,
+     "f0": 124
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/s01.m4a",
+     "bytes": 12668,
+     "secs": 1.92,
+     "f0": 136
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/s01.m4a",
+     "bytes": 12349,
+     "secs": 1.82,
+     "f0": 211
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/s01.m4a",
+     "bytes": 13434,
+     "secs": 2.03,
+     "f0": 238
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/s01.m4a",
+     "bytes": 13053,
+     "secs": 1.95,
+     "f0": 231
+    }
+   }
+  },
+  {
+   "id": "s02",
+   "kind": "Sutra",
+   "n": 2,
+   "app": "Nikhilaṃ Navataścaramaṃ Daśataḥ",
+   "iast": "Nikhilaṃ Navataścaramaṃ Daśataḥ",
+   "say": "Nikhilaṃ Navataś|caramaṃ Daśataḥ",
+   "meaning": "All from 9 and the last from 10",
+   "note": "js/vedic.js writes 'Nikhilam Navataścaramam' with m (Tirtha's own spelling); js/sutras.js uses ṃ (standard IAST). Both are said the same.",
+   "deva": "निखिलं नवतश्चरमं दशतः",
+   "respell": "NI-khi-luhm NUH-vuh-tuhsh CHUH-ruh-muhm DUH-shuh-tuh-huh",
+   "ipa": "nˈɪkʰɪləm nˌəʋətəʃʧˈərəməm dˈəʃətəhə",
+   "espeak": "nˈɪkʰɪlˌən nˌəʋətˈʌʃcəɾˌəmən dˈʌʃətˌəh",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/s02.m4a",
+     "bytes": 17183,
+     "secs": 3.13,
+     "f0": 222
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/s02.m4a",
+     "bytes": 15296,
+     "secs": 2.65,
+     "f0": 180
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/s02.m4a",
+     "bytes": 16765,
+     "secs": 3,
+     "f0": 128
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/s02.m4a",
+     "bytes": 16885,
+     "secs": 2.9,
+     "f0": 130
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/s02.m4a",
+     "bytes": 15075,
+     "secs": 2.55,
+     "f0": 209
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/s02.m4a",
+     "bytes": 16642,
+     "secs": 2.93,
+     "f0": 240
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/s02.m4a",
+     "bytes": 16603,
+     "secs": 2.95,
+     "f0": 222
+    }
+   }
+  },
+  {
+   "id": "s03",
+   "kind": "Sutra",
+   "n": 3,
+   "app": "Ūrdhva-Tiryagbhyām",
+   "iast": "Ūrdhva-Tiryagbhyām",
+   "say": "Ūrdhva|Tiryagbhyām",
+   "meaning": "Vertically and crosswise",
+   "deva": "ऊर्ध्वतिर्यग्भ्याम्",
+   "respell": "OOR-dhvuh tir-YUHG-bhyahm",
+   "ipa": "ˌuːrdʰʋətɪrjˈəɡbʰjaːm",
+   "espeak": "ˌuɾdʰʋətˌɪrjəɡbʰjˈaːm",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/s03.m4a",
+     "bytes": 12311,
+     "secs": 1.76,
+     "f0": 226
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/s03.m4a",
+     "bytes": 11136,
+     "secs": 1.57,
+     "f0": 195
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/s03.m4a",
+     "bytes": 11858,
+     "secs": 1.68,
+     "f0": 133
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/s03.m4a",
+     "bytes": 11116,
+     "secs": 1.55,
+     "f0": 147
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/s03.m4a",
+     "bytes": 11662,
+     "secs": 1.63,
+     "f0": 216
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/s03.m4a",
+     "bytes": 11868,
+     "secs": 1.67,
+     "f0": 242
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/s03.m4a",
+     "bytes": 12219,
+     "secs": 1.74,
+     "f0": 242
+    }
+   }
+  },
+  {
+   "id": "s04",
+   "kind": "Sutra",
+   "n": 4,
+   "app": "Parāvartya Yojayet",
+   "iast": "Parāvartya Yojayet",
+   "say": "Parāvartya Yojayet",
+   "meaning": "Transpose and apply",
+   "deva": "परावर्त्य योजयेत्",
+   "respell": "puh-rah-VUHR-tyuh YOH-juh-yayt",
+   "ipa": "pəraːʋˈərtjə jˈoːʤəjeːt",
+   "espeak": "pˌəɾaːʋˈʌɾtːjə jˌoːɟjˈeːt",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/s04.m4a",
+     "bytes": 12955,
+     "secs": 1.88,
+     "f0": 250
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/s04.m4a",
+     "bytes": 11920,
+     "secs": 1.68,
+     "f0": 200
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/s04.m4a",
+     "bytes": 12632,
+     "secs": 1.8,
+     "f0": 144
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/s04.m4a",
+     "bytes": 11859,
+     "secs": 1.68,
+     "f0": 147
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/s04.m4a",
+     "bytes": 12045,
+     "secs": 1.69,
+     "f0": 238
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/s04.m4a",
+     "bytes": 12846,
+     "secs": 1.89,
+     "f0": 261
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/s04.m4a",
+     "bytes": 13297,
+     "secs": 2,
+     "f0": 250
+    }
+   }
+  },
+  {
+   "id": "s05",
+   "kind": "Sutra",
+   "n": 5,
+   "app": "Śūnyaṃ Sāmyasamuccaye",
+   "iast": "Śūnyaṃ Sāmyasamuccaye",
+   "say": "Śūnyaṃ Sāmya|samuccaye",
+   "meaning": "When the totals are the same, that total is zero",
+   "note": "js/vedic.js writes 'Śūnyam' with m; js/sutras.js 'Śūnyaṃ'. Same sound.",
+   "deva": "शून्यं साम्यसमुच्चये",
+   "respell": "SHOON-yuhm SAHM-yuh suh-MUCH-chuh-yay",
+   "ipa": "ʃˈuːnjəm sˌaːmjəsəmˈʊʧʧəjeː",
+   "espeak": "ʃˈuːnjən sˈaːmjəsmʊcːjeː",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/s05.m4a",
+     "bytes": 13400,
+     "secs": 2.03,
+     "f0": 229
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/s05.m4a",
+     "bytes": 12683,
+     "secs": 1.84,
+     "f0": 180
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/s05.m4a",
+     "bytes": 13898,
+     "secs": 2.14,
+     "f0": 130
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/s05.m4a",
+     "bytes": 12922,
+     "secs": 1.93,
+     "f0": 143
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/s05.m4a",
+     "bytes": 12699,
+     "secs": 1.83,
+     "f0": 209
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/s05.m4a",
+     "bytes": 13479,
+     "secs": 2.04,
+     "f0": 245
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/s05.m4a",
+     "bytes": 13143,
+     "secs": 1.93,
+     "f0": 226
+    }
+   }
+  },
+  {
+   "id": "s06",
+   "kind": "Sutra",
+   "n": 6,
+   "app": "(Ānurūpye) Śūnyamanyat",
+   "iast": "Ānurūpye Śūnyamanyat",
+   "say": "Ānurūpye Śūnyamanyat",
+   "meaning": "If one is in ratio, the other is zero",
+   "note": "The brackets are Tirtha's: Ānurūpye is sometimes left off. The clip says both words.",
+   "deva": "आनुरूप्ये शून्यमन्यत्",
+   "respell": "ah-nu-ROOP-yay shoon-yuh-MUHN-yuht",
+   "ipa": "aːnʊrˈuːpjeː ʃuːnjəmˈənjət",
+   "espeak": "ˌaːnʊɾˈuːpːjeː ʃˈuːnjəmˌənjət",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/s06.m4a",
+     "bytes": 13704,
+     "secs": 2.07,
+     "f0": 242
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/s06.m4a",
+     "bytes": 12370,
+     "secs": 1.82,
+     "f0": 205
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/s06.m4a",
+     "bytes": 13420,
+     "secs": 2.06,
+     "f0": 140
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/s06.m4a",
+     "bytes": 12837,
+     "secs": 1.95,
+     "f0": 149
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/s06.m4a",
+     "bytes": 12966,
+     "secs": 1.93,
+     "f0": 226
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/s06.m4a",
+     "bytes": 13136,
+     "secs": 1.99,
+     "f0": 264
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/s06.m4a",
+     "bytes": 13477,
+     "secs": 2.07,
+     "f0": 233
+    }
+   }
+  },
+  {
+   "id": "s07",
+   "kind": "Sutra",
+   "n": 7,
+   "app": "Saṅkalana-Vyavakalanābhyām",
+   "iast": "Saṅkalana-Vyavakalanābhyām",
+   "say": "Saṅkalana|Vyavakalanābhyām",
+   "meaning": "By adding and by subtracting",
+   "deva": "सङ्कलनव्यवकलनाभ्याम्",
+   "respell": "SUHNG-kuh-luh-nuh vyuh-vuh-kuh-luh-NAH-bhyahm",
+   "ipa": "sˌəŋkələnəʋjəʋəkələnˈaːbʰjaːm",
+   "espeak": "sˌəŋkəlˌənəʋjˌəʋəkˌəlnˈaːbʰjaːm",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/s07.m4a",
+     "bytes": 14175,
+     "secs": 2.25,
+     "f0": 247
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/s07.m4a",
+     "bytes": 13275,
+     "secs": 2.02,
+     "f0": 195
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/s07.m4a",
+     "bytes": 14653,
+     "secs": 2.33,
+     "f0": 136
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/s07.m4a",
+     "bytes": 14298,
+     "secs": 2.2,
+     "f0": 136
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/s07.m4a",
+     "bytes": 13313,
+     "secs": 2.05,
+     "f0": 216
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/s07.m4a",
+     "bytes": 13920,
+     "secs": 2.16,
+     "f0": 255
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/s07.m4a",
+     "bytes": 14877,
+     "secs": 2.41,
+     "f0": 240
+    }
+   }
+  },
+  {
+   "id": "s08",
+   "kind": "Sutra",
+   "n": 8,
+   "app": "Pūraṇāpūraṇābhyām",
+   "iast": "Pūraṇāpūraṇābhyām",
+   "say": "Pūraṇā|pūraṇābhyām",
+   "meaning": "By completing or not completing",
+   "deva": "पूरणापूरणाभ्याम्",
+   "respell": "POO-ruh-nah poo-ruh-NAH-bhyahm",
+   "ipa": "pˌuːrəɳaːpuːrəɳˈaːbʰjaːm",
+   "espeak": "pˌuːɾɳˌaːpuːɾɳˈaːbʰjaːm",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/s08.m4a",
+     "bytes": 12262,
+     "secs": 1.77,
+     "f0": 255
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/s08.m4a",
+     "bytes": 11500,
+     "secs": 1.62,
+     "f0": 194
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/s08.m4a",
+     "bytes": 11717,
+     "secs": 1.67,
+     "f0": 143
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/s08.m4a",
+     "bytes": 11731,
+     "secs": 1.62,
+     "f0": 141
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/s08.m4a",
+     "bytes": 11931,
+     "secs": 1.69,
+     "f0": 233
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/s08.m4a",
+     "bytes": 12215,
+     "secs": 1.77,
+     "f0": 267
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/s08.m4a",
+     "bytes": 11562,
+     "secs": 1.63,
+     "f0": 224
+    }
+   }
+  },
+  {
+   "id": "s09",
+   "kind": "Sutra",
+   "n": 9,
+   "app": "Calana-Kalanābhyām",
+   "iast": "Calana-Kalanābhyām",
+   "say": "Calana|Kalanābhyām",
+   "meaning": "By sequential motion (differences and similarities)",
+   "note": "Meaning to check: 'differences and similarities' is a later teaching gloss. Literally 'by motion and reckoning'; Tirtha uses it for calculus.",
+   "deva": "चलनकलनाभ्याम्",
+   "respell": "CHUH-luh-nuh kuh-luh-NAH-bhyahm",
+   "ipa": "ʧˌələnəkələnˈaːbʰjaːm",
+   "espeak": "cˌələnˌəkəlnˈaːbʰjaːm",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/s09.m4a",
+     "bytes": 11581,
+     "secs": 1.62,
+     "f0": 231
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/s09.m4a",
+     "bytes": 10840,
+     "secs": 1.45,
+     "f0": 188
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/s09.m4a",
+     "bytes": 10896,
+     "secs": 1.49,
+     "f0": 118
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/s09.m4a",
+     "bytes": 10400,
+     "secs": 1.39,
+     "f0": 143
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/s09.m4a",
+     "bytes": 11255,
+     "secs": 1.54,
+     "f0": 209
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/s09.m4a",
+     "bytes": 11445,
+     "secs": 1.59,
+     "f0": 247
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/s09.m4a",
+     "bytes": 11884,
+     "secs": 1.7,
+     "f0": 253
+    }
+   }
+  },
+  {
+   "id": "s10",
+   "kind": "Sutra",
+   "n": 10,
+   "app": "Yāvadūnam",
+   "iast": "Yāvadūnam",
+   "say": "Yāvadūnam",
+   "meaning": "Whatever the amount of its deficiency",
+   "deva": "यावदूनम्",
+   "respell": "yah-vuh-DOO-nuhm",
+   "ipa": "jaːʋədˈuːnəm",
+   "espeak": "jˌaːʋdˈuːnəm",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/s10.m4a",
+     "bytes": 10139,
+     "secs": 1.3,
+     "f0": 235
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/s10.m4a",
+     "bytes": 9474,
+     "secs": 1.14,
+     "f0": 205
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/s10.m4a",
+     "bytes": 9612,
+     "secs": 1.18,
+     "f0": 131
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/s10.m4a",
+     "bytes": 9384,
+     "secs": 1.17,
+     "f0": 147
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/s10.m4a",
+     "bytes": 9919,
+     "secs": 1.22,
+     "f0": 231
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/s10.m4a",
+     "bytes": 10242,
+     "secs": 1.33,
+     "f0": 253
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/s10.m4a",
+     "bytes": 9866,
+     "secs": 1.25,
+     "f0": 242
+    }
+   }
+  },
+  {
+   "id": "s11",
+   "kind": "Sutra",
+   "n": 11,
+   "app": "Vyaṣṭisamaṣṭiḥ",
+   "iast": "Vyaṣṭisamaṣṭiḥ",
+   "say": "Vyaṣṭi|samaṣṭiḥ",
+   "meaning": "Part and whole",
+   "deva": "व्यष्टिसमष्टिः",
+   "respell": "VYUHSH-ti suh-MUHSH-ti-hi",
+   "ipa": "ʋjˌəʂʈɪsəmˈəʂʈɪhɪ",
+   "espeak": "ʋjˌəʂʈɪsəmˈʌʂʈɪh",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/s11.m4a",
+     "bytes": 12054,
+     "secs": 1.73,
+     "f0": 220
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/s11.m4a",
+     "bytes": 10843,
+     "secs": 1.42,
+     "f0": 174
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/s11.m4a",
+     "bytes": 11935,
+     "secs": 1.76,
+     "f0": 117
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/s11.m4a",
+     "bytes": 11889,
+     "secs": 1.65,
+     "f0": 126
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/s11.m4a",
+     "bytes": 11322,
+     "secs": 1.48,
+     "f0": 214
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/s11.m4a",
+     "bytes": 12012,
+     "secs": 1.66,
+     "f0": 235
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/s11.m4a",
+     "bytes": 11531,
+     "secs": 1.59,
+     "f0": 229
+    }
+   }
+  },
+  {
+   "id": "s12",
+   "kind": "Sutra",
+   "n": 12,
+   "app": "Śeṣāṇyaṅkena Carameṇa",
+   "iast": "Śeṣāṇyaṅkena Carameṇa",
+   "say": "Śeṣāṇyaṅkena Carameṇa",
+   "meaning": "The remainders by the last digit",
+   "deva": "शेषाण्यङ्केन चरमेण",
+   "respell": "shay-shahn-yuhng-KAY-nuh chuh-ruh-MAY-nuh",
+   "ipa": "ʃeːʂaːɳjəŋkˈeːnə ʧərəmˈeːɳə",
+   "espeak": "ʃeːʂˈaːɳjəŋkˌeːn cˌəɾmˈeːɳ",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/s12.m4a",
+     "bytes": 14249,
+     "secs": 2.2,
+     "f0": 226
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/s12.m4a",
+     "bytes": 13084,
+     "secs": 1.96,
+     "f0": 188
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/s12.m4a",
+     "bytes": 13654,
+     "secs": 2.13,
+     "f0": 129
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/s12.m4a",
+     "bytes": 13452,
+     "secs": 2.1,
+     "f0": 136
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/s12.m4a",
+     "bytes": 13261,
+     "secs": 1.98,
+     "f0": 205
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/s12.m4a",
+     "bytes": 13992,
+     "secs": 2.19,
+     "f0": 235
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/s12.m4a",
+     "bytes": 13191,
+     "secs": 1.95,
+     "f0": 247
+    }
+   }
+  },
+  {
+   "id": "s13",
+   "kind": "Sutra",
+   "n": 13,
+   "app": "Sopāntyadvayamantyam",
+   "iast": "Sopāntyadvayamantyam",
+   "say": "Sopāntya|dvayamantyam",
+   "meaning": "The last and twice the second last",
+   "deva": "सोपान्त्यद्वयमन्त्यम्",
+   "respell": "soh-PAHN-tyuh dvuh-yuh-MUHN-tyuhm",
+   "ipa": "soːpˌaːntjədʋəjəmˈəntjəm",
+   "espeak": "soːpˈaːntːjədʋˌəjəmˌəntːjəm",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/s13.m4a",
+     "bytes": 12866,
+     "secs": 1.92,
+     "f0": 231
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/s13.m4a",
+     "bytes": 12107,
+     "secs": 1.74,
+     "f0": 176
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/s13.m4a",
+     "bytes": 12978,
+     "secs": 1.98,
+     "f0": 127
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/s13.m4a",
+     "bytes": 11914,
+     "secs": 1.76,
+     "f0": 147
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/s13.m4a",
+     "bytes": 12520,
+     "secs": 1.81,
+     "f0": 202
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/s13.m4a",
+     "bytes": 13147,
+     "secs": 1.97,
+     "f0": 245
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/s13.m4a",
+     "bytes": 13100,
+     "secs": 1.97,
+     "f0": 218
+    }
+   }
+  },
+  {
+   "id": "s14",
+   "kind": "Sutra",
+   "n": 14,
+   "app": "Ekanyūnena Pūrveṇa",
+   "iast": "Ekanyūnena Pūrveṇa",
+   "say": "Ekanyūnena Pūrveṇa",
+   "meaning": "By one less than the one before",
+   "note": "js/vedic.js spells it 'Ekanyūnena Pūrvena' (Trick by9s): the last n should be ṇ.",
+   "deva": "एकन्यूनेन पूर्वेण",
+   "respell": "ay-kuhn-yoo-NAY-nuh poor-VAY-nuh",
+   "ipa": "eːkənjuːnˈeːnə puːrʋˈeːɳə",
+   "espeak": "ˌeːknjuːnˈeːn pˈuːrʋeːɳ",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/s14.m4a",
+     "bytes": 13519,
+     "secs": 2.03,
+     "f0": 235
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/s14.m4a",
+     "bytes": 12138,
+     "secs": 1.76,
+     "f0": 189
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/s14.m4a",
+     "bytes": 12977,
+     "secs": 1.94,
+     "f0": 126
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/s14.m4a",
+     "bytes": 12493,
+     "secs": 1.83,
+     "f0": 139
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/s14.m4a",
+     "bytes": 12017,
+     "secs": 1.72,
+     "f0": 222
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/s14.m4a",
+     "bytes": 13005,
+     "secs": 1.93,
+     "f0": 242
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/s14.m4a",
+     "bytes": 12033,
+     "secs": 1.73,
+     "f0": 245
+    }
+   }
+  },
+  {
+   "id": "s15",
+   "kind": "Sutra",
+   "n": 15,
+   "app": "Guṇitasamuccayaḥ",
+   "iast": "Guṇitasamuccayaḥ",
+   "say": "Guṇita|samuccayaḥ",
+   "meaning": "The product of the sums is the sum of the product",
+   "note": "js/vedic.js writes it as two words, 'Guṇita Samuccayaḥ'. One compound in Tirtha's list; said the same.",
+   "deva": "गुणितसमुच्चयः",
+   "respell": "GU-ni-tuh suh-MUCH-chuh-yuh-huh",
+   "ipa": "ɡˌʊɳɪtəsəmˈʊʧʧəjəhə",
+   "espeak": "ɡˌʊɳɪtˌəsmˈʊcːəjˌəh",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/s15.m4a",
+     "bytes": 12487,
+     "secs": 1.85,
+     "f0": 233
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/s15.m4a",
+     "bytes": 12094,
+     "secs": 1.76,
+     "f0": 186
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/s15.m4a",
+     "bytes": 12433,
+     "secs": 1.84,
+     "f0": 125
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/s15.m4a",
+     "bytes": 12040,
+     "secs": 1.73,
+     "f0": 143
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/s15.m4a",
+     "bytes": 11701,
+     "secs": 1.69,
+     "f0": 209
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/s15.m4a",
+     "bytes": 12075,
+     "secs": 1.78,
+     "f0": 253
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/s15.m4a",
+     "bytes": 11543,
+     "secs": 1.64,
+     "f0": 233
+    }
+   }
+  },
+  {
+   "id": "s16",
+   "kind": "Sutra",
+   "n": 16,
+   "app": "Guṇakasamuccayaḥ",
+   "iast": "Guṇakasamuccayaḥ",
+   "say": "Guṇaka|samuccayaḥ",
+   "meaning": "The factors of the sum are the sum of the factors",
+   "deva": "गुणकसमुच्चयः",
+   "respell": "GU-nuh-kuh suh-MUCH-chuh-yuh-huh",
+   "ipa": "ɡˌʊɳəkəsəmˈʊʧʧəjəhə",
+   "espeak": "ɡˌʊɳəkˌəsmˈʊcːəjˌəh",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/s16.m4a",
+     "bytes": 12557,
+     "secs": 1.85,
+     "f0": 238
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/s16.m4a",
+     "bytes": 11891,
+     "secs": 1.68,
+     "f0": 185
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/s16.m4a",
+     "bytes": 12215,
+     "secs": 1.79,
+     "f0": 122
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/s16.m4a",
+     "bytes": 11703,
+     "secs": 1.65,
+     "f0": 140
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/s16.m4a",
+     "bytes": 11549,
+     "secs": 1.66,
+     "f0": 209
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/s16.m4a",
+     "bytes": 12103,
+     "secs": 1.79,
+     "f0": 250
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/s16.m4a",
+     "bytes": 11345,
+     "secs": 1.61,
+     "f0": 231
+    }
+   }
+  },
+  {
+   "id": "u01",
+   "kind": "Sub-sutra",
+   "n": 1,
+   "app": "Ānurūpyeṇa",
+   "iast": "Ānurūpyeṇa",
+   "say": "Ānurūpyeṇa",
+   "meaning": "Proportionately",
+   "deva": "आनुरूप्येण",
+   "respell": "ah-nu-roop-YAY-nuh",
+   "ipa": "aːnʊruːpjˈeːɳə",
+   "espeak": "ˌaːnʊɾˈuːpːjeːɳ",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/u01.m4a",
+     "bytes": 10536,
+     "secs": 1.4,
+     "f0": 226
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/u01.m4a",
+     "bytes": 9563,
+     "secs": 1.23,
+     "f0": 185
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/u01.m4a",
+     "bytes": 10036,
+     "secs": 1.3,
+     "f0": 135
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/u01.m4a",
+     "bytes": 9241,
+     "secs": 1.14,
+     "f0": 137
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/u01.m4a",
+     "bytes": 9875,
+     "secs": 1.3,
+     "f0": 212
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/u01.m4a",
+     "bytes": 10450,
+     "secs": 1.42,
+     "f0": 240
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/u01.m4a",
+     "bytes": 10004,
+     "secs": 1.33,
+     "f0": 235
+    }
+   }
+  },
+  {
+   "id": "u02",
+   "kind": "Sub-sutra",
+   "n": 2,
+   "app": "Śiṣyate Śeṣasaṃjñaḥ",
+   "iast": "Śiṣyate Śeṣasaṃjñaḥ",
+   "say": "Śiṣyate Śeṣa|saṃjñaḥ",
+   "meaning": "The remainder remains constant",
+   "note": "jñ is said 'gy' in most of India today; some regions say 'dny' or 'jny'.",
+   "deva": "शिष्यते शेषसंज्ञः",
+   "respell": "SHISH-yuh-tay SHAY-shuh SUHN-gyuh-huh",
+   "ipa": "ʃˈɪʂjəteː ʃˌeːʂəsˈəŋɡjəhə",
+   "espeak": "ʃˈɪʂjətˌeː ʃˌeːʂəsˈʌɲɡjəh",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/u02.m4a",
+     "bytes": 14063,
+     "secs": 2.19,
+     "f0": 242
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/u02.m4a",
+     "bytes": 12941,
+     "secs": 1.93,
+     "f0": 174
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/u02.m4a",
+     "bytes": 13716,
+     "secs": 2.11,
+     "f0": 117
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/u02.m4a",
+     "bytes": 13564,
+     "secs": 2.01,
+     "f0": 123
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/u02.m4a",
+     "bytes": 13376,
+     "secs": 2.01,
+     "f0": 205
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/u02.m4a",
+     "bytes": 13375,
+     "secs": 2.06,
+     "f0": 264
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/u02.m4a",
+     "bytes": 13342,
+     "secs": 2,
+     "f0": 209
+    }
+   }
+  },
+  {
+   "id": "u03",
+   "kind": "Sub-sutra",
+   "n": 3,
+   "app": "Ādyamādyenāntyamantyena",
+   "iast": "Ādyamādyenāntyamantyena",
+   "say": "Ādyamādyenāntyamantyena",
+   "meaning": "The first by the first and the last by the last",
+   "deva": "आद्यमाद्येनान्त्यमन्त्येन",
+   "respell": "ahd-yuh-mahd-yay-nahn-tyuh-muhn-TYAY-nuh",
+   "ipa": "aːdjəmaːdjeːnaːntjəməntjˈeːnə",
+   "espeak": "ˌaːdjəmˌaːdjeːnˈaːntːjəmntːjeːn",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/u03.m4a",
+     "bytes": 14196,
+     "secs": 2.2,
+     "f0": 245
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/u03.m4a",
+     "bytes": 12942,
+     "secs": 1.97,
+     "f0": 197
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/u03.m4a",
+     "bytes": 14620,
+     "secs": 2.32,
+     "f0": 139
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/u03.m4a",
+     "bytes": 13916,
+     "secs": 2.2,
+     "f0": 138
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/u03.m4a",
+     "bytes": 13621,
+     "secs": 2.03,
+     "f0": 216
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/u03.m4a",
+     "bytes": 14113,
+     "secs": 2.16,
+     "f0": 253
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/u03.m4a",
+     "bytes": 13714,
+     "secs": 2.03,
+     "f0": 240
+    }
+   }
+  },
+  {
+   "id": "u04",
+   "kind": "Sub-sutra",
+   "n": 4,
+   "app": "Kevalaiḥ Saptakaṃ Guṇyāt",
+   "iast": "Kevalaiḥ Saptakaṃ Guṇyāt",
+   "say": "Kevalaiḥ Saptakaṃ Guṇyāt",
+   "meaning": "For 7, the multiplier is 143",
+   "note": "Meaning to check: Tirtha calls 143 the number to be multiplied (guṇya), not the multiplier. 'For 7, multiply by 143' avoids the question. Kevalaiḥ codes 143 in the old katapayādi letter-number code.",
+   "deva": "केवलैः सप्तकं गुण्यात्",
+   "respell": "KAY-vuh-lai-hi SUHP-tuh-kuhm GUN-yaht",
+   "ipa": "kˈeːʋələɪhɪ sˈəptəkəm ɡˈʊɳjaːt",
+   "espeak": "kˌeːʋlˈɛːh sˈʌptəkˌən ɡʊɳjˈaːt",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/u04.m4a",
+     "bytes": 14631,
+     "secs": 2.31,
+     "f0": 250
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/u04.m4a",
+     "bytes": 13270,
+     "secs": 1.94,
+     "f0": 195
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/u04.m4a",
+     "bytes": 14254,
+     "secs": 2.21,
+     "f0": 142
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/u04.m4a",
+     "bytes": 13509,
+     "secs": 2.07,
+     "f0": 147
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/u04.m4a",
+     "bytes": 13694,
+     "secs": 2.07,
+     "f0": 214
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/u04.m4a",
+     "bytes": 14505,
+     "secs": 2.29,
+     "f0": 264
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/u04.m4a",
+     "bytes": 14414,
+     "secs": 2.24,
+     "f0": 250
+    }
+   }
+  },
+  {
+   "id": "u05",
+   "kind": "Sub-sutra",
+   "n": 5,
+   "app": "Veṣṭanam",
+   "iast": "Veṣṭanam",
+   "say": "Veṣṭanam",
+   "meaning": "By osculation",
+   "deva": "वेष्टनम्",
+   "respell": "VAYSH-tuh-nuhm",
+   "ipa": "ʋˈeːʂʈənəm",
+   "espeak": "ʋˈeːʂʈənˌəm",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/u05.m4a",
+     "bytes": 9601,
+     "secs": 1.14,
+     "f0": 222
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/u05.m4a",
+     "bytes": 8962,
+     "secs": 1.08,
+     "f0": 188
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/u05.m4a",
+     "bytes": 8823,
+     "secs": 1.06,
+     "f0": 122
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/u05.m4a",
+     "bytes": 8700,
+     "secs": 1,
+     "f0": 136
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/u05.m4a",
+     "bytes": 9476,
+     "secs": 1.14,
+     "f0": 220
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/u05.m4a",
+     "bytes": 9670,
+     "secs": 1.17,
+     "f0": 247
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/u05.m4a",
+     "bytes": 9616,
+     "secs": 1.19,
+     "f0": 218
+    }
+   }
+  },
+  {
+   "id": "u06",
+   "kind": "Sub-sutra",
+   "n": 6,
+   "app": "Yāvadūnaṃ Tāvadūnam",
+   "iast": "Yāvadūnaṃ Tāvadūnam",
+   "say": "Yāvadūnaṃ Tāvadūnam",
+   "meaning": "Lessen by the deficiency",
+   "deva": "यावदूनं तावदूनम्",
+   "respell": "yah-vuh-DOO-nuhm tah-vuh-DOO-nuhm",
+   "ipa": "jaːʋədˈuːnəm taːʋədˈuːnəm",
+   "espeak": "jˌaːʋdˈuːnən tˌaːʋdˈuːnəm",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/u06.m4a",
+     "bytes": 13679,
+     "secs": 2.13,
+     "f0": 226
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/u06.m4a",
+     "bytes": 12317,
+     "secs": 1.83,
+     "f0": 203
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/u06.m4a",
+     "bytes": 13167,
+     "secs": 2.01,
+     "f0": 128
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/u06.m4a",
+     "bytes": 12513,
+     "secs": 1.98,
+     "f0": 143
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/u06.m4a",
+     "bytes": 12703,
+     "secs": 1.86,
+     "f0": 224
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/u06.m4a",
+     "bytes": 13629,
+     "secs": 2.07,
+     "f0": 247
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/u06.m4a",
+     "bytes": 13394,
+     "secs": 2.03,
+     "f0": 231
+    }
+   }
+  },
+  {
+   "id": "u07",
+   "kind": "Sub-sutra",
+   "n": 7,
+   "app": "Yāvadūnaṃ Tāvadūnīkṛtya Vargaṃ ca Yojayet",
+   "iast": "Yāvadūnaṃ Tāvadūnīkṛtya Vargaṃ ca Yojayet",
+   "say": "Yāvadūnaṃ Tāvadūnī|kṛtya Vargaṃ ca Yojayet",
+   "meaning": "Lessen by the deficiency and add its square",
+   "note": "Tirtha prints 'Vargañca'; 'Vargaṃ ca' is the same words, written apart.",
+   "deva": "यावदूनं तावदूनीकृत्य वर्गं च योजयेत्",
+   "respell": "yah-vuh-DOO-nuhm tah-vuh-DOO-nee KRIT-yuh VUHR-guhm chuh YOH-juh-yayt",
+   "ipa": "jaːʋədˈuːnəm taːʋədˌuːniːkˈɾɪtjə ʋˈərɡəm ʧə jˈoːʤəjeːt",
+   "espeak": "jˌaːʋdˈuːnən tˌaːʋduːnˈiːkɾɪtːjˌə ʋˈʌɾɡən cˈə jˌoːɟjˈeːt",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/u07.m4a",
+     "bytes": 21160,
+     "secs": 3.91,
+     "f0": 226
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/u07.m4a",
+     "bytes": 18956,
+     "secs": 3.39,
+     "f0": 194
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/u07.m4a",
+     "bytes": 20352,
+     "secs": 3.75,
+     "f0": 140
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/u07.m4a",
+     "bytes": 19409,
+     "secs": 3.7,
+     "f0": 141
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/u07.m4a",
+     "bytes": 18979,
+     "secs": 3.37,
+     "f0": 216
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/u07.m4a",
+     "bytes": 21051,
+     "secs": 3.85,
+     "f0": 238
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/u07.m4a",
+     "bytes": 21246,
+     "secs": 3.97,
+     "f0": 222
+    }
+   }
+  },
+  {
+   "id": "u08",
+   "kind": "Sub-sutra",
+   "n": 8,
+   "app": "Antyayordaśake'pi",
+   "iast": "Antyayordaśake'pi",
+   "say": "Antyayor|daśake'pi",
+   "meaning": "When the last digits add to ten",
+   "deva": "अन्त्ययोर्दशकेऽपि",
+   "respell": "UHN-tyuh-yohr duh-shuh-KAY-pi",
+   "ipa": "ˌəntjəjoːrdəʃəkˈeːpɪ",
+   "espeak": "ˌʌntːjəjˈoːɾdəʃkeːːpˌɪ",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/u08.m4a",
+     "bytes": 12475,
+     "secs": 1.82,
+     "f0": 245
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/u08.m4a",
+     "bytes": 11512,
+     "secs": 1.63,
+     "f0": 198
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/u08.m4a",
+     "bytes": 12305,
+     "secs": 1.78,
+     "f0": 135
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/u08.m4a",
+     "bytes": 11566,
+     "secs": 1.63,
+     "f0": 140
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/u08.m4a",
+     "bytes": 12077,
+     "secs": 1.71,
+     "f0": 222
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/u08.m4a",
+     "bytes": 12734,
+     "secs": 1.88,
+     "f0": 253
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/u08.m4a",
+     "bytes": 12361,
+     "secs": 1.78,
+     "f0": 247
+    }
+   }
+  },
+  {
+   "id": "u09",
+   "kind": "Sub-sutra",
+   "n": 9,
+   "app": "Antyayoreva",
+   "iast": "Antyayoreva",
+   "say": "Antyayoreva",
+   "meaning": "Only the last terms",
+   "deva": "अन्त्ययोरेव",
+   "respell": "uhn-tyuh-yoh-RAY-vuh",
+   "ipa": "əntjəjoːrˈeːʋə",
+   "espeak": "ˌʌntːjəjoːɾˈeːʋ",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/u09.m4a",
+     "bytes": 10539,
+     "secs": 1.42,
+     "f0": 261
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/u09.m4a",
+     "bytes": 9688,
+     "secs": 1.24,
+     "f0": 183
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/u09.m4a",
+     "bytes": 10113,
+     "secs": 1.32,
+     "f0": 124
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/u09.m4a",
+     "bytes": 9391,
+     "secs": 1.2,
+     "f0": 132
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/u09.m4a",
+     "bytes": 10191,
+     "secs": 1.36,
+     "f0": 231
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/u09.m4a",
+     "bytes": 11121,
+     "secs": 1.51,
+     "f0": 253
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/u09.m4a",
+     "bytes": 10291,
+     "secs": 1.35,
+     "f0": 220
+    }
+   }
+  },
+  {
+   "id": "u10",
+   "kind": "Sub-sutra",
+   "n": 10,
+   "app": "Samuccayaguṇitaḥ",
+   "iast": "Samuccayaguṇitaḥ",
+   "say": "Samuccaya|guṇitaḥ",
+   "meaning": "The sum of the products",
+   "note": "Meaning is reversed in the app: samuccaya (total) + guṇita (multiplied) is 'the product of the sums', not 'the sum of the products'.",
+   "deva": "समुच्चयगुणितः",
+   "respell": "suh-MUCH-chuh-yuh GU-ni-tuh-huh",
+   "ipa": "səmˌʊʧʧəjəɡˈʊɳɪtəhə",
+   "espeak": "səmˈʊcːəjɡʊɳˌɪtəh",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/u10.m4a",
+     "bytes": 12379,
+     "secs": 1.83,
+     "f0": 207
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/u10.m4a",
+     "bytes": 11862,
+     "secs": 1.72,
+     "f0": 171
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/u10.m4a",
+     "bytes": 12757,
+     "secs": 1.88,
+     "f0": 118
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/u10.m4a",
+     "bytes": 12017,
+     "secs": 1.79,
+     "f0": 138
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/u10.m4a",
+     "bytes": 11776,
+     "secs": 1.66,
+     "f0": 195
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/u10.m4a",
+     "bytes": 12369,
+     "secs": 1.77,
+     "f0": 238
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/u10.m4a",
+     "bytes": 11150,
+     "secs": 1.57,
+     "f0": 214
+    }
+   }
+  },
+  {
+   "id": "u11",
+   "kind": "Sub-sutra",
+   "n": 11,
+   "app": "Lopanasthāpanābhyām",
+   "iast": "Lopanasthāpanābhyām",
+   "say": "Lopana|sthāpanābhyām",
+   "meaning": "By alternate elimination and retention",
+   "deva": "लोपनस्थापनाभ्याम्",
+   "respell": "LOH-puh-nuh sthah-puh-NAH-bhyahm",
+   "ipa": "lˌoːpənəstʰaːpənˈaːbʰjaːm",
+   "espeak": "lˌoːpənstʰaːpnˈaːbʰjaːm",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/u11.m4a",
+     "bytes": 12974,
+     "secs": 1.92,
+     "f0": 226
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/u11.m4a",
+     "bytes": 12445,
+     "secs": 1.84,
+     "f0": 188
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/u11.m4a",
+     "bytes": 12809,
+     "secs": 1.92,
+     "f0": 124
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/u11.m4a",
+     "bytes": 12245,
+     "secs": 1.82,
+     "f0": 141
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/u11.m4a",
+     "bytes": 12597,
+     "secs": 1.83,
+     "f0": 212
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/u11.m4a",
+     "bytes": 12613,
+     "secs": 1.91,
+     "f0": 238
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/u11.m4a",
+     "bytes": 12473,
+     "secs": 1.87,
+     "f0": 226
+    }
+   }
+  },
+  {
+   "id": "u12",
+   "kind": "Sub-sutra",
+   "n": 12,
+   "app": "Vilokanam",
+   "iast": "Vilokanam",
+   "say": "Vilokanam",
+   "meaning": "By mere observation",
+   "deva": "विलोकनम्",
+   "respell": "vi-LOH-kuh-nuhm",
+   "ipa": "ʋɪlˈoːkənəm",
+   "espeak": "ʋɪlˈoːkənˌəm",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/u12.m4a",
+     "bytes": 9287,
+     "secs": 1.09,
+     "f0": 238
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/u12.m4a",
+     "bytes": 8958,
+     "secs": 1.03,
+     "f0": 205
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/u12.m4a",
+     "bytes": 8997,
+     "secs": 1.06,
+     "f0": 130
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/u12.m4a",
+     "bytes": 8839,
+     "secs": 1,
+     "f0": 145
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/u12.m4a",
+     "bytes": 9240,
+     "secs": 1.1,
+     "f0": 226
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/u12.m4a",
+     "bytes": 9430,
+     "secs": 1.13,
+     "f0": 242
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/u12.m4a",
+     "bytes": 9798,
+     "secs": 1.22,
+     "f0": 229
+    }
+   }
+  },
+  {
+   "id": "u13",
+   "kind": "Sub-sutra",
+   "n": 13,
+   "app": "Guṇitasamuccayaḥ Samuccayaguṇitaḥ",
+   "iast": "Guṇitasamuccayaḥ Samuccayaguṇitaḥ",
+   "say": "Guṇita|samuccayaḥ Samuccaya|guṇitaḥ",
+   "meaning": "The product of the sums is the sum of the products",
+   "deva": "गुणितसमुच्चयः समुच्चयगुणितः",
+   "respell": "GU-ni-tuh suh-MUCH-chuh-yuh-huh suh-MUCH-chuh-yuh GU-ni-tuh-huh",
+   "ipa": "ɡˌʊɳɪtəsəmˈʊʧʧəjəhə səmˌʊʧʧəjəɡˈʊɳɪtəhə",
+   "espeak": "ɡˌʊɳɪtˌəsmˈʊcːəjˌəh səmˈʊcːəjɡʊɳˌɪtəh",
+   "files": {
+    "hf_alpha": {
+     "file": "audio/hf_alpha/u13.m4a",
+     "bytes": 18012,
+     "secs": 3.3,
+     "f0": 231
+    },
+    "hf_beta": {
+     "file": "audio/hf_beta/u13.m4a",
+     "bytes": 16330,
+     "secs": 2.84,
+     "f0": 188
+    },
+    "hm_omega": {
+     "file": "audio/hm_omega/u13.m4a",
+     "bytes": 18110,
+     "secs": 3.25,
+     "f0": 124
+    },
+    "hm_psi": {
+     "file": "audio/hm_psi/u13.m4a",
+     "bytes": 16607,
+     "secs": 2.92,
+     "f0": 128
+    },
+    "kid_beta_jalpha": {
+     "file": "audio/kid_beta_jalpha/u13.m4a",
+     "bytes": 16078,
+     "secs": 2.83,
+     "f0": 218
+    },
+    "kid_alpha_jalpha": {
+     "file": "audio/kid_alpha_jalpha/u13.m4a",
+     "bytes": 17648,
+     "secs": 3.19,
+     "f0": 245
+    },
+    "hf_alpha_espeak": {
+     "file": "audio/hf_alpha_espeak/u13.m4a",
+     "bytes": 16559,
+     "secs": 2.88,
+     "f0": 226
+    }
+   }
+  }
+ ]
+}

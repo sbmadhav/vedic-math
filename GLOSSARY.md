@@ -42,6 +42,22 @@ _Avoid_: shortcut, hack, strategy
 One of the short named rules from Bharati Krishna Tirtha's 1965 book. Tricks are grouped under the Sutra they come from.
 _Avoid_: formula, verse, Vedic sutra (never "from the Vedas")
 
+**Say it**:
+The button beside a Sutra name that plays its Name clip. It only ever plays after a tap, whether read aloud is on or off. (Proposed in the `sutra-pronunciation` change.)
+_Avoid_: pronounce button, audio button
+
+**Name clip**:
+A short prerecorded clip of one Sutra name, made once with a free voice model from the name's checked spelling. There are 29, one per Sutra and sub-sutra.
+_Avoid_: recording (it is not a human voice), sample
+
+**Respelling**:
+A Sutra name written so an English reader can say it: syllables joined by hyphens, long vowels spelled to be held, and one light beat per word part in capitals ("ay-kah-dhi-KAY-nuh poor-VAY-nuh").
+_Avoid_: phonetic spelling, transliteration (that is the IAST)
+
+**Sutra ambience**:
+Very quiet sound on the Sutra pages: a soft bowl strike when a page opens, an optional low hum, or an opt-in chanted Om instead. Never over Calm music and silent when Sound effects is off. (Proposed in the `sutra-pronunciation` change.)
+_Avoid_: background music, chanting (unless the Om is meant)
+
 **Kata**:
 A fixed practice problem for one Trick, numbered from easy to hard. Stars draw their questions from them; a Kata has no rating of its own.
 _Avoid_: drill, exercise
