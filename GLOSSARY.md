@@ -158,6 +158,10 @@ _Avoid_: challenge, boss, bonus question
 A place on the edge of the Sky that leads somewhere else in the app, such as the Arena, Duel, Games, Watch or the Skill map.
 _Avoid_: tab, menu item, building
 
+**All places**:
+The Sky as a plain list: every Constellation with its Stars and their states, every Landmark and every other place. The keyboard and screen reader way round the Sky.
+_Avoid_: sitemap, menu, index
+
 **Comeback**:
 Getting the rematch right after a mistake in a Star. It pays more Sparks than a first-time right answer, at most once per kind of question in a round.
 _Avoid_: retry, second chance, redemption

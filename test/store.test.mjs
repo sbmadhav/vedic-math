@@ -96,3 +96,46 @@ test('record(..., { sparks: false }) updates counts and mastery and emits no spa
   store.record('v-sq5', true, false);
   assert.ok(store.sparks() > before, 'the default still pays Practice Sparks');
 });
+
+/* ---------- sky-home: the Sky switch, kept Belts, Star states, one-time upgrades ---------- */
+test('the Sky switch is stored on each Player record, apart per Player', () => {
+  const a = store.player().id;
+  store.updatePlayer({ sky: true });
+  assert.equal(saved().list.find(p => p.id === a).sky, true);
+  const b = store.addPlayer();
+  assert.equal(store.player().sky, undefined, 'a new Player has not turned it on');
+  store.switchPlayer(a);
+  assert.equal(store.player().sky, true);
+  store.updatePlayer({ sky: false });
+  assert.equal(saved().list.find(p => p.id === a).sky, false);
+  store.removePlayer(b.id);
+});
+
+test('keepBelt keeps a Belt once (with when), and keptBelts returns a copy', () => {
+  const seen = [], off = store.on((type, d) => seen.push([type, d]));
+  assert.equal(store.keepBelt('green'), true);
+  assert.equal(store.keepBelt('green'), false);
+  off();
+  assert.deepEqual(seen, [['belt', 'green']]);
+  const k = store.keptBelts(); k.black = 1;
+  assert.equal(store.keptBelts().black, undefined);
+  assert.ok(store.keptBelts().green > 0);
+});
+
+test('starStates returns copies of the lit and skipped Stars', () => {
+  store.skipStar('by11', 3);
+  const st = store.starStates();
+  assert.ok(st.skipped['by11:3']);
+  st.lit['zero-sum:3'] = 1;
+  assert.equal(store.starState('zero-sum', 3), 'open');
+});
+
+test('upgrade(fn) saves only when fn changed the record, and importData tells listeners', () => {
+  assert.equal(store.upgrade(S => { S.e2eFlag = 1; return true; }), true);
+  assert.equal(JSON.parse(mem['mathquest.v1.' + store.player().id]).e2eFlag, 1);
+  assert.equal(store.upgrade(() => false), false);
+  const seen = [], off = store.on(type => seen.push(type));
+  store.importData(JSON.stringify({ data: { skills: {} } }));
+  off();
+  assert.ok(seen.includes('import'));
+});

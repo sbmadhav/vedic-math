@@ -28,6 +28,8 @@ test('route content: learn levels, dojo belts, games, sutra cards, watch shelf, 
   expect(await page.locator('.mq-grade').count()).toBeGreaterThan(3);
   await open(page, '#/dojo');
   await expect(page.locator('.dojo-belt')).toHaveCount(7);
+  await expect(page.locator('#view .md-lede')).toContainText("Light all 9 Stars of a belt's three tricks to earn it.");
+  await expect(page.locator('.dojo-h small').first()).toHaveText('0/9 Stars');
   await open(page, '#/games');
   await expect(page.locator('a.mq-game')).toHaveCount(14);
   await open(page, '#/sutras');

@@ -208,3 +208,52 @@ test('a Player who earned Level 10 before keeps it as Fraction Fighter', () => {
 test('no badge text names a level number or XP', () => {
   for (const b of gm.BADGES) { assert.doesNotMatch(b.how + ' ' + b.name, /level \d|\bXP\b/i, b.id); }
 });
+
+/* ---------- Belts by Stars (sky-home) ---------- */
+const lightAll = tricks => tricks.forEach(t => [1, 2, 3].forEach(n => store.lightStar(t, n)));
+const saved = () => JSON.parse(localStorage.getItem('mathquest.v1.' + store.player().id));
+
+test('9 lit white belt Stars earn the White belt and its badge; 8 do not', () => {
+  fresh('challenger', 40);
+  lightAll(['from9', 'by11']);
+  store.lightStar('times5', 1); store.lightStar('times5', 2);
+  let white = gm.beltProgress()[0];
+  assert.equal(white.lit, 8); assert.equal(white.earned, false);
+  assert.ok(!store.badges()['belt-white']);
+  store.lightStar('times5', 3);
+  white = gm.beltProgress()[0];
+  assert.equal(white.lit, 9); assert.equal(white.done, 9); assert.equal(white.earned, true);
+  assert.ok(store.badges()['belt-white'], 'the badge follows the Belt');
+  assert.equal(gm.currentBelt().id, 'white');
+});
+
+test('a Belt earned by Stars is written to S.belts', () => {
+  fresh('pro', 41);
+  lightAll(['sq5', 'by9s', 'ends10']);
+  assert.ok(saved().belts.yellow > 0);
+  assert.ok(store.keptBelts().yellow > 0);
+});
+
+test('a kept yellow Belt with 4 lit Stars stays earned', () => {
+  fresh('challenger', 42);
+  store.keepBelt('yellow');
+  lightAll(['sq5']); store.lightStar('by9s', 1);
+  const y = gm.beltProgress()[1];
+  assert.equal(y.lit, 4); assert.equal(y.earned, true);
+  assert.equal(gm.beltProgress()[0].earned, false, 'the white belt is not earned');
+});
+
+test('mastering the three Tricks no longer earns a Belt by itself (after the one-time migration)', () => {
+  fresh('challenger', 43);
+  for (const t of ['from9', 'by11', 'times5']) for (let i = 0; i < 12; i++) store.record('v-' + t, true, false);
+  assert.ok(store.mastered('v-from9'));
+  assert.equal(gm.beltProgress()[0].earned, false);
+});
+
+test('belt badge texts say to light Stars, never to master the tricks', () => {
+  const how = id => gm.BADGES.find(b => b.id === id).how;
+  assert.match(how('belt-white'), /Light all 9 white belt Stars/);
+  assert.match(how('belt-green'), /Earn the green belt/);
+  assert.match(how('belt-black'), /Earn the black belt/);
+  for (const b of gm.BADGES) assert.doesNotMatch(b.how, /Master the 3/i, b.id);
+});

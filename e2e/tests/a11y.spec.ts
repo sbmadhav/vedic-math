@@ -7,7 +7,7 @@ import { test, expect, APP, open, chromiumOnly } from './fixtures';
    (only that rule on that element) and recorded as its own test.fixme below, so it stays visible.
    When one is fixed, delete its KNOWN entry: the route checks then cover it again. */
 
-const ROUTES = ['#/', '#/learn', '#/dojo', '#/arena', '#/games', '#/sutras', '#/watch', '#/me', '#/skill/v-sq5', '#/game/times-sprint'];
+const ROUTES = ['#/', '#/learn', '#/dojo', '#/arena', '#/games', '#/sutras', '#/watch', '#/me', '#/skill/v-sq5', '#/game/times-sprint', '#/places'];
 
 /* Known violations on the live site: { route, rule, target, note }. Empty: the Sparks bar is a progressbar and
    #prRun lost its label (both fixed in js/app.js). Add an entry when a new one is found and reported. */
@@ -51,6 +51,22 @@ for (const scheme of ['light', 'dark'] as const) {
       await expect(page.locator('.star-step').nth(1)).toBeVisible();
       expect(await serious(page, '#/star/sq5/1')).toEqual([]);
     });
+  });
+}
+
+/* The Sky as home (sky-home 2.2), with a lit and a skipped Star, and the Me page with its Sky switch */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, the Sky`, () => {
+    test.use({ colorScheme: scheme, seedPlayer: { sky: true }, seedProgress: { v: 3, skills: {}, sky: { lit: { 'from9:1': 1 }, skipped: { 'from9:2': 1 }, last: {} } } });
+    for (const r of ['#/', '#/places', '#/me']) {
+      test(`${r} with the Sky on has no serious or critical axe violations`, async ({ page }, testInfo) => {
+        chromiumOnly(testInfo);
+        await open(page, r);
+        if (r === '#/') await expect(page.locator('.sky-star')).toHaveCount(63);
+        await page.waitForLoadState('networkidle');
+        expect(await serious(page, r)).toEqual([]);
+      });
+    }
   });
 }
 
@@ -129,10 +145,10 @@ for (const scheme of ['light', 'dark'] as const) {
         expect(await axeIn(page, '#worldBoards')).toEqual([]);
         await page.locator('#wbIn').fill((await page.locator('#wbCheck').getAttribute('data-n'))!);
         await page.locator('#wbCheck button').click();
-        await expect(page.getByRole('switch')).toBeVisible();
+        await expect(page.locator('#worldBoards').getByRole('switch')).toBeVisible();
         expect(await axeIn(page, '#worldBoards')).toEqual([]);
-        await page.getByRole('switch').click();
-        await expect(page.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+        await page.locator('#worldBoards').getByRole('switch').click();
+        await expect(page.locator('#worldBoards').getByRole('switch')).toHaveAttribute('aria-checked', 'true');
         expect(await axeIn(page, '#worldBoards')).toEqual([]);
       });
     });
