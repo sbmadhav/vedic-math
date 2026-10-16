@@ -33,10 +33,46 @@ export const voiceOn = () => pref('voice', mode() === 'explorer');
 export const setVoice = v => setPref('voice', v);
 /* Reduced motion: the device setting, or Pause motion in the site's Explore menu (html.motion-paused, WCAG 2.2.2) */
 export const motionOff = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.classList.contains('motion-paused');
-/* No motion at all (Star rounds, confetti): reduced motion, the site's motion pause, or Calm (vm.calm, the preference
-   game-shell-and-calm will switch; nothing writes it yet). The same steps and messages appear, without movement. */
-export const noMotion = () => { try { return motionOff() || localStorage.getItem('vm.calm') === '1'; } catch (e) { return motionOff(); } };
+
+/* ---------- Calm (openspec game-shell-and-calm): one device preference, vm.calm ----------
+   Calm takes the clock off Practice rounds and stops all motion. Ranked rounds keep their clock. It is per device,
+   like sound and the site's Pause motion: motion sensitivity belongs to whoever holds the device. Pause motion never
+   sets Calm, and Calm never sets html.motion-paused; each control owns its own state. */
+export const calmOn = () => { try { return localStorage.getItem('vm.calm') === '1'; } catch (e) { return false; } };
+export function setCalm(on) {
+  on = !!on;
+  try { localStorage.setItem('vm.calm', on ? '1' : '0'); } catch (e) {}
+  applyPrefs();
+  try { document.dispatchEvent(new CustomEvent('vmcalm', { detail: { on } })); } catch (e) {}
+  announce(on ? 'Calm on. No clocks in Practice, no motion.' : 'Calm off.');
+}
+/* No motion at all: reduced motion on the device, the site's Pause motion, or Calm. The same steps and messages
+   appear, without movement. This is the one check every moving thing in the app asks. */
+export const noMotion = () => motionOff() || calmOn();
 const reduced = noMotion;
+/* Calls fn whenever any source of noMotion() may have changed: the reduced-motion media query, the site's
+   sitemotion event (explore.js) and Calm (vmcalm). Stops when signal aborts. */
+export function onMotionChange(fn, signal) {
+  const opts = { signal };
+  try { const mq = matchMedia('(prefers-reduced-motion: reduce)'); if (mq && mq.addEventListener) mq.addEventListener('change', fn, opts); } catch (e) {}
+  document.addEventListener('sitemotion', fn, opts);
+  document.addEventListener('vmcalm', fn, opts);
+}
+
+/* ---------- Text size: A (normal) or A+ (larger) on play screens, vm.text ---------- */
+export const textSize = () => { try { return localStorage.getItem('vm.text') === 'a+' ? 'a+' : 'a'; } catch (e) { return 'a'; } };
+export function setTextSize(size) {
+  const v = size === 'a+' ? 'a+' : 'a';
+  try { localStorage.setItem('vm.text', v); } catch (e) {}
+  applyPrefs();
+  try { document.dispatchEvent(new CustomEvent('vmtext', { detail: { size: v } })); } catch (e) {}
+  announce(v === 'a+' ? 'Larger text.' : 'Normal text.');
+}
+/* body.calm and body.text-plus follow the saved preferences (called at start and after every change) */
+export function applyPrefs() {
+  const b = document.body; if (!b || !b.classList) return;
+  b.classList.toggle('calm', calmOn()); b.classList.toggle('text-plus', textSize() === 'a+');
+}
 
 /* ---------- Screen-reader announcements ---------- */
 /* One polite live region (#vmLive in index.html). Cleared first so a repeat is read again; messages sent in the same
@@ -59,6 +95,7 @@ function tone(freq, start, dur, type = 'sine', vol = 0.12) {
 }
 export function sfx(kind) {
   if (!soundOn() || document.hidden) return;
+  if (kind === 'tick' && calmOn()) return; /* Calm: no countdown ticks, in Ranked rounds too */
   try {
     if (kind === 'ok') { tone(660, 0, .12, 'triangle'); tone(990, .09, .18, 'triangle'); }
     else if (kind === 'no') { tone(220, 0, .18, 'sawtooth', .05); }
