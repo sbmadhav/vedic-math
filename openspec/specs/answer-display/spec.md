@@ -6,7 +6,7 @@ Show the right answer in the form a Player is learning to write, so a revealed a
 ## Requirements
 
 ### Requirement: Fraction answers are shown as fractions
-When a right answer that is not a whole number is revealed for a fraction skill, or for a problem that asks for a fraction or for simplest form, the system SHALL show it as a fraction in lowest terms, followed by the mixed number when it is more than 1, and SHALL NOT show a rounded decimal, unless the problem asks for a decimal. This SHALL apply in Practice, Endless runs, Katas, worked examples and the challenge tower.
+When a right answer that is not a whole number is revealed for a fraction skill, or for a problem that asks for a fraction or for simplest form, the system SHALL show it as a fraction in lowest terms, followed by the mixed number when it is more than 1, and SHALL NOT show a rounded decimal, unless the problem asks for a decimal. This SHALL apply in Practice, Endless runs, Katas, Star rounds (a missed rematch and the replay's last step), worked examples and the challenge tower.
 
 #### Scenario: Improper fraction in Practice
 - **WHEN** the answer to 2/3 + 3/3 is revealed

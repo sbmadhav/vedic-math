@@ -36,4 +36,4 @@ Prerequisites: `sparks-replace-xp` is merged (no Sparks for videos). `star-round
 
 ## 6. Release check
 
-- [ ] 6.1 Node, build and Playwright suites pass locally; after deploy the live E2E run (including `@live-videos`) is green. Then the next steps from `docs/videos.md`: the channel list for the owner, then batch 1 (Tricks).
+- [x] 6.1 Node, build and Playwright suites pass locally; after deploy the live E2E run (including `@live-videos`) is green (manual run on 0718dd1: 536 passed, 20 of 20 videos play). Then the next steps from `docs/videos.md`: the channel list for the owner, then batch 1 (Tricks).
