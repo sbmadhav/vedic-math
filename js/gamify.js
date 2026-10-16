@@ -7,6 +7,7 @@ import { SUTRAS, SUBSUTRAS } from './sutras.js';
 import { seeded } from './levels.js';
 import { shuffle } from './lib.js';
 import { sfx, confetti, toast, mode } from './fx.js';
+import { migrateSky } from './sky.js';
 
 /* Titles from total Sparks. The thresholds are where the old numbered levels (50 * n * (n - 1) XP, one Title
    per two levels) changed Title, so carried-over totals keep their Title (docs/adr/0003). No number is shown. */
@@ -21,10 +22,21 @@ export function titleInfo(sparks = store.sparks()) {
   return { title, next: nx[1], into: n - lo, need: nx[0] - lo, pct: (n - lo) / (nx[0] - lo) };
 }
 
+/* Belts by Stars (openspec sky-home): a Belt is earned by lighting all 9 Stars of its three Tricks, and a Belt once
+   earned (by Stars, or under the old mastery rule before the change) is kept in store.keptBelts() and stays earned.
+   Each Belt: lit (0 to 9 lit Stars), done (the same, for display), earned. */
+export const STARS_PER_BELT = 9;
+const litIn = (b, lit) => b.tricks.reduce((n, t) => n + [1, 2, 3].filter(k => lit[`${t}:${k}`]).length, 0);
 export function beltProgress() {
-  return BELTS.map(b => ({ ...b, done: b.tricks.filter(t => store.mastered('v-' + t)).length, earned: b.tricks.every(t => store.mastered('v-' + t)) }));
+  const { lit } = store.starStates(), kept = store.keptBelts();
+  return BELTS.map(b => { const n = litIn(b, lit); return { ...b, lit: n, done: n, earned: !!kept[b.id] || n >= STARS_PER_BELT }; });
 }
 export function currentBelt() { const bp = beltProgress(); const last = [...bp].reverse().find(b => b.earned); return last || null; }
+/* Writes every Belt earned by Stars to the kept Belts, so it never goes back */
+function keepBelts() { const { lit } = store.starStates(), kept = store.keptBelts(); BELTS.forEach(b => { if (!kept[b.id] && litIn(b, lit) >= STARS_PER_BELT) store.keepBelt(b.id); }); }
+/* The one-time move to Belts by Stars for the active Player (js/sky.js migrateSky): at start, after a Player switch
+   and after a backup is restored. Stars it lights send no event and earn no Sparks. */
+export function migrate() { if (store.upgrade(migrateSky)) { keepBelts(); checkBadges(); } }
 
 /* Badges: id, name, how to earn, test */
 const masteredCount = () => SKILLS.filter(s => store.mastered(s.id)).length;
@@ -43,9 +55,9 @@ export const BADGES = [
   { id: 'master50', name: 'Math marathon', how: 'Master 50 skills.', test: () => masteredCount() >= 50 },
   { id: 'trick1', name: 'Trick seeker', how: 'Watch a speed trick step by step.', test: () => store.count('tricksWatched') >= 1 },
   { id: 'trick10', name: 'Trick collector', how: 'Watch 10 different speed tricks.', test: () => TRICKS.filter(t => store.seen('trick:' + t.id)).length >= 10 },
-  { id: 'belt-white', name: 'White belt', how: 'Master the 3 white belt tricks.', test: () => beltProgress()[0].earned },
-  { id: 'belt-green', name: 'Green belt', how: 'Reach the green belt in the Dojo.', test: () => beltProgress()[3].earned },
-  { id: 'belt-black', name: 'Black belt', how: 'Earn the Vedic black belt.', test: () => beltProgress()[6].earned },
+  { id: 'belt-white', name: 'White belt', how: 'Light all 9 white belt Stars.', test: () => beltProgress()[0].earned },
+  { id: 'belt-green', name: 'Green belt', how: 'Earn the green belt: light all 9 of its Stars.', test: () => beltProgress()[3].earned },
+  { id: 'belt-black', name: 'Black belt', how: 'Earn the black belt: light all 9 of its Stars.', test: () => beltProgress()[6].earned },
   { id: 'arena1', name: 'Arena debut', how: 'Finish an Arena round.', test: () => store.count('arena') >= 1 },
   { id: 'arena200', name: 'Arena star', how: 'Score 200 or more in one Arena round.', test: () => store.count('arenaBest') >= 200 },
   { id: 'daily3', name: 'Daily habit', how: 'Finish the daily challenge on 3 days.', test: () => store.count('dailyDays') >= 3 },
@@ -120,9 +132,10 @@ export function init() {
     if (type === 'badge') { const b = BADGES.find(x => x.id === d); if (b) { sfx('badge'); toast(`<span class="fx-badge"></span><b>Badge earned:</b> ${b.name}`, 'win'); } }
     if (type === 'mastered') { confetti(); toast('<b>Skill mastered!</b> A new ring is full.', 'win'); }
     if (type === 'answer' || type === 'count' || type === 'seen') { checkBadges(); if (type !== 'seen') checkQuests(); }
-    if (type === 'player') { startDay(); }
+    if (type === 'star' || type === 'belt') { if (type === 'star') keepBelts(); checkBadges(); }
+    if (type === 'player' || type === 'import') { migrate(); if (type === 'player') startDay(); }
   });
-  startDay(); atMidnight();
+  migrate(); startDay(); atMidnight();
 }
 /* A new quest day at local midnight while the app stays open, so the day's first action counts */
 function atMidnight() {

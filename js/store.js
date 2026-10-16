@@ -127,8 +127,17 @@ export const starState = (trick, n) => { const k = starKey(trick, n), s = sky();
 export function lightStar(trick, n) { const k = starKey(trick, n), s = sky(), was = !!s.lit[k]; if (!was) s.lit[k] = Date.now(); delete s.skipped[k]; save(); if (!was) emit('star', { k, state: 'lit' }); return !was; }
 /* Marks a Star skipped, unless it is lit (a lit Star stays lit); true when it is now marked */
 export function skipStar(trick, n) { const k = starKey(trick, n), s = sky(); if (s.lit[k]) return false; s.skipped[k] = s.skipped[k] || Date.now(); save(); emit('star', { k, state: 'skipped' }); return true; }
+/* Every Star's state at once, for the Sky: { lit, skipped } (copies) */
+export const starStates = () => { const s = sky(); return { lit: { ...s.lit }, skipped: { ...s.skipped } }; };
 export const starLast = (trick, n) => (sky().last[starKey(trick, n)] || []).slice();
 export function setStarLast(trick, n, keys) { sky().last[starKey(trick, n)] = keys.slice(); save(); }
+
+/* Kept Belts (openspec sky-home): { <belt id>: when }. A Belt is earned by lighting all 9 of its Stars, and once earned
+   (or earned under the old mastery rule before the change) it is kept here and never goes back. */
+export const keptBelts = () => (load(), { ...(S.belts || {}) });
+export function keepBelt(id) { load(); S.belts = { ...(S.belts || {}) }; if (S.belts[id]) return false; S.belts[id] = Date.now(); save(); emit('belt', id); return true; }
+/* Runs a one-time upgrade fn(S) on the active Player's record and saves when it returns true (js/sky.js migrateSky) */
+export function upgrade(fn) { load(); if (!fn(S)) return false; save(); return true; }
 
 /* One answer to a Skill's question: counts, mastery, streak and quests. sparks: false when the caller pays its own
    Sparks (a Star round), so the answer earns no Practice Sparks on top. */
@@ -165,7 +174,7 @@ export const setGrade = g => { load(); S.grade = String(g); save(); };
 export const savedGrade = () => (load(), S.grade);
 export function reset() { S = blank(); save(); emit('player', player()); }
 export function exportData() { load(); return JSON.stringify({ player: player(), data: S }); }
-export function importData(txt) { const d = JSON.parse(txt); const data = d.data || d; if (!data || typeof data.skills !== 'object') throw new Error('bad'); S = { ...blank(), ...migrate(data) }; save(); }
+export function importData(txt) { const d = JSON.parse(txt); const data = d.data || d; if (!data || typeof data.skills !== 'object') throw new Error('bad'); S = { ...blank(), ...migrate(data) }; save(); emit('import'); }
 
 /* ---------- Device leaderboard: every player on this device ---------- */
 export function boardAdd(board, score) {
