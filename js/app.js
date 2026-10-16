@@ -23,6 +23,8 @@ import * as AD from './adapt.js';
 import { initAmbient, bgOn, setBg, BG_NOTES, stop as stopMusic, isPlaying as musicOn } from './ambient.js';
 import { on, later, every, child } from './life.js';
 import * as metrics from './metrics.js';
+import { boltHTML } from './bolt.js';
+import { runStar } from './star.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const view = $('#view');
@@ -42,7 +44,8 @@ const ring = (m, size = 44) => { const r = size / 2 - 4, c = 2 * Math.PI * r; re
 const status = id => (store.mastered(id) ? ['done', both('Mastered', 'Got it!')] : store.started(id) ? ['going', both('Practicing', 'Learning')] : ['new', 'New']);
 const gradeStats = g => { const list = skillsFor(g); const done = list.filter(s => store.mastered(s.id)).length; const avg = list.reduce((t, s) => t + store.mastery(s.id), 0) / (list.length || 1); return { done, total: list.length, avg }; };
 const avatar = (p, size = 36) => `<span class="av av-${p.avatar}" style="width:${size}px;height:${size}px;font-size:${size * 0.42}px" aria-hidden="true">${p.name.split(' ').slice(0, 2).map(w => w[0]).join('')}</span>`;
-const BOLT = `<svg class="bolt" viewBox="0 0 64 64" aria-hidden="true"><rect x="8" y="14" width="48" height="40" rx="14" fill="#4FB3A6" stroke="#151B2B" stroke-width="3"/><circle cx="24" cy="34" r="7" fill="#fff"/><circle cx="40" cy="34" r="7" fill="#fff"/><circle cx="25" cy="35" r="3" fill="#151B2B"/><circle cx="41" cy="35" r="3" fill="#151B2B"/><path d="M32 14V9" stroke="#151B2B" stroke-width="3"/><circle cx="32" cy="7" r="5" fill="#EE7A63" stroke="#151B2B" stroke-width="3"/></svg>`;
+/* Bolt in a speech bubble: cheer for a right answer, think after a miss (js/bolt.js) */
+const boltFor = tone => boltHTML(tone === 'ok' ? 'cheer' : tone === 'no' ? 'think' : 'idle');
 const crumbs = (...parts) => `<nav class="mq-crumbs" aria-label="Breadcrumb"><a href="#/">${BRAND}</a>${parts.map(([h, l]) => ` <span aria-hidden="true">/</span> ${h ? `<a href="${h}">${l}</a>` : `<span>${l}</span>`}`).join('')}</nav>`;
 
 /* ---------- Router ---------- */
@@ -58,6 +61,7 @@ const routes = [
   [/^#\/(dojo|tricks)$/, (m, ctx) => dojoView(ctx)],
   [/^#\/katas\/([\w-]+)$/, (m, ctx) => katasView(m[1], ctx)],
   [/^#\/kata\/([\w-]+)\/(\d+)$/, (m, ctx) => kataView(m[1], +m[2], ctx)],
+  [/^#\/star\/([\w-]+)\/(\d+)$/, (m, ctx) => starView(m[1], +m[2], ctx)],
   [/^#\/tower$/, (m, ctx) => towerView(ctx)],
   [/^#\/tower\/(\d+)$/, (m, ctx) => chapterView(+m[1], ctx)],
   [/^#\/challenge\/(\d+)$/, (m, ctx) => challengeView(+m[1], ctx)],
@@ -92,6 +96,7 @@ const knownId = (kind, id) => kind === 'grade' ? !!gradeOf(id) : kind === 'skill
 function render() {
   try { speechSynthesis.cancel(); } catch (e) {}
   const h = location.hash || '#/';
+  render.from = render.at; render.at = h; /* where a Star's Back button returns to */
   // Sutra deep dives open over the sutras page without re-rendering it
   const ms = h.match(/^#\/sutras\/(\w+)$/);
   if (ms && document.querySelector('.sutra-grid')) { openSutra(ms[1], true); metrics.view(h, knownId); return; }
@@ -254,7 +259,7 @@ function skillView(id, { signal } = {}) {
         <p class="mq-idea">${s.idea}</p>
         <h2 class="mq-h3">How it works</h2>
         <ol class="mq-method">${(trick ? [trick.when] : s.method).map(m => `<li>${m}</li>`).join('')}</ol>
-        ${trick ? animatorHTML(trick) : `<div class="mq-example" id="example"></div>`}
+        ${trick ? starsHTML(trick) + animatorHTML(trick) : `<div class="mq-example" id="example"></div>`}
         ${videosFor(s, trick)}
       </article>
       <div class="mq-practice md-card" id="practice"></div>
@@ -310,7 +315,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
     wire(question.signal); fx.speak(p.q);
     const first = root.querySelector('input, .pr-choice'); if (first && render.n > 1 && matchMedia('(pointer: fine)').matches) first.focus({ preventScroll: true });
   };
-  const say = (html, tone = '') => { const b = $('#prSay', root); b.className = 'pr-say ' + tone; b.innerHTML = html ? `${BOLT}<div class="md-bubble">${html}</div>` : ''; };
+  const say = (html, tone = '') => { const b = $('#prSay', root); b.className = 'pr-say ' + tone; b.innerHTML = html ? `${boltFor(tone)}<div class="md-bubble">${html}</div>` : ''; };
   const reveal = () => { const sol = $('#prSol', root); sol.hidden = false; sol.innerHTML = `<h3>Here is how</h3><ol class="mq-steps">${p.steps.map(x => `<li>${x}</li>`).join('')}</ol><p class="mq-ans">Answer: <b>${answerText(p, s)}</b></p>`; };
   const finish = ok => {
     done = true; total++; if (ok) right++; run = ok && tries === 1 && !hints ? run + 1 : 0;
@@ -401,7 +406,7 @@ function dojoView() {
     <p class="mq-small">${earned} of ${BELTS.length} belts earned.</p>
     <div class="dojo-path">${bp.map((b, i) => `<section class="dojo-belt${b.earned ? ' earned' : ''}">
       <h2 class="dojo-h"><span class="belt-swatch" style="--belt:${b.color}" aria-hidden="true"></span>${b.name}<small>${b.done}/3</small></h2>
-      <div class="dojo-nodes">${b.tricks.map(id => { const t = TRICKS.find(x => x.id === id), sid = 'v-' + id, [cls, lab] = status(sid); return `<div class="dojo-cell"><a class="dojo-node mq-${cls}" href="#/skill/${sid}">${ring(store.mastery(sid), 52)}<span><b>${t.title}</b><small lang="sa-Latn">${t.sutra}</small><em>${lab}</em></span></a><a class="dojo-katas" href="#/katas/${id}">${icon('belt')} Katas ${store.katasDoneWhere(`k:${id}:`)}/${LV.KATAS_PER_TRICK} done</a></div>`; }).join('')}</div></section>`).join('')}</div>
+      <div class="dojo-nodes">${b.tricks.map(id => { const t = TRICKS.find(x => x.id === id), sid = 'v-' + id, [cls, lab] = status(sid); return `<div class="dojo-cell"><a class="dojo-node mq-${cls}" href="#/skill/${sid}">${ring(store.mastery(sid), 52)}<span><b>${t.title}</b><small lang="sa-Latn">${t.sutra}</small><em>${lab}</em></span></a><a class="dojo-katas" href="#/katas/${id}">${icon('belt')} Katas ${store.katasDoneWhere(`k:${id}:`)}/${LV.KATAS_PER_TRICK} done</a>${dojoStars(t)}</div>`; }).join('')}</div></section>`).join('')}</div>
     <p class="mq-cta"><a class="md-btn" href="#/sutras">Read about all 29 sutras</a> <a class="md-btn" href="#/arena">Test your speed in the Arena</a></p>
   </div></section>`;
 }
@@ -471,17 +476,17 @@ function kataView(trickId, n, { signal } = {}) {
     tried = false; fx.speak(p.q);
     const f = box.querySelector('input, .pr-choice'); if (f && matchMedia('(pointer: fine)').matches) f.focus({ preventScroll: true });
     box.querySelectorAll('.pr-choice').forEach(b => on(b, 'click', () => { box.querySelectorAll('.pr-choice').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); $('#kForm').requestSubmit(); }, qs));
-    on($('#kHint'), 'click', () => { hints++; $('#kSay').innerHTML = `${BOLT}<div class="md-bubble">Hint: ${p.hints[0] || p.steps[0]}</div>`; }, qs);
+    on($('#kHint'), 'click', () => { hints++; $('#kSay').innerHTML = `${boltHTML('explain')}<div class="md-bubble">Hint: ${p.hints[0] || p.steps[0]}</div>`; }, qs);
     on($('#kForm'), 'submit', e => {
       e.preventDefault();
       if (tried) { i++; return i < K.problems.length ? show() : done(); }
       let ok;
       if (p.kind === 'choice') { const c = box.querySelector('.pr-choice[aria-pressed="true"]'); if (!c) return; ok = c.dataset.v === p.answer; }
       else if (p.kind === 'fields') { const ins = [...box.querySelectorAll('.ans-in')]; if (ins.some(x => !x.value.trim())) return; ok = ins.every((x, k) => checkOne({ kind: 'num', answer: p.fields[k].answer }, x.value).ok); }
-      else { const v = box.querySelector('.ans-in').value; if (!v.trim()) return; const res = checkOne(p, v); if (res.notAnswer) { $('#kSay').className = 'pr-say'; $('#kSay').innerHTML = `${BOLT}<div class="md-bubble">${notAnswerMsg()}</div>`; return; } ok = res.ok; }
+      else { const v = box.querySelector('.ans-in').value; if (!v.trim()) return; const res = checkOne(p, v); if (res.notAnswer) { $('#kSay').className = 'pr-say'; $('#kSay').innerHTML = `${boltFor('')}<div class="md-bubble">${notAnswerMsg()}</div>`; return; } ok = res.ok; }
       tried = true; if (ok) right++; fx.sfx(ok ? 'ok' : 'no'); metrics.answered('kata', ok);
       $('#kSay').className = 'pr-say ' + (ok ? 'ok' : 'no');
-      $('#kSay').innerHTML = `${BOLT}<div class="md-bubble">${ok ? pick(['Correct!', 'Clean!', 'Nailed it!', 'Yes!']) : `Not this time. Answer: <b>${answerText(p, byId['v-' + trickId])}</b><br><small>${p.steps.slice(0, 3).join(' ')}</small>`}</div>`;
+      $('#kSay').innerHTML = `${boltFor(ok ? 'ok' : 'no')}<div class="md-bubble">${ok ? pick(['Correct!', 'Clean!', 'Nailed it!', 'Yes!']) : `Not this time. Answer: <b>${answerText(p, byId['v-' + trickId])}</b><br><small>${p.steps.slice(0, 3).join(' ')}</small>`}</div>`;
       $('#kGo').textContent = i + 1 < K.problems.length ? 'Next' : 'Finish'; $('#kGo').focus({ preventScroll: true });
       box.querySelector('.pr-score').textContent = `${right}/${K.problems.length}`;
     }, qs);
@@ -495,6 +500,24 @@ function kataView(trickId, n, { signal } = {}) {
     const rt = box.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); mount(ctx => kataView(trickId, n, ctx)); };
   };
   show();
+}
+
+/* ---------- Stars (openspec star-round): three per Trick, on Trick pages and in the Dojo, not in Explorer ---------- */
+const STAR_WORD = { lit: 'Lit', skipped: 'Skipped', open: 'Open' };
+function starsHTML(t) {
+  if (fx.mode() === 'explorer') return '';
+  return `<div class="star-row"><h2 class="mq-h3">Stars</h2><p class="mq-small">Four questions each. A miss shows the trick on your numbers, and fixing it pays more.</p><div class="star-links">${[1, 2, 3].map(n => { const s = store.starState(t.id, n); return `<a class="star-link star-link--${s}" href="#/star/${t.id}/${n}">${icon('star')}<b>Star ${n}</b><small>${STAR_WORD[s]}</small></a>`; }).join('')}</div></div>`;
+}
+const dojoStars = t => (fx.mode() === 'explorer' ? '' : `<span class="dojo-stars">${[1, 2, 3].map(n => { const s = store.starState(t.id, n); return `<a class="dojo-star dojo-star--${s}" href="#/star/${t.id}/${n}" aria-label="${t.title}: Star ${n}, ${STAR_WORD[s].toLowerCase()}">${icon('star')}${n}</a>`; }).join('')}</span>`);
+function starView(trick, n, { signal } = {}, back = null) {
+  const t = TRICKS.find(x => x.id === trick); if (!t || !(n >= 1 && n <= 3)) return dojoView();
+  const from = render.from || '';
+  back = back || (from === '#/skill/v-' + trick ? { href: from, label: `Back to ${t.title}` } : { href: '#/dojo', label: 'Back to the Dojo' });
+  document.title = `Star ${n}: ${t.title} · ${BRAND}`;
+  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
+    ${crumbs(['#/dojo', 'Dojo'], ['#/skill/v-' + trick, t.title], [null, `Star ${n}`])}
+    <div id="star"></div></div></section>`;
+  return runStar($('#star'), { trick, star: n, signal, back, again: () => mount(ctx => starView(trick, n, ctx, back)), findVideo: async () => null /* watch-shelf plugs in videoForTrick */ });
 }
 
 /* ---------- Arena challenge tower ---------- */

@@ -118,7 +118,21 @@ export const kataDone = k => (load(), !!(S.katasDone || {})[k]);
 export function setKataDone(k) { load(); S.katasDone = S.katasDone || {}; if (S.katasDone[k]) return false; S.katasDone[k] = 1; save(); emit('kata', { k }); return true; }
 export const katasDoneWhere = prefix => { load(); return Object.keys(S.katasDone || {}).filter(k => k.startsWith(prefix)).length; };
 
-export function record(id, correct, hintsUsed) {
+/* Stars (<trick>:<n>, n 1 to 3): lit or skipped (each with when), and the keys the last round dealt. On the device only.
+   S.sky is made on first use (not in blank()), so loading and saving an older record changes nothing. */
+const sky = () => { load(); S.sky = { lit: {}, skipped: {}, last: {}, ...(S.sky || {}) }; return S.sky; };
+const starKey = (trick, n) => `${trick}:${n}`;
+export const starState = (trick, n) => { const k = starKey(trick, n), s = sky(); return s.lit[k] ? 'lit' : s.skipped[k] ? 'skipped' : 'open'; };
+/* Lights a Star and clears its skipped mark; true when it was not lit before */
+export function lightStar(trick, n) { const k = starKey(trick, n), s = sky(), was = !!s.lit[k]; if (!was) s.lit[k] = Date.now(); delete s.skipped[k]; save(); if (!was) emit('star', { k, state: 'lit' }); return !was; }
+/* Marks a Star skipped, unless it is lit (a lit Star stays lit); true when it is now marked */
+export function skipStar(trick, n) { const k = starKey(trick, n), s = sky(); if (s.lit[k]) return false; s.skipped[k] = s.skipped[k] || Date.now(); save(); emit('star', { k, state: 'skipped' }); return true; }
+export const starLast = (trick, n) => (sky().last[starKey(trick, n)] || []).slice();
+export function setStarLast(trick, n, keys) { sky().last[starKey(trick, n)] = keys.slice(); save(); }
+
+/* One answer to a Skill's question: counts, mastery, streak and quests. sparks: false when the caller pays its own
+   Sparks (a Star round), so the answer earns no Practice Sparks on top. */
+export function record(id, correct, hintsUsed, { sparks = true } = {}) {
   load();
   const s = S.skills[id] = { ...skill(id) }, was = mastered(id);
   const score = correct ? (hintsUsed ? 0.5 : 1) : 0, rate = s.n < 5 ? 0.35 : 0.22;
@@ -127,11 +141,11 @@ export function record(id, correct, hintsUsed) {
   S.counts.bestStreak = Math.max(S.counts.bestStreak || 0, s.streak);
   save();
   const gain = correct ? (hintsUsed ? 5 : 10 + Math.min(s.streak, 5)) : 0;
-  if (gain) addSparks(gain, 'answer');
+  if (gain && sparks) addSparks(gain, 'answer');
   const justMastered = !was && mastered(id);
   emit('answer', { id, correct, streak: s.streak, justMastered });
   if (justMastered) emit('mastered', id);
-  return { justMastered, streak: s.streak, gain };
+  return { justMastered, streak: s.streak, gain: sparks ? gain : 0 };
 }
 
 export function streakDays() {
