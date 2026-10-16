@@ -963,7 +963,7 @@ function gameView(id, lvl = 0, { signal } = {}) {
 /* ---------- Watch shelf (openspec watch-shelf) ---------- */
 /* The list loads when the shelf opens. Filters: the Player's Mode first, then Skill area, Tricks, length and kind
    (Links too for Pro). Videos and Shorts play in the page; only Pro sees sites, which open in a new tab. */
-const LENGTH_LABEL = { short: 'Under 2 min', mid: '2 to 5 min', long: '5 to 8 min' };
+const LENGTH_LABEL = { short: 'Under 2 min', mid: '2 to 5 min', long: '5 to 8 min', longer: '8 to 12 min' };
 function watchView({ signal } = {}) {
   document.title = `Watch and learn: ${BRAND} · Madhav`;
   const m = fx.mode() || 'challenger', pro = linksOut();
@@ -972,7 +972,7 @@ function watchView({ signal } = {}) {
     ${crumbs([null, 'Watch'])}
     <span class="md-tag md-tag--teal">Watch and learn</span>
     <h1 class="md-heading">Short videos that show how</h1>
-    <p class="md-lede">Every video plays right here, and none is longer than 8 minutes. Each one is checked by hand and matched to the skills and tricks it teaches.${pro ? ' Sites open in a new tab.' : ''}</p>
+    <p class="md-lede">Every video plays right here, and none is longer than ${W.MAX_LENGTH / 60} minutes. Each one is checked by hand and matched to the skills and tricks it teaches.${pro ? ' Sites open in a new tab.' : ''}</p>
     <div id="watchBody"><p class="mq-small">Loading videos…</p></div>
   </div></section>`;
   const body = $('#watchBody');
@@ -981,7 +981,7 @@ function watchView({ signal } = {}) {
     const visible = VIDEOS.filter(v => W.visibleTo(v, m));
     const strands = Object.keys(STRANDS).filter(id => visible.some(v => W.strandsOf(v, byId).includes(id)));
     const chips = (key, opts, label) => opts.length < 2 ? '' : `<div class="g-optrow watch-filter" role="group" aria-label="${label}"><span class="watch-flab" aria-hidden="true">${label}</span>${opts.map(([val, l]) => `<button type="button" class="md-chip" data-k="${key}" data-v="${val}" aria-pressed="${String(f[key]) === String(val)}">${l}</button>`).join('')}</div>`;
-    const card = v => `<button type="button" class="watch-card plays${v.kind === 'short' ? ' watch-card--short' : ''}" data-watch="${esc(v.yt)}" data-modes="${v.modes.join(' ')}" data-kind="${v.kind}" data-tricks="${v.tricks.join(' ')}"${navigator.onLine === false ? ' disabled' : ''}>
+    const card = v => `<button type="button" class="watch-card plays${v.kind === 'short' ? ' watch-card--short' : ''}" data-watch="${esc(v.yt)}" data-modes="${v.modes.join(' ')}" data-kind="${v.kind}" data-tricks="${v.tricks.join(' ')}" data-secs="${v.duration}"${navigator.onLine === false ? ' disabled' : ''}>
       <span class="watch-th"><img src="${W.thumbSrc(v)}" alt="" loading="lazy" width="320" height="180"><span class="watch-type">${v.kind === 'short' ? 'Short' : 'Video'} · ${mins(v.duration)}</span><span class="watch-play" aria-hidden="true">${icon('play')}</span></span>
       <b>${esc(v.title)}</b><small>${esc(v.why)}</small><span class="watch-tags"><span>${esc(v.channel)}</span>${v.tricks.length ? '<span class="tagv">Trick</span>' : ''}</span></button>`;
     const linkCard = l => outLink(l.url, `<span class="watch-th watch-th--${l.kind === 'game' ? 'game' : 'website'}">${icon('link')}<span class="watch-type">${l.kind === 'game' ? 'Game' : 'Site'}</span><span class="watch-ext">Opens in a new tab</span></span><b>${esc(l.title)}</b><small>${esc(l.why)}</small>`, 'watch-card');

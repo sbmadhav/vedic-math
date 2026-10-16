@@ -58,8 +58,10 @@ export async function videoForTrick(trick, mode, { list } = {}) {
   return pickForTrick(list, trick, mode);
 }
 
-/* Length filter buckets, in seconds: under 2 minutes, 2 to 5, 5 to 8 */
-export const LENGTHS = { short: [0, 120], mid: [120, 300], long: [300, 480] };
+/* The length bar (openspec video-length-12): every video, for every Mode, is under 12 minutes */
+export const MAX_LENGTH = 720;
+/* Length filter buckets, in seconds: under 2 minutes, 2 to 5, 5 to 8, 8 to 12 */
+export const LENGTHS = { short: [0, 120], mid: [120, 300], long: [300, 480], longer: [480, MAX_LENGTH] };
 export const lengthOf = v => Object.keys(LENGTHS).find(k => v.duration >= LENGTHS[k][0] && v.duration < LENGTHS[k][1]) || null;
 
 /* The Skill areas (strands) a video belongs to: its Skills' strands, plus 'tricks' when it has a Trick */

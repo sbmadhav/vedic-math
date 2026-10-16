@@ -16,7 +16,7 @@ Decided in the 2026-10-15 grilling; every recommended answer was accepted. Nothi
 ### Every video must
 4. **Play in the page.** Nothing sends a Player to YouTube. Existing playlists and channel links are swapped for single in-page videos.
 5. **Pass a real-browser check** that it plays in the page, its length, and whether it has captions. The same check runs in the daily live tests, and a deleted or unembeddable video fails the run.
-6. **Meet the bar:** under 8 minutes (under 4 for Explorer); teaches the method correctly; from a channel with a track record; no claim that the methods come from the Vedas; no clickbait aimed at kids. Shorts meet the same bar.
+6. **Meet the bar:** under 12 minutes, for every Mode (raised from 8 minutes, and from 4 for Explorer, on 2026-10-16; openspec `video-length-12`); teaches the method correctly; from a channel with a track record; no claim that the methods come from the Vedas; no clickbait aimed at kids. Shorts meet the same bar.
 7. **Be checked for accuracy** by reading its captions and description and confirming the method and the worked example's answer. Trick videos and anything outside the approved channels get a full check; videos without captions only go in after a closer look, or are left out.
 
 ### Who decides

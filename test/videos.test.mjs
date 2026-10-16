@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { VIDEOS, LINKS } from '../js/videos.js';
 import { byId } from '../js/skills/index.js';
 import { TRICKS } from '../js/vedic.js';
+import { MAX_LENGTH } from '../js/watch.js';
 
 const MODES = ['explorer', 'challenger', 'pro'];
 const TRICK_IDS = new Set(TRICKS.map(t => t.id));
@@ -17,11 +18,9 @@ test('ids are unique across videos and links; YouTube ids are well formed and un
   for (const v of VIDEOS) assert.match(v.yt, /^[\w-]{11}$/, v.id);
 });
 
-test('every video is under 8 minutes, and under 4 when it is for Explorer', () => {
-  for (const v of VIDEOS) {
-    assert.ok(Number.isInteger(v.duration) && v.duration > 0 && v.duration < 480, `${v.id}: ${v.duration}s`);
-    if (v.modes.includes('explorer')) assert.ok(v.duration < 240, `${v.id} is for Explorer: ${v.duration}s`);
-  }
+test('every video is under 12 minutes, for every Mode', () => {
+  assert.equal(MAX_LENGTH, 720);
+  for (const v of VIDEOS) assert.ok(Number.isInteger(v.duration) && v.duration > 0 && v.duration < MAX_LENGTH, `${v.id}: ${v.duration}s`);
 });
 
 test('every video has the full schema', () => {

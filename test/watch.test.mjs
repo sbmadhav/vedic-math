@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { visibleTo, order, picksFor, pickForTrick, videoForTrick, filterShelf, lengthOf, embedSrc, linksOut, loadVideos, MODE_SEES } from '../js/watch.js';
+import { visibleTo, order, picksFor, pickForTrick, videoForTrick, filterShelf, lengthOf, LENGTHS, MAX_LENGTH, embedSrc, linksOut, loadVideos, MODE_SEES } from '../js/watch.js';
 import { VIDEOS } from '../js/videos.js';
 import { DETAILS } from '../js/sutra-details.js';
 import { byId } from '../js/skills/index.js';
@@ -63,8 +63,15 @@ test('the Star video is hand-matched to the Trick only, made for kids first, sho
   assert.ok(v && v.tricks.includes('sq5') && v.modes.some(m => MODE_SEES.challenger.includes(m)));
 });
 
-test('length buckets at 119, 120, 300 and 479 seconds', () => {
-  assert.deepEqual([119, 120, 299, 300, 479].map(d => lengthOf({ duration: d })), ['short', 'mid', 'mid', 'long', 'long']);
+test('length buckets at 119, 120, 300, 480 and 719 seconds; nothing from 12 minutes', () => {
+  assert.deepEqual([119, 120, 299, 300, 479, 480, 719, 720].map(d => lengthOf({ duration: d })), ['short', 'mid', 'mid', 'long', 'long', 'longer', 'longer', null]);
+  assert.deepEqual(Object.keys(LENGTHS), ['short', 'mid', 'long', 'longer']);
+  assert.equal(LENGTHS.longer[1], MAX_LENGTH);
+  // every bucket has a filter label on the shelf
+  const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
+  const label = app.match(/const LENGTH_LABEL = (\{[^}]*\})/);
+  assert.ok(label, 'LENGTH_LABEL in js/app.js');
+  assert.deepEqual(Object.keys(Function(`return ${label[1]}`)()), Object.keys(LENGTHS));
 });
 
 test('shelf filters: Mode chip, Skill area, Tricks, length, kind', () => {
@@ -74,6 +81,7 @@ test('shelf filters: Mode chip, Skill area, Tricks, length, kind', () => {
   assert.deepEqual(ids(filterShelf(LIST, { mode: 'challenger', level: 'all', strand: 'number' }, byId)), ['exp']);
   assert.deepEqual(ids(filterShelf(LIST, { mode: 'challenger', level: 'all', strand: 'tricks' }, byId)), ['chalkid', 'chalshort', 'chal']);
   assert.deepEqual(ids(filterShelf(LIST, { mode: 'pro', level: 'all', length: 'mid' }, byId)), ['kw', 'chal']);
+  assert.deepEqual(ids(filterShelf([...LIST, V('ten', { duration: 600 })], { mode: 'challenger', level: 'all', length: 'longer' }, byId)), ['ten']);
   assert.deepEqual(ids(filterShelf(LIST, { mode: 'explorer', level: 'pro' }, byId)), []);
 });
 
