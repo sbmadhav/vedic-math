@@ -1,4 +1,4 @@
-import { test, expect, APP, open, ANALYTICS, chromiumOnly } from './fixtures';
+import { test, expect, APP, open, ANALYTICS, chromiumOnly, typeAnswer } from './fixtures';
 
 /* Anonymous usage events (openspec analytics spec). The shared /assets/analytics.js is replaced by a stub
    that only records window.siteTrack calls in window.__events, so no GoatCounter request is ever made and
@@ -90,7 +90,7 @@ test('two Arena Practice rounds: round_end r1 and r2 and one round2_start, no pe
     await page.locator('#arGo').click();
     await page.clock.runFor(2_500);
     await expect(page.locator('#arType')).toBeVisible();
-    for (let i = 0; i < 3; i++) { await page.locator('#arType').fill('1'); await page.locator('#arForm button').click(); }
+    for (let i = 0; i < 3; i++) { await typeAnswer(page, '1'); await page.locator('#arForm button').click(); }
     await page.clock.runFor(61_000);
     await expect(page.locator('.ar-result')).toBeVisible();
     await page.locator('#arDone').click(); // leave the result in the play shell
@@ -159,6 +159,7 @@ test.describe('with the Sky on', () => {
     await expect(page.locator('.star-end-h')).toHaveText('Star 2 skipped');
     expect((await events(page)).filter(e => e.startsWith('math/star/'))).toEqual(['math/star/skipped/by11']);
   });
+});
 
 test('an untimed Arena Practice round sends its type and one round_end r1', async ({ page }, testInfo) => {
   chromiumOnly(testInfo, 'app logic, the same in every engine');

@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, chromiumOnly, ANALYTICS } from './fixtures';
+import { test, expect, APP, open, cloudLog, chromiumOnly, ANALYTICS, typeAnswer } from './fixtures';
 
 /* The note for grown-ups is shown beside every World board (Arena, game pages, Pro home) and on the Me
    page, and what it promises must match what the app sends (openspec parent-note spec). The fake Firebase
@@ -195,7 +195,7 @@ test('an Arena Daily challenge sends its score to today\'s and this week\'s Aren
   const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
   await page.locator('#arGo').click();
   await page.clock.runFor(2_500); // 3, 2, 1
-  await page.locator('#arType').fill(String(answer));
+  await typeAnswer(page, String(answer));
   await page.locator('#arForm button').click();
   await expect(page.locator('#arScore')).toHaveText('10');
   expect(await writes(page)).toEqual([]);
@@ -327,7 +327,7 @@ test.describe('two Players on one device', () => {
     const play = async () => {
       await page.locator('#arGo').click();
       await page.clock.runFor(2_500);
-      await page.locator('#arType').fill(String(answer));
+      await typeAnswer(page, String(answer));
       await page.locator('#arForm button').click();
       await expect(page.locator('#arScore')).toHaveText('10');
       await page.clock.runFor(61_000);
@@ -462,9 +462,9 @@ test.describe('Ratings', () => {
     const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('pro', d)[0].answer, day);
     await page.locator('#arGo').click();
     await page.clock.runFor(2_500);
-    await page.locator('#arType').fill(String(answer));
+    await typeAnswer(page, String(answer));
     await page.locator('#arForm button').click();
-    for (let k = 0; k < 4; k++) { await page.locator('#arType').fill('1'); await page.locator('#arForm button').click(); }
+    for (let k = 0; k < 4; k++) { await typeAnswer(page, '1'); await page.locator('#arForm button').click(); }
     await page.clock.runFor(61_000);
     await expect(page.locator('.ar-result')).toBeVisible();
     await expect.poll(async () => (await sent(page)).length).toBe(2);
@@ -473,7 +473,7 @@ test.describe('Ratings', () => {
     await page.locator('[data-t="practice"]').click();
     await page.locator('#arGo').click();
     await page.clock.runFor(2_500);
-    for (let k = 0; k < 5; k++) { await page.locator('#arType').fill('1'); await page.locator('#arForm button').click(); }
+    for (let k = 0; k < 5; k++) { await typeAnswer(page, '1'); await page.locator('#arForm button').click(); }
     await page.clock.runFor(61_000);
     await expect(page.locator('.ar-result')).toBeVisible();
     // Skill Practice: 10 answers save a Skill Rating

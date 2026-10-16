@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, type Mode } from './fixtures';
+import { test, expect, APP, open, cloudLog, type Mode, typeAnswer } from './fixtures';
 import type { Page } from '@playwright/test';
 
 /* Posting consent (openspec posting-consent spec, docs/adr/0001): the Age answer is asked the first time a
@@ -39,7 +39,7 @@ async function arenaRound(page: Page, mode: Mode) {
   if (mode === 'explorer') await page.locator(`.ar-choice[data-v="${answer}"]`).click();
   else {
     // Typed, not tapped: the keypad enters each tap twice from round 2 (PLAN.md Phase 0, bug 1)
-    await page.locator('#arType').fill(answer);
+    await typeAnswer(page, answer);
     await page.locator('#arForm button').click();
   }
   await expect(page.locator('#arScore')).toHaveText('10');

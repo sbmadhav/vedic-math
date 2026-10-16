@@ -112,6 +112,8 @@ async function twoMisses(page: Page) {
   await question(page, 1);
   await enter(page, '1');
   await page.locator('#stRSkip').click();
+  // In the play shell the Next button can appear under the spot just tapped; its hover lift then jitters at the edge
+  await page.mouse.move(0, 0);
   await expect(tag(page)).toHaveText('Rematch');
   await enter(page, '1'); // a missed rematch: the answer, then on
   await expect(page.locator('#stSay')).toContainText('Close! It is');

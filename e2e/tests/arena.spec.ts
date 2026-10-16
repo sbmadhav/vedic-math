@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, heldClock, appErrors } from './fixtures';
+import { test, expect, APP, open, cloudLog, heldClock, appErrors, typeAnswer } from './fixtures';
 
 /* Arena rounds start and take answers. Every test leaves before the 60 second round ends,
    so no score is ever submitted (and the fake SDK would record it if one were). */
@@ -324,7 +324,7 @@ test.describe('pro', () => {
     for (let k = 0; k < 6; k++) {
       const text = (await q.textContent()) || '';
       expect(text).toMatch(MENTAL);
-      await page.locator('#arType').fill(String(mentalAnswer(text)));
+      await typeAnswer(page, String(mentalAnswer(text)));
       await page.locator('#arForm button').click();
       await expect(q).not.toHaveText(text);
     }
@@ -366,7 +366,7 @@ test.describe('pro', () => {
         const text = (await q.textContent()) || '';
         expect(text).toMatch(MENTAL);
         seen.push(`${await q.getAttribute('data-d')} ${text}`);
-        await page.locator('#arType').fill(String(mentalAnswer(text)));
+        await typeAnswer(page, String(mentalAnswer(text)));
         await page.locator('#arForm button').click();
         await expect(q).not.toHaveText(text);
       }
