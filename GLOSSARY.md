@@ -162,6 +162,14 @@ _Avoid_: challenge, boss, bonus question
 A place on the edge of the Sky that leads somewhere else in the app, such as the Arena, Duel, Games, Watch or the Skill map.
 _Avoid_: tab, menu item, building
 
+**Guide**:
+The page at `#/guide` that explains every part of the app in the words of the Player's Mode, one section per feature with a link to it.
+_Avoid_: help, manual, FAQ, tutorial
+
+**Tour**:
+Up to six coach marks over Home, shown once per device on the first visit and replayable from the Guide. Not the Hook.
+_Avoid_: onboarding, walkthrough, tutorial
+
 **All places**:
 The Sky as a plain list: every Constellation with its Stars and their states, every Landmark and every other place. The keyboard and screen reader way round the Sky.
 _Avoid_: sitemap, menu, index

@@ -52,6 +52,14 @@ test('view timers in js/app.js go through js/life.js', () => {
   assert.deepEqual(hits('app.js', TIMERS, PAGE_TIMERS), []);
 });
 
+test('the first-visit tour (js/tour.js): no bare listeners or timers; its listeners go through life.on on a child signal', () => {
+  assert.deepEqual(hits('tour.js', /\.?addEventListener\(/), []);
+  assert.deepEqual(hits('tour.js', TIMERS), []);
+  const src = readFileSync(new URL('../js/tour.js', import.meta.url), 'utf8');
+  assert.match(src, /import \{[^}]*\bon\b[^}]*\bchild\b[^}]*\} from '\.\/life\.js'/);
+  assert.ok(src.split('\n').filter(l => /^\s*on\(/.test(l) && /\bls\b/.test(l)).length >= 4, 'dialog, resize, scroll and motion listeners on the tour signal');
+});
+
 test('the router owns one AbortController per render and there is no cleanup variable', () => {
   const app = src('app.js').join('\n');
   assert.doesNotMatch(app, /\bcleanup\s*=/);
