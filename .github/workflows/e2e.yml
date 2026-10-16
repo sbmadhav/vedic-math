@@ -35,7 +35,7 @@ jobs:
     env:
       BASE_URL: ${{ inputs.base_url || 'https://sbmadhav.com' }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
 
       # On a push, the CI deploy publishes a stamped build in the background. Wait until the live files
       # match this commit's build (index.html pins every module hash, sw.js carries the cache VERSION).
@@ -56,7 +56,7 @@ jobs:
           done
           echo "::warning::The live site still differs from this commit after about 15 minutes. Testing what is live."
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: '22'
           cache: npm
@@ -71,7 +71,7 @@ jobs:
       - name: Playwright tests
         run: npx playwright test ${{ github.event_name == 'push' && '--grep-invert @live-videos' || '' }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: failure()
         with:
           name: playwright-report
