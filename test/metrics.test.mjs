@@ -25,6 +25,7 @@ const SAMPLES = {
   '#/challenge/123': 'challenge/challenge', '#/sutras': 'sutras', '#/sutras/s1': 'sutras/s1', '#/arena': 'arena',
   '#/duel': 'duel', '#/games': 'games', '#/game/times-sprint': 'game/times-sprint', '#/game/times-sprint/12': 'game/times-sprint/level',
   '#/watch': 'watch', '#/me': 'me', '#/progress': 'progress', '#/places': 'places', '#/tiles': 'tiles',
+  '#/guide': 'guide', '#/guide/arena': 'guide/section',
   '#/arena/ghosts/r/abc': 'play/ghosts', '#/dojo/spells': 'play/spells', '#/sutras/lost-scroll': 'play/lost-scroll',
 };
 const known = (kind, id) => ({ grade: ['5', 'K', '3'], skill: ['v-sq5'], trick: ['sq5'], sutra: ['s1'], game: ['times-sprint'], play: ['ghosts', 'spells', 'lost-scroll'] }[kind] || []).includes(id);
@@ -60,6 +61,26 @@ test('view() names home with the Sky on sky, never home; other routes keep their
   assert.deepEqual(paths(), ['math/view/sky', 'math/view/sky', 'math/view/home', 'math/view/places', 'math/view/arena']);
   clear(); M.view('#/', known, true, true);
   assert.deepEqual(paths(), ['math/view/pick-mode']);
+});
+
+/* ---------- The guide and the tour (in-app-guide) ---------- */
+test('tourEvent: start, finish and skip send math/tour/<kind>; anything else sends nothing', () => {
+  clear();
+  for (const k of M.TOUR_EVENTS) M.tourEvent(k);
+  M.tourEvent('done'); M.tourEvent('tour/skip'); M.tourEvent(undefined); M.tourEvent('Swift Tiger 42');
+  assert.deepEqual(paths(), ['math/tour/start', 'math/tour/finish', 'math/tour/skip']);
+  assert.ok(sent.every(([, t]) => t === 'Vedic Math: tour'));
+});
+
+test('the guide at a section is counted without the section name', () => {
+  clear(); M.view('#/guide/katas', known); M.view('#/guide', known);
+  assert.deepEqual(paths(), ['math/view/guide/section', 'math/view/guide']);
+});
+
+test('app.js sends the tour events with fixed words only', () => {
+  const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
+  const kinds = callSites(app).filter(c => c.fn === 'metrics.tourEvent').map(c => c.args).sort();
+  assert.deepEqual(kinds, ["'finish'", "'skip'", "'start'"]);
 });
 
 /* ---------- Star Quest counts (sky-home) ---------- */
@@ -166,11 +187,12 @@ test('no event or title carries anything but fixed words, route names, catalog i
   for (const a of M.ROUND_AREAS) for (const l of M.LEAGUES) { M.roundStart(a); M.roundEnd(a, l); }
   for (const s of M.SHARE_SURFACES) M.shareClick(s);
   for (const k of M.STAR_EVENTS) M.starEvent(k, 'sq5');
+  for (const k of M.TOUR_EVENTS) M.tourEvent(k);
   M.view('#/', known, false, true);
   for (const [p, t] of sent) {
     assert.match(p, PATH, p);
     assert.match(t, /^Vedic Math: [a-z ]+$/, t);
-    assert.ok(!/swift|tiger|uid|age|score|\d{3,}/i.test(p), p);
+    assert.ok(!/swift|tiger|\buid\b|age|score|\d{3,}/i.test(p), p); /* \buid\b: guide holds the letters uid */
   }
 });
 

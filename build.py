@@ -28,11 +28,17 @@ What the build does:
   That is every file of this repo the page loads, at the exact URL index.html uses, with a hash the
   worker checks on install, plus the shared files index.html and manifest.webmanifest reference (no
   hash). VERSION hashes all of that and the rest of sw.js, so any change to the app is a new cache.
+- In the copied index.html, right after <meta charset>: a Content-Security-Policy <meta> (and an
+  explicit Referrer-Policy). Inline scripts, the import map among them, are allowed by their sha256,
+  computed here, so the policy exists only in the build (the import map does too). GitHub Pages
+  cannot send headers; a <meta> policy cannot carry frame-ancestors, report-uri or sandbox. The
+  Firebase hosts come from js/cloud-config.js. The build fails on inline event handlers
+  (onclick="...") and javascript: URLs, which the policy would block.
 
-It fails if the source carries stamps (an import map, a ?v= on app.js or math.css, or a VERSION
-other than 'dev'), and on a module import it cannot pin.
+It fails if the source carries stamps (an import map, a ?v= on app.js or math.css, a VERSION
+other than 'dev', or a Content-Security-Policy <meta>), and on a module import it cannot pin.
 """
-import argparse, fnmatch, hashlib, json, pathlib, posixpath, re, shutil, subprocess, sys
+import argparse, base64, fnmatch, hashlib, json, pathlib, posixpath, re, shutil, subprocess, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent
 BASE = "/vedic-math/"
@@ -82,7 +88,87 @@ def publishable(out):
     return sorted(keep)
 
 
+# ---------- Content-Security-Policy ----------
+# Every origin the page itself loads from (openspec/specs/content-security). Workers started from a
+# URL get their own policy from their response, not this one, so the natural voice worker's
+# jsDelivr library and Hugging Face model downloads need nothing here.
+GOATCOUNTER = "https://sbmadhav.goatcounter.com"   # beacons from /assets/count.js (sendBeacon, <img> fallback)
+YOUTUBE = "https://www.youtube-nocookie.com"       # Watch shelf and Star round player (js/watch.js)
+YT_THUMBS = "https://i.ytimg.com"                  # Watch shelf thumbnails
+CSP_META = re.compile(r"""<meta\s+http-equiv=["']?Content-Security-Policy""", re.I)
+INLINE_SCRIPT = re.compile(r"<script(?![^>]*\bsrc=)([^>]*)>(.*?)</script>", re.S | re.I)
+RUNS = re.compile(r"""\btype=["']?(text/javascript|module|importmap|application/javascript)\b""", re.I)
+
+
+def firebase_sources():
+    """The Firebase and App Check hosts js/cloud.js talks to, or none when leaderboards are off."""
+    cfg = (ROOT / "js/cloud-config.js").read_text()
+    if re.search(r"export const FIREBASE\s*=\s*null", cfg):
+        return {}
+    auth = re.search(r"""authDomain:\s*["']([\w.-]+)["']""", cfg)
+    if not auth:
+        fail("js/cloud-config.js: no authDomain in FIREBASE (the CSP lists it)")
+    src = {
+        # The SDK modules (import() from the CDN); Auth's popup and redirect helper (gapi), which
+        # Safari and mobile browsers load as soon as Auth starts
+        "script": ["https://www.gstatic.com/firebasejs/", "https://apis.google.com"],
+        "connect": ["https://firestore.googleapis.com", "https://identitytoolkit.googleapis.com",
+                    "https://securetoken.googleapis.com"],
+        # Auth's hidden helper frame on the authDomain (same Safari and mobile case)
+        "frame": [f"https://{auth.group(1)}"],
+    }
+    if re.search(r"""export const appCheckSiteKey\s*=\s*['"][^'"]+['"]""", cfg):
+        # App Check with reCAPTCHA (Enterprise or v3): Google's documented hosts
+        src["script"] += ["https://www.google.com/recaptcha/", "https://www.gstatic.com/recaptcha/"]
+        src["connect"] += ["https://content-firebaseappcheck.googleapis.com", "https://www.google.com/recaptcha/"]
+        src["frame"] += ["https://www.google.com/recaptcha/", "https://recaptcha.google.com/recaptcha/"]
+    return src
+
+
+def csp(html):
+    """The policy for this index.html: fixed sources plus the sha256 of every inline script."""
+    hashes = []
+    for m in INLINE_SCRIPT.finditer(html):
+        if "type=" in m.group(1).lower() and not RUNS.search(m.group(1)):
+            continue  # a data block (application/ld+json) never runs; an import map is checked like a script
+        hashes.append("'sha256-" + base64.b64encode(hashlib.sha256(m.group(2).encode()).digest()).decode() + "'")
+    fb = firebase_sources()
+    join = lambda *parts: " ".join(x for part in parts for x in part)
+    return "; ".join([
+        "default-src 'self'",
+        "script-src " + join(["'self'"], dict.fromkeys(hashes), fb.get("script", [])),
+        # A critical <style> block, and style="" in markup the views build
+        "style-src 'self' 'unsafe-inline'",
+        "img-src " + join(["'self'", "data:", YT_THUMBS, GOATCOUNTER]),
+        "font-src 'self'",
+        "connect-src " + join(["'self'", GOATCOUNTER], fb.get("connect", [])),
+        "frame-src " + join([YOUTUBE], fb.get("frame", [])),
+        "worker-src 'self'",
+        "manifest-src 'self'",
+        "media-src 'self'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+    ])
+
+
+def add_csp(html):
+    handler = re.search(r"""<[a-z][^>]*\s(on[a-z]+)\s*=""", html, re.I)
+    if handler:
+        fail(f"index.html has an inline event handler ({handler.group(1)}=...), which the CSP blocks; use on() from js/life.js")
+    if re.search(r"""(href|src|action)\s*=\s*["']?\s*javascript:""", html, re.I):
+        fail("index.html has a javascript: URL, which the CSP blocks")
+    charset = re.search(r"""<meta charset=["']?utf-8["']?\s*/?>\n?""", html, re.I)
+    if not charset:
+        fail('index.html has no <meta charset="utf-8"> to put the CSP after')
+    tags = (f'<meta http-equiv="Content-Security-Policy" content="{csp(html)}">\n'
+            '<meta name="referrer" content="strict-origin-when-cross-origin">\n')
+    return html[:charset.end()] + tags + html[charset.end():]
+
+
 def check_source(html, sw):
+    if CSP_META.search(html):
+        fail("index.html carries a Content-Security-Policy <meta>; the source must not (the build adds it)")
     if 'type="importmap"' in html or MAP_START in html or 'id="vm-css"' in html:
         fail("index.html carries an import map; the source must not (the build adds it)")
     for url in [BASE + "js/app.js", BASE + "math.css", *SHARED]:
@@ -147,6 +233,7 @@ def main():
     for url in SHARED:
         if not re.search(r'(?:src|href)="' + re.escape(url) + '"', html):
             fail(f"index.html: no reference to {url}")
+    html = add_csp(html)
 
     # ---------- sw.js: precache list and VERSION ----------
     own_files = {BASE: "index.html", f"{BASE}math.css?v={own[BASE + 'math.css']}": "math.css", BASE + "manifest.webmanifest": "manifest.webmanifest"}

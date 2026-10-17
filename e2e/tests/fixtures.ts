@@ -12,9 +12,10 @@ import { test as base, expect, type Page, type BrowserContext, type TestInfo } f
      Requests to identitytoolkit / securetoken are aborted and recorded as violations in those tests.
    - Only tests that opt in with test.use({ liveFirebase: true }) load the real SDK (world leaderboard
      read). They still go through the write guard.
-   - GoatCounter is answered locally so test runs do not count as visits. */
+   - GoatCounter is answered locally so test runs do not count as visits. Its count.js is served from the main
+     site (/assets/count.js); gc.zgo.at stays in the pattern for a main site that still loads it from there. */
 
-export const ANALYTICS = /(^https:\/\/[^/]*goatcounter\.com\/)|(^https:\/\/gc\.zgo\.at\/)/;
+export const ANALYTICS = /(^https:\/\/[^/]*goatcounter\.com\/)|(^https:\/\/gc\.zgo\.at\/)|(^https?:\/\/[^/]+\/assets\/count\.js(\?|$))/;
 export const FIREBASE_SDK = /^https:\/\/www\.gstatic\.com\/firebasejs\//;
 export const FIREBASE_AUTH = /^https:\/\/(identitytoolkit|securetoken)\.googleapis\.com\//;
 export const FIRESTORE = /^https:\/\/firestore\.googleapis\.com\//;
@@ -94,6 +95,9 @@ type Fixtures = {
   /** Saved progress (mathquest.v1.p1) for that player before the page loads, for example a record from before
       Sparks (v2: xp, weekXp, stars). Default null: a fresh start. */
   seedProgress: Record<string, unknown> | null;
+  /** The first-visit tour (openspec in-app-guide) counts as already shown on this device. Default true, so specs that
+      open Home for a fresh Player are not covered by it; e2e/tests/guide.spec.ts turns it off. */
+  tourSeen: boolean;
   /** Requests that broke the live-dependency rules. Checked automatically after each test. */
   violations: string[];
   issues: Issues;
@@ -105,8 +109,9 @@ export const test = base.extend<Fixtures>({
   seedConsent: [null, { option: true }],
   seedProgress: [null, { option: true }],
   seedPlayer: [null, { option: true }],
+  tourSeen: [true, { option: true }],
 
-  context: async ({ context, seedMode, seedConsent, seedProgress, seedPlayer }, use) => {
+  context: async ({ context, seedMode, seedConsent, seedProgress, seedPlayer, tourSeen }, use) => {
     await blockAnalytics(context);
     // The same no-op counter from the start, for pages whose queue flushes before the local count.js answer runs
     await context.addInitScript(() => { const w = window as any; w.goatcounter ||= {}; if (typeof w.goatcounter.count !== 'function') w.goatcounter.count = () => {}; });
@@ -120,6 +125,7 @@ export const test = base.extend<Fixtures>({
         }
       } catch (e) { /* storage blocked: the app copes */ }
     }, [seedMode, seedConsent, seedProgress, seedPlayer] as const);
+    if (tourSeen) await context.addInitScript(() => { try { if (!localStorage.getItem('vm.tour')) localStorage.setItem('vm.tour', 'done'); } catch (e) { /* storage blocked */ } });
     await use(context);
   },
 

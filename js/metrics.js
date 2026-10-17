@@ -16,6 +16,7 @@ export const ROUND_AREAS = ['arena', 'game', 'tower', 'duel'];
 export const SHARE_SURFACES = ['result', 'challenge-link'];
 export const WIN_BUCKETS = ['under-30', '30-60', '60-90', '90-180', 'over-180'];
 export const STAR_EVENTS = ['lit', 'skipped', 'comeback', 'dare_taken', 'dare_won'];
+export const TOUR_EVENTS = ['start', 'finish', 'skip'];
 const ID = /^[a-z0-9][a-z0-9_-]{0,40}$/;
 
 const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -69,6 +70,8 @@ const ROUTES = [
   [/^#\/tiles$/, 'tiles'],
   [/^#\/me$/, 'me'],
   [/^#\/progress$/, 'progress'],
+  [/^#\/guide$/, 'guide'],
+  [/^#\/guide\/[\w-]+$/, 'guide/section'],
   /* Play experiences: the page name inside its section (js/play/catalog.js), never the params after it */
   [/^#\/(dojo|arena|games|sutras)\/([a-z-]+)(?:\/.*)?$/, 'play/{play:2}'],
 ];
@@ -98,6 +101,12 @@ export function view(hash, known, picker = false, sky = false) {
 export function starEvent(kind, trick) {
   if (!STAR_EVENTS.includes(kind) || !TRICKS.some(t => t.id === trick)) return;
   send(`star/${kind}/${trick}`, 'Vedic Math: star quest');
+}
+
+/* ---------- The first-visit tour (openspec in-app-guide) ---------- */
+/* The tour opened, or ended with Done on its last step (finish) or with Skip tour, Escape or leaving Home (skip) */
+export function tourEvent(kind) {
+  if (TOUR_EVENTS.includes(kind)) send('tour/' + kind, 'Vedic Math: tour');
 }
 
 /* ---------- Answers in untimed play (Practice, Endless runs, Katas, Star rounds) ---------- */

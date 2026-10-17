@@ -1,0 +1,391 @@
+{
+ "bitrateKbps": 32,
+ "voices": [
+  {
+   "key": "heart",
+   "name": "Kokoro Heart (free)",
+   "engine": "kokoro",
+   "spec": "af_heart",
+   "speed": 0.92,
+   "sprite": "audio/heart/stitch.m4a",
+   "map": "audio/heart/stitch.json",
+   "spriteBytes": 182210,
+   "spriteSecs": 44.2,
+   "clips": 45,
+   "wholeBytes": 180249,
+   "wholeSecs": 28.8,
+   "f0": 202
+  }
+ ],
+ "items": [
+  {
+   "id": "add",
+   "mode": "Explorer",
+   "label": "Adding within 20",
+   "html": "7 + 5 = ?",
+   "text": "7 plus 5 equals what?",
+   "plan": [
+    {
+     "clip": "n:7"
+    },
+    {
+     "clip": "f:plus"
+    },
+    {
+     "clip": "n:5"
+    },
+    {
+     "clip": "f:equals what?"
+    }
+   ],
+   "whole": {
+    "heart": {
+     "file": "audio/heart/whole/add.m4a",
+     "bytes": 12853,
+     "secs": 1.83
+    }
+   }
+  },
+  {
+   "id": "bond",
+   "mode": "Explorer",
+   "label": "Number bond",
+   "html": "3 and how many more make <b>10</b>?",
+   "text": "3 and how many more make 10 what?",
+   "plan": [
+    {
+     "clip": "n:3"
+    },
+    {
+     "clip": "f:and how many more make"
+    },
+    {
+     "clip": "n:10"
+    },
+    {
+     "clip": "f:what?"
+    }
+   ],
+   "whole": {
+    "heart": {
+     "file": "audio/heart/whole/bond.m4a",
+     "bytes": 13994,
+     "secs": 2.06
+    }
+   }
+  },
+  {
+   "id": "story",
+   "mode": "Explorer",
+   "label": "Story problem",
+   "html": "Leo has 8 cards and gets 2 more. How many now?",
+   "text": "Leo has 8 cards and gets 2 more. How many now?",
+   "plan": [
+    {
+     "clip": "f:Leo has"
+    },
+    {
+     "clip": "n:8"
+    },
+    {
+     "clip": "f:cards and gets"
+    },
+    {
+     "clip": "n:2"
+    },
+    {
+     "clip": "f:more. How many now?"
+    }
+   ],
+   "whole": {
+    "heart": {
+     "file": "audio/heart/whole/story.m4a",
+     "bytes": 17662,
+     "secs": 3.09
+    }
+   }
+  },
+  {
+   "id": "balloon",
+   "mode": "Explorer",
+   "label": "Balloon game",
+   "html": "Pop 8 balloons",
+   "text": "Pop 8 balloons",
+   "plan": [
+    {
+     "clip": "f:Pop"
+    },
+    {
+     "clip": "n:8"
+    },
+    {
+     "clip": "f:balloons"
+    }
+   ],
+   "whole": {
+    "heart": {
+     "file": "audio/heart/whole/balloon.m4a",
+     "bytes": 9701,
+     "secs": 1.18
+    }
+   }
+  },
+  {
+   "id": "hint",
+   "mode": "Explorer",
+   "label": "Hint",
+   "html": "Count up from 9 to 16. First get to 10.",
+   "text": "Count up from 9 to 16. First get to 10.",
+   "plan": [
+    {
+     "clip": "f:Count up from"
+    },
+    {
+     "clip": "n:9"
+    },
+    {
+     "clip": "f:to"
+    },
+    {
+     "clip": "n:16."
+    },
+    {
+     "pause": "long"
+    },
+    {
+     "clip": "f:First get to"
+    },
+    {
+     "clip": "n:10."
+    },
+    {
+     "pause": "long"
+    }
+   ],
+   "whole": {
+    "heart": {
+     "file": "audio/heart/whole/hint.m4a",
+     "bytes": 18036,
+     "secs": 3.03
+    }
+   }
+  },
+  {
+   "id": "praise",
+   "mode": "Explorer",
+   "label": "Praise",
+   "html": "Yay! You got it!",
+   "text": "Yay! You got it!",
+   "plan": [
+    {
+     "clip": "f:Yay! You got it!"
+    }
+   ],
+   "whole": {
+    "heart": {
+     "file": "audio/heart/whole/praise.m4a",
+     "bytes": 9037,
+     "secs": 0.97
+    }
+   }
+  },
+  {
+   "id": "retry",
+   "mode": "Explorer",
+   "label": "Try again",
+   "html": "Not quite. Try again!",
+   "text": "Not quite. Try again!",
+   "plan": [
+    {
+     "clip": "f:Not quite. Try again!"
+    }
+   ],
+   "whole": {
+    "heart": {
+     "file": "audio/heart/whole/retry.m4a",
+     "bytes": 10393,
+     "secs": 1.33
+    }
+   }
+  },
+  {
+   "id": "sub3",
+   "mode": "Challenger",
+   "label": "Three-digit subtraction",
+   "html": "682 &minus; 628 = ?",
+   "text": "682 minus 628 equals what?",
+   "plan": [
+    {
+     "clip": "n:6"
+    },
+    {
+     "clip": "w:hundred"
+    },
+    {
+     "clip": "n:82"
+    },
+    {
+     "clip": "f:minus"
+    },
+    {
+     "clip": "n:6"
+    },
+    {
+     "clip": "w:hundred"
+    },
+    {
+     "clip": "n:28"
+    },
+    {
+     "clip": "f:equals what?"
+    }
+   ],
+   "whole": {
+    "heart": {
+     "file": "audio/heart/whole/sub3.m4a",
+     "bytes": 20912,
+     "secs": 3.81
+    }
+   }
+  },
+  {
+   "id": "divide",
+   "mode": "Challenger",
+   "label": "Big division",
+   "html": "4368 &divide; 16 = ?",
+   "text": "4368 divided by 16 equals what?",
+   "plan": [
+    {
+     "clip": "n:4"
+    },
+    {
+     "clip": "w:thousand"
+    },
+    {
+     "clip": "n:3"
+    },
+    {
+     "clip": "w:hundred"
+    },
+    {
+     "clip": "n:68"
+    },
+    {
+     "clip": "f:divided by"
+    },
+    {
+     "clip": "n:16"
+    },
+    {
+     "clip": "f:equals what?"
+    }
+   ],
+   "whole": {
+    "heart": {
+     "file": "audio/heart/whole/divide.m4a",
+     "bytes": 20041,
+     "secs": 3.64
+    }
+   }
+  },
+  {
+   "id": "percent",
+   "mode": "Pro",
+   "label": "Percent",
+   "html": "What is 18% of 600?",
+   "text": "What is 18 percent of 600?",
+   "plan": [
+    {
+     "clip": "f:What is"
+    },
+    {
+     "clip": "n:18"
+    },
+    {
+     "clip": "f:percent of"
+    },
+    {
+     "clip": "n:6"
+    },
+    {
+     "clip": "w:hundred."
+    },
+    {
+     "pause": "long"
+    }
+   ],
+   "whole": {
+    "heart": {
+     "file": "audio/heart/whole/percent.m4a",
+     "bytes": 13021,
+     "secs": 1.93
+    }
+   }
+  },
+  {
+   "id": "frac",
+   "mode": "Challenger",
+   "label": "Fractions",
+   "html": "<span class=\"fr\"><span>3</span><span>4</span></span> + <span class=\"fr\"><span>1</span><span>6</span></span> = ?",
+   "text": "three quarters plus 1 over 6 equals what?",
+   "plan": [
+    {
+     "clip": "f:three quarters plus"
+    },
+    {
+     "clip": "n:1"
+    },
+    {
+     "clip": "f:over"
+    },
+    {
+     "clip": "n:6"
+    },
+    {
+     "clip": "f:equals what?"
+    }
+   ],
+   "whole": {
+    "heart": {
+     "file": "audio/heart/whole/frac.m4a",
+     "bytes": 16554,
+     "secs": 2.74
+    }
+   }
+  },
+  {
+   "id": "algebra",
+   "mode": "Pro",
+   "label": "Equation",
+   "html": "&minus;8<i>x</i> &minus; 14 = 42",
+   "text": "negative 8 x minus 14 equals 42",
+   "plan": [
+    {
+     "clip": "f:negative"
+    },
+    {
+     "clip": "n:8"
+    },
+    {
+     "clip": "f:x minus"
+    },
+    {
+     "clip": "n:14"
+    },
+    {
+     "clip": "f:equals"
+    },
+    {
+     "clip": "n:42."
+    }
+   ],
+   "whole": {
+    "heart": {
+     "file": "audio/heart/whole/algebra.m4a",
+     "bytes": 18045,
+     "secs": 3.19
+    }
+   }
+  }
+ ]
+}

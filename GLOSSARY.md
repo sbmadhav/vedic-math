@@ -42,6 +42,22 @@ _Avoid_: shortcut, hack, strategy
 One of the short named rules from Bharati Krishna Tirtha's 1965 book. Tricks are grouped under the Sutra they come from.
 _Avoid_: formula, verse, Vedic sutra (never "from the Vedas")
 
+**Say it**:
+The button beside a Sutra name that plays its Name clip. It only ever plays after a tap, whether read aloud is on or off. (Proposed in the `sutra-pronunciation` change.)
+_Avoid_: pronounce button, audio button
+
+**Name clip**:
+A short prerecorded clip of one Sutra name, made once with a free voice model from the name's checked spelling. There are 29, one per Sutra and sub-sutra.
+_Avoid_: recording (it is not a human voice), sample
+
+**Respelling**:
+A Sutra name written so an English reader can say it: syllables joined by hyphens, long vowels spelled to be held, and one light beat per word part in capitals ("ay-kah-dhi-KAY-nuh poor-VAY-nuh").
+_Avoid_: phonetic spelling, transliteration (that is the IAST)
+
+**Sutra ambience**:
+Very quiet sound on the Sutra pages: a soft bowl strike when a page opens, an optional low hum, or an opt-in chanted Om instead. Never over Calm music and silent when Sound effects is off. (Proposed in the `sutra-pronunciation` change.)
+_Avoid_: background music, chanting (unless the Om is meant)
+
 **Kata**:
 A fixed practice problem for one Trick, numbered from easy to hard. Stars draw their questions from them; a Kata has no rating of its own.
 _Avoid_: drill, exercise
@@ -89,6 +105,22 @@ _Avoid_: reel, clip
 **Link**:
 A website or game on the Watch shelf that opens in a new tab. Pro only, like every link that leaves the site.
 _Avoid_: resource, external site
+
+**Read aloud**:
+The setting that speaks questions, hints and praise. On by default for Explorer, off for Challenger and Pro. Speech only ever follows a tap.
+_Avoid_: TTS, narration, voice mode
+
+**Built-in voice**:
+The speech voice that comes with the Player's browser or device. The fallback for anything the Studio voice cannot say.
+_Avoid_: system TTS, robot voice, default voice
+
+**Studio voice**:
+The default read-aloud voice: one paid neural voice recorded ahead of time and served as audio files, whole lines for Explorer and short clips joined at play time for the rest. Nothing is sent to say a line, and it plays offline once saved.
+_Avoid_: TTS, cloud voice (it is not called at play time), recorded voice (no person recorded it)
+
+**Natural voice**:
+The opt-in voice that runs the Kokoro model on the device after a one-time download of about 100 MB. It can say any line whole.
+_Avoid_: AI voice, neural voice, premium voice
 
 ## Rounds and results
 
@@ -165,6 +197,14 @@ _Avoid_: challenge, boss, bonus question
 **Landmark**:
 A place on the edge of the Sky that leads somewhere else in the app, such as the Arena, Party Mode, Games, Watch or the Skill map.
 _Avoid_: tab, menu item, building
+
+**Guide**:
+The page at `#/guide` that explains every part of the app in the words of the Player's Mode, one section per feature with a link to it.
+_Avoid_: help, manual, FAQ, tutorial
+
+**Tour**:
+Up to six coach marks over Home, shown once per device on the first visit and replayable from the Guide. Not the Hook.
+_Avoid_: onboarding, walkthrough, tutorial
 
 **All places**:
 The Sky as a plain list: every Constellation with its Stars and their states, every Landmark and every other place. The keyboard and screen reader way round the Sky.

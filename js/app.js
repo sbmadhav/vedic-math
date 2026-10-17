@@ -31,6 +31,9 @@ import { openShell } from './shell.js';
 import { PLAY, SECTIONS, playFor, playIn } from './play/catalog.js';
 import { ICONS as PLAY_ICONS } from './play/icons.js';
 import { place as playPlace } from './play/kit.js';
+import { GROUPS, sectionsFor, tryFor, say, resolveTour, tourDue, tourState, setTourState } from './guide.js';
+import { artFor } from './guide-art.js';
+import { startTour } from './tour.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const view = $('#view');
@@ -84,6 +87,7 @@ const routes = [
   [/^#\/places$/, (m, ctx) => placesView(ctx)],
   [/^#\/tiles$/, (m, ctx) => home(ctx, { tiles: true })],
   [/^#\/(me|progress)$/, (m, ctx) => meView(ctx)],
+  [/^#\/guide(?:\/([\w-]+))?$/, (m, ctx) => guideView(m[1], ctx)],
   /* Play experiences: pages inside a section, after the section's own routes (js/play/catalog.js) */
   [/^#\/(?:dojo|arena|games|sutras)\/[a-z-]+(?:\/.*)?$/, (m, ctx) => playView(m[0], ctx)]
 ];
@@ -115,7 +119,7 @@ function render() {
   if (ms && document.querySelector('.sutra-grid')) { openSutra(ms[1], true); metrics.view(h, knownId); return; }
   if (h === '#/sutras' && sutraDlg && sutraDlg.open) { closeSutra(); metrics.view(h, knownId); return; }
   if (sutraDlg && sutraDlg.open) closeSutra(true);
-  const hit = routes.find(([re]) => re.test(h)), picker = !fx.mode() && !/^#\/(watch|sutras)$/.test(h);
+  const hit = routes.find(([re]) => re.test(h)), picker = !fx.mode() && !/^#\/(watch|sutras|guide(\/[\w-]+)?)$/.test(h); /* the guide opens without a mode too */
   mount(ctx => (picker ? modePicker(ctx) : hit ? hit[1](h.match(hit[0]), ctx) : home(ctx)));
   const asSky = !picker && /^#?\/?$/.test(h) && SKY.skyOn(store.player()); /* home showed the Sky: the route view is sky */
   if ((location.hash || '#/') === h) metrics.view(h, knownId, picker, asSky); /* one anonymous route view (analytics spec); a view that redirected is counted when its target renders */
@@ -150,6 +154,7 @@ function modePicker() {
     <p class="md-lede">Speed tricks from the sutras in Bharati Krishna Tirtha's 1965 book, a full skill map from counting to calculus, games, daily quests and an Arena with leaderboards. Pick how you want to play. You can change it any time.</p>
     <div class="mode-pick">${Object.entries(fx.MODES).map(([id, m]) => `<button class="mode-card mode-card--${m.color}" data-mode="${id}"><span class="mode-ic" aria-hidden="true">${modeIcon(id)}</span><b>${m.name}</b><small>${m.ages}</small><span>${m.blurb}</span></button>`).join('')}</div>
     <p class="mq-note">Playing as <b>${esc(p.name)}</b>. Nicknames are made up for you, so no real names are ever needed.</p>
+    <p class="mq-note gd-pickhelp">Not sure where to start? <a href="#/guide">See how it works</a></p>
   </div></section>`;
   view.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { fx.sfx('level'); fx.setMode(b.dataset.mode); gm.startDay(); fx.confetti(60); location.hash = '#/'; render(); });
 }
@@ -221,20 +226,23 @@ function home(ctx = {}, { tiles = false } = {}) {
     ${heroStats()}
     <h1 class="md-heading home-h">${fx.t({ explorer: 'What do you want to play?', challenger: 'Ready to get faster?', pro: 'Train your mental math' })}</h1>
     <p class="mode-line">Mode: <b>${fx.MODES[m].name}</b> <a href="#/me">Change</a></p>
-    ${cont}${body}
+    ${newHereHTML()}${cont}${body}
   </div></section>`;
   const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); home(); };
   if (m === 'pro') loadBoard($('#homeBoard'), `daily-${cloud.dayId()}-pro`, 5);
+  homeTour(ctx.signal);
 }
 
 /* The Sky as home (openspec sky-home). Back from a Star (the route before was #/star/<trick>/<n>): that Star is focused. */
 const litStars = () => { const { lit } = store.starStates(); return SKY.PATH.filter(k => lit[k]).length; };
 function skyHome({ signal } = {}) {
   document.title = `${BRAND} for Everyone · Madhav`;
-  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}<div id="skyHome"></div>
+  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}${newHereHTML()}<div id="skyHome"></div>
     <p class="mode-line">Mode: <b>${fx.MODES[fx.mode()].name}</b> <a href="#/me">Change</a></p></div></section>`;
   const back = (render.from || '').match(/^#\/star\/([\w-]+)\/(\d)$/);
-  return skyView($('#skyHome'), { signal, focus: back ? `${back[1]}:${back[2]}` : null });
+  const out = skyView($('#skyHome'), { signal, focus: back ? `${back[1]}:${back[2]}` : null });
+  homeTour(signal);
+  return out;
 }
 /* All places: the Sky as a plain list (#/places) */
 function placesView() {
@@ -1214,6 +1222,76 @@ function wireWorldBoards(root) {
     else { store.setParentOk(true); track('parent-step/on', 'Vedic Math: World boards turned on'); redraw('World boards are on for this player.'); queueSparksPost(); }
     const again = $('#wbSwitch', box) || $('#wbIn', box); if (again) again.focus();
   };
+}
+
+/* ---------- Guide and first-visit tour (openspec in-app-guide) ---------- */
+/* The guide's data is js/guide.js, its pictures js/guide-art.js, the tour js/tour.js. Counts come from the catalogs. */
+const guideCounts = () => ({ skills: SKILLS.length - TRICKS.length, tricks: TRICKS.length, belts: BELTS.length, katasPer: LV.KATAS_PER_TRICK, kataCount: LV.KATA_COUNT,
+  sutras: SUTRAS.length, subsutras: SUBSUTRAS.length, games: GAMES.length, levelsPerGame: LEVELS_PER_GAME, chapters: LV.TOPICS.length, perChapter: LV.PER_CHAPTER,
+  challenges: LV.CHALLENGE_COUNT, badges: gm.BADGES.length, videoMinutes: W.MAX_LENGTH / 60, starsPerBelt: gm.STARS_PER_BELT });
+/* Take the tour (guide, Home note): the next Home render plays it whatever vm.tour says */
+let tourAsked = false;
+function askTour() { tourAsked = true; if ((location.hash || '#/') === '#/' || location.hash === '#') render(); else location.hash = '#/'; }
+/* "New here?" on Home while the Player has not played on an earlier day */
+function newHereHTML() {
+  if (store.playedBefore()) return '';
+  return `<p class="gd-new"><span class="gd-new-ic" aria-hidden="true">${icon('map')}</span><span>New here? <a href="#/guide">See how everything works</a> or <button type="button" class="linkbtn" id="tourAgain">take the tour</button>.</span></p>`;
+}
+/* On Home: the tour when it is due (a Player with a Mode and no Sparks, on a device that has never shown it) or asked
+   for. It starts once the route has drawn the menu chip and focused the heading. */
+function homeTour(signal) {
+  const again = $('#tourAgain'); if (again) again.onclick = askTour;
+  const replay = tourAsked; tourAsked = false;
+  if (!signal || !fx.mode()) return;
+  if (!replay && !tourDue({ mode: fx.mode(), state: tourState(), hash: location.hash, fresh: store.sparks() === 0 })) return;
+  later(() => {
+    const has = sel => { const el = document.querySelector(sel); if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+    const steps = resolveTour(has, fx.mode());
+    if (!steps.length) return;
+    setTourState('shown'); metrics.tourEvent('start');
+    startTour(steps, { signal, onEnd: outcome => { if (outcome === 'finish') { setTourState('done'); metrics.tourEvent('finish'); } else { setTourState('skipped'); metrics.tourEvent('skip'); } } });
+  }, 300, signal);
+}
+function guideView(section, { signal } = {}) {
+  const m = fx.mode() || null, mode = m || 'challenger', explorer = m === 'explorer';
+  document.title = `Guide: ${BRAND} · Madhav`;
+  const list = sectionsFor(mode, guideCounts()), groups = GROUPS.map(g => ({ g, items: list.filter(s => s.group === g.id) })).filter(x => x.items.length);
+  const T = v => esc(say(v, mode));
+  const tryHTML = s => {
+    const t = tryFor(s, mode); if (!t) return '';
+    if (t.action === 'tour' && !m) return '';
+    const main = t.action ? `<button type="button" class="md-btn md-btn--sm md-btn--primary gd-try" data-gd="${t.action}">${esc(t.label)}</button>` : `<a class="md-btn md-btn--sm md-btn--primary gd-try" href="${esc(t.href)}">${esc(t.label)}</a>`;
+    return `<p class="gd-acts">${main}${t.more ? ` <a class="md-btn md-btn--sm" href="${esc(t.more.href)}">${esc(t.more.label)}</a>` : ''}</p>`;
+  };
+  const card = s => `<article class="gd-sec md-card" id="gd-${s.id}" aria-labelledby="gdh-${s.id}">
+      <div class="gd-art">${artFor(s.art)}</div>
+      <div class="gd-body"><h3 class="mq-h3 gd-h" id="gdh-${s.id}">${T(s.title)}</h3>
+        <p class="gd-what"><b class="gd-k">What it is</b> ${T(s.what)}</p>
+        <p class="gd-k" id="gdk-${s.id}">${explorer ? 'How to do it' : 'How to use it'}</p>
+        <ol class="gd-how" aria-labelledby="gdk-${s.id}">${s.how.map(h => `<li>${T(h)}</li>`).join('')}</ol>
+        <p class="gd-tip"><b class="gd-k">Tip</b> ${T(s.tip)}</p>
+        ${s.parentNote ? parentNote() : ''}${tryHTML(s)}</div></article>`;
+  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap gd">
+    ${crumbs([null, 'Guide'])}
+    <span class="md-tag md-tag--teal">Guide</span>
+    <h1 class="md-heading">${fx.t({ explorer: 'How to play', challenger: 'How to use Vedic Math', pro: 'How to use Vedic Math' })}</h1>
+    <p class="md-lede">${fx.t({ explorer: 'Everything you can do here, one part at a time. The button under each part takes you there.', challenger: 'Every part of the app, what it is for and how to use it. The button under each section takes you straight there.', pro: 'Every part of the app, what it is for and how to use it, with a link to each one.' })}</p>
+    ${m ? `<p class="mode-line">Words for: <b>${fx.MODES[m].name}</b> <a href="#/me">Change</a></p><p class="gd-top"><button type="button" class="md-btn md-btn--primary" data-gd="tour">${icon('map')} ${explorer ? 'Show me around' : 'Take the tour'}</button></p>`
+      : '<div class="md-card gd-nomode"><p>Pick a play mode first: Explorer, Challenger or Pro. It sets the words, the questions and your league. This guide uses the Challenger words until you do.</p><p><a class="md-btn md-btn--primary" href="#/">Pick a play mode</a></p></div>'}
+    <nav class="gd-toc md-card" aria-label="Guide contents"><ul>${groups.map(({ g, items }) => `<li><a href="#/guide/${items[0].id}" class="gd-toc-g">${T(g.title)}</a><ul>${items.map(s => `<li><a href="#/guide/${s.id}">${T(s.title)}</a></li>`).join('')}</ul></li>`).join('')}</ul></nav>
+    ${groups.map(({ g, items }) => `<section class="gd-group" aria-labelledby="gdg-${g.id}"><h2 class="mq-strand" id="gdg-${g.id}">${T(g.title)}</h2><div class="gd-grid">${items.map(card).join('')}</div></section>`).join('')}
+  </div></section>`;
+  on(view, 'click', e => {
+    const b = e.target.closest('[data-gd]'); if (!b) return;
+    if (b.dataset.gd === 'tour') askTour();
+    else if (b.dataset.gd === 'music') { e.stopPropagation(); window.scrollTo({ top: 0 }); const mb = $('#vmMBtn'); if (mb && mb.getAttribute('aria-expanded') !== 'true') mb.click(); const first = $('#vmMPanel [data-t]'); if (first) first.focus({ preventScroll: true }); }
+  }, signal);
+  /* #/guide/<section>: focus its heading now (so the router leaves focus there), scroll to it once the router is done */
+  const sec = section && $(`#gd-${CSS.escape(section)}`);
+  if (sec) {
+    const h = sec.querySelector('.gd-h'); h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true });
+    if (signal) later(() => sec.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }), 0, signal);
+  }
 }
 
 /* ---------- Me: profile, badges, players, settings ---------- */
