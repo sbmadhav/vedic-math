@@ -14,11 +14,15 @@ The system SHALL offer twelve play experiences, each a page under an existing se
 - **THEN** Tala Lab shows, Games is current in the nav, and Back returns to `#/games`
 
 ### Requirement: Section shelves by Mode
-The Dojo, Arena, Games and Sutras pages SHALL list their experiences for the Player's Mode. Experiences of sections hidden in Explorer (Dojo and Sutras) SHALL NOT be listed for Explorer.
+The Dojo, Arena, Games and Sutras pages SHALL list their experiences for the Player's Mode, and an experience SHALL open only for the Modes it is listed for. Experiences of sections hidden in Explorer (Dojo and Sutras), Pattern Wall, Teach the Apprentice and Estimation Bets SHALL NOT be listed for or opened by Explorer.
 
 #### Scenario: Explorer Games page
 - **WHEN** an Explorer opens Games
-- **THEN** the shelf lists Tala Lab, Mandala Studio, Pattern Wall, Teach the Apprentice, Estimation Bets and Math Lens
+- **THEN** the shelf lists Tala Lab, Mandala Studio and Math Lens
+
+#### Scenario: A direct link outside the Mode
+- **WHEN** an Explorer opens a link to Pattern Wall, Teach the Apprentice, Estimation Bets or a Dojo or Sutras experience
+- **THEN** the page says it is for older players and offers experiences the Explorer can open, and nothing of the experience is stored
 
 ### Requirement: Party Mode replaces the Duel
 Party Mode SHALL let two to four Players play on one screen, each answering questions at their own Mode. `#/duel` SHALL open Party Mode, and finishing a Party game SHALL count toward the Party host badge.
@@ -35,11 +39,26 @@ Each experience SHALL keep its progress for the active Player only, so Players s
 - **THEN** they see their own puzzles' progress, not the first Player's
 
 ### Requirement: Sparks from play, capped
-Finishing a puzzle, lock, round, chapter or discovery in an experience SHALL earn Sparks, at most 150 a day from experiences per Player.
+Finishing a puzzle, lock, round, chapter or discovery in an experience SHALL earn Sparks, at most 150 a day from experiences per Player. Replaying something already finished, opening a page or pressing a button SHALL earn none, and only an action that earns Sparks SHALL count as a practice day.
 
 #### Scenario: The daily cap
 - **WHEN** a Player has earned 150 Sparks from experiences today
 - **THEN** further play today earns no more Sparks from experiences
+
+#### Scenario: Only opening pages
+- **WHEN** a Player opens Tala Lab, Mandala Studio and Ghost Races and finishes nothing
+- **THEN** today is not added to their practice days
+
+### Requirement: Calm removes clocks from play
+When Calm is on, Party Mode SHALL run no clocks (buzz, answer, steal, secret turns, the final and the relay end by a set count instead of time) and the Discovery Locks "Beat the lock" level SHALL be untimed, with a right answer counting at any speed. Each SHALL say that Calm is on.
+
+#### Scenario: A Party game in Calm
+- **WHEN** Calm is on and a Player waits on a Party Mode question
+- **THEN** no clock shows and the turn does not time out
+
+#### Scenario: Beat the lock in Calm
+- **WHEN** Calm is on and a Player answers the quick level slowly and right
+- **THEN** the answer counts
 
 ### Requirement: Nothing personal leaves the device
 Experiences SHALL NOT send anything to the leaderboards. Share links SHALL carry only puzzle or piece parameters, times, and names built from fixed word lists, never typed text. Math Lens SHALL process camera frames on the device only, never store or send an image, and SHALL be fully playable without the camera.

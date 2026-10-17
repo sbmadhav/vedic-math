@@ -20,6 +20,9 @@
 - [x] 4.2 Camera and microphone turn off on a hidden tab, a route change and errors; a Lens share link carries only plate characters; a removed Player's `vm.play.<id>.*` is forgotten. Verify: `e2e/tests/play-lens.spec.ts`, `e2e/tests/play-sound.spec.ts`, `test/play/lens.test.mjs`, `test/store.test.mjs`.
 - [x] 4.3 Sparks from play are paid for a first finish or discovery, not for replays or button presses (Spellbook, Locks, Pattern Wall, Apprentice, Daily Number, Tala Lab, Mandala Studio, Scroll preview). Verify: the experience unit tests and `e2e/tests/play-*.spec.ts`.
 
+- [x] 4.4 Owner decisions (2026-10-17): Pattern Wall, Teach the Apprentice and Estimation Bets are Challenger and Pro only, and no experience opens outside its Modes by link; Calm removes the clocks in Party Mode and the Locks quick level; the Math Lens reader is served from the app's own origin. Verify: `test/play/shell.test.mjs`, `e2e/tests/play.spec.ts` (Explorer shelves and direct links), `play-arena.spec.ts` and `play-dojo-scroll.spec.ts` (Calm), `csp.spec.ts` and `play-lens.spec.ts` against a built `_site`.
+- [x] 4.5 Only actions that pay Sparks count as a practice day. Verify: `e2e/tests/play.spec.ts`.
+
 ## 5. After release
 
 - [ ] 5.1 Listen to Tala Lab and Mandala Studio on a phone and a laptop; try Math Lens on real plates and receipts; then archive this change.

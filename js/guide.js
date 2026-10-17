@@ -205,7 +205,7 @@ export function sections(n) {
 
     { id: 'playmore', group: 'play', art: 'dial', covers: ['#/dojo/spells', '#/dojo/locks', '#/arena/ghosts', '#/arena/daily-number', '#/games/tala', '#/games/art', '#/games/wall', '#/games/apprentice', '#/games/bets', '#/games/lens', '#/sutras/lost-scroll'],
       title: w('More ways to play', 'Play experiences'),
-      what: w('Music, art, puzzles and stories made of math. Find them on the Games and Arena pages.', 'Twelve ways to play where math is what you do: cast tricks as spells, crack locks, clap rhythms, paint mandalas, solve the Daily Number, race your ghost and more. Each lives on its section\'s page.'),
+      what: w('Music, art, races and number puzzles. Find them on the Games and Arena pages.', 'Twelve ways to play where math is what you do: cast tricks as spells, crack locks, clap rhythms, paint mandalas, solve the Daily Number, race your ghost and more. Each lives on its section\'s page.'),
       how: [
         w('Open Games or the Arena and look for the cards under the title.', 'Open the Dojo, Arena, Games or Sutras page and pick a card from its shelf.'),
         w('Each one shows you what to do. Try, play and make things!', 'Each one starts by showing, not telling. Share a Daily Number grid, a ghost or a mandala with a link.'),
