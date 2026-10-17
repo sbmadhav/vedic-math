@@ -35,6 +35,25 @@ for (const [mode, sees] of [['explorer', ['explorer']], ['challenger', ['challen
   });
 }
 
+test.describe('explorer', () => {
+  test.use({ seedMode: 'explorer' });
+  test('Explorer has a full shelf, and a kindergarten Skill shows its own made-for-kids videos', async ({ page }) => {
+    await openShelf(page);
+    expect(await cards(page).count()).toBeGreaterThanOrEqual(40);
+    await open(page, '#/skill/k-bonds');
+    const box = page.locator('[data-watch-for]');
+    await expect(box).toHaveAttribute('data-how', 'hand');
+    const yts = await box.locator('button[data-watch]').evaluateAll(els => els.map(e => (e as HTMLElement).dataset.watch));
+    expect(yts.length).toBeGreaterThanOrEqual(2);
+    const picked = await page.evaluate(async ys => { const { VIDEOS } = await import('/vedic-math/js/videos.js' as string); return ys.map((y: string) => VIDEOS.find((v: any) => v.yt === y)); }, yts);
+    for (const v of picked) {
+      expect(v.skills).toContain('k-bonds');
+      expect(v.madeForKids).toBe(true);
+      expect(v.modes).toEqual(['explorer']);
+    }
+  });
+});
+
 test('Shorts plus Tricks shows only Short tiles matched to a Trick', async ({ page }) => {
   await openShelf(page);
   await chip(page, 'Videos or Shorts', 'Shorts').click();
@@ -121,10 +140,40 @@ test('Challenger on a Trick with a made-for-kids video sees only that one', asyn
   await expect(box.locator('button[data-watch]')).toHaveAttribute('data-watch', 'f0W32SwhAwM');
 });
 
-test('a Skill with no hand-matched video gets keyword matches or no Watch section', async ({ page }) => {
-  await open(page, '#/skill/3-multtens');
-  await expect(page.locator('[data-watch-for]')).toHaveAttribute('data-how', 'keyword');
+/* The videos behind a Skill or Trick page's "Watch it explained" buttons, from js/videos.js */
+const watchPicks = async (page: Page) => {
+  const box = page.locator('[data-watch-for]');
+  await expect(box).toHaveAttribute('data-how', 'hand');
+  const yts = await box.locator('button[data-watch]').evaluateAll(els => els.map(e => (e as HTMLElement).dataset.watch));
+  return page.evaluate(async ys => { const { VIDEOS } = await import('/vedic-math/js/videos.js' as string); return ys.map((y: string) => VIDEOS.find((v: any) => v.yt === y)); }, yts);
+};
+
+test('a grade 6 to 8 Skill shows its own hand-matched videos, made for kids first for Challenger', async ({ page }) => {
   await open(page, '#/skill/7-pctchange');
+  let picks = await watchPicks(page);
+  expect(picks.length).toBeGreaterThanOrEqual(2);
+  for (const v of picks) { expect(v.skills).toContain('7-pctchange'); expect(v.modes).toContain('challenger'); }
+  await open(page, '#/skill/7-circle');
+  picks = await watchPicks(page);
+  expect(picks.length).toBeGreaterThanOrEqual(2);
+  for (const v of picks) { expect(v.skills).toContain('7-circle'); expect(v.madeForKids).toBe(true); }
+});
+
+test.describe('pro', () => {
+  test.use({ seedMode: 'pro' });
+  test('Pro on a grade 8 Skill sees hand-matched videos, Pro-only ones included', async ({ page }) => {
+    await open(page, '#/skill/8-lineq');
+    const picks = await watchPicks(page);
+    expect(picks.length).toBe(3);
+    for (const v of picks) { expect(v.skills).toContain('8-lineq'); expect(v.modes).toContain('pro'); }
+    expect(picks.some((v: any) => v.modes.join() === 'pro')).toBe(true);
+  });
+});
+
+test('a Skill with no hand-matched video gets keyword matches or no Watch section', async ({ page }) => {
+  await open(page, '#/skill/9-radicals');
+  await expect(page.locator('[data-watch-for]')).toHaveAttribute('data-how', 'keyword');
+  await open(page, '#/skill/11-logs');
   await expect(page.locator('#practice')).toBeVisible();
   await page.waitForFunction(() => import('/vedic-math/js/videos.js' as string));
   await expect(page.locator('[data-watch-for] button')).toHaveCount(0);

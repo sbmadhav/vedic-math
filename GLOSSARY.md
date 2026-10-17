@@ -46,6 +46,14 @@ _Avoid_: formula, verse, Vedic sutra (never "from the Vedas")
 A genuine Sanskrit verse, prose rule (sūtra) or Vedic mantra about mathematics from an older text, shown in Mathematics in Sanskrit verse at the end of the Sutras page (`js/slokas.js`). Verses are not the source of the Sutras; the only verse in the 1965 book (gopī bhāgya, π/10) is the Swami's own.
 _Avoid_: calling a Sutra a verse; "ancient" without a date
 
+**Deep dive**:
+The dialog that opens from a Sutra card's Learn more (route `#/sutras/<id>`): the plain explanation, an animated diagram, why it works, Worked examples, where it is used and further reading. Its close button and the footer to the previous and next Sutra stay pinned while it scrolls.
+_Avoid_: modal, popup, detail page
+
+**Worked example**:
+One solved problem in a Deep dive: a question and the short steps the Sutra uses, ending in the result. Each Sutra and sub-sutra has at least three, from easy to harder; the first is shown open and the Player opens the others after trying them.
+_Avoid_: sample, demo, Kata (a Kata is a practice problem the Player answers)
+
 **Say it**:
 The button beside a Sutra name that plays its Name clip. It only ever plays after a tap, whether read aloud is on or off. (Proposed in the `sutra-pronunciation` change.)
 _Avoid_: pronounce button, audio button
