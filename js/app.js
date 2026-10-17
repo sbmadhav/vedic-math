@@ -31,6 +31,7 @@ import { GROUPS, sectionsFor, tryFor, say, resolveTour, tourDue, tourState, setT
 import { artFor } from './guide-art.js';
 import { startTour } from './tour.js';
 import { guideCounts } from './explain-lines.js';
+import { listenBtn, wireListen } from './listen.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const view = $('#view');
@@ -98,6 +99,7 @@ function teardown() {
 function mount(fn) {
   teardown();
   const ctl = new AbortController(), mine = { ctl, destroy: null }; life = mine;
+  wireListen(view, ctl.signal); /* every Listen button the view draws (openspec explanation-audio) */
   const out = fn({ signal: ctl.signal });
   if (life === mine && out && typeof out.destroy === 'function') mine.destroy = out.destroy;
 }
@@ -298,6 +300,7 @@ function skillView(id, { signal } = {}) {
         <h1 class="mq-h1">${both(s.title, s.kid)}</h1>
         ${trick ? `<p class="mq-sutra"><b lang="sa-Latn">${trick.sutra}</b><span>${trick.meaning}</span></p>` : ''}
         <p class="mq-idea">${s.idea}</p>
+        <p class="listen-row">${listenBtn('skill:' + s.id, 'the idea and how it works')}</p>
         <h2 class="mq-h3">How it works</h2>
         <ol class="mq-method">${(trick ? [trick.when] : s.method).map(m => `<li>${m}</li>`).join('')}</ol>
         ${trick ? starsHTML(trick) + animatorHTML(trick) : `<div class="mq-example" id="example"></div>`}
@@ -328,7 +331,7 @@ const mins = d => (d < 60 ? `${d} s` : `${Math.floor(d / 60)}:${String(d % 60).p
 
 function showExample(s) {
   const box = $('#example'); const p = s.gen(1);
-  box.innerHTML = `<h2 class="mq-h3">Watch me do one</h2><div class="mq-q${plain(p.q).length > 60 ? ' long' : ''}">${p.q}</div>${p.viz ? `<div class="mq-viz">${p.viz}</div>` : ''}<ol class="mq-steps">${p.steps.map(x => `<li>${x}</li>`).join('')}</ol>${answerText(p, s) ? `<p class="mq-ans">Answer: <b>${answerText(p, s)}</b></p>` : ''}<button class="md-btn md-btn--sm" id="another">Another example</button>`;
+  box.innerHTML = `<h2 class="mq-h3">Watch me do one</h2><div class="mq-q${plain(p.q).length > 60 ? ' long' : ''}">${p.q}</div>${p.viz ? `<div class="mq-viz">${p.viz}</div>` : ''}<ol class="mq-steps">${p.steps.map(x => `<li>${x}</li>`).join('')}</ol>${answerText(p, s) ? `<p class="mq-ans">Answer: <b>${answerText(p, s)}</b></p>` : ''}<p class="listen-row">${listenBtn('from:.mq-q, .mq-steps li', 'the worked example')} <button class="md-btn md-btn--sm" id="another">Another example</button></p>`;
   $('#another', box).onclick = () => showExample(s);
 }
 /* ---------- Practice engine ---------- */
@@ -366,7 +369,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
     const first = root.querySelector('input, .pr-choice'); if (first && render.n > 1 && matchMedia('(pointer: fine)').matches) first.focus({ preventScroll: true });
   };
   const say = (html, tone = '') => { const b = $('#prSay', root); b.className = 'pr-say ' + tone; b.innerHTML = html ? `${boltFor(tone)}<div class="md-bubble">${html}</div>` : ''; };
-  const reveal = () => { const sol = $('#prSol', root); sol.hidden = false; sol.innerHTML = `<h3>Here is how</h3><ol class="mq-steps">${p.steps.map(x => `<li>${x}</li>`).join('')}</ol><p class="mq-ans">Answer: <b>${answerText(p, s)}</b></p>`; };
+  const reveal = () => { const sol = $('#prSol', root); sol.hidden = false; sol.innerHTML = `<h3>Here is how</h3><ol class="mq-steps">${p.steps.map(x => `<li>${x}</li>`).join('')}</ol><p class="mq-ans">Answer: <b>${answerText(p, s)}</b></p><p class="listen-row">${listenBtn('from:.mq-steps li', 'how to solve it')}</p>`; };
   const finish = ok => {
     done = true; total++; if (ok) right++; run = ok && tries === 1 && !hints ? run + 1 : 0;
     const r = store.record(s.id, ok, hints > 0 || tries > 1);
@@ -658,14 +661,14 @@ function sutrasView() {
   const card = c => { const have = gm.collectedCard(c); return `<article class="sutra-card${have ? ' got' : ''}" data-id="${c.id}" data-name="${esc(c.name)}">
     <button class="sutra-face" aria-expanded="false" aria-label="${esc(c.name)}: ${esc(c.meaning)}. Flip card"><span class="sutra-n">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n}</span><b lang="sa-Latn">${c.name}</b><i>${c.meaning}</i>${have ? '<span class="sutra-got">Collected</span>' : '<span class="sutra-tap">Tap to flip</span>'}</button>
     <div class="sutra-back"><span>${c.plain}</span>${c.example ? `<code>${c.example}</code>` : ''}
-      <span class="sutra-acts"><a class="sutra-more" href="#/sutras/${c.id}">Learn more ${icon('play')}</a><button type="button" class="sutra-flipback" aria-label="Flip back">${icon('loop')}</button></span></div></article>`; };
+      <span class="sutra-acts">${listenBtn('sutra-card:' + c.id, c.meaning)}<a class="sutra-more" href="#/sutras/${c.id}">Learn more ${icon('play')}</a><button type="button" class="sutra-flipback" aria-label="Flip back">${icon('loop')}</button></span></div></article>`; };
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs([null, 'Sutras'])}
     <span class="md-tag md-tag--plum">Deep dive</span>
     <h1 class="md-heading">The 16 sutras and 13 sub-sutras</h1>
     <p class="md-lede">Each sutra is a short word formula that packs a whole method into a phrase. Flip a card for the short version, then open <b>Learn more</b> for the full story: animated diagrams, why it works, worked examples and further reading. You have collected <b>${got} of ${ALL_SUTRAS.length}</b>.</p>
     <div class="mq-bar mq-bar--big sutra-bar"><i style="width:${pct(got / ALL_SUTRAS.length)}%"></i></div>
-    <div class="md-card history"><h2 class="mq-h3">Where Vedic math comes from</h2>${HISTORY.map(h => `<p>${h}</p>`).join('')}
+    <div class="md-card history"><h2 class="mq-h3">Where Vedic math comes from</h2><p class="listen-row">${listenBtn('history', 'where Vedic math comes from')}</p>${HISTORY.map(h => `<p>${h}</p>`).join('')}
       <p class="mq-small" data-history-links hidden></p></div>
     <div class="md-card history roots"><h2 class="mq-h3">Older roots: what you see in the background</h2><p>The 1965 sutras stand on a much older tradition of Indian mathematics. The moving background draws real pieces of it.</p><ul>${BG_NOTES.map(([h, b]) => `<li><b>${h}.</b> ${b}</li>`).join('')}</ul></div>
     <h2 class="mq-strand">The 16 sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => !c.sub).map(card).join('')}</div>
@@ -688,12 +691,12 @@ function sutraHTML(c) {
   const reads = d.read.map(([label, to]) => (typeof to === 'object' ? playBtn(to.yt, `${icon('play')}<span>${esc(label)}</span>`) : outLink(to, `${icon('link')}<span>${esc(label)}</span>`))).filter(Boolean);
   return `<header class="sd-head"><div><span class="md-tag md-tag--plum">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n} of ${c.sub ? 13 : 16}</span><h2 id="sdTitle" lang="sa-Latn">${c.name}</h2><p class="sd-mean">${c.meaning}</p></div><button class="vp-x sd-x" aria-label="Close">${icon('close')}</button></header>
   <div class="sd-body">
-    <div class="sd-fig"><div class="sd-scene"></div><p class="mq-small">Diagram plays by itself. Use Back and Next to go at your own pace.</p></div>
+    <div class="sd-fig" data-listen-scope><div class="sd-scene"></div><p class="listen-row">${listenBtn('from:.sc-say', 'this diagram step')}</p><p class="mq-small">Diagram plays by itself. Use Back and Next to go at your own pace.</p></div>
     <div class="sd-text">
-      <h3>In plain words</h3><p>${c.plain}</p><p>${d.more}</p>
-      <h3>Why it works</h3><p>${d.why}</p>
-      <h3>Worked examples</h3><ul class="sd-ex">${d.examples.map(([q, a]) => `<li><b>${q}</b><span>${a}</span></li>`).join('')}</ul>
-      <h3>Where it is used</h3><p class="sd-uses">${d.uses.map(u => `<span>${u}</span>`).join('')}</p>
+      <div class="sd-h"><h3>In plain words</h3>${listenBtn(`sutra:${c.id}:plain`, 'in plain words')}</div><p>${c.plain}</p><p>${d.more}</p>
+      <div class="sd-h"><h3>Why it works</h3>${listenBtn(`sutra:${c.id}:why`, 'why it works')}</div><p>${d.why}</p>
+      <div class="sd-h"><h3>Worked examples</h3>${listenBtn(`sutra:${c.id}:examples`, 'the worked examples')}</div><ul class="sd-ex">${d.examples.map(([q, a]) => `<li><b>${q}</b><span>${a}</span></li>`).join('')}</ul>
+      <div class="sd-h"><h3>Where it is used</h3>${listenBtn(`sutra:${c.id}:uses`, 'where it is used')}</div><p class="sd-uses">${d.uses.map(u => `<span>${u}</span>`).join('')}</p>
       ${tricks.length ? `<h3>Try it yourself</h3><p class="sd-try">${tricks.map(t => `<a class="md-btn md-btn--sm md-btn--primary" href="#/skill/v-${t.id}">${icon('bolt')} ${t.title}</a>`).join(' ')}</p>` : ''}
       ${reads.length ? `<h3>Learn more</h3><div class="rel-links">${reads.join('')}</div>` : ''}
     </div>
@@ -711,6 +714,7 @@ function openSutra(id, fromPage) {
   if (sutraScene) sutraScene.abort();
   sutraDlg.innerHTML = `<div class="sd-inner">${sutraHTML(c)}</div>`;
   sutraScene = new AbortController();
+  wireListen(sutraDlg, sutraScene.signal);
   mountScene(sutraDlg.querySelector('.sd-scene'), DETAILS[c.name].scene, sutraScene.signal);
   collect(c.name); track('sutra/' + id, 'Sutra: ' + c.name);
   document.title = `${c.name}: ${BRAND} · Madhav`;
@@ -971,7 +975,7 @@ function gameView(id, lvl = 0, { signal } = {}) {
   let mode = lvl ? 'level' : 'ranked', round = null; /* round: the running round's controller */
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs(['#/games', 'Games'], lvl ? [`#/game/${g.id}`, both(g.title, g.kid)] : [null, both(g.title, g.kid)], ...(lvl ? [[null, `Level ${lvl}`]] : []))}
-    <h1 class="md-heading">${both(g.title, g.kid)}${lvl ? ` <small class="kata-of">level ${lvl} of ${LEVELS_PER_GAME}</small>` : ''}</h1><p class="md-lede">${g.desc}</p>
+    <h1 class="md-heading">${both(g.title, g.kid)}${lvl ? ` <small class="kata-of">level ${lvl} of ${LEVELS_PER_GAME}</small>` : ''}</h1><p class="md-lede">${g.desc}</p><p class="listen-row">${listenBtn('game:' + g.id, 'how to play')}</p>
     <div class="md-card g-shell" id="gShell"></div>
     ${lvl ? '' : `<div class="lb-cols"><div><h2 class="mq-h3">Today's best</h2><div id="gbDay" class="lb-wrap"></div></div><div><h2 class="mq-h3">This week</h2><div id="gbWeek" class="lb-wrap"></div></div></div>${parentNote()}
     <h2 class="mq-strand">Levels <small class="mq-small">${store.medalsWhere(`g:${g.id}:`).any} of ${LEVELS_PER_GAME} cleared · ${store.medalsWhere(`g:${g.id}:`).gold} gold · levels up to ${ratedLevel} are open at your skill (level ${Math.round(rate)} of 20)</small></h2>${levelMap(LEVELS_PER_GAME, n => ({ medal: store.medal(gkey(n)) }), n => `#/game/${g.id}/${n}`, { isOpen, suggest: Math.max(ratedLevel, ...Array.from({ length: LEVELS_PER_GAME }, (_, i) => (store.medal(gkey(i + 1)) ? Math.min(LEVELS_PER_GAME, i + 2) : 0))) })}`}
@@ -1242,7 +1246,7 @@ function guideView(section, { signal } = {}) {
   };
   const card = s => `<article class="gd-sec md-card" id="gd-${s.id}" aria-labelledby="gdh-${s.id}">
       <div class="gd-art">${artFor(s.art)}</div>
-      <div class="gd-body"><h3 class="mq-h3 gd-h" id="gdh-${s.id}">${T(s.title)}</h3>
+      <div class="gd-body"><div class="gd-hrow"><h3 class="mq-h3 gd-h" id="gdh-${s.id}">${T(s.title)}</h3>${listenBtn('guide:' + s.id, say(s.title, mode))}</div>
         <p class="gd-what"><b class="gd-k">What it is</b> ${T(s.what)}</p>
         <p class="gd-k" id="gdk-${s.id}">${explorer ? 'How to do it' : 'How to use it'}</p>
         <ol class="gd-how" aria-labelledby="gdk-${s.id}">${s.how.map(h => `<li>${T(h)}</li>`).join('')}</ol>
@@ -1340,12 +1344,12 @@ function meView() {
 
 /* ---------- Trick animator ---------- */
 function animatorHTML(t) {
-  return `<div class="anim" id="anim"><h2 class="mq-h3">Watch it work</h2>
+  return `<div class="anim" id="anim" data-listen-scope><h2 class="mq-h3">Watch it work</h2>
     <form class="anim-in" id="animForm">${t.inputs.map((f, i) => `<label>${f.label}<input type="number" inputmode="numeric" min="${f.min}" max="${f.max}" data-i="${i}"></label>`).join('')}
       <div class="anim-btns"><button class="md-btn md-btn--sm md-btn--primary">Show steps</button><button type="button" class="md-btn md-btn--sm" id="animRand">New numbers</button></div></form>
     <p class="anim-err" id="animErr" role="alert"></p>
     <div class="anim-board" id="animBoard" aria-live="polite"></div>
-    <div class="anim-nav" id="animNav" hidden><button type="button" class="md-btn md-btn--sm" id="animPrev">Back</button><span id="animPos"></span><button type="button" class="md-btn md-btn--sm md-btn--primary" id="animNext">Next step</button><button type="button" class="md-btn md-btn--sm" id="animAll">Show all</button></div></div>`;
+    <div class="anim-nav" id="animNav" hidden><button type="button" class="md-btn md-btn--sm" id="animPrev">Back</button><span id="animPos"></span><button type="button" class="md-btn md-btn--sm md-btn--primary" id="animNext">Next step</button><button type="button" class="md-btn md-btn--sm" id="animAll">Show all</button>${listenBtn('from:.anim-step p', 'the steps shown')}</div></div>`;
 }
 function mountAnimator(t, signal) {
   const form = $('#animForm'), ins = [...form.querySelectorAll('input')], board = $('#animBoard'), nav = $('#animNav'), err = $('#animErr'); let steps = [], i = 0, counted = false;

@@ -57,3 +57,40 @@ export function allExplanationLines({ videos = [], links = [] } = {}) {
   add('watch', videoLines(videos, links));
   return out;
 }
+
+/* ---------- Listen buttons (openspec explanation-audio): what each button reads ----------
+   A button names its lines with a key; linesForKey() gives the same text the page shows, so every line has a whole
+   recording once the inventory is recorded. Keys that read numbers made up per problem (worked steps) are handled in
+   js/listen.js from the page itself. */
+const sutraById = id => [...SUTRAS.map(c => ({ ...c, id: 's' + c.n })), ...SUBSUTRAS.map(c => ({ ...c, id: 'u' + c.n }))].find(c => c.id === id);
+/* A Skill page: its idea, then How it works (a Trick's page shows when to use it instead of the method) */
+export const skillPageLines = s => {
+  const t = s.trick && TRICKS.find(x => x.id === s.trick);
+  return [s.idea, ...(t ? [t.when] : s.method || [])].filter(Boolean);
+};
+export const SUTRA_PARTS = ['plain', 'why', 'examples', 'uses'];
+/* One section of a Sutra deep dive, as the dialog shows it */
+export function sutraSectionLines(c, part) {
+  const d = DETAILS[c.name]; if (!d) return [];
+  if (part === 'plain') return [c.plain, d.more].filter(Boolean);
+  if (part === 'why') return [d.why].filter(Boolean);
+  if (part === 'examples') return (d.examples || []).map(exampleLine);
+  if (part === 'uses') return (d.uses || []).slice();
+  return [];
+}
+export function linesForKey(key, mode = 'challenger') {
+  const [kind, id, part] = String(key).split(':');
+  if (kind === 'skill') { const s = SKILLS.find(x => x.id === id); return s ? skillPageLines(s) : []; }
+  if (kind === 'sutra-card') { const c = sutraById(id); return c ? sutraCardLines(c) : []; }
+  if (kind === 'sutra') { const c = sutraById(id); return c ? sutraSectionLines(c, part) : []; }
+  if (kind === 'history') return HISTORY.slice();
+  if (kind === 'guide') { const sec = sectionsFor(mode, guideCounts()).find(x => x.id === id); return sec ? guideLines(sec, mode) : []; }
+  if (kind === 'game') { const g = GAMES.find(x => x.id === id); return g ? gameLines(g) : []; }
+  return [];
+}
+/* Every key a page can ask for in a Mode, for the coverage test */
+export function listenKeys(mode = 'challenger') {
+  const sut = [...SUTRAS.map(c => 's' + c.n), ...SUBSUTRAS.map(c => 'u' + c.n)];
+  return [...SKILLS.map(s => 'skill:' + s.id), ...sut.map(id => 'sutra-card:' + id), ...sut.flatMap(id => SUTRA_PARTS.map(p => `sutra:${id}:${p}`)),
+    'history', ...sectionsFor(mode, guideCounts()).map(s => 'guide:' + s.id), ...GAMES.map(g => 'game:' + g.id)];
+}

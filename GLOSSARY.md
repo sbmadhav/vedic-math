@@ -122,6 +122,10 @@ _Avoid_: TTS, cloud voice (it is not called at play time), recorded voice (no pe
 The opt-in voice that runs the Kokoro model on the device after a one-time download of about 100 MB. It can say any line whole.
 _Avoid_: AI voice, neural voice, premium voice
 
+**Listen**:
+The button beside an explanation (a Skill's idea, a Sutra deep dive section, a Guide section) that reads it aloud with the Studio voice, else the Built-in voice. It only plays after a tap, also with Read aloud off, and one plays at a time.
+_Avoid_: play button, speaker, read-aloud button (Read aloud is the setting)
+
 ## Rounds and results
 
 **Ranked round**:
