@@ -42,3 +42,5 @@ Decided in the 2026-10-15 grilling; every recommended answer was accepted. Nothi
 One OpenSpec change for the shelf (data file, filters, hand matching, in-page only, Mode and made-for-kids rules, the daily check, the parent note, migrating the 67 entries), then the channel list for the owner to approve, then batch 1 (Tricks).
 
 Batch 1 (Tricks), 2026-10-15: 23 videos from the approved channels, each checked as in `openspec/changes/archive/2026-10-15-watch-shelf/HANDOFF.md`. Tricks still without a video that meets the bar: `by9s` (beyond the nines table), `duplex`, `osculator`, `zero-sum`, `add-sub` and `ratio-zero`.
+
+Batch 3 (grades 6 to 8 Skills), 2026-10-17: 112 videos from the approved channels, 3 to 5 for each of the 29 grade 6 to 8 Skills, checked the same way (oEmbed 200; length, captions and made-for-kids from the watch page; embedded playback at the site's origin; captions read). No approved channel had a video that meets the bar for the six Tricks above: tecmath's squaring videos use the nearest ten, not the duplex, and the divisibility by 7 videos double and subtract instead of using the osculator.
