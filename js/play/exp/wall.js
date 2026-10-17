@@ -7,10 +7,11 @@ import { on, child } from '../life.js';
 import * as W from './wall-core.js';
 
 const KEY = 'wall';
-const now = new Date();
-const CAL = { y: now.getFullYear(), m: now.getMonth() + 1 };
-const gridFor = (id, gp) => W.makeGrid(id, id === 'calendar' ? gp || CAL : {});
+/* This month, worked out when needed so a page left open across a month change stays right */
+const thisMonth = () => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() + 1 }; };
+const gridFor = (id, gp) => W.makeGrid(id, id === 'calendar' ? gp || thisMonth() : {});
 const WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export function mount({ root, signal, params }) {
   const lv = level();
@@ -35,12 +36,12 @@ export function mount({ root, signal, params }) {
       <h1 class="md-heading px-title">Pattern Wall</h1>
       <p class="md-lede px-intro">${lv === 'explorer' ? 'Color the numbers. When a pattern appears, give it your name and put it on your wall.' : 'Paint a number grid. When your colors make a real pattern, name it, write its rule, and pin it to your own wall. Mathematicians do exactly this: notice, name, test.'}</p>
     </div>
-    <div class="wl-tabs" role="tablist" aria-label="Pattern Wall">
-      <a role="tab" href="#/games/wall" aria-selected="${tab === 'work'}" class="wl-tab">Workspace</a>
-      <a role="tab" href="#/games/wall/wall" aria-selected="${tab === 'wall'}" class="wl-tab">My wall <span class="wl-count">${D.cards.length}</span></a>
-      <a role="tab" href="#/games/wall/famous" aria-selected="${tab === 'famous'}" class="wl-tab">Famous patterns</a>
-    </div>
-    <div class="wl-body" role="tabpanel"></div>`;
+    <nav class="wl-tabs" aria-label="Pattern Wall">
+      <a href="#/games/wall" ${tab === 'work' ? 'aria-current="page"' : ''} class="wl-tab">Workspace</a>
+      <a href="#/games/wall/wall" ${tab === 'wall' ? 'aria-current="page"' : ''} class="wl-tab">My wall <span class="wl-count">${D.cards.length}</span></a>
+      <a href="#/games/wall/famous" ${tab === 'famous' ? 'aria-current="page"' : ''} class="wl-tab">Famous patterns</a>
+    </nav>
+    <div class="wl-body"></div>`;
   const body = wrap.querySelector('.wl-body');
   if (tab === 'wall') return wallView();
   if (tab === 'famous') return famousView();
@@ -51,7 +52,7 @@ export function mount({ root, signal, params }) {
     const S = { g: GRID_IDS.includes(params[0]) ? params[0] : 'hundred', tool: null, mode: 'new', k: 3, s: 9, rm: [1, 4], painted: new Set(), focus: 0, flow: null };
     let grid = gridFor(S.g);
     body.innerHTML = `
-      <div class="wl-gridpick" role="group" aria-label="Choose a grid">${GRID_IDS.map(id => `<button type="button" class="md-chip wl-gp" data-grid="${id}" aria-pressed="${id === S.g}">${esc(W.GRIDS[id].title)}<small>${esc(id === 'calendar' ? monthName(CAL) : W.GRIDS[id].short)}</small></button>`).join('')}</div>
+      <div class="wl-gridpick" role="group" aria-label="Choose a grid">${GRID_IDS.map(id => `<button type="button" class="md-chip wl-gp" data-grid="${id}" aria-pressed="${id === S.g}">${esc(W.GRIDS[id].title)}<small>${esc(id === 'calendar' ? monthName(thisMonth()) : W.GRIDS[id].short)}</small></button>`).join('')}</div>
       <div class="wl-work">
         <section class="wl-canvas px-stage" aria-label="Number grid"><div class="wl-grid-wrap"></div><p class="wl-help px-note">Tap numbers to paint them, or use a paint tool. Arrow keys move, Space paints.</p></section>
         <section class="wl-tools px-stage" aria-label="Paint tools">
@@ -299,7 +300,7 @@ export function mount({ root, signal, params }) {
 
   /* ---------- Rendering helpers ---------- */
   function gridHtml(g, painted, live) {
-    const cell = c => `<button type="button" class="wl-c${painted.has(c.i) ? ' is-on' : ''}${g.id === 'roots' ? ` wl-dr${W.digitalRoot(c.n)}` : ''}" data-i="${c.i}" aria-pressed="${painted.has(c.i)}" aria-label="${c.n}${g.id === 'roots' ? `, digital root ${W.digitalRoot(c.n)}` : g.id === 'times' ? `, ${c.r + 1} times ${c.c + 1}` : g.id === 'meru' ? `, row ${c.r}` : ''}"><span>${c.n}</span>${g.id === 'roots' ? `<small>${W.digitalRoot(c.n)}</small>` : ''}</button>`;
+    const cell = c => `<button type="button" class="wl-c${painted.has(c.i) ? ' is-on' : ''}${g.id === 'roots' ? ` wl-dr${W.digitalRoot(c.n)}` : ''}" data-i="${c.i}" aria-pressed="${painted.has(c.i)}" aria-label="${c.n}${g.id === 'roots' ? `, digital root ${W.digitalRoot(c.n)}` : g.id === 'times' ? `, ${c.r + 1} times ${c.c + 1}` : g.id === 'meru' ? `, row ${c.r}` : g.id === 'calendar' ? `, ${WEEKDAY[c.c]}` : ''}"><span>${c.n}</span>${g.id === 'roots' ? `<small>${W.digitalRoot(c.n)}</small>` : ''}</button>`;
     if (g.layout === 'tri') return `<div class="wl-tri" role="group" aria-label="Meru-prastāra, 12 rows">${Array.from({ length: g.rows }, (_, r) => `<div class="wl-tri-row">${g.cells.filter(c => c.r === r).map(cell).join('')}</div>`).join('')}</div>`;
     const head = g.id === 'calendar' ? `<div class="wl-cal-head" aria-hidden="true">${WEEK.map(d => `<span>${d}</span>`).join('')}</div><p class="wl-cal-m">${esc(monthName(g.params))}</p>` : g.id === 'times' ? '' : '';
     return `${head}<div class="wl-grid wl-grid--${g.id}" role="group" aria-label="${esc(W.GRIDS[g.id].title)}" style="--cols:${g.cols}">${g.cells.map(c => `<div class="wl-slot" style="grid-row:${c.r + 1};grid-column:${c.c + 1}">${cell(c)}</div>`).join('')}</div>`;
@@ -317,9 +318,9 @@ function miniSvg(g, painted) {
   const u = 10;
   if (g.layout === 'tri') {
     const w = g.rows * u;
-    return `<svg viewBox="0 0 ${w} ${g.rows * u}" class="wl-mini">${g.cells.map(c => `<rect class="${painted.has(c.i) ? 'is-on' : ''}" x="${w / 2 + (c.k - c.r / 2) * u - u / 2 + 0.6}" y="${c.r * u + 0.6}" width="${u - 1.2}" height="${u - 1.2}" rx="2"/>`).join('')}</svg>`;
+    return `<svg viewBox="0 0 ${w} ${g.rows * u}" class="wl-mini" aria-hidden="true" focusable="false">${g.cells.map(c => `<rect class="${painted.has(c.i) ? 'is-on' : ''}" x="${w / 2 + (c.k - c.r / 2) * u - u / 2 + 0.6}" y="${c.r * u + 0.6}" width="${u - 1.2}" height="${u - 1.2}" rx="2"/>`).join('')}</svg>`;
   }
-  return `<svg viewBox="0 0 ${g.cols * u} ${g.rows * u}" class="wl-mini">${g.cells.map(c => `<rect class="${painted.has(c.i) ? 'is-on' : ''}" x="${c.c * u + 0.6}" y="${c.r * u + 0.6}" width="${u - 1.2}" height="${u - 1.2}" rx="2"/>`).join('')}</svg>`;
+  return `<svg viewBox="0 0 ${g.cols * u} ${g.rows * u}" class="wl-mini" aria-hidden="true" focusable="false">${g.cells.map(c => `<rect class="${painted.has(c.i) ? 'is-on' : ''}" x="${c.c * u + 0.6}" y="${c.r * u + 0.6}" width="${u - 1.2}" height="${u - 1.2}" rx="2"/>`).join('')}</svg>`;
 }
 /* A share image of a card, drawn with the current theme's tokens */
 function cardCanvas(c) {

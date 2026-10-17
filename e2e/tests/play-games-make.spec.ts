@@ -92,4 +92,16 @@ test.describe('Pattern Wall', () => {
     expect(await plays(page, 'wall/discover')).toBe(0);
     expect(issues.console).toEqual([]);
   });
+
+  test('section links mark the current page, and calendar days name their weekday', async ({ page }) => {
+    await open(page, '#/games/wall/wall');
+    await expect(page.locator('.wl-tabs [aria-current="page"]')).toHaveText(/My wall/);
+    await expect(page.locator('[role="tab"]')).toHaveCount(0);
+    await open(page, '#/games/wall/calendar');
+    const first = page.locator('.wl-c').first();
+    const label = await first.getAttribute('aria-label');
+    const now = new Date();
+    const weekday = new Date(now.getFullYear(), now.getMonth(), 1).toLocaleDateString('en-US', { weekday: 'long' });
+    expect(label).toBe(`1, ${weekday}`);
+  });
 });
