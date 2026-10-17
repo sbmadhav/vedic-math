@@ -116,3 +116,18 @@ test('share grid shows operations and stars but never the numbers', () => {
   assert.match(text, /#19/); assert.match(text, /4 day streak/);
   assert.ok(!text.includes('—'));
 });
+
+test('a finished tier pays once per tier and day, only with a star, and never in practice', () => {
+  let paid = [];
+  const fin = (o) => { const r = D.finishAction({ key: '2026-10-17', tier: 0, official: true, paid, ...o }); paid = r.paid; return r.action; };
+  assert.equal(fin({ stars: 0 }), 'daily/finish', 'no stars, no Sparks');
+  assert.equal(fin({ stars: 2 }), 'daily/solve');
+  assert.equal(fin({ stars: 3 }), 'daily/finish', 'the same tier again (another Mode, a replay) does not pay');
+  assert.equal(fin({ stars: 1, tier: 1 }), 'daily/solve', 'another tier pays');
+  assert.deepEqual(paid, ['2026-10-17:0', '2026-10-17:1']);
+  assert.equal(D.finishAction({ key: '2026-10-17', tier: 0, official: false, stars: 3, paid: [] }).action, 'daily/practice');
+  /* yesterday's ids are dropped; a corrupt list is ignored */
+  assert.deepEqual(D.finishAction({ key: '2026-10-18', tier: 0, official: true, stars: 3, paid }).paid, ['2026-10-18:0']);
+  assert.equal(D.finishAction({ key: '2026-10-18', tier: 0, official: true, stars: 3, paid: 'x' }).action, 'daily/solve');
+});
+

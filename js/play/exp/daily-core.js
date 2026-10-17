@@ -226,3 +226,13 @@ export function shareText({ num, level, results, streakDays = 0, practice = fals
   if (streakDays > 1 && !practice) lines.push(`🔥 ${streakDays} day streak`);
   return lines.join('\n');
 }
+
+/* ---------- Saved progress and rewards ---------- */
+/* Which fixed action a finished tier reports (js/app.js turns 'daily/solve' into Sparks). Today's puzzle pays
+   once per tier and day, and only for at least one star, whatever the Mode; paid holds today's "<day>:<tier>" ids. */
+export function finishAction({ official, stars, key, tier, paid = [] }) {
+  if (!official) return { action: 'daily/practice', paid };
+  const id = `${key}:${tier}`, today = (Array.isArray(paid) ? paid : []).filter(x => typeof x === 'string' && x.startsWith(key + ':'));
+  if (stars >= 1 && !today.includes(id)) return { action: 'daily/solve', paid: [...today, id] };
+  return { action: 'daily/finish', paid: today };
+}

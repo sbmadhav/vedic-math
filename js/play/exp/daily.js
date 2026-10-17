@@ -6,7 +6,7 @@ import { on, later, every } from '../life.js';
 import * as D from './daily-core.js';
 
 const KEY = 'daily';
-const blank = () => ({ days: {}, played: [] });
+const blank = () => ({ days: {}, played: [], paid: [] });
 const fmtDate = key => new Date(key + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
 const stepText = s => `${s.a} ${D.OP_SIGN[s.op]} ${s.b} = ${s.r}`;
 const starHtml = n => `<span class="dn-stars" aria-label="${n} of 3 stars">${[0, 1, 2].map(i => `<i class="${i < n ? 'on' : ''}" aria-hidden="true">★</i>`).join('')}</span>`;
@@ -15,6 +15,9 @@ const TIER_COLOR = ['teal', 'sun', 'coral'];
 export function mount({ root, signal, params }) {
   const lv = level();
   const S = { ...blank(), ...store.get(KEY, {}) };
+  if (!S.days || typeof S.days !== 'object' || Array.isArray(S.days)) S.days = {};
+  if (!Array.isArray(S.played)) S.played = [];
+  if (!Array.isArray(S.paid)) S.paid = [];
   const save = () => store.set(KEY, S);
   const today = dayKey();
   root.innerHTML = '';
@@ -128,8 +131,10 @@ export function mount({ root, signal, params }) {
       Object.assign(st, { done: true, stars, v: value, ops });
       if (!fun[cur]) {
         if (official && !S.played.includes(key)) S.played.push(key);
+        /* Sparks ('daily/solve') once per tier and day, and only with a star; any other finish is 'daily/finish' */
+        const fa = D.finishAction({ official, stars, key, tier: cur, paid: S.paid }); S.paid = fa.paid;
         save();
-        track('daily/' + (official ? 'solve' : 'practice'), `${D.LEVEL_NAME[lv]} ${tr.name} ${stars} stars`);
+        track(fa.action, `${D.LEVEL_NAME[lv]} ${tr.name}`);
       }
       sel = null; op = null;
       if (stars === 3) { sfx('win'); confetti(official && !fun[cur] ? 70 : 30); } else sfx('ok');
