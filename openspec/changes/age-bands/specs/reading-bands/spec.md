@@ -31,6 +31,13 @@ The Grade answer SHALL be stored only on the device, in the Player's record, and
 - **WHEN** a Player who answered grade 2 plays Practice, an Arena daily round and a Star
 - **THEN** no request URL or body contains the Grade answer or the Reading band
 
+### Requirement: The Grade answer moves only with the Player's progress
+The Grade answer SHALL leave the device only inside the Player's own progress, when someone explicitly copies the backup code or uses the progress hand-off, whose data rides in the URL fragment and never reaches a server. No other export or transfer of it SHALL exist.
+
+#### Scenario: Hand-off
+- **WHEN** a Player's progress moves to a new device with the hand-off
+- **THEN** their Grade answer comes with it, and no request URL or body contained it
+
 ### Requirement: A grown-up can change it in Me
 Me SHALL show the Grade answer under "For grown-ups" as how much reading help the Player gets, with Change, which opens the grade question, and Clear, which removes the answer.
 

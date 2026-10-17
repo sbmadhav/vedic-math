@@ -169,6 +169,13 @@ Only the result of a Placement (the Placement level, the steps climbed and when 
 - **WHEN** a new Player answers 6 Placement questions right
 - **THEN** their answered-question count and Sparks are still 0
 
+### Requirement: The Placement result moves only with the Player's progress
+The saved Placement result SHALL leave the device only inside the Player's own progress, when someone explicitly copies the backup code or uses the progress hand-off, whose data rides in the URL fragment and never reaches a server. No other export or transfer of it SHALL exist.
+
+#### Scenario: Backup code
+- **WHEN** a grown-up copies a placed Player's backup code and restores it on another device
+- **THEN** the Player keeps their Placement level there, and no request was made that contains it
+
 ### Requirement: Placement with Calm and screen readers
 Placement SHALL work by keyboard and screen reader: each question's heading SHALL take focus, the step and the result SHALL be announced through the polite live region, and the answer buttons SHALL be named by their values. When motion is off (reduced motion, Pause motion or Calm), the staircase picture SHALL change without moving.
 

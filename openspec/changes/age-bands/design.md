@@ -14,7 +14,7 @@
 **Goals:**
 - A 4-year-old, a 7-year-old and a 12-year-old in the same Mode each get words, answers and pace they can manage.
 - One place where copy and its variants live, with checks a reviewer can trust.
-- The Grade answer never leaves the device.
+- The Grade answer is never sent anywhere. It moves only inside the Player's own progress, by the backup code or the progress hand-off a person starts on purpose (decision 9).
 
 **Non-Goals:**
 - Any effect on math difficulty, Leagues, Boards or Ranked rounds.

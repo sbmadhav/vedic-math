@@ -15,7 +15,7 @@
 **Goals:**
 - A short, untimed, friendly climb that finds where Practice should start, for any child in any Mode, including children well ahead of their age group.
 - No change at all for a Player who skips it.
-- Nothing about it leaves the device.
+- Nothing about it is sent anywhere. The saved result moves only inside the Player's own progress, by the backup code or the progress hand-off a person starts on purpose (decision 11).
 
 **Non-Goals:**
 - Diagnosing gaps per area (Q9).
