@@ -10,6 +10,10 @@ const COLOR_NAME = { coral: 'Coral', teal: 'Teal', sun: 'Sun', slate: 'Night' };
 const LV_SHORT = { explorer: 'Explorer', challenger: 'Challenger', pro: 'Pro' };
 const pick = (r, a) => a[Math.floor(r() * a.length)];
 const freshSeed = () => (Math.random() * 2 ** 31) >>> 0;
+/* Full screen, with the older WebKit names (iPad Safari); iPhone has neither, so the button is not shown there */
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+const fsCan = () => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+const fsExit = () => { try { const p = (document.exitFullscreen || document.webkitExitFullscreen)?.call(document); if (p && p.catch) p.catch(() => {}); } catch (e) {} };
 const defaults = () => ({ seats: [{ adj: 0, noun: 0, color: 'coral', level: 'explorer' }, { adj: 1, noun: 1, color: 'teal', level: 'pro' }], length: 'full', handicap: true, games: 0 });
 
 /* Avatar: shape and color both identify a player (never color alone) */
@@ -114,7 +118,7 @@ export async function mount({ root, signal }) {
       <div class="pt-colors" role="radiogroup" aria-label="Color for player ${i + 1}">${C.COLORS.map(c => `<button type="button" role="radio" class="pt-sw pt-c--${c}" data-i="${i}" data-color="${c}" aria-checked="${c === p.color}" aria-label="${COLOR_NAME[c]}"></button>`).join('')}</div>
       <div class="pt-lvls" role="radiogroup" aria-label="Level for player ${i + 1}">${C.LEVELS.map(l => `<button type="button" role="radio" class="md-chip" data-i="${i}" data-lvl="${l}" aria-checked="${l === p.level}">${LV_SHORT[l]}</button>`).join('')}</div>
     </div>
-    <div class="pt-seat-end"><span class="pt-keycap" aria-label="Buzz key ${C.KEYS[i].toUpperCase()}"><kbd>${C.KEYS[i].toUpperCase()}</kbd><small>buzz key</small></span>
+    <div class="pt-seat-end"><span class="pt-keycap" role="img" aria-label="Buzz key ${C.KEYS[i].toUpperCase()}"><kbd>${C.KEYS[i].toUpperCase()}</kbd><small>buzz key</small></span>
     ${S.seats.length > 2 ? `<button type="button" class="md-btn md-btn--sm" data-rm="${i}" aria-label="Remove player ${i + 1}">Remove</button>` : ''}</div>
   </li>`;
 
@@ -129,13 +133,13 @@ export async function mount({ root, signal }) {
       <div class="pt-top">
         <p class="pt-progress" aria-live="off"></p>
         <span class="px-sp"></span>
-        <button type="button" class="md-btn md-btn--sm pt-fs" aria-pressed="${document.fullscreenElement === body}">${document.fullscreenElement === body ? 'Exit full screen' : 'Full screen'}</button>
+        ${fsCan() ? `<button type="button" class="md-btn md-btn--sm pt-fs" aria-pressed="${fsEl() === body}">${fsEl() === body ? 'Exit full screen' : 'Full screen'}</button>` : ''}
         <button type="button" class="md-btn md-btn--sm pt-snd" aria-pressed="${!muted()}">${muted() ? 'Sound off' : 'Sound on'}</button>
         <button type="button" class="md-btn md-btn--sm pt-quit">End game</button>
       </div>
       <ol class="pt-board" aria-label="Scores">${s.players.map(p => `<li class="pt-score pt-c--${p.color}" data-p="${p.id}"><span class="pt-av">${avatar(p.color, 40)}</span><span class="pt-sname">${esc(C.playerName(p))}<small>${LV_SHORT[p.level]}</small></span><b class="pt-pts">0</b><span class="pt-sbar" aria-hidden="true"><i></i></span></li>`).join('')}</ol>
       <div class="pt-arena">
-        ${s.players.map(p => `<button type="button" class="pt-zone pt-zone--${p.id} pt-c--${p.color}" data-buzz="${p.id}" aria-label="${esc(C.playerName(p))} buzzer, key ${p.key.toUpperCase()}"><span class="pt-zhead"><span class="pt-av">${avatar(p.color, 48)}</span><span class="pt-zname">${esc(C.playerName(p))}</span><kbd>${p.key.toUpperCase()}</kbd></span><span class="pt-zq"></span><span class="pt-zst"></span></button>`).join('')}
+        ${s.players.map(p => `<button type="button" class="pt-zone pt-zone--${p.id} pt-c--${p.color}" data-buzz="${p.id}" aria-label="${esc(C.playerName(p))} buzzer, key ${p.key.toUpperCase()}" aria-describedby="ptZq${p.id} ptZst${p.id}"><span class="pt-zhead"><span class="pt-av">${avatar(p.color, 48)}</span><span class="pt-zname">${esc(C.playerName(p))}</span><kbd>${p.key.toUpperCase()}</kbd></span><span class="pt-zq" id="ptZq${p.id}"></span><span class="pt-zst" id="ptZst${p.id}"></span></button>`).join('')}
         <section class="pt-center" aria-label="Game">
           <p class="pt-host"></p>
           <div class="pt-timer" aria-hidden="true"><i></i></div>
@@ -290,7 +294,11 @@ export async function mount({ root, signal }) {
       const o = main.querySelector('.pt-padout'); if (o) o.innerHTML = pad ? Number(pad).toLocaleString('en-US') : '<span class="pt-ph">type a guess</span>';
     };
     const ready = () => { if (!dispatch({ type: 'ready' })) return; main.querySelector('[data-autofocus]')?.focus({ preventScroll: true }); say(C.round(s).type === 'estimate' ? `${s.shared.text} Type a guess.` : `${s.qs[s.players[s.turn].id].text}. Pick an answer.`); };
-    const fsToggle = () => { if (document.fullscreenElement) document.exitFullscreen?.(); else body.requestFullscreen?.().catch(() => {}); };
+    const fsToggle = () => {
+      if (!fsCan()) return;
+      if (fsEl()) { fsExit(); return; }
+      try { const p = (body.requestFullscreen || body.webkitRequestFullscreen)?.call(body); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+    };
     on(stage, 'click', e => {
       const z = e.target.closest('[data-buzz]'); if (z) { dispatch({ type: 'buzz', pid: +z.dataset.buzz }); return; }
       const c = e.target.closest('[data-ans]'); if (c) { choose(+c.dataset.ans); return; }
@@ -300,9 +308,9 @@ export async function mount({ root, signal }) {
       if (e.target.closest('.pt-next')) { dispatch({ type: 'next' }); return; }
       if (e.target.closest('.pt-fs')) { fsToggle(); return; }
       if (e.target.closest('.pt-snd')) { setMuted(!muted()); const b = e.target.closest('.pt-snd'); b.setAttribute('aria-pressed', String(!muted())); b.textContent = muted() ? 'Sound off' : 'Sound on'; return; }
-      if (e.target.closest('.pt-quit')) { if (globalThis.confirm && !globalThis.confirm('End this game?')) return; if (document.fullscreenElement) document.exitFullscreen?.(); setup(); return; }
+      if (e.target.closest('.pt-quit')) { if (globalThis.confirm && !globalThis.confirm('End this game?')) return; if (fsEl()) fsExit(); setup(); return; }
       if (e.target.closest('.pt-rematch')) { track('party/rematch', 'Rematch'); startGame(freshSeed()); return; }
-      if (e.target.closest('.pt-newp')) { if (document.fullscreenElement) document.exitFullscreen?.(); setup(); return; }
+      if (e.target.closest('.pt-newp')) { if (fsEl()) fsExit(); setup(); return; }
       if (e.target.closest('.pt-share')) share({ title: 'Vedic Math Party', text: `Family math night! ${C.standings(s).map(p => `${p.place}. ${C.playerName(p)} ${p.score}`).join(', ')}` });
     }, sig);
     on(document, 'keydown', e => {
@@ -319,9 +327,10 @@ export async function mount({ root, signal }) {
       }
       if (/^[1-4]$/.test(k)) { const b = main.querySelectorAll('.pt-choice')[+k - 1]; if (b) { b.click(); e.preventDefault(); } return; }
       if ((k === 'enter' || k === ' ') && !onBtn) { const b = main.querySelector('.pt-ready, .pt-next, .pt-rematch'); if (b) { b.click(); e.preventDefault(); } return; }
-      if (k === 'f' && !onBtn) fsToggle();
+      if (k === 'f' && !onBtn && fsCan()) fsToggle();
     }, sig);
-    on(document, 'fullscreenchange', () => { const b = stage.querySelector('.pt-fs'); const fs = document.fullscreenElement === body; b.setAttribute('aria-pressed', String(fs)); b.textContent = fs ? 'Exit full screen' : 'Full screen'; stage.classList.toggle('is-fs', fs); }, sig);
+    const fsChange = () => { const b = stage.querySelector('.pt-fs'), fs = fsEl() === body; if (b) { b.setAttribute('aria-pressed', String(fs)); b.textContent = fs ? 'Exit full screen' : 'Full screen'; } stage.classList.toggle('is-fs', fs); };
+    on(document, 'fullscreenchange', fsChange, sig); on(document, 'webkitfullscreenchange', fsChange, sig);
 
     /* Clock: the reducer gets the time; the bar and countdown beeps are drawn every frame */
     every(() => dispatch({ type: 'tick', typed: pad }), 200, sig);
@@ -338,7 +347,7 @@ export async function mount({ root, signal }) {
     stage.focus({ preventScroll: true });
     stage.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' });
   }
-  onAbort(signal, () => { if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}); });
+  onAbort(signal, () => { if (fsEl()) fsExit(); });
 
   setup();
 }
