@@ -192,6 +192,8 @@ function ctx() {
   master.connect(ac.destination);
   return ac;
 }
+/* The one AudioContext the music and the Sutra ambience (js/sutra-ambience.js) share; the ambience has its own gain */
+export const audioContext = () => ctx();
 const out = node => { node.connect(master); node.connect(verb); };
 const later = (fn, ms) => { const id = setTimeout(fn, ms); timers.push(id); };
 

@@ -7,7 +7,7 @@ import { test, expect, APP, open, chromiumOnly } from './fixtures';
    (only that rule on that element) and recorded as its own test.fixme below, so it stays visible.
    When one is fixed, delete its KNOWN entry: the route checks then cover it again. */
 
-const ROUTES = ['#/', '#/learn', '#/dojo', '#/arena', '#/games', '#/sutras', '#/watch', '#/me', '#/skill/v-sq5', '#/game/times-sprint', '#/places', '#/guide'];
+const ROUTES = ['#/', '#/learn', '#/dojo', '#/arena', '#/games', '#/sutras', '#/sutras/s3', '#/watch', '#/me', '#/skill/v-sq5', '#/game/times-sprint', '#/places', '#/guide'];  // #/sutras/s3: the deep dive with Say it and Ambience (sutra-pronunciation 3.3)
 
 /* Known violations on the live site: { route, rule, target, note }. Empty: the Sparks bar is a progressbar and
    #prRun lost its label (both fixed in js/app.js). Add an entry when a new one is found and reported. */
@@ -208,5 +208,26 @@ for (const scheme of ['light', 'dark'] as const) {
       await page.waitForLoadState('networkidle');
       expect(await serious(page, '#/me')).toEqual([]);
     });
+  });
+}
+
+/* The sutra deep dive (openspec sutra-examples): worked examples all open, scrolled to the middle so the pinned
+   footer and close button sit over the content, at desktop and phone widths, both schemes */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, sutra deep dive`, () => {
+    test.use({ colorScheme: scheme });
+    for (const width of [1280, 375]) {
+      test(`#/sutras/u9 at ${width}px with every example open has no serious or critical axe violations`, async ({ page }, testInfo) => {
+        chromiumOnly(testInfo);
+        await page.setViewportSize({ width, height: 760 });
+        await open(page, '#/sutras/u9');
+        const dlg = page.locator('dialog.sutra-modal');
+        await expect(dlg).toBeVisible();
+        await dlg.locator('.sd-ex details').evaluateAll(ds => ds.forEach(d => { (d as HTMLDetailsElement).open = true; }));
+        await dlg.evaluate(el => { el.scrollTop = (el.scrollHeight - el.clientHeight) / 2; });
+        await page.waitForLoadState('networkidle');
+        expect(await serious(page, '#/sutras/u9')).toEqual([]);
+      });
+    }
   });
 }

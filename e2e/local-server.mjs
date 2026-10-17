@@ -16,8 +16,8 @@ const port = +(process.argv[2] || process.env.PORT || 8124);
 const LIVE = 'https://sbmadhav.com';
 const PREFIX = '/vedic-math/';
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.txt': 'text/plain', '.m4a': 'audio/mp4' };
-// Repo-only paths that GitHub Pages does not publish (see _config.yml exclude)
-const BLOCKED = /^\/(e2e|test|cloud|node_modules|\.git|\.github|\.githooks)(\/|$)|^\/(CLAUDE|README)\.md$|^\/build\.py$|^\/_config\.yml$/;
+// Repo-only paths that GitHub Pages does not publish (see _config.yml exclude), and any part starting with . or _
+const BLOCKED = /^\/(e2e|test|cloud|node_modules)(\/|$)|^\/(CLAUDE|README)\.md$|^\/build\.py$|\/[._]/;
 
 async function proxy(req, res) {
   const r = await fetch(LIVE + req.url, { redirect: 'manual' });
@@ -34,10 +34,12 @@ http.createServer(async (req, res) => {
     const pathname = decodeURIComponent(url.pathname);
     if (pathname === '/vedic-math') { res.writeHead(301, { location: PREFIX + url.search }); return res.end(); }
     if (!pathname.startsWith(PREFIX)) return await proxy(req, res);
-    const rel = '/' + pathname.slice(PREFIX.length);
+    // Checked after normalizing, so // and encoded ../ cannot spell their way around BLOCKED
+    const rel = path.posix.normalize('/' + pathname.slice(PREFIX.length));
     if (BLOCKED.test(rel)) { res.writeHead(404); return res.end('Not found'); }
     let p = path.join(root, rel);
-    if (!p.startsWith(root)) { res.writeHead(403); return res.end(); }
+    const inside = path.relative(root, p);
+    if (inside.startsWith('..') || path.isAbsolute(inside)) { res.writeHead(403); return res.end(); }
     const s = await stat(p).catch(() => null);
     if (s && s.isDirectory()) p = path.join(p, 'index.html');
     const body = await readFile(p).catch(() => null);

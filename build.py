@@ -93,6 +93,8 @@ def publishable(out):
 # into _site/voice/ after this build (tools/voice/ci-fetch.mjs). The site never talks to a speech provider, so no
 # provider host, key or token may appear in a published file. The Firebase web config's apiKey (js/cloud-config.js) is
 # a public project identifier, not a secret, and is the one key allowed.
+# sounds/ is the one exception to "no committed audio": the 29 Sutra name clips and the Om (openspec
+# sutra-pronunciation) are small, hand-made and committed on purpose (js/say-clips.js pins their hashes).
 AUDIO_EXT = (".m4a", ".mp3", ".wav", ".ogg", ".opus", ".aac", ".flac", ".tar")
 PROVIDER_HOSTS = re.compile(r"texttospeech\.googleapis\.com|api\.elevenlabs\.io|api\.openai\.com|tts\.speech\.microsoft\.com"
                             r"|\.cognitiveservices\.azure\.com|polly\.[a-z0-9-]+\.amazonaws\.com")
@@ -102,7 +104,7 @@ FIREBASE_KEY = re.compile(r"apiKey:\s*[\"']AIza[0-9A-Za-z_-]{30,}[\"']")
 
 def check_voice(files):
     for f in files:
-        if f.startswith("voice/") or f.lower().endswith(AUDIO_EXT):
+        if f.startswith("voice/") or (f.lower().endswith(AUDIO_EXT) and not f.startswith("sounds/")):
             fail(f"{f}: audio is never committed; record it with tools/voice/ and publish it as a release archive (tools/voice/publish.mjs)")
 
 

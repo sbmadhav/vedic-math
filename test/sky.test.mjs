@@ -28,9 +28,11 @@ test('17 Constellations hold all 63 Stars, one per Sutra name the Tricks use', (
   for (const c of CONSTELLATIONS) for (const t of c.tricks) assert.equal(TRICKS.find(x => x.id === t).sutra, c.sutra);
 });
 
-test('Ekādhikena Pūrvena holds sq5 and recip; the three Ūrdhva Tiryagbhyām variants are apart', () => {
-  const e = CONSTELLATIONS.find(c => c.sutra === 'Ekādhikena Pūrvena');
+test('Ekādhikena Pūrveṇa holds sq5 and recip; the three Ūrdhva Tiryagbhyām variants are apart', () => {
+  const e = CONSTELLATIONS.find(c => c.sutra === 'Ekādhikena Pūrveṇa');
   assert.deepEqual(e.tricks, ['sq5', 'recip']);
+  assert.equal(e.id, 'ekadhikena-purvena', 'the spelling fix (ṇ) keeps the Constellation id');
+  assert.deepEqual(CONSTELLATIONS.map(c => c.id).filter(id => /^(nikhila|sunyam)/.test(id)).sort(), ['nikhilam-division-by-9', 'nikhilam-navatascaramam-dasatah', 'sunyam-samyasamuccaye']);
   assert.equal(Object.keys(SKY_LAYOUT[e.id].stars).length, 6);
   assert.equal(CONSTELLATIONS.filter(c => c.sutra.startsWith('Ūrdhva Tiryagbhyām')).length, 3);
   assert.equal(CONSTELLATIONS[0].tricks[0], 'from9', 'white belt Sutras come first');
