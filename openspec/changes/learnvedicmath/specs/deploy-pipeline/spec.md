@@ -7,7 +7,7 @@ Ship every change the same checked way: tests, a stamped build, a preview per br
 ## ADDED Requirements
 
 ### Requirement: Deploy from main
-A push to `main` SHALL run the unit tests, the build and its checks, and then deploy the checked build to Cloudflare with `wrangler deploy`, authenticated by a Cloudflare API token held as a GitHub secret and scoped to editing Workers scripts on this one account. The token SHALL never be printed, passed on a command line or available to pull requests from forks. Every action SHALL be pinned to a full commit SHA, and wrangler to an exact version.
+A push to `main` SHALL run the unit tests, the build and its checks, and then deploy the checked build to Cloudflare with `wrangler deploy`, authenticated by the production Cloudflare API token, scoped to editing Workers scripts on this one account and zone. The token SHALL never be printed, passed on a command line or available to pull requests from forks. Every action SHALL be pinned to a full commit SHA, and wrangler to an exact version.
 
 #### Scenario: A push to main
 - **WHEN** a commit lands on `main` and the checks pass
@@ -16,6 +16,20 @@ A push to `main` SHALL run the unit tests, the build and its checks, and then de
 #### Scenario: A fork's pull request
 - **WHEN** a pull request comes from a fork
 - **THEN** no secret is available to its runs and nothing is deployed
+
+### Requirement: The production token is readable only on main
+The production token `CLOUDFLARE_API_TOKEN` SHALL be readable only by the deploy job of a push to `main`: held in a `production` environment whose deployment branches are `main` only, or, on a plan without environments, a repository secret named only by that job.
+
+#### Scenario: A job on another branch
+- **WHEN** a workflow job runs on a branch other than `main` and asks for the `production` environment
+- **THEN** GitHub refuses it and the production token is not exposed
+
+### Requirement: Production and preview credentials are separate
+Preview uploads SHALL use a separate token, `CLOUDFLARE_PREVIEW_TOKEN`, held in a `preview` environment (or a repository secret named only by the preview job), and used only for pull requests from branches of this repo, through the `pull_request` event and never `pull_request_target`. Either token SHALL be revocable without touching the other.
+
+#### Scenario: A same-repo pull request
+- **WHEN** the preview job runs for a pull request from a branch of this repo
+- **THEN** it can read `CLOUDFLARE_PREVIEW_TOKEN` and cannot read `CLOUDFLARE_API_TOKEN`
 
 ### Requirement: A preview for every branch
 A pull request from a branch of this repo SHALL get a preview version on `workers.dev` with an alias for that pull request, built with the preview flag (no indexing), whose URL is posted on the pull request.

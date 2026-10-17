@@ -212,7 +212,7 @@ ENV_FILE="${ENV_FILE:-$HOME/.config/learnvedicmath/setup.env}"
 mkdir -p "$(dirname "$ENV_FILE")"
 GUIDE="docs/owner-setup-learnvedicmath.md"
 
-TOTAL_STAGES=15
+TOTAL_STAGES=16
 
 banner "learnvedicmath.com: owner setup"
 
@@ -282,8 +282,36 @@ step "Add TXT with name _github-pages-challenge-sbmadhav (ONLY that part) and Gi
 step "Back in GitHub: Verify."
 pause "Shows Verified? Press Enter"
 
-stage "Cloudflare API token for GitHub Actions"
-say "This makes the one secret CI needs. It goes straight into GitHub, nowhere else."
+stage "GitHub environments for the two tokens"
+say "The tokens go into environments, never into plain repository secrets."
+note "production: only the main branch may use it. preview: only the preview workflow."
+REPO="sbmadhav/vedic-math"
+if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1 && confirm "Create or update the production and preview environments of $REPO with gh now?"; then
+  if gh api -X PUT "repos/$REPO/environments/production" --input - >/dev/null 2>&1 <<'JSON'
+{"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}
+JSON
+  then
+    gh api -X POST "repos/$REPO/environments/production/deployment-branch-policies" -f name=main -f type=branch >/dev/null 2>&1 || true
+    printf '  %s✓ production%s environment, deployments from main only\n' "$GREEN" "$RESET"
+  else
+    SKIPPED+=("production environment (Settings > Environments, branch main only)")
+    warn "could not create the production environment; make it by hand (guide section 8)"
+  fi
+  if gh api -X PUT "repos/$REPO/environments/preview" >/dev/null 2>&1; then
+    printf '  %s✓ preview%s environment\n' "$GREEN" "$RESET"
+  else
+    SKIPPED+=("preview environment (Settings > Environments)")
+    warn "could not create the preview environment; make it by hand"
+  fi
+else
+  open_url "https://github.com/$REPO/settings/environments"
+  step "New environment production > Deployment branches: Selected branches > add main."
+  step "New environment preview (no branch rule)."
+  pause "Both made? Press Enter"
+fi
+
+stage "Cloudflare API tokens for GitHub Actions"
+say "Two tokens with the same permissions, kept apart so either can be revoked alone."
 open_url "https://dash.cloudflare.com/profile/api-tokens"
 step "Create Token > Create Custom Token > name github-actions-learnvedicmath"
 step "Permissions: Account Workers Scripts Edit; Account Account Settings Read;"
@@ -291,20 +319,24 @@ step "Zone Workers Routes Edit; Zone Zone Read; User User Details Read; User Mem
 step "Account resources: your account. Zone resources: Specific zone > learnvedicmath.com."
 step "No IP filtering. TTL: today to one year from today (add a calendar reminder)."
 step "Create Token. Copy it (Cloudflare shows it once)."
-warn "Paste it only here (hidden input), never into a chat."
-ask_secret CLOUDFLARE_API_TOKEN "Paste the token:"
-if confirm "Has the production environment been created yet (guide section 15)?"; then
-  if command -v gh >/dev/null 2>&1 && printf '%s' "$CLOUDFLARE_API_TOKEN" | gh secret set CLOUDFLARE_API_TOKEN --env production >/dev/null 2>&1; then
-    WRITTEN_SECRET+=("CLOUDFLARE_API_TOKEN (env production)")
-    printf '  %s✓ set%s GitHub environment secret CLOUDFLARE_API_TOKEN\n' "$GREEN" "$RESET"
+warn "Paste tokens only here (hidden input), never into a chat."
+_env_secret() {
+  local name="$1" env="$2" value="$3"
+  if command -v gh >/dev/null 2>&1 && printf '%s' "$value" | gh secret set "$name" --env "$env" >/dev/null 2>&1; then
+    WRITTEN_SECRET+=("$name (env $env)")
+    printf '  %s✓ set%s %s in environment %s\n' "$GREEN" "$RESET" "$name" "$env"
   else
-    SKIPPED+=("GitHub secret CLOUDFLARE_API_TOKEN (gh secret set CLOUDFLARE_API_TOKEN --env production)")
-    warn "could not set the environment secret; set it later by hand"
+    SKIPPED+=("$name: gh secret set $name --env $env (never as a repository secret)")
+    warn "could not set $name in $env; set it later with: gh secret set $name --env $env"
   fi
-else
-  set_secret CLOUDFLARE_API_TOKEN "$CLOUDFLARE_API_TOKEN"
-fi
+}
+ask_secret CLOUDFLARE_API_TOKEN "Paste the production token:"
+_env_secret CLOUDFLARE_API_TOKEN production "$CLOUDFLARE_API_TOKEN"
 CLOUDFLARE_API_TOKEN=""
+step "Now make a second token the same way, named github-actions-learnvedicmath-preview."
+ask_secret CLOUDFLARE_PREVIEW_TOKEN "Paste the preview token:"
+_env_secret CLOUDFLARE_PREVIEW_TOKEN preview "$CLOUDFLARE_PREVIEW_TOKEN"
+CLOUDFLARE_PREVIEW_TOKEN=""
 
 stage "Cloudflare account id"
 open_url "https://dash.cloudflare.com/?to=/:account/workers-and-pages"
@@ -373,7 +405,6 @@ open_url "https://uptimerobot.com/"
 step "Monitors (5 min, email): /, /play/ and /sw.js on https://learnvedicmath.com"
 open_url "https://github.com/sbmadhav/vedic-math/settings/security_analysis"
 step "Dependabot alerts and updates on; CodeQL > Default; secret scanning and push protection on."
-step "Settings > Environments > production (branch main only), if not done yet."
 pause "Press Enter to finish"
 
 note "Give the builder these public values (also in $ENV_FILE):"

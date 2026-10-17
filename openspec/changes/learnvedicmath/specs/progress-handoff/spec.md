@@ -31,6 +31,10 @@ The moved page SHALL keep a visible link to the new site, carry `<link rel="cano
 ### Requirement: Only listed data moves
 The payload SHALL hold only what the shared hand-off schema lists: each Player's id, Nickname, avatar color, Mode, created time and Age answer; each listed Player's progress record; and the listed device settings. It SHALL NOT hold World board identities, Firebase data, the Parent step, Device board entries or analytics milestones. A test SHALL fail when a `vm.*` key used in the app is in neither the moved nor the excluded list.
 
+#### Scenario: A device still on the oldest saved format
+- **WHEN** the moved page runs on a device that has a bare `mathquest.v1` record with progress and no `vm.players`
+- **THEN** it packs that record as one Player (id `p1`, a Nickname made from the word lists, avatar teal) and hands it off like any other, instead of treating the device as empty
+
 #### Scenario: Identities stay behind
 - **WHEN** a device whose Player has posted to World boards is handed off
 - **THEN** the payload holds no Firebase id and no `parentOk`
@@ -105,7 +109,11 @@ The Phase B deploy of the old origin SHALL publish `sw.js` with `KILL = true` an
 - **THEN** the KILL worker installs, deletes the `vedic-math-*` caches and unregisters itself
 
 ### Requirement: Permanent redirect (Phase C)
-From Phase C, every `https://sbmadhav.com/vedic-math/*` request SHALL answer with a 301 to the same path and query on learnvedicmath.com, without the `/vedic-math/` prefix, and a daily check SHALL fail when it does not.
+From Phase C, every `https://sbmadhav.com/vedic-math/*` request SHALL answer with a 301 to the same path and query on learnvedicmath.com, without the `/vedic-math/` prefix, and a daily check SHALL fail when it does not. Phase C SHALL count as done only once that check passes; until then the moved page SHALL stay in place, and if GitHub's custom-domain redirect does not give the 301, the redirect SHALL be made another way (design D13) without changing where learnvedicmath.com is hosted.
+
+#### Scenario: GitHub does not redirect
+- **WHEN** the custom domain is set on the Pages site but `https://sbmadhav.com/vedic-math/x` does not answer with that 301 within 24 hours
+- **THEN** the custom domain is removed again, the moved page keeps serving, and the fallback redirect of design D13 is used instead
 
 #### Scenario: Daily check
 - **WHEN** the daily run requests `https://sbmadhav.com/vedic-math/x?y=1`

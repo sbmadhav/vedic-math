@@ -14,8 +14,12 @@ The system SHALL NOT create an anonymous identity, or contact the sign-in servic
 - **THEN** no sign-in request is made and no identity is created
 
 #### Scenario: First post
-- **WHEN** a Player whose Age answer is 13 or over finishes their first Ranked round
+- **WHEN** a Player whose Age answer is 13 or over finishes their first Ranked round with a Score the Board accepts (10 or more, within the Board's cap)
 - **THEN** an anonymous identity is created and the Score is posted under it
+
+#### Scenario: First Ranked round with a Score too low to post
+- **WHEN** a Player whose Age answer is 13 or over finishes their first Ranked round with a Score below 10
+- **THEN** nothing is posted and no identity is created
 
 ### Requirement: World boards are readable without sign-in
 The system SHALL allow anyone to read at most 20 entries of a valid Board that began less than 35 days ago, ordered by Score, without signing in. Each entry SHALL expose only the Nickname, avatar color, Score and time. Reading a single entry by its identity, and all writes, SHALL still require the matching identity. In the app, a World board SHALL be shown only to a Player whose Age answer is 13 or over, and only after they tap to show it; every other Player SHALL see the Device board.
@@ -43,11 +47,15 @@ The system SHALL allow anyone to read at most 20 entries of a valid Board that b
 ## ADDED Requirements
 
 ### Requirement: Board entries expire
-Every World board entry SHALL carry an `exp` time 30 days after its last write, the rules SHALL refuse an `exp` less than 1 day or more than 31 days ahead, and a Firestore TTL policy on `exp` SHALL delete expired entries.
+Every World board entry SHALL carry an `exp` time 30 days after its last write, and the rules SHALL refuse an `exp` less than 1 day or more than 31 days ahead. The app SHALL NOT show an entry whose `exp` has passed. A Firestore TTL policy on `exp` SHALL delete expired entries; that deletion runs in the background and is not immediate, so until it completes an expired entry is hidden by the app and, 35 days after its Board began, refused by the rules.
 
 #### Scenario: An entry with a long expiry
 - **WHEN** a client writes an entry whose `exp` is 45 days ahead
 - **THEN** the write is refused
+
+#### Scenario: Expired but not yet deleted
+- **WHEN** a World board is shown and one of its entries has an `exp` in the past that TTL has not yet removed
+- **THEN** that entry is not shown
 
 #### Scenario: TTL policy
 - **WHEN** the project's Firestore TTL policies are listed

@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: The note states consent, identity and keeping
-The parent note SHALL state that nothing is posted before the Age answer, that nothing is ever posted for a Player whose Age answer is under 13, and that no identity exists until the first post. It SHALL list the fields an entry holds, say that each entry deletes itself 30 days after its last update, and say how to ask for earlier removal (`privacy@learnvedicmath.com`, with the Nickname, color and date).
+The parent note SHALL state that nothing is posted before the Age answer, that nothing is ever posted for a Player whose Age answer is under 13, and that no identity exists until the first post. It SHALL list the fields an entry holds, say that each entry stops being shown 30 days after its last update and is then deleted by an automatic clean-up that usually finishes within a few days, and say how to ask for earlier removal (`privacy@learnvedicmath.com`, with the Nickname, color and date).
 
 #### Scenario: Note for an under-13 Player without the Parent step
 - **WHEN** a grown-up opens the note for a Player whose Age answer is under 13
@@ -11,7 +11,7 @@ The parent note SHALL state that nothing is posted before the Age answer, that n
 
 #### Scenario: Keeping
 - **WHEN** a grown-up reads the note
-- **THEN** it says entries delete themselves after 30 days and names `privacy@learnvedicmath.com` for removal requests
+- **THEN** it says entries stop being shown after 30 days and are deleted automatically soon after, and names `privacy@learnvedicmath.com` for removal requests
 
 ### Requirement: The note mentions videos
 The parent note SHALL say, in one sentence, that video pictures come from this site, that a video loads from YouTube in privacy-enhanced mode only after a Player presses play, and that YouTube's own rules apply once it plays. Videos SHALL stay available to every Player.

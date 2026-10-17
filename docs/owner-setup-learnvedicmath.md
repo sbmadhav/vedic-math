@@ -66,24 +66,34 @@ Cloudflare adds the other CAs its certificates need on its own. A day later chec
 3. Cloudflare > DNS > Records > Add record: type TXT, **name `_github-pages-challenge-sbmadhav`** (only that part: Cloudflare adds `.learnvedicmath.com` itself; this exact slip happened with sbmadhav.com), value as GitHub shows.
 4. Back in GitHub: **Verify**. This stops anyone else claiming learnvedicmath.com on GitHub Pages, which matters once Phase C points the old repo at it.
 
-## 8. Cloudflare API token for GitHub Actions (task 1.7)
+## 8. Cloudflare API tokens for GitHub Actions (task 1.7)
 
-1. Cloudflare > avatar > My Profile > **API Tokens** > Create Token > **Create Custom Token**.
-2. Name: `github-actions-learnvedicmath`.
-3. Permissions (only these):
+First create the two GitHub environments, so the tokens are never stored at repository scope:
+
+1. github.com/sbmadhav/vedic-math > Settings > **Environments** > New environment `production` > Deployment branches and tags: **Selected branches and tags** > Add rule `main`. Save.
+2. New environment `preview` (no branch rule; only the preview workflow names it, for pull requests from this repo's own branches).
+   (The wizard can do both with `gh api`. If the repo is ever private on GitHub Free, environments go away; the builder then switches to repository secrets named by one job each, design D12.)
+
+Then the production token:
+
+3. Cloudflare > avatar > My Profile > **API Tokens** > Create Token > **Create Custom Token**.
+4. Name: `github-actions-learnvedicmath`.
+5. Permissions (only these):
    - Account > **Workers Scripts** > Edit
    - Account > **Account Settings** > Read
    - Zone > **Workers Routes** > Edit
    - Zone > **Zone** > Read
    - User > **User Details** > Read
    - User > **Memberships** > Read
-4. Account Resources: Include > your account. Zone Resources: Include > **Specific zone** > learnvedicmath.com.
-5. Client IP Address Filtering: leave empty (GitHub runners have changing addresses).
-6. TTL: start today, end one year from today. Put a reminder in your calendar a week before.
-7. Continue to summary > Create Token. Cloudflare shows the token **once**. Do not close the page yet.
-8. In a terminal in the repo: `gh secret set CLOUDFLARE_API_TOKEN` and paste at the hidden prompt (it never shows on screen and never goes in a file). While the repo is public and a `production` environment exists (step 15), use `gh secret set CLOUDFLARE_API_TOKEN --env production` instead.
-9. The account id is public: Cloudflare > Workers & Pages > Overview, right side, **Account ID** > copy, then `gh variable set CLOUDFLARE_ACCOUNT_ID --body <id>`.
-10. If a deploy later fails on a missing permission, add only the one the error names.
+6. Account Resources: Include > your account. Zone Resources: Include > **Specific zone** > learnvedicmath.com.
+7. Client IP Address Filtering: leave empty (GitHub runners have changing addresses).
+8. TTL: start today, end one year from today. Put a reminder in your calendar a week before.
+9. Continue to summary > Create Token. Cloudflare shows the token **once**. Do not close the page yet.
+10. In a terminal in the repo: `gh secret set CLOUDFLARE_API_TOKEN --env production` and paste at the hidden prompt (it never shows on screen and never goes in a file). Always `--env production`, never a plain repository secret.
+11. The account id is public: Cloudflare > Workers & Pages > Overview, right side, **Account ID** > copy, then `gh variable set CLOUDFLARE_ACCOUNT_ID --body <id>`.
+12. Preview token: repeat steps 3 to 9 with the name `github-actions-learnvedicmath-preview` (same permissions; Cloudflare cannot narrow it further, so it is kept apart so either can be revoked alone), then `gh secret set CLOUDFLARE_PREVIEW_TOKEN --env preview`.
+13. Check: `gh secret list --env production` and `gh secret list --env preview` show one name each; plain `gh secret list` shows neither.
+14. If a deploy later fails on a missing permission, add only the one the error names, to that token.
 
 ## 9. First deploy and custom domains (with the builder, after task 11.1)
 
@@ -131,7 +141,7 @@ Read the Cloudflare Self-Serve Subscription Agreement and Website and Online Ser
 ## 15. GitHub security settings (tasks 11.5 and 11.6, while the repo is public)
 
 1. github.com/sbmadhav/vedic-math > Settings > **Code security**: Dependabot alerts on, Dependabot security updates on; CodeQL analysis > **Set up** > Default; Secret Protection: secret scanning on, **Push protection** on; Private vulnerability reporting on.
-2. Settings > **Environments** > New environment `production` > Deployment branches and tags: **Selected branches** > add `main`. Then `gh secret set CLOUDFLARE_API_TOKEN --env production` (paste at the hidden prompt) and `gh secret delete CLOUDFLARE_API_TOKEN` to remove the repository-level copy.
+2. Environments: already made in step 8. Check Settings > Environments shows `production` limited to `main`, and `preview`.
 
 ## 16. Search Console and YouTube's child-directed designation (task 1.11)
 
@@ -148,7 +158,7 @@ Read the Cloudflare Self-Serve Subscription Agreement and Website and Online Ser
 ## 18. Phase B and C (later; tasks 16.3, 18.1 to 18.3, 19.2)
 
 - **Start of Phase B**: in the old project (`sbmadhav-vedic-math`), deploy the frozen rules the builder prepares: `cd cloud && npx firebase-tools deploy --only firestore:rules --project sbmadhav-vedic-math` from the builder's branch.
-- **Phase C, going private (stub route)**: (1) github.com/sbmadhav/vedic-math > Settings > General > Repository name: `learnvedicmath` > Rename. (2) github.com/new > name `vedic-math`, **Public** > the builder pushes the moved page to it > its Settings > Pages > Source: Deploy from a branch, `main`, `/`. (3) The renamed repo > Settings > General > Danger zone > **Change visibility** > Private. (4) In the stub repo's Settings > Pages > **Custom domain**: `learnvedicmath.com` > Save (it says the DNS check failed; that is expected). Leave Enforce HTTPS off.
+- **Phase C, going private (stub route)**: (1) github.com/sbmadhav/vedic-math > Settings > General > Repository name: `learnvedicmath` > Rename. (2) github.com/new > name `vedic-math`, **Public** > the builder pushes the moved page to it > its Settings > Pages > Source: Deploy from a branch, `main`, `/`. (3) The renamed repo > Settings > General > Danger zone > **Change visibility** > Private. (4) In the stub repo's Settings > Pages > **Custom domain**: `learnvedicmath.com` > Save (it says the DNS check failed; that is expected, and it does not move the site off Cloudflare). Leave Enforce HTTPS off. (5) **Gate**: within 24 hours, `curl -sI "https://sbmadhav.com/vedic-math/x?y=1"` must show `301` and `location: http://learnvedicmath.com/x?y=1` (or https). GitHub documents this redirect only for apex and www, so it must be seen working here. If it does not: remove the custom domain again (the moved page keeps working) and tell the builder; the fallback is moving sbmadhav.com's DNS to Cloudflare with one redirect rule (design D13), which is your call.
 - **GitHub Pro route instead**: github.com/settings/billing > upgrade to Pro, then make the repo private and keep its Pages; set the custom domain on it.
 - **End**: console.firebase.google.com > `sbmadhav-vedic-math` > Project settings > General > **Delete project**.
 

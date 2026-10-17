@@ -17,7 +17,7 @@ Learn Vedic Math (learnvedicmath.com) is a math game for ages 4 to adult. We bui
 
 ## Who we are
 
-Learn Vedic Math is run by [operator name: Madhav Srinivasan, or the business entity once it exists], [postal address], [phone], privacy@learnvedicmath.com. We are the only operator of the site. We do not let anyone else collect information from children through it.
+Learn Vedic Math is run by [operator name: Madhav Srinivasan, or the business entity once it exists], [postal address], [phone], privacy@learnvedicmath.com. We are the only operator of the site. Apart from the service providers listed below, which handle information only to provide their service to us, and YouTube, which collects information under its own rules only after a Player presses play on a video, we do not let anyone else collect information from children through the site.
 
 ## What stays on your device
 
@@ -42,7 +42,7 @@ To delete it: remove a Player on the Me page, or clear this site's data in your 
 | Anonymous usage counts (which page or game was opened, a right or a miss in Practice, a round finished, in fixed words only) | GoatCounter (operated by Martin Tournoij, Netherlands) | To learn which parts help people learn | After the page has loaded, unless your browser sends Do Not Track or Global Privacy Control |
 | A report when the page blocks something it did not expect (the rule that was broken, the site that was blocked, the page) | Cloudflare, for us | To find security problems | Only when something is blocked |
 | Video request (your IP address, browser data, and what YouTube collects while the video plays) | Google LLC (YouTube), in privacy-enhanced mode | To play the video you chose | Only after you press play on a video |
-| For Players 13 and older who post: the made-up Nickname, avatar color, score, the time, an expiry date, and a random ID | Google LLC (Firebase, Firestore) | To show the World board | When such a Player finishes a Ranked round, or the weekly Sparks total is posted |
+| For Players 13 and older who post: the made-up Nickname, avatar color, score, the time, an expiry date, and a random ID | Google LLC (Firebase, Firestore) | To show the World board | When such a Player finishes an Arena daily round (posted to today's and this week's Arena Board), finishes a ranked game round (posted to that game's Board for today and for this week), or when their weekly Sparks total is posted |
 | For Players 13 and older who open a World board or post: device and browser signals checked by reCAPTCHA | Google LLC (Firebase App Check, reCAPTCHA Enterprise) | To make sure posts come from our site and not from a cheating script | When such a Player opens a World board or posts |
 | The voice model download (your IP address and browser data) | jsDelivr and Hugging Face | To download the optional "natural voice" to your device | Only if you turn on the natural voice and confirm the download |
 | Your email to us | Cloudflare (Email Routing) and Google (Gmail), where our inbox is | To read and answer it | Only if you write to us |
@@ -70,13 +70,13 @@ We designed the site so that we do not collect personal information from childre
 
 ## Teens and adults (13 and older)
 
-A Player whose age answer is 13 or over can post to World boards. Each post holds only the made-up Nickname, an avatar color, the score, the time and an expiry date, filed under a random ID that belongs to that Player on that browser. Anyone can see the top 20 entries of a board: the Nickname, color, score and time. The random ID is created at that Player's first post, never before. Removing the Player on the Me page forgets the ID on the device; entries already posted delete themselves after 30 days, or sooner if you ask.
+A Player whose age answer is 13 or over can post to World boards. Each post holds only the made-up Nickname, an avatar color, the score, the time and an expiry date, filed under a random ID that belongs to that Player on that browser. Anyone can see the top 20 entries of a board: the Nickname, color, score and time. The random ID is created at that Player's first post, never before. Removing the Player on the Me page forgets the ID on the device; entries already posted stop being shown after 30 days and are then deleted automatically (usually within a few days), or sooner if you ask.
 
 ## How long we keep things
 
 | What | How long |
 |---|---|
-| World board entries (Players 13 and older) | Deleted automatically 30 days after their last update; boards older than 35 days cannot be read |
+| World board entries (Players 13 and older) | No longer shown 30 days after their last update, and no board older than 35 days can be read; then deleted by an automatic clean-up, usually within a few days |
 | Analytics counts | Kept in total, as counts; no record of a person exists to delete. GoatCounter's per-visit records are kept for [13 months] |
 | Security reports and server logs | A few days (Cloudflare's log limits), then deleted |
 | Emails to us | Up to 12 months after the conversation ends, or 30 days after we finish a deletion request, whichever is sooner |
