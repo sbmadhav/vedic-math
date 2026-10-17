@@ -15,6 +15,66 @@
    "wholeBytes": 180249,
    "wholeSecs": 28.8,
    "f0": 202
+  },
+  {
+   "key": "chirp3-aoede",
+   "name": "Google Chirp 3 HD Aoede",
+   "engine": "google",
+   "spec": "en-US-Chirp3-HD-Aoede",
+   "speed": 0.95,
+   "sprite": "audio/chirp3-aoede/stitch.m4a",
+   "map": "audio/chirp3-aoede/stitch.json",
+   "spriteBytes": 193258,
+   "spriteSecs": 46.4,
+   "clips": 45,
+   "wholeBytes": 202564,
+   "wholeSecs": 34.2,
+   "f0": 185
+  },
+  {
+   "key": "chirp3-leda",
+   "name": "Google Chirp 3 HD Leda",
+   "engine": "google",
+   "spec": "en-US-Chirp3-HD-Leda",
+   "speed": 0.95,
+   "sprite": "audio/chirp3-leda/stitch.m4a",
+   "map": "audio/chirp3-leda/stitch.json",
+   "spriteBytes": 198888,
+   "spriteSecs": 48.1,
+   "clips": 45,
+   "wholeBytes": 219801,
+   "wholeSecs": 38.9,
+   "f0": 216
+  },
+  {
+   "key": "chirp3-kore",
+   "name": "Google Chirp 3 HD Kore",
+   "engine": "google",
+   "spec": "en-US-Chirp3-HD-Kore",
+   "speed": 0.95,
+   "sprite": "audio/chirp3-kore/stitch.m4a",
+   "map": "audio/chirp3-kore/stitch.json",
+   "spriteBytes": 190147,
+   "spriteSecs": 46.3,
+   "clips": 45,
+   "wholeBytes": 201899,
+   "wholeSecs": 35.3,
+   "f0": 218
+  },
+  {
+   "key": "chirp3-achernar",
+   "name": "Google Chirp 3 HD Achernar",
+   "engine": "google",
+   "spec": "en-US-Chirp3-HD-Achernar",
+   "speed": 0.95,
+   "sprite": "audio/chirp3-achernar/stitch.m4a",
+   "map": "audio/chirp3-achernar/stitch.json",
+   "spriteBytes": 186188,
+   "spriteSecs": 45,
+   "clips": 45,
+   "wholeBytes": 191007,
+   "wholeSecs": 31.7,
+   "f0": 261
   }
  ],
  "items": [
@@ -43,6 +103,26 @@
      "file": "audio/heart/whole/add.m4a",
      "bytes": 12853,
      "secs": 1.83
+    },
+    "chirp3-aoede": {
+     "file": "audio/chirp3-aoede/whole/add.m4a",
+     "bytes": 13484,
+     "secs": 2.02
+    },
+    "chirp3-leda": {
+     "file": "audio/chirp3-leda/whole/add.m4a",
+     "bytes": 14464,
+     "secs": 2.29
+    },
+    "chirp3-kore": {
+     "file": "audio/chirp3-kore/whole/add.m4a",
+     "bytes": 14545,
+     "secs": 2.33
+    },
+    "chirp3-achernar": {
+     "file": "audio/chirp3-achernar/whole/add.m4a",
+     "bytes": 13145,
+     "secs": 1.9
     }
    }
   },
@@ -71,6 +151,26 @@
      "file": "audio/heart/whole/bond.m4a",
      "bytes": 13994,
      "secs": 2.06
+    },
+    "chirp3-aoede": {
+     "file": "audio/chirp3-aoede/whole/bond.m4a",
+     "bytes": 12699,
+     "secs": 1.83
+    },
+    "chirp3-leda": {
+     "file": "audio/chirp3-leda/whole/bond.m4a",
+     "bytes": 14725,
+     "secs": 2.33
+    },
+    "chirp3-kore": {
+     "file": "audio/chirp3-kore/whole/bond.m4a",
+     "bytes": 15512,
+     "secs": 2.64
+    },
+    "chirp3-achernar": {
+     "file": "audio/chirp3-achernar/whole/bond.m4a",
+     "bytes": 14510,
+     "secs": 2.24
     }
    }
   },
@@ -102,6 +202,26 @@
      "file": "audio/heart/whole/story.m4a",
      "bytes": 17662,
      "secs": 3.09
+    },
+    "chirp3-aoede": {
+     "file": "audio/chirp3-aoede/whole/story.m4a",
+     "bytes": 20992,
+     "secs": 3.88
+    },
+    "chirp3-leda": {
+     "file": "audio/chirp3-leda/whole/story.m4a",
+     "bytes": 22520,
+     "secs": 4.35
+    },
+    "chirp3-kore": {
+     "file": "audio/chirp3-kore/whole/story.m4a",
+     "bytes": 19173,
+     "secs": 3.64
+    },
+    "chirp3-achernar": {
+     "file": "audio/chirp3-achernar/whole/story.m4a",
+     "bytes": 21336,
+     "secs": 4.11
     }
    }
   },
@@ -127,6 +247,26 @@
      "file": "audio/heart/whole/balloon.m4a",
      "bytes": 9701,
      "secs": 1.18
+    },
+    "chirp3-aoede": {
+     "file": "audio/chirp3-aoede/whole/balloon.m4a",
+     "bytes": 11201,
+     "secs": 1.43
+    },
+    "chirp3-leda": {
+     "file": "audio/chirp3-leda/whole/balloon.m4a",
+     "bytes": 12137,
+     "secs": 1.7
+    },
+    "chirp3-kore": {
+     "file": "audio/chirp3-kore/whole/balloon.m4a",
+     "bytes": 12759,
+     "secs": 1.84
+    },
+    "chirp3-achernar": {
+     "file": "audio/chirp3-achernar/whole/balloon.m4a",
+     "bytes": 12335,
+     "secs": 1.76
     }
    }
   },
@@ -167,6 +307,26 @@
      "file": "audio/heart/whole/hint.m4a",
      "bytes": 18036,
      "secs": 3.03
+    },
+    "chirp3-aoede": {
+     "file": "audio/chirp3-aoede/whole/hint.m4a",
+     "bytes": 20920,
+     "secs": 3.86
+    },
+    "chirp3-leda": {
+     "file": "audio/chirp3-leda/whole/hint.m4a",
+     "bytes": 22553,
+     "secs": 4.31
+    },
+    "chirp3-kore": {
+     "file": "audio/chirp3-kore/whole/hint.m4a",
+     "bytes": 18740,
+     "secs": 3.24
+    },
+    "chirp3-achernar": {
+     "file": "audio/chirp3-achernar/whole/hint.m4a",
+     "bytes": 20177,
+     "secs": 3.61
     }
    }
   },
@@ -186,6 +346,26 @@
      "file": "audio/heart/whole/praise.m4a",
      "bytes": 9037,
      "secs": 0.97
+    },
+    "chirp3-aoede": {
+     "file": "audio/chirp3-aoede/whole/praise.m4a",
+     "bytes": 12116,
+     "secs": 1.65
+    },
+    "chirp3-leda": {
+     "file": "audio/chirp3-leda/whole/praise.m4a",
+     "bytes": 13293,
+     "secs": 1.95
+    },
+    "chirp3-kore": {
+     "file": "audio/chirp3-kore/whole/praise.m4a",
+     "bytes": 10975,
+     "secs": 1.49
+    },
+    "chirp3-achernar": {
+     "file": "audio/chirp3-achernar/whole/praise.m4a",
+     "bytes": 9959,
+     "secs": 1.17
     }
    }
   },
@@ -205,6 +385,26 @@
      "file": "audio/heart/whole/retry.m4a",
      "bytes": 10393,
      "secs": 1.33
+    },
+    "chirp3-aoede": {
+     "file": "audio/chirp3-aoede/whole/retry.m4a",
+     "bytes": 12255,
+     "secs": 1.91
+    },
+    "chirp3-leda": {
+     "file": "audio/chirp3-leda/whole/retry.m4a",
+     "bytes": 13940,
+     "secs": 2.18
+    },
+    "chirp3-kore": {
+     "file": "audio/chirp3-kore/whole/retry.m4a",
+     "bytes": 11395,
+     "secs": 1.58
+    },
+    "chirp3-achernar": {
+     "file": "audio/chirp3-achernar/whole/retry.m4a",
+     "bytes": 10357,
+     "secs": 1.31
     }
    }
   },
@@ -245,6 +445,26 @@
      "file": "audio/heart/whole/sub3.m4a",
      "bytes": 20912,
      "secs": 3.81
+    },
+    "chirp3-aoede": {
+     "file": "audio/chirp3-aoede/whole/sub3.m4a",
+     "bytes": 22340,
+     "secs": 4.12
+    },
+    "chirp3-leda": {
+     "file": "audio/chirp3-leda/whole/sub3.m4a",
+     "bytes": 19164,
+     "secs": 3.41
+    },
+    "chirp3-kore": {
+     "file": "audio/chirp3-kore/whole/sub3.m4a",
+     "bytes": 18906,
+     "secs": 3.45
+    },
+    "chirp3-achernar": {
+     "file": "audio/chirp3-achernar/whole/sub3.m4a",
+     "bytes": 19198,
+     "secs": 3.53
     }
    }
   },
@@ -285,6 +505,26 @@
      "file": "audio/heart/whole/divide.m4a",
      "bytes": 20041,
      "secs": 3.64
+    },
+    "chirp3-aoede": {
+     "file": "audio/chirp3-aoede/whole/divide.m4a",
+     "bytes": 21454,
+     "secs": 3.86
+    },
+    "chirp3-leda": {
+     "file": "audio/chirp3-leda/whole/divide.m4a",
+     "bytes": 23614,
+     "secs": 4.49
+    },
+    "chirp3-kore": {
+     "file": "audio/chirp3-kore/whole/divide.m4a",
+     "bytes": 23843,
+     "secs": 4.67
+    },
+    "chirp3-achernar": {
+     "file": "audio/chirp3-achernar/whole/divide.m4a",
+     "bytes": 22240,
+     "secs": 4.26
     }
    }
   },
@@ -319,6 +559,26 @@
      "file": "audio/heart/whole/percent.m4a",
      "bytes": 13021,
      "secs": 1.93
+    },
+    "chirp3-aoede": {
+     "file": "audio/chirp3-aoede/whole/percent.m4a",
+     "bytes": 13853,
+     "secs": 2.03
+    },
+    "chirp3-leda": {
+     "file": "audio/chirp3-leda/whole/percent.m4a",
+     "bytes": 13430,
+     "secs": 1.98
+    },
+    "chirp3-kore": {
+     "file": "audio/chirp3-kore/whole/percent.m4a",
+     "bytes": 12836,
+     "secs": 1.91
+    },
+    "chirp3-achernar": {
+     "file": "audio/chirp3-achernar/whole/percent.m4a",
+     "bytes": 13104,
+     "secs": 1.86
     }
    }
   },
@@ -350,6 +610,26 @@
      "file": "audio/heart/whole/frac.m4a",
      "bytes": 16554,
      "secs": 2.74
+    },
+    "chirp3-aoede": {
+     "file": "audio/chirp3-aoede/whole/frac.m4a",
+     "bytes": 21107,
+     "secs": 4.03
+    },
+    "chirp3-leda": {
+     "file": "audio/chirp3-leda/whole/frac.m4a",
+     "bytes": 23109,
+     "secs": 4.44
+    },
+    "chirp3-kore": {
+     "file": "audio/chirp3-kore/whole/frac.m4a",
+     "bytes": 21227,
+     "secs": 4.13
+    },
+    "chirp3-achernar": {
+     "file": "audio/chirp3-achernar/whole/frac.m4a",
+     "bytes": 15698,
+     "secs": 2.46
     }
    }
   },
@@ -384,6 +664,26 @@
      "file": "audio/heart/whole/algebra.m4a",
      "bytes": 18045,
      "secs": 3.19
+    },
+    "chirp3-aoede": {
+     "file": "audio/chirp3-aoede/whole/algebra.m4a",
+     "bytes": 20143,
+     "secs": 3.63
+    },
+    "chirp3-leda": {
+     "file": "audio/chirp3-leda/whole/algebra.m4a",
+     "bytes": 26852,
+     "secs": 5.5
+    },
+    "chirp3-kore": {
+     "file": "audio/chirp3-kore/whole/algebra.m4a",
+     "bytes": 21988,
+     "secs": 4.37
+    },
+    "chirp3-achernar": {
+     "file": "audio/chirp3-achernar/whole/algebra.m4a",
+     "bytes": 18948,
+     "secs": 3.46
     }
    }
   }
