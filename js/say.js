@@ -75,8 +75,19 @@ function fallback(mine, signal) {
 }
 
 /* Idle prefetch of the other clips after the first tap on this page load, one at a time */
-const fetched = new Set();
+const fetched = new Set(); // ids whose clip is saved (a prefetch got it, or it played)
+const inflight = new Map(); // id -> the prefetch request still running for it (settles, never rejects)
 let queue = null; // ids still to fetch, while a prefetch runs under some signal
+/* One prefetch request; only a successful response marks the clip saved, so an HTTP error or a network failure is
+   tried again by a later prefetch. A request outlives the view that started it, and a newer queue waits for it. */
+function fetchOne(id) {
+  const run = Promise.resolve().then(() => deps.fetch(clipUrl(id)))
+    .then(r => { if (!r || !r.ok) throw new Error('not saved'); return r.arrayBuffer(); })
+    .then(() => { fetched.add(id); }, () => {})
+    .finally(() => { inflight.delete(id); });
+  inflight.set(id, run);
+  return run;
+}
 function idle(fn, signal) {
   if (typeof requestIdleCallback === 'function') {
     const h = requestIdleCallback(() => { if (!signal.aborted) fn(); }, { timeout: 3000 });
@@ -91,8 +102,8 @@ function prefetch(signal) {
     if (queue !== mine) return;
     const id = mine.shift(); if (!id) { queue = null; return; }
     if (fetched.has(id)) return step();
-    fetched.add(id);
-    Promise.resolve().then(() => deps.fetch(clipUrl(id))).then(r => { if (!r || !r.ok) throw new Error('not saved'); return r.arrayBuffer(); }).catch(() => fetched.delete(id)) /* an HTTP error is not saved: a later prefetch tries again */
+    /* A request an older queue left running is awaited; if it did not save the clip, this queue fetches it again */
+    (inflight.get(id) || Promise.resolve()).then(() => (fetched.has(id) || signal.aborted ? null : fetchOne(id)))
       .finally(() => { if (!signal.aborted) idle(step, signal); });
   };
   idle(step, signal);
@@ -105,9 +116,9 @@ export function tap(btn, signal) {
   stopSay();
   const mine = current = { btn, id };
   setPressed(btn, true);
-  fetched.add(id);
-  /* Counted once the clip has really started: not on a failure, the fallback voice, or a tap that was superseded */
-  const onStart = () => { if (current === mine) deps.count(); };
+  /* Counted once the clip has really started: not on a failure, the fallback voice, or a tap that was superseded.
+     A clip that started is saved (its fetch went through the service worker), so the prefetch skips it. */
+  const onStart = () => { fetched.add(id); if (current === mine) deps.count(); };
   let p;
   try { p = Promise.resolve(deps.play(clipUrl(id), { onStart })); } catch (e) { p = Promise.reject(e); }
   p.then(() => finish(mine), () => fallback(mine, signal));
@@ -123,4 +134,4 @@ export function wireSay(root, signal) {
   }, signal);
   onAbort(signal, () => { if (current && root.contains(current.btn)) stopSay(); });
 }
-export function _reset() { current = null; queue = null; fetched.clear(); }
+export function _reset() { current = null; queue = null; fetched.clear(); inflight.clear(); }

@@ -37,7 +37,7 @@ function stubs({ fail = false, saveData = false, manualStart = false } = {}) {
     stop: () => { log.stops++; },
     count: () => { log.counts++; },
     status: t => { log.status.push(t); },
-    fetch: url => { log.fetched.push(url); return Promise.resolve({ ok: !(log.failIds || []).some(id => url.includes(`/${id}.m4a`)), arrayBuffer: async () => new ArrayBuffer(1) }); },
+    fetch: url => { log.fetched.push(url); const res = { ok: !(log.failIds || []).some(id => url.includes(`/${id}.m4a`)), arrayBuffer: async () => new ArrayBuffer(1) }; const hold = (log.hold || {})[url.match(/\/(\w+)\.m4a/)[1]]; return hold ? hold.then(ok => ({ ...res, ok })) : Promise.resolve(res); },
     saveData: () => saveData,
     synth: () => (synthOn ? synth : null),
   });
@@ -221,5 +221,22 @@ test('a prefetch that gets an HTTP error is tried again by a later prefetch', as
   ctl = new AbortController();
   S.tap(btn('s1'), ctl.signal); await wait(100);
   assert.deepEqual(log.fetched.map(u => u.match(/\/(\w+)\.m4a/)[1]), ['u5'], 'only the clip that failed, not the 27 saved ones');
+  ctl.abort();
+});
+
+test('a prefetch left running by a closed view that then fails is retried by the next queue', async () => {
+  const log = stubs(); let release;
+  log.hold = { s2: new Promise(r => { release = r; }) }; // s2's request hangs until the test answers it
+  let ctl = new AbortController();
+  S.tap(btn('s1'), ctl.signal); await wait(30);
+  assert.ok(log.fetched.some(u => /\/s2\.m4a/.test(u)), 's2 is in flight');
+  ctl.abort(); // the Player leaves the view
+  log.hold = {}; log.fetched.length = 0;
+  ctl = new AbortController();
+  S.tap(btn('s3'), ctl.signal); // back again: a new queue, while s2 is still in flight
+  await wait(30);
+  release(false); // the old s2 request fails with an HTTP error
+  await wait(200);
+  assert.ok(log.fetched.some(u => /\/s2\.m4a/.test(u)), 'the new queue fetched s2 again');
   ctl.abort();
 });
