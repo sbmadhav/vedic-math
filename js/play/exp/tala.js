@@ -22,21 +22,33 @@ const MODES = [
 ];
 const HAND = { clap: 'clap', wave: 'wave', pinky: '1', ring: '2', middle: '3', count: 'count' };
 
-/* A player: one scheduler at a time under a child signal, sharing one clock */
+/* A player: one scheduler at a time under a child signal, sharing one clock. The first play waits for the
+   clock (up to 300 ms), so each play takes a generation number: a second play or a stop while one is
+   waiting supersedes it, and only the newest ever starts. `on` is true while a play waits too, so a second
+   click on a Play button stops instead of starting another. opts.onStop runs when a play is stopped before
+   its end (a Stop, a hidden tab, or a new play); opts.onEnd when it plays to the end. */
 function player(signal) {
-  let ctl = null, sched = null, clock = null;
+  let ctl = null, sched = null, clock = null, gen = 0, waiting = false, live = null;
   const P = {
     async play(opts) {
       P.stop();
+      const my = ++gen; live = opts; waiting = true;
       clock = clock || (await makeClock(signal));
-      if (signal.aborted) return null;
+      if (my !== gen) return null;
+      waiting = false;
+      if (signal.aborted) { live = null; return null; }
       ctl = child(signal);
       const mine = ctl;
-      sched = schedule({ clock, signal: ctl.signal, ...opts, onEnd: () => { if (ctl === mine) P.stop(); opts.onEnd && opts.onEnd(); } });
+      sched = schedule({ clock, signal: ctl.signal, ...opts, onEnd: () => { if (ctl === mine) { live = null; P.stop(); } opts.onEnd && opts.onEnd(); } });
       return sched;
     },
-    stop() { if (ctl) ctl.abort(); ctl = null; sched = null; },
-    get on() { return !!sched; }, get sched() { return sched; }, get clock() { return clock; },
+    stop() {
+      gen++; waiting = false;
+      const was = live; live = null;
+      if (ctl) ctl.abort(); ctl = null; sched = null;
+      if (was && was.onStop) was.onStop();
+    },
+    get on() { return !!sched || waiting; }, get sched() { return sched; }, get clock() { return clock; },
     async ensureClock() { clock = clock || (await makeClock(signal)); return clock; }
   };
   return P;
@@ -44,7 +56,7 @@ function player(signal) {
 
 /* Tap input: screen tap, Space or T, and the microphone when switched on */
 function tapper({ wrap, pad, signal, P, onTap }) {
-  const handle = ts => { if (!P.on) return; onTap(P.clock.fromEvent(ts)); };
+  const handle = ts => { if (!P.sched) return; onTap(P.clock.fromEvent(ts)); };
   on(pad, 'pointerdown', e => { e.preventDefault(); pad.classList.remove('is-hit'); void pad.offsetWidth; pad.classList.add('is-hit'); handle(e.timeStamp); }, signal);
   on(pad, 'keydown', e => { if (e.key === 'Enter') { e.preventDefault(); handle(e.timeStamp); } }, signal);
   on(document, 'keydown', e => {
@@ -387,7 +399,7 @@ export function mount({ root, signal, params }) {
         onCue(e) {
           if (e.track === 'ph') { flash(beatsEl[e.beat + 1]); svg.querySelector('.tl-cword').textContent = e.word; svg.querySelector('.tl-csub').textContent = `phrase ${k}, count ${e.i + 1} of ${p}`; const a0 = from / n, a1 = (from + e.i + 1) / n; arc.setAttribute('d', arcPath(cx, cy, R, a0, Math.min(a1, a0 + 0.999))); }
           if (e.track === 'land') land(C.landing(p, n, k + 1));
-        }, onEnd: () => { busy = false; } });
+        }, onEnd: () => { busy = false; }, onStop: () => { busy = false; } });
     };
     const land = b => {
       k++; starts.push(b); drawStar(); flash(beatsEl[b]);
@@ -411,6 +423,8 @@ export function mount({ root, signal, params }) {
     const reset = () => { P.stop(); busy = false; k = 1; starts = [1]; guess = 0; result.innerHTML = ''; allBtn.setAttribute('aria-pressed', 'false'); allBtn.textContent = 'Play them all'; svg.querySelector('.tl-arc').setAttribute('d', ''); draw(); };
     on(scene.querySelector('.tl-next'), 'click', () => { if (starts.length > 1 && starts[starts.length - 1] === 1) reset(); nextPhrase(); }, signal);
     on(scene.querySelector('.tl-reset'), 'click', reset, signal);
+    /* a phrase or the whole run ends, or is stopped (a hidden tab stops the player): the scene is free again */
+    const allDone = () => { busy = false; allBtn.setAttribute('aria-pressed', 'false'); allBtn.textContent = 'Play them all'; };
     on(allBtn, 'click', async () => {
       if (P.on) { reset(); return; }
       reset(); busy = true; allBtn.setAttribute('aria-pressed', 'true'); allBtn.textContent = 'Stop';
@@ -425,7 +439,7 @@ export function mount({ root, signal, params }) {
         onCue(e) {
           if (e.track === 'ph') { flash(beatsEl[e.beat + 1]); svg.querySelector('.tl-cword').textContent = e.word; svg.querySelector('.tl-csub').textContent = `phrase ${e.ph + 1}`; const from = (e.ph * p) % n; arc.setAttribute('d', arcPath(cx, cy, R, from / n, Math.min((from + e.i + 1) / n, from / n + 0.999))); }
           if (e.track === 'land') land(C.mod(e.at, n) + 1);
-        }, onEnd: () => { busy = false; allBtn.setAttribute('aria-pressed', 'false'); allBtn.textContent = 'Play them all'; } });
+        }, onEnd: allDone, onStop: allDone });
       track('tala/cycle-all', `${tala.id}-${p}`);
     }, signal);
     on(scene.querySelector('.tl-talas'), 'click', e => { const b = e.target.closest('[data-tala]'); if (!b) return; tala = C.TALAS[b.dataset.tala]; scene.querySelectorAll('[data-tala]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); reset(); }, signal);
