@@ -942,7 +942,8 @@ function playView(hash, { signal }) {
     if (signal.aborted) return;
     view.innerHTML = '';
     mod.mount({ root: view, signal, params, exp: e });
-    const head = view.querySelector('h1, h2'); if (head && !view.contains(document.activeElement)) { head.setAttribute('tabindex', '-1'); head.focus({ preventScroll: true }); }
+    /* Like render(): focus the heading after a route change, not on the first page load */
+    const head = view.querySelector('h1, h2'); if (head) { head.setAttribute('tabindex', '-1'); if (render.n > 1 && !view.contains(document.activeElement)) head.focus({ preventScroll: true }); }
   }).catch(() => {
     if (signal.aborted) return;
     view.innerHTML = `<section class="md-section"><div class="md-wrap"><h1 class="md-heading">${e.title} did not open</h1><p class="md-lede">Check your connection and try again.</p><p><a class="md-btn md-btn--primary" href="${sec.href}">Back to ${sec.label}</a></p></div></section>`;

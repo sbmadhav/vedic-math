@@ -38,6 +38,7 @@ test('routes resolve to their experience with params, and sutra deep dives are u
   assert.equal(playFor('#/sutras/s1'), null);
   assert.equal(playFor('#/games'), null);
   assert.equal(playFor('#/arena/partyx'), null);
+  assert.deepEqual(playFor('#/arena/ghosts/r/%E0%A4')[1], ['r', '%E0%A4'], 'a malformed escape does not throw');
 });
 
 test('Explorer sees no experiences from the sections hidden in Explorer (Dojo, Sutras)', () => {

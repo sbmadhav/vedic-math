@@ -28,7 +28,9 @@ export const PLAY = [
 export const playById = id => PLAY.find(e => e.id === id);
 /* The experience a hash opens, and its params: '#/arena/ghosts/r/abc' -> [ghosts, ['r', 'abc']] */
 export function playFor(hash) {
-  for (const e of PLAY) if (hash === e.route || hash.startsWith(e.route + '/')) return [e, hash.slice(e.route.length).split('/').filter(Boolean).map(decodeURIComponent)];
+  /* Params come from a link: a malformed escape (a lone %) is kept as typed instead of throwing in the router */
+  const dec = s => { try { return decodeURIComponent(s); } catch (e) { return s; } };
+  for (const e of PLAY) if (hash === e.route || hash.startsWith(e.route + '/')) return [e, hash.slice(e.route.length).split('/').filter(Boolean).map(dec)];
   return null;
 }
 /* Listed in a section for a Mode */
