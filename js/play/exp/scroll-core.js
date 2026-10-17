@@ -19,8 +19,9 @@ export const KP_ROWS = [
   ['pa', 'pha', 'ba', 'bha', 'ma'],
   ['ya', 'ra', 'la', 'va', 'śa', 'ṣa', 'sa', 'ha']
 ];
-/* A friendlier key for explorers: one or two easy syllables per digit */
-export const KP_EASY = { 1: ['ka', 'pa', 'ya'], 2: ['ra'], 3: ['ga', 'la'], 4: ['va'], 5: ['ma'], 6: ['ca', 'ta'], 7: ['sa'], 8: ['ja', 'ha'], 9: ['dha'], 0: ['na'] };
+/* A friendlier key for explorers: one or two easy syllables per digit. kha (2) is here for Explorer's raga,
+   Kharaharapriya; it comes after ra, so kpEncode still picks ra for a 2. */
+export const KP_EASY = { 1: ['ka', 'pa', 'ya'], 2: ['ra', 'kha'], 3: ['ga', 'la'], 4: ['va'], 5: ['ma'], 6: ['ca', 'ta'], 7: ['sa'], 8: ['ja', 'ha'], 9: ['dha'], 0: ['na'] };
 const VOWELS = ['ai', 'au', 'a', 'ā', 'i', 'ī', 'u', 'ū', 'ṛ', 'ṝ', 'e', 'o'];
 const ASP = ['kh', 'gh', 'ch', 'jh', 'ṭh', 'ḍh', 'th', 'dh', 'ph', 'bh'];
 const norm = s => String(s).normalize('NFC').toLowerCase();

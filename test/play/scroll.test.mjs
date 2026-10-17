@@ -133,3 +133,19 @@ test('the scroll art uses its own class prefix, never the Spellbook\'s sp- class
   assert.doesNotMatch(svg, /class="[^"]*\bsp-/);
   for (const c of ['sc-psvg', 'sc-prod', 'sc-piece', 'sc-pglyph', 'sc-pnum', 'sc-pg']) assert.match(svg, new RegExp(`\\b${c}\\b`), c);
 });
+
+test('every Explorer cipher can be read with the easy key it shows', () => {
+  const easy = new Set(Object.values(S.KP_EASY).flat());
+  let seen = 0;
+  for (const c of S.CHAPTERS) for (const p of S.puzzlesFor(c.n, 'explorer')) {
+    const f = p.fig;
+    if (f && f.type === 'kp') {
+      assert.ok(f.easy, `${p.id} shows the easy key`);
+      for (const s of f.syll) { assert.ok(easy.has(s.toLowerCase()), `${p.id}: ${s} is not in the easy key`); seen++; }
+    }
+    if (p.kind === 'kp') for (const s of p.answer) assert.ok(p.pool.includes(s), `${p.id}: ${s} is not a tile`);
+  }
+  assert.ok(seen >= 4);
+  /* adding kha did not change what the encoder picks for a 2 */
+  assert.deepEqual(S.kpEncode(22), ['ra', 'ra']);
+});
