@@ -228,6 +228,22 @@ export function shareText({ num, level, results, streakDays = 0, practice = fals
 }
 
 /* ---------- Saved progress and rewards ---------- */
+/* A saved day record for a puzzle, cleaned: a tier whose moves no longer replay (corrupt or from an older
+   generator) starts over, so the page never fails to open. Returns { rec, fixed } (fixed: something was reset). */
+export function cleanRecord(rec, puzzle) {
+  const fresh = () => ({ moves: [], done: false });
+  const tiers = puzzle.tiers;
+  if (!rec || typeof rec !== 'object' || !Array.isArray(rec.tiers) || rec.tiers.length !== tiers.length) return { rec: { tiers: tiers.map(fresh), practice: !!(rec && rec.practice) }, fixed: !!rec };
+  let fixed = false;
+  const out = rec.tiers.map((st, i) => {
+    let ok = st && typeof st === 'object' && Array.isArray(st.moves) && st.moves.every(m => Array.isArray(m) && m.length === 3);
+    if (ok) { try { replay(tiers[i].nums, st.moves); } catch (e) { ok = false; } }
+    if (ok && st.done) ok = Number.isInteger(st.stars) && st.stars >= 0 && st.stars <= 3 && Number.isFinite(st.v);
+    if (ok) return st;
+    fixed = true; return fresh();
+  });
+  return { rec: { ...rec, tiers: out }, fixed };
+}
 /* Which fixed action a finished tier reports (js/app.js turns 'daily/solve' into Sparks). Today's puzzle pays
    once per tier and day, and only for at least one star, whatever the Mode; paid holds today's "<day>:<tier>" ids. */
 export function finishAction({ official, stars, key, tier, paid = [] }) {

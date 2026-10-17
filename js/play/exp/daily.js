@@ -35,7 +35,10 @@ export function mount({ root, signal, params }) {
     const official = key === today;
     const P = D.dailyPuzzles(key, lv);
     const id = `${key}:${lv}`;
-    const rec = S.days[id] || (S.days[id] = { tiers: P.tiers.map(() => ({ moves: [], done: false })), practice: !official });
+    /* A saved tier whose moves no longer replay starts over instead of stopping the page from opening */
+    const clean = D.cleanRecord(S.days[id] || { tiers: P.tiers.map(() => ({ moves: [], done: false })), practice: !official }, P);
+    const rec = S.days[id] = clean.rec;
+    if (clean.fixed) save();
     const fun = P.tiers.map(() => null); /* replays after a finished tier: never saved, never counted */
     let cur = Math.max(0, rec.tiers.findIndex(x => !x.done)), sel = null, op = null, lastNew = -1;
     const tierState = i => fun[i] || rec.tiers[i];

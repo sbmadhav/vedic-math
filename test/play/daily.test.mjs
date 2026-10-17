@@ -131,3 +131,17 @@ test('a finished tier pays once per tier and day, only with a star, and never in
   assert.equal(D.finishAction({ key: '2026-10-18', tier: 0, official: true, stars: 3, paid: 'x' }).action, 'daily/solve');
 });
 
+test('saved progress that no longer replays starts that tier over', () => {
+  const P = D.dailyPuzzles('2026-10-17', 'challenger'), nums = P.tiers[0].nums;
+  const good = [[0, '+', 1]];
+  const rec = { tiers: [{ moves: good, done: false }, { moves: [[0, '/', 0]], done: false }, { moves: [], done: true, stars: 9, v: 1 }], practice: false };
+  const { rec: c, fixed } = D.cleanRecord(rec, P);
+  assert.ok(fixed); assert.deepEqual(c.tiers[0].moves, good); assert.deepEqual(c.tiers[1], { moves: [], done: false }); assert.deepEqual(c.tiers[2], { moves: [], done: false });
+  assert.doesNotThrow(() => c.tiers.forEach((t, i) => D.replay(P.tiers[i].nums, t.moves)));
+  assert.equal(D.replay(nums, good)[1], nums[0] + nums[1]);
+  for (const bad of [null, {}, { tiers: 'x' }, { tiers: [] }, { tiers: [{ moves: 'x' }, null, 5] }]) {
+    const r = D.cleanRecord(bad, P); assert.equal(r.rec.tiers.length, 3); assert.ok(r.rec.tiers.every(t => Array.isArray(t.moves)));
+  }
+  const ok = { tiers: P.tiers.map(() => ({ moves: [], done: false })) };
+  assert.equal(D.cleanRecord(ok, P).fixed, false);
+});
