@@ -244,7 +244,10 @@ export function sourceFrom(raw, kind = guessKind(raw)) {
     const total = items.reduce((x, y) => x + y, 0);
     return { kind, raw: money(total), digits: String(total), total, items: items.length > 1 ? items.map(c => ({ name: '', cents: c })) : [] };
   }
-  return { kind, raw: s, digits: digits.slice(0, 9) };
+  /* A plate or a number keeps only what a plate shows (capital letters, digits, a space or hyphen), at most 12
+     characters: the label is shown and goes into a shared link, so it never carries other typed text */
+  const label = s.toUpperCase().replace(/[^A-Z0-9 -]/g, '').replace(/\s+/g, ' ').slice(0, 12).trim();
+  return { kind, raw: label || digits.slice(0, 9), digits: digits.slice(0, 9) };
 }
 
 /* "Surprise me": a realistic plate, clock, receipt or number, seeded */

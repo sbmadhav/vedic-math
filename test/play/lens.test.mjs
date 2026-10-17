@@ -171,3 +171,11 @@ test('image clean-up: grayscale, contrast and threshold give black digits on whi
     for (let i = 0; i < 200; i++) { const inkPx = i % 20 >= 8 && i % 20 < 12; assert.equal(img.data[i * 4], inkPx ? 0 : 255, `pixel ${i}`); }
   }
 });
+
+test('a typed or linked plate keeps only plate characters, so a shared link never carries other typed text', () => {
+  assert.equal(sourceFrom('ka 05 mh 1234', 'plate').raw, 'KA 05 MH 1234'.slice(0, 12).trim());
+  const s = sourceFrom('my name is Asha, call 98450 12345 <b>', 'plate');
+  assert.ok(/^[A-Z0-9 -]{1,12}$/.test(s.raw), s.raw);
+  assert.ok(!/<|>|,/.test(s.raw));
+  assert.equal(sourceFrom('12345678901234', 'number').digits, '123456789');
+});
