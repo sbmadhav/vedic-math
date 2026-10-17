@@ -123,6 +123,25 @@ test('Locks: keyboard focus moves to the next offer after feeding the lock', asy
   await expect(page.locator('.lk-offer:focus')).toBeEnabled();
 });
 
+test('Locks: an offer clicked after the last required feed is refused, so only one predict phase starts', async ({ page, issues }) => {
+  await open(page, '#/dojo/locks/eleven');
+  const tape = page.locator('.lk-tape-list li');
+  for (let i = 0; i < 3; i++) {
+    await expect(page.locator('.lk-machine')).not.toHaveClass(/is-running/);
+    await page.locator('.lk-offer:not([disabled])').first().click();
+    await expect(tape).toHaveCount(i + 1);
+  }
+  /* the lock has had its three feeds; in the moment before Predict, one more offer is still on screen */
+  await page.locator('.lk-offer:not([disabled])').first().click();
+  await expect(page.locator('.lk-q-ask')).toBeVisible();
+  await page.waitForTimeout(1500);
+  await expect(tape).toHaveCount(3);
+  /* one key press is handled once */
+  await page.keyboard.press('7');
+  await expect(page.locator('.lk-q-typed')).toHaveText('7');
+  expect(issues.console).toEqual([]);
+});
+
 test.describe('the scroll with two pieces found', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => { try { if (!localStorage.getItem('vm.play.p1.scroll')) localStorage.setItem('vm.play.p1.scroll', JSON.stringify({ solved: {}, pieces: [1, 2] })); } catch (e) { /* storage blocked */ } });

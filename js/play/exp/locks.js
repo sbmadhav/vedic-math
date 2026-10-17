@@ -150,7 +150,8 @@ export function mount({ root, signal, params }) {
       };
       draw();
       on(panel, 'click', e => {
-        const b = e.target.closest('.lk-offer'); if (!b || b.disabled || machine.classList.contains('is-running')) return;
+        /* used counts every clicked offer: after the last required feed, more clicks would start a second predict phase */
+        const b = e.target.closest('.lk-offer'); if (!b || b.disabled || used.size >= lvl.feeds || machine.classList.contains('is-running')) return;
         markFocus();
         const x = offers[+b.dataset.i]; used.add(+b.dataset.i); b.disabled = true;
         run(x, sig, y => {
