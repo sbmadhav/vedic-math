@@ -6,6 +6,22 @@ import { ri, pick } from './lib.js';
 const H = (s, c = 'coral') => `<b class="hl hl-${c}">${s}</b>`;
 const pad = (n, w) => String(n).padStart(w, '0');
 const digits = n => String(n).split('').map(Number);
+/* Clean signed math for step and question text: no "1x", no "+ -", no "- -", no 0x terms */
+const M = '−';
+const sn = n => (n < 0 ? M + -n : String(n));
+/* lin([3, 'x'], [-1, 'y'], [-12]) is "3x − y − 12"; zero terms are left out and an empty sum is "0" */
+export function lin(...terms) {
+  let s = '';
+  for (const [k, v = ''] of terms) {
+    if (!k) continue;
+    const a = Math.abs(k), t = v ? (a === 1 ? v : a + v) : String(a);
+    s += s ? (k < 0 ? ` ${M} ` : ' + ') + t : (k < 0 ? M : '') + t;
+  }
+  return s || '0';
+}
+const plus = (p, q) => `${sn(p)} ${q < 0 ? M : '+'} ${Math.abs(q)}`; // p + q
+const less = (p, q) => `${sn(p)} ${q < 0 ? '+' : M} ${Math.abs(q)}`; // p − q
+const times = (k, group) => (k === 1 ? group : k === -1 ? M + group : sn(k) + group); // k(x + y)
 
 export const TRICKS = [
   { id: 'sq5', sutra: 'Ekādhikena Pūrvena', meaning: 'By one more than the one before', title: 'Square numbers ending in 5', kid: 'Fives squared in one breath', grade: 4,
@@ -182,9 +198,9 @@ export const TRICKS = [
     valid: ([a, b, c]) => (a === c ? 'a and c must be different.' : null),
     steps([a, b, c, d]) { const x = (d - b) / (a - c);
       return [
-        { say: `Equation: ${a}x + ${b} = ${c}x + ${d}.`, show: `${H(a + 'x')} ${b < 0 ? '&minus;' : '+'} ${H(Math.abs(b), 'teal')} = ${H(c + 'x')} ${d < 0 ? '&minus;' : '+'} ${H(Math.abs(d), 'teal')}` },
-        { say: `Transpose: x terms to the left, numbers to the right, flipping signs: (${a} − ${c})x = ${d} − ${b}.`, show: `${H(a - c)}x = ${H(d - b, 'teal')}` },
-        { say: `x = ${d - b} ÷ ${a - c} = ${Math.round(x * 1000) / 1000}.`, show: `<b>x = ${Math.round(x * 1000) / 1000}</b>` }
+        { say: `Equation: ${lin([a, 'x'], [b])} = ${lin([c, 'x'], [d])}.`, show: `${H(lin([a, 'x']))}${b ? ` ${b < 0 ? '&minus;' : '+'} ${H(Math.abs(b), 'teal')}` : ''} = ${H(lin([c, 'x']))}${d ? ` ${d < 0 ? '&minus;' : '+'} ${H(Math.abs(d), 'teal')}` : ''}` },
+        { say: `Transpose: x terms to the left, numbers to the right, flipping signs: (${less(a, c)})x = ${less(d, b)}.`, show: `${H(lin([a - c, 'x']))} = ${H(sn(d - b), 'teal')}` },
+        { say: `x = ${sn(d - b)} ÷ ${a - c < 0 ? `(${sn(a - c)})` : a - c} = ${sn(Math.round(x * 1000) / 1000)}.`, show: `<b>x = ${sn(Math.round(x * 1000) / 1000)}</b>` }
       ]; },
     answer: ([a, b, c, d]) => (d - b) / (a - c) },
 
@@ -194,8 +210,8 @@ export const TRICKS = [
     inputs: [{ label: 'a', min: 1, max: 30 }, { label: 'b', min: 1, max: 30 }, { label: 'c', min: 1, max: 30 }, { label: 'd', min: 1, max: 60 }], random: () => pick([[2, 12, 3, 8], [3, 8, 4, 6], [2, 9, 3, 6], [4, 9, 6, 6], [2, 15, 5, 6], [3, 10, 5, 6], [1, 12, 3, 4]]),
     valid: ([a, b, c, d]) => (a * b !== c * d ? 'For this trick a × b must equal c × d.' : a + b === c + d ? 'The sums a + b and c + d must differ.' : null),
     steps([a, b, c, d]) { return [
-      { say: `(x + ${a})(x + ${b}) = (x + ${c})(x + ${d}). Check the constants: ${a} × ${b} = ${a * b} and ${c} × ${d} = ${c * d}. Equal.`, show: `${H(a * b)} = ${H(c * d)}` },
-      { say: `Expanding both sides, x² and ${a * b} cancel, leaving ${a + b}x = ${c + d}x.`, show: `${H((a + b) + 'x', 'teal')} = ${H((c + d) + 'x', 'teal')}` },
+      { say: `(${lin([1, 'x'], [a])})(${lin([1, 'x'], [b])}) = (${lin([1, 'x'], [c])})(${lin([1, 'x'], [d])}). Check the constants: ${a} × ${b} = ${a * b} and ${c} × ${d} = ${c * d}. Equal.`, show: `${H(a * b)} = ${H(c * d)}` },
+      { say: `Expanding both sides, x² and ${a * b} cancel, leaving ${lin([a + b, 'x'])} = ${lin([c + d, 'x'])}.`, show: `${H(lin([a + b, 'x']), 'teal')} = ${H(lin([c + d, 'x']), 'teal')}` },
       { say: `Since ${a + b} ≠ ${c + d}, the only answer is x = 0.`, show: '<b>x = 0</b>' }
     ]; },
     answer: () => 0 }
@@ -287,12 +303,12 @@ TRICKS.push(
     valid: ([a, b, c, d]) => (a === b ? 'a and b must differ.' : (c + d) % (a + b) || (c - d) % (a - b) || ((c + d) / (a + b) + (c - d) / (a - b)) % 2 ? 'Those numbers do not give whole-number answers. Try New numbers.' : null),
     steps([a, b, c, d]) { const s = (c + d) / (a + b), t = (c - d) / (a - b), x = (s + t) / 2, y = (s - t) / 2;
       return [
-        { say: `${a}x + ${b}y = ${c} and ${b}x + ${a}y = ${d}. The numbers are swapped.`, show: `${H(a)}x + ${H(b, 'teal')}y = ${c}<br>${H(b, 'teal')}x + ${H(a)}y = ${d}` },
-        { say: `Add: ${a + b}(x + y) = ${c + d}, so x + y = ${s}. Subtract: ${a - b}(x − y) = ${c - d}, so x − y = ${t}.`, show: `x + y = ${H(s, 'sky')}<br>x − y = ${H(t, 'sun')}` },
-        { say: `x = (${s} + ${t}) ÷ 2 = ${x}, y = (${s} − ${t}) ÷ 2 = ${y}.`, show: `<b>x = ${x}, y = ${y}</b>` }
+        { say: `${lin([a, 'x'], [b, 'y'])} = ${sn(c)} and ${lin([b, 'x'], [a, 'y'])} = ${sn(d)}. The numbers are swapped.`, show: `${H(lin([a, 'x']))} + ${H(lin([b, 'y']), 'teal')} = ${sn(c)}<br>${H(lin([b, 'x']), 'teal')} + ${H(lin([a, 'y']))} = ${sn(d)}` },
+        { say: `Add: ${times(a + b, '(x + y)')} = ${sn(c + d)}, so x + y = ${sn(s)}. Subtract: ${times(a - b, '(x − y)')} = ${sn(c - d)}, so x − y = ${sn(t)}.`, show: `x + y = ${H(sn(s), 'sky')}<br>x − y = ${H(sn(t), 'sun')}` },
+        { say: `x = (${plus(s, t)}) ÷ 2 = ${sn(x)}, y = (${less(s, t)}) ÷ 2 = ${sn(y)}.`, show: `<b>x = ${sn(x)}, y = ${sn(y)}</b>` }
       ]; },
     answer: ([a, b, c, d]) => ((c + d) / (a + b) + (c - d) / (a - b)) / 2,
-    q: v => `Solve:<br>${v[0]}<i>x</i> + ${v[1]}<i>y</i> = ${v[2]}<br>${v[1]}<i>x</i> + ${v[0]}<i>y</i> = ${v[3]}`,
+    q: v => `Solve:<br>${lin([v[0], '<i>x</i>'], [v[1], '<i>y</i>'])} = ${sn(v[2])}<br>${lin([v[1], '<i>x</i>'], [v[0], '<i>y</i>'])} = ${sn(v[3])}`,
     fields: v => { const s = (v[2] + v[3]) / (v[0] + v[1]), t = (v[2] - v[3]) / (v[0] - v[1]); return [{ label: 'x', answer: (s + t) / 2 }, { label: 'y', answer: (s - t) / 2 }]; } },
 
   { id: 'ratio-zero', sutra: '(Ānurūpye) Śūnyamanyat', meaning: 'If one is in ratio, the other is zero', title: 'Spot the zero in two equations', kid: 'Zero spy', grade: 9,
@@ -302,12 +318,12 @@ TRICKS.push(
     valid: ([, b, c]) => (c % b ? 'Pick c as a multiple of b so y is a whole number.' : null),
     steps([a, b, c, k]) { const a2 = a * k + 1;
       return [
-        { say: `${a}x + ${b}y = ${c} and ${a2}x + ${b * k}y = ${c * k}.`, show: `${a}x + ${H(b)}y = ${H(c, 'teal')}<br>${a2}x + ${H(b * k)}y = ${H(c * k, 'teal')}` },
+        { say: `${lin([a, 'x'], [b, 'y'])} = ${c} and ${lin([a2, 'x'], [b * k, 'y'])} = ${c * k}.`, show: `${lin([a, 'x'])} + ${H(lin([b, 'y']))} = ${H(c, 'teal')}<br>${lin([a2, 'x'])} + ${H(lin([b * k, 'y']))} = ${H(c * k, 'teal')}` },
         { say: `y numbers ${b} : ${b * k} are in the same ratio as ${c} : ${c * k}. So x = 0.`, show: `${H('x = 0', 'sky')}` },
-        { say: `Then ${b}y = ${c}, so y = ${c / b}.`, show: `<b>x = 0, y = ${c / b}</b>` }
+        { say: `Then ${lin([b, 'y'])} = ${c}, so y = ${c / b}.`, show: `<b>x = 0, y = ${c / b}</b>` }
       ]; },
     answer: ([, b, c]) => c / b,
-    q: v => `Solve:<br>${v[0]}<i>x</i> + ${v[1]}<i>y</i> = ${v[2]}<br>${v[0] * v[3] + 1}<i>x</i> + ${v[1] * v[3]}<i>y</i> = ${v[2] * v[3]}`,
+    q: v => `Solve:<br>${lin([v[0], '<i>x</i>'], [v[1], '<i>y</i>'])} = ${v[2]}<br>${lin([v[0] * v[3] + 1, '<i>x</i>'], [v[1] * v[3], '<i>y</i>'])} = ${v[2] * v[3]}`,
     fields: v => [{ label: 'x', answer: 0 }, { label: 'y', answer: v[2] / v[1] }] }
 );
 
@@ -330,7 +346,7 @@ export function problemFor(t, vals) {
     sq5: `${vals[0]}<sup>2</sup> = ?`, 'near-base': `${vals[0]} &times; ${vals[1]} = ?`, crosswise: `${vals[0]} &times; ${vals[1]} = ?`, from9: `${(10 ** String(vals[0]).length).toLocaleString('en-US')} &minus; ${vals[0]} = ?`,
     by9s: `${vals[0]} &times; ${vals[1]} = ?`, ends10: `${vals[0]} &times; ${vals[1]} = ?`, 'square-near': `${vals[0]}<sup>2</sup> = ?`, by11: `${vals[0]} &times; 11 = ?`,
     div9: `${vals[0]} &divide; 9 = ? remainder ?`, check9: `Casting out nines (answer 0 to 8), what is the digit sum of ${vals[0]} &times; ${vals[1]}?`, recip: `What is the first decimal digit of 1/${vals[0]} that is not 0?`,
-    transpose: `Solve: ${vals[0]}<i>x</i> ${vals[1] < 0 ? '&minus;' : '+'} ${Math.abs(vals[1])} = ${vals[2]}<i>x</i> ${vals[3] < 0 ? '&minus;' : '+'} ${Math.abs(vals[3])}`, 'zero-sum': `Solve: (<i>x</i> + ${vals[0]})(<i>x</i> + ${vals[1]}) = (<i>x</i> + ${vals[2]})(<i>x</i> + ${vals[3]})`
+    transpose: `Solve: ${lin([vals[0], '<i>x</i>'], [vals[1]])} = ${lin([vals[2], '<i>x</i>'], [vals[3]])}`, 'zero-sum': `Solve: (${lin([1, '<i>x</i>'], [vals[0]])})(${lin([1, '<i>x</i>'], [vals[1]])}) = (${lin([1, '<i>x</i>'], [vals[2]])})(${lin([1, '<i>x</i>'], [vals[3]])})`
   }[t.id];
   if (t.fields) return { q, kind: 'fields', fields: t.fields(vals), hints: [steps[0]], steps };
   if (t.choice) return { q, kind: 'choice', choices: t.choice, answer: t.answer(vals), hints: [steps[0]], steps };
