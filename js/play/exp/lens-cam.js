@@ -95,7 +95,9 @@ export function camera(host, { signal, kindChips, onDigits, onType }) {
       if (sig.aborted || !host.contains(v)) { stopStream(); return; }
       /* The browser or the Player can end the camera from outside (permission revoked, camera unplugged) */
       stream.getVideoTracks().forEach(tr => on(tr, 'ended', () => { if (stream) { stopStream(); fail('The camera stopped. You can type the digits instead.'); } }, sig));
-      v.srcObject = stream; await v.play().catch(() => {});
+      /* Not awaited: WebKit can leave play() pending (autoplay, a busy device), which kept Capture disabled; capture()
+         waits for a real frame (videoWidth) anyway */
+      v.srcObject = stream; v.play().catch(() => {});
       const snap = host.querySelector('.ln-snap'); snap.disabled = false; snap.focus();
       say('Camera on. Point at some digits and press Capture.');
       track('lens/camera', 'Camera on');
