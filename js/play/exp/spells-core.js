@@ -95,7 +95,8 @@ const crosswise = {
 
 /* Squares ending in 5 and its big sibling (same tens, units add to ten) share a board: the tens vertical
    turns the bottom tens digit into its "one more". Drawing the cross fizzles and shows why: the crosswise
-   pair always makes a whole number of tens, exactly one more tens digit. */
+   pair sits in the tens column and always makes 10t tens, so it carries exactly t into the hundreds,
+   turning t x t hundreds into t x (t + 1). */
 const ekBoard = (p, unitsName) => {
   const t = Math.floor(p.a / 10), u1 = p.a % 10, u2 = p.b % 10;
   return {
@@ -113,7 +114,7 @@ const ekBoard = (p, unitsName) => {
       const [x, y] = k.split('|').map(id => n[id]);
       if (k === ek('a1', 'b0') || k === ek('a0', 'b1')) {
         const cross = t * u2 + u1 * t;
-        return { calc: `${t} ${TIMES} ${u2} + ${u1} ${TIMES} ${t} = ${cross}`, hint: `No cross in this spell. The crosswise pair always makes ${cross}, which is ${t} more tens: that is where the "one more" comes from.` };
+        return { calc: `${t} ${TIMES} ${u2} + ${u1} ${TIMES} ${t} = ${cross}`, hint: `No cross in this spell. The crosswise pair always makes ${cross} tens, which is ${t} more hundreds: that turns ${t} ${TIMES} ${t} into ${t} ${TIMES} ${t + 1}, the "one more".` };
       }
       return { calc: times(+x.label, +y.label), hint: 'Strokes go straight down, from the top number to the bottom one.' };
     }

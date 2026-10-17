@@ -101,7 +101,10 @@ test('fives squared: the cross fizzles and explains the one more; the twin morph
   assert.equal(f.kind, 'stray');
   const t = fizzleText(b, c, f);
   assert.equal(t.calc, '6 × 5 + 5 × 6 = 60');
-  assert.match(t.hint, /6 more tens/);
+  /* the cross is in the tens column: 60 tens is 6 hundreds, the extra 6 that turns 6 x 6 into 6 x 7 */
+  assert.match(t.hint, /60 tens, which is 6 more hundreds/);
+  assert.match(t.hint, /6 × 6 into 6 × 7/);
+  assert.doesNotMatch(t.hint, /more tens/);
   assert.equal(visibleNodes(b, c).find(n => n.id === 'b1').label, '6');
   applyEdge(b, c, ek('a1', 'b1'));
   assert.equal(visibleNodes(b, c).find(n => n.id === 'b1').label, '7');
@@ -154,4 +157,18 @@ test('difficulty adapts: up after a clean streak, down after misses, within 0..3
   assert.deepEqual(nextTier(2, 0, 2).tier, 1);
   assert.deepEqual(nextTier(0, 0, 2).tier, 0);
   assert.deepEqual(nextTier(1, 1, 1), { tier: 1, streak: 1, misses: 1 });
+});
+
+test('the cross hint is true place value for every fives square and ten buddies pair', () => {
+  for (const [id, pairs] of [['sq5', [15, 25, 45, 95, 115].map(n => [n, n])], ['ends10', [[23, 27], [41, 49], [86, 84]]]]) {
+    for (const [a, b] of pairs) {
+      const bd = spellById(id).board({ a, b }), t = Math.floor(a / 10), u1 = a % 10, u2 = b % 10;
+      const h = fizzleText(bd, newCast(bd), applyEdge(bd, newCast(bd), ek('a1', 'b0'))).hint;
+      const [, tens, hundreds] = h.match(/makes (\d+) tens, which is (\d+) more hundreds/);
+      assert.equal(+tens * 10, (t * u2 + u1 * t) * 10, `${a} x ${b}`);
+      assert.equal(+hundreds * 100, +tens * 10, `${a} x ${b}`);
+      /* t x t hundreds plus the carry is t x (t + 1) hundreds: the left part of the answer */
+      assert.equal((t * t + +hundreds) * 100 + u1 * u2, a * b, `${a} x ${b}`);
+    }
+  }
 });
