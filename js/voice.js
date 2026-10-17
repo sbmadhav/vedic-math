@@ -412,6 +412,7 @@ export const studioOn = () => get('studioVoice', '1') !== '0';
 export const setStudio = v => put('studioVoice', v ? '1' : '0');
 const canAudio = () => typeof window !== 'undefined' && typeof (window.AudioContext || window.webkitAudioContext) === 'function' && typeof fetch === 'function';
 function audioCtx() {
+  try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch (e) {} // iOS: play with the ringer off
   actx = actx || new (window.AudioContext || window.webkitAudioContext)();
   if (actx.state === 'suspended') actx.resume().catch(() => {});
   return actx;

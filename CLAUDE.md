@@ -41,7 +41,7 @@ They are not `?v=` stamped (this repo cannot hash them). Do not copy them in; ch
 - `e2e/tests/cov/` holds one spec per live OpenSpec scenario. In CI they run on chromium only, and the run after a push leaves them out (`E2E_SKIP_COV=1`), so the live run stays under GitHub Pages' rate limit and the job timeout. Locally every project runs them.
 - The live pages carry a Content-Security-Policy without `'unsafe-eval'`: never build a function from a string inside `page.evaluate` (`new Function`, `eval`); pass a named option and keep the code in the page function.
 - `.github/workflows/e2e.yml` runs the suite daily, on demand (optional `base_url`) and on pushes to `main` (after waiting for the Pages deploy).
-- Repo-only files are listed in `exclude` in `_config.yml` (`cloud/`, `test/`, `docs/`, `e2e/`, this file, the README, `build.py`). Add new ones there.
+- Repo-only files are listed in `exclude` in `_config.yml` (`cloud/`, `test/`, `docs/`, `tools/`, `e2e/`, this file, the README, `build.py`). Add new ones there.
 
 ## Offline
 
@@ -53,6 +53,10 @@ They are not `?v=` stamped (this repo cannot hash them). Do not copy them in; ch
 - New same-origin files the page loads must be in `index.html` or the manifest (build.py lists them), and a module worker must be started with `import.meta.resolve(...)` so it gets its `?v=` stamp.
 - To retire it, set `KILL = true` in `sw.js` and deploy (see the comment there).
 - `manifest.webmanifest` here makes Vedic Math its own installable app (scope `/vedic-math/`); the main site's manifest is unchanged.
+
+## Studio voice
+
+Read aloud plays prerecorded audio from `/vedic-math/voice/` (Google Chirp 3 HD, Aoede), else the device's own voice. The audio is never committed: it is a GitHub Release archive (`voice-<hash>`) named with its SHA-256 by the generated `js/voice-index.js`, and the CI deploy unpacks it into `_site/voice/` (`tools/voice/ci-fetch.mjs`). The recording tools are repo-only in `tools/voice/` (`lines.mjs`, `record.mjs`, `publish.mjs`; steps in the README). A change to any spoken line needs a re-record and publish in the same PR, or `test/voice-coverage.test.mjs` fails for Explorer lines. Keys and tokens come only from the shell (`GOOGLE_TTS_TOKEN=$(gcloud auth print-access-token)`), never a file; keep the spend guard in `tools/voice/voice-lib.mjs` ($300 a month, $50 a run, 300 requests a minute). The game never calls a speech service, and `build.py` fails on a provider host or key in a published file. `sw.js` keeps `/vedic-math/voice/` files cache first in `vedic-math-voice`, a cache every deploy keeps.
 
 ## Leaderboards
 

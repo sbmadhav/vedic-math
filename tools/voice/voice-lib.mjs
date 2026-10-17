@@ -141,8 +141,10 @@ export function makeGuard({ ledger = CACHE + 'ledger.json', budget = +(process.e
     runUsd: () => runUsd
   };
 }
+/* One guard per process, so the run cap covers every request this run makes (record.mjs's whole lines and its clips) */
 let guard = null;
-export const spentThisMonth = () => (guard ||= makeGuard()).spent();
+export const sharedGuard = () => (guard ||= makeGuard());
+export const spentThisMonth = () => sharedGuard().spent();
 
 /* say(text, spec, speed) for an engine, cached like Kokoro. Kokoro loads only when a Kokoro voice is used. */
 export async function speakerFor(engine) {
@@ -151,7 +153,7 @@ export async function speakerFor(engine) {
   return async (text, spec, speed) => {
     const f = CACHE + createHash('sha1').update(`${engine}|${spec}|${speed}|${text}`).digest('hex') + '.f32';
     if (existsSync(f)) { const b = readFileSync(f); return new Float32Array(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength)); }
-    guard ||= makeGuard(); guard.charge(engine, text.length); await guard.pace();
+    const g = sharedGuard(); g.charge(engine, text.length); await g.pace();
     const a = await c.say(text, spec, speed); writeFileSync(f, Buffer.from(a.buffer)); console.log(`  made "${text}" (${engine} ${spec})`); return a;
   };
 }

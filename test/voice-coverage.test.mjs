@@ -19,8 +19,8 @@ const MANIFEST = new URL('../tools/voice/manifest.json', import.meta.url);
 const manifest = existsSync(MANIFEST) ? JSON.parse(readFileSync(MANIFEST, 'utf8')) : null;
 const spoken = p => [p.say || p.q, ...(p.hints || [])].filter(Boolean);
 
-test('the index: Leda, served from /vedic-math/voice/, and an archive only with its hash and files', () => {
-  assert.equal(STUDIO.voice, 'en-US-Chirp3-HD-Leda');
+test('the index: Aoede, served from /vedic-math/voice/, and an archive only with its hash and files', () => {
+  assert.equal(STUDIO.voice, 'en-US-Chirp3-HD-Aoede');
   assert.equal(STUDIO.base, '/vedic-math/voice/');
   assert.equal(!!STUDIO.tag, !!STUDIO.sha256, 'a tag and its sha256 come together');
   if (STUDIO.tag) {

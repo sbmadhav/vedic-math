@@ -16,7 +16,7 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { lineHash, lineKey, planLine, clipText as clipTextOf } from '../../js/voice-plan.js';
 import { indexModule } from './index-file.mjs';
-import { CLOUD, makeGuard, trim, m4a, RATE, speakerFor } from './voice-lib.mjs';
+import { CLOUD, sharedGuard, trim, m4a, RATE, speakerFor } from './voice-lib.mjs';
 
 const ROOT = new URL('../../', import.meta.url).pathname;
 const HERE = new URL('./', import.meta.url).pathname;
@@ -32,7 +32,8 @@ if (LIMIT) {
   const need = new Set(whole.flatMap(w => planLine(w.words).filter(p => p.clip).map(p => p.clip)));
   clipIds = clipIds.filter(id => need.has(id)).slice(0, LIMIT);
 }
-const guard = makeGuard();
+const failed = []; // whole lines the provider refused (not budget): left out of the index, so clips say them
+const guard = sharedGuard(); // the same guard speakerFor() charges, so RUN_USD caps the whole run
 const sha = buf => createHash('sha256').update(buf).digest('hex');
 const short = buf => sha(buf).slice(0, 10);
 
@@ -56,16 +57,19 @@ async function say(text) {
 
 async function recordWhole() {
   mkdirSync(OUT + 'l', { recursive: true });
-  let next = 0, done = 0, made = 0;
+  let next = 0, done = 0, made = 0; failed.length = 0;
   const work = async () => {
     while (next < whole.length) {
       const { words } = whole[next++], file = `${OUT}l/${lineHash(L.voice, words)}.m4a`;
-      if (!existsSync(file)) { m4a(trim(await say(words)), file); made++; }
+      if (!existsSync(file)) {
+        try { m4a(trim(await say(words)), file); made++; }
+        catch (e) { if (String(e.message).startsWith('budget:')) throw e; failed.push(words); console.error(`  failed: "${words}": ${String(e.message).slice(0, 160)}`); }
+      }
       if (++done % 500 === 0) console.log(`  whole lines: ${done} of ${whole.length} (${made} new, $${guard.runUsd().toFixed(2)} this run)`);
     }
   };
   await Promise.all(Array.from({ length: WORKERS }, work));
-  console.log(`whole lines: ${whole.length} (${made} recorded this run)`);
+  console.log(`whole lines: ${whole.length} (${made} recorded this run${failed.length ? `, ${failed.length} failed: said from clips until a re-run records them` : ''})`);
 }
 
 async function recordPacks() {
@@ -96,10 +100,13 @@ await recordWhole();
 const packs = await recordPacks();
 const dirJson = JSON.stringify(Object.fromEntries(clipIds.map(id => [id, L.clips[id]])));
 const dir = `p/dir.${short(dirJson)}.json`; writeFileSync(OUT + dir, dirJson);
-const hashes = [...new Set(whole.map(w => lineHash(L.voice, w.words)))].sort();
+const hashes = [...new Set(whole.map(w => lineHash(L.voice, w.words)))].filter(h => existsSync(`${OUT}l/${h}.m4a`)).sort(); // only lines on disk
 const keys = Uint32Array.from(new Set(hashes.map(lineKey))).sort();
 const setBuf = Buffer.from(keys.buffer);
 for (const f of readdirSync(OUT + 'l').filter(f => f.startsWith('set.'))) rmSync(OUT + 'l/' + f);
+/* Lines no longer said (a wording change) leave the archive but stay on disk in stale/, in case the wording comes back */
+const keep = new Set(hashes.map(h => h + '.m4a')); mkdirSync(OUT + '../stale/', { recursive: true });
+for (const f of readdirSync(OUT + 'l').filter(f => f.endsWith('.m4a') && !keep.has(f))) renameSync(OUT + 'l/' + f, OUT + '../stale/' + f);
 const lineSet = `l/set.${short(setBuf)}.bin`; writeFileSync(OUT + lineSet, setBuf);
 
 const index = { voice: L.voice, speed: L.speed, base: '/vedic-math/voice/', tag: null, sha256: null, lineSet, dir, packs, coveredSkills: L.coveredSkills, counts: { lines: hashes.length, clips: clipIds.length } };

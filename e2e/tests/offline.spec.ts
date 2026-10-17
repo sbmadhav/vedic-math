@@ -74,7 +74,7 @@ test('the worker registers with scope /vedic-math/ and caches under vedic-math-,
   }
   // The precache holds the shell, every module at its import-map URL, the styles and the shared files
   const saved = await page.evaluate(async prefix => {
-    const name = (await caches.keys()).filter(k => k.startsWith(prefix)).pop()!;
+    const name = (await caches.keys()).filter(k => k.startsWith(prefix) && k !== prefix + 'voice').pop()!;
     return (await (await caches.open(name)).keys()).map(r => new URL(r.url).pathname + new URL(r.url).search);
   }, OWN_PREFIX);
   expect(saved).toContain('/vedic-math/');
@@ -293,19 +293,47 @@ test('the main site\'s root worker leaves /vedic-math/ alone', async ({ page, ba
 });
 
 /* Studio voice (openspec better-voice): audio under /vedic-math/voice/ is cache first in vedic-math-voice, a cache every
-   deploy keeps, so a line heard once plays offline. Needs a built site with audio in _site/voice/ (the CI deploy unpacks
-   the release archive there; locally, copy e2e/fixtures/voice/pack.m4a to _site/voice/p/core.test.m4a). */
-test('studio voice audio heard once is served offline', async ({ page, context }) => {
-  await open(page);
-  await workerReady(page);
-  const url = '/vedic-math/voice/p/core.test.m4a';
-  const first = await page.evaluate(u => fetch(u).then(async r => ({ status: r.status, size: (await r.arrayBuffer()).byteLength })), url);
-  test.skip(first.status === 404, 'no studio voice audio in this build (_site/voice/ is filled by the deploy)');
-  expect(first.status).toBe(200);
-  expect(await page.evaluate(() => caches.keys())).toContain('vedic-math-voice');
-  await goOffline(context);
-  await expectOffline(page);
-  const again = await page.evaluate(u => fetch(u).then(async r => ({ status: r.status, size: (await r.arrayBuffer()).byteLength }), () => ({ status: 0, size: 0 })), url);
-  expect(again).toEqual(first);
-  await goOnline(context);
+   deploy keeps, so a line heard once plays offline. Needs a built site with the recordings in _site/voice/ (the CI
+   deploy unpacks the release archive there; locally, unpack it with tools/voice/ci-fetch.mjs _site). Skipped when the
+   build has none. The built-in voice is replaced by a recorder, so "builtin" in the log means the device would speak. */
+test.describe('studio voice offline', () => {
+  test.use({ seedMode: 'explorer' });
+
+  test('a line heard once plays from its saved file offline, and a new line still gets a voice', async ({ page, context }) => {
+    await page.addInitScript(() => {
+      (window as any).__voiceLog = [];
+      const fake = { getVoices: () => [], speaking: false, pending: false, paused: false, speak(u: any) { setTimeout(() => u.onend && u.onend(), 0); }, cancel() {}, pause() {}, resume() {}, addEventListener() {}, removeEventListener() {} };
+      Object.defineProperty(window, 'speechSynthesis', { value: fake, configurable: true });
+    });
+    await open(page, '#/skill/k-count');
+    await workerReady(page);
+    await page.reload(); // the first load was not controlled by the worker; from here every voice file goes through it
+    await expect(page.locator('#practice')).toBeVisible();
+    const studio = await page.evaluate(async () => (await import('/vedic-math/js/voice-index.js')).STUDIO);
+    const probe = await page.evaluate(u => fetch(u, { method: 'HEAD' }).then(r => r.status, () => 0), studio.base + (studio.lineSet || 'none'));
+    test.skip(!studio.tag || probe !== 200, 'no studio voice recordings in this build (_site/voice/ is filled by the deploy)');
+    const log = () => page.evaluate(() => (window as any).__voiceLog as string[]);
+    const hear = async () => {
+      await page.evaluate(() => { (window as any).__voiceLog.length = 0; });
+      await page.locator('#practice').getByRole('button', { name: 'Hear it' }).click();
+      await expect.poll(async () => (await log()).filter(e => e !== 'stop').length).toBeGreaterThan(0);
+      return (await log()).filter(e => e !== 'stop');
+    };
+    await expect.poll(async () => (await hear())[0], { timeout: 15_000 }).toBe('studio:line'); // online, the whole line plays (and is saved)
+    const heardQ = await page.locator('#practice').innerText();
+    expect(await page.evaluate(() => caches.keys())).toContain('vedic-math-voice');
+    await goOffline(context);
+    await expectOffline(page);
+    await page.reload();
+    await expect(page.locator('#practice')).toBeVisible();
+    /* The question after a reload is a new draw; Hear it on a line never fetched gets clips or the built-in voice */
+    const next = (await hear())[0];
+    expect(['studio:line', 'studio:clips', 'builtin']).toContain(next);
+    if ((await page.locator('#practice').innerText()) === heardQ) expect(next).toBe('studio:line');
+    /* The line set, clip directory and core pack were saved, so the app knows what it has offline */
+    const saved = await page.evaluate(async () => (await (await caches.open('vedic-math-voice')).keys()).map(r => new URL(r.url).pathname));
+    expect(saved.some(p => /\/l\/set\.[0-9a-f]{10}\.bin$/.test(p))).toBe(true);
+    expect(saved.some(p => /\/l\/[0-9a-f]{14}\.m4a$/.test(p))).toBe(true);
+    await goOnline(context);
+  });
 });

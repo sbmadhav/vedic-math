@@ -3,7 +3,7 @@
    CI deploy unpacks it into /vedic-math/voice/ after checking sha256 (tools/voice/ci-fetch.mjs). With no tag, nothing
    has been recorded yet and read aloud uses the built-in voice. */
 export const STUDIO = {
-  "voice": "en-US-Chirp3-HD-Leda",
+  "voice": "en-US-Chirp3-HD-Aoede",
   "speed": 0.95,
   "base": "/vedic-math/voice/",
   "tag": null,

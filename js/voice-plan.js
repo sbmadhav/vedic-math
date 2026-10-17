@@ -39,18 +39,35 @@ export function numClips(s, last = false) {
   if (last) out[out.length - 1] += '.';
   return out;
 }
-/* A normalized line as parts: frames (runs of words), numbers, and pauses after punctuation that follows a number */
+/* Fractions are spoken as words ("five eighths", "eleven twelfths", normalize() in voice.js). Each one is its own frame,
+   so the frames around it ("plus", "equals what?") are shared and the clip set stays small. A fraction is a run of
+   number words ending in a denominator word, or a denominator word right after a number ("11 twelfths"). */
+const NUM_WORD = /^(zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|negative)$/;
+const DENOM = /^(half|halves|thirds?|quarters?|(fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth|nineteenth|twentieth|thirtieth|fortieth|fiftieth|sixtieth|seventieth|eightieth|ninetieth|hundredth|thousandth)s?)([,.?!:]?)$/;
+/* A normalized line as parts: frames (runs of words), numbers, and pauses after punctuation that follows a number or a fraction */
 export function splitParts(text) {
   const toks = String(text).split(' ').filter(Boolean), parts = []; let cur = [];
   const flush = () => { if (cur.length) parts.push({ f: cur.join(' ') }); cur = []; };
-  toks.forEach((tk, i) => {
-    const m = tk.match(/^(-?\d+(?:\.\d+)?)([,.?!:]?)$/);
+  const pause = p => { if (p) parts.push({ pause: p === ',' ? 'short' : 'long' }); };
+  for (let i = 0; i < toks.length; i++) {
+    const tk = toks[i], m = tk.match(/^(-?\d+(?:\.\d+)?)([,.?!:]?)$/);
     if (m && Math.abs(+m[1]) < 1e9) {
       flush();
       parts.push({ n: m[1], last: (!!m[2] && m[2] !== ',') || i === toks.length - 1 });
-      if (m[2]) parts.push({ pause: m[2] === ',' ? 'short' : 'long' });
-    } else cur.push(tk);
-  });
+      pause(m[2]);
+      continue;
+    }
+    /* number words up to a denominator word: one fraction frame */
+    let j = i; while (j < toks.length && NUM_WORD.test(toks[j])) j++;
+    const d = j < toks.length && toks[j].match(DENOM), afterNumber = !cur.length && parts.length && parts[parts.length - 1].n !== undefined;
+    if (d && (j > i || afterNumber) && toks[i] !== 'negative') {
+      flush();
+      parts.push({ f: toks.slice(i, j + 1).join(' ') });
+      if (j + 1 < toks.length) pause(d[3]);
+      i = j; continue;
+    }
+    cur.push(tk);
+  }
   flush();
   return parts;
 }
