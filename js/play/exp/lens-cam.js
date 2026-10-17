@@ -56,9 +56,16 @@ export function camera(host, { signal, kindChips, onDigits, onType }) {
   const stopStream = () => { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } };
   onAbort(sig, stopStream);
   onAbort(signal, () => { if (reader) { const r = reader; reader = null; r.terminate().catch(() => {}); } });
+  /* The camera is on only while the Player is looking at it: hiding the tab (or the phone locking) turns it off,
+     and the Player turns it on again with one tap. Nothing is kept from the live view. */
+  on(document, 'visibilitychange', () => {
+    if (!document.hidden || !stream) return;
+    stopStream(); intro('The camera turned off while you were away. Turn it on again when you are ready.');
+  }, sig);
 
-  const intro = () => {
+  const intro = (note = '') => {
     host.innerHTML = `<div class="ln-cam-intro">
+      ${note ? `<p class="ln-err" role="status">${esc(note)}</p>` : ''}
       <p class="ln-q">Use the camera?</p>
       <p>Math Lens needs to see the digits for a moment. You point, tap <b>Capture</b>, and it reads the digits from that one frozen frame.</p>
       ${PRIVACY}
@@ -77,7 +84,9 @@ export function camera(host, { signal, kindChips, onDigits, onType }) {
     const v = host.querySelector('video');
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
-      if (sig.aborted) { stopStream(); return; }
+      if (sig.aborted || !host.contains(v)) { stopStream(); return; }
+      /* The browser or the Player can end the camera from outside (permission revoked, camera unplugged) */
+      stream.getVideoTracks().forEach(tr => on(tr, 'ended', () => { if (stream) { stopStream(); fail('The camera stopped. You can type the digits instead.'); } }, sig));
       v.srcObject = stream; await v.play().catch(() => {});
       const snap = host.querySelector('.ln-snap'); snap.disabled = false; snap.focus();
       say('Camera on. Point at some digits and press Capture.');
@@ -137,7 +146,7 @@ export function camera(host, { signal, kindChips, onDigits, onType }) {
     const prog = host.querySelector('.ln-prog'), bar = prog.querySelector('i'), pt = prog.querySelector('.ln-progt');
     prog.hidden = false; host.querySelectorAll('.ln-camrow button').forEach(b => { b.disabled = true; });
     const progress = m => { if (sig.aborted) return; const p = Math.round((m.progress || 0) * 100); bar.style.width = p + '%'; pt.textContent = /recogniz/.test(m.status) ? `Reading ${p}%` : /load|initializ/.test(m.status) ? `Getting the reader ready ${p}%` : 'Working'; };
-    let text = '';
+    let text = '', failed = false;
     try {
       pt.textContent = reader ? 'Reading' : 'Downloading the reader (one time)';
       say(pt.textContent);
@@ -149,11 +158,11 @@ export function camera(host, { signal, kindChips, onDigits, onType }) {
     } catch (e) {
       if (sig.aborted) return;
       console.warn('Math Lens reader', e);
-      text = '';
+      text = ''; failed = true;
     }
     if (sig.aborted) return;
     ctl.abort();
-    onDigits(text, kind);
+    onDigits(text, kind, failed);
   };
 
   on(host, 'click', e => {

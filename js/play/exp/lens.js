@@ -83,11 +83,14 @@ export async function mount({ root, signal, params }) {
   const stopCam = () => { if (cam) { cam.stop(); cam = null; } };
   const showCamera = () => {
     stopCam(); setWay('camera');
-    cam = camera(panel, { signal, kindChips, onDigits: (text, kind) => {
-      panel.innerHTML = digitForm(text, kind, text ? 'Here is what I read. Fix anything that looks wrong, then play.' : 'I could not find digits in that picture. Type them here instead, or try again with the digits filling the box.');
+    cam = camera(panel, { signal, kindChips, onDigits: (text, kind, failed) => {
+      /* failed: the digit reader could not load or run (offline, or blocked by the browser), which is not the picture's fault */
+      panel.innerHTML = digitForm(text, kind, text ? 'Here is what I read. Fix anything that looks wrong, then play.'
+        : failed ? 'The digit reader could not start here. Type the digits instead: the puzzles are just the same.'
+        : 'I could not find digits in that picture. Type them here instead, or try again with the digits filling the box.');
       wireForm(); const inp = panel.querySelector('#lnDigits'); inp.focus(); inp.select();
       panel.querySelector('.ln-form').insertAdjacentHTML('beforeend', '<button type="button" class="md-btn md-btn--sm ln-retake">Take another picture</button>');
-      track('lens/read', text ? 'Read digits' : 'Read nothing');
+      track(text ? 'lens/read' : failed ? 'lens/reader-failed' : 'lens/read-nothing');
     }, onType: showType });
   };
   on(wrap, 'click', e => {
