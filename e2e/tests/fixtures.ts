@@ -95,6 +95,9 @@ type Fixtures = {
   /** Saved progress (mathquest.v1.p1) for that player before the page loads, for example a record from before
       Sparks (v2: xp, weekXp, stars). Default null: a fresh start. */
   seedProgress: Record<string, unknown> | null;
+  /** The first-visit tour (openspec in-app-guide) counts as already shown on this device. Default true, so specs that
+      open Home for a fresh Player are not covered by it; e2e/tests/guide.spec.ts turns it off. */
+  tourSeen: boolean;
   /** Requests that broke the live-dependency rules. Checked automatically after each test. */
   violations: string[];
   issues: Issues;
@@ -106,8 +109,9 @@ export const test = base.extend<Fixtures>({
   seedConsent: [null, { option: true }],
   seedProgress: [null, { option: true }],
   seedPlayer: [null, { option: true }],
+  tourSeen: [true, { option: true }],
 
-  context: async ({ context, seedMode, seedConsent, seedProgress, seedPlayer }, use) => {
+  context: async ({ context, seedMode, seedConsent, seedProgress, seedPlayer, tourSeen }, use) => {
     await blockAnalytics(context);
     // The same no-op counter from the start, for pages whose queue flushes before the local count.js answer runs
     await context.addInitScript(() => { const w = window as any; w.goatcounter ||= {}; if (typeof w.goatcounter.count !== 'function') w.goatcounter.count = () => {}; });
@@ -121,6 +125,7 @@ export const test = base.extend<Fixtures>({
         }
       } catch (e) { /* storage blocked: the app copes */ }
     }, [seedMode, seedConsent, seedProgress, seedPlayer] as const);
+    if (tourSeen) await context.addInitScript(() => { try { if (!localStorage.getItem('vm.tour')) localStorage.setItem('vm.tour', 'done'); } catch (e) { /* storage blocked */ } });
     await use(context);
   },
 

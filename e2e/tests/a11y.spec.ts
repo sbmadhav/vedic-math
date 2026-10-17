@@ -7,7 +7,7 @@ import { test, expect, APP, open, chromiumOnly } from './fixtures';
    (only that rule on that element) and recorded as its own test.fixme below, so it stays visible.
    When one is fixed, delete its KNOWN entry: the route checks then cover it again. */
 
-const ROUTES = ['#/', '#/learn', '#/dojo', '#/arena', '#/games', '#/sutras', '#/watch', '#/me', '#/skill/v-sq5', '#/game/times-sprint', '#/places'];
+const ROUTES = ['#/', '#/learn', '#/dojo', '#/arena', '#/games', '#/sutras', '#/watch', '#/me', '#/skill/v-sq5', '#/game/times-sprint', '#/places', '#/guide'];
 
 /* Known violations on the live site: { route, rule, target, note }. Empty: the Sparks bar is a progressbar and
    #prRun lost its label (both fixed in js/app.js). Add an entry when a new one is found and reported. */
@@ -34,6 +34,20 @@ for (const scheme of ['light', 'dark'] as const) {
         expect(await serious(page, r)).toEqual([]);
       });
     }
+  });
+}
+
+/* Home with the first-visit tour open (in-app-guide 3.3) */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, tour`, () => {
+    test.use({ colorScheme: scheme, tourSeen: false });
+    test('Home with the tour open has no serious or critical axe violations', async ({ page }, testInfo) => {
+      chromiumOnly(testInfo);
+      await open(page);
+      await expect(page.locator('dialog.vm-tour')).toBeVisible();
+      await page.waitForLoadState('networkidle');
+      expect(await serious(page, '#/')).toEqual([]);
+    });
   });
 }
 
