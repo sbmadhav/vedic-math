@@ -148,7 +148,8 @@ export function mount({ root, signal, params }) {
       done.scrollIntoView({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
     };
 
-    const ways = {};
+    const ways = {}, counting = {};
+    const waysText = (w, target) => `There ${w === 1 ? 'is 1 way' : `are ${w.toLocaleString()} ways`} to make ${target} with these six numbers.`;
     function drawDone() {
       const tr = P.tiers[cur], st = tierState(cur);
       done.hidden = !st.done;
@@ -161,10 +162,12 @@ export function mount({ root, signal, params }) {
           <p class="px-note">${fun[cur] ? 'Just for fun: your first try still counts.' : `${mine} move${mine === 1 ? '' : 's'}.${st.v === tr.target && mine === sol.length ? ' As short as it gets.' : ''}`}</p>
         </div>
         <div class="dn-path"><p class="dn-path-k">One elegant path</p><ol>${sol.map(s => `<li>${esc(stepText(s))}</li>`).join('')}</ol>
-          <p class="px-note dn-ways">${w == null ? 'Counting every path...' : `There ${w === 1 ? 'is 1 way' : `are ${w.toLocaleString()} ways`} to make ${tr.target} with these six numbers.`}</p></div>
+          <p class="px-note dn-ways">${w == null ? 'Counting every path...' : waysText(w, tr.target)}</p></div>
         <div class="px-row">${next >= 0 ? `<button type="button" class="md-btn md-btn--primary dn-next" data-tier="${next}">Next: ${P.tiers[next].name} target</button>` : ''}
           <button type="button" class="md-btn md-btn--sm dn-fun">Play it again for fun</button></div>`;
-      if (w == null) later(() => { ways[cur] = D.countWays(tr.nums, tr.target, tr.ops); const el = done.querySelector('.dn-ways'); if (el) el.textContent = `There ${ways[cur] === 1 ? 'is 1 way' : `are ${ways[cur].toLocaleString()} ways`} to make ${tr.target} with these six numbers.`; }, 30, signal);
+      /* Count once per tier, for the tier it was asked for (cur may change before it runs) */
+      const c = cur;
+      if (w == null && !counting[c]) { counting[c] = true; later(() => { ways[c] = D.countWays(tr.nums, tr.target, tr.ops); const el = cur === c && done.querySelector('.dn-ways'); if (el) el.textContent = waysText(ways[c], tr.target); }, 30, signal); }
       summaryDraw();
     }
 
@@ -187,7 +190,13 @@ export function mount({ root, signal, params }) {
         </div></div>`;
       if (official) tick();
     }
-    const tick = () => { const el = wrap.querySelector('.dn-next-in'); if (!el) return; const now = new Date(), mid = new Date(now); mid.setHours(24, 0, 0, 0); const m = Math.max(0, Math.round((mid - now) / 60000)); el.textContent = `Next puzzle in ${Math.floor(m / 60)} h ${m % 60} min`; };
+    const tick = () => {
+      const el = wrap.querySelector('.dn-next-in'); if (!el) return;
+      /* Past midnight this page still shows yesterday's puzzle: say so instead of counting down a whole new day */
+      if (dayKey() !== today) { if (!el.querySelector('.dn-reload')) el.innerHTML = 'A new puzzle is ready. <button type="button" class="dn-link dn-reload">Play it</button>'; return; }
+      const now = new Date(), mid = new Date(now); mid.setHours(24, 0, 0, 0); const m = Math.max(1, Math.ceil((mid - now) / 60000));
+      el.textContent = `Next puzzle in ${Math.floor(m / 60)} h ${m % 60} min`;
+    };
     every(tick, 30000, signal);
 
     on(wrap, 'click', e => {
@@ -195,6 +204,7 @@ export function mount({ root, signal, params }) {
       if (tab) { cur = +tab.dataset.tier; sel = null; op = null; draw(); say(`${P.tiers[cur].name} target: ${P.tiers[cur].target}.`); if (tab.classList.contains('dn-next')) wrap.querySelector('.dn-stage').scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); return; }
       const sl = e.target.closest('[data-slot]'); if (sl) return pickSlot(+sl.dataset.slot);
       const ob = e.target.closest('[data-op]'); if (ob) return pickOp(ob.dataset.op);
+      if (e.target.closest('.dn-reload')) { location.reload(); return; }
       if (e.target.closest('.dn-undo')) return undo();
       if (e.target.closest('.dn-reset')) return reset();
       if (e.target.closest('.dn-submit')) { const c = D.closest(slotsOf(cur), P.tiers[cur].target); return finish(c); }
