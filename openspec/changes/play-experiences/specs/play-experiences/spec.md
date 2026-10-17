@@ -50,7 +50,7 @@ Experiences SHALL NOT send anything to the leaderboards. Share links SHALL carry
 
 #### Scenario: A typed plate in a share link
 - **WHEN** a Player types a plate with other words in Math Lens and shares it
-- **THEN** the link holds only capital letters, digits, spaces and hyphens, at most 12 characters
+- **THEN** the link and the message hold only its digits
 
 ### Requirement: Camera and microphone only while in use
 Math Lens (camera) and Tala Lab (microphone) SHALL ask for the device only after the Player taps to turn it on, next to a line saying what it is used for, and SHALL use it on the device only, never recording, storing or sending a picture or a sound. Every track SHALL stop when the Player leaves the page, when the page is hidden, and on any error.

@@ -269,8 +269,11 @@ export async function mount({ root, signal, params }) {
     const tb = e.target.closest('[data-tab]'); if (tb) { go(+tb.dataset.tab, false); return; }
     if (e.target.closest('.ln-new')) { wrap.querySelector('.ln-find').scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); wrap.querySelector('[data-way="camera"]').focus({ preventScroll: true }); return; }
     if (e.target.closest('.ln-send')) {
-      const payload = src.kind === 'receipt' && src.items?.length ? src.items.map(x => (x.cents / 100).toFixed(2)).join(' ') : src.kind === 'receipt' ? (src.total / 100).toFixed(2) : src.raw;
-      share({ title: 'Math Lens', text: `I found ${src.raw} out in the world. Can you play it?`, url: shareUrl(`#/games/lens/d/${src.kind}/${encodeURIComponent(payload)}`) });
+      /* A plate or number is shared as its digits only (the challenges use only the digits), so letters someone
+         typed never travel in the link or the message; a clock and a receipt are shared as the time or amounts */
+      const payload = src.kind === 'receipt' && src.items?.length ? src.items.map(x => (x.cents / 100).toFixed(2)).join(' ') : src.kind === 'receipt' ? (src.total / 100).toFixed(2) : src.kind === 'clock' ? src.raw : src.digits;
+      const shown = src.kind === 'clock' || src.kind === 'receipt' ? src.raw : src.digits;
+      share({ title: 'Math Lens', text: `I found ${shown} out in the world. Can you play it?`, url: shareUrl(`#/games/lens/d/${src.kind}/${encodeURIComponent(payload)}`) });
     }
   }, signal);
   on(play, 'keydown', e => {
