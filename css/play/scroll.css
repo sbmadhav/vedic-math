@@ -18,12 +18,12 @@
 .sc-map-scroll figcaption, .sc-found-scroll + .sc-found-k { text-align: center; font-weight: 700; color: var(--sun-strong); margin-top: var(--space-2); }
 .sc-psvg { width: 100%; height: auto; display: block; max-width: 760px; margin: 0 auto; overflow: visible; }
 .sc-prod { fill: var(--sc-wood); }
-.sc-piece path { fill: transparent; stroke: var(--ink-muted); stroke-width: 1.5; stroke-dasharray: 5 5; opacity: .6; }
-.sc-piece.is-found path { fill: var(--sc-parch); stroke: var(--sc-parch-edge); stroke-dasharray: none; opacity: 1; animation: sc-piece-in .7s cubic-bezier(.3, 1.4, .5, 1) both; animation-delay: calc(var(--i) * 80ms); }
+.sc-piece > path { fill: transparent; stroke: var(--ink-muted); stroke-width: 1.5; stroke-dasharray: 5 5; opacity: .6; }
+.sc-piece.is-found > path { fill: var(--sc-parch); stroke: var(--sc-parch-edge); stroke-dasharray: none; opacity: 1; animation: sc-piece-in .7s cubic-bezier(.3, 1.4, .5, 1) both; animation-delay: calc(var(--i) * 80ms); }
 .sc-pnum { font: 700 22px/1 var(--font-display); fill: var(--ink-muted); text-anchor: middle; opacity: .55; }
 .sc-pg { fill: var(--sun-strong); }
 .sc-pg--line, .sc-pg.sc-pg--line { fill: none; stroke: var(--sun-strong); stroke-width: 2.5; stroke-linejoin: round; }
-.sc-map-scroll.is-whole .sc-piece path { stroke: none; }
+.sc-map-scroll.is-whole .sc-piece > path { stroke: none; }
 @keyframes sc-piece-in { from { transform: translateY(-14px) rotate(-3deg); opacity: 0; } }
 
 .sc-chapters { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
@@ -254,7 +254,7 @@ span.sc-chip { cursor: default; }
 @keyframes sc-shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
 @keyframes sc-unroll { from { transform: scaleY(.6); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .sc-parrot, .sc-shimmer, .sc-flame, .sc-star, .sc-piece.is-found path, .sc-explain, .sc-widget.is-shake { animation: none; }
+  .sc-parrot, .sc-shimmer, .sc-flame, .sc-star, .sc-piece.is-found > path, .sc-explain, .sc-widget.is-shake { animation: none; }
   .sc-ch, .sc-choice, .sc-tile, .sc-dial { transition: none; }
   a.sc-ch:hover { transform: none; }
 }
