@@ -1202,7 +1202,8 @@ html.motion-paused .tour-ring, body.calm .tour-ring, html.motion-paused .tour-ca
 
 /* ---------- Play shelves (openspec play-experiences): a section's play experiences, js/play/catalog.js ---------- */
 .play-shelf { margin-block: var(--space-6); }
-.play-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: var(--space-4); }
+/* Its own grid class: .play-grid is Home's tile grid (above), which a second rule here would override */
+.play-shelf-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: var(--space-4); }
 .play-card { --c: var(--coral); display: flex; flex-direction: column; gap: var(--space-1); height: 100%; box-sizing: border-box; padding: var(--space-5); border-radius: var(--radius-lg); background: var(--card); border: 2px solid var(--line); color: var(--ink); text-decoration: none; box-shadow: var(--shadow-card); position: relative; overflow: hidden; transition: transform .18s ease, border-color .18s ease; }
 .play-card::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 6px; background: var(--c); }
 .play-card:hover, .play-card:focus-visible { transform: translateY(-3px); border-color: var(--c); }
@@ -1213,5 +1214,5 @@ html.motion-paused .tour-ring, body.calm .tour-ring, html.motion-paused .tour-ca
 .play-card span:last-child { color: var(--ink-muted); font-size: .95rem; }
 .play-card { --cs: var(--coral-strong); }
 .play-card--coral { --c: var(--coral); --cs: var(--coral-strong); } .play-card--sun { --c: var(--sun-strong); --cs: var(--sun-strong); } .play-card--teal { --c: var(--teal); --cs: var(--teal-strong); }
-@media (prefers-reduced-motion: reduce) { .play-card { transition: none; } .play-card:hover { transform: none; } }
-html.motion-paused .play-card, body.calm .play-card { transition: none; } html.motion-paused .play-card:hover, body.calm .play-card:hover { transform: none; }
+@media (prefers-reduced-motion: reduce) { .play-card { transition: none; } .play-card:hover, .play-card:focus-visible { transform: none; } }
+html.motion-paused .play-card, body.calm .play-card { transition: none; } html.motion-paused .play-card:hover, body.calm .play-card:hover, html.motion-paused .play-card:focus-visible, body.calm .play-card:focus-visible { transform: none; }
