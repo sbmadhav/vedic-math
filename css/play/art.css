@@ -70,11 +70,12 @@
 .ms-hear-ic { width: 16px; height: 14px; background: linear-gradient(90deg, currentColor 0 3px, transparent 3px 6px, currentColor 6px 9px, transparent 9px 12px, currentColor 12px 15px, transparent 15px); clip-path: polygon(0 40%, 20% 40%, 20% 0, 40% 0, 40% 100%, 60% 100%, 60% 20%, 80% 20%, 80% 60%, 100% 60%, 100% 100%, 0 100%); }
 .ms-hear[aria-pressed="true"] .ms-hear-ic { animation: ms-eq .5s ease-in-out infinite alternate; }
 @keyframes ms-eq { to { transform: scaleY(.5); } }
-.ms-wall { position: relative; }
+.ms-wall { min-width: 0; }
+/* open, the box sits in the flow on its own line (an overlay was covered by the page foot and pushed phones sideways) */
+.ms-wall[open] { flex: 1 1 100%; }
 .ms-wall summary { list-style: none; cursor: pointer; }
 .ms-wall summary::-webkit-details-marker { display: none; }
-.ms-wallbox { position: absolute; z-index: 5; right: 0; top: calc(100% + 6px); width: min(300px, 80vw); padding: var(--space-3); border-radius: var(--radius-md); background: var(--card); border: 2px solid var(--edge); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: var(--space-2); backdrop-filter: var(--glass); }
-@media (max-width: 520px) { .ms-wallbox { right: auto; left: 0; } }
+.ms-wallbox { box-sizing: border-box; width: 100%; max-width: 360px; margin-top: var(--space-2); padding: var(--space-3); border-radius: var(--radius-md); background: var(--card); border: 2px solid var(--edge); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: var(--space-2); }
 .ms-wallbox fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .ms-wallbox legend { font-weight: 700; color: var(--ink-muted); font-size: .82rem; margin-bottom: 2px; }
 .ms-wallbox label { display: flex; align-items: center; gap: 8px; font-weight: 700; }
