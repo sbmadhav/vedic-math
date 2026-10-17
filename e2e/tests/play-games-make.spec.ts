@@ -1,4 +1,5 @@
 import { test, expect, open } from './fixtures';
+import type { Page } from '@playwright/test';
 
 /* Play and make games (Pattern Wall, Teach the Apprentice, Estimation Bets): shared links cannot inject markup,
    removing cards always asks first, Sparks-paying actions are not farmable, and bets with the ends typed the
@@ -11,6 +12,11 @@ const CONJ = { v: 1, p: 0, k: '', g: 'hundred', gp: 0, x: '0.2.4', n: [1, 2, 3],
 /* The same card as it is stored on the wall */
 const stored = (name: number[]) => ({ p: null, k: '', g: 'hundred', gp: null, cells: [0, 2, 4], name, rule: { s: 'prime', c: 'odd' }, test: { ok: false, counter: 2, tested: 1 }, t: '2026-10-16' });
 
+/* Records the play actions the app turns into Sparks (js/play/kit.js track) */
+async function recordPlay(page: Page) {
+  await page.addInitScript(() => { (window as any).__plays = []; document.addEventListener('vmplay', (e: any) => (window as any).__plays.push(e.detail.action)); });
+}
+const plays = (page: Page, action: string) => page.evaluate(a => (window as any).__plays.filter((x: string) => x === a).length, action);
 
 test.describe('Pattern Wall', () => {
   test('a hostile shared card link injects nothing and does not open', async ({ page, issues }) => {
@@ -43,6 +49,47 @@ test.describe('Pattern Wall', () => {
     await expect(page.locator('.wl-cards > li')).toHaveCount(1);
     await expect(page.locator('#pwn2')).toHaveCount(0);
     await expect(page.locator('.wl-cards .wl-badge')).toHaveText(/broken by 2/);
+    expect(issues.console).toEqual([]);
+  });
+
+  test('removing two cards in a row asks to confirm each one', async ({ page, issues }) => {
+    await page.addInitScript(([k, cards]) => { if (!localStorage.getItem(k)) localStorage.setItem(k, JSON.stringify({ cards })); }, [WALL, [stored([0, 0, 0]), stored([1, 1, 1]), stored([2, 2, 2])]] as const);
+    await open(page, '#/games/wall/wall');
+    const cards = page.locator('.wl-cards > li');
+    await expect(cards).toHaveCount(3);
+    for (const left of [2, 1]) {
+      const rm = cards.first().locator('.wl-rm');
+      await rm.click();
+      await expect(rm).toHaveText('Really remove?');
+      await expect(cards).toHaveCount(left + 1);
+      await rm.click();
+      await expect(cards).toHaveCount(left);
+    }
+    await expect(cards.first().locator('.wl-rm')).toHaveText('Remove');
+    await expect(page.locator('.wl-count')).toHaveText('1');
+    expect((await page.evaluate(k => JSON.parse(localStorage.getItem(k) || '{}'), WALL)).cards).toHaveLength(1);
+    expect(issues.console).toEqual([]);
+  });
+
+  test('a discovery is tracked once per Player, however often it is painted again', async ({ page, issues }) => {
+    await recordPlay(page);
+    await open(page, '#/games/wall');
+    const tool = page.locator('[data-tool="mult"]');
+    await tool.click();
+    await expect(page.locator('.wl-found-k')).toHaveText('Pattern discovered!');
+    expect(await plays(page, 'wall/discover')).toBe(1);
+    await page.locator('.wl-clear').click();
+    await tool.click();
+    await expect(page.locator('.wl-found-k')).toHaveText('Pattern discovered!');
+    await page.locator('.wl-name-it').click();
+    await page.locator('.wl-cancel').click();
+    await expect(page.locator('.wl-found-k')).toHaveText('Pattern discovered!');
+    expect(await plays(page, 'wall/discover')).toBe(1);
+    await page.reload();
+    await expect(page.locator('#view h1')).toHaveText('Pattern Wall');
+    await page.locator('[data-tool="mult"]').click();
+    await expect(page.locator('.wl-found-k')).toHaveText('Pattern discovered!');
+    expect(await plays(page, 'wall/discover')).toBe(0);
     expect(issues.console).toEqual([]);
   });
 });

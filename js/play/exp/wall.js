@@ -3,7 +3,7 @@
    conjecture after testing them on more numbers. Routes: #/games/wall, #/games/wall/wall, #/games/wall/famous,
    #/games/wall/card/<code> (a shared card). Logic in wall-core.js. */
 import { level, store, rng, shuffle, tone, sfx, PENTA, say, confetti, toast, track, esc, token, b64url, shareUrl, share, downloadCanvas, dayKey, reducedMotion, backLink } from '../kit.js';
-import { on } from '../life.js';
+import { on, child } from '../life.js';
 import * as W from './wall-core.js';
 
 const KEY = 'wall';
@@ -18,7 +18,10 @@ export function mount({ root, signal, params }) {
   /* Stored cards pass the same checks as shared ones, so nothing odd in storage reaches the page */
   D.cards = Array.isArray(D.cards) ? D.cards.map(W.cleanCard).filter(Boolean) : [];
   D.nick = Number.isInteger(D.nick) && D.nick >= 0 && D.nick < W.NICKS.length ? D.nick : null;
+  /* Pattern ids this Player has discovered (pinned or not): a discovery counts once */
+  D.found = Array.isArray(D.found) ? D.found.filter(id => W.patternById(id)) : [];
   const save = () => store.set(KEY, D);
+  let wallCtl = null; /* the My wall render's listeners (wallView) */
   const wrap = document.createElement('div'); wrap.className = 'md-wrap wl'; root.append(wrap);
   const GRID_IDS = lv === 'explorer' ? ['hundred', 'times', 'meru', 'calendar'] : Object.keys(W.GRIDS);
   const TOOL_IDS = lv === 'explorer' ? ['mult', 'square', 'tri', 'prime'] : Object.keys(W.TOOLS);
@@ -105,7 +108,12 @@ export function mount({ root, signal, params }) {
         const fresh = m.find(x => !hasCard(x.pattern.id, x.variant.key)) || m[0];
         const have = hasCard(fresh.pattern.id, fresh.variant.key);
         S.flow = { kind: 'found', p: fresh.pattern, v: fresh.variant, have };
-        if (!have) { sfx('magic'); confetti(40); track('wall/discover', fresh.pattern.id); }
+        if (!have) {
+          sfx('magic'); confetti(40);
+          /* Only a Player's first discovery of a pattern is tracked (and earns Sparks), not a repaint of it */
+          const pid = fresh.pattern.id;
+          if (!D.found.includes(pid) && !D.cards.some(c => c.p === pid)) { D.found.push(pid); save(); track('wall/discover', pid); }
+        }
         return discovery();
       }
       if (S.painted.size >= 3) status.innerHTML = `<div class="wl-none"><p>${lv === 'explorer' ? 'No famous pattern yet. Keep painting!' : 'No pattern from the catalog matches this painting yet.'}</p><button type="button" class="md-btn md-btn--sm wl-conj">Is it a pattern? Test my idea</button></div>`;
@@ -237,6 +245,9 @@ export function mount({ root, signal, params }) {
 
   /* ---------- My wall ---------- */
   function wallView() {
+    /* One click listener per render: the last render's goes when this one starts */
+    if (wallCtl) wallCtl.abort();
+    wallCtl = child(signal);
     if (!D.cards.length) { body.innerHTML = `<div class="wl-empty px-stage"><p class="wl-found-t">Your wall is empty</p><p>${lv === 'explorer' ? 'Paint some numbers and find a pattern to pin here.' : 'Find a pattern in the workspace, name it, and it will hang here with your rule.'}</p><a class="md-btn md-btn--primary" href="#/games/wall">Go to the workspace</a></div>`; return; }
     const found = D.cards.filter(c => c.p).length, conj = D.cards.length - found;
     body.innerHTML = `<p class="wl-sum">${found} discover${found === 1 ? 'y' : 'ies'}${conj ? `, ${conj} conjecture${conj === 1 ? '' : 's'}` : ''}. ${lv === 'explorer' ? 'You are a pattern finder.' : 'Every card is a rule you found yourself.'}</p><ul class="wl-cards">${D.cards.map((c, i) => `<li>${cardHtml(c, i)}</li>`).join('')}</ul>`;
@@ -248,8 +259,9 @@ export function mount({ root, signal, params }) {
       if (b.dataset.act === 'remove') {
         if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Really remove?'; return; }
         D.cards.splice(i, 1); save(); toast('Removed from your wall'); wrap.querySelector('.wl-count').textContent = D.cards.length; wallView();
+        const rms = body.querySelectorAll('.wl-rm'); (rms[Math.min(i, rms.length - 1)] || body.querySelector('.md-btn'))?.focus({ preventScroll: true });
       }
-    }, signal);
+    }, wallCtl.signal);
   }
   function cardHtml(c, i, shared = false) {
     const g = gridFor(c.g, c.gp), p = c.p && W.patternById(c.p);
