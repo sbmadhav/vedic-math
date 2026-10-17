@@ -1,0 +1,46 @@
+# Spec Delta
+
+## Purpose
+
+Ship every change the same checked way: tests, a stamped build, a preview per branch, a deploy to Cloudflare from `main`, and end-to-end runs against what is actually live.
+
+## ADDED Requirements
+
+### Requirement: Deploy from main
+A push to `main` SHALL run the unit tests, the build and its checks, and then deploy the checked build to Cloudflare with `wrangler deploy`, authenticated by a Cloudflare API token held as a GitHub secret and scoped to editing Workers scripts on this one account. The token SHALL never be printed, passed on a command line or available to pull requests from forks. Every action SHALL be pinned to a full commit SHA, and wrangler to an exact version.
+
+#### Scenario: A push to main
+- **WHEN** a commit lands on `main` and the checks pass
+- **THEN** the same build that was checked is deployed, and the deploy step reads the token only from the secret
+
+#### Scenario: A fork's pull request
+- **WHEN** a pull request comes from a fork
+- **THEN** no secret is available to its runs and nothing is deployed
+
+### Requirement: A preview for every branch
+A pull request from a branch of this repo SHALL get a preview version on `workers.dev` with an alias for that pull request, built with the preview flag (no indexing), whose URL is posted on the pull request.
+
+#### Scenario: Opening a pull request
+- **WHEN** a pull request is opened from a branch of this repo
+- **THEN** a comment gives its preview URL, and that preview answers with `X-Robots-Tag: noindex, nofollow`
+
+### Requirement: End-to-end runs against previews and production
+The Playwright suite SHALL run against the preview of each pull request, against production after each deploy once the live files match the commit, daily, and on demand with a chosen base URL. It SHALL never write to production Firestore or count analytics visits.
+
+#### Scenario: After a deploy
+- **WHEN** a deploy finishes
+- **THEN** the suite waits until `/play/`, `/sw.js` and `/js/app.js` on learnvedicmath.com match the build of that commit, then runs
+
+### Requirement: Watching the move and the site
+The daily run SHALL check the moved page on sbmadhav.com during Phase B and the 301 from sbmadhav.com/vedic-math/ from Phase C. An external uptime monitor SHALL watch `/`, `/play/` and `/sw.js` and alert the owner.
+
+#### Scenario: GitHub stops redirecting
+- **WHEN** `https://sbmadhav.com/vedic-math/x` no longer answers with a 301 to learnvedicmath.com in Phase C
+- **THEN** the daily run fails and names the check
+
+### Requirement: Dependencies and code are scanned
+Dependabot SHALL propose updates for GitHub Actions and for every npm folder weekly. Code scanning SHALL run on every pull request: CodeQL while the repo is public, Semgrep Community Edition and a secret scan once it is private.
+
+#### Scenario: A private repo
+- **WHEN** the repo is private
+- **THEN** a pull request still gets a Semgrep and a secret scan result
