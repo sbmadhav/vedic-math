@@ -120,7 +120,7 @@ export default [
       const t = pick(['disc', 'tax', 'change']);
       if (t === 'change') { const o = ri(4, 40) * 5, p = pick([10, 20, 25, 40, 50, -10, -20, -25]), n = o * (1 + p / 100); return { q: `A price goes from $${o} to $${round(n, 2)}. What is the percent change? (Use a negative number for a decrease.)`, kind: 'num', answer: p, unit: '%', hints: [`Change: ${round(n - o, 2)}`], steps: [`${round(n - o, 2)} &divide; ${o} &times; 100 = ${p}%`] }; }
       const price = ri(8, 120), p = t === 'disc' ? pick([10, 15, 20, 25, 30, 40]) : pick([5, 6, 7, 8, 10]), m = t === 'disc' ? 1 - p / 100 : 1 + p / 100;
-      return { q: `$${price} with a ${p}% ${t === 'disc' ? 'discount' : 'sales tax'}. What is the final price?`, kind: 'num', answer: round(price * m, 2), tol: 0.011, unit: '$',
+      return { q: `$${price} with ${/^(8|11|18)/.test(String(p)) ? 'an' : 'a'} ${p}% ${t === 'disc' ? 'discount' : 'sales tax'}. What is the final price?`, kind: 'num', answer: round(price * m, 2), tol: 0.011, unit: '$',
         hints: [`Multiply by ${round(m, 2)}.`], steps: [`${price} &times; ${round(m, 2)} = ${round(price * m, 2).toFixed(2)}`] };
     } },
   { id: '7-circle', grade: 7, strand: 'geo', title: 'Circumference and area of circles', kid: 'Round things',
@@ -138,7 +138,7 @@ export default [
     gen() {
       const r = ri(1, 8), b = ri(1, 8), g = ri(0, 6), col = pick(['red', 'blue', 'green'].filter(c => c !== 'green' || g)), want = { red: r, blue: b, green: g }[col], tot = r + b + g;
       if (Math.random() < .3) { const f = pick([[2, 'an even number', 3], [1, 'a 6', 1], [3, 'a number greater than 4', 2], [4, 'a number less than 3', 2]]); return { q: `You roll a fair six-sided die. What is the probability of ${f[1]}?`, kind: 'num', answer: f[2] / 6, simplest: true, hints: ['There are 6 equally likely outcomes.'], steps: [`${f[2]} out of 6 = ${fr(f[2], 6)}`] }; }
-      return { q: `A bag has ${r} red, ${b} blue${g ? ' and ' + g + ' green' : ''} marbles. You pick one without looking. What is the probability it is ${col}? Give a fraction.`, kind: 'num', answer: want / tot, simplest: true,
+      return { q: `A bag has ${r} red${g ? ', ' : ' and '}${b} blue${g ? ' and ' + g + ' green' : ''} marbles. You pick one without looking. What is the probability it is ${col}? Give a fraction.`, kind: 'num', answer: want / tot, simplest: true,
         hints: [`There are ${tot} marbles in all.`], steps: [`${want} out of ${tot} = ${fr(want, tot)}`] };
     } },
   { id: '7-like', grade: 7, strand: 'alg', title: 'Combine like terms', kid: 'Group the x\'s',
@@ -201,8 +201,8 @@ export default [
     gen() {
       const [p, q, h] = pick([[3, 4, 5], [5, 12, 13], [8, 15, 17], [7, 24, 25], [6, 8, 10], [9, 12, 15], [20, 21, 29], [9, 40, 41]]), k = pick([1, 1, 2]);
       const a = p * k, b = q * k, c = h * k, findC = Math.random() < .6;
-      return findC ? { q: 'Find the hypotenuse <i>c</i>.', viz: V.triangle({ right: true, sides: [String(b), 'c', String(a)] }), kind: 'num', answer: c, hints: [`${a}<sup>2</sup> + ${b}<sup>2</sup> = ${a * a + b * b}`], steps: [`c = &radic;${a * a + b * b} = ${c}`] }
-        : { q: 'Find the missing leg <i>a</i>.', viz: V.triangle({ right: true, sides: [String(b), String(c), 'a'] }), kind: 'num', answer: a, hints: [`${c}<sup>2</sup> &minus; ${b}<sup>2</sup> = ${c * c - b * b}`], steps: [`a = &radic;${c * c - b * b} = ${a}`] };
+      return findC ? { q: 'Find the hypotenuse <i>c</i>.', say: `A right triangle has legs ${a} and ${b}. Find the hypotenuse <i>c</i>.`, viz: V.triangle({ right: true, sides: [String(b), 'c', String(a)] }), kind: 'num', answer: c, hints: [`${a}<sup>2</sup> + ${b}<sup>2</sup> = ${a * a + b * b}`], steps: [`c = &radic;${a * a + b * b} = ${c}`] }
+        : { q: 'Find the missing leg <i>a</i>.', say: `A right triangle has hypotenuse ${c} and one leg ${b}. Find the missing leg <i>a</i>.`, viz: V.triangle({ right: true, sides: [String(b), String(c), 'a'] }), kind: 'num', answer: a, hints: [`${c}<sup>2</sup> &minus; ${b}<sup>2</sup> = ${c * c - b * b}`], steps: [`a = &radic;${c * c - b * b} = ${a}`] };
     } },
   { id: '8-slope', grade: 8, strand: 'func', title: 'Slope', kid: 'Steepness',
     idea: 'Slope is rise over run: how much y changes for each step in x.',
@@ -227,7 +227,7 @@ export default [
       const x = ri(-8, 8), a = rnz(-8, 8); let c = rnz(-8, 8); if (c === a) c = a + 1;
       const b = ri(-15, 15), d = (a - c) * x + b;
       return { q: `${poly([a, b])} = ${poly([c, d])}`, viz: V.balance(poly([a, b]), poly([c, d])), kind: 'num', answer: x,
-        hints: [`Subtract ${term(c, 'x', 1, true)} from both sides.`], steps: [`${term(a - c, 'x', 1, true)} = ${neg(d - b)}`, `<i>x</i> = ${neg(x)}`] };
+        hints: [c ? `Subtract ${term(c, 'x', 1, true)} from both sides.` : `The x terms are already on one side. Get ${term(a, 'x', 1, true)} alone.`], steps: [`${term(a - c, 'x', 1, true)} = ${neg(d - b)}`, `<i>x</i> = ${neg(x)}`] };
     } },
   { id: '8-systems', grade: 8, strand: 'func', title: 'Systems of equations', kid: 'Where lines meet',
     idea: 'The solution of a system is the point where the lines cross: it makes both equations true.',
@@ -254,6 +254,6 @@ export default [
     gen() {
       const r = ri(1, 9), h = ri(2, 15), t = pick(['cyl', 'cone', 'sph']), v = t === 'cyl' ? Math.PI * r * r * h : t === 'cone' ? Math.PI * r * r * h / 3 : 4 / 3 * Math.PI * r ** 3;
       return { q: `Find the volume of a ${t === 'cyl' ? 'cylinder' : t === 'cone' ? 'cone' : 'sphere'} with radius ${r}${t === 'sph' ? '' : ' and height ' + h}. Round to 2 decimal places.`, kind: 'num', answer: round(v, 2), tol: 0.02,
-        hints: [t === 'cyl' ? '&pi;r<sup>2</sup>h' : t === 'cone' ? '&frac13;&pi;r<sup>2</sup>h' : '&frac43;&pi;r<sup>3</sup>'], steps: [`${round(v, 2)}`] };
+        hints: [t === 'cyl' ? '&pi;r<sup>2</sup>h' : t === 'cone' ? '&frac13;&pi;r<sup>2</sup>h' : '<span class="fr"><span>4</span><span>3</span></span>&pi;r<sup>3</sup>'], steps: [`${round(v, 2)}`] };
     } }
 ];

@@ -368,7 +368,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
       </form>
       <div class="pr-say" id="prSay" role="status" aria-live="polite"></div>
       <div class="pr-sol" id="prSol" hidden></div>`;
-    wire(question.signal); fx.speak(p.q);
+    wire(question.signal); fx.speakQuestion(p);
     const first = root.querySelector('input, .pr-choice'); if (first && render.n > 1 && matchMedia('(pointer: fine)').matches) first.focus({ preventScroll: true });
   };
   const say = (html, tone = '') => { const b = $('#prSay', root); b.className = 'pr-say ' + tone; b.innerHTML = html ? `${boltFor(tone)}<div class="md-bubble">${html}</div>` : ''; };
@@ -405,12 +405,12 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
       fx.sfx('no');
       if (lives) { life--; reveal(); say(life ? `Oops! ${life} ${life === 1 ? 'life' : 'lives'} left. See how it works, then keep going.` : 'Out of lives!', 'no'); finish(false); const lv = root.querySelector('.pr-lives'); lv.innerHTML = '<i class="on"></i>'.repeat(life) + '<i></i>'.repeat(lives - life); lv.setAttribute('aria-label', `${life} lives left`); if (!life && onOver) { const b = $('#prCheck', root); b.textContent = 'See my score'; b.onclick = e => { e.preventDefault(); onOver(right); }; } return; }
       if (tries === 1) { say((res.msg ? res.msg + ' ' : '') + 'Not quite. Try once more.' + (p.hints[0] && !hints ? ' <button type="button" class="linkbtn" data-hint>Want a hint?</button>' : ''), 'no'); if (explorer) fx.speak('Not quite. Try again!', true); }
-      else if (tries === 2) { hints = Math.max(hints, 1); say((res.msg ? res.msg + ' ' : '') + `Hint: ${p.hints[Math.min(1, p.hints.length - 1)] || p.hints[0]}`, 'no'); if (explorer) fx.speak(p.hints[0], true); }
+      else if (tries === 2) { hints = Math.max(hints, 1); const h = p.hints[Math.min(1, p.hints.length - 1)] || p.hints[0]; say((res.msg ? res.msg + ' ' : '') + `Hint: ${h}`, 'no'); if (explorer && h) fx.speak(h, true); } // read the hint that is shown
       else { reveal(); say('That one was tricky. See how it works, then try the next one.', 'no'); finish(false); }
     }, qs);
     on($('#prHint', root), 'click', () => { if (done) return; const h = p.hints[Math.min(hints, p.hints.length - 1)]; hints++; say(`Hint: ${h}`); if (explorer) fx.speak(h, true); }, qs);
     on($('#prShow', root), 'click', () => { if (done) return; tries = Math.max(tries, 3); reveal(); say('Read the steps, then try the next one.'); finish(false); }, qs);
-    const hear = $('#prHear', root); if (hear) on(hear, 'click', () => fx.speak(p.q, true), qs);
+    const hear = $('#prHear', root); if (hear) on(hear, 'click', () => fx.speakQuestion(p, true), qs);
     root.querySelectorAll('.pr-choice').forEach(b => on(b, 'click', () => { if (done) return; root.querySelectorAll('.pr-choice').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); $('#prForm', root).requestSubmit(); }, qs));
   };
   const grade = () => {
@@ -531,7 +531,7 @@ function kataView(trickId, n, { signal } = {}) {
       <div class="pr-q${plain(p.q).length > 60 ? ' long' : ''}">${p.q}</div>
       <form class="pr-form" id="kForm" autocomplete="off">${answerUI(p)}<div class="pr-actions"><button class="md-btn md-btn--primary" id="kGo">Check</button><button type="button" class="md-btn md-btn--sm" id="kHint">Hint</button></div></form>
       <div class="pr-say" id="kSay" role="status" aria-live="polite"></div>`;
-    tried = false; fx.speak(p.q);
+    tried = false; fx.speakQuestion(p);
     const f = box.querySelector('input, .pr-choice'); if (f && matchMedia('(pointer: fine)').matches) f.focus({ preventScroll: true });
     box.querySelectorAll('.pr-choice').forEach(b => on(b, 'click', () => { box.querySelectorAll('.pr-choice').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); $('#kForm').requestSubmit(); }, qs));
     on($('#kHint'), 'click', () => { hints++; $('#kSay').innerHTML = `${boltHTML('explain')}<div class="md-bubble">Hint: ${p.hints[0] || p.steps[0]}</div>`; }, qs);
@@ -1353,7 +1353,7 @@ function meView() {
   $('#setCalm').onclick = e => { fx.setCalm(!fx.calmOn()); e.currentTarget.setAttribute('aria-checked', String(fx.calmOn())); };
   view.querySelectorAll('.me-size [data-size]').forEach(b => b.onclick = () => { fx.setTextSize(b.dataset.size); view.querySelectorAll('.me-size [data-size]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.size === fx.textSize()))); });
   $('#setVoice').onchange = e => { fx.setVoice(e.target.checked); if (e.target.checked) fx.speak('Read aloud is on.', true); else fx.stopSpeaking(); };
-  fx.wireVoiceSettings(view);
+  fx.wireVoiceSettings(view, { player: p.id });
   wireWorldBoards(view);
   if (focusWorldBoards) { focusWorldBoards = false; const wb = $('#worldBoards'); wb.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); ($('#wbIn') || $('#wbSwitch') || wb).focus({ preventScroll: true }); }
   $('#pExport').onclick = async () => { const code = btoa(unescape(encodeURIComponent(store.exportData()))); try { await navigator.clipboard.writeText(code); msg('Backup code copied. Paste it somewhere safe.'); } catch (e) { prompt('Copy this backup code:', code); } };

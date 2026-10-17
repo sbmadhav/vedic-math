@@ -10,7 +10,7 @@ Part A (tasks 1) can ship on its own before part B.
 
 ## 1. Tune the built-in voice (A)
 
-- [ ] 1.1 `js/voice.js`: `rateVoice(v)` returns `{ tier: 'good' | 'ok' | 'poor', pts }` from the name and `voiceURI` (rules in design decision 2), and `englishVoices()` sorts by it. `bestVoice()` never returns a poor voice when a good or ok one exists. A voice picked by name in Me still wins.
+- [x] 1.1 `js/voice.js`: `rateVoice(v)` returns `{ tier: 'good' | 'ok' | 'poor', pts }` from the name and `voiceURI` (rules in design decision 2), and `englishVoices()` sorts by it. `bestVoice()` never returns a poor voice when a good or ok one exists. A voice picked by name in Me still wins.
   - Verify: new `test/voice.test.mjs` with fake voice lists:
     - macOS Safari (`com.apple.voice.compact.en-US.Samantha` and `com.apple.voice.enhanced.en-US.Ava`) picks Ava.
     - Windows Edge (`Microsoft David - English (United States)` and `Microsoft Aria Online (Natural) - English (United States)`) picks Aria.
@@ -18,10 +18,10 @@ Part A (tasks 1) can ship on its own before part B.
     - Android (`English United States`) is ok.
     - A list of only `Albert`, `Zarvox` and `eSpeak` returns the best poor voice.
     - Non-English voices are never returned.
-- [ ] 1.2 `speakBuiltIn()`: pitch 1 always; rate 0.9 for Explorer, 0.95 otherwise.
+- [x] 1.2 `speakBuiltIn()`: pitch 1 always; rate 0.9 for Explorer, 0.95 otherwise.
   - Verify: `test/voice.test.mjs` stubs `speechSynthesis` and asserts pitch 1 and rate 0.9 with `body.mode-explorer`, and 0.95 without.
   - Verify: Playwright `e2e/tests/voice.spec.ts` "built-in voice is tuned". With the studio voice off and an init script that records `speechSynthesis.speak()` utterances, an Explorer Practice question is spoken at pitch 1 and rate 0.9.
-- [ ] 1.3 Me settings: the picker lists good and ok voices first and marks poor ones "(robotic)". When every English voice is poor, show the poor-voice note (design decision 3) with "Got it", stored per Player as `vm.voiceNoteSeen`.
+- [x] 1.3 Me settings: the picker lists good and ok voices first and marks poor ones "(robotic)". When every English voice is poor, show the poor-voice note (design decision 3) with "Got it", stored per Player as `vm.voiceNoteSeen`.
   - Verify: `voice.spec.ts` "poor-voice note". With an init script that makes `getVoices()` return only compact voices, `#/me` shows the note with the iPhone and Windows steps. After "Got it" and a reload it is gone. With an Enhanced voice in the list it never shows.
   - Verify: `e2e/tests/a11y.spec.ts` `#/me` has no new violations, and the 320px accessibility scenario still holds with the note shown.
 

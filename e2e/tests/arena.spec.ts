@@ -118,6 +118,31 @@ test.describe('explorer, second round', () => {
   });
 });
 
+test.describe('explorer, toast over the choices', () => {
+  test.use({ seedMode: 'explorer' });
+  /* A "Badge earned" toast sits at the bottom of a phone screen, over the answer choices; it must not swallow taps */
+  test('a tap on a choice under a toast still answers', async ({ page }) => {
+    await heldClock(page);
+    await open(page, '#/arena');
+    await practiceRound(page);
+    await page.evaluate(async () => {
+      const fx = await import('/vedic-math/js/fx.js' as string);
+      fx.toast('<b>Badge earned:</b> a long toast that covers the bottom of a small screen', 'win');
+    });
+    const toast = page.locator('.fx-toast');
+    await expect(toast).toBeVisible();
+    /* Where the toast lands depends on the screen and the round's layout, so pin it over the first choice */
+    const choice = page.locator('.ar-choice').first();
+    const c = (await choice.boundingBox())!;
+    await page.evaluate(y => { (document.querySelector('.fx-toasts') as HTMLElement).style.bottom = `${innerHeight - y}px`; }, c.y + c.height);
+    const t = (await toast.boundingBox())!;
+    expect(t.y < c.y + c.height / 2 && t.y + t.height > c.y + c.height / 2, 'the toast covers the choice').toBe(true);
+    await choice.click();
+    await expect(page.locator('#arPop')).toHaveText(/^(\+\d+|-?\d+)$/);
+    expect((await cloudLog(page)).writes).toEqual([]);
+  });
+});
+
 test('challenge tower: Play again, then one keypad tap enters one digit', async ({ page }) => {
   await heldClock(page);
   await open(page, '#/challenge/1');

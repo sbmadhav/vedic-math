@@ -95,3 +95,24 @@ test('kata Sparks: 5 per right answer, plus 10 when done', () => {
   assert.equal(kataSparks(2, 5), 10);
   assert.equal(kataSparks(0, 5), 0);
 });
+
+/* Step and question text is clean signed math on screen and when read aloud (openspec voice-wording):
+   no "1x", no "+ -", no "- -", no "+ −", no 0x terms */
+test('speed trick steps and questions are written in clean form', async () => {
+  const { lin } = await import('../js/vedic.js');
+  assert.equal(lin([1, 'x'], [-12]), 'x − 12');
+  assert.equal(lin([-1, 'x'], [0, 'y'], [5]), '−x + 5');
+  assert.equal(lin([0, 'x']), '0');
+  const bad = /(^|[^\d.])1[xy]\b|\b0[xy]\b|[+−-]\s*[-−]\s*[\dxy(]/;
+  const clean = h => h.replace(/<br\s*\/?>/g, ' ; ').replace(/<[^>]+>/g, '').replace(/&minus;/g, '−');
+  const fails = [];
+  const look = (id, x) => { if (bad.test(clean(x))) fails.push(`${id}: ${clean(x)}`); };
+  for (const k of ALL) for (const p of k.problems) { look(k.trick.id, p.q); p.steps.forEach(s => look(k.trick.id, s)); }
+  // The animator takes any numbers a Player types, so try the edges too: 1 and -1 coefficients, zeros, negatives
+  const edges = { transpose: [[1, -12, -1, 0], [2, 0, 1, 5], [-1, 3, 1, -7], [3, -4, 0, 8]], 'add-sub': [[1, 2, -3, 0], [2, 1, 4, 5]], 'ratio-zero': [[1, 1, 3, 2]], 'zero-sum': [[1, 12, 3, 4]] };
+  for (const t of TRICKS) {
+    for (let i = 0; i < 40; i++) t.steps(t.random()).forEach(s => look(t.id, s.say));
+    for (const v of edges[t.id] || []) t.steps(v).forEach(s => look(t.id, s.say));
+  }
+  assert.deepEqual(fails.slice(0, 10), [], `${fails.length} lines`);
+});

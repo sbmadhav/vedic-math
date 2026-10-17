@@ -56,10 +56,12 @@ test('main routes render with no CSP violation', async ({ page, baseURL }) => {
   expect(csp).not.toContain("'unsafe-eval'");
   expect(csp).toContain("object-src 'none'");
   await expect(page.locator('meta[name="referrer"]')).toHaveAttribute('content', 'strict-origin-when-cross-origin');
-  // The hashed inline scripts ran: the color mode buttons work, and the import map resolved the modules
-  await page.locator('.md-modes [data-mode="dark"]').click();
+  // The hashed inline scripts ran: the color scheme button works, and the import map resolved the modules
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.locator('#themeBtn').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await page.locator('.md-modes [data-mode="system"]').click();
+  await page.locator('#themeBtn').click();
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme', /./);
 
   for (const hash of ['#/learn', '#/dojo', '#/games', '#/game/times-sprint', '#/sutras', '#/me', '#/skill/3-mult', '#/grade/3', '#/star/sq5/1']) {
     await page.goto(`${APP}${hash}`);

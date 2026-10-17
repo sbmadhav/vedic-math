@@ -240,11 +240,12 @@ document.addEventListener('visibilitychange', () => { if (!ac) return; if (docum
 
 const subs = new Set(); export const onChange = fn => (subs.add(fn), () => subs.delete(fn)); const emit = () => subs.forEach(f => f());
 
-/* Music button and panel in the nav */
+/* Music button and panel in the header */
 export function mountMusic(slot) {
   if (!slot) return;
-  const note = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 18V5l11-2v13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="16" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
-  slot.innerHTML = `<button class="vm-mbtn" id="vmMBtn" aria-expanded="false" aria-controls="vmMPanel" aria-label="Calm music">${note}<span class="vm-eq" aria-hidden="true"><i></i><i></i><i></i></span></button>
+  const note = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l11-2v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.5" fill="currentColor"/><circle cx="17.5" cy="16" r="2.5" fill="currentColor"/></svg>';
+  // Styled like the music control in the header of the rest of sbmadhav.com (a pill with a note, "Music" and a little equalizer)
+  slot.innerHTML = `<button type="button" class="vm-mbtn" id="vmMBtn" aria-expanded="false" aria-controls="vmMPanel" aria-label="Calm music">${note}<span class="lbl" aria-hidden="true">Music</span><span class="vm-eq" aria-hidden="true"><i></i><i></i><i></i></span></button>
     <div class="vm-mpanel md-card" id="vmMPanel" hidden><b class="vm-mt">Calm music</b><p class="mq-small">Gentle sounds made live in your browser. They never start by themselves.</p>
     <div class="vm-tracks" role="group" aria-label="Choose music">${TRACKS.map(t => `<button class="vm-track" data-t="${t.id}" aria-pressed="false"><b>${t.name}</b><small>${t.note}</small></button>`).join('')}</div>
     <div class="vm-mrow"><button class="md-btn md-btn--sm" id="vmStop">Stop</button><label class="vm-vol">Volume <input type="range" min="0" max="1" step="0.05" value="${volume()}" id="vmVol"></label></div>

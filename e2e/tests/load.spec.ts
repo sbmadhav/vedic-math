@@ -24,7 +24,9 @@ test.describe('first visit', () => {
     await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', '/vedic-math/manifest.webmanifest');
     await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href', '/assets/icons/apple-touch-icon.png');
     await expect(page.locator('a.skip[href="#view"]')).toHaveCount(1);
-    await expect(page.locator('nav.mq-nav')).toBeVisible();
+    // The Vedic Math tabs are in the page but hidden until a Mode is picked (header.spec.ts 'tabs wait for a Mode')
+    await expect(page.locator('nav.mq-nav')).toHaveCount(1);
+    await expect(page.locator('nav.mq-nav')).toBeHidden();
   });
 });
 
@@ -112,35 +114,30 @@ test.describe('color schemes', () => {
   const bg = (page: import('@playwright/test').Page) => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
 
   test('Daybreak and Deep Space switch the palette and are remembered', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
     await open(page);
-    const sw = page.locator('.md-modes');
-    await sw.getByRole('button', { name: 'Deep Space' }).click();
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-    await expect(sw.getByRole('button', { name: 'Deep Space' })).toHaveAttribute('aria-pressed', 'true');
-    const dark = await bg(page);
-    await sw.getByRole('button', { name: 'Daybreak' }).click();
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
     const light = await bg(page);
+    await page.locator('#themeBtn').click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    const dark = await bg(page);
     expect(dark).not.toBe(light);
     await page.reload();
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-    await expect(page.locator('.md-modes').getByRole('button', { name: 'Daybreak' })).toHaveAttribute('aria-pressed', 'true');
-    expect(await page.evaluate(() => localStorage.getItem('theme'))).toBe('light');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    expect(await page.evaluate(() => localStorage.getItem('theme'))).toBe('dark');
   });
 
   test('System follows the operating system scheme', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'dark' });
     await open(page);
-    await expect(page.locator('.md-modes').getByRole('button', { name: 'System' })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('html')).not.toHaveAttribute('data-theme', /./);
     const darkSys = await bg(page);
     await page.emulateMedia({ colorScheme: 'light' });
     const lightSys = await bg(page);
     expect(darkSys).not.toBe(lightSys);
-    // An explicit choice overrides the system, and System clears it again
-    await page.locator('.md-modes').getByRole('button', { name: 'Deep Space' }).click();
+    // An explicit choice overrides the system, and switching back to match it clears the choice
+    await page.locator('#themeBtn').click();
     expect(await bg(page)).toBe(darkSys);
-    await page.locator('.md-modes').getByRole('button', { name: 'System' }).click();
+    await page.locator('#themeBtn').click();
     expect(await bg(page)).toBe(lightSys);
     expect(await page.evaluate(() => localStorage.getItem('theme'))).toBe('');
   });
