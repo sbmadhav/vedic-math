@@ -121,14 +121,17 @@ const LIST_CLAIMS = {
 };
 export const CLAIMS = { ...Object.fromEntries(Object.entries(NUM_CLAIMS).map(([id, [one, many, f]]) => [id, { one, many, f }])), ...Object.fromEntries(Object.entries(LIST_CLAIMS).map(([id, [many, list]]) => [id, { many, list }])) };
 
+/* Table lookups by own key only, so a shared link cannot name 'constructor' or 'toString' */
+export const own = (table, k) => typeof k === 'string' && Object.hasOwn(table, k);
+const at = (table, k) => (own(table, k) ? table[k] : undefined);
 export function ruleText({ s, c }) {
-  const S = SUBJECTS[s], K = CLAIMS[c]; if (!S || !K) return '';
+  const S = at(SUBJECTS, s), K = at(CLAIMS, c); if (!S || !K) return '';
   return s === 'painted' ? `${S.one} ${K.many}.` : `${S.one} ${K.one || K.many}.`;
 }
 /* Evaluate a rule. ok: no counterexample. fits: the rule's subject is exactly the painted cells (or it
    is about the painted cells themselves). tested: how many numbers it was checked on. */
 export function evalRule({ s, c }, grid, painted, N = 1000) {
-  const S = SUBJECTS[s], K = CLAIMS[c];
+  const S = at(SUBJECTS, s), K = at(CLAIMS, c);
   if (!S || !K) return { ok: false, fits: false, reason: 'missing' };
   const cells = grid.cells.filter(x => painted.has(x.i));
   if (K.list) {
@@ -212,7 +215,7 @@ function boxes(g, size) {
   for (const c of g.cells) { const s = []; for (let dr = 0; dr < size; dr++) for (let dc = 0; dc < size; dc++) { const i = at.get(`${c.r + dr},${c.c + dc}`); if (i !== undefined) s.push(i); } if (s.length === size * size) out.push({ key: String(c.n), label: `from ${c.n}`, set: new Set(s) }); }
   return out;
 }
-export const patternById = id => PATTERNS.find(p => p.id === id);
+export const patternById = id => (typeof id === 'string' ? PATTERNS.find(p => p.id === id) : undefined);
 /* A pattern's variants on a grid, keeping only sets of at least three cells */
 export const variantsOf = (p, g) => p.variants(g).filter(v => v.set.size >= 3);
 export const ruleFor = (p, key) => (p.ruleBy ? p.ruleBy(key) : p.rule);
@@ -235,12 +238,48 @@ export const suggestName = (r, nick = 0) => [nick, Math.floor(r() * ADJ.length),
 /* A card: { p: pattern id or null (a conjecture), k: variant key, g: grid id, gp: grid params,
    cells: [indices], name: [nick, adj, noun], rule: { s, c }, test: { ok, counter, tested } | null, t: day key } */
 export const encodeCard = c => JSON.stringify({ v: 1, p: c.p || 0, k: c.k || '', g: c.g, gp: c.gp || 0, x: c.cells.join('.'), n: c.name, r: [c.rule.s, c.rule.c], t: c.test ? [c.test.ok ? 1 : 0, c.test.counter ?? 0, c.test.tested ?? 0] : 0 });
+const isInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
+/* A card from a share link or from storage, checked field by field: ids must be own keys of their tables,
+   numbers bounded integers, the calendar month real, the cells on the grid (and, for a discovery, exactly
+   the pattern's cells with a rule that is true and fits). The test result is worked out again here, never
+   taken from the card. Returns a clean copy, or null. */
+export function cleanCard(o) {
+  if (!o || typeof o !== 'object' || !own(GRIDS, o.g)) return null;
+  let gp = null;
+  if (o.g === 'calendar') {
+    if (!o.gp || typeof o.gp !== 'object' || !isInt(o.gp.y, 1900, 2200) || !isInt(o.gp.m, 1, 12)) return null;
+    gp = { y: o.gp.y, m: o.gp.m };
+  }
+  const g = makeGrid(o.g, gp || {});
+  if (!Array.isArray(o.cells) || !o.cells.length || o.cells.length > g.cells.length || !o.cells.every(i => isInt(i, 0, g.cells.length - 1))) return null;
+  const cells = [...new Set(o.cells)].sort((a, b) => a - b);
+  if (cells.length !== o.cells.length) return null;
+  if (!Array.isArray(o.name) || o.name.length !== 3 || !o.name.every((v, i) => isInt(v, 0, [NICKS, ADJ, NOUN][i].length - 1))) return null;
+  if (!o.rule || !own(SUBJECTS, o.rule.s) || !own(CLAIMS, o.rule.c)) return null;
+  const rule = { s: o.rule.s, c: o.rule.c }, painted = new Set(cells);
+  let p = null, k = '', test = null;
+  if (o.p) {
+    const pat = patternById(o.p);
+    if (!pat || pat.grid !== o.g || typeof o.k !== 'string') return null;
+    const v = variantsOf(pat, g).find(x => x.key === o.k);
+    if (!v || !sameSet(v.set, painted)) return null;
+    const R = evalRule(rule, g, painted);
+    if (!(R.ok && R.fits)) return null;
+    p = pat.id; k = v.key;
+  } else {
+    if (o.k) return null;
+    const R = evalRule(rule, g, painted);
+    test = { ok: R.ok, counter: R.counter ?? null, tested: R.tested ?? 0 };
+  }
+  const out = { p, k, g: o.g, gp, cells, name: o.name.slice(), rule, test };
+  if (typeof o.t === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(o.t)) out.t = o.t;
+  return out;
+}
 export function decodeCard(s) {
   const o = JSON.parse(s);
-  if (o.v !== 1 || !GRIDS[o.g] || !Array.isArray(o.n) || o.n.length !== 3) throw new Error('bad card');
-  const g = makeGrid(o.g, o.gp || {});
-  const cells = String(o.x).split('.').filter(Boolean).map(Number).filter(i => Number.isInteger(i) && i >= 0 && i < g.cells.length);
-  const name = o.n.map((v, i) => Math.max(0, Math.min([NICKS, ADJ, NOUN][i].length - 1, v | 0)));
-  const rule = { s: SUBJECTS[o.r?.[0]] ? o.r[0] : 'painted', c: CLAIMS[o.r?.[1]] ? o.r[1] : 'odd' };
-  return { p: o.p && patternById(o.p) ? o.p : null, k: String(o.k || ''), g: o.g, gp: o.gp || null, cells, name, rule, test: o.t ? { ok: !!o.t[0], counter: o.t[1] || null, tested: o.t[2] } : null };
+  if (!o || o.v !== 1 || typeof o.x !== 'string' || !/^\d+(\.\d+)*$/.test(o.x) || !Array.isArray(o.r) || o.r.length !== 2) throw new Error('bad card');
+  if (!(o.t === 0 || (Array.isArray(o.t) && o.t.length === 3 && o.t.every(v => isInt(v, 0, 1e6))))) throw new Error('bad card');
+  const c = cleanCard({ p: o.p || null, k: o.k ?? '', g: o.g, gp: o.gp || null, cells: o.x.split('.').map(Number), name: o.n, rule: { s: o.r[0], c: o.r[1] } });
+  if (!c) throw new Error('bad card');
+  return c;
 }

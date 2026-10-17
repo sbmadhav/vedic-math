@@ -128,8 +128,45 @@ test('cards round trip through a share link and reject junk', () => {
   assert.deepEqual(back, card);
   const conj = { p: null, k: '', g: 'calendar', gp: { y: 2026, m: 10 }, cells: [0, 7, 14], name: [1, 2, 3], rule: { s: 'prime', c: 'odd' }, test: { ok: false, counter: 2, tested: 1 } };
   assert.deepEqual(W.decodeCard(b64url.dec(b64url.enc(W.encodeCard(conj)))), conj);
-  const evil = W.decodeCard(JSON.stringify({ v: 1, g: 'hundred', x: '1.2.999.-4.x', n: [500, 1, 1], r: ['<script>', 'nope'] }));
-  assert.deepEqual(evil.cells, [1, 2]); assert.equal(evil.name[0], W.NICKS.length - 1); assert.equal(evil.rule.s, 'painted');
   assert.throws(() => W.decodeCard(JSON.stringify({ v: 2, g: 'hundred' })));
   assert.throws(() => W.decodeCard(JSON.stringify({ v: 1, g: 'mars', n: [0, 0, 0] })));
+});
+
+test('share codes from a hostile or broken link are refused, never cleaned into a card', () => {
+  const base = { v: 1, p: 0, k: '', g: 'hundred', gp: 0, x: '0.2.4', n: [1, 2, 3], r: ['prime', 'odd'], t: [0, 2, 1] };
+  const enc = o => JSON.stringify({ ...base, ...o });
+  assert.ok(W.decodeCard(enc({})), 'the base card opens');
+  const bad = [
+    { t: [1, 0, '<a href="x">pwn</a>'] }, { t: [1, 0, 1e9] }, { t: [1, 0] }, { t: 'yes' },
+    { x: '1.2.999' }, { x: '1.2.-4' }, { x: '1.2.x' }, { x: '' }, { x: '1.1.2' }, { x: 7 },
+    { n: [500, 1, 1] }, { n: [1.5, 1, 1] }, { n: ['0', 1, 1] }, { n: [1, 2] },
+    { r: ['<script>', 'odd'] }, { r: ['prime', 'nope'] }, { r: ['constructor', 'toString'] }, { r: ['prime', '__proto__'] }, { r: ['hasOwnProperty', 'odd'] }, { r: ['prime'] },
+    { g: 'constructor' }, { g: 'toString' }, { g: '__proto__' },
+    { g: 'calendar' }, { g: 'calendar', gp: { y: 2026, m: 13 } }, { g: 'calendar', gp: { y: 2026, m: 0 } }, { g: 'calendar', gp: { y: 2026.5, m: 3 } }, { g: 'calendar', gp: { y: '<b>', m: 3 } }, { g: 'calendar', gp: { y: 99999, m: 3 } },
+    { k: '<img src=x onerror=alert(1)>' }, { k: 7 },
+    { p: 'constructor' }, { p: 'nope' }, { p: 'h-mult9' }, { p: 'h-mult9', x: '8.17.26' }, { p: 't-diag', x: '8.17.26' }
+  ];
+  for (const o of bad) assert.throws(() => W.decodeCard(enc(o)), `refused: ${JSON.stringify(o)}`);
+  assert.throws(() => W.decodeCard('null')); assert.throws(() => W.decodeCard('[]')); assert.throws(() => W.decodeCard('{"v":1}'));
+  /* A discovery must be its pattern's own cells with a rule that is true and fits */
+  const nine = [...W.applyTool(grids.hundred, new Set(), 'mult', 9)].sort((a, b) => a - b).join('.');
+  assert.equal(W.decodeCard(enc({ p: 'h-mult9', x: nine, r: ['mult:9', 'dr:9'], t: 0 })).p, 'h-mult9');
+  assert.throws(() => W.decodeCard(enc({ p: 'h-mult9', x: nine, r: ['mult:9', 'odd'], t: 0 })), 'a false rule on a discovery');
+  /* A conjecture's test is worked out again, whatever the link says */
+  const c = W.decodeCard(enc({ t: [1, 0, 999] }));
+  assert.deepEqual(c.test, { ok: false, counter: 2, tested: 1 });
+  const cal = W.decodeCard(enc({ g: 'calendar', gp: { y: 2026, m: 2, extra: '<i>' } }));
+  assert.deepEqual(cal.gp, { y: 2026, m: 2 });
+  /* Stored cards go through the same check */
+  assert.equal(W.cleanCard({ ...c, test: { ok: true, counter: null, tested: '<a>' } }).test.tested, 1);
+  assert.equal(W.cleanCard({ ...c, t: '2026-10-17' }).t, '2026-10-17');
+  assert.equal(W.cleanCard({ ...c, t: '<a>' }).t, undefined);
+  assert.equal(W.cleanCard({ ...c, g: 'valueOf' }), null);
+  assert.equal(W.cleanCard(null), null);
+});
+
+test('rule lookups ignore inherited keys', () => {
+  assert.equal(W.ruleText({ s: 'constructor', c: 'toString' }), '');
+  assert.equal(W.evalRule({ s: 'constructor', c: 'odd' }, grids.hundred, new Set([1])).reason, 'missing');
+  assert.equal(W.evalRule({ s: 'painted', c: 'hasOwnProperty' }, grids.hundred, new Set([1])).reason, 'missing');
 });

@@ -15,7 +15,9 @@ const WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export function mount({ root, signal, params }) {
   const lv = level();
   const D = store.get(KEY, null) || {};
-  D.cards = D.cards || []; D.nick = Number.isInteger(D.nick) ? D.nick : null;
+  /* Stored cards pass the same checks as shared ones, so nothing odd in storage reaches the page */
+  D.cards = Array.isArray(D.cards) ? D.cards.map(W.cleanCard).filter(Boolean) : [];
+  D.nick = Number.isInteger(D.nick) && D.nick >= 0 && D.nick < W.NICKS.length ? D.nick : null;
   const save = () => store.set(KEY, D);
   const wrap = document.createElement('div'); wrap.className = 'md-wrap wl'; root.append(wrap);
   const GRID_IDS = lv === 'explorer' ? ['hundred', 'times', 'meru', 'calendar'] : Object.keys(W.GRIDS);
@@ -251,13 +253,13 @@ export function mount({ root, signal, params }) {
   }
   function cardHtml(c, i, shared = false) {
     const g = gridFor(c.g, c.gp), p = c.p && W.patternById(c.p);
-    const badge = p ? `<span class="wl-badge">Discovery</span>` : c.test?.ok ? `<span class="wl-badge wl-badge--conj">Conjecture · held for ${c.test.tested} tests</span>` : `<span class="wl-badge wl-badge--broken">Conjecture · broken by ${esc(String(c.test?.counter ?? '?'))}</span>`;
+    const badge = p ? `<span class="wl-badge">Discovery</span>` : c.test?.ok ? `<span class="wl-badge wl-badge--conj">Conjecture · held for ${esc(String(c.test.tested))} tests</span>` : `<span class="wl-badge wl-badge--broken">Conjecture · broken by ${esc(String(c.test?.counter ?? '?'))}</span>`;
     return `<article class="wl-card${p ? '' : ' is-conj'}" aria-label="${esc(W.nameOf(c.name))}">
       <div class="wl-card-art">${miniSvg(g, new Set(c.cells))}</div>
       ${badge}
       <h3 class="wl-card-t">${esc(W.nameOf(c.name))}</h3>
       <p class="wl-card-rule">${esc(W.ruleText(c.rule))}</p>
-      <p class="wl-card-meta">${esc(W.GRIDS[c.g].title)}${c.g === 'calendar' && c.gp ? `, ${esc(monthName(c.gp))}` : ''}${p ? ` · ${esc(p.title)}` : ''}</p>
+      <p class="wl-card-meta">${esc(W.GRIDS[c.g]?.title ?? '')}${c.g === 'calendar' && c.gp ? `, ${esc(monthName(c.gp))}` : ''}${p ? ` · ${esc(p.title)}` : ''}</p>
       ${shared ? '' : `<div class="wl-card-acts"><button type="button" class="md-btn md-btn--sm" data-act="link" data-i="${i}">Share link</button><button type="button" class="md-btn md-btn--sm" data-act="image" data-i="${i}">Save image</button><button type="button" class="md-btn md-btn--sm wl-rm" data-act="remove" data-i="${i}" aria-label="Remove ${esc(W.nameOf(c.name))}">Remove</button></div>`}
     </article>`;
   }
@@ -277,6 +279,7 @@ export function mount({ root, signal, params }) {
     let c = null; try { c = W.decodeCard(b64url.dec(code)); } catch (e) { c = null; }
     if (!c) { wrap.innerHTML = `<div class="px-head px-head--sun"><a class="px-back" href="#/games/wall">&larr; Pattern Wall</a><h1 class="md-heading px-title">That card did not open</h1><p class="md-lede">The link may be cut short. Ask for it again.</p></div>`; return; }
     const have = D.cards.some(x => W.encodeCard(x) === W.encodeCard(c));
+    /* c came through decodeCard (W.cleanCard), so every field is checked; text still goes through esc() */
     wrap.innerHTML = `<div class="px-head px-head--sun"><a class="px-back" href="#/games/wall">&larr; Pattern Wall</a><p class="md-kicker">A pattern card someone shared</p><h1 class="md-heading px-title">${esc(W.nameOf(c.name))}</h1></div>
       <div class="wl-shared">${cardHtml(c, 0, true)}<div class="px-row"><button type="button" class="md-btn md-btn--primary wl-add" ${have ? 'disabled' : ''}>${have ? 'Already on your wall' : 'Pin it to my wall too'}</button><a class="md-btn" href="#/games/wall/${c.g}">Find it yourself</a></div></div>`;
     on(wrap.querySelector('.wl-add'), 'click', e => { D.cards.unshift({ ...c, t: dayKey() }); save(); e.target.disabled = true; e.target.textContent = 'Pinned to your wall'; sfx('ok'); say('Pinned to your wall.'); track('wall/import', c.p || 'conjecture'); }, signal);
