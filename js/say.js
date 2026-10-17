@@ -92,7 +92,7 @@ function prefetch(signal) {
     const id = mine.shift(); if (!id) { queue = null; return; }
     if (fetched.has(id)) return step();
     fetched.add(id);
-    Promise.resolve().then(() => deps.fetch(clipUrl(id))).then(r => r && r.arrayBuffer && r.arrayBuffer()).catch(() => fetched.delete(id))
+    Promise.resolve().then(() => deps.fetch(clipUrl(id))).then(r => { if (!r || !r.ok) throw new Error('not saved'); return r.arrayBuffer(); }).catch(() => fetched.delete(id)) /* an HTTP error is not saved: a later prefetch tries again */
       .finally(() => { if (!signal.aborted) idle(step, signal); });
   };
   idle(step, signal);

@@ -37,7 +37,7 @@ function stubs({ fail = false, saveData = false, manualStart = false } = {}) {
     stop: () => { log.stops++; },
     count: () => { log.counts++; },
     status: t => { log.status.push(t); },
-    fetch: url => { log.fetched.push(url); return Promise.resolve({ arrayBuffer: async () => new ArrayBuffer(1) }); },
+    fetch: url => { log.fetched.push(url); return Promise.resolve({ ok: !(log.failIds || []).some(id => url.includes(`/${id}.m4a`)), arrayBuffer: async () => new ArrayBuffer(1) }); },
     saveData: () => saveData,
     synth: () => (synthOn ? synth : null),
   });
@@ -209,5 +209,17 @@ test('clip URLs come only from the generated index (no URL for an id that is not
   const log = stubs(), ctl = new AbortController();
   S.tap(btn('constructor'), ctl.signal);
   assert.equal(log.played.length, 0);
+  ctl.abort();
+});
+
+test('a prefetch that gets an HTTP error is tried again by a later prefetch', async () => {
+  const log = stubs(); log.failIds = ['u5'];
+  let ctl = new AbortController();
+  S.tap(btn('s3'), ctl.signal); await wait(200);
+  assert.equal(log.fetched.filter(u => /\/u5\.m4a/.test(u)).length, 1);
+  ctl.abort(); log.failIds = []; log.fetched.length = 0;
+  ctl = new AbortController();
+  S.tap(btn('s1'), ctl.signal); await wait(100);
+  assert.deepEqual(log.fetched.map(u => u.match(/\/(\w+)\.m4a/)[1]), ['u5'], 'only the clip that failed, not the 27 saved ones');
   ctl.abort();
 });
