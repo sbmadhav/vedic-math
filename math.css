@@ -506,7 +506,7 @@ html.motion-paused .mq-grade, body.calm .mq-grade, html.motion-paused .mq-skill,
 
 /* Fun layer */
 .fx-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 120; }
-.fx-toasts { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); display: grid; gap: 8px; z-index: 110; width: min(92vw, 420px); }
+.fx-toasts { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); display: grid; gap: 8px; z-index: 110; width: min(92vw, 420px); pointer-events: none; } /* toasts only tell; a tap goes through to the game under them */
 .fx-toast { padding: 12px 16px; border-radius: var(--radius-lg); border: 2px solid var(--edge); background: var(--card); color: var(--ink); box-shadow: var(--shadow-ledge); font-size: 15px; animation: toastIn .35s cubic-bezier(.5,1.6,.5,1); }
 .fx-toast.win { background: color-mix(in srgb, var(--sun) 30%, var(--card)); } .fx-toast.ok { background: color-mix(in srgb, var(--teal) 18%, var(--card)); }
 .fx-toast.out { opacity: 0; transform: translateY(10px); transition: .35s; }
