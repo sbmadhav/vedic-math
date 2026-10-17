@@ -8,12 +8,13 @@
 import { readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { pipeline } from '@huggingface/transformers';
+import { fileURLToPath } from 'node:url';
 
 import { NAMES, appId } from './names.mjs';
 import { toDeva } from './sanskrit.mjs';
 import { VOICE } from '../../js/say-clips.js';
 
-const DIR = new URL('../../', import.meta.url).pathname, OUT = new URL('./check.json', import.meta.url).pathname;
+const DIR = fileURLToPath(new URL('../../', import.meta.url)), OUT = fileURLToPath(new URL('./check.json', import.meta.url));
 const MODEL = process.argv[2] || 'onnx-community/whisper-small';
 
 const pcm16k = file => { // m4a to 16 kHz mono float samples via macOS afconvert

@@ -15,6 +15,7 @@
 import { audioContext, isPlaying as musicPlaying, onChange as onMusicChange } from './ambient.js';
 import { soundOn, calmOn, onMotionChange } from './fx.js';
 import { on, every, onAbort, child } from './life.js';
+import { OM } from './say-clips.js';
 
 export const OM_NOTE = 'Om is a sacred syllable added here for atmosphere. It is not part of the 1965 book.';
 const KEYS = { amb: ['sutraAmb', '1'], hum: ['sutraHum', '0'], om: ['sutraOm', '0'] };
@@ -34,7 +35,7 @@ export const deps = {
   paused: () => { try { return document.documentElement.classList.contains('motion-paused'); } catch (e) { return false; } },
   gestured: () => { try { return !!(navigator.userActivation && navigator.userActivation.hasBeenActive); } catch (e) { return false; } },
   now: () => Date.now(),
-  omUrl: () => new URL('../sounds/om.m4a', import.meta.url).href,
+  omUrl: () => new URL(`../sounds/om.m4a?v=${OM.v}`, import.meta.url).href, // content hash: a changed Om is a new URL
 };
 export const silencedBySettings = () => !ambienceOn() || !soundOn() || calmOn() || deps.paused();
 

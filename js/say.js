@@ -8,7 +8,7 @@
      the browser is idle (not with Save-Data), so the names work offline afterwards (sw.js keeps sounds/ cache first).
    - Fallback: when a clip cannot be fetched, decoded or played, the device's English voice reads the Respelling
      ("ay kah dhi kay nuh poor vay nuh"), and with no voice at all a status shows the Respelling to read.
-   - One anonymous event per tap that starts a clip (metrics.say: math/say/sutra, no name in it).
+   - One anonymous event per tap whose clip really starts playing (metrics.say: math/say/sutra, no name in it).
    Every listener and timer goes through js/life.js on the signal the caller passes. */
 import { SUTRAS, SUBSUTRAS } from './sutras.js';
 import { CLIPS } from './say-clips.js';
@@ -20,7 +20,9 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 /* id (s1 to s16, u1 to u13, as in js/app.js) to the card's name, Respelling and Devanagari */
 export const NAMES = Object.fromEntries([...SUTRAS.map(c => ['s' + c.n, c]), ...SUBSUTRAS.map(c => ['u' + c.n, c])]
   .map(([id, c]) => [id, { name: c.name, say: c.say, deva: c.deva }]));
-export const clipUrl = id => new URL(`../sounds/sutras/${id}.m4a?v=${CLIPS[id].v}`, import.meta.url).href;
+/* A clip URL is only ever built from the generated index: an id that is not one of its own keys gives no URL */
+export const hasClip = id => typeof id === 'string' && Object.prototype.hasOwnProperty.call(CLIPS, id);
+export const clipUrl = id => (hasClip(id) ? new URL(`../sounds/sutras/${id}.m4a?v=${CLIPS[id].v}`, import.meta.url).href : null);
 /* What the built-in voice reads when the clip cannot play: the Respelling, hyphens as spaces, lower case */
 export const fallbackWords = id => NAMES[id].say.replace(/-/g, ' ').toLowerCase();
 export const DEVICE_VOICE_NOTE = "Played with this device's voice, which may not be exact.";
@@ -30,16 +32,16 @@ const SPEAKER = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" f
 /* The button. label: show the words "Hear how to say" beside the icon (the deep dive and Trick pages); the visible
    words are part of the accessible name, "Hear how to say <name>" (WCAG 2.5.3). */
 export function sayButton(id, { label = false, cls = '' } = {}) {
-  const c = NAMES[id]; if (!c || !CLIPS[id]) return '';
+  const c = hasClip(id) && NAMES[id]; if (!c) return '';
   return `<button type="button" class="say-btn${label ? ' say-btn--label' : ''}${cls ? ' ' + cls : ''}" data-say="${id}" aria-pressed="false" aria-label="Hear how to say ${esc(c.name)}">${SPEAKER}${label ? '<span aria-hidden="true">Hear how to say</span>' : ''}</button>`;
 }
 /* The Respelling under the name, with a visually hidden prefix for screen readers */
-export const respellHTML = (id, tag = 'span') => (NAMES[id] ? `<${tag} class="say-resp"><span class="say-vh">Say it like: </span>${esc(NAMES[id].say)}</${tag}>` : '');
-export const devaHTML = id => (NAMES[id] ? `<span class="say-deva" lang="sa">${NAMES[id].deva}</span>` : '');
+export const respellHTML = (id, tag = 'span') => (hasClip(id) ? `<${tag} class="say-resp"><span class="say-vh">Say it like: </span>${esc(NAMES[id].say)}</${tag}>` : '');
+export const devaHTML = id => (hasClip(id) ? `<span class="say-deva" lang="sa">${NAMES[id].deva}</span>` : '');
 
 /* Seams for the node tests; the page uses the defaults */
 export const deps = {
-  play: url => playClip(url),
+  play: (url, opts) => playClip(url, opts),
   stop: () => stopVoice(),
   count: () => metrics.say(),
   status: text => import('./fx.js').then(m => m.toast(esc(text))).catch(() => {}),
@@ -98,15 +100,16 @@ function prefetch(signal) {
 
 /* A tap on a Say it button */
 export function tap(btn, signal) {
-  const id = btn && btn.dataset && btn.dataset.say; if (!id || !NAMES[id]) return;
+  const id = btn && btn.dataset && btn.dataset.say; if (!hasClip(id) || !NAMES[id]) return;
   if (current && current.btn === btn) { stopSay(); return; } // a second tap stops it, and is not counted
   stopSay();
   const mine = current = { btn, id };
   setPressed(btn, true);
   fetched.add(id);
-  deps.count();
+  /* Counted once the clip has really started: not on a failure, the fallback voice, or a tap that was superseded */
+  const onStart = () => { if (current === mine) deps.count(); };
   let p;
-  try { p = Promise.resolve(deps.play(clipUrl(id))); } catch (e) { p = Promise.reject(e); }
+  try { p = Promise.resolve(deps.play(clipUrl(id), { onStart })); } catch (e) { p = Promise.reject(e); }
   p.then(() => finish(mine), () => fallback(mine, signal));
   prefetch(signal);
 }

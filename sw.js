@@ -24,8 +24,10 @@
      while revalidate. This repo cannot hash them, so a change reaches visitors one visit late.
    - Sounds (/vedic-math/sounds/: the Sutra name clips and the Om, openspec sutra-pronunciation): cache first in
      their own cache, vedic-math-sounds, which every deploy keeps, so a name heard once plays offline after the next
-     deploy too. Name clips carry ?v=<content hash> (js/say-clips.js), so a remade clip is a new URL. Never in the
-     install precache: only Players who tap Say it (or turn on the Om) download them. Trimmed to SOUNDS_MAX.
+     deploy too. Every sound URL the app builds carries ?v=<content hash> (js/say-clips.js), so a changed file is a new
+     URL and the old entry is never served for it; a sounds/ request without ?v= goes network first (cache only when
+     offline), so it cannot go stale either. Never in the install precache: only Players who tap Say it (or turn on
+     the Om) download them. Trimmed to SOUNDS_MAX, one trim at a time.
    - Never touched: other origins (Firebase, Google, reCAPTCHA, analytics), anything not a GET.
 
    Caches are named vedic-math-<VERSION>. The root worker only deletes madhav-*, and this one only
@@ -161,18 +163,23 @@ async function matchOlder(req) {
   return null;
 }
 
-/* Sounds: cache first; a miss goes to the network and is kept (oldest dropped past SOUNDS_MAX) */
+/* Sounds: a ?v= URL is cache first (its bytes never change); a miss goes to the network and is kept. A URL without
+   ?v= is network first with the cache as the offline fallback. The trim (oldest dropped past SOUNDS_MAX) runs one at a
+   time on a chain, so the idle prefetch and a tap that miss together never delete each other's new entries. */
+let soundTrim = Promise.resolve();
 async function soundFile(req) {
   const cache = await caches.open(SOUNDS_CACHE);
-  const hit = await cache.match(req);
-  if (hit) return hit;
-  const res = await fetch(req);
+  const pinned = new URL(req.url).searchParams.has('v');
+  if (pinned) { const hit = await cache.match(req); if (hit) return hit; }
+  let res;
+  try { res = await fetch(req); } catch (e) { const hit = !pinned && await cache.match(req); if (hit) return hit; throw e; }
   if (cacheable(res)) {
-    try {
-      await cache.put(req, res.clone());
+    try { await cache.put(req, res.clone()); } catch (e) { return res; /* quota: play it without saving */ }
+    soundTrim = soundTrim.then(async () => {
       const keys = await cache.keys();
       for (let i = 0; i < keys.length - SOUNDS_MAX; i++) await cache.delete(keys[i]);
-    } catch (e) { /* quota: play it without saving */ }
+    }).catch(() => {});
+    await soundTrim;
   }
   return res;
 }

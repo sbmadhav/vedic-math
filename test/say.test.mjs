@@ -14,7 +14,7 @@ const synth = { cancel() {}, speak(u) { said.push(u.text); setTimeout(() => u.on
 globalThis.SpeechSynthesisUtterance = class { constructor(t) { this.text = t; } };
 
 const S = await import('../js/say.js');
-const { CLIPS, VOICE } = await import('../js/say-clips.js');
+const { CLIPS, VOICE, OM } = await import('../js/say-clips.js');
 const { indexSource, hashOf, VOICE: TOOL_VOICE } = await import('../tools/sutra-voice/make-sutra-clips.mjs');
 const { TRICKS } = await import('../js/vedic.js');
 const { SUTRAS, SUBSUTRAS } = await import('../js/sutras.js');
@@ -25,11 +25,15 @@ const btn = id => {
   return { dataset: { say: id }, attrs, setAttribute: (k, v) => { attrs[k] = v; }, classList: { toggle() {} }, closest() { return this; } };
 };
 /* Fresh stubs for each test: play resolves when the test says the clip ended */
-function stubs({ fail = false, saveData = false } = {}) {
+function stubs({ fail = false, saveData = false, manualStart = false } = {}) {
   S._reset(); said.length = 0; synthOn = true;
-  const log = { played: [], stops: 0, counts: 0, status: [], fetched: [], end: null };
+  const log = { played: [], stops: 0, counts: 0, status: [], fetched: [], end: null, starts: [] };
   Object.assign(S.deps, {
-    play: url => { log.played.push(url); if (fail) return Promise.reject(new Error('decode')); return new Promise(res => { log.end = () => res('ended'); }); },
+    play: (url, opts = {}) => {
+      log.played.push(url); if (fail) return Promise.reject(new Error('decode'));
+      log.starts.push(opts.onStart); if (!manualStart && opts.onStart) opts.onStart(); // the clip really started
+      return new Promise(res => { log.end = () => res('ended'); });
+    },
     stop: () => { log.stops++; },
     count: () => { log.counts++; },
     status: t => { log.status.push(t); },
@@ -56,8 +60,10 @@ test('29 clips, each under 30 KB and all under 500 KB; the index matches the fil
   }
   assert.ok(total < 500 * 1024, `all clips are ${total} bytes`);
   const rows = ids.map(id => ({ id, ...CLIPS[id] }));
-  assert.equal(readFileSync(new URL('../js/say-clips.js', import.meta.url), 'utf8'), indexSource(rows), 'js/say-clips.js is what the tool writes');
-  assert.ok(statSync(new URL('../sounds/om.m4a', import.meta.url)).size < 20 * 1024, 'the Om is small');
+  const om = readFileSync(new URL('../sounds/om.m4a', import.meta.url));
+  assert.deepEqual(OM, { bytes: om.length, v: hashOf(om) }, 'the Om is indexed by its content hash');
+  assert.equal(readFileSync(new URL('../js/say-clips.js', import.meta.url), 'utf8'), indexSource(rows, OM), 'js/say-clips.js is what the tool writes');
+  assert.ok(om.length < 20 * 1024, 'the Om is small');
 });
 
 test('the ids are the 29 Sutra cards, and clip URLs carry the content hash', () => {
@@ -177,4 +183,31 @@ test('voice.js playClip rejects without Web Audio, so Say it falls back', async 
 test('the clip index hash is the first 10 hex of the SHA-256', () => {
   const buf = Buffer.from('x');
   assert.equal(hashOf(buf), createHash('sha256').update(buf).digest('hex').slice(0, 10));
+});
+
+/* ---------- Counting (review: count only clips that really start) ---------- */
+test('a clip that fails, falls back or is superseded before it starts is not counted', async () => {
+  let log = stubs({ fail: true }); let ctl = new AbortController();
+  S.tap(btn('s1'), ctl.signal); await wait(80);
+  assert.equal(log.counts, 0, 'fetch or decode failure: the fallback voice is not a clip start');
+  ctl.abort();
+  log = stubs({ manualStart: true }); ctl = new AbortController();
+  const a = btn('s1'), b = btn('s3');
+  S.tap(a, ctl.signal); S.tap(b, ctl.signal); // a is still loading when b is tapped
+  log.starts[0](); // a's playback would start now, but it was superseded
+  assert.equal(log.counts, 0);
+  log.starts[1]();
+  assert.equal(log.counts, 1, 'only b, once it starts');
+  ctl.abort();
+});
+
+test('clip URLs come only from the generated index (no URL for an id that is not its own key)', () => {
+  for (const id of ['constructor', '__proto__', 'toString', '../x', 'https://evil.example/a', '', undefined]) {
+    assert.equal(S.clipUrl(id), null, String(id));
+    assert.equal(S.sayButton(id), '', String(id));
+  }
+  const log = stubs(), ctl = new AbortController();
+  S.tap(btn('constructor'), ctl.signal);
+  assert.equal(log.played.length, 0);
+  ctl.abort();
 });

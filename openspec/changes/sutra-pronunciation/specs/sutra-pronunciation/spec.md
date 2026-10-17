@@ -59,7 +59,7 @@ The system SHALL ship one clip per name (29), made with the Kokoro voice the own
 - **THEN** there are 29, each under 30 KB, and all together under 500 KB
 
 ### Requirement: Clips load on use and stay for offline
-The system SHALL keep name clips out of the service worker's install precache and fetch a clip on the first tap that needs it. After the first Say it tap on a device, it SHALL fetch the remaining clips one at a time while the browser is idle, unless Save-Data is on. The service worker SHALL serve clips cache first.
+The system SHALL keep name clips out of the service worker's install precache and fetch a clip on the first tap that needs it. After the first Say it tap on a device, it SHALL fetch the remaining clips one at a time while the browser is idle, unless Save-Data is on. The service worker SHALL serve clips cache first. Every sound file URL SHALL carry a content-hash `?v=`, so a changed file is fetched again.
 
 #### Scenario: First tap
 - **WHEN** a Player on a new device taps Say it for Sutra 3

@@ -154,3 +154,9 @@ test('the Om note says it is atmosphere and not part of the book', () => {
   assert.ok(A.settingsHTML().includes(A.OM_NOTE));
   assert.match(A.ambienceButton(), /aria-pressed="(true|false)"/);
 });
+
+test('the Om URL carries its content hash, so a changed file is a new URL for the long-lived sound cache', async () => {
+  const { OM } = await import('../js/say-clips.js');
+  const real = await import('../js/sutra-ambience.js?real');
+  assert.match(real.deps.omUrl(), new RegExp(`/sounds/om\\.m4a\\?v=${OM.v}$`));
+});

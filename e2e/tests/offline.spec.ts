@@ -307,11 +307,14 @@ test('a Sutra name heard once online lets every other name play offline', async 
   await expect.poll(() => audioLog(page).then(l => l.decoded)).toBe(1);
   await expect.poll(() => page.evaluate(async () => (await (await caches.open('vedic-math-sounds')).keys()).length), { message: 'the idle prefetch saves all 29 clips', timeout: 30_000 }).toBe(29);
   await goOffline(context);
-  await expectOffline(page);
-  await page.evaluate(() => { location.hash = '#/sutras/s3'; });
-  await expect(page.locator('#sdTitle')).toHaveText('Ūrdhva-Tiryagbhyām');
-  await page.locator('dialog .say-btn').click();
-  await expect.poll(() => audioLog(page).then(l => l.decoded)).toBe(2);
-  await expect(page.locator('.fx-toasts')).toHaveCount(0);
-  await goOnline(context);
+  try {
+    await expectOffline(page);
+    await page.evaluate(() => { location.hash = '#/sutras/s3'; });
+    await expect(page.locator('#sdTitle')).toHaveText('Ūrdhva-Tiryagbhyām');
+    await page.locator('dialog .say-btn').click();
+    await expect.poll(() => audioLog(page).then(l => l.decoded)).toBe(2);
+    await expect(page.locator('.fx-toasts')).toHaveCount(0);
+  } finally {
+    await goOnline(context); // back online even when an assertion above fails
+  }
 });

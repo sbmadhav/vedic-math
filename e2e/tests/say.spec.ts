@@ -103,6 +103,7 @@ test('when the clip cannot load, the device voice reads the Respelling and the s
   await expect.poll(() => said(page)).toEqual(['ay kah dhi kay nuh poor vay nuh']);
   await expect(page.locator('.fx-toasts')).toContainText("Played with this device's voice, which may not be exact.");
   await expect(btn).toHaveAttribute('aria-pressed', 'false');
+  expect((await events(page)).filter(([p]) => p.startsWith('math/say')), 'a clip that never started is not counted').toEqual([]);
 });
 
 test('two taps that start a clip send two identical math/say/sutra events; a stopping tap sends none', async ({ page }) => {
