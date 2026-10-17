@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
-import { PLAY, SECTIONS, playFor, playIn } from '../../js/play/catalog.js';
+import { PLAY, SECTIONS, playFor, playIn, playOpen } from '../../js/play/catalog.js';
 import { routePath } from '../../js/metrics.js';
 
 const here = p => new URL(`../../${p}`, import.meta.url);
@@ -44,7 +44,10 @@ test('routes resolve to their experience with params, and sutra deep dives are u
 test('Explorer sees no experiences from the sections hidden in Explorer (Dojo, Sutras)', () => {
   assert.deepEqual(playIn('dojo', 'explorer'), []);
   assert.deepEqual(playIn('sutras', 'explorer'), []);
-  assert.ok(playIn('games', 'explorer').length >= 5);
+  /* Pattern Wall, Teach the Apprentice and Estimation Bets are Challenger and Pro only for now (owner, 2026-10-17) */
+  assert.deepEqual(playIn('games', 'explorer').map(e => e.id), ['tala', 'art', 'lens']);
+  for (const id of ['wall', 'apprentice', 'bets', 'spells', 'locks', 'scroll']) assert.equal(playOpen(PLAY.find(e => e.id === id), 'explorer'), false, id);
+  assert.equal(playOpen(PLAY.find(e => e.id === 'wall'), 'challenger'), true);
   for (const m of ['challenger', 'pro']) assert.equal(['dojo', 'arena', 'games', 'sutras'].flatMap(s => playIn(s, m)).length, 12);
 });
 

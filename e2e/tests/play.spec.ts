@@ -44,12 +44,23 @@ test.describe('explorer', () => {
   test.use({ seedMode: 'explorer' });
   test('Games and Arena shelves show, and nothing from the hidden Dojo and Sutras', async ({ page }) => {
     await open(page, '#/games');
-    await expect(page.locator('.play-shelf .play-card')).toHaveCount(6);
+    // Pattern Wall, Teach the Apprentice and Estimation Bets are Challenger and Pro only for now
+    await expect(page.locator('.play-shelf .play-card b')).toHaveText(['Tala Lab', 'Mandala Studio', 'Math Lens']);
     await open(page, '#/arena');
     await expect(page.locator('.play-shelf .play-card')).toHaveCount(3);
     await open(page, '#/dojo');
     await expect(page.locator('.play-shelf')).toHaveCount(0);
   });
+  for (const [hash, title] of [['#/games/wall', 'Pattern Wall'], ['#/games/bets', 'Estimation Bets'], ['#/games/apprentice', 'Teach the Apprentice'], ['#/dojo/spells', 'Sutra Spellbook']] as const) {
+    test(`a direct link to ${title} says it is for older players and offers what an Explorer can play`, async ({ page, issues }) => {
+      await open(page, hash);
+      await expect(page.locator('#view h1')).toHaveText(`${title} is for older players`);
+      await expect(page.locator('#view .play-card').first()).toBeVisible();
+      for (const href of await page.locator('#view .play-card').evaluateAll(as => as.map(a => a.getAttribute('href')))) expect(['#/games/tala', '#/games/art', '#/games/lens', '#/arena/party', '#/arena/ghosts', '#/arena/daily-number']).toContain(href);
+      expect(await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('vm.play.')))).toEqual([]);
+      expect(issues.console).toEqual([]);
+    });
+  }
 });
 
 test('#/duel opens Party Mode, and the Home tile and Sky place point there', async ({ page }) => {
@@ -108,8 +119,26 @@ test('Party Mode: Start the party begins the first round', async ({ page, issues
 
 test('play state is kept per Player, under vm.play.<player id>', async ({ page }) => {
   await open(page, '#/arena/daily-number');
+  // One move, so Daily Number has something to keep
+  await page.locator('[data-slot]').first().click();
+  await page.locator('.dn-ops [data-op]').first().click();
+  await page.locator('[data-slot]:not(:disabled)').nth(1).click();
+  const active = await page.evaluate(() => JSON.parse(localStorage.getItem('vm.players') || '{}').active);
+  expect(active).toBeTruthy();
   const keys = await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('vm.play.') || k.startsWith('vp.')));
-  expect(keys.every(k => k.startsWith('vm.play.'))).toBe(true);
+  expect(keys.length).toBeGreaterThan(0);
+  for (const k of keys) expect(k.startsWith(`vm.play.${active}.`), k).toBe(true);
+});
+
+test('opening play pages and pressing around is not a practice day; a finish is', async ({ page }) => {
+  const day = () => page.evaluate(() => { const p = JSON.parse(localStorage.getItem('vm.players') || '{}').active; const d = JSON.parse(localStorage.getItem('mathquest.v1.' + p) || '{}').days || {}; const t = new Date(); const k = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; return d[k] || 0; });
+  await open(page, '#/games');
+  const before = await day();
+  for (const hash of ['#/games/tala', '#/games/art', '#/arena/ghosts', '#/games/lens']) { await open(page, hash); await expect(page.locator('#view h1').first()).toBeVisible(); }
+  await page.evaluate(() => { document.dispatchEvent(new CustomEvent('vmplay', { detail: { action: 'art/try' } })); document.dispatchEvent(new CustomEvent('vmplay', { detail: { action: 'tala/compose-open' } })); });
+  expect(await day()).toBe(before);
+  await page.evaluate(() => document.dispatchEvent(new CustomEvent('vmplay', { detail: { action: 'daily/solve' } })));
+  await expect.poll(day).toBe(before + 1);
 });
 
 test('the badge for Party Mode is listed on Me', async ({ page }) => {

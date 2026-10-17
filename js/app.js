@@ -28,7 +28,7 @@ import { runStar } from './star.js';
 import * as SKY from './sky.js';
 import { skyView, placesHTML } from './sky-view.js';
 import { openShell } from './shell.js';
-import { PLAY, SECTIONS, playFor, playIn } from './play/catalog.js';
+import { PLAY, SECTIONS, playFor, playIn, playOpen } from './play/catalog.js';
 import { ICONS as PLAY_ICONS } from './play/icons.js';
 import { place as playPlace, suspendAudio as playQuiet } from './play/kit.js';
 import { GROUPS, sectionsFor, tryFor, say, resolveTour, tourDue, tourState, setTourState } from './guide.js';
@@ -934,6 +934,16 @@ function playView(hash, { signal }) {
   const hit = playFor(hash); if (!hit) return home({ signal });
   const [e, params] = hit, sec = SECTIONS[e.section];
   document.title = `${e.title}: ${BRAND} · Madhav`;
+  /* Not for this Mode (a direct or shared link): say so and point at what this Mode can play, instead of opening it */
+  if (!playOpen(e, fx.mode())) {
+    const mine = PLAY.filter(x => playOpen(x, fx.mode())).slice(0, 3);
+    view.innerHTML = `<section class="md-section"><div class="md-wrap px-closed">${crumbs([sec.href, sec.label], [null, e.title])}
+      <h1 class="md-heading">${e.title} is for older players</h1>
+      <p class="md-lede">${fx.t({ explorer: 'This one is for Challenger and Pro. Here are some you can play right now!', challenger: 'This one is for Challenger and Pro players.', pro: 'This one is for Challenger and Pro players.' })}</p>
+      <ul class="play-shelf-grid">${mine.map(x => `<li><a class="play-card play-card--${x.color}" href="${x.route}"><span class="play-card-ic" aria-hidden="true">${PLAY_ICONS[x.icon] || ''}</span><b>${x.title}</b><em>${x.tag}</em><span>${x.blurb}</span></a></li>`).join('')}</ul>
+      <p><a class="md-btn md-btn--primary" href="${sec.href}">Back to ${sec.label}</a></p></div></section>`;
+    return;
+  }
   playPlace.back = sec;
   view.classList.add('px-view', `px-view--${e.id}`);
   onAbort(signal, () => { view.classList.remove('px-view', `px-view--${e.id}`); playQuiet(); });
@@ -957,9 +967,11 @@ const PLAY_SPARKS = { 'daily/solve': 20, 'locks/level': 10, 'locks/discover': 15
 const PLAY_DAY_CAP = 150;
 function onPlay(ev) {
   const a = ev.detail && ev.detail.action; if (!a) return;
-  store.touchDay();
   if (a === 'party/finish') store.bump('duelsDone'); /* the Party host badge (was Duelist) */
   const n = PLAY_SPARKS[a]; if (!n) return;
+  /* Only a finish or a discovery (the actions that pay Sparks) counts as a practice day; opening a page, a shared
+     link or pressing Play does not, so a streak or Week warrior needs real play */
+  store.touchDay();
   const key = 'playSparks:' + cloud.dayId(), had = store.count(key), give = Math.min(n, PLAY_DAY_CAP - had);
   if (give > 0) { store.bump(key, give); store.addSparks(give, 'play'); }
 }

@@ -2,7 +2,8 @@
    is a page inside an existing section, reached from that section's page.
    - id: the module js/play/exp/<id>.js (exports mount) and the styles css/play/<id>.css
    - route: the page (params after it go to mount); section: the page Back returns to and that lists it
-   - modes: who sees it listed (Dojo and Sutras are hidden in Explorer, so their experiences are too)
+   - modes: who sees it listed and who may open it (Dojo and Sutras are hidden in Explorer, so their experiences are
+     too; Pattern Wall, Teach the Apprentice and Estimation Bets read above Explorer for now, owner decision 2026-10-17)
    Colors are the design system's three accents: coral, teal and sun. */
 export const SECTIONS = {
   dojo: { href: '#/dojo', label: 'Dojo' },
@@ -19,9 +20,9 @@ export const PLAY = [
   { id: 'daily', route: '#/arena/daily-number', section: 'arena', modes: ALL, title: 'Daily Number', tag: 'One puzzle a day', blurb: 'Six numbers, one target. Find a path, share your grid, come back tomorrow.', color: 'teal', icon: 'daily' },
   { id: 'tala', route: '#/games/tala', section: 'games', modes: ALL, title: 'Tala Lab', tag: 'Konnakol rhythm math', blurb: 'Clap 3 against 4 and hear them meet at 12. Build a tihai that lands on sam.', color: 'sun', icon: 'tala' },
   { id: 'art', route: '#/games/art', section: 'games', modes: ALL, title: 'Mandala Studio', tag: 'Math you can hang on a wall', blurb: 'Times-table mandalas, Meru-prastāra in color, Śulba rope geometry. Each one sings. Save it as a wallpaper.', color: 'coral', icon: 'art' },
-  { id: 'wall', route: '#/games/wall', section: 'games', modes: ALL, title: 'Pattern Wall', tag: 'Name what you discover', blurb: 'Color a number grid, find a pattern, give it your name. Build a wall of your own rules.', color: 'sun', icon: 'wall' },
-  { id: 'apprentice', route: '#/games/apprentice', section: 'games', modes: ALL, title: 'Teach the Apprentice', tag: 'Be the teacher', blurb: 'Your apprentice keeps making mistakes. Spot the wrong step and coach them to their belt.', color: 'coral', icon: 'apprentice' },
-  { id: 'bets', route: '#/games/bets', section: 'games', modes: ALL, title: 'Estimation Bets', tag: 'How sure are you?', blurb: 'Guess with a range, bet your confidence chips, and learn how good your number sense really is.', color: 'teal', icon: 'bets' },
+  { id: 'wall', route: '#/games/wall', section: 'games', modes: BIG, title: 'Pattern Wall', tag: 'Name what you discover', blurb: 'Color a number grid, find a pattern, give it your name. Build a wall of your own rules.', color: 'sun', icon: 'wall' },
+  { id: 'apprentice', route: '#/games/apprentice', section: 'games', modes: BIG, title: 'Teach the Apprentice', tag: 'Be the teacher', blurb: 'Your apprentice keeps making mistakes. Spot the wrong step and coach them to their belt.', color: 'coral', icon: 'apprentice' },
+  { id: 'bets', route: '#/games/bets', section: 'games', modes: BIG, title: 'Estimation Bets', tag: 'How sure are you?', blurb: 'Guess with a range, bet your confidence chips, and learn how good your number sense really is.', color: 'teal', icon: 'bets' },
   { id: 'lens', route: '#/games/lens', section: 'games', modes: ALL, title: 'Math Lens', tag: 'The world is your puzzle', blurb: 'Point the camera at a plate, a clock or a receipt and get a challenge made from its digits.', color: 'teal', icon: 'lens' },
   { id: 'scroll', route: '#/sutras/lost-scroll', section: 'sutras', modes: BIG, title: 'The Lost Śulba Scroll', tag: 'A math mystery in chapters', blurb: 'Katapayadi ciphers, rope-and-peg locks and a scroll torn into pieces. New chapter every week.', color: 'sun', icon: 'scroll' }
 ];
@@ -34,4 +35,6 @@ export function playFor(hash) {
   return null;
 }
 /* Listed in a section for a Mode */
+/* Whether a Mode may open an experience (a direct link included) */
+export const playOpen = (e, mode) => e.modes.includes(mode || 'challenger');
 export const playIn = (section, mode) => PLAY.filter(e => e.section === section && e.modes.includes(mode || 'challenger'));
