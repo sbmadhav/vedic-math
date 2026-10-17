@@ -358,6 +358,8 @@ export function mount({ root, signal, params }) {
     const begin = () => {
       if (current) current.stop();
       current = null;
+      /* a defeated monster stays on screen for a moment but takes no more spells */
+      if (target && target.state === 'gone') target = null;
       if (!target || !chosen) return idle();
       const spell = C.spellById(chosen);
       if (!spell.fits(target.problem)) {
@@ -398,20 +400,23 @@ export function mount({ root, signal, params }) {
       if (good) S.book[spell.id] = (S.book[spell.id] || 0) + 1;
       if (good) S.since++;
       save();
-      track('spells/cast', spell.title);
+      /* Sparks are for a clean cast on your own, like the combo: not after a fizzle or with the next stroke shown */
+      if (good) track('spells/cast', spell.title);
       /* HP drains from the answer to zero */
       const hp = m.el.querySelector('.sp-m-hp'), t0 = performance.now(), dur = reducedMotion() ? 1 : 700;
       m.state = 'gone'; m.el.classList.add('is-won'); m.el.disabled = true;
+      if (target === m) target = null;
       loop(now => { const k = Math.min(1, (now - t0) / dur); hp.textContent = `HP ${Math.round(value * (1 - k))}`; return k < 1; }, signal);
       if (combo > 0 && combo % 5 === 0) confetti(40);
       say(`${C.show(m.problem)} is ${value}. The monster turns into ${gain} sparkle${gain > 1 ? 's' : ''}.${inked ? ' A new page is inked in your spellbook.' : ''}`);
       host.insertAdjacentHTML('beforeend', `<p class="sp-win">${esc(C.show(m.problem))} = <b>${value}</b>. ${good ? `+${gain} sparkle${gain > 1 ? 's' : ''}` : 'Cast with help: no combo this time'}${inked ? `. <b>New page inked:</b> ${esc(spell.sutra)}` : ''}</p>`);
       if (inked) { toast(`Spellbook: ${spell.sutra} inked`); [0, 2, 4, 7, 9].forEach((n, i) => tone(PENTA[n], { dur: 0.3, when: i * 0.08, gain: 0.1 })); }
       later(() => {
-        m.el.remove(); monsters.splice(monsters.indexOf(m), 1);
-        if (target === m) target = null;
+        m.el.remove();
+        const i = monsters.indexOf(m); if (i >= 0) monsters.splice(i, 1);
         offerScroll(); spawn(); spawn();
-        if (!target && monsters.length) aim(monsters.reduce((a, b) => (b.p > a.p ? b : a)));
+        const left = monsters.filter(x => x.state !== 'gone');
+        if (!target && left.length) aim(left.reduce((a, b) => (b.p > a.p ? b : a)));
       }, reducedMotion() ? 500 : 1500, signal);
     };
     const offerScroll = () => {
