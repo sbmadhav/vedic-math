@@ -66,6 +66,7 @@ See the proposal's Out of scope. Also: no framework, no bundler (the house rule 
 | `/fonts/*.woff2`, `/icons/*` | `fonts/`, `icons/` | Self-hosted, with licences |
 | `/vendor/firebase/<v>/*.js`, `/vendor/goatcounter/count.js` | `vendor/...` | Self-hosted third-party code (D10) |
 | `/thumbs/<youtube id>.webp` | `thumbs/` | Video thumbnails (D10) |
+| `https://voice.learnvedicmath.com/<hash>.m4a` | R2 bucket `learnvedicmath-voice`, filled by CI from the voice Release | Studio voice files, about 23,700 (D17); not static assets |
 | `/sw.js` | `sw.js` | Registered with scope `/play/` (D7) |
 | `/manifest.webmanifest` | `manifest.webmanifest` | Scope `/play/` |
 | `/.well-known/security.txt`, `/robots.txt`, `/sitemap.xml`, `/404.html` | `site/` | Written or copied by the build |
@@ -251,7 +252,12 @@ Crawlers and first-time visitors (no storage) see the landing page. The script r
 - New project (suggested id `learnvedicmath`, or `learnvedicmath-prod` if taken), owned by the owner's Google account for now (the business entity's account later, decision 9). Anonymous sign-in on; authorized domains `learnvedicmath.com`, `www.learnvedicmath.com`, `localhost`; the browser key restricted to HTTP referrers `https://learnvedicmath.com/*`, `https://www.learnvedicmath.com/*`, `http://localhost:*/*`, `http://127.0.0.1:*/*` and the project's `firebaseapp.com`, and to the five APIs used today; App Check with a reCAPTCHA Enterprise key for `learnvedicmath.com` (and `localhost` through debug tokens, not as a key domain), enforced for Firestore; budget alert.
 - Retention needs the Firestore TTL policy on `exp`, which needs the Blaze plan (on Spark the TTL command fails). Blaze with the free quotas still costs nothing at this size; a $5 budget with alerts at 50, 90 and 100 percent guards it (open question 3).
 - `cloud/setup.sh` takes the project id and the domains as parameters (today it hard-codes `sbmadhav.com`), and turns on TTL.
-- Rules: unchanged except retention. `validEntry()` requires `exp` between 1 and 31 days ahead (was 60); `KEEP_DAYS` stays 30. `allow list` also requires that the Board began less than 35 days ago (`request.time < boardStart() + duration.value(35, 'd')`), so an entry that TTL has not yet removed is no longer served. TTL deletion is asynchronous (Firestore deletes expired documents in the background, typically within a day or so of expiry, with no guarantee of a time), so between `exp` and the 35-day cut-off `cloud.top()` also drops any entry whose `exp` has passed before showing a Board. The copy says "stops being shown after 30 days and is then deleted automatically", never "deleted at 30 days". Emulator tests cover the rules; `test/cloud.test.mjs` covers the client filter.
+- Rules: unchanged except retention, and set so that **no expired entry can ever be listed**, by anyone, even while TTL has not yet deleted it:
+  - `validEntry()` requires `exp` between 29 and 31 days ahead (was 1 to 60); the client sends 30 (`KEEP_DAYS`).
+  - `allow list` also requires `request.time < boardStart() + duration.value(28, 'd')`.
+  - Why that is enough: a write is accepted only while its Board is open, which starts at the earliest 15 hours before `boardStart()`. So every entry's `exp` is at least `boardStart() - 15h + 29d`, which is later than `boardStart() + 28d`, the last moment the Board can be listed. Both sides use server time (`request.time`), so a wrong device clock changes nothing. A list query cannot filter on `exp > request.time` itself (rules check query constraints, and the query orders by score), so the bound is made on the Board's age instead.
+  - Daily Boards stay listable for 28 days and weekly Boards for 4 weeks from their Monday, more than the app ever shows.
+  - TTL deletion is asynchronous (Firestore deletes expired documents in the background, typically within a day or so, with no guaranteed time). Until it does, an expired entry still exists but cannot be listed, and `get` needs that entry's own identity. `cloud.top()` also drops any entry whose `exp` has passed, as a second guard. The copy says "stops being shown after 30 days and is then deleted automatically", never "deleted at 30 days". Emulator tests cover the rules; `test/cloud.test.mjs` covers the client filter.
 - Under-13 device-only boards are enforced in `cloud.canPost()` (a new reason, `'device-only'`), not in the rules: the Age answer never leaves the device (posting-consent), so the server cannot know it. ADR 0006 records why a self-asserted age field was rejected.
 - `js/cloud-config.js` holds the new project's web config and App Check site key (public by design).
 
@@ -261,6 +267,29 @@ Crawlers and first-time visitors (no storage) see the landing page. The script r
 - The Me page's World boards section shows, for an under-13 Player, a plain sentence (for the Player's Mode) that their Scores stay on this device's board, and no switch. The Parent step dialog, its grown-up check and the `parent-step/on|off` events are removed.
 - World boards (viewing) appear only for a Player whose Age answer is 13 or over, behind a "Show World board" tap; everyone else sees the Device board. The Age answer stays neutral: it is asked at the first Ranked round end as today, never framed as unlocking anything.
 - Weekly Sparks are never queued for posting for an under-13 Player.
+
+### D17. Studio voice files (better-voice Part B, PR #55)
+
+PR #55 publishes the Studio voice into the site at `/vedic-math/voice/`: about 23,700 files (21,387 whole lines and 2,291 clips in five packs, about 414 MB), not in git, downloaded at deploy from a GitHub Release (`tools/voice/ci-fetch.mjs`, checked against the SHA-256 in `js/voice-index.js`). They are cache first in their own `vedic-math-voice` cache, which deploys never delete.
+
+Cloudflare's limits (developers.cloudflare.com/workers/platform/limits, updated 2026-10-12): static assets allow **20,000 files per Worker version on Free** and **100,000 on Paid**, **25 MiB per file**, and no documented total size limit. So the site plus the voice (about 24,000 files with the app's own files) **does not fit on Free**. R2 (developers.cloudflare.com/r2/pricing, updated 2026-10-01): free tier 10 GB-month of Standard storage, 1 million Class A and 10 million Class B operations a month, **no egress fees**.
+
+Options:
+- **(a) R2 bucket `learnvedicmath-voice`.** CI uploads only files that are new (names are content hashes, so nothing is ever overwritten) and checks every file against the release manifest's SHA-256 before uploading. The static site keeps only `js/voice-index.js` (the tag, the archive hash, and now the voice base URL), so it stays at about 300 files. Two ways to serve it:
+  - **(a1) public custom domain `voice.learnvedicmath.com`** on the bucket (default). Requests go through Cloudflare's cache and never run Worker code, so they do not count against the Free plan's 100,000 Worker requests a day. They also don't count as R2 Class B reads when they are cache hits (a Cache Rule sets `Edge TTL` long for `voice.learnvedicmath.com/*`). Object metadata sets `Cache-Control: public, max-age=31536000, immutable`, a bucket CORS rule allows `GET` from `https://learnvedicmath.com` only, and a Transform Rule adds `Cross-Origin-Resource-Policy: same-site`, `X-Content-Type-Options: nosniff` and HSTS (which `includeSubDomains` covers anyway). The play CSP adds `https://voice.learnvedicmath.com` to `media-src` and `connect-src`. It is a first-party host (same site), listed in `THIRD_PARTIES` as "own".
+  - **(a2) same domain, `/voice/*` through the Worker** (`run_worker_first: ["/_csp", "/voice/*"]`, an R2 binding, the Worker answers from `caches.default` or R2). One origin, no CORS or CSP change. But every clip a Player hears is a Worker request. A Player hears a few hundred clips a session, so about 300 daily Players would reach the Free plan's 100,000 requests a day, and then the voice stops working until the next day. It is fine on Workers Paid (10 million a month included).
+- **(b) Workers Paid, $5 a month.** All files stay static assets at `/voice/` (100,000 files allowed, 25 MiB each covers the largest pack), same origin, no new moving parts, static requests free. The cost is $60 a year now rather than "once there is revenue". Each deploy uploads only changed assets, so the 414 MB is uploaded once per new recording.
+- **(c) Pack lines into fewer files** (for example one file per Skill and Mode with a byte-range index). It fits on Free with no new service, but it means range requests, partial responses in the service worker cache and a rework of PR #55's player and tests. A Player would also download a whole pack to hear one line. Rejected unless (a) and (b) both fall through.
+
+**Recommendation: (a1)**, R2 on `voice.learnvedicmath.com`. It is free at this size (414 MB of 10 GB, about 24,000 Class A writes once, cached reads), keeps the site far under the 20,000-file limit with room to grow, and keeps the audio release separate from code deploys. It stays free even if many Players listen, because cached requests run no Worker. (b) is the simple fallback, and the natural place to land once the site moves to Workers Paid anyway (then (a2) becomes free too).
+
+Rules carried over from PR #55 (whatever the option):
+- The deploy fails if any voice file does not match its manifest hash, and with no tag in the index nothing is uploaded and the device voice reads.
+- Voice files are cache first in their own cache, now `lvm-voice`, which the worker's version clean-up never deletes (offline-app spec). Nothing is precached; the core clip pack loads while idle once read aloud is on.
+- No voice file is ever in git, and `build.py` fails if any is in `_site`.
+- Upload credential: an R2 API token with Object Read & Write on that one bucket only (`R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ACCOUNT_ID`) in the `production` environment, used only by a `voice-upload` job on `main` that runs when `js/voice-index.js` changes. Uploads use the S3 API (`aws s3 cp --checksum-algorithm SHA256`, or `rclone copy --immutable`), never deleting.
+- Re-recording: the recording project is the old `sbmadhav-vedic-math` GCP project (PR #55 used it through the owner's gcloud sign-in), which task 19.2 deletes. Recording moves to the new project first (enable Text-to-Speech, the same $300/month and $50/run guards), task 7.6.
+- PR #44 (sutra-examples) merged after the recording, so its new Worked examples have no recording yet. The re-record (`lines.mjs`, `record.mjs`, `publish.mjs`, a few thousand characters, inside the free million a month) runs before launch, task 7.5, and `test/voice-coverage.test.mjs` must pass with the explanation lines included.
 
 ### D16. Licence
 
@@ -287,11 +316,15 @@ Phase A (tasks 1 to 15), Phase B (16 to 17), Phase C (18 to 19), as in `tasks.md
 
 ## Open questions (defaults used in this change)
 
-1. **Who sees World boards**: default, only Players whose Age answer is 13 or over, and only after a "Show World board" tap (because App Check makes a read reach Google). Alternative: anyone may view without posting.
-2. **Going private**: default, rename plus a public stub repo for the redirect (free). Alternative: GitHub Pro at $4/month (Pages from a private repo, environments, 3,000 minutes).
-3. **Blaze plan for Firestore TTL**: default yes, with a $5 budget and alerts. Without it, entries must be deleted by a scheduled job, which needs a service-account secret.
-4. **Licence of new code**: default proprietary from the change date. Alternative: new code stays MIT and only content is reserved.
-5. **Brand name**: default "Learn Vedic Math" for the site and the installed app ("Vedic Math" as the short name), and new icons drawn from Bolt. The owner may want a different name or art.
-6. **"Made by Madhav" in the game**: default a link for Pro, text for Explorer and Challenger.
-7. **PR #50 (Sanskrit verses)** is open and not in decision 6's list. Default: it merges on the current site before the move if it is ready; otherwise it is rebased onto the new layout.
-8. **GoatCounter**: "self-hosted" is read as a new hosted site code with the script served from this site, not running a GoatCounter server.
+Labelled L1 to L8 to match the owner's list.
+
+- **L1. Who sees World boards**: default, only Players whose Age answer is 13 or over, and only after a "Show World board" tap (because App Check makes a read reach Google). Alternative: anyone may view without posting.
+- **L2. Going private**: default, rename plus a public stub repo for the redirect (free). Alternative: GitHub Pro at $4/month (Pages from a private repo, environments, 3,000 minutes).
+- **L3. Blaze plan for Firestore TTL**: default yes, with a $5 budget and alerts. Without it, entries must be deleted by a scheduled job, which needs a service-account secret.
+- **L4. Licence of new code**: default proprietary from the change date. Alternative: new code stays MIT and only content is reserved.
+- **L5. Brand name**: default "Learn Vedic Math" for the site and the installed app ("Vedic Math" as the short name), and new icons drawn from Bolt. The owner may want a different name or art.
+- **L6. "Made by Madhav" in the game**: default a link for Pro, text for Explorer and Challenger.
+- **L7. PR #50 (Sanskrit verses)** is open and not in decision 6's list. Default: it merges on the current site before the move if it is ready; otherwise it is rebased onto the new layout.
+- **L8. Where the Studio voice files live**: default R2 on `voice.learnvedicmath.com` (D17 option a). Alternatives: Workers Paid (b), packing (c), or R2 behind the same domain through the Worker.
+
+Not a decision, an interpretation: **GoatCounter** "self-hosted" is read as a new hosted site code with the script served from this site, not running a GoatCounter server.

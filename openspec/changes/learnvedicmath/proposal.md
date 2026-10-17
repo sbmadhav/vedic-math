@@ -25,7 +25,7 @@ The 14 owner decisions in `_handoff/learnvedicmath-decisions.md` (all approved o
 **Boards and privacy (decisions 9, 10).**
 - A new Firebase/GCP project for learnvedicmath.com: authorized domains, App Check (reCAPTCHA Enterprise, enforced), API key restricted to the new referrers, budget alert, TTL on `exp`.
 - **Players whose Age answer is under 13 use Device boards only.** The Parent step is retired: it was a device toggle, which is not verifiable parental consent under the amended COPPA Rule. Players 13 and over keep posting to World boards, unchanged.
-- The Firestore rules are unchanged except a retention rule: `exp` at most 31 days ahead, and a Board can be listed only until 35 days after it began.
+- The Firestore rules are unchanged except a retention rule: `exp` 29 to 31 days ahead, and a Board can be listed only until 28 days after it began, so the rules never serve an expired entry, even before TTL deletes it.
 - Nothing reaches Google until a Player presses play on a video, opens a World board (13 and over only) or posts: YouTube thumbnails and the Firebase SDK are served from learnvedicmath.com, and reCAPTCHA loads only on those paths.
 
 **Analytics (decision 12).** Cloudflare Web Analytics (cookieless) for traffic, plus a new GoatCounter site code with its script served from this site, keeping today's events. PostHog (cookieless, no person profiles) is a later change, after the privacy policy is published. Never Google Analytics.

@@ -76,7 +76,7 @@ A Player whose age answer is 13 or over can post to World boards. Each post hold
 
 | What | How long |
 |---|---|
-| World board entries (Players 13 and older) | No longer shown 30 days after their last update, and no board older than 35 days can be read; then deleted by an automatic clean-up, usually within a few days |
+| World board entries (Players 13 and older) | No longer shown 30 days after their last update (a board cannot be read at all once it is 28 days old, so an expired entry is never shown); then deleted by an automatic clean-up, usually within a few days |
 | Analytics counts | Kept in total, as counts; no record of a person exists to delete. GoatCounter's per-visit records are kept for [13 months] |
 | Security reports and server logs | A few days (Cloudflare's log limits), then deleted |
 | Emails to us | Up to 12 months after the conversation ends, or 30 days after we finish a deletion request, whichever is sooner |

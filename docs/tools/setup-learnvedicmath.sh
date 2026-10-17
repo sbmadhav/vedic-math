@@ -291,8 +291,16 @@ if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1 && confirm "C
 {"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}
 JSON
   then
-    gh api -X POST "repos/$REPO/environments/production/deployment-branch-policies" -f name=main -f type=branch >/dev/null 2>&1 || true
-    printf '  %s✓ production%s environment, deployments from main only\n' "$GREEN" "$RESET"
+    if gh api "repos/$REPO/environments/production/deployment-branch-policies" --jq '.branch_policies[].name' 2>/dev/null | grep -qx main \
+       || gh api -X POST "repos/$REPO/environments/production/deployment-branch-policies" -f name=main -f type=branch >/dev/null 2>&1; then
+      printf '  %s✓ production%s environment, deployments from main only\n' "$GREEN" "$RESET"
+    else
+      SKIPPED+=("production environment branch rule: add main under Settings > Environments > production (until then NO branch can deploy)")
+      warn "the production environment exists but its main-only branch rule could not be added."
+      warn "Until you add it (Settings > Environments > production), no branch can deploy."
+      open_url "https://github.com/$REPO/settings/environments"
+      pause "Add the main rule by hand, then press Enter"
+    fi
   else
     SKIPPED+=("production environment (Settings > Environments, branch main only)")
     warn "could not create the production environment; make it by hand (guide section 8)"
@@ -326,8 +334,13 @@ _env_secret() {
     WRITTEN_SECRET+=("$name (env $env)")
     printf '  %s✓ set%s %s in environment %s\n' "$GREEN" "$RESET" "$name" "$env"
   else
-    SKIPPED+=("$name: gh secret set $name --env $env (never as a repository secret)")
-    warn "could not set $name in $env; set it later with: gh secret set $name --env $env"
+    warn "could not set $name in environment $env."
+    warn "Cloudflare shows a token only once. Keep its page open and run, in another terminal:"
+    say  "gh secret set $name --env $env"
+    warn "and paste it there now. If the page is already closed, roll the token in Cloudflare"
+    warn "(API Tokens > ... > Roll) or create a new one, and save that instead."
+    pause "Press Enter once it is saved (or after you have noted to make a replacement)"
+    SKIPPED+=("$name: if not saved yet, roll or recreate the Cloudflare token, then gh secret set $name --env $env (never as a repository secret)")
   fi
 }
 ask_secret CLOUDFLARE_API_TOKEN "Paste the production token:"

@@ -95,6 +95,21 @@ Then the production token:
 13. Check: `gh secret list --env production` and `gh secret list --env preview` show one name each; plain `gh secret list` shows neither.
 14. If a deploy later fails on a missing permission, add only the one the error names, to that token.
 
+## 8b. R2 for the Studio voice (task 7.8, only if decision L8 stays R2)
+
+The Studio voice (about 23,700 files, 414 MB) is too many files for Workers static assets on the Free plan (20,000 per version), so it lives in an R2 bucket on its own subdomain (design D17).
+
+1. Cloudflare > **R2 Object Storage** > Enable R2. It asks for a payment method even for the free tier (10 GB-month, no egress fees); 414 MB costs nothing.
+2. **Create bucket** `learnvedicmath-voice`, location Automatic, storage class Standard.
+3. The bucket > Settings > **Custom Domains** > Connect domain > `voice.learnvedicmath.com`. Leave the `r2.dev` public URL **disabled**.
+4. Settings > **CORS policy**: allow origin `https://learnvedicmath.com`, method `GET`, headers `Range`, max age 86400.
+5. learnvedicmath.com > Rules > **Cache Rules** > Create: when hostname equals `voice.learnvedicmath.com`, eligible for cache, Edge TTL: override, 1 year.
+6. Rules > **Transform Rules** > Modify response header: when hostname equals `voice.learnvedicmath.com`, set `Cross-Origin-Resource-Policy: same-site` and `X-Content-Type-Options: nosniff`.
+7. R2 > **Manage R2 API Tokens** > Create API token: name `github-actions-voice-upload`, permission **Object Read & Write**, **Apply to specific buckets only** > `learnvedicmath-voice`, TTL one year. Cloudflare shows an Access Key ID and a Secret Access Key **once**.
+8. In a terminal: `gh secret set R2_ACCESS_KEY_ID --env production` and `gh secret set R2_SECRET_ACCESS_KEY --env production` (paste each at the hidden prompt), then `gh variable set R2_ACCOUNT_ID --body <your account id>`.
+
+If L8 is Workers Paid instead: Cloudflare > Workers & Pages > Plans > **Workers Paid** ($5 a month), and skip this section.
+
 ## 9. First deploy and custom domains (with the builder, after task 11.1)
 
 1. The builder's first `main` deploy creates the Worker `learnvedicmath`.

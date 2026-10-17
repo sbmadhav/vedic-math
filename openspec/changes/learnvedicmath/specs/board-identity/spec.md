@@ -22,7 +22,7 @@ The system SHALL NOT create an anonymous identity, or contact the sign-in servic
 - **THEN** nothing is posted and no identity is created
 
 ### Requirement: World boards are readable without sign-in
-The system SHALL allow anyone to read at most 20 entries of a valid Board that began less than 35 days ago, ordered by Score, without signing in. Each entry SHALL expose only the Nickname, avatar color, Score and time. Reading a single entry by its identity, and all writes, SHALL still require the matching identity. In the app, a World board SHALL be shown only to a Player whose Age answer is 13 or over, and only after they tap to show it; every other Player SHALL see the Device board.
+The system SHALL allow anyone to read at most 20 entries of a valid Board that began less than 28 days ago, ordered by Score, without signing in. Each entry SHALL expose only the Nickname, avatar color, Score and time. Reading a single entry by its identity, and all writes, SHALL still require the matching identity. In the app, a World board SHALL be shown only to a Player whose Age answer is 13 or over, and only after they tap to show it; every other Player SHALL see the Device board.
 
 #### Scenario: Signed-out list query
 - **WHEN** a signed-out client asks for the top 20 entries of today's Arena Board
@@ -33,7 +33,7 @@ The system SHALL allow anyone to read at most 20 entries of a valid Board that b
 - **THEN** the request is refused
 
 #### Scenario: An old Board
-- **WHEN** a client asks for the entries of a Board that began 40 days ago
+- **WHEN** a client asks for the entries of a Board that began 29 days ago
 - **THEN** the request is refused
 
 #### Scenario: Signed-out write
@@ -47,15 +47,23 @@ The system SHALL allow anyone to read at most 20 entries of a valid Board that b
 ## ADDED Requirements
 
 ### Requirement: Board entries expire
-Every World board entry SHALL carry an `exp` time 30 days after its last write, and the rules SHALL refuse an `exp` less than 1 day or more than 31 days ahead. The app SHALL NOT show an entry whose `exp` has passed. A Firestore TTL policy on `exp` SHALL delete expired entries; that deletion runs in the background and is not immediate, so until it completes an expired entry is hidden by the app and, 35 days after its Board began, refused by the rules.
+Every World board entry SHALL carry an `exp` time 30 days after its last write, and the rules SHALL refuse an `exp` less than 29 or more than 31 days ahead, so that no entry of a Board that can still be listed has expired. No read SHALL return an expired entry, and the app SHALL NOT show one. A Firestore TTL policy on `exp` SHALL delete expired entries; that deletion runs in the background and is not immediate.
 
 #### Scenario: An entry with a long expiry
 - **WHEN** a client writes an entry whose `exp` is 45 days ahead
 - **THEN** the write is refused
 
+#### Scenario: An entry with a short expiry
+- **WHEN** a client writes an entry whose `exp` is 2 days ahead
+- **THEN** the write is refused
+
 #### Scenario: Expired but not yet deleted
-- **WHEN** a World board is shown and one of its entries has an `exp` in the past that TTL has not yet removed
-- **THEN** that entry is not shown
+- **WHEN** an entry's `exp` has passed and TTL has not yet removed it, and a signed-out client lists its Board
+- **THEN** the list is refused, because that Board began more than 28 days ago
+
+#### Scenario: The app's own guard
+- **WHEN** the app receives a Board row whose `exp` is in the past
+- **THEN** it does not show it
 
 #### Scenario: TTL policy
 - **WHEN** the project's Firestore TTL policies are listed

@@ -76,6 +76,17 @@ A preview build SHALL send `X-Robots-Tag: noindex, nofollow` on every response. 
 - **WHEN** a crawler requests `https://learnvedicmath.com/robots.txt`
 - **THEN** it allows crawling and points to `https://learnvedicmath.com/sitemap.xml`
 
+### Requirement: Studio voice files are not static assets
+The Studio voice files SHALL be served from the voice host chosen in design D17 (by default an R2 bucket on `https://voice.learnvedicmath.com`), named by content hash, with `Cache-Control: public, max-age=31536000, immutable` and readable cross-origin only from `https://learnvedicmath.com`. The build SHALL fail if any voice file is in the site's output, and the deploy SHALL upload only files whose SHA-256 matches the recording manifest, never deleting or overwriting one.
+
+#### Scenario: Build output
+- **WHEN** the build runs with a voice release in the index
+- **THEN** `_site` holds no voice audio and has fewer than 20,000 files
+
+#### Scenario: A corrupted upload
+- **WHEN** a voice file's bytes do not match the manifest hash
+- **THEN** the upload job fails and names the file, and nothing is uploaded for it
+
 ### Requirement: Within the host's limits
 The build SHALL fail when the output has more than 20,000 files, a file larger than 25 MiB, more than 100 header rules, a header line longer than 2,000 characters, or more than 2,000 static redirects.
 
