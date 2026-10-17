@@ -6,6 +6,10 @@
      the Balloon pop prompts and counts);
    - clips: every number clip in both takes, and every word frame seen while sampling every other source (all Skills,
      all Katas, which Stars deal, Arena sets for each League, towers), each assigned to the first pack that needs it.
+   - explanations (openspec explanation-audio): every line js/explain-lines.js lists (Skill ideas and methods, Trick
+     ideas, Sutra cards and deep dives, the Guide and the tour, game rules, badges, Watch descriptions) recorded whole;
+     worked steps (a Skill problem's steps, a Trick's steps) hold numbers made up per problem, so their frames go into
+     the clip packs.
    Spoken text is what the app passes to fx.speak(): a question's `say` when it has one, else `q`; and its hints. */
 import { writeFileSync, readFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { normalize } from '../../js/voice.js';
@@ -15,6 +19,8 @@ import { TRICKS } from '../../js/vedic.js';
 import { KATAS_PER_TRICK, kata, CHALLENGE_COUNT, challenge, challengeSet } from '../../js/levels.js';
 import { makeSet } from '../../js/arena.js';
 import { STUDIO } from '../../js/voice-index.js';
+import { allExplanationLines } from '../../js/explain-lines.js';
+import { VIDEOS, LINKS } from '../../js/videos.js';
 
 const ROOT = new URL('../../', import.meta.url).pathname;
 const OUT = new URL('./out/', import.meta.url).pathname;
@@ -49,6 +55,7 @@ function main() {
   const whole = new Map(); // words -> source
   const addWhole = (t, src) => { const w = normalize(t); if (w && !whole.has(w)) whole.set(w, src); };
   for (const t of fixedLines()) addWhole(t, 'fixed');
+  for (const { text, src } of allExplanationLines({ videos: VIDEOS, links: LINKS })) addWhole(text, 'explain:' + src);
   for (const s of wholeSkills()) {
     let quiet = 0, before = whole.size;
     for (let i = 0; quiet < WHOLE_QUIET && i < 5e6; i++) {
@@ -63,11 +70,13 @@ function main() {
   const clips = new Map(NUMBER_CLIPS.map(id => [id, 'core']));
   const addClips = (t, pack) => { const w = normalize(t); if (!w) return; for (const p of planLine(w)) if (p.clip && !clips.has(p.clip)) clips.set(p.clip, pack); };
   const band = g => (['K', '1', '2'].includes(String(g)) ? 'core' : ['3', '4', '5'].includes(String(g)) ? 'g3-5' : ['6', '7', '8'].includes(String(g)) ? 'g6-8' : String(g) === 'V' ? 'tricks' : 'g9-12');
-  for (const [w] of whole) addClips(w, 'core');
+  for (const [w, src] of whole) if (!src.startsWith('explain:')) addClips(w, 'core'); // explanations are always whole
   for (let d = 0; d < 60; d++) makeSet('explorer', 'lines-' + d).forEach(p => spoken(p).forEach(t => addClips(t, 'core')));
   const bySkillBand = PACKS.map(pk => SKILLS.filter(s => band(s.grade) === pk));
-  bySkillBand.forEach((list, i) => list.forEach(s => { for (const lv of [1, 2, 3]) for (let k = 0; k < N; k++) { const p = gen(s, lv); if (p) spoken(p).forEach(t => addClips(t, PACKS[i])); } }));
-  for (const t of TRICKS) for (let n = 1; n <= KATAS_PER_TRICK; n++) kata(t.id, n).problems.forEach(p => spoken(p).forEach(x => addClips(x, 'tricks')));
+  const withSteps = p => [...spoken(p), ...(p.steps || [])];
+  bySkillBand.forEach((list, i) => list.forEach(s => { for (const lv of [1, 2, 3]) for (let k = 0; k < N; k++) { const p = gen(s, lv); if (p) withSteps(p).forEach(t => addClips(t, PACKS[i])); } }));
+  for (const t of TRICKS) for (let k = 0; k < N; k++) { const v = t.random(); if (!(t.valid && t.valid(v))) t.steps(v).forEach(st => addClips(st.say, 'tricks')); }
+  for (const t of TRICKS) for (let n = 1; n <= KATAS_PER_TRICK; n++) kata(t.id, n).problems.forEach(p => withSteps(p).forEach(x => addClips(x, 'tricks')));
   for (let d = 0; d < 40; d++) { makeSet('challenger', 'lines-' + d).forEach(p => spoken(p).forEach(t => addClips(t, 'tricks'))); makeSet('pro', 'lines-' + d).forEach(p => spoken(p).forEach(t => addClips(t, 'tricks'))); }
   for (let id = 1; id <= CHALLENGE_COUNT; id += 3) challengeSet(challenge(id), 30).forEach(p => spoken(p).forEach(t => addClips(t, 'tricks')));
 

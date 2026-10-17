@@ -30,6 +30,7 @@ import { openShell } from './shell.js';
 import { GROUPS, sectionsFor, tryFor, say, resolveTour, tourDue, tourState, setTourState } from './guide.js';
 import { artFor } from './guide-art.js';
 import { startTour } from './tour.js';
+import { guideCounts } from './explain-lines.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const view = $('#view');
@@ -1205,9 +1206,6 @@ function wireWorldBoards(root) {
 
 /* ---------- Guide and first-visit tour (openspec in-app-guide) ---------- */
 /* The guide's data is js/guide.js, its pictures js/guide-art.js, the tour js/tour.js. Counts come from the catalogs. */
-const guideCounts = () => ({ skills: SKILLS.length - TRICKS.length, tricks: TRICKS.length, belts: BELTS.length, katasPer: LV.KATAS_PER_TRICK, kataCount: LV.KATA_COUNT,
-  sutras: SUTRAS.length, subsutras: SUBSUTRAS.length, games: GAMES.length, levelsPerGame: LEVELS_PER_GAME, chapters: LV.TOPICS.length, perChapter: LV.PER_CHAPTER,
-  challenges: LV.CHALLENGE_COUNT, badges: gm.BADGES.length, videoMinutes: W.MAX_LENGTH / 60, starsPerBelt: gm.STARS_PER_BELT });
 /* Take the tour (guide, Home note): the next Home render plays it whatever vm.tour says */
 let tourAsked = false;
 function askTour() { tourAsked = true; if ((location.hash || '#/') === '#/' || location.hash === '#') render(); else location.hash = '#/'; }

@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dir = mkdtempSync(join(tmpdir(), 'vedic-math-build-'));
-for (const f of ['build.py', '_config.yml', '.gitignore', 'index.html', 'math.css', 'sw.js', 'manifest.webmanifest', 'js', 'CLAUDE.md', 'README.md', 'cloud/firestore.rules', 'test/index.js', '.github'])
+for (const f of ['build.py', '_config.yml', '.gitignore', 'index.html', 'math.css', 'sw.js', 'manifest.webmanifest', 'js', 'CLAUDE.md', 'README.md', 'cloud/firestore.rules', 'test/index.js', '.github', 'tools/voice/ci-fetch.mjs'])
   cpSync(join(repo, f), join(dir, f), { recursive: true });
 writeFileSync(join(dir, '_notes.txt'), 'starts with _');
 /* Run git and the build in the temp copy only. A pre-commit hook exports GIT_DIR, GIT_INDEX_FILE and friends;
@@ -48,7 +48,7 @@ test('the output is stamped, has .nojekyll and holds only publishable files', ()
   assert.match(sw().version, /^[0-9a-f]{10}$/);
   assert.match(read('index.html'), /<script type="module" src="\/vedic-math\/js\/app\.js\?v=[0-9a-f]{10}"><\/script>/);
   assert.match(read('index.html'), /href="\/vedic-math\/math\.css\?v=[0-9a-f]{10}"/);
-  for (const f of ['CLAUDE.md', 'README.md', 'build.py', '_config.yml', 'cloud', 'test', '.github', '.gitignore', '_notes.txt', 'out'])
+  for (const f of ['CLAUDE.md', 'README.md', 'build.py', '_config.yml', 'cloud', 'test', 'tools', '.github', '.gitignore', '_notes.txt', 'out'])
     assert.ok(!existsSync(join(out, f)), `${f} must not be published`);
   for (const f of ['index.html', 'sw.js', 'math.css', 'manifest.webmanifest', 'js/app.js', 'js/skills/index.js']) assert.ok(existsSync(join(out, f)), `${f} is published`);
   // Modules are copied byte for byte
