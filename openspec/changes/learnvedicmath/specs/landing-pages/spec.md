@@ -35,19 +35,8 @@ The landing page SHALL show Bolt, say in plain words what Vedic Math is (Tricks 
 - **WHEN** a grown-up opens `/parents/`
 - **THEN** it shows `privacy@learnvedicmath.com` and links to `/privacy/`
 
-### Requirement: Footer credit
-Every page SHALL have a small "Made by Madhav" line in its footer. On the landing and grown-up pages it SHALL link to `https://sbmadhav.com/`. In the game it SHALL be a link for Pro Players and plain text for Explorer and Challenger Players.
-
-#### Scenario: Challenger footer
-- **WHEN** a Challenger Player reaches the footer of the game
-- **THEN** "Made by Madhav" is shown as text with no link
-
-#### Scenario: Landing footer
-- **WHEN** a visitor reads the landing page footer
-- **THEN** "Made by Madhav" links to `https://sbmadhav.com/`
-
 ### Requirement: Its own brand
-No page SHALL show the sbmadhav.com Explore menu or load any file from sbmadhav.com. The only link to sbmadhav.com SHALL be the footer credit, plus the export popup that `/import/` opens.
+No page SHALL show the sbmadhav.com Explore menu or load any file from sbmadhav.com. No page SHALL link to sbmadhav.com except the export popup that `/import/` opens.
 
 #### Scenario: Requests on load
 - **WHEN** any page of the site loads

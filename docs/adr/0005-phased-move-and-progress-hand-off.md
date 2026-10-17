@@ -18,5 +18,5 @@ Status: accepted 2026-10-17 (owner decisions 3 and 8). Change: `openspec/changes
 - What moves is device-local progress, Nicknames, avatar colors, Modes, Age answers and settings. World board identities, the Parent step, Device board entries and analytics milestones stay behind; weekly Boards start fresh.
 - The old origin keeps its data (nothing is deleted there), so a failed or declined hand-off can be retried from the export page.
 - The Phase C redirect relies on GitHub behaviour that is not documented. A daily check watches it, and `learnvedicmath.com` is verified in the GitHub account so no one else can claim it on Pages.
-- The repo can only go private once the old path no longer needs this repo's public Pages site: either a small public stub repo named `vedic-math` serves the moved page and holds the custom domain, or GitHub Pro.
+- The repo can only go private on a plan that publishes Pages from a private repo, because the old path needs this repo's Pages until the end: the owner chose GitHub Pro (2026-10-17), so the repo keeps its name and its Pages and goes private from Phase B. No stub repo.
 - Safari deletes script storage after 7 days without a visit, so Phase B starts on launch day.

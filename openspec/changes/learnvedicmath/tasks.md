@@ -7,6 +7,7 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 - [ ] 0.1 Merge, on the current site, better-voice Part B (PR #55, about 23,700 voice files: see design D17) with explanation audio, PR #47 (Play) and PR #49 (sutra pronunciation), and confirm the live E2E run after each (owner decision 6). Decide PR #50 (Sanskrit verses): merge before the move, or rebase it after (design open question 7).
 - [ ] 0.2 Archive `content-security-policy` and `site-header` (this change modifies their specs), and any other change whose release check is done. Verify: `openspec list` shows neither, and `openspec validate learnvedicmath --strict` reports no "Archive would refuse" notice.
 - [ ] 0.3 **[OWNER]** Answer the open questions L1 to L8 in `design.md` (World board viewing, going private route, Blaze plan, licence of new code, brand name and icons, credit link, PR #50, where the Studio voice files live). Defaults are written into this change; a different answer is folded in with `/opsx:update`.
+  - L2 (GitHub Pro) and L6 (no credit line) answered 2026-10-17.
 - [ ] 0.4 Rebase this change onto `main` after 0.1 and update file paths in `design.md` D2 for anything the merged work added under `/vedic-math/`.
 
 ## 1. Owner setup, Phase A (can start now, in parallel with 0)
@@ -32,7 +33,7 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 - [ ] 2.1 Move `index.html` to `play/index.html`; module, style, font and icon paths drop the `/vedic-math/` prefix (`/js/`, `/css/`, `/math.css`); `BASE`, the import check and every `/vedic-math/` string in `build.py` follow D2. Verify: `test/build.test.mjs` builds `_site` and finds `play/index.html`, `index.html`, `js/app.js`, and no `/vedic-math/` outside `_redirects`.
 - [ ] 2.2 `build.py`: `--dev` (no stamps, `'dev'` worker), `--preview` (adds `X-Robots-Tag`), `--target moved` (D8, old origin). Verify: build tests for each target; `--target moved` output has `index.html`, `404.html`, a KILL `sw.js` with a hashed `VERSION`, and only `/vedic-math/` paths.
 - [ ] 2.3 `build.py` writes `_redirects` (`/vedic-math/* /play/ 301`, `/vedic-math /play/ 301`), `robots.txt`, `sitemap.xml`, `404.html`, and fails on the host limits (hosting spec). Verify: build tests, including an oversized-file case.
-- [ ] 2.4 `build.py` fails on any `sbmadhav.com` reference in a published file except the credit link and the export-page URL, any `https://` module import, and any third-party host not in `THIRD_PARTIES` (D10). Verify: build tests with one failing case each.
+- [ ] 2.4 `build.py` fails on any `sbmadhav.com` reference in a published file except the export-page URL, any `https://` module import, and any third-party host not in `THIRD_PARTIES` (D10). Verify: build tests with one failing case each.
 - [ ] 2.5 `wrangler.jsonc` as in D1, wrangler pinned in a new `deploy/package.json`; `_config.yml` `exclude:` gains `wrangler.jsonc`, `worker/`, `deploy/`, `vendor/**/SHA256SUMS`, `tools/`, `site/` sources (the build renders them). Verify: `npx wrangler deploy --dry-run` from `deploy/` succeeds; CI's repo-only check lists the new paths.
 - [ ] 2.6 Update `CLAUDE.md` (paths, no Explore rule, `/js/analytics.js`, Cloudflare deploy, `wrangler dev`, the moved target, the new cache prefix), `README.md` and `CONTRIBUTING.md`.
 
@@ -50,7 +51,7 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 
 - [ ] 4.1 `site/index.html`: landing page (Bolt, what it is, three Modes, Play, grown-up links), the pre-paint redirect script (D3), no game modules. Verify: `e2e/tests/landing.spec.ts`: first visit shows the page and writes no storage; a device with Players goes to `/play/`; `/?home` stays; `/#/arena` goes to `/play/#/arena`; JavaScript off shows the text.
 - [ ] 4.2 `site/parents/`, `site/teachers/`, `site/privacy/`, `site/terms/` from the reviewed `docs/legal/` drafts (only after task 13.1). Verify: copy tests (no em dashes, honest framing, the contact address on parents and privacy); a test that the privacy page's last-updated date and headings match `docs/legal/privacy-policy.md`.
-- [ ] 4.3 Footer on every page: "Made by Madhav" (link on landing and grown-up pages; in the game a link for Pro, text otherwise), "For grown-ups" and "Privacy" links in the game. Verify: e2e per Mode.
+- [ ] 4.3 Footer in the game: "For grown-ups" and "Privacy" links. No "Made by" credit on any page (owner, L6). Verify: e2e per Mode, and a build test that no published page links to `sbmadhav.com` except the export popup.
 - [ ] 4.4 Canonical links, Open Graph tags and image, `sitemap.xml` entries for every static page. Verify: build test.
 
 ## 5. Headers, CSP and reports
@@ -147,7 +148,7 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 
 ## 16. Old origin
 
-- [ ] 16.1 Build `_moved` and publish it at `https://sbmadhav.com/vedic-math/` (by this repo's Pages, or the stub repo of 18.2 if the owner goes private now). Verify: `e2e/tests/moved.live.spec.ts` against `https://sbmadhav.com` (payload, KILL worker installed, `madhav-*` untouched).
+- [ ] 16.1 Build `_moved` and publish it at `https://sbmadhav.com/vedic-math/` (by this repo's Pages, which keep serving after the repo goes private on GitHub Pro). Verify: `e2e/tests/moved.live.spec.ts` against `https://sbmadhav.com` (payload, KILL worker installed, `madhav-*` untouched).
 - [ ] 16.2 User-site repo (`sbmadhav.github.io`) PR: home page and Explore menu link to `https://learnvedicmath.com/`; `/vm-export/` page (export spec) with its e2e; the root worker keeps `/vedic-math/` network only and adds `/vm-export/`; the copy of `handoff-schema.js` checked against this repo's. Not merged without the owner.
 - [ ] 16.3 **[OWNER]** Old Firebase project: deploy write-deny rules (the builder prepares `cloud/firestore.rules.frozen`), keep reads for open tabs.
 - [ ] 16.4 `e2e.yml` gains the daily moved-page check for the length of Phase B.
@@ -163,10 +164,10 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 ## 18. Redirect and going private
 
 - [ ] 18.1 **[OWNER]** Confirm 1.10 (domain verified) before anything else in this section.
-- [ ] 18.2 **[OWNER]** If open question 2 is the stub route: rename `sbmadhav/vedic-math` to `sbmadhav/learnvedicmath`, create the public stub `sbmadhav/vedic-math` with `_moved` (or a minimal page) and Pages on, then make `sbmadhav/learnvedicmath` private (D13 "Going private", steps 1 to 4). If GitHub Pro: subscribe, make the repo private, keep its Pages.
+- [ ] 18.2 **[OWNER]** Subscribe to GitHub Pro, then (any time from the start of Phase B, after 16.1) make `sbmadhav/vedic-math` private and keep its Pages (D13 "Going private", owner guide). Verify: `https://sbmadhav.com/vedic-math/` still serves the moved page.
 - [ ] 18.3 **[OWNER]** Settings > Pages of the repo that serves `/vedic-math/`: custom domain `learnvedicmath.com` (leave "Enforce HTTPS" off; it cannot be issued). Gate (D13): within 24 hours `curl -sI https://sbmadhav.com/vedic-math/x?y=1` and `https://sbmadhav.github.io/vedic-math/x` answer 301 to `learnvedicmath.com/x...`. If not, remove the custom domain (the moved page keeps serving) and go to 18.3a.
 - [ ] 18.3a **[OWNER]** Only if 18.3's gate fails: decide on the fallback redirect (sbmadhav.com DNS to Cloudflare, proxied, plus one Single Redirect rule; D13). Until then the moved page stays and Phase C is not done.
-- [ ] 18.4 Update `origin` in every local clone and worktree after a rename (`git -C <path> remote set-url origin git@github.com:sbmadhav/learnvedicmath.git`); update links in `README.md`, `SECURITY.md`, `security.txt` (advisory link dropped if private), `docs/`, `_handoff/RESUME.md`.
+- [x] 18.4 Not needed: on GitHub Pro the repo keeps its name, so no remotes change (owner, L2).
 - [ ] 18.5 `e2e.yml`: replace the moved-page check with the daily 301 check (deploy-pipeline spec).
 - [ ] 18.6 Private repo follow-ups (D12): secret back to a repository secret if no environments; Semgrep and gitleaks steps in `ci.yml`; cov weekly; `paths-ignore` for docs-only pushes; preview e2e chromium only. Verify: one week of Actions minutes stays under 450.
 

@@ -133,7 +133,7 @@ Crawlers and first-time visitors (no storage) see the landing page. The script r
 - Fonts: the five `woff2` files move to `fonts/` with their SIL Open Font License texts; one `@font-face` set in `theme/fonts.css` (the duplicate inline block in today's `index.html` goes, design-audit item 2); `index.html`s preload Nunito Sans and Fredoka.
 - Explore menu: removed with `/assets/explore.js`. Its Pause motion switch (WCAG 2.2.2, `html.motion-paused`) moves into the app: a switch on the Me page and in the music panel, saved on the device under `motion-paused`, applied before paint by the same inline script that applies the theme. `fx.motionOff()` keeps reading the class.
 - The CLAUDE.md rules about the Explore button and `/assets/explore.js` are removed; the rule about `/assets/analytics.js` becomes "`/js/analytics.js`".
-- "Made by Madhav": a footer line on every page. On the landing and grown-up pages it links to `https://sbmadhav.com/`. In the game it is a link for Pro and plain text for Explorer and Challenger (watch-shelf rule: no link off the site for them).
+- No "Made by" credit line on any page (owner, L6). The operator is named only where the law needs it: the operator details in the privacy policy.
 
 ### D7. Service worker re-scoped
 
@@ -214,19 +214,19 @@ Crawlers and first-time visitors (no storage) see the landing page. The script r
   - `CLOUDFLARE_API_TOKEN` (production) in a `production` environment whose deployment branches are `main` only; only the `deploy` job of a push to `main` names that environment.
   - `CLOUDFLARE_PREVIEW_TOKEN` in a `preview` environment, used only by `preview.yml` on the `pull_request` event (never `pull_request_target`), which GitHub does not give secrets to for forks. Same permissions (Cloudflare cannot scope a token to "upload versions but never deploy"), so the boundary is who can trigger it: only people who can push branches to this repo, which is the owner. Revoking one never touches the other.
   - The owner creates the `production` environment before saving the token (owner guide §8), so the token is never stored at repository scope.
-  - On a private repo on GitHub Free, environments and their secrets are not available (they need GitHub Pro or Team). Then both become repository secrets, each referenced by exactly one job (`deploy` gated on `github.ref == 'refs/heads/main' && github.event_name == 'push'`; `preview` gated on a same-repo pull request), and a CI check fails if any other job names them. Forked pull requests never see secrets.
+  - The repo goes private on GitHub Pro (owner, L2), which keeps environments and environment secrets on private repos, so this setup stays as it is after the repo goes private.
 - `preview.yml` (pull requests from branches of this repo): build with `--preview` (adds `X-Robots-Tag: noindex`), `wrangler versions upload --preview-alias pr-<number>`, post the preview URL as a PR comment, then run the Playwright suite against it (`BASE_URL`). Preview URLs on `workers.dev` are public but not indexed; they never post (the fake SDK, and the Firebase key's referrers do not include `workers.dev`).
 - `e2e.yml`: after a deploy, wait until the live `/play/`, `/sw.js` and `/js/app.js` match this commit's build (as today), then run the suite against `https://learnvedicmath.com`; daily at 06:23 UTC; on demand with `base_url`. Also: during Phase B, `moved.live.spec.ts` against `https://sbmadhav.com/vedic-math/`; from Phase C, a `curl -sI https://sbmadhav.com/vedic-math/x` step that expects a 301 to `learnvedicmath.com/x` (undocumented GitHub behaviour, so it is watched).
 - The 429 notes: Cloudflare does not rate limit static assets the way GitHub Pages does, so the comments about 429 in `playwright.config.ts` and the cov split are rewritten. `serviceWorkers: 'block'` stays, for its first reason (WebKit does not route requests from a worker-controlled page, so the fake SDK and analytics answer would be bypassed). Bot Fight Mode on the zone could challenge runner traffic, and on Free it cannot be skipped by a rule: turn it on only after a production e2e run passes with it on (task 15.7); previews on `workers.dev` are outside the zone.
 - `.github/dependabot.yml`: `github-actions` (weekly), `npm` in `/e2e`, `/cloud/test` and the new `/deploy` (wrangler pinned there), weekly, grouped.
 - Code scanning: CodeQL default setup (JavaScript, Python, Actions) while the repo is public. CodeQL and secret-scanning push protection on a private repo need GitHub Advanced Security (paid); after the repo goes private, `ci.yml` runs Semgrep Community Edition with the `p/javascript`, `p/python` and `p/github-actions` rulesets instead, and `gitleaks` on pushes. Dependabot alerts and updates stay free on private repos.
-- Actions minutes: a private repo on Free gets 2,000 Linux minutes a month. Today's runs (daily e2e up to 50 minutes including cov, one e2e per push, CI per push) would go over. After the repo goes private: cov runs weekly instead of daily, docs-only pushes skip e2e (`paths-ignore`), and the preview e2e runs chromium only. GitHub Pro (3,000 minutes, $4/month) is the alternative (open question 2).
+- Actions minutes: GitHub Pro gives a private repo 3,000 Linux minutes a month (owner, L2). Today's runs (daily e2e up to 50 minutes including cov, one e2e per push, CI per push) come close. If a month's usage passes 2,500 minutes: cov runs weekly instead of daily, docs-only pushes skip e2e (`paths-ignore`), and the preview e2e runs chromium only.
 
 ### D13. Phases and the GitHub side
 
 - **Phase A**: everything in tasks 2 to 15 lands on `main`, deploys to Cloudflare, and the production e2e run passes. sbmadhav.com still serves the old app until Phase B starts (same day if possible).
 - **Phase B (start = launch day, 3 months, then month by month)**:
-  - One deploy of the old origin: `build.py --target moved --out _moved`, published by the existing Pages pipeline of this repo (still public at this point) or of the stub repo (below).
+  - One deploy of the old origin: `build.py --target moved --out _moved`, published by this repo's existing Pages pipeline, which keeps working after the repo goes private on GitHub Pro.
   - sbmadhav.com home page and Explore menu link to `https://learnvedicmath.com/` (user-site repo PR). The root worker's `NETWORK_ONLY` list keeps `/vedic-math/`; `/vm-export/` is added to it.
   - The `/vm-export/` page goes live in the user-site repo (it is needed in Phase C, but shipping it in B lets `/import/` offer the popup from day one).
   - Old Firebase project: deploy deny-all rules for writes at the start of B (reads stay for the old app's tabs); the old app is gone, so nothing should post.
@@ -234,18 +234,14 @@ Crawlers and first-time visitors (no storage) see the landing page. The script r
 - **Phase C** (done only when the 301 check passes; until then the moved page stays):
   - Set `learnvedicmath.com` as the custom domain of the Pages site that answers `/vedic-math/`. This changes nothing about where learnvedicmath.com is served: its DNS stays on Cloudflare and the Worker stays authoritative, so GitHub's "DNS check unsuccessful" notice is expected and harmless. GitHub then 301s `sbmadhav.com/vedic-math/*` and `sbmadhav.github.io/vedic-math/*` to `http://learnvedicmath.com/*` (repo prefix stripped, path and query kept; verified live on other sites, undocumented). Cloudflare "Always Use HTTPS" and HSTS turn `http://` into `https://`.
   - Gate: within 24 hours, `curl -sI https://sbmadhav.com/vedic-math/x?y=1` must answer 301 with `Location` `http(s)://learnvedicmath.com/x?y=1`, and the same for `sbmadhav.github.io/vedic-math/x`. GitHub documents only apex and `www` redirects, not this project-site behaviour (it was seen working on other sites on 2026-10-17), so it is treated as unproven until this check passes here.
-  - If the check fails: remove the custom domain again (the moved page keeps working meanwhile) and use the fallback, which is documented by Cloudflare rather than GitHub: move sbmadhav.com's DNS to Cloudflare as a proxied zone (the user site stays on GitHub Pages behind it) and add one Single Redirect rule, `starts_with(http.request.uri.path, "/vedic-math/")` to `concat("https://learnvedicmath.com/", substring(http.request.uri.path, 12))`, 301, keep query. That is a real 301 to the Worker-hosted site. It is an owner decision because it touches the main site's DNS; until it is made, the stub repo keeps serving the moved page, which still hands progress over (just not as a 301).
+  - If the check fails: remove the custom domain again (the moved page keeps working meanwhile) and use the fallback, which is documented by Cloudflare rather than GitHub: move sbmadhav.com's DNS to Cloudflare as a proxied zone (the user site stays on GitHub Pages behind it) and add one Single Redirect rule, `starts_with(http.request.uri.path, "/vedic-math/")` to `concat("https://learnvedicmath.com/", substring(http.request.uri.path, 12))`, 301, keep query. That is a real 301 to the Worker-hosted site. It is an owner decision because it touches the main site's DNS; until it is made, this repo's Pages keep serving the moved page, which still hands progress over (just not as a 301).
   - Verify `learnvedicmath.com` under GitHub account Settings > Pages > Verified domains first, so no other account can claim it on Pages (owner task; do it in Phase A).
   - Old Firebase project: delete it (Google keeps it 30 days, then purges). Remove `sbmadhav.com` from every key and App Check list of the new project (it was never added).
-- **Going private** (decision 4: not before hosting stops depending on public GitHub Pages). On GitHub Free, a private repo cannot publish Pages, and the Phase C 301 needs a Pages site named `vedic-math`. Recommended route, which lets the repo go private at the start of Phase B:
-  1. Build `_moved`.
-  2. Rename `sbmadhav/vedic-math` to `sbmadhav/learnvedicmath` (open PRs, issues, secrets and variables move with it; `/vedic-math/` 404s for a few minutes).
-  3. Create a new public repo `sbmadhav/vedic-math` holding only `_moved` (moved page, KILL worker, `.nojekyll`, a README saying where the app went and that it holds no app code) and turn on Pages from its `main` branch.
-  4. Make `sbmadhav/learnvedicmath` private.
-  5. Update `origin` in every local clone and worktree (`git remote set-url origin git@github.com:sbmadhav/learnvedicmath.git`), because creating the stub ends GitHub's redirect from the old name.
-  6. Phase C sets the custom domain on the stub repo.
-  What changes when the repo is private: GitHub Pages stops for it (fine: hosting is Cloudflare), environments and environment secrets go away on Free (D12), CodeQL and push protection go away (D12), branch protection and rulesets for private repos need a paid plan (the owner is the only committer; the pre-commit hook and CI stay), Actions minutes are metered (D12), the SHA-pinning requirement for Actions keeps working, and `SECURITY.md`'s private vulnerability reporting link stops working for outsiders, so `security.txt` and `SECURITY.md` point to `security@learnvedicmath.com` instead.
-  The alternative is GitHub Pro (open question 2): Pages from a private repo, no stub, environments with reviewers, 3,000 minutes.
+- **Going private** (decision 4; the owner chose GitHub Pro, L2). GitHub Pro publishes Pages from a private repo, so the repo keeps its name and its Pages site (the published site stays public; only the code goes private). No rename and no stub repo:
+  1. The owner subscribes to GitHub Pro ($4/month).
+  2. Any time from the start of Phase B (after `_moved` is live), the owner makes `sbmadhav/vedic-math` private. Its Pages site keeps serving `/vedic-math/`.
+  3. Phase C sets the custom domain on this repo's Pages.
+  What changes when the repo is private: CodeQL and push protection go away (they need GitHub Advanced Security; D12 replaces them), Actions minutes are metered (3,000 a month on Pro, D12), the SHA-pinning requirement for Actions keeps working, and `SECURITY.md`'s private vulnerability reporting link stops working for outsiders, so `security.txt` and `SECURITY.md` point to `security@learnvedicmath.com` instead. Environments, environment secrets, branch protection and rulesets keep working on Pro.
 
 ### D14. Firebase: new project, rules, retention
 
@@ -301,14 +297,13 @@ Rules carried over from PR #55 (whatever the option):
 
 ## Risks and trade-offs
 
-- **GitHub's custom-domain 301 is undocumented.** Mitigation: the daily check; the export page works whatever happens; if GitHub stops redirecting, the stub repo can serve a JS redirect page instead.
+- **GitHub's custom-domain 301 is undocumented.** Mitigation: the daily check; the export page works whatever happens; if GitHub stops redirecting, remove the custom domain and let this repo's Pages serve a JS redirect page instead.
 - **Safari players who stay away for 7 days during Phase B may already have lost progress** (ITP). Nothing on our side can fix that; starting B on launch day limits it.
 - **A crafted hand-off link.** Anyone can build `/import/#...`. The schema, size caps, `textContent`-only rendering, the prompt and never overwriting without a choice keep the damage to "a Player can choose to import made-up progress", which they could do by playing.
 - **Under-13 Players lose World boards they had.** Accepted (ADR 0006). The copy explains it plainly and nothing they earned on the device is lost.
 - **Bot Fight Mode** could challenge older iPads or CI. It is on only after testing (task 15.7).
 - **CSP line length** in `_headers`. The build fails before deploy; the fallback is moving the theme script out of line.
 - **Firebase SDK vendoring** turns SDK upgrades into a manual step. Dependabot cannot see it; a quarterly check is on the security program's calendar.
-- **Repo rename** breaks remotes in many local worktrees. Task 18.4 updates them all.
 - **Actions minutes** on a private repo. D12 trims runs; Pro is the fallback.
 
 ## Migration plan
@@ -320,11 +315,11 @@ Phase A (tasks 1 to 15), Phase B (16 to 17), Phase C (18 to 19), as in `tasks.md
 Labelled L1 to L8 to match the owner's list.
 
 - **L1. Who sees World boards**: default, only Players whose Age answer is 13 or over, and only after a "Show World board" tap (because App Check makes a read reach Google). Alternative: anyone may view without posting.
-- **L2. Going private**: default, rename plus a public stub repo for the redirect (free). Alternative: GitHub Pro at $4/month (Pages from a private repo, environments, 3,000 minutes).
+- **L2. Going private**: answered 2026-10-17: GitHub Pro at $4/month. Pages from a private repo, no rename or stub repo, environments, 3,000 minutes (D12, D13).
 - **L3. Blaze plan for Firestore TTL**: default yes, with a $5 budget and alerts. Without it, entries must be deleted by a scheduled job, which needs a service-account secret.
 - **L4. Licence of new code**: default proprietary from the change date. Alternative: new code stays MIT and only content is reserved.
 - **L5. Brand name**: default "Learn Vedic Math" for the site and the installed app ("Vedic Math" as the short name), and new icons drawn from Bolt. The owner may want a different name or art.
-- **L6. "Made by Madhav" in the game**: default a link for Pro, text for Explorer and Challenger.
+- **L6. "Made by Madhav"**: answered 2026-10-17: dropped everywhere. No credit line on any page; the operator is named only in the privacy policy, where the law needs it.
 - **L7. PR #50 (Sanskrit verses)** is open and not in decision 6's list. Default: it merges on the current site before the move if it is ready; otherwise it is rebased onto the new layout.
 - **L8. Where the Studio voice files live**: default R2 on `voice.learnvedicmath.com` (D17 option a). Alternatives: Workers Paid (b), packing (c), or R2 behind the same domain through the Worker.
 

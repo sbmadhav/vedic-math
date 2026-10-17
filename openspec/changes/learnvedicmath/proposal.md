@@ -13,7 +13,7 @@ The 14 owner decisions in `_handoff/learnvedicmath-decisions.md` (all approved o
 **Layout (decisions 1, 2, 11).**
 - Everything is served from the root of learnvedicmath.com: no URL starts with `/vedic-math/`. Modules move from `/vedic-math/js/` to `/js/`.
 - The game moves to `/play/`. `/` becomes a static, prerendered landing page with Bolt, plus `/parents/`, `/teachers/`, `/privacy/` and `/terms/`. A Player who already has progress on the device goes straight from `/` into `/play/`. Old deep links (`#/arena`, `/vedic-math/...`) reach the same screen.
-- The build vendors a pinned copy of design-system v2.1.0 with a `learnvedicmath` theme on the same tokens, self-hosts the fonts, drops the sbmadhav.com Explore menu (and replaces its Pause motion switch with one in the app), and adds a small "Made by Madhav" credit.
+- The build vendors a pinned copy of design-system v2.1.0 with a `learnvedicmath` theme on the same tokens, self-hosts the fonts, drops the sbmadhav.com Explore menu (and replaces its Pause motion switch with one in the app). There is no "Made by" credit line (owner, L6).
 - A new manifest, icons and service worker for the new brand: the worker is re-scoped to `/play/` and precaches every file with a hash, because nothing is shared with another repo any more.
 
 **The move, in three phases (decisions 3, 8).**
@@ -65,7 +65,7 @@ Every Mode (Explorer, Challenger, Pro) and every Player. What changes for each:
 
 - `hosting`: learnvedicmath.com on Cloudflare Workers static assets: paths, the landing-to-game redirect, old-link mapping, `www` and 404 handling, previews kept out of search.
 - `security-headers`: response headers on every page (CSP with reporting, HSTS, Permissions-Policy, Referrer-Policy, COOP, CORP, `nosniff`), the CSP report endpoint and `security.txt`.
-- `landing-pages`: the static landing, parents, teachers, privacy and terms pages, the footer credit, no Explore menu.
+- `landing-pages`: the static landing, parents, teachers, privacy and terms pages, no credit line, no Explore menu.
 - `site-assets`: the vendored, pinned design system with the learnvedicmath theme, the header partial, self-hosted fonts, the manifest and icons, third-party notices.
 - `offline-app`: the service worker re-scoped to `/play/`, with every precached file hashed.
 - `progress-handoff`: the moved page, the fragment payload, the import page with its schema and prompt, the export page, the all-Players backup code, the old worker's retirement and the Phase C redirect.
@@ -91,4 +91,4 @@ Every Mode (Explorer, Challenger, Pro) and every Player. What changes for each:
 - Tests: most of `test/` and `e2e/` (208 `/vedic-math` references in 73 files), `e2e/local-server.mjs`, `e2e/playwright.config.ts`, `e2e/tests/fixtures.ts` (the Firebase SDK pattern moves to `/vendor/firebase/`).
 - CI: `.github/workflows/ci.yml`, `.github/workflows/e2e.yml`, new `.github/workflows/preview.yml`, new `.github/dependabot.yml`.
 - Docs: `CLAUDE.md`, `README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `LICENSE-CONTENT.md`, `GLOSSARY.md`, `docs/adr/0004` to `0006`, `docs/legal/`, `docs/owner-setup-learnvedicmath.md`.
-- Other repos: `sbmadhav.github.io` (links to the new domain, `/vm-export/` page, the root worker's `NETWORK_ONLY` list), a new public stub repo for the Phase C redirect if the owner picks that route.
+- Other repos: `sbmadhav.github.io` (links to the new domain, `/vm-export/` page, the root worker's `NETWORK_ONLY` list). No new repos: on GitHub Pro this repo goes private and keeps its Pages for the Phase C redirect (owner, L2).
