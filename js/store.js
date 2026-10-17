@@ -174,7 +174,7 @@ export const setGrade = g => { load(); S.grade = String(g); save(); };
 export const savedGrade = () => (load(), S.grade);
 export function reset() { S = blank(); save(); emit('player', player()); }
 export function exportData() { load(); return JSON.stringify({ player: player(), data: S }); }
-export function importData(txt) { const d = JSON.parse(txt); const data = d.data || d; if (!data || typeof data.skills !== 'object') throw new Error('bad'); S = { ...blank(), ...migrate(clean(data)) }; save(); emit('import'); }
+export function importData(txt) { const d = JSON.parse(txt); const data = d.data || d; if (!isObj(data) || !isObj(data.skills)) throw new Error('bad'); S = { ...blank(), ...migrate(clean(data)) }; save(); emit('import'); }
 
 /* A backup code is outside data that pages later put into HTML. clean keeps only the record's known fields, each in
    its own shape: counts and times are finite numbers 0 or more, and keys and ids hold no markup characters.

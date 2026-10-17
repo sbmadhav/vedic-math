@@ -163,3 +163,10 @@ test('importData keeps a backup round trip and drops markup and non-numbers from
   assert.deepEqual(d.sky, { lit: {}, skipped: {}, last: { 'by11:1': ['ok'] } });
   assert.ok(!store.exportData().includes('<img'));
 });
+
+test('importData refuses a backup whose skills are null or a list, and keeps the progress it had', () => {
+  store.importData(JSON.stringify({ data: { skills: {}, sparks: 55 } }));
+  for (const skills of [null, [], 'x']) assert.throws(() => store.importData(JSON.stringify({ data: { skills, sparks: 1 } })), String(skills));
+  assert.throws(() => store.importData('[]'));
+  assert.equal(store.sparks(), 55);
+});
