@@ -6,8 +6,8 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 
 - [ ] 0.1 Merge, on the current site, better-voice Part B (PR #55, about 23,700 voice files: see design D17) with explanation audio, PR #47 (Play) and PR #49 (sutra pronunciation), and confirm the live E2E run after each (owner decision 6). Decide PR #50 (Sanskrit verses): merge before the move, or rebase it after (design open question 7).
 - [ ] 0.2 Archive `content-security-policy` and `site-header` (this change modifies their specs), and any other change whose release check is done. Verify: `openspec list` shows neither, and `openspec validate learnvedicmath --strict` reports no "Archive would refuse" notice.
-- [ ] 0.3 **[OWNER]** Answer the open questions L1 to L8 in `design.md` (World board viewing, going private route, Blaze plan, licence of new code, brand name and icons, credit link, PR #50, where the Studio voice files live). Defaults are written into this change; a different answer is folded in with `/opsx:update`.
-  - L2 (GitHub Pro) and L6 (no credit line) answered 2026-10-17.
+- [x] 0.3 **[OWNER]** Answer the open questions L1 to L8 in `design.md` (World board viewing, going private route, Blaze plan, licence of new code, brand name and icons, credit link, PR #50, where the Studio voice files live). Defaults are written into this change; a different answer is folded in with `/opsx:update`.
+  - Done 2026-10-17: L2 GitHub Pro, L6 no credit line, the rest as the defaults in design.md.
 - [ ] 0.4 Rebase this change onto `main` after 0.1 and update file paths in `design.md` D2 for anything the merged work added under `/vedic-math/`.
 
 ## 1. Owner setup, Phase A (can start now, in parallel with 0)

@@ -310,17 +310,17 @@ Rules carried over from PR #55 (whatever the option):
 
 Phase A (tasks 1 to 15), Phase B (16 to 17), Phase C (18 to 19), as in `tasks.md`. Rollback during Phase A is a DNS-free no-op (sbmadhav.com still serves the app). During Phase B, rollback is redeploying the old app to the old origin (the KILL worker unregisters itself either way; a new deploy registers a fresh one). Phase C is reversible by removing the custom domain, but browsers cache 301s, so it is treated as permanent.
 
-## Open questions (defaults used in this change)
+## Owner answers (L1 to L8, all answered 2026-10-17)
 
 Labelled L1 to L8 to match the owner's list.
 
-- **L1. Who sees World boards**: default, only Players whose Age answer is 13 or over, and only after a "Show World board" tap (because App Check makes a read reach Google). Alternative: anyone may view without posting.
+- **L1. Who sees World boards**: answered 2026-10-17: the default, only Players whose Age answer is 13 or over, and only after a "Show World board" tap (because App Check makes a read reach Google). Alternative: anyone may view without posting.
 - **L2. Going private**: answered 2026-10-17: GitHub Pro at $4/month. Pages from a private repo, no rename or stub repo, environments, 3,000 minutes (D12, D13).
-- **L3. Blaze plan for Firestore TTL**: default yes, with a $5 budget and alerts. Without it, entries must be deleted by a scheduled job, which needs a service-account secret.
-- **L4. Licence of new code**: default proprietary from the change date. Alternative: new code stays MIT and only content is reserved.
-- **L5. Brand name**: default "Learn Vedic Math" for the site and the installed app ("Vedic Math" as the short name), and new icons drawn from Bolt. The owner may want a different name or art.
+- **L3. Blaze plan for Firestore TTL**: answered 2026-10-17: the default, yes, with a $5 budget and alerts. Without it, entries must be deleted by a scheduled job, which needs a service-account secret.
+- **L4. Licence of new code**: answered 2026-10-17: the default, proprietary from the change date. Alternative: new code stays MIT and only content is reserved.
+- **L5. Brand name**: answered 2026-10-17: the default, "Learn Vedic Math" for the site and the installed app ("Vedic Math" as the short name), and new icons drawn from Bolt. The owner may want a different name or art.
 - **L6. "Made by Madhav"**: answered 2026-10-17: dropped everywhere. No credit line on any page; the operator is named only in the privacy policy, where the law needs it.
-- **L7. PR #50 (Sanskrit verses)** is open and not in decision 6's list. Default: it merges on the current site before the move if it is ready; otherwise it is rebased onto the new layout.
-- **L8. Where the Studio voice files live**: default R2 on `voice.learnvedicmath.com` (D17 option a). Alternatives: Workers Paid (b), packing (c), or R2 behind the same domain through the Worker.
+- **L7. PR #50 (Sanskrit verses)** is open and not in decision 6's list. Answered 2026-10-17: the default, it merges on the current site before the move if it is ready; otherwise it is rebased onto the new layout.
+- **L8. Where the Studio voice files live**: answered 2026-10-17: the default, R2 on `voice.learnvedicmath.com` (D17 option a). Alternatives: Workers Paid (b), packing (c), or R2 behind the same domain through the Worker.
 
 Not a decision, an interpretation: **GoatCounter** "self-hosted" is read as a new hosted site code with the script served from this site, not running a GoatCounter server.
