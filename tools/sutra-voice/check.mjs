@@ -1,7 +1,7 @@
 /* Listen-check without ears: transcribe every clip back with Whisper (open weights, run locally through
    transformers.js) in Hindi mode, and score how close the Devanagari it hears is to the name.
-   Run after make-clips.mjs:  node check.mjs [whisper model]   (default onnx-community/whisper-small)
-   Writes ../check.json. The score is 1 minus the edit distance between the two letter skeletons
+   Run after make-sutra-clips.mjs:  node check.mjs [whisper model]   (default onnx-community/whisper-small)
+   Reads ../../sounds/sutras/<id>.m4a and writes check.json here. The score is 1 minus the edit distance between the two letter skeletons
    (vowel signs and virama kept, spaces dropped) over the longer length; 1 is a perfect match.
    Whisper is a Hindi listener, so it tends to drop final short a and to "correct" Sanskrit into Hindi
    words; a low score means "listen to this one", not "this one is wrong". */
@@ -9,12 +9,15 @@ import { readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { pipeline } from '@huggingface/transformers';
 
-const DIR = new URL('../', import.meta.url).pathname;
+import { NAMES, appId } from './names.mjs';
+import { toDeva } from './sanskrit.mjs';
+import { VOICE } from '../../js/say-clips.js';
+
+const DIR = new URL('../../', import.meta.url).pathname, OUT = new URL('./check.json', import.meta.url).pathname;
 const MODEL = process.argv[2] || 'onnx-community/whisper-small';
-const { sets, clips } = JSON.parse(readFileSync(DIR + 'clips.json', 'utf8'));
 
 const pcm16k = file => { // m4a to 16 kHz mono float samples via macOS afconvert
-  const tmp = DIR + '.check.wav';
+  const tmp = OUT.replace(/check\.json$/, '.check.wav');
   execFileSync('afconvert', ['-f', 'WAVE', '-d', 'LEI16@16000', '-c', '1', DIR + file, tmp]);
   const b = readFileSync(tmp); rmSync(tmp);
   let o = 12; while (b.toString('ascii', o, o + 4) !== 'data') o += 8 + b.readUInt32LE(o + 4);
@@ -33,17 +36,14 @@ const lev = (a, b) => {
 const score = (heard, want) => { const a = skeleton(heard), b = skeleton(want); return +(1 - lev(a, b) / Math.max(a.length, b.length, 1)).toFixed(2); };
 
 const asr = await pipeline('automatic-speech-recognition', MODEL, { dtype: 'fp32' });
-const out = { model: MODEL, perSet: {}, rows: [] };
-for (const c of clips) {
-  const row = { id: c.id, deva: c.deva, heard: {} };
-  for (const s of sets) {
-    const r = await asr(pcm16k(c.files[s.id].file), { language: 'hindi', task: 'transcribe' });
-    const text = (r.text || '').trim();
-    row.heard[s.id] = { text, score: score(text, c.deva) };
-  }
+const out = { model: MODEL, voice: VOICE, mean: 0, rows: [] };
+for (const n of NAMES) {
+  const id = appId(n.id), deva = toDeva(n.say);
+  const r = await asr(pcm16k(`sounds/sutras/${id}.m4a`), { language: 'hindi', task: 'transcribe' });
+  const text = (r.text || '').trim(), row = { id, iast: n.iast, deva, heard: text, score: score(text, deva) };
   out.rows.push(row);
-  console.log(c.id, c.deva, '|', sets.map(s => `${s.id}: ${row.heard[s.id].text} (${row.heard[s.id].score})`).join(' | '));
+  console.log(id, deva, '|', text, `(${row.score})`);
 }
-for (const s of sets) out.perSet[s.id] = +(out.rows.reduce((a, r) => a + r.heard[s.id].score, 0) / out.rows.length).toFixed(3);
-writeFileSync(DIR + 'check.json', JSON.stringify(out, null, 1));
-console.log(out.perSet);
+out.mean = +(out.rows.reduce((a, r) => a + r.score, 0) / out.rows.length).toFixed(3);
+writeFileSync(OUT, JSON.stringify(out, null, 1) + '\n');
+console.log('mean', out.mean);

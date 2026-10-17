@@ -1,14 +1,14 @@
 /* sutra-pronunciation listening page (throwaway prototype, repo-only).
-   Names, Devanagari and respellings come straight from tools/ (the same code that made the clips);
+   Names, Devanagari and respellings come straight from tools/sutra-voice/ (the same code that made the clips);
    clip files, sizes and pitch from clips.json; what Whisper heard from check.json if it exists.
    Speech only follows a tap. The ambience panel tries the proposed Sutra ambience: a synthesized bowl strike,
    an optional quiet hum, and the opt-in Om (CC0 recording), all with slow fades. */
-import { NAMES } from './tools/names.mjs';
-import { toDeva, respell, toIPA } from './tools/sanskrit.mjs';
+import { NAMES } from '../../../tools/sutra-voice/names.mjs';
+import { toDeva, respell, toIPA } from '../../../tools/sutra-voice/sanskrit.mjs';
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-const RECOMMENDED = 'hf_alpha'; // see design.md decision 3; the owner's ears decide
+const RECOMMENDED = 'kid_alpha_jalpha'; // the owner chose the Alpha kid blend (design.md, owner decision 1)
 const SPEAKER = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
 
 const SHORT = { hf_alpha: 'Alpha', hf_beta: 'Beta', hm_omega: 'Omega', hm_psi: 'Psi', kid_alpha_jalpha: 'Kid blend (Alpha)', kid_beta_jalpha: 'Kid blend (Beta)', hf_alpha_espeak: 'Alpha, Hindi rules' };
@@ -59,7 +59,7 @@ try { speechSynthesis.addEventListener('voiceschanged', () => { builtInNote(); i
 /* ---------- Names ---------- */
 function render() {
   const sets = clips.sets || [], hi = hiVoice(), showHeard = $('#svWhisper').checked && heard;
-  $('#svSets').innerHTML = sets.length ? sets.map(s => { const p = clips.perSet[s.id] || {}; return `<li><b>${esc(s.label)}</b>${s.id === RECOMMENDED ? ' (recommended)' : ''}: ${Math.round((p.bytes || 0) / 1024)} KB for all 29, typical pitch ${p.f0 || '?'} Hz${heard && heard.perSet[s.id] != null ? `, Whisper match ${heard.perSet[s.id]}` : ''}</li>`; }).join('') : '<li>No clips yet: run tools/make-clips.mjs.</li>';
+  $('#svSets').innerHTML = sets.length ? sets.map(s => { const p = clips.perSet[s.id] || {}; return `<li><b>${esc(s.label)}</b>${s.id === RECOMMENDED ? ' (recommended)' : ''}: ${Math.round((p.bytes || 0) / 1024)} KB for all 29, typical pitch ${p.f0 || '?'} Hz${heard && heard.perSet[s.id] != null ? `, Whisper match ${heard.perSet[s.id]}` : ''}</li>`; }).join('') : '<li>No clips yet: run docs/prototypes/sutra-voice/tools/make-clips.mjs (moved to tools/sutra-voice/ when the change was built).</li>';
   $('#svItems').innerHTML = NAMES.map(n => {
     const deva = toDeva(n.say), row = heard && heard.rows.find(r => r.id === n.id);
     const btns = sets.map(s => { const f = fileOf(n.id, s.id); return f ? `<button type="button" class="md-btn md-btn--sm ${s.id === RECOMMENDED ? 'rec' : ''} ${s.src === 'espeak' ? 'cmp' : ''}" data-file="${f.file}" aria-pressed="false" aria-label="${esc(s.label)}: ${esc(n.iast)}">${esc(SHORT[s.id] || s.label)}</button>` : ''; }).join('')
@@ -87,7 +87,7 @@ $('#svItems').addEventListener('click', e => {
   else if (b.dataset.hi != null) speakWith(b.dataset.hi, hiVoice(), 'hi-IN', b);
 });
 $('#svWhisper').disabled = !heard;
-if (!heard) $('#svWhisper').parentElement.insertAdjacentHTML('beforeend', ' <span class="sv-muted">(run tools/check.mjs first)</span>');
+if (!heard) $('#svWhisper').parentElement.insertAdjacentHTML('beforeend', ' <span class="sv-muted">(no Whisper check yet)</span>');
 $('#svWhisper').addEventListener('change', render);
 builtInNote(); render();
 

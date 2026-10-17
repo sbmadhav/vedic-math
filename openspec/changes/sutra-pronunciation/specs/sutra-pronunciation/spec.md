@@ -49,10 +49,10 @@ Wherever a Say it button is shown, the system SHALL show the name's respelling u
 
 #### Scenario: Stored text matches the generator
 - **WHEN** the node tests run
-- **THEN** every `say` and `deva` in `js/sutras.js` equals what `tools/voice/sanskrit.mjs` makes from that entry's IAST
+- **THEN** every `say` and `deva` in `js/sutras.js` equals what `tools/sutra-voice/sanskrit.mjs` makes from that entry's IAST
 
 ### Requirement: Name clips
-The system SHALL ship one clip per name (29), made with the Kokoro Hindi voice the owner chose, from phonemes generated from the IAST, as AAC `.m4a` (mono, 24 kHz, 32 kbps) under `voice/sutras/`.
+The system SHALL ship one clip per name (29), made with the Kokoro voice the owner chose (the Alpha kid blend: Hindi Alpha 70%, Japanese Alpha 30%), from phonemes generated from the IAST, as AAC `.m4a` (mono, 24 kHz, 32 kbps) under `sounds/sutras/`.
 
 #### Scenario: Size
 - **WHEN** the clips are built

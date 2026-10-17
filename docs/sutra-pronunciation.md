@@ -23,7 +23,7 @@ Research for the `sutra-pronunciation` change (October 2026). It covers all 29 n
    - **"Ekādhikena Pūrvena"** (Tricks sq5, recip) and **"Ekanyūnena Pūrvena"** (Trick by9s): the last n of Pūrveṇa is retroflex ṇ (पूर्वेण). Fix to "Pūrveṇa". The Sky's Constellation id does not change (`slug()` drops diacritics: `ekadhikena-purvena`), but `test/sky.test.mjs` names the old spelling.
    - "Nikhilam Navataścaramam Daśataḥ" and "Śūnyam Sāmyasamuccaye" use m where `js/sutras.js` uses ṃ. Both are acceptable (Tirtha writes m, standard IAST writes ṃ before a consonant) and they sound the same; the change makes them match.
    - "Ūrdhva Tiryagbhyām" (no hyphen) and "Guṇita Samuccayaḥ" (two words) differ from `js/sutras.js` but are said the same.
-3. **Three English meanings need the owner's eye** (`js/sutras.js`):
+3. **Three English meanings needed the owner's eye** (`js/sutras.js`; all three approved and changed on 2026-10-17):
    - **Sub-sutra 10 Samuccayaguṇitaḥ is reversed.** The app says "The sum of the products"; samuccaya (total) + guṇita (multiplied) is "the product of the sums" [MW], the mirror of Sutra 15. Proposed: "The product of the sums".
    - **Sutra 9 Calana-Kalanābhyām**: "By sequential motion (differences and similarities)" is a later teaching gloss. Literally "by motion and reckoning"; Tirtha uses it for differential calculus [T]. Proposed: "By motion and reckoning (calculus)".
    - **Sub-sutra 4 Kevalaiḥ Saptakaṃ Guṇyāt**: "For 7, the multiplier is 143". Tirtha calls 143 the guṇya, the number to be multiplied [T][MW]; "kevalaiḥ" spells 1-4-3 in the old katapayādi letter code. Proposed: "For 7, multiply by 143".
@@ -55,7 +55,7 @@ Every short a is said, including the last one. This is where Hindi differs (Hind
 
 ## The names
 
-S is a Sutra, Sub a sub-sutra. The Devanagari is generated from the IAST by `docs/prototypes/sutra-voice/tools/sanskrit.mjs` and checked against [HiWP] and [T].
+S is a Sutra, Sub a sub-sutra. The Devanagari is generated from the IAST by `tools/sutra-voice/sanskrit.mjs` (first written for the listening page) and checked against [HiWP] and [T].
 
 | # | Devanagari | IAST | Respelling | Meaning (app) | Check |
 |---|---|---|---|---|---|

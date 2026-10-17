@@ -22,6 +22,10 @@
    - Other /vedic-math/ files: network first, cache fallback.
    - Shared files from the rest of sbmadhav.com (/design-system/, /assets/, fonts, icons): stale
      while revalidate. This repo cannot hash them, so a change reaches visitors one visit late.
+   - Sounds (/vedic-math/sounds/: the Sutra name clips and the Om, openspec sutra-pronunciation): cache first in
+     their own cache, vedic-math-sounds, which every deploy keeps, so a name heard once plays offline after the next
+     deploy too. Name clips carry ?v=<content hash> (js/say-clips.js), so a remade clip is a new URL. Never in the
+     install precache: only Players who tap Say it (or turn on the Om) download them. Trimmed to SOUNDS_MAX.
    - Never touched: other origins (Firebase, Google, reCAPTCHA, analytics), anything not a GET.
 
    Caches are named vedic-math-<VERSION>. The root worker only deletes madhav-*, and this one only
@@ -43,6 +47,9 @@ const SHELL = BASE;
 const RUNTIME_MAX = 60; // entries kept beyond the precache list; the oldest go first
 const NAV_TIMEOUT = 3500; // ms before a page load falls back to the saved shell
 const PRECACHED = new Set(PRECACHE.map(([u]) => new URL(u, location.origin).href));
+const SOUNDS = BASE + 'sounds/';
+const SOUNDS_CACHE = PREFIX + 'sounds'; // kept across deploys (not a version cache)
+const SOUNDS_MAX = 120; // 29 name clips and the Om, with room for remade ones
 
 if (VERSION === 'dev') {
   /* Unbuilt source: no fetch handler, so the browser goes to the network. Take over at once and drop
@@ -83,7 +90,7 @@ if (VERSION === 'dev') {
     event.waitUntil((async () => {
       /* Keep this version and the one before it (a tab opened on it may still load a module); delete older ones.
          CacheStorage lists caches in the order they were created. */
-      const ours = (await caches.keys()).filter(k => k.startsWith(PREFIX) && k !== CACHE);
+      const ours = (await caches.keys()).filter(k => k.startsWith(PREFIX) && k !== CACHE && k !== SOUNDS_CACHE);
       await Promise.all(ours.slice(0, -1).map(k => caches.delete(k)));
       await self.clients.claim();
     })());
@@ -96,6 +103,7 @@ if (VERSION === 'dev') {
     if (url.origin !== location.origin) return;
 
     if (req.mode === 'navigate') return event.respondWith(page(req));
+    if (url.pathname.startsWith(SOUNDS)) return event.respondWith(soundFile(req));
     const own = url.pathname.startsWith(BASE);
     if (own && url.searchParams.has('v')) return event.respondWith(versioned(req));
     if (own) return event.respondWith(networkFirst(req));
@@ -146,11 +154,27 @@ async function versioned(req) {
   return res;
 }
 async function matchOlder(req) {
-  for (const k of (await caches.keys()).filter(k => k.startsWith(PREFIX) && k !== CACHE).reverse()) {
+  for (const k of (await caches.keys()).filter(k => k.startsWith(PREFIX) && k !== CACHE && k !== SOUNDS_CACHE).reverse()) {
     const hit = await (await caches.open(k)).match(req);
     if (hit) return hit;
   }
   return null;
+}
+
+/* Sounds: cache first; a miss goes to the network and is kept (oldest dropped past SOUNDS_MAX) */
+async function soundFile(req) {
+  const cache = await caches.open(SOUNDS_CACHE);
+  const hit = await cache.match(req);
+  if (hit) return hit;
+  const res = await fetch(req);
+  if (cacheable(res)) {
+    try {
+      await cache.put(req, res.clone());
+      const keys = await cache.keys();
+      for (let i = 0; i < keys.length - SOUNDS_MAX; i++) await cache.delete(keys[i]);
+    } catch (e) { /* quota: play it without saving */ }
+  }
+  return res;
 }
 
 async function networkFirst(req) {
