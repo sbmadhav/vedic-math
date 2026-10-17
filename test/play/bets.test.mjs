@@ -132,3 +132,8 @@ test('typed numbers read back everything show() writes', () => {
     assert.equal(B.show(back), txt, `show is stable for "${txt}"`);
   }
 });
+
+test('question wording: 2^10 is ten 2s multiplied together, and Kangchenjunga is not called India\'s highest', () => {
+  assert.match(B.byId('two-10').q, /ten 2s/);
+  assert.doesNotMatch(B.byId('kanchenjunga').q, /highest/);
+});
