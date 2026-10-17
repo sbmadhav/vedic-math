@@ -114,3 +114,13 @@ test('the badge for Party Mode is listed on Me', async ({ page }) => {
   await open(page, '#/me');
   await expect(page.locator('.badge-grid .badge').filter({ has: page.locator('b', { hasText: /^Party host$/ }) })).toContainText('Finish a Party Mode game');
 });
+
+test('leaving an experience page suspends the shared audio context', async ({ page }) => {
+  await open(page, '#/games/tala');
+  await page.locator('#view h1').first().click(); // a user gesture, so the context may run
+  const state = () => page.evaluate(async () => { const k = await import('/vedic-math/js/play/kit.js' as string); return k.audio()?.state; });
+  await expect.poll(state).toBe('running');
+  await page.locator('.px-back').first().click();
+  await expect(page).toHaveURL(/#\/games$/);
+  await expect.poll(() => page.evaluate(async () => { const k = await import('/vedic-math/js/play/kit.js' as string); return (k as any).audioState?.(); })).toBe('suspended');
+});

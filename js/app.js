@@ -30,7 +30,7 @@ import { skyView, placesHTML } from './sky-view.js';
 import { openShell } from './shell.js';
 import { PLAY, SECTIONS, playFor, playIn } from './play/catalog.js';
 import { ICONS as PLAY_ICONS } from './play/icons.js';
-import { place as playPlace } from './play/kit.js';
+import { place as playPlace, suspendAudio as playQuiet } from './play/kit.js';
 import { GROUPS, sectionsFor, tryFor, say, resolveTour, tourDue, tourState, setTourState } from './guide.js';
 import { artFor } from './guide-art.js';
 import { startTour } from './tour.js';
@@ -936,7 +936,7 @@ function playView(hash, { signal }) {
   document.title = `${e.title}: ${BRAND} · Madhav`;
   playPlace.back = sec;
   view.classList.add('px-view', `px-view--${e.id}`);
-  onAbort(signal, () => view.classList.remove('px-view', `px-view--${e.id}`));
+  onAbort(signal, () => { view.classList.remove('px-view', `px-view--${e.id}`); playQuiet(); });
   view.innerHTML = `<div class="md-wrap px-loading" aria-busy="true">Opening ${e.title}...</div>`;
   Promise.all([import(`./play/exp/${e.id}.js`), playCss('base'), playCss(e.id)]).then(([mod]) => {
     if (signal.aborted) return;

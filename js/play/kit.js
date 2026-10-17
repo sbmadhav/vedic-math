@@ -55,6 +55,10 @@ export const t = o => o[level()] ?? o.challenger ?? o.pro ?? o.explorer;
 /* ---------- Sound: one shared AudioContext, created on the first user gesture ---------- */
 let AC = null;
 export function audio() { if (!AC) { const C = globalThis.AudioContext || globalThis.webkitAudioContext; if (!C) return null; AC = new C(); } if (AC.state === 'suspended') AC.resume(); return AC; }
+/* Leaving an experience page suspends the shared context (js/app.js playView), so no audio thread keeps a phone
+   awake on the next page; audio() resumes it on the next gesture that plays a sound */
+export const audioState = () => (AC ? AC.state : 'none');
+export function suspendAudio() { try { if (AC && AC.state === 'running') AC.suspend(); } catch (e) {} }
 /* Sound follows the app's sound setting (vm.sound, fx.soundOn) */
 export const muted = () => { try { return localStorage.getItem('vm.sound') === '0'; } catch (e) { return false; } };
 export const setMuted = m => { try { localStorage.setItem('vm.sound', m ? '0' : '1'); } catch (e) {} };
