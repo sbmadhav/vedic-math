@@ -48,6 +48,28 @@ Experiences SHALL NOT send anything to the leaderboards. Share links SHALL carry
 - **WHEN** a Player sends their ghost to a friend
 - **THEN** the link holds the seed, answer times and an optional nickname from the word lists, and nothing else
 
+#### Scenario: A typed plate in a share link
+- **WHEN** a Player types a plate with other words in Math Lens and shares it
+- **THEN** the link holds only capital letters, digits, spaces and hyphens, at most 12 characters
+
+### Requirement: Camera and microphone only while in use
+Math Lens (camera) and Tala Lab (microphone) SHALL ask for the device only after the Player taps to turn it on, next to a line saying what it is used for, and SHALL use it on the device only, never recording, storing or sending a picture or a sound. Every track SHALL stop when the Player leaves the page, when the page is hidden, and on any error.
+
+#### Scenario: Camera left on in a hidden tab
+- **WHEN** a Player has turned on the camera in Math Lens and switches to another tab
+- **THEN** every camera track is stopped, and the Player turns it on again with one tap
+
+#### Scenario: Microphone and a route change
+- **WHEN** a Player has turned on the microphone in Tala Lab and opens another page or hides the tab
+- **THEN** every microphone track is stopped
+
+### Requirement: A removed Player's play progress goes with them
+Removing a Player from the device SHALL remove that Player's experience progress, and only theirs.
+
+#### Scenario: Removing a child's Player
+- **WHEN** a parent removes a Player on the Me page
+- **THEN** that Player's Daily Number, Pattern Wall and other experience progress is no longer stored on the device
+
 ### Requirement: Experiences work offline
 Once the app has been opened online, every experience page SHALL open offline.
 

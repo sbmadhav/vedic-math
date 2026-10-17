@@ -26,12 +26,15 @@ Out of scope:
 
 ### New Capabilities
 
-- `play-experiences`: the twelve pages, where they live, shelves, per Player state, Sparks from play, privacy of shared links and the camera.
+- `play-experiences`: the twelve pages, where they live, shelves, per Player state, Sparks from play, privacy of shared links, the camera and the microphone.
 
 ### Modified Capabilities
 
 - `duel`: REMOVED; Party Mode takes its place.
 - `analytics`: ADDED "Play experience events".
+- `badges`: the Duelist badge becomes Party host (same id and counter); the completion rule's Duel scenario becomes a Party Mode one.
+- `arena`: the Pro mental arithmetic rule loses its Pro Duel scenario (Practice keeps it).
+- `view-lifecycle`: the one-tap rule's Duel rematch scenario becomes Party Mode setup; "Ending a round" names Party games instead of Duels.
 
 ## Impact
 

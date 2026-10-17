@@ -14,6 +14,12 @@
 
 - [x] 3.1 `js/metrics.js` play route template. Verify: `test/metrics.test.mjs` samples `#/arena/ghosts/r/abc` -> `play/ghosts`.
 
-## 4. After release
+## 4. Review fixes (PR #47 review)
 
-- [ ] 4.1 Listen to Tala Lab and Mandala Studio on a phone and a laptop; try Math Lens on real plates and receipts; then archive this change.
+- [x] 4.1 Spec deltas for what the Duel's removal changes elsewhere: `badges` (Duelist became Party host), `arena` (no Pro Duel), `view-lifecycle` (Party setup instead of the Duel rematch). Verify: `e2e/tests/cov/badges-4.spec.ts`, `cov/arena-1`, `cov/arena-3` updated; `cov/duel-*` removed with the Duel.
+- [x] 4.2 Camera and microphone turn off on a hidden tab, a route change and errors; a Lens share link carries only plate characters; a removed Player's `vm.play.<id>.*` is forgotten. Verify: `e2e/tests/play-lens.spec.ts`, `e2e/tests/play-sound.spec.ts`, `test/play/lens.test.mjs`, `test/store.test.mjs`.
+- [x] 4.3 Sparks from play are paid for a first finish or discovery, not for replays or button presses (Spellbook, Locks, Pattern Wall, Apprentice, Daily Number, Tala Lab, Mandala Studio, Scroll preview). Verify: the experience unit tests and `e2e/tests/play-*.spec.ts`.
+
+## 5. After release
+
+- [ ] 5.1 Listen to Tala Lab and Mandala Studio on a phone and a laptop; try Math Lens on real plates and receipts; then archive this change.
