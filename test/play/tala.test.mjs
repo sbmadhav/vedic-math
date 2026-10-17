@@ -180,3 +180,28 @@ test('clap detection: one onset per clap, none in steady noise', () => {
   assert.equal(q, 0);
   assert.equal(C.rms(new Float32Array([0.5, -0.5, 0.5, -0.5])), 0.5);
 });
+
+test('a tempo change while playing neither doubles nor drops a note (the real scheduler)', async t => {
+  const { schedule } = await import('../../js/play/exp/tala-audio.js');
+  /* drive it by hand: a fake clock, mocked setInterval for the 25 ms tick, and a queue for animation frames */
+  t.mock.timers.enable({ apis: ['setInterval'] });
+  let frames = [];
+  globalThis.requestAnimationFrame = fn => { frames.push(fn); return frames.length; };
+  globalThis.cancelAnimationFrame = () => {};
+  t.after(() => { delete globalThis.requestAnimationFrame; delete globalThis.cancelAnimationFrame; });
+  /* the change lands at many phases between notes, since a doubled or dropped note depends on where it falls */
+  for (const [from, to] of [[60, 140], [140, 45], [90, 60], [72, 72]]) for (let at = 2; at < 2.5; at += 0.0125) {
+    let T = 10; frames = [];
+    const clock = { audio: null, now: () => T, latency: () => 0 }, ctl = new AbortController(), got = [];
+    const pat = C.gatiPattern(4);
+    const s = schedule({ clock, pattern: pat, bpm: from, signal: ctl.signal, onCue: e => got.push(e) });
+    const run = secs => { for (let i = 0; i < secs / 0.025; i++) { T += 0.025; t.mock.timers.tick(25); const f = frames; frames = []; f.forEach(fn => fn(T * 1000)); } };
+    run(at); s.setBpm(to); run(2);
+    ctl.abort();
+    /* every count of the pattern, in order, once: syllable i of beat b in repeat k */
+    const syl = got.filter(e => e.track === 'gati').map(e => e.k * pat.len + e.at);
+    assert.ok(syl.length > 15, `${from} to ${to}`);
+    syl.forEach((x, i) => assert.equal(x, syl[0] + i, `${from} to ${to} at ${at}: count ${i} is ${x}`));
+    for (let i = 1; i < got.length; i++) assert.ok(got[i].time >= got[i - 1].time - 1e-9, 'cues in time order');
+  }
+});

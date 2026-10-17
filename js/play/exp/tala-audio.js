@@ -129,9 +129,11 @@ export function schedule({ clock, pattern, bpm, signal, onCue = () => {}, onEnd 
     stop() { stopped = true; cues.length = 0; },
     /* change tempo without a jump: keep the current position in the loop */
     setBpm(b) {
-      const now = clock.now(), pos = (now - start) / unit();
+      const now = clock.now(), pos = (now - start) / unit(), posH = (horizon - start) / unit();
       tempo = b; start = now - pos * unit();
-      /* notes already scheduled keep their times; the next tick continues on the new grid */
+      /* notes already scheduled keep their times; the horizon keeps its place in the pattern too, so the next
+         tick continues on the new grid from the first note not yet scheduled (no note twice, none dropped) */
+      horizon = start + posH * unit();
     },
     get bpm() { return tempo; }
   };
