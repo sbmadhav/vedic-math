@@ -70,7 +70,7 @@ The decision is cached for the page in memory (not in storage) and exposed as `d
 
 - Frame caps: 30 frames a second for the backdrop and the Moving background, 60 for celebrations.
 - Pixel ratio: at most 2 on a fine pointer, 1.5 on touch, 1 when `deviceMemory` is 4 or less.
-- Self-check: the worker measures each frame's time. If the average over 2 seconds is above 20 ms, it halves particle counts and the pixel ratio; if it is still above 20 ms after another 2 seconds, the scene goes **still** for the rest of the page. On the 2D renderer the same rule runs on the main thread, measured with `performance.now()`.
+- Self-check: the worker measures each frame's work time, from the start of its frame callback to the end of its draw calls (`performance.now()`), not the interval between frames (33 ms at the 30 fps cap, which is normal pacing). If the average work time over 2 seconds is above 20 ms, it halves particle counts and the pixel ratio; if it is still above 20 ms after another 2 seconds, the scene goes **still** for the rest of the page. On the 2D renderer the same rule runs on the main thread, measured the same way.
 - Celebration sizes: confetti up to 150 pieces (WebGL) or 60 (2D), at most 2 seconds. The existing `confetti(n)` call sites map to small (n under 50), medium (50 to 90) and large (over 90).
 
 ### D6. Context loss and failures

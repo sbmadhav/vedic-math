@@ -40,7 +40,7 @@ Second change after the learnvedicmath.com move (owner M6), after `render-perfor
 - [ ] 4.2 Endpoints `POST /rooms`, `/rooms/:code/join`, `/rooms/:code/resume`, `GET /status`, the WebSocket route. Codes from the 20-consonant alphabet, collision retry, 15 LOBBY rooms per hashed IP. Verify: worker tests for each answer code in D3, case and space handling of codes.
 - [ ] 4.3 `DuelQueue`: per League, hibernating waiting sockets, pairing the longest waiting compatible Player, one socket per key, 60 s wait, Block pairs for 7 days both ways, the automatic limits from D13. Verify: worker tests: pairing order, blocked pair never paired, same key replaced, 60 s expiry, limit after three reports from distinct keys.
 - [ ] 4.4 `DuelSafety`: report records (D13 shape), 30-day deletion by alarm, the Access-protected `GET /api/duel/admin/digest` (counts only), `npm run reports` script. Verify: worker tests for the record shape (no Nickname, IP, code or text), deletion at 30 days, and the admin route refusing a request without the Access header.
-- [ ] 4.5 The off switch (`DUEL_OPEN`) and fail-closed on plan limits (a Durable Object call that errors with a limit returns `503 closed`). Verify: worker tests for both.
+- [ ] 4.5 The off switch (`DUEL_OPEN`) and fail-closed on plan limits (a Durable Object call that errors with a limit returns `503 closed`), for every Free quota in D19 (requests, duration, rows read, rows written). A running room whose storage write fails keeps playing from memory; one that cannot go on ends with `end server`. Verify: worker tests for the off switch, a limit error on room creation, a failing storage write in the middle of a match (the match finishes), and a room stopped by a limit (`end server`).
 
 ## 5. App (D16)
 

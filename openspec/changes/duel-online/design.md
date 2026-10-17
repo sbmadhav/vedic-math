@@ -109,12 +109,12 @@ JSON text frames. Every message has `t` (type). Client frames are at most 256 by
 
 - `deal.text` and `deal.viz` are the generators' HTML. The client renders them only through `js/duel/safe-html.js`: a parser-based allow-list (`b`, `i`, `sup`, `sub`, `span`, `br`, and the SVG elements `svg`, `g`, `circle`, `rect`, `line`, `path`, `text`, `tspan` with only `class`, geometry and `viewBox` attributes; classes must start with `vz-`, `sc-` or `hl`). Anything else is dropped. The CSP blocks inline script anyway; this keeps a compromised server from drawing UI that looks like ours.
 - WebSocket close codes: 1000 normal end, 1001 server going away (deploy; clients resume), 1008 policy (rate or invalid), 4001 bad ticket, 4002 room full, 4003 expired, 4009 upgrade needed.
-- **Version.** `v` is checked on every HTTP call and in the ticket. During a deploy the Worker accepts `v` and `v - 1`; an older client gets `error upgrade` and the app says "Reload to play online".
+- **Version.** `v` is checked on every HTTP call except `GET /api/duel/status`, and in the ticket. The status call takes no version: it only tells the app whether Duels are open, and its answer carries the server's current `v` so the app can ask for a reload before trying to play. During a deploy the Worker accepts `v` and `v - 1`; an older client gets `error upgrade` and the app says "Reload to play online".
 
 ### D5. Match states and timeouts
 
 ```text
-LOBBY ──second seat──▶ SEATED ──both ready──▶ COUNTDOWN (3 s) ──▶ QUESTION ──right──▶ RESOLVING (≤100 ms) ──▶ (point) ──▶ QUESTION ... ──goal──▶ ENDED
+LOBBY ──second seat──▶ SEATED ──both ready──▶ COUNTDOWN (3 s) ──▶ QUESTION ──right──▶ RESOLVING (100 to 250 ms) ──▶ (point) ──▶ QUESTION ... ──goal──▶ ENDED
   │ 10 min, no friend   │ 30 s, not ready          ▲                 │ both missed / time up ──▶ REVEAL (1.2 s) ──▶ QUESTION
   ▼                     ▼                          │                 │ a seat drops
  CLOSED               ENDED (idle)              PAUSED (≤20 s each, ≤45 s per seat in all) ──not back──▶ ENDED (left)
@@ -128,7 +128,7 @@ ENDED ──both rematch within 30 s──▶ SEATED (new seed) ; else CLOSED �
 | Ready | 30 s after both are seated | `end idle`, no winner. |
 | Countdown | 3 s | First `deal`. |
 | Question | Explorer 20 s, Challenger 15 s, Pro 12 s | `reveal timeout`. |
-| Resolution window | 100 ms after the first right answer arrives | `point` to the earliest effective time (D6). |
+| Resolution window | From the first right answer until no answer from the other seat could still have an earlier effective time: at least 100 ms, at most 250 ms (D6) | `point` to the earliest effective time (D6). |
 | Reveal | 1.2 s | Next `deal`. |
 | Disconnect grace | 20 s each time, 45 s per seat per match | `end left`, the other seat wins. |
 | Idle | 3 questions in a row that nobody answers | `end idle`, no winner. |
@@ -146,7 +146,7 @@ While a match runs, the room keeps its timers with `setTimeout` (it is busy anyw
 - An answer's **effective time** is `received - ts[seat] - L[seat]`.
 - Wrong choice: `miss` for that seat; it is out of this question (the old Duel's freeze). Both out: `reveal both-missed`.
 - **Too fast:** an effective time under 350 ms (500 ms in Explorer) counts as a miss, and the seat's too-fast count rises. Nobody reads and taps that fast; a bot does.
-- Right choice: the room opens a 100 ms resolution window. Any right answer from the other seat arriving within it competes; the smaller effective time wins, and an exact tie goes to the earlier arrival. Then `point`. The cap on `L` limits how much a Player can gain by faking a slow connection to 150 ms, while keeping play fair between a phone on 4G and a laptop on Wi-Fi.
+- Right choice: the room opens a resolution window. With the first right answer's effective time `e`, an answer from the other seat could still beat it until `ts[other] + L[other] + e`; the window stays open until then, and for at least 100 ms. Because `L` is capped at 150 ms and both deals are sent in the same event, that is never more than 250 ms. Any right answer from the other seat arriving within it competes; the smaller effective time wins, and an exact tie goes to the earlier arrival. Then `point`. The cap on `L` limits how much a Player can gain by faking a slow connection to 150 ms, while keeping play fair between a phone on 4G and a laptop on Wi-Fi.
 - First to 10 points wins (`end goal`). Every right answer is 1 point; there are no combos (the Duel is about the race, as before).
 - The question set: `makeSet(league, seed, 60)` with Explorer at generator level 1, Challenger at 2 and Pro on a ramp from 6 to 14 over the first 20 questions, the same pools as Arena Practice. A rematch gets a new seed.
 
@@ -164,7 +164,7 @@ While a match runs, the room keeps its timers with `setTimeout` (it is busy anyw
 1. The host taps "Duel a friend" (League = the host's Mode). Turnstile runs (D12). The app gets a code and shows it big ("B K T R M Z"), with Copy, Share (Web Share API where available) and the link `https://learnvedicmath.com/play/#/arena/duel/BKTRMZ`. The code is in the fragment, so it never reaches a server log or a `Referer`.
 2. The friend opens the link (the code is filled in) or taps "I have a code" and types it. The join screen shows the host's Nickname and color and the League ("This Duel is at Challenger level"), and asks "Duel Swift Tiger 12?" before joining. A Player who does not know that Nickname is told, in their Mode's words, to go back.
 3. Codes use 20 consonants (`B C D F G H J K L M N P Q R S T V W X Z`): 64 million codes, no vowels so no real words, no 0/O or 1/I confusion. A code is live for 10 minutes or until a friend joins; the room refuses a third seat.
-4. Nothing about either Player is kept after the match (D14). There is no friend list: next time, a new code.
+4. Nothing about either Player is kept more than 10 minutes after the match: the room's storage (Nicknames, colors, question log) is deleted by then (D5, D14). There is no friend list: next time, a new code.
 5. Under-13 Players use exactly this flow. The server never knows anyone's age; the app decides who may use Random Duels.
 
 ### D9. Random Duels (13 and over, same League)
@@ -235,7 +235,7 @@ Not legal advice; the owner's lawyer reviews it with the move's privacy policy b
 | League | Make, queue | Pick questions and the waiting line | As above |
 | Choice indices, Reactions, ready, rematch, leave | During the match | Play | Question log in the room's storage until 10 minutes after the match |
 | `teen: true` | Queue | Open the 13+ waiting line | Not stored |
-| `SHA-256(Duel key)` (13+ only) | Queue | Block and limits for up to a week | Block pairs 7 days; in a report 30 days |
+| `SHA-256(Duel key)` (13+ only) | Queue | Block and limits for up to a week | In the queue only while waiting; Block pairs and automatic-limit records 7 days; in a report 30 days |
 | Report reason and match summary | Report | Abuse handling | 30 days |
 | Turnstile token | Make, join, queue | Bot check | Not stored (verified once) |
 | IP address | Every request (the network needs it) | Delivering the connection; rate limits | Never stored or logged by us; only a salted hash is used as a counter key for up to a minute |
@@ -300,19 +300,21 @@ worker/
 
 ### D19. Cost estimate (prices checked 2026-10-17)
 
-Durable Objects (SQLite backend): **Free** 100,000 requests and 13,000 GB-s a day, 5 GB stored. **Workers Paid** ($5 a month): 1 million requests and 400,000 GB-s a month included, then $0.15 a million requests and $12.50 a million GB-s. Incoming WebSocket messages count as requests at 20 to 1; duration is wall-clock time in memory at 128 MB, and stops while an object hibernates. Turnstile is free and unlimited. Rate Limiting bindings add no cost.
+Durable Objects (SQLite backend): **Free** 100,000 requests, 13,000 GB-s, 5 million SQLite rows read and 100,000 rows written a day (reset at 00:00 UTC), 5 GB stored for the account. On Free, an operation of a type whose daily quota is used up fails until the reset; there is no charge. **Workers Paid** ($5 a month): 1 million requests and 400,000 GB-s a month included, then $0.15 a million requests and $12.50 a million GB-s. Incoming WebSocket messages count as requests at 20 to 1; duration is wall-clock time in memory at 128 MB, and stops while an object hibernates. Turnstile is free and unlimited. Rate Limiting bindings add no cost.
 
-A typical match: about 18 questions at about 4 s each plus lobby, countdown and end screen: about 2.5 minutes in memory, so 150 s x 0.128 GB = **about 20 GB-s**. Requests: 1 to 2 HTTP calls per Player, 2 WebSocket upgrades, about 60 incoming frames (3 at 20 to 1), a few alarms: **about 10 requests**. Storage: a few KB per match, deleted after 10 minutes.
+A typical match: about 18 questions at about 4 s each plus lobby, countdown and end screen: about 2.5 minutes in memory, so 150 s x 0.128 GB = **about 20 GB-s**. Requests: 1 to 2 HTTP calls per Player, 2 WebSocket upgrades, about 60 incoming frames (3 at 20 to 1), a few alarms: **about 10 requests**. Storage: a few KB per match, deleted after 10 minutes, far below any per-object size cap. The state is one row rewritten after each `step` (about 60 steps a match, plus the cleanup delete): **about 70 rows written** and a handful read (only when a restarted object reloads).
 
 | Matches | Duration | Requests | Plan and cost a month |
 |---|---|---|---|
-| 300 a day (9,000 a month) | 6,000 GB-s a day | 3,000 a day | Free, $0 |
-| 600 a day (18,000 a month) | 12,000 GB-s a day (92% of Free) | 6,000 a day | Free at the limit; move to Paid |
+| 300 a day (9,000 a month) | 6,000 GB-s a day | 3,000 a day (21,000 rows written) | Free, $0 |
+| 600 a day (18,000 a month) | 12,000 GB-s a day (92% of Free) | 6,000 a day (42,000 rows written, 42% of Free) | Free at the limit; move to Paid |
 | 20,000 a month | 400,000 GB-s | 200,000 | Paid, $5 |
 | 100,000 a month | 2,000,000 GB-s | 1,000,000 | Paid, $5 + 1.6M GB-s x $12.50/M = **about $25** |
 | 500,000 a month | 10,000,000 GB-s | 5,000,000 | Paid, $5 + $120 + $0.60 = **about $126** |
 
-The waiting line hibernates between arrivals, so it adds little. Load tests (D20) at full size need the Paid plan or must run before launch, because staging shares the account's daily Free quota.
+Duration is the Free quota that runs out first: at 600 matches a day requests are at 6% and rows written at 42%. The waiting line hibernates between arrivals, so it adds little.
+
+**When a daily Free quota runs out.** New Duels fail closed: a room or queue call that fails with a limit error answers `503 closed` (D18). A match already running keeps its state in memory, so a failed storage write does not stop it; it only loses the ability to continue after a restart until the reset. If the request or duration quota stops the running room itself, the match ends with `end server` (no winner; Sparks follow the D15 rules for what was played) and the app shows the resting message. The owner moves to Paid before D19's thresholds, so this is a safety net, not the plan. Load tests (D20) at full size need the Paid plan or must run before launch, because staging shares the account's daily Free quota.
 
 ### D20. Load test plan
 

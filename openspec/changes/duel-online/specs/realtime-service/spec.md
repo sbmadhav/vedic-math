@@ -53,14 +53,21 @@ The Worker SHALL limit, per hashed IP address, how often codes are made (10 a mi
 - **THEN** the tries after the twentieth are refused until the minute is over
 
 ### Requirement: The IP address is never kept
-The Worker SHALL use a Player's IP address only to deliver the connection and, as a salted hash, as a rate-limit key for at most a minute. It SHALL NOT write the IP address, its hash, a Nickname, a code, a ticket or a key to any log or storage.
+The Worker SHALL use a Player's IP address only to deliver the connection and, as a salted hash, as a rate-limit key for at most a minute. It SHALL NOT write the IP address, its hash, a Duel code, a ticket or a raw Duel key to any log or storage, and SHALL NOT write a Nickname or a hashed Duel key to any log.
 
 #### Scenario: A day of logs
 - **WHEN** a day of the Worker's logs is searched for IP addresses and Nicknames
 - **THEN** none is found
 
+### Requirement: Where Nicknames and Duel key hashes may be stored
+A Nickname SHALL be stored only in a match's state and in a waiting-line entry. A hashed Duel key SHALL be stored only in waiting-line entries, Block pairs, automatic-limit records and reports. Each SHALL be kept no longer than "What is kept, and for how long" allows.
+
+#### Scenario: Searching storage after a Random Duel
+- **WHEN** a Random Duel ended 11 minutes ago and its storage, the waiting line, the Block pairs and the reports are searched
+- **THEN** the Players' Nicknames are found nowhere, and their hashed Duel keys only in Block pairs, automatic-limit records or reports that the Duel led to
+
 ### Requirement: What is kept, and for how long
-A match's state SHALL be deleted 10 minutes after it ends. Waiting-line entries SHALL exist only while a Player waits. Block pairs SHALL be deleted after 7 days and reports after 30 days, each by the server without anyone acting.
+A match's state SHALL be deleted 10 minutes after it ends. Waiting-line entries SHALL exist only while a Player waits. Block pairs and automatic-limit records SHALL be deleted after 7 days and reports after 30 days, each by the server without anyone acting.
 
 #### Scenario: Ten minutes after a Duel
 - **WHEN** a Duel ended 11 minutes ago
@@ -71,7 +78,7 @@ A match's state SHALL be deleted 10 minutes after it ends. Waiting-line entries 
 - **THEN** it has been deleted
 
 ### Requirement: Versioned protocol
-Every call and connection SHALL carry the protocol version. During a deploy the server SHALL accept the current and the previous version, and an older app SHALL be asked to reload instead of failing in play.
+Every call and connection SHALL carry the protocol version, except the status call that says whether Duels are open, which takes none and answers with the server's current version. During a deploy the server SHALL accept the current and the previous version, and an older app SHALL be asked to reload instead of failing in play.
 
 #### Scenario: An old tab after a deploy
 - **WHEN** a tab running protocol version 1 calls a server that accepts only 2 and 3

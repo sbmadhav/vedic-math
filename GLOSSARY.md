@@ -174,7 +174,7 @@ Two Players on two devices racing the same question online at the same time. The
 _Avoid_: versus, battle, multiplayer, match (fine in code, not in copy)
 
 **Friend Duel**:
-A Duel with someone the Player knows, joined by a Duel code or its link. Open to every Player, under 13 included; nothing about either Player is kept after it.
+A Duel with someone the Player knows, joined by a Duel code or its link. Open to every Player, under 13 included; nothing about either Player is kept more than 10 minutes after it (reports aside).
 _Avoid_: private match, invite game
 
 **Random Duel**:

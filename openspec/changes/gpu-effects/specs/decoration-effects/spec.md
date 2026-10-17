@@ -14,7 +14,7 @@ WebGL SHALL be used only for the Sky backdrop, the Moving background, celebratio
 - **THEN** every Star and Landmark is still an SVG or HTML link with its name, and the backdrop canvas has `aria-hidden="true"` and no pointer events
 
 ### Requirement: Drawn off the main thread where supported
-When the browser supports OffscreenCanvas, module workers and a hardware WebGL 2 context, decoration SHALL be drawn in a worker. Otherwise it SHALL be drawn with canvas 2D on the main thread with fewer particles and at most 30 frames a second, and with Save-Data on or 2 GB of memory or less it SHALL be one still frame.
+With Save-Data on or 2 GB of memory or less, the Sky backdrop and the Moving background SHALL be one still frame, whatever the browser supports. Otherwise, when the browser supports OffscreenCanvas, module workers and a hardware WebGL 2 context, decoration SHALL be drawn in a worker, and when it does not, with canvas 2D on the main thread with fewer particles and at most 30 frames a second.
 
 #### Scenario: Chromium on a laptop
 - **WHEN** the Sky opens in Chromium with a hardware GPU
@@ -43,10 +43,10 @@ A decoration scene SHALL stop drawing while it is off screen, while the tab is h
 - **THEN** the backdrop draws no frames until the Player comes back
 
 ### Requirement: Decoration lowers its own quality when it is slow
-When frames take more than 20 ms on average for 2 seconds, a scene SHALL halve its particles and pixel ratio, and if frames are still slow 2 seconds later it SHALL hold still for the rest of the page.
+When drawing a frame takes more than 20 ms on average for 2 seconds (the work of drawing it, not the wait between frames), a scene SHALL halve its particles and pixel ratio, and if frames are still slow 2 seconds later it SHALL hold still for the rest of the page.
 
 #### Scenario: A slow phone
-- **WHEN** the backdrop's frames average 28 ms on a phone for 4 seconds
+- **WHEN** drawing each backdrop frame takes 28 ms on average on a phone for 4 seconds
 - **THEN** the backdrop first draws fewer stars and then holds a still frame
 
 ### Requirement: Decoration never breaks a view

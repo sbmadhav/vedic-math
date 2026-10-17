@@ -48,7 +48,7 @@ Two gates, because byte counts are exact and timings are noisy:
    - CSS before play exceeds **40 KB**;
    - JS on any landing or grown-up page exceeds **15 KB**;
    - any one route's own graph exceeds **80 KB** (keeps a fat section from hiding behind lazy loading).
-   It prints the table every build and writes `_site/budget.json` (repo-only output, excluded from publishing), which the perf job compares with `main` and comments on the pull request when growth is over 5 KB.
+   It prints the table every build and writes `_budget/budget.json` at the repo root, outside the output folder (a `_` path, so never published, and listed in `.gitignore`); `ci.yml`'s repo-only check of `_site/` also lists `budget.json`. The perf job compares it with `main` and comments on the pull request when growth is over 5 KB.
 2. **Timing budget, Lighthouse CI on the pull request preview** (the move's `preview.yml` gains a `perf` job; `@lhci/cli` pinned in `tools/package.json`). Mobile preset, 5 runs, median, pages as in D1. It fails when FCP is 1.5 s or more, LCP is 2.5 s or more, CLS is over 0.1, or total blocking time is over 200 ms (the lab proxy for INP). Assertions live in `tools/lighthouserc.json`. Fork pull requests have no preview and are skipped. On `main`, the same job runs against production after the deploy and opens an issue on failure instead of failing the deploy.
 
 A budget only changes in a pull request that says why in its description and updates the table in `docs/perf/baseline.md`.
