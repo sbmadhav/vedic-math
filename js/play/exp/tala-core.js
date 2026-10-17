@@ -205,6 +205,17 @@ export const TIHAI_PUZZLES = [
   { id: 't7', gati: 5, C: 40, start: 0, fix: null, say: 'Khanda gati: five counts per beat, 40 in the cycle.' },
   { id: 't8', gati: 7, C: 56, start: 21, fix: null, say: 'Misra gati, starting on beat 4. A long one.' }
 ];
+/* Where the steppers start for a puzzle: the given value, and a guess for the rest that is never already the
+   answer (t2 gives p = 5 in 16 counts, where the usual g = 1 would land before the player did anything) */
+export function tihaiStart(z, lv) {
+  let p = z.fix?.p ?? (lv === 'explorer' ? 2 : 4), g = z.fix?.g ?? 1;
+  const free = ['g', 'p'].filter(k => !(z.fix && k in z.fix));
+  for (let d = 1; tihaiMiss(z.C, z.start, p, g) === 0 && free.length && d < 40; d++) {
+    const k = free[0], base = k === 'g' ? g : p, lo = k === 'g' ? 0 : 2, v = base - d >= lo ? base - d : base + d;
+    if (tihaiMiss(z.C, z.start, k === 'p' ? v : p, k === 'g' ? v : g) !== 0) { if (k === 'g') g = v; else p = v; }
+  }
+  return { p, g };
+}
 export const puzzlesFor = lv => (lv === 'explorer' ? TIHAI_PUZZLES.slice(0, 3) : lv === 'challenger' ? TIHAI_PUZZLES.slice(0, 6) : TIHAI_PUZZLES);
 
 /* ---------- Composer ---------- */

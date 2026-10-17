@@ -205,3 +205,16 @@ test('a tempo change while playing neither doubles nor drops a note (the real sc
     for (let i = 1; i < got.length; i++) assert.ok(got[i].time >= got[i - 1].time - 1e-9, 'cues in time order');
   }
 });
+
+test('a tihai puzzle never starts already solved, and keeps its given value', () => {
+  for (const lv of ['explorer', 'challenger', 'pro']) for (const z of C.puzzlesFor(lv)) {
+    const { p, g } = C.tihaiStart(z, lv);
+    assert.notEqual(C.tihaiMiss(z.C, z.start, p, g), 0, `${z.id} for ${lv} starts on the answer`);
+    if (z.fix) for (const [k, v] of Object.entries(z.fix)) assert.equal({ p, g }[k], v, `${z.id} keeps ${k}`);
+    assert.ok(p >= 2 && p <= 20 && g >= 0 && g <= 16, `${z.id} in the stepper range`);
+  }
+  /* t2 gives p = 5 in 16 counts: g = 1 is the answer, so the gap starts elsewhere */
+  const t2 = C.TIHAI_PUZZLES.find(z => z.id === 't2');
+  assert.equal(C.tihaiMiss(t2.C, t2.start, 5, 1), 0);
+  assert.equal(C.tihaiStart(t2, 'explorer').p, 5);
+});

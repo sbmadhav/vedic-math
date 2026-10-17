@@ -8,7 +8,7 @@ import * as C from './tala-core.js';
 import { hit, makeClock, schedule, listen } from './tala-audio.js';
 
 const KEY = 'tala';
-const blank = () => ({ bpm: 72, best: 0, meets: [], solved: [], sols: {}, comps: [], stars: [] });
+const blank = () => ({ bpm: 72, best: 0, meets: [], called: [], solved: [], sols: {}, comps: [], stars: [] });
 const SVGNS = 'http://www.w3.org/2000/svg';
 const TAU = Math.PI * 2;
 const pt = (cx, cy, r, turn) => [cx + r * Math.sin(turn * TAU), cy - r * Math.cos(turn * TAU)];
@@ -312,7 +312,8 @@ export function mount({ root, signal, params }) {
       if (!S.meets.includes(key)) { S.meets.push(key); save(); }
       result.innerHTML = `<p class="tl-meet"><b>${list.join(' and ')} meet at ${Lv}.</b> ${guess ? (right ? 'You called it.' : `You guessed ${guess}.`) : ''}</p><p>${esc(C.meetWhy(list))}</p>
         <p class="px-note">${C.gcd(list[0], list[1]) === 1 ? 'Now try 4 and 6. Do they wait until 24?' : 'Pairs you have heard meet: ' + S.meets.length + '.'}</p>`;
-      if (right) { confetti(40); track('tala/meet-right', key); }
+      /* a right call is tracked (and so earns Sparks) only the first time for each pair */
+      if (right) { confetti(40); if (!S.called.includes(key)) { S.called.push(key); save(); track('tala/meet-right', key); } }
       say(`They meet at ${Lv}. ${right ? 'You called it.' : ''} ${C.meetWhy(list)}`);
     };
     const start = async () => {
@@ -423,9 +424,9 @@ export function mount({ root, signal, params }) {
         const st = C.star(p, tala.beats), key = `${tala.id}-${p}`;
         if (!S.stars.includes(key)) { S.stars.push(key); save(); }
         svg.classList.add('is-home'); later(() => svg.classList.remove('is-home'), 2400, signal);
-        result.innerHTML = `<p class="tl-meet"><b>Back on sam after ${m} phrases.</b> ${m} × ${p} = ${m * p} counts = ${m * p / tala.beats} cycle${m * p / tala.beats > 1 ? 's' : ''} of ${tala.beats}.</p>
-          <p>${st.points > 2 ? `The starts drew a ${st.points}-pointed ${st.step > 1 && st.step < st.points - 1 ? 'star' : 'shape'}${st.polygons > 1 ? ` (${tala.beats} and ${p} share ${st.polygons}, so only ${st.points} beats get a turn)` : ''}.` : 'The phrase fits the cycle evenly, so it just bounces between sam and the middle.'} Try another phrase length.</p>`;
-        say(`Back on sam after ${m} phrases. That is ${m * p} counts.`);
+        result.innerHTML = `<p class="tl-meet"><b>Back on sam after ${m} phrase${m > 1 ? 's' : ''}.</b> ${m} × ${p} = ${m * p} counts = ${m * p / tala.beats} cycle${m * p / tala.beats > 1 ? 's' : ''} of ${tala.beats}.</p>
+          <p>${st.points === 1 ? `The phrase is exactly one cycle of ${tala.beats}, so every phrase starts on sam.` : st.points > 2 ? `The starts drew a ${st.points}-pointed ${st.step > 1 && st.step < st.points - 1 ? 'star' : 'shape'}${st.polygons > 1 ? ` (${tala.beats} and ${p} share ${st.polygons}, so only ${st.points} beats get a turn)` : ''}.` : 'The phrase fits the cycle evenly, so it just bounces between sam and the middle.'} Try another phrase length.</p>`;
+        say(`Back on sam after ${m} phrase${m > 1 ? 's' : ''}. That is ${m * p} counts.`);
         if (!reducedMotion()) confetti(24);
         track('tala/cycle-home', key);
       } else { result.innerHTML = right ? `<p class="tl-ok">Yes, beat ${b}.</p>` : `<p>It started on beat ${b}. ${lv === 'explorer' ? 'Count on ' + p + ' from the last start.' : wrapText(starts[starts.length - 2], p, tala.beats, b)}</p>`; say(`Beat ${b}`); }
@@ -487,7 +488,7 @@ export function mount({ root, signal, params }) {
     const load = i => {
       idx = i; z = list[i]; tried = false; P.stop(); setPlaying(btn, false, 'Play the tihai');
       const sols = C.tihaiSolutions(z.C, z.start);
-      p = z.fix?.p ?? (lv === 'explorer' ? 2 : 4); g = z.fix?.g ?? 1;
+      ({ p, g } = C.tihaiStart(z, lv));
       scene.querySelector('.tl-pz').innerHTML = `Puzzle <b>${i + 1}</b> of ${list.length}`;
       scene.querySelector('.tl-pzs').innerHTML = list.map((q, j) => `<button type="button" class="tl-pzb${S.solved.includes(q.id) ? ' is-done' : ''}" data-z="${j}" aria-current="${j === i}" aria-label="Puzzle ${j + 1}${S.solved.includes(q.id) ? ', solved' : ''}">${j + 1}</button>`).join('');
       const beat = z.start / z.gati + 1;
@@ -528,13 +529,14 @@ export function mount({ root, signal, params }) {
       if (miss === 0) {
         const fresh = !S.solved.includes(z.id);
         if (fresh) S.solved.push(z.id);
-        const got = new Set(S.sols[z.id] || []); got.add(`${p},${g}`); S.sols[z.id] = [...got]; save();
+        const got = new Set(S.sols[z.id] || []), isNew = !got.has(`${p},${g}`); got.add(`${p},${g}`); S.sols[z.id] = [...got]; save();
         const all = C.tihaiSolutions(z.C, z.start).length;
         result.innerHTML = `<p class="tl-meet"><b>Thom! Right on sam.</b> ${p} + ${g} + ${p} + ${g} + ${p} counts, and the last thom is sam.</p>
           <p>${all > 1 ? `This cycle has ${all} tihais with these rules. You have found ${got.size}.` : 'This is the only one that fits.'}</p>
           ${idx < list.length - 1 ? '<button type="button" class="md-btn md-btn--primary tl-nextpz">Next puzzle</button>' : '<p class="px-note">That was the last puzzle. Try finding every solution, or compose your own.</p>'}`;
         confetti(70); say(`Thom on sam! The tihai lands. ${all > 1 ? `${got.size} of ${all} solutions found.` : ''}`);
-        track('tala/tihai-land', z.id);
+        /* tracked (and so paid in Sparks) only for a solution this Player has not found before, not on replays */
+        if (isNew) track('tala/tihai-land', z.id);
         scene.querySelectorAll('.tl-pzb')[idx]?.classList.add('is-done');
       } else {
         const a = Math.abs(miss);
