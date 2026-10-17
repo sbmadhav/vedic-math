@@ -81,3 +81,22 @@ test('judging typed digits: right at once, wrong only at full length', () => {
   assert.equal(G.judge('9', 7), 'wrong');
   assert.equal(G.judge('', 7), 'typing');
 });
+
+test('decode rejects ghosts that could never end: splits outside 0.01 s to 10 min, too many misses', () => {
+  const code = (sp, miss = '') => Buffer.from(['1', '4', '1', 'a', '', sp, miss].join('.')).toString('base64url');
+  const h = n => n.toString(36);
+  assert.ok(G.decode(code([h(100), h(250)].join(','))), 'a normal ghost decodes');
+  assert.ok(G.decode(code([h(1), h(60000)].join(','))), 'the limits themselves are fine');
+  assert.equal(G.decode(code([h(100), h(60001)].join(','))), null, 'over 10 minutes for one question');
+  assert.equal(G.decode(code([h(100), '0'].join(','))), null, 'zero');
+  assert.equal(G.decode(code(['-5', h(100)].join(','))), null, 'negative');
+  assert.equal(G.decode(code(['zzzzzzzzzzzz', h(100)].join(','))), null, 'huge');
+  assert.equal(G.decode(code(Array(41).fill(h(100)).join(','))), null, 'too many questions');
+  const misses = n => Array.from({ length: n }, () => `0:${h(50)}`).join(',');
+  assert.ok(G.decode(code(h(100), misses(200))), '200 misses are allowed');
+  assert.equal(G.decode(code(h(100), misses(201))), null, 'more than 200 misses');
+  assert.equal(G.decode(code(h(100), `0:${h(5000)}`)), null, 'a miss after the race ended');
+  assert.equal(G.decode(code(h(100), `-1:${h(50)}`)), null, 'a miss on no question');
+  const g = G.decode(code([h(100), h(60000)].join(',')));
+  assert.equal(G.total(g), 601000);
+});

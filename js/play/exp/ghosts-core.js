@@ -61,6 +61,8 @@ export const nickName = nick => (nick && ADJ[nick[0]] && ANIMAL[nick[1]] ? `${AD
 /* Plain text before base64url: v.kind.lv.seed.nick.splits.misses, with numbers in base 36 and times in
    hundredths of a second, so 20 questions stay well under 200 characters */
 const KINDS = Object.keys(SPRINTS);
+/* Limits on a decoded ghost: questions, hundredths of a second per question, misses */
+export const MAX_QUESTIONS = 40, MAX_SPLIT = 60000, MAX_MISSES = 200;
 const b36 = n => Math.max(0, Math.round(n)).toString(36);
 export function encode(g) {
   const sp = splits(g).map(ms => b36(ms / 10)).join(',');
@@ -73,10 +75,14 @@ export function decode(code) {
     const [v, k, l, seed, nick, sp, miss = ''] = b64url.dec(String(code)).split('.');
     const kind = KINDS[parseInt(k, 36)], lv = LEVEL_CODES[parseInt(l, 36)];
     if (parseInt(v, 36) !== VERSION || !kind || !lv || !sp) return null;
-    let acc = 0; const t = sp.split(',').map(x => (acc += parseInt(x, 36) * 10));
-    if (!t.length || t.length > 40 || t.some(x => !Number.isFinite(x) || x <= 0)) return null;
-    const ms = miss ? miss.split(',').map(p => p.split(':').map(x => parseInt(x, 36))).map(([i, m]) => [i, m * 10]) : [];
-    if (ms.some(([i, m]) => !(i >= 0 && i < t.length) || !Number.isFinite(m))) return null;
+    /* Each split is 0.01 s to 10 minutes; a hostile link with huge or negative times would keep the race running for ever */
+    const hs = sp.split(',').map(x => (/^[0-9a-z]+$/.test(x) ? parseInt(x, 36) : NaN));
+    if (!hs.length || hs.length > MAX_QUESTIONS || hs.some(h => !Number.isInteger(h) || h < 1 || h > MAX_SPLIT)) return null;
+    let acc = 0; const t = hs.map(h => (acc += h * 10));
+    const mp = miss ? miss.split(',') : [];
+    if (mp.length > MAX_MISSES) return null;
+    const ms = mp.map(p => p.split(':').map(x => (/^[0-9a-z]+$/.test(x) ? parseInt(x, 36) : NaN))).map(([i, m]) => [i, m * 10]);
+    if (ms.some(([i, m]) => !(Number.isInteger(i) && i >= 0 && i < t.length) || !(Number.isInteger(m) && m >= 0 && m <= acc))) return null;
     let nk = null;
     if (nick) { const [a, b] = nick.split('-').map(x => parseInt(x, 36)); if (ADJ[a] && ANIMAL[b]) nk = [a, b]; }
     const s = parseInt(seed, 36); if (!Number.isFinite(s)) return null;
