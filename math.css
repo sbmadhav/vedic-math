@@ -619,9 +619,12 @@ html.motion-paused .vm-player[open], body.calm .vm-player[open] { animation: non
 /* Sutra deep-dive modal */
 .sutra-modal { width: min(1100px, 96vw); max-width: 96vw; max-height: 92dvh; padding: 0; border: 2px solid var(--edge); border-radius: var(--radius-xl); background: var(--bg); color: var(--ink); box-shadow: 0 40px 100px -24px rgba(0,0,0,.55); overflow: auto; transform-origin: top left; }
 .sutra-modal::backdrop { background: rgba(10,12,17,.6); backdrop-filter: blur(5px); }
-.sd-inner { padding: 22px 26px 18px; }
-@media (max-width: 600px) { .sd-inner { padding: 16px; } }
-.sd-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+/* The dialog scrolls; the close button (top) and the prev / next footer (bottom) stay pinned over the content */
+.sd-inner { --sd-pad: 26px; padding: 22px var(--sd-pad) 0; }
+@media (max-width: 600px) { .sd-inner { --sd-pad: 16px; padding-top: 16px; } }
+.sd-bar { position: sticky; top: 10px; z-index: 3; height: 0; display: flex; justify-content: flex-end; }
+.sd-bar .sd-x { box-shadow: 0 4px 14px -6px color-mix(in srgb, var(--ink) 45%, transparent); }
+.sd-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding-right: 52px; }
 .sd-head h2 { font: 600 clamp(1.5rem, 3.4vw, 2.2rem)/1.15 var(--display); color: var(--plum-strong); margin: 10px 0 4px; }
 .sd-mean { font-style: italic; color: var(--ink-muted); margin: 0; font-size: 1.05rem; }
 .sd-body { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 26px; margin-top: 18px; }
@@ -631,12 +634,25 @@ html.motion-paused .vm-player[open], body.calm .vm-player[open] { animation: non
 .sd-text h3 { font: 600 1.1rem/1.2 var(--display); margin: 18px 0 6px; }
 .sd-text h3:first-child { margin-top: 0; }
 .sd-text p { margin: 6px 0; line-height: 1.6; }
+/* Worked examples: each one a disclosure (the first open), so a Player can try it before seeing the steps */
+.sd-ex-tip { margin: 0 0 8px; color: var(--ink-muted); }
 .sd-ex { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.sd-ex li { display: grid; gap: 4px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--line); }
+.sd-ex li { border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--line); }
+.sd-ex summary { display: grid; grid-template-columns: 1fr auto; column-gap: 10px; align-items: center; padding: 10px 12px; min-height: 44px; box-sizing: border-box; cursor: pointer; list-style: none; border-radius: var(--radius-md); }
+.sd-ex summary::-webkit-details-marker { display: none; }
+.sd-ex summary::after { content: '+'; grid-column: 2; grid-row: 1 / span 2; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--edge); font-weight: 800; color: var(--ink-muted); }
+.sd-ex details[open] > summary::after { content: '\2212'; }
+.sd-ex summary:hover { background: var(--bg-alt); }
+.sd-ex summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.sd-exn { grid-column: 1; font-size: 12.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-muted); }
+.sd-ex summary b { grid-column: 1; overflow-wrap: anywhere; }
+.sd-ex details > p { margin: 0; padding: 0 12px 12px; line-height: 1.6; overflow-wrap: anywhere; }
 .sd-uses { display: flex; flex-wrap: wrap; gap: 6px; } .sd-uses span { padding: 4px 10px; border-radius: 99px; background: color-mix(in srgb, var(--teal) 16%, var(--card)); font-size: 13.5px; font-weight: 700; }
 .sd-try { display: flex; flex-wrap: wrap; gap: 8px; }
-.sd-foot { display: flex; justify-content: space-between; gap: 10px; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--line); flex-wrap: wrap; }
-.sd-foot a { text-decoration: none; }
+.sd-foot { position: sticky; bottom: 0; z-index: 3; display: flex; justify-content: space-between; gap: 10px; margin: 20px calc(-1 * var(--sd-pad)) 0; padding: 12px var(--sd-pad) calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--bg); border-top: 1px solid var(--line); }
+.sd-foot a { text-decoration: none; min-width: 0; max-width: calc(50% - 5px); }
+.sd-foot a > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.sd-foot .sd-next { margin-left: auto; }
 
 /* Animated scenes */
 .sc-stage { min-height: 220px; display: grid; place-items: center; }
