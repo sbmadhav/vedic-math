@@ -6,15 +6,17 @@ import { test, expect, open, openExplore, chromiumOnly } from './fixtures';
 
 type Page = import('@playwright/test').Page;
 
-/* The header's controls in order, by kind. Works on the home page (header.nav) and on Vedic Math (header.top). */
+/* The header's controls in order, by kind. Works on the home page (the design system's md-header since v2.1, whose
+   music and kid mode switch sit in an .md-header-end group) and on Vedic Math (header.top). */
 const kinds = (page: Page) => page.evaluate(() => {
   const wrap = document.querySelector('body > header .wrap, body > header .md-wrap')!;
-  return [...wrap.children].map(e => {
-    if (e.matches('.logo, .home')) return 'brand';
+  const parts = [...wrap.children].flatMap(e => e.matches('.md-header-end') ? [...e.children] : [e]);
+  return parts.map(e => {
+    if (e.matches('.logo, .home, .md-brand')) return 'brand';
     if (e.matches('nav')) return 'nav';
     if (e.matches('#exploreBtn')) return 'explore';
     if (e.matches('#themeBtn')) return 'theme';
-    if (e.matches('.music, #mqMusic')) return 'music';
+    if (e.matches('.music, #mqMusic, .md-music')) return 'music';
     if (e.matches('#modeToggle')) return 'kid-mode';
     if (e.matches('#mqChip')) return 'player';
     return 'other:' + (e.id || e.className);
