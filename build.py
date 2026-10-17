@@ -88,6 +88,38 @@ def publishable(out):
     return sorted(keep)
 
 
+# ---------- Studio voice guards (openspec better-voice) ----------
+# The recordings never live in git: publish.mjs uploads them as a GitHub Release archive and the CI deploy unpacks it
+# into _site/voice/ after this build (tools/voice/ci-fetch.mjs). The site never talks to a speech provider, so no
+# provider host, key or token may appear in a published file. The Firebase web config's apiKey (js/cloud-config.js) is
+# a public project identifier, not a secret, and is the one key allowed.
+AUDIO_EXT = (".m4a", ".mp3", ".wav", ".ogg", ".opus", ".aac", ".flac", ".tar")
+PROVIDER_HOSTS = re.compile(r"texttospeech\.googleapis\.com|api\.elevenlabs\.io|api\.openai\.com|tts\.speech\.microsoft\.com"
+                            r"|\.cognitiveservices\.azure\.com|polly\.[a-z0-9-]+\.amazonaws\.com")
+SECRETS = re.compile(r"AIza[0-9A-Za-z_-]{30,}|\bAQ\.[0-9A-Za-z_-]{20,}|\bya29\.[0-9A-Za-z_-]{20,}|\bsk-[0-9A-Za-z_-]{20,}")
+FIREBASE_KEY = re.compile(r"apiKey:\s*[\"']AIza[0-9A-Za-z_-]{30,}[\"']")
+
+
+def check_voice(files):
+    for f in files:
+        if f.startswith("voice/") or f.lower().endswith(AUDIO_EXT):
+            fail(f"{f}: audio is never committed; record it with tools/voice/ and publish it as a release archive (tools/voice/publish.mjs)")
+
+
+def check_no_provider(out):
+    for p in sorted(out.rglob("*")):
+        if not p.is_file() or p.suffix not in (".js", ".html", ".css", ".json", ".webmanifest", ".txt", ".md"):
+            continue
+        text, rel = p.read_text(errors="ignore"), p.relative_to(out).as_posix()
+        if rel == "js/cloud-config.js":
+            text = FIREBASE_KEY.sub("", text)
+        host, secret = PROVIDER_HOSTS.search(text), SECRETS.search(text)
+        if host:
+            fail(f"{rel}: names a speech provider ({host.group(0)}); the site must only play its own recorded files")
+        if secret:
+            fail(f"{rel}: holds something shaped like an API key or token ({secret.group(0)[:6]}...); keys stay in the shell that records")
+
+
 # ---------- Content-Security-Policy ----------
 # Every origin the page itself loads from (openspec/specs/content-security). Workers started from a
 # URL get their own policy from their response, not this one, so the natural voice worker's
@@ -195,6 +227,7 @@ def main():
     check_source(html, sw)
 
     files = publishable(out)
+    check_voice(files)
     for required in ["index.html", "sw.js", "math.css", "manifest.webmanifest", "js/app.js"]:
         if required not in files:
             fail(f"{required} is missing from the publishable files")
@@ -260,6 +293,7 @@ def main():
     (out / "index.html").write_text(html)
     (out / "sw.js").write_text(sw)
     (out / ".nojekyll").write_bytes(b"")
+    check_no_provider(out)
 
     rel = out.relative_to(ROOT) if out.is_relative_to(ROOT) else out
     print(f"{rel}/: {len(files)} files, {len(imports)} modules pinned, app.js v={own[BASE + 'js/app.js']}, "

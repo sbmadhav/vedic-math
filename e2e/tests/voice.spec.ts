@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { test, expect, open, type Page } from './fixtures';
 
 /* Built-in voice (openspec better-voice, part A): pitch 1 and a calm rate, never a robotic voice when a better one
@@ -75,5 +77,97 @@ test.describe('voice settings in Me', () => {
     await open(page, '#/me');
     await expect(page.locator('#vvPoor')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+  });
+});
+
+/* ---------- Studio voice (openspec better-voice, part B) ----------
+   The real recordings come from a release archive at deploy time, so these tests serve a fake index and tiny tone
+   files (e2e/fixtures/voice/) through page.route. js/voice.js records the voice that said each line in
+   window.__voiceLog when a test puts an array there. */
+
+const FIX = join(__dirname, '..', 'fixtures', 'voice');
+const LINE_M4A = readFileSync(join(FIX, 'line.m4a')), PACK_M4A = readFileSync(join(FIX, 'pack.m4a'));
+/* lineHash('en-US-Chirp3-HD-Leda', 'How many dots are there?') and its first 32 bits (test/voice-plan.test.mjs pins the hash) */
+const DOTS_HASH = '1046a691a40c5f', DOTS_KEY = 273065617;
+const NUMBER_IDS = [...Array.from({ length: 100 }, (_, n) => [`n:${n}`, `n:${n}.`]).flat(), ...['hundred', 'thousand', 'million', 'point', 'negative'].flatMap(w => [`w:${w}`, `w:${w}.`])];
+const FRAMES = ['f:plus', 'f:minus', 'f:equals what?', 'f:equals'];
+const PROVIDERS = /texttospeech\.googleapis\.com|api\.elevenlabs\.io|api\.openai\.com|tts\.speech\.microsoft\.com|amazonaws\.com\/.*polly/;
+
+async function fakeStudio(page: Page, { lineStatus = 200 } = {}) {
+  await page.addInitScript(() => { (window as any).__voiceLog = []; });
+  const index = { voice: 'en-US-Chirp3-HD-Leda', speed: 0.95, base: '/vedic-math/voice/', tag: 'voice-0123456789', sha256: '0'.repeat(64),
+    lineSet: 'l/set.test.bin', dir: 'p/dir.test.json', packs: [{ name: 'core', audio: 'p/core.test.m4a', map: 'p/core.test.json', bytes: PACK_M4A.length, clips: 0 }],
+    coveredSkills: ['k-count'], counts: { lines: 1, clips: NUMBER_IDS.length + FRAMES.length } };
+  const ids = [...NUMBER_IDS, ...FRAMES];
+  const requests: string[] = [];
+  page.on('request', r => { if (r.url().includes('/vedic-math/voice/')) requests.push(r.url()); });
+  await page.route('**/vedic-math/js/voice-index.js*', r => r.fulfill({ contentType: 'text/javascript', body: `export const STUDIO = ${JSON.stringify(index)};` }));
+  await page.route('**/vedic-math/voice/**', r => {
+    const u = new URL(r.request().url()).pathname.replace('/vedic-math/voice/', '');
+    if (u === 'l/set.test.bin') return r.fulfill({ contentType: 'application/octet-stream', body: Buffer.from(Uint32Array.from([DOTS_KEY]).buffer) });
+    if (u === 'p/dir.test.json') return r.fulfill({ json: Object.fromEntries(ids.map(id => [id, 'core'])) });
+    if (u === 'p/core.test.json') return r.fulfill({ json: { rate: 24000, gap: 0.25, clips: Object.fromEntries(ids.map(id => [id, [0.25, 0.4]])) } });
+    if (u === 'p/core.test.m4a') return r.fulfill({ contentType: 'audio/mp4', body: PACK_M4A });
+    if (u === `l/${DOTS_HASH}.m4a`) return lineStatus === 200 ? r.fulfill({ contentType: 'audio/mp4', body: LINE_M4A }) : r.fulfill({ status: lineStatus, body: 'not found' });
+    return r.fulfill({ status: 404, body: 'not found' });
+  });
+  return requests;
+}
+const vlog = (page: Page) => page.evaluate(() => (window as any).__voiceLog as string[]);
+
+test.describe('studio voice', () => {
+  test.use({ seedMode: 'explorer' });
+
+  test('an Explorer line with a recording plays its whole file, with no call to a speech provider', async ({ page }) => {
+    const provider: string[] = []; page.on('request', r => { if (PROVIDERS.test(r.url())) provider.push(r.url()); });
+    await fakeSpeech(page, [ENHANCED]);
+    const requests = await fakeStudio(page);
+    await open(page, '#/skill/k-count');
+    await expect.poll(() => vlog(page)).toContain('studio:line');
+    expect(await spoken(page)).toEqual([]); // the built-in voice said nothing
+    expect(requests.some(u => u.endsWith(`/l/${DOTS_HASH}.m4a`))).toBe(true);
+    expect(provider).toEqual([]);
+  });
+
+  test('a three-digit sum is said from clips once the core pack is loaded', async ({ page }) => {
+    await fakeSpeech(page, [ENHANCED]);
+    await fakeStudio(page);
+    const core = page.waitForResponse(r => r.url().endsWith('/vedic-math/voice/p/core.test.m4a'));
+    await open(page, '#/skill/2-add1000');
+    await core;
+    await page.waitForTimeout(300); // decode
+    await page.locator('#practice').getByRole('button', { name: 'Hear it' }).click();
+    await expect.poll(async () => (await vlog(page)).at(-1)).toBe('studio:clips');
+  });
+
+  test('a missing recording falls back to the built-in voice for the whole line', async ({ page }) => {
+    await fakeSpeech(page, [ENHANCED]);
+    await fakeStudio(page, { lineStatus: 404 });
+    await open(page, '#/skill/k-count');
+    await expect.poll(() => vlog(page)).toContain('builtin');
+    expect(await vlog(page)).not.toContain('studio:line');
+    await expect.poll(async () => (await spoken(page)).map(s => s.text)).toContain('How many dots are there?');
+  });
+
+  test('leaving the page stops a studio line', async ({ page }) => {
+    await fakeSpeech(page, [ENHANCED]);
+    await fakeStudio(page);
+    await open(page, '#/skill/k-count');
+    await expect.poll(() => vlog(page)).toContain('studio:line');
+    await page.locator('.mq-nav a[href="#/learn"]').first().click();
+    await expect.poll(async () => (await vlog(page)).slice((await vlog(page)).indexOf('studio:line'))).toContain('stop');
+    const after = await vlog(page);
+    expect(after.slice(after.lastIndexOf('stop') + 1).filter(e => e.startsWith('studio:'))).toEqual([]);
+  });
+});
+
+test.describe('studio voice with read aloud off', () => {
+  test.use({ seedMode: 'challenger' });
+  test('no audio is fetched', async ({ page }) => {
+    await fakeSpeech(page, [ENHANCED]);
+    const requests = await fakeStudio(page);
+    await open(page, '#/skill/3-mult');
+    await page.waitForTimeout(2500); // past the idle warm-up
+    expect(requests).toEqual([]);
   });
 });

@@ -104,7 +104,7 @@ function mount(fn) {
 const knownId = (kind, id) => kind === 'grade' ? !!gradeOf(id) : kind === 'skill' ? !!byId[id] : kind === 'trick' ? TRICKS.some(t => t.id === id)
   : kind === 'sutra' ? ALL_SUTRAS.some(c => c.id === id) : kind === 'game' ? GAMES.some(g => g.id === id) : false;
 function render() {
-  try { speechSynthesis.cancel(); } catch (e) {}
+  fx.stopSpeaking(); /* every voice: built-in, studio and natural */
   const h = location.hash || '#/';
   render.from = render.at; render.at = h; /* where a Star's Back button returns to */
   // Sutra deep dives open over the sutras page without re-rendering it
@@ -1397,6 +1397,7 @@ function icon(n) {
 const rm = $('#resetMode'); if (rm) rm.onclick = () => { store.updatePlayer({ mode: null }); fx.applyMode(); location.hash = '#/'; render(); window.scrollTo({ top: 0 }); };
 fx.applyMode();
 fx.applyPrefs(); /* body.calm and body.text-plus from this device's Calm and text size */
+fx.warmVoice(); /* the studio voice's core pack, while idle, when read aloud is on */
 gm.init();
 metrics.returnCheck(); /* before the first route view: remembers this device's first visit */
 render();

@@ -1,18 +1,18 @@
 /* better-voice listening prototype: makes the Kokoro audio for docs/prototypes/voice/ locally.
    No cloud service: kokoro-js runs the open Kokoro-82M model (Apache-2.0) on this machine.
    Needs macOS afconvert for AAC (m4a), which every current browser plays.
-   Run:  cd docs/prototypes/voice/tools && npm install && node make-clips.mjs
+   Run:  cd tools/voice && npm install && node make-clips.mjs
    For each voice in VOICES it writes ../audio/<voice>/whole/<id>.m4a (one clip per item, the quality ceiling) and
    ../audio/<voice>/stitch.m4a + stitch.json (one sprite: the number clips, scale words and word frames the items
    need, numbers in mid-sentence and end-of-sentence takes), then ../items.json.
    Every generated clip is cached in .cache/ (git-ignored), so a stopped run resumes where it left off.
    ALL=1 also makes every number 0 to 99 in both takes (slow on a busy machine; about 210 clips per voice). */
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
-import { normalize } from '../../../../js/voice.js';
-import { numClips, splitParts } from './stitch-plan.mjs';
+import { normalize } from '../../js/voice.js';
+import { numClips, splitParts } from '../../js/voice-plan.js';
 import { speakerFor, CLOUD, trim, m4a, medianF0, RATE, BITRATE } from './voice-lib.mjs';
 
-const OUT = new URL('../', import.meta.url).pathname;
+const OUT = new URL('../../docs/prototypes/voice/', import.meta.url).pathname;
 const GAP = 0.25; // seconds of silence between clips in the sprite, so the decoder's start offset never cuts a word
 /* The voices on the page. Kokoro is free and local. The paid cloud voices are made only when their key is set
    (for example GOOGLE_TTS_KEY=... or GOOGLE_TTS_TOKEN=$(gcloud auth print-access-token) node make-clips.mjs); voices already made stay in items.json.

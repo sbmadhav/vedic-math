@@ -270,7 +270,7 @@ pause "Press Enter."
 stage "Listen and pick one voice"
 if ! curl -s -o /dev/null http://localhost:8180/vedic-math/docs/prototypes/voice/; then
   say "Starting the listening page server on port 8180."
-  (cd ../../../.. && nohup node e2e/local-server.mjs 8180 >/dev/null 2>&1 &)
+  (cd ../.. && nohup node e2e/local-server.mjs 8180 >/dev/null 2>&1 &)
   sleep 2
 fi
 open_url "http://localhost:8180/vedic-math/docs/prototypes/voice/"

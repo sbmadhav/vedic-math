@@ -167,3 +167,31 @@ test('the build fails on a CSP in the source, an inline event handler or a javas
     assert.match(r.stderr, /CSP|Content-Security-Policy/);
   }
 });
+
+/* Studio voice (openspec better-voice): recordings never come from git, and the site never names a speech provider
+   or carries a key. The Firebase web config's apiKey is public and is the one key allowed. */
+test('the build fails on committed audio or a voice/ folder', () => {
+  for (const f of ['voice/l/0123456789abcd.m4a', 'js/clip.mp3']) {
+    const p = join(dir, f);
+    cpSync(join(repo, 'js/voice-plan.js'), p, { recursive: true }); // any bytes will do
+    execFileSync('git', ['add', '-f', f], { cwd: dir, env }); // committed by force, past .gitignore
+    const r = tryBuild();
+    execFileSync('git', ['rm', '-q', '--cached', f], { cwd: dir, env });
+    rmSync(p); rmSync(join(dir, 'voice'), { recursive: true, force: true });
+    assert.notEqual(r.status, 0, f);
+    assert.match(r.stderr, /audio is never committed/);
+  }
+});
+
+test('the build fails when a published file names a speech provider or holds a key or token', () => {
+  const key = 'AIza' + 'Sy'.padEnd(35, 'x'), token = 'ya29' + '.'.padEnd(30, 'a');
+  for (const line of ["fetch('https://texttospeech.googleapis.com/v1/text:synthesize')", `const k = '${key}';`, `const t = '${token}';`, "const u = 'https://api.elevenlabs.io/v1';"]) {
+    const f = join(dir, 'js/voice-plan.js'), orig = readFileSync(f, 'utf8');
+    writeFileSync(f, orig + '\n// ' + line + '\n');
+    const r = tryBuild();
+    writeFileSync(f, orig);
+    assert.notEqual(r.status, 0, line);
+    assert.match(r.stderr, /speech provider|API key or token/, line);
+  }
+  build(); // and the real source passes, Firebase apiKey included
+});

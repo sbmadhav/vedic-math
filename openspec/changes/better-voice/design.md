@@ -24,7 +24,7 @@
 
 ## Inventory
 
-Run `node docs/prototypes/voice/tools/inventory.mjs 1000 1`. It writes `inventory.json`. It samples every source of spoken text, normalizes each line with the real `normalize()`, and splits it with `stitch-plan.mjs` into numbers, word frames and pauses.
+Run `node tools/voice/inventory.mjs 1000 1`. It writes `inventory.json`. It samples every source of spoken text, normalizes each line with the real `normalize()`, and splits it with `stitch-plan.mjs` into numbers, word frames and pauses.
 
 The sample covers:
 - 1,000 lines per Skill and generator level (135 Skills x 3 levels, question and first hint);

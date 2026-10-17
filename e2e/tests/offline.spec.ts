@@ -291,3 +291,21 @@ test('the main site\'s root worker leaves /vedic-math/ alone', async ({ page, ba
   for (const [name, paths] of Object.entries(caches_))
     if (name.startsWith('madhav-')) expect(paths.filter(p => p.startsWith('/vedic-math')), `${name} holds Vedic Math files`).toEqual([]);
 });
+
+/* Studio voice (openspec better-voice): audio under /vedic-math/voice/ is cache first in vedic-math-voice, a cache every
+   deploy keeps, so a line heard once plays offline. Needs a built site with audio in _site/voice/ (the CI deploy unpacks
+   the release archive there; locally, copy e2e/fixtures/voice/pack.m4a to _site/voice/p/core.test.m4a). */
+test('studio voice audio heard once is served offline', async ({ page, context }) => {
+  await open(page);
+  await workerReady(page);
+  const url = '/vedic-math/voice/p/core.test.m4a';
+  const first = await page.evaluate(u => fetch(u).then(async r => ({ status: r.status, size: (await r.arrayBuffer()).byteLength })), url);
+  test.skip(first.status === 404, 'no studio voice audio in this build (_site/voice/ is filled by the deploy)');
+  expect(first.status).toBe(200);
+  expect(await page.evaluate(() => caches.keys())).toContain('vedic-math-voice');
+  await goOffline(context);
+  await expectOffline(page);
+  const again = await page.evaluate(u => fetch(u).then(async r => ({ status: r.status, size: (await r.arrayBuffer()).byteLength }), () => ({ status: 0, size: 0 })), url);
+  expect(again).toEqual(first);
+  await goOnline(context);
+});
