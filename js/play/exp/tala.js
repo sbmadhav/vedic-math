@@ -366,7 +366,7 @@ export function mount({ root, signal, params }) {
         </div>
       </section>
       <details class="tl-why"><summary>The arithmetic of landing</summary>
-        <p>Phrase 1 starts on sam (beat 1). Each phrase moves the start ${p} beats on, and the cycle wraps around after ${tala.beats}. So phrase k starts on beat ((k − 1) × p mod n) + 1. That is clock arithmetic: the remainder after dividing by the cycle.</p>
+        <p>Phrase 1 starts on sam (beat 1). Each phrase moves the start <span class="tl-why-p">${p}</span> beats on, and the cycle wraps around after <span class="tl-why-n">${tala.beats}</span>. So phrase k starts on beat ((k − 1) × p mod n) + 1. That is clock arithmetic: the remainder after dividing by the cycle.</p>
         <p>The phrases come back to sam after lcm(p, n) ÷ p phrases. If p and n share no factor, every beat gets a turn, and joining the starts draws a star polygon. If they do share one, only some beats are visited and the shape is smaller.</p>
       </details>`;
     const svg = scene.querySelector('.tl-csvg'), ask = scene.querySelector('.tl-ask'), result = scene.querySelector('.tl-result'), allBtn = scene.querySelector('.tl-all');
@@ -384,6 +384,8 @@ export function mount({ root, signal, params }) {
         <text x="${cx}" y="${cy - 6}" text-anchor="middle" class="tl-word tl-cword">${tala.beats}</text>
         <text x="${cx}" y="${cy + 22}" text-anchor="middle" class="tl-wsub tl-csub">beats in ${tala.name}</text>`;
       beatsEl = [null, ...svg.querySelectorAll('.tl-cb')];
+      /* the explanation follows the chosen phrase length and tala */
+      scene.querySelector('.tl-why-p').textContent = p; scene.querySelector('.tl-why-n').textContent = n;
       scene.querySelector('.tl-hands').innerHTML = `<b>${tala.name}</b>: ${tala.note}.`;
       scene.querySelector('.tl-phrase').innerHTML = `Phrase of ${p}: <span class="tl-ph">${C.phrase(p).map(w => `<i>${w}</i>`).join(' ')}</span>`;
       drawStar(); prompt();

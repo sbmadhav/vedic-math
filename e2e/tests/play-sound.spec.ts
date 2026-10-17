@@ -198,6 +198,18 @@ test.describe('Tala Lab', () => {
     await expect(page.locator('.tl-cb[data-b="6"]')).toHaveClass(/is-guess/);
   });
 
+  test('the Cycle explanation follows the phrase length and the tala', async ({ page }) => {
+    await open(page, '#/games/tala/cycle');
+    await expect(page.locator('.tl-why-p')).toHaveText('5');
+    await expect(page.locator('.tl-why-n')).toHaveText('8');
+    await page.locator('.tl-cy [data-p="7"]').click();
+    await expect(page.locator('.tl-why-p')).toHaveText('7');
+    const rupaka = page.locator('[data-tala="rupaka"]');
+    await rupaka.click();
+    await expect(page.locator('.tl-why-n')).toHaveText((await rupaka.locator('small').textContent())!.trim());
+    await expect(page.locator('.tl-why-p')).toHaveText('7');
+  });
+
   test('tihai puzzle 2 does not open already solved', async ({ page }) => {
     await open(page, '#/games/tala/tihai');
     await page.locator('.tl-pzb[data-z="1"]').click();
