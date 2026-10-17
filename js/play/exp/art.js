@@ -61,14 +61,14 @@ export function mount({ root, signal, params }) {
   const tab = TABS.find(x => x.id === params[0]) ? params[0] : 'times';
   const shared = params[1] ? A.decodePiece(params[1], b64url) : null;
   if (shared) track('art/open-shared', A.describe(shared));
-  root.innerHTML = `<div class="md-wrap ar">
+  root.innerHTML = `<div class="md-wrap ms">
     ${head({ title: 'Mandala Studio', kicker: 'Math you can hang on a wall', intro: t({ explorer: 'Move a slider and watch a pattern bloom. Then press Hear it.', challenger: 'Every picture here is made by a rule you control. Change a number, watch it change, hear it sing, save it as a wallpaper.', pro: 'Modular chords, binomial remainders, digital roots and Śulba rope geometry. Each piece is a parameter set you can animate, sonify, export and share.' }), color: 'coral' })}
-    <div class="ar-top"><nav class="ar-tabs" aria-label="Studio rooms">${TABS.map(x => `<a href="#/games/art/${x.id}" ${x.id === tab ? 'aria-current="page"' : ''}><b>${x.name}</b><small>${x.sub}</small></a>`).join('')}</nav>
-    <button type="button" class="md-btn ar-surprise">Surprise me</button></div>
-    <div class="ar-room"></div>
+    <div class="ms-top"><nav class="ms-tabs" aria-label="Studio rooms">${TABS.map(x => `<a href="#/games/art/${x.id}" ${x.id === tab ? 'aria-current="page"' : ''}><b>${x.name}</b><small>${x.sub}</small></a>`).join('')}</nav>
+    <button type="button" class="md-btn ms-surprise">Surprise me</button></div>
+    <div class="ms-room"></div>
   </div>`;
-  const wrap = root.querySelector('.ar'), room = wrap.querySelector('.ar-room');
-  on(wrap.querySelector('.ar-surprise'), 'click', () => {
+  const wrap = root.querySelector('.ms'), room = wrap.querySelector('.ms-room');
+  on(wrap.querySelector('.ms-surprise'), 'click', () => {
     const p = A.surprise(rng(seedOf('art-surprise', Date.now())));
     track('art/surprise', A.describe(p));
     location.hash = `#/games/art/${tabOf(p.k)}/${A.encodePiece(p, b64url)}`;
@@ -79,42 +79,42 @@ export function mount({ root, signal, params }) {
   /* ---------- Shared room frame ---------- */
   function frame({ controls, why, label }) {
     room.innerHTML = `
-      <section class="ar-stage px-stage">
-        <div class="ar-grid">
-          <figure class="ar-fig"><canvas class="ar-cv" role="img" aria-label="${esc(label)}"></canvas><figcaption class="ar-cap" aria-live="off"></figcaption></figure>
-          <div class="ar-side">${controls}
-            <div class="ar-tools">
-              <button type="button" class="md-btn md-btn--primary ar-hear" aria-pressed="false"><span class="ar-hear-ic" aria-hidden="true"></span><span class="ar-hear-l">Hear it</span></button>
-              <button type="button" class="md-btn ar-save">Save</button>
-              <button type="button" class="md-btn ar-share">Share</button>
-              <details class="ar-wall"><summary class="md-btn">Wallpaper</summary>
-                <div class="ar-wallbox">
+      <section class="ms-stage px-stage">
+        <div class="ms-grid">
+          <figure class="ms-fig"><canvas class="ms-cv" role="img" aria-label="${esc(label)}"></canvas><figcaption class="ms-cap" aria-live="off"></figcaption></figure>
+          <div class="ms-side">${controls}
+            <div class="ms-tools">
+              <button type="button" class="md-btn md-btn--primary ms-hear" aria-pressed="false"><span class="ms-hear-ic" aria-hidden="true"></span><span class="ms-hear-l">Hear it</span></button>
+              <button type="button" class="md-btn ms-save">Save</button>
+              <button type="button" class="md-btn ms-share">Share</button>
+              <details class="ms-wall"><summary class="md-btn">Wallpaper</summary>
+                <div class="ms-wallbox">
                   <fieldset><legend>Size</legend>${Object.keys(WALL).map((k, i) => `<label><input type="radio" name="arSize" value="${k}" ${i === (matchMedia('(max-width: 700px)').matches ? 0 : 1) ? 'checked' : ''}> ${k[0].toUpperCase() + k.slice(1)} <small>${WALL[k].join(' × ')}</small></label>`).join('')}</fieldset>
                   <fieldset><legend>Background</legend><label><input type="radio" name="arBg" value="night" checked> Night</label><label><input type="radio" name="arBg" value="day"> Day</label></fieldset>
-                  <button type="button" class="md-btn md-btn--primary ar-download">Download PNG</button>
+                  <button type="button" class="md-btn md-btn--primary ms-download">Download PNG</button>
                 </div>
               </details>
             </div>
           </div>
         </div>
       </section>
-      ${why ? `<details class="ar-why"><summary>${why[0]}</summary>${why[1]}</details>` : ''}`;
-    return { cv: room.querySelector('.ar-cv'), cap: room.querySelector('.ar-cap'), hearBtn: room.querySelector('.ar-hear') };
+      ${why ? `<details class="ms-why"><summary>${why[0]}</summary>${why[1]}</details>` : ''}`;
+    return { cv: room.querySelector('.ms-cv'), cap: room.querySelector('.ms-cap'), hearBtn: room.querySelector('.ms-hear') };
   }
-  function setHear(btn, on) { btn.setAttribute('aria-pressed', String(on)); btn.querySelector('.ar-hear-l').textContent = on ? 'Stop' : 'Hear it'; }
+  function setHear(btn, on) { btn.setAttribute('aria-pressed', String(on)); btn.querySelector('.ms-hear-l').textContent = on ? 'Stop' : 'Hear it'; }
   /* Save, share and wallpaper for whatever piece getPiece() returns */
   function wireTools(getPiece) {
-    on(room.querySelector('.ar-save'), 'click', () => {
+    on(room.querySelector('.ms-save'), 'click', () => {
       const p = getPiece(), c = A.encodePiece(p, b64url);
       S.gallery = [{ c, at: dayKey() }, ...S.gallery.filter(x => x.c !== c)].slice(0, 40); save();
       toast('Saved to your gallery'); say(`Saved ${A.describe(p)} to your gallery`); track('art/save', A.describe(p));
     }, signal);
-    on(room.querySelector('.ar-share'), 'click', () => { const p = getPiece(); share({ title: 'Mandala Studio', text: `${A.describe(p)}: a piece I made from math.`, url: shareUrl(`#/games/art/${tabOf(p.k)}/${A.encodePiece(p, b64url)}`) }); }, signal);
-    on(room.querySelector('.ar-download'), 'click', () => {
+    on(room.querySelector('.ms-share'), 'click', () => { const p = getPiece(); share({ title: 'Mandala Studio', text: `${A.describe(p)}: a piece I made from math.`, url: shareUrl(`#/games/art/${tabOf(p.k)}/${A.encodePiece(p, b64url)}`) }); }, signal);
+    on(room.querySelector('.ms-download'), 'click', () => {
       const p = getPiece(), size = room.querySelector('[name="arSize"]:checked').value, bg = room.querySelector('[name="arBg"]:checked').value;
       const cv = exportCanvas(p, WALL[size], wallPal(readPal(), bg));
       downloadCanvas(cv, `mandala-${p.k}-${size}.png`); toast('Wallpaper saved'); track('art/wallpaper', `${p.k} ${size} ${bg}`);
-      room.querySelector('.ar-wall').open = false;
+      room.querySelector('.ms-wall').open = false;
     }, signal);
   }
 
@@ -128,24 +128,24 @@ export function mount({ root, signal, params }) {
     const { cv, cap, hearBtn } = frame({
       label: 'A times-table mandala',
       controls: `
-        <label class="ar-sl"><span>Points around the circle <b class="ar-nv">${piece.n}</b></span><input type="range" class="ar-n" min="10" max="${nMax}" step="1" value="${piece.n}" aria-label="Points"></label>
-        <label class="ar-sl"><span>Multiply by <b class="ar-mv">${piece.m.toFixed(2)}</b></span><input type="range" class="ar-m" min="1" max="${mMax}" step="0.01" value="${piece.m}" aria-label="Multiplier"></label>
-        <div class="ar-row"><button type="button" class="md-btn ar-drift" aria-pressed="false"><span class="ar-drift-ic" aria-hidden="true"></span> Drift</button>
-          <button type="button" class="md-chip ar-nudge" data-d="-1" aria-label="Multiplier minus one">&minus;1</button><button type="button" class="md-chip ar-nudge" data-d="-0.01" aria-label="Multiplier minus a hundredth">&minus;.01</button><button type="button" class="md-chip ar-nudge" data-d="0.01" aria-label="Multiplier plus a hundredth">+.01</button><button type="button" class="md-chip ar-nudge" data-d="1" aria-label="Multiplier plus one">+1</button></div>
-        <div class="ar-row ar-try" role="group" aria-label="Try a multiplier"><span class="px-note">Try</span>${TRY.map(m => `<button type="button" class="md-chip" data-m="${m}">× ${m}</button>`).join('')}</div>
+        <label class="ms-sl"><span>Points around the circle <b class="ms-nv">${piece.n}</b></span><input type="range" class="ms-n" min="10" max="${nMax}" step="1" value="${piece.n}" aria-label="Points"></label>
+        <label class="ms-sl"><span>Multiply by <b class="ms-mv">${piece.m.toFixed(2)}</b></span><input type="range" class="ms-m" min="1" max="${mMax}" step="0.01" value="${piece.m}" aria-label="Multiplier"></label>
+        <div class="ms-row"><button type="button" class="md-btn ms-drift" aria-pressed="false"><span class="ms-drift-ic" aria-hidden="true"></span> Drift</button>
+          <button type="button" class="md-chip ms-nudge" data-d="-1" aria-label="Multiplier minus one">&minus;1</button><button type="button" class="md-chip ms-nudge" data-d="-0.01" aria-label="Multiplier minus a hundredth">&minus;.01</button><button type="button" class="md-chip ms-nudge" data-d="0.01" aria-label="Multiplier plus a hundredth">+.01</button><button type="button" class="md-chip ms-nudge" data-d="1" aria-label="Multiplier plus one">+1</button></div>
+        <div class="ms-row ms-try" role="group" aria-label="Try a multiplier"><span class="px-note">Try</span>${TRY.map(m => `<button type="button" class="md-chip" data-m="${m}">× ${m}</button>`).join('')}</div>
         ${palChips(piece.p)}
-        <div class="ar-read" aria-live="off"></div>`,
+        <div class="ms-read" aria-live="off"></div>`,
       why: ['How does a times table draw this?', `<p>Put ${piece.n} points around a circle and number them 0, 1, 2 and so on. For each point k, draw a line to point m × k. When m × k runs past the last point, keep counting around the circle: that is the remainder, m × k mod n.</p>
         <p>With m = 2 the lines wrap into a <b>cardioid</b> (heart-shaped). m = 3 gives a <b>nephroid</b> (kidney-shaped), and in general m gives a curve with m − 1 cusps, an epicycloid: the path of a point on a wheel rolling around another wheel. Between whole numbers the lines slide, which is why Drift looks alive.</p>
         <p>Hear it plays every chord as it is drawn. Long chords sound low and short ones high, like long and short strings.</p>`]
     });
     const view = stageCanvas(cv, signal, (g, w, h, pal) => D.times(g, w, h, pal, piece, { upto, hot }));
-    const nIn = room.querySelector('.ar-n'), mIn = room.querySelector('.ar-m'), read = room.querySelector('.ar-read'), driftBtn = room.querySelector('.ar-drift');
+    const nIn = room.querySelector('.ms-n'), mIn = room.querySelector('.ms-m'), read = room.querySelector('.ms-read'), driftBtn = room.querySelector('.ms-drift');
     const update = (quiet) => {
-      room.querySelector('.ar-nv').textContent = piece.n; room.querySelector('.ar-mv').textContent = piece.m.toFixed(2);
+      room.querySelector('.ms-nv').textContent = piece.n; room.querySelector('.ms-mv').textContent = piece.m.toFixed(2);
       nIn.value = piece.n; mIn.value = piece.m;
       const name = A.curveName(piece.m, piece.n), k = 7 % piece.n, tg = A.target(k, piece.m, piece.n);
-      read.innerHTML = `${name ? `<p class="ar-name"><b>${name.name}</b> <span>${name.note}</span></p>` : ''}<p class="ar-rule">Point <b>${k}</b> joins point <b>${Math.round(tg * 100) / 100}</b> because ${piece.m} × ${k} = ${Math.round(piece.m * k * 100) / 100}${piece.m * k >= piece.n ? `, and around ${piece.n} points that wraps to ${Math.round(tg * 100) / 100}` : ''}.</p>`;
+      read.innerHTML = `${name ? `<p class="ms-name"><b>${name.name}</b> <span>${name.note}</span></p>` : ''}<p class="ms-rule">Point <b>${k}</b> joins point <b>${Math.round(tg * 100) / 100}</b> because ${piece.m} × ${k} = ${Math.round(piece.m * k * 100) / 100}${piece.m * k >= piece.n ? `, and around ${piece.n} points that wraps to ${Math.round(tg * 100) / 100}` : ''}.</p>`;
       if (name && !quiet) { const key = 't' + Math.round(piece.m); if (!S.seen.includes(key)) { S.seen.push(key); save(); say(`You found a ${name.name}.`); } }
       cv.setAttribute('aria-label', `Times-table mandala: ${piece.n} points, multiplied by ${piece.m}${name ? ', a ' + name.name : ''}`);
       cap.textContent = `${piece.n} points · × ${piece.m.toFixed(2)}`;
@@ -155,7 +155,7 @@ export function mount({ root, signal, params }) {
     on(nIn, 'input', () => { piece.n = +nIn.value; update(); }, signal);
     on(mIn, 'input', () => { piece.m = +mIn.value; stopDrift(); update(); }, signal);
     on(room, 'click', e => {
-      const b = e.target.closest('[data-m]'), nd = e.target.closest('.ar-nudge');
+      const b = e.target.closest('[data-m]'), nd = e.target.closest('.ms-nudge');
       if (b) { stopDrift(); glide(+b.dataset.m); track('art/try', 'm ' + b.dataset.m); }
       if (nd) { stopDrift(); piece.m = Math.round(Math.min(mMax, Math.max(1, piece.m + +nd.dataset.d)) * 100) / 100; update(); }
     }, signal);
@@ -201,33 +201,33 @@ export function mount({ root, signal, params }) {
     const { cv, cap, hearBtn } = frame({
       label: 'Meru-prastāra triangle',
       controls: `
-        <label class="ar-sl"><span>Rows <b class="ar-rv">${piece.rows}</b></span><input type="range" class="ar-rows" min="4" max="${rMax}" step="1" value="${piece.rows}" aria-label="Rows"></label>
-        <div class="ar-row" role="group" aria-label="Color by remainder"><span class="px-note">Color by remainder after dividing by</span>${[2, 3, 4, 5, 6, 7, 8, 9].map(m => `<button type="button" class="md-chip" data-mod="${m}" aria-pressed="${m === piece.mod}">${m}</button>`).join('')}</div>
+        <label class="ms-sl"><span>Rows <b class="ms-rv">${piece.rows}</b></span><input type="range" class="ms-rows" min="4" max="${rMax}" step="1" value="${piece.rows}" aria-label="Rows"></label>
+        <div class="ms-row" role="group" aria-label="Color by remainder"><span class="px-note">Color by remainder after dividing by</span>${[2, 3, 4, 5, 6, 7, 8, 9].map(m => `<button type="button" class="md-chip" data-mod="${m}" aria-pressed="${m === piece.mod}">${m}</button>`).join('')}</div>
         ${palChips(piece.p)}
-        <div class="ar-row"><span class="px-note">Tap a row to hear it, or</span><button type="button" class="md-chip ar-rowb" data-d="-1" aria-label="Previous row">&uarr;</button><button type="button" class="md-chip ar-rowb" data-d="1" aria-label="Next row">&darr;</button></div>
-        <div class="ar-row"><button type="button" class="md-btn ar-diag" aria-pressed="false">Shallow diagonals</button></div>
-        <div class="ar-read" aria-live="off"></div>`,
+        <div class="ms-row"><span class="px-note">Tap a row to hear it, or</span><button type="button" class="md-chip ms-rowb" data-d="-1" aria-label="Previous row">&uarr;</button><button type="button" class="md-chip ms-rowb" data-d="1" aria-label="Next row">&darr;</button></div>
+        <div class="ms-row"><button type="button" class="md-btn ms-diag" aria-pressed="false">Shallow diagonals</button></div>
+        <div class="ms-read" aria-live="off"></div>`,
       why: ['Where does this triangle come from?', `<p>Each cell is the sum of the two above it. Piṅgala's <i>Chandaḥśāstra</i>, a work on Sanskrit poetic meter from around the 3rd or 2nd century BCE, gave rules for counting meters that these numbers answer; Halāyudha's 10th century commentary describes the triangle itself and calls it <i>meru-prastāra</i>, the staircase of Mount Meru. The same triangle was studied in Persia and China, and by Blaise Pascal in 17th century France, whose name it carries in many schools.</p>
         <p>Row r, cell k counts the ways to choose k long syllables in a line of r syllables. Color only the remainders after dividing by 2 and the Sierpinski triangle appears: copies of itself inside itself. Prime numbers give the cleanest fractals.</p>
         <p>Add the shallow diagonals and you get 1, 1, 2, 3, 5, 8, 13: the number of rhythms of a given length made of short (1 beat) and long (2 beats) syllables. Virahāṅka (around the 7th century), Gopāla and Hemachandra (12th century) counted them, before Fibonacci's book of 1202.</p>`]
     });
     const view = stageCanvas(cv, signal, (g, w, h, pal) => { geom = D.meru(g, w, h, pal, piece, { upto, row, diag, values }); });
-    const read = room.querySelector('.ar-read'), rowsIn = room.querySelector('.ar-rows'), diagBtn = room.querySelector('.ar-diag');
+    const read = room.querySelector('.ms-read'), rowsIn = room.querySelector('.ms-rows'), diagBtn = room.querySelector('.ms-diag');
     const update = () => {
-      room.querySelector('.ar-rv').textContent = piece.rows;
+      room.querySelector('.ms-rv').textContent = piece.rows;
       cap.textContent = `${piece.rows} rows · remainders mod ${piece.mod}`;
       cv.setAttribute('aria-label', `Meru-prastāra with ${piece.rows} rows, colored by remainder after dividing by ${piece.mod}`);
       view.redraw();
     };
     const showRow = r => {
       const vals = A.meruRows(r + 1)[r];
-      read.innerHTML = `<p class="ar-rule">Row ${r}: <span class="ar-nums">${vals.length > 12 ? vals.slice(0, 6).join(', ') + ', …, ' + vals.slice(-3).join(', ') : vals.join(', ')}</span>. ${lv === 'explorer' ? '' : `They add up to 2<sup>${r}</sup> = ${2n ** BigInt(r)}.`}</p>`;
+      read.innerHTML = `<p class="ms-rule">Row ${r}: <span class="ms-nums">${vals.length > 12 ? vals.slice(0, 6).join(', ') + ', …, ' + vals.slice(-3).join(', ') : vals.join(', ')}</span>. ${lv === 'explorer' ? '' : `They add up to 2<sup>${r}</sup> = ${2n ** BigInt(r)}.`}</p>`;
     };
     const showDiag = d => {
       const cells = A.diagonalCells(d), parts = cells.map(([r, i]) => String(A.binom(r, i)));
       const m = A.meters(d);
-      read.innerHTML = `<p class="ar-rule">Diagonal ${d}: ${parts.join(' + ')} = <b>${A.diagonalSum(d)}</b></p>
-        <p class="ar-meters">Rhythms ${d} beats long from short (S, 1 beat) and long (L, 2 beats) syllables: <b>${m.length}</b>${m.length <= 13 ? ` <span>${m.map(s => `<i>${s.split('').join(' ')}</i>`).join(' ')}</span>` : ''}</p>`;
+      read.innerHTML = `<p class="ms-rule">Diagonal ${d}: ${parts.join(' + ')} = <b>${A.diagonalSum(d)}</b></p>
+        <p class="ms-meters">Rhythms ${d} beats long from short (S, 1 beat) and long (L, 2 beats) syllables: <b>${m.length}</b>${m.length <= 13 ? ` <span>${m.map(s => `<i>${s.split('').join(' ')}</i>`).join(' ')}</span>` : ''}</p>`;
     };
     const playRow = (r, at, e2, gain = 0.1) => {
       const vals = A.meruRows(r + 1)[r], max = Number(vals[Math.floor(r / 2)]), res = A.meruMod(r + 1, piece.mod)[r];
@@ -242,7 +242,7 @@ export function mount({ root, signal, params }) {
     update();
     on(rowsIn, 'input', () => { piece.rows = +rowsIn.value; if (row >= piece.rows) row = -1; update(); }, signal);
     on(room, 'click', e => {
-      const b = e.target.closest('[data-mod]'), rb = e.target.closest('.ar-rowb');
+      const b = e.target.closest('[data-mod]'), rb = e.target.closest('.ms-rowb');
       if (b) { piece.mod = +b.dataset.mod; room.querySelectorAll('[data-mod]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); update(); track('art/meru-mod', 'mod ' + piece.mod); }
       if (rb) tapRow(Math.max(0, Math.min(piece.rows - 1, (row < 0 ? -1 : row) + +rb.dataset.d)));
     }, signal);
@@ -287,20 +287,20 @@ export function mount({ root, signal, params }) {
     const { cv, cap, hearBtn } = frame({
       label: 'Digital-root pattern',
       controls: `
-        <div class="ar-row ar-seg" role="group" aria-label="View">${[['grid', 'Square'], ['star', 'Star'], ['spiral', 'Spiral']].map(([v, n]) => `<button type="button" class="md-chip" data-view="${v}" aria-pressed="${v === piece.view}">${n}</button>`).join('')}</div>
-        <div class="ar-row ar-digits" role="group" aria-label="Digit">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button type="button" class="ar-digit" data-d="${d}" aria-pressed="${d === piece.d}">${d}</button>`).join('')}</div>
-        <div class="ar-row ar-angles" role="group" aria-label="Turn angle">${A.ANGLES.map(a => `<button type="button" class="md-chip" data-a="${a}" aria-pressed="${a === piece.a}">${a}°</button>`).join('')}</div>
+        <div class="ms-row ms-seg" role="group" aria-label="View">${[['grid', 'Square'], ['star', 'Star'], ['spiral', 'Spiral']].map(([v, n]) => `<button type="button" class="md-chip" data-view="${v}" aria-pressed="${v === piece.view}">${n}</button>`).join('')}</div>
+        <div class="ms-row ms-digits" role="group" aria-label="Digit">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button type="button" class="ms-digit" data-d="${d}" aria-pressed="${d === piece.d}">${d}</button>`).join('')}</div>
+        <div class="ms-row ms-angles" role="group" aria-label="Turn angle">${A.ANGLES.map(a => `<button type="button" class="md-chip" data-a="${a}" aria-pressed="${a === piece.a}">${a}°</button>`).join('')}</div>
         ${palChips(piece.p)}
-        <div class="ar-read" aria-live="off"></div>`,
+        <div class="ms-read" aria-live="off"></div>`,
       why: ['What is this square?', `<p>Multiply two digits and keep adding the digits of the answer until one digit is left: 7 × 8 = 56, and 5 + 6 = 11, and 1 + 1 = 2. That last digit is the <b>digital root</b>, the remainder after dividing by 9 (with 9 in place of 0). The 9 by 9 table of them is often called the Vedic square; the name is modern, the arithmetic is simple and old.</p>
         <p>Each row repeats with a rhythm. Row 2 goes 2 4 6 8 1 3 5 7 9. Join those digits around a circle of nine points and you get a star. Walk them as steps, turning a fixed angle after each one, and the walk comes home in a closed spiral, the kind of pattern that echoes Islamic geometric art. Rows 3 and 6 only visit 3, 6 and 9, so their shapes are smaller.</p>`]
     });
     const view = stageCanvas(cv, signal, (g, w, h, pal) => D.square(g, w, h, pal, piece, { upto }));
-    const read = room.querySelector('.ar-read');
+    const read = room.querySelector('.ms-read');
     const update = () => {
-      room.querySelector('.ar-angles').hidden = piece.view !== 'spiral';
+      room.querySelector('.ms-angles').hidden = piece.view !== 'spiral';
       const row = A.rowOf(piece.d), tt = A.turtle(piece.d, piece.a);
-      read.innerHTML = `<p class="ar-rule">Row ${piece.d}: <span class="ar-nums">${row.join(' ')}</span></p>${piece.view === 'spiral' ? `<p class="px-note">Walk ${row.join(', ')}, turning ${piece.a}° each time. Home after ${tt.reps} round${tt.reps > 1 ? 's' : ''} of the row (${tt.reps * 9} steps), because ${tt.reps} × 9 × ${piece.a}° = ${tt.reps * 9 * piece.a}°, a whole number of turns.</p>` : piece.view === 'star' ? `<p class="px-note">${new Set(row).size === 9 ? 'All nine points are visited.' : `Only ${[...new Set(row)].sort().join(', ')} are visited.`}</p>` : `<p class="px-note">${A.cellsOf(piece.d).length} cells hold a ${piece.d}.</p>`}`;
+      read.innerHTML = `<p class="ms-rule">Row ${piece.d}: <span class="ms-nums">${row.join(' ')}</span></p>${piece.view === 'spiral' ? `<p class="px-note">Walk ${row.join(', ')}, turning ${piece.a}° each time. Home after ${tt.reps} round${tt.reps > 1 ? 's' : ''} of the row (${tt.reps * 9} steps), because ${tt.reps} × 9 × ${piece.a}° = ${tt.reps * 9 * piece.a}°, a whole number of turns.</p>` : piece.view === 'star' ? `<p class="px-note">${new Set(row).size === 9 ? 'All nine points are visited.' : `Only ${[...new Set(row)].sort().join(', ')} are visited.`}</p>` : `<p class="px-note">${A.cellsOf(piece.d).length} cells hold a ${piece.d}.</p>`}`;
       cap.textContent = A.describe(piece);
       cv.setAttribute('aria-label', A.describe(piece));
       view.redraw();
@@ -349,13 +349,13 @@ export function mount({ root, signal, params }) {
     const { cv, cap, hearBtn } = frame({
       label: 'Śulba rope geometry',
       controls: `
-        <div class="ar-row ar-scenes" role="tablist" aria-label="Constructions">${SCENES.map(s => `<button type="button" role="tab" class="md-chip" data-scene="${s.id}" aria-selected="${s.id === scene}">${s.name}</button>`).join('')}</div>
-        <div class="ar-steps"></div>
-        <div class="ar-read" aria-live="off"></div>`,
+        <div class="ms-row ms-scenes" role="tablist" aria-label="Constructions">${SCENES.map(s => `<button type="button" role="tab" class="md-chip" data-scene="${s.id}" aria-selected="${s.id === scene}">${s.name}</button>`).join('')}</div>
+        <div class="ms-steps"></div>
+        <div class="ms-read" aria-live="off"></div>`,
       why: ['What are the Śulba Sūtras?', `<p>The Śulba Sūtras are Indian manuals on building fire altars with a rope (śulba) and pegs, composed from around the 8th to the 5th century BCE; Baudhāyana's is the oldest. Altars had to have exact shapes and areas, so the builders needed right angles, squares of double area, and good values for square roots.</p>
         <p>Baudhāyana states the rule we now call the Pythagorean theorem: the diagonal rope of a rectangle makes as much area as the two sides make separately. He also gives the diagonal of a square as the side increased by its third, plus a fourth of that third, less a thirty-fourth part of that fourth: 1 + 1/3 + 1/12 − 1/408 = 577/408, which is √2 to five decimal places.</p>`]
     });
-    const steps = room.querySelector('.ar-steps'), read = room.querySelector('.ar-read');
+    const steps = room.querySelector('.ms-steps'), read = room.querySelector('.ms-read');
     let G = null; /* world-to-screen for the current frame */
     const fit = (w, h, minX, maxX, minY, maxY) => { const s = Math.min((w * 0.84) / (maxX - minX), (h * 0.84) / (maxY - minY)), ox = w / 2 - ((minX + maxX) / 2) * s, oy = h / 2 - ((minY + maxY) / 2) * s; return { s, to: ([x, y]) => [ox + x * s, oy + y * s], from: ([x, y]) => [(x - ox) / s, (y - oy) / s] }; };
     const C = pal => ({ ink: A.rgba(pal.ink), soft: A.rgba(pal.ink, 0.12), coral: A.rgba(pal.coral), sun: A.rgba(pal.sun), teal: A.rgba(pal.teal), fill: c => A.rgba(pal[c], pal.dark ? 0.32 : 0.28) });
@@ -441,51 +441,51 @@ export function mount({ root, signal, params }) {
       Object.assign(st, { frozen: null, knot: [2.6, -1.4], snapped: false, built: 0, end: null, doubled: 0, a: 3, b: 2, drag: null, step: 0, len: 1 });
       read.innerHTML = '';
       if (id === 'right') {
-        steps.innerHTML = `<p class="ar-task">${t({ explorer: 'A rope with knots at 3, 4 and 5. Two pegs hold the 4 along the east-west line. Drag the last knot until both ropes are tight.', challenger: 'Pegs A and B hold 4 units of a 12-unit rope on the east-west line. Drag the knot until the 3 and the 5 are both taut.', pro: 'Stretch a 3 + 4 + 5 rope from two pegs. Drag the knot until both free sides are taut.' })}</p>
-          <div class="ar-row"><button type="button" class="md-btn md-btn--sm ar-snap">Snap the knot</button><button type="button" class="md-btn md-btn--sm ar-build" disabled>Build the square</button></div>`;
+        steps.innerHTML = `<p class="ms-task">${t({ explorer: 'A rope with knots at 3, 4 and 5. Two pegs hold the 4 along the east-west line. Drag the last knot until both ropes are tight.', challenger: 'Pegs A and B hold 4 units of a 12-unit rope on the east-west line. Drag the knot until the 3 and the 5 are both taut.', pro: 'Stretch a 3 + 4 + 5 rope from two pegs. Drag the knot until both free sides are taut.' })}</p>
+          <div class="ms-row"><button type="button" class="md-btn md-btn--sm ms-snap">Snap the knot</button><button type="button" class="md-btn md-btn--sm ms-build" disabled>Build the square</button></div>`;
         cap.textContent = 'Rope of 3 + 4 + 5';
       } else if (id === 'double') {
-        steps.innerHTML = `<p class="ar-task">${t({ explorer: 'The rope is tied at corner D. Drag its end to the far corner B.', challenger: 'A rope is tied at corner D. Stretch it along the diagonal to B, then see the square built on that rope.', pro: 'Stretch the diagonal from D to B and build the square on it.' })}</p><div class="ar-row"><button type="button" class="md-btn md-btn--sm ar-snap">Stretch it for me</button></div>`;
+        steps.innerHTML = `<p class="ms-task">${t({ explorer: 'The rope is tied at corner D. Drag its end to the far corner B.', challenger: 'A rope is tied at corner D. Stretch it along the diagonal to B, then see the square built on that rope.', pro: 'Stretch the diagonal from D to B and build the square on it.' })}</p><div class="ms-row"><button type="button" class="md-btn md-btn--sm ms-snap">Stretch it for me</button></div>`;
         cap.textContent = 'A square and its diagonal';
       } else if (id === 'diag') {
-        steps.innerHTML = `<p class="ar-task">Drag the corner of the rectangle. The squares on the two sides always add up to the square on the diagonal. Can you find rectangles whose diagonal is a whole number?</p><div class="ar-row"><button type="button" class="md-chip ar-ab" data-k="a" data-d="-1" aria-label="Shorter width">a &minus;</button><button type="button" class="md-chip ar-ab" data-k="a" data-d="1" aria-label="Longer width">a +</button><button type="button" class="md-chip ar-ab" data-k="b" data-d="-1" aria-label="Shorter height">b &minus;</button><button type="button" class="md-chip ar-ab" data-k="b" data-d="1" aria-label="Longer height">b +</button></div>`;
+        steps.innerHTML = `<p class="ms-task">Drag the corner of the rectangle. The squares on the two sides always add up to the square on the diagonal. Can you find rectangles whose diagonal is a whole number?</p><div class="ms-row"><button type="button" class="md-chip ms-ab" data-k="a" data-d="-1" aria-label="Shorter width">a &minus;</button><button type="button" class="md-chip ms-ab" data-k="a" data-d="1" aria-label="Longer width">a +</button><button type="button" class="md-chip ms-ab" data-k="b" data-d="-1" aria-label="Shorter height">b &minus;</button><button type="button" class="md-chip ms-ab" data-k="b" data-d="1" aria-label="Longer height">b +</button></div>`;
         diagRead();
       } else if (id === 'root2') {
-        steps.innerHTML = `<p class="ar-task">${t({ explorer: 'The rope starts as long as the side. Make it reach the far corner C, one piece at a time.', challenger: 'Lay a rope as long as the side along the diagonal. Baudhāyana tells you how much to add. Press each step.', pro: 'Build Baudhāyana\'s diagonal: 1 + 1/3 + 1/(3·4) − 1/(3·4·34).' })}</p>
-          <ol class="ar-root">${A.SQRT2_STEPS.slice(1).map((s, i) => `<li><button type="button" class="md-btn md-btn--sm ar-add" data-step="${i + 1}" ${i ? 'disabled' : ''}>${['Add a third', 'Add a fourth of that third', 'Take away a 34th of that fourth'][i]}</button></li>`).join('')}</ol>
-          <div class="ar-row"><button type="button" class="md-btn md-btn--sm ar-beat" aria-pressed="false">Hear the gap</button><button type="button" class="md-btn md-btn--sm ar-reset">Start over</button></div>`;
+        steps.innerHTML = `<p class="ms-task">${t({ explorer: 'The rope starts as long as the side. Make it reach the far corner C, one piece at a time.', challenger: 'Lay a rope as long as the side along the diagonal. Baudhāyana tells you how much to add. Press each step.', pro: 'Build Baudhāyana\'s diagonal: 1 + 1/3 + 1/(3·4) − 1/(3·4·34).' })}</p>
+          <ol class="ms-root">${A.SQRT2_STEPS.slice(1).map((s, i) => `<li><button type="button" class="md-btn md-btn--sm ms-add" data-step="${i + 1}" ${i ? 'disabled' : ''}>${['Add a third', 'Add a fourth of that third', 'Take away a 34th of that fourth'][i]}</button></li>`).join('')}</ol>
+          <div class="ms-row"><button type="button" class="md-btn md-btn--sm ms-beat" aria-pressed="false">Hear the gap</button><button type="button" class="md-btn md-btn--sm ms-reset">Start over</button></div>`;
         rootRead();
       } else {
-        steps.innerHTML = `<p class="ar-task">Each square inside is half the one around it: the doubling, run backwards. Pick a color and tap the altar.</p>
-          <div class="ar-row ar-brushes" role="radiogroup" aria-label="Color">${[[1, 'coral'], [2, 'sun'], [3, 'teal'], [4, 'ink'], [0, 'clear']].map(([v, n]) => `<button type="button" role="radio" class="ar-brush ar-brush--${n}" data-b="${v}" aria-checked="${v === brush}" aria-label="${n}">${n === 'clear' ? 'clear' : ''}</button>`).join('')}</div>
-          <div class="ar-row"><button type="button" class="md-chip ar-mirror" aria-pressed="${mirror}">Mirror all four</button><button type="button" class="md-chip ar-lv" data-d="-1" aria-label="Fewer squares">&minus; square</button><button type="button" class="md-chip ar-lv" data-d="1" aria-label="More squares">+ square</button><button type="button" class="md-chip ar-fill">Fill for me</button></div>`;
+        steps.innerHTML = `<p class="ms-task">Each square inside is half the one around it: the doubling, run backwards. Pick a color and tap the altar.</p>
+          <div class="ms-row ms-brushes" role="radiogroup" aria-label="Color">${[[1, 'coral'], [2, 'sun'], [3, 'teal'], [4, 'ink'], [0, 'clear']].map(([v, n]) => `<button type="button" role="radio" class="ms-brush ms-brush--${n}" data-b="${v}" aria-checked="${v === brush}" aria-label="${n}">${n === 'clear' ? 'clear' : ''}</button>`).join('')}</div>
+          <div class="ms-row"><button type="button" class="md-chip ms-mirror" aria-pressed="${mirror}">Mirror all four</button><button type="button" class="md-chip ms-lv" data-d="-1" aria-label="Fewer squares">&minus; square</button><button type="button" class="md-chip ms-lv" data-d="1" aria-label="More squares">+ square</button><button type="button" class="md-chip ms-fill">Fill for me</button></div>`;
         cap.textContent = A.describe(altarPiece);
       }
       cv.setAttribute('aria-label', `Rope construction: ${SCENES.find(s => s.id === id).name}`);
-      room.querySelectorAll('.ar-save, .ar-share, .ar-wall').forEach(x => { x.hidden = id !== 'altar'; });
+      room.querySelectorAll('.ms-save, .ms-share, .ms-wall').forEach(x => { x.hidden = id !== 'altar'; });
       view.redraw();
     };
-    const diagRead = () => { const c = A.isTriple(st.a, st.b), d = Math.hypot(st.a, st.b); read.innerHTML = `<p class="ar-rule">${st.a}² + ${st.b}² = ${st.a * st.a} + ${st.b * st.b} = <b>${st.a * st.a + st.b * st.b}</b> = (diagonal)²</p><p class="${c ? 'ar-yes' : 'px-note'}">${c ? `The diagonal is exactly <b>${c}</b>. A whole-number triple, like the ones in the Śulba texts: ${st.a}, ${st.b}, ${c}.` : `The diagonal is about ${d.toFixed(3)}.`}</p>`; cap.textContent = `${st.a} by ${st.b}`; };
+    const diagRead = () => { const c = A.isTriple(st.a, st.b), d = Math.hypot(st.a, st.b); read.innerHTML = `<p class="ms-rule">${st.a}² + ${st.b}² = ${st.a * st.a} + ${st.b * st.b} = <b>${st.a * st.a + st.b * st.b}</b> = (diagonal)²</p><p class="${c ? 'ms-yes' : 'px-note'}">${c ? `The diagonal is exactly <b>${c}</b>. A whole-number triple, like the ones in the Śulba texts: ${st.a}, ${st.b}, ${c}.` : `The diagonal is about ${d.toFixed(3)}.`}</p>`; cap.textContent = `${st.a} by ${st.b}`; };
     const rootRead = () => {
       const s = A.SQRT2_STEPS[st.step], err = Math.abs(s.value - Math.SQRT2);
-      read.innerHTML = `<table class="ar-table"><tbody>${A.SQRT2_STEPS.slice(0, st.step + 1).map((x, i) => `<tr${i === st.step ? ' class="is-now"' : ''}><td>${i ? esc(x.add) : 'Start with the side'}</td><td class="ar-mono">${x.value.toFixed(7)}</td>${lv === 'pro' ? `<td class="ar-mono">${x.frac[0]}/${x.frac[1]}</td>` : ''}</tr>`).join('')}<tr class="ar-true"><td>The true diagonal √2</td><td class="ar-mono">${Math.SQRT2.toFixed(7)}</td>${lv === 'pro' ? '<td></td>' : ''}</tr></tbody></table>
-        <p class="${st.step === 3 ? 'ar-yes' : 'px-note'}">${st.step === 3 ? `Off by ${err.toFixed(7)}: about 1 part in ${Math.round(Math.SQRT2 / err).toLocaleString()}. On a 10 metre altar that is a twentieth of a millimetre.${lv === 'pro' ? ' And 577² − 2 × 408² = 1, which is why this fraction is so close.' : ''}` : `The gap is ${err.toFixed(4)}.`}</p>`;
+      read.innerHTML = `<table class="ms-table"><tbody>${A.SQRT2_STEPS.slice(0, st.step + 1).map((x, i) => `<tr${i === st.step ? ' class="is-now"' : ''}><td>${i ? esc(x.add) : 'Start with the side'}</td><td class="ms-mono">${x.value.toFixed(7)}</td>${lv === 'pro' ? `<td class="ms-mono">${x.frac[0]}/${x.frac[1]}</td>` : ''}</tr>`).join('')}<tr class="ms-true"><td>The true diagonal √2</td><td class="ms-mono">${Math.SQRT2.toFixed(7)}</td>${lv === 'pro' ? '<td></td>' : ''}</tr></tbody></table>
+        <p class="${st.step === 3 ? 'ms-yes' : 'px-note'}">${st.step === 3 ? `Off by ${err.toFixed(7)}: about 1 part in ${Math.round(Math.SQRT2 / err).toLocaleString()}. On a 10 metre altar that is a twentieth of a millimetre.${lv === 'pro' ? ' And 577² − 2 × 408² = 1, which is why this fraction is so close.' : ''}` : `The gap is ${err.toFixed(4)}.`}</p>`;
       cap.textContent = `Rope ${s.value.toFixed(5)}`;
       if (strings) strings.set(330, A.ropePitch(st.len));
-      const b = room.querySelector('.ar-beat'); if (b && strings) b.textContent = `Gap: ${A.beatRate(st.len).toFixed(st.step === 3 ? 4 : 2)} beats a second`;
+      const b = room.querySelector('.ms-beat'); if (b && strings) b.textContent = `Gap: ${A.beatRate(st.len).toFixed(st.step === 3 ? 4 : 2)} beats a second`;
     };
     const P_stopStrings = () => { if (strings) { strings.stop(); strings = null; } };
     onAbort(signal, P_stopStrings);
     const snapRight = () => {
       const pts = A.taut([0, 0], 5, [4, 0], 3); st.knot = pts.sort((p, q) => p[1] - q[1])[0]; st.snapped = true;
-      pluckChord([3, 4, 5]); room.querySelector('.ar-build').disabled = false;
-      read.innerHTML = `<p class="ar-yes"><b>A right angle at B.</b> ${lv === 'explorer' ? 'The rope made a perfect corner.' : `3² + 4² = 9 + 16 = 25 = 5², so the angle at B is exactly ${Math.round(A.angleAt([4, 0], [0, 0], st.knot))}°.`} Hear the three sides: shorter ropes sing higher.</p>`;
+      pluckChord([3, 4, 5]); room.querySelector('.ms-build').disabled = false;
+      read.innerHTML = `<p class="ms-yes"><b>A right angle at B.</b> ${lv === 'explorer' ? 'The rope made a perfect corner.' : `3² + 4² = 9 + 16 = 25 = 5², so the angle at B is exactly ${Math.round(A.angleAt([4, 0], [0, 0], st.knot))}°.`} Hear the three sides: shorter ropes sing higher.</p>`;
       say('Taut. A right angle at B.'); track('art/rope-right', 'snap'); view.redraw();
     };
     const doubleIt = () => {
       st.end = [0.5, 0.5]; st.doubled = 0.001; pluckChord([Math.SQRT2 * 3]);
       const t0 = globalThis.performance.now();
-      view.animate(now => { st.doubled = reducedMotion() ? 1 : Math.min(1, (now - t0) / 1400); if (st.doubled >= 1) { read.innerHTML = `<p class="ar-yes"><b>The square on the diagonal is double the first square.</b> The first square is 2 triangles; the new one is 4 of the same triangles.</p>`; say('The square on the diagonal is double.'); confetti(30); return false; } });
+      view.animate(now => { st.doubled = reducedMotion() ? 1 : Math.min(1, (now - t0) / 1400); if (st.doubled >= 1) { read.innerHTML = `<p class="ms-yes"><b>The square on the diagonal is double the first square.</b> The first square is 2 triangles; the new one is 4 of the same triangles.</p>`; say('The square on the diagonal is double.'); confetti(30); return false; } });
       track('art/rope-double', 'double');
     };
     /* dragging */
@@ -520,13 +520,13 @@ export function mount({ root, signal, params }) {
     /* buttons inside the steps panel */
     on(steps, 'click', e => {
       const b = e.target;
-      if (b.closest('.ar-snap')) { if (scene === 'right' && !st.snapped) snapRight(); if (scene === 'double' && !st.doubled) doubleIt(); }
-      if (b.closest('.ar-build')) {
+      if (b.closest('.ms-snap')) { if (scene === 'right' && !st.snapped) snapRight(); if (scene === 'double' && !st.doubled) doubleIt(); }
+      if (b.closest('.ms-build')) {
         const t0 = globalThis.performance.now(); st.built = 0.001;
         view.animate(now => { st.built = reducedMotion() ? 1 : Math.min(1, (now - t0) / 1200); if (st.built >= 1) { pluckChord([4, 4, 4]); read.innerHTML += '<p class="px-note">Ropes of 4 from each end meet at the last corner: a square, built with nothing but rope and pegs.</p>'; return false; } });
       }
-      const ab = b.closest('.ar-ab'); if (ab) { st[ab.dataset.k] = Math.max(1, Math.min(12, st[ab.dataset.k] + +ab.dataset.d)); diagRead(); const c = A.isTriple(st.a, st.b); if (c) pluckChord([st.a, st.b, c].map(x => x / 2)); view.redraw(); }
-      const add = b.closest('.ar-add');
+      const ab = b.closest('.ms-ab'); if (ab) { st[ab.dataset.k] = Math.max(1, Math.min(12, st[ab.dataset.k] + +ab.dataset.d)); diagRead(); const c = A.isTriple(st.a, st.b); if (c) pluckChord([st.a, st.b, c].map(x => x / 2)); view.redraw(); }
+      const add = b.closest('.ms-add');
       if (add) {
         const k = +add.dataset.step, from = st.len, to = A.SQRT2_STEPS[k].value, t0 = globalThis.performance.now();
         add.disabled = true; st.step = k; const nx = steps.querySelector(`[data-step="${k + 1}"]`); if (nx) nx.disabled = false;
@@ -535,17 +535,17 @@ export function mount({ root, signal, params }) {
         say(`${A.SQRT2_STEPS[k].add}: ${to.toFixed(6)}`);
         if (k === 3) { confetti(40); track('art/rope-root2', 'done'); }
       }
-      if (b.closest('.ar-reset')) setScene('root2');
-      const beat = b.closest('.ar-beat');
+      if (b.closest('.ms-reset')) setScene('root2');
+      const beat = b.closest('.ms-beat');
       if (beat) {
         if (strings) { P_stopStrings(); beat.setAttribute('aria-pressed', 'false'); beat.textContent = 'Hear the gap'; return; }
         strings = twoStrings(); strings.set(330, A.ropePitch(st.len)); beat.setAttribute('aria-pressed', 'true'); rootRead();
         toast('One string is the true diagonal, one is the rope. The wobble is the gap.');
       }
       const br = b.closest('[data-b]'); if (br) { brush = +br.dataset.b; steps.querySelectorAll('[data-b]').forEach(x => x.setAttribute('aria-checked', String(x === br))); }
-      if (b.closest('.ar-mirror')) { mirror = !mirror; b.closest('.ar-mirror').setAttribute('aria-pressed', String(mirror)); }
-      const lvb = b.closest('.ar-lv'); if (lvb) { altarPiece = A.cleanPiece({ ...altarPiece, levels: altarPiece.levels + +lvb.dataset.d }); cap.textContent = A.describe(altarPiece); view.redraw(); }
-      if (b.closest('.ar-fill')) { const r = rng(seedOf('altar', Date.now())); const cols = [1 + Math.floor(r() * 3), 1 + Math.floor(r() * 3), 4, 0]; altarPiece.f = A.altar(altarPiece.levels).map(reg => cols[(reg.ring + (reg.ring === altarPiece.levels ? 1 : 0)) % cols.length]); view.redraw(); }
+      if (b.closest('.ms-mirror')) { mirror = !mirror; b.closest('.ms-mirror').setAttribute('aria-pressed', String(mirror)); }
+      const lvb = b.closest('.ms-lv'); if (lvb) { altarPiece = A.cleanPiece({ ...altarPiece, levels: altarPiece.levels + +lvb.dataset.d }); cap.textContent = A.describe(altarPiece); view.redraw(); }
+      if (b.closest('.ms-fill')) { const r = rng(seedOf('altar', Date.now())); const cols = [1 + Math.floor(r() * 3), 1 + Math.floor(r() * 3), 4, 0]; altarPiece.f = A.altar(altarPiece.levels).map(reg => cols[(reg.ring + (reg.ring === altarPiece.levels ? 1 : 0)) % cols.length]); view.redraw(); }
     }, signal);
     const regionAt = p => { const regs = A.altar(altarPiece.levels); for (let i = regs.length - 1; i >= 0; i--) if (A.inPoly(p[0], p[1], regs[i].pts)) return i; return -1; };
     const paintAt = p => {
@@ -555,7 +555,7 @@ export function mount({ root, signal, params }) {
       ensemble().bell(A.PENTA[Math.min(14, 2 + ring * 2)], 0, 0.1, 1.2);
       say(`Painted ${mirror ? 'ring ' + (ring + 1) : 'a triangle'}`); view.redraw();
     };
-    on(room.querySelector('.ar-scenes'), 'click', e => { const b = e.target.closest('[data-scene]'); if (b) setScene(b.dataset.scene); }, signal);
+    on(room.querySelector('.ms-scenes'), 'click', e => { const b = e.target.closest('[data-scene]'); if (b) setScene(b.dataset.scene); }, signal);
     /* Hear it: the scene's rope as music */
     on(hearBtn, 'click', () => {
       if (scene === 'right') pluckChord([3, 4, 5]);
@@ -565,16 +565,16 @@ export function mount({ root, signal, params }) {
       else { const e2 = ensemble(), t0 = clockOf(e2)() + 0.05; for (let k = 0; k <= altarPiece.levels; k++) e2.bell(A.PENTA[Math.min(14, 2 + k * 2)], t0 + k * 0.3, 0.11, 2); }
       track('art/hear', 'rope ' + scene);
     }, signal);
-    hearBtn.querySelector('.ar-hear-l').textContent = 'Hear it';
+    hearBtn.querySelector('.ms-hear-l').textContent = 'Hear it';
     wireTools(() => ({ ...altarPiece }));
     setScene(scene);
   }
 
   /* ======================= Gallery ======================= */
   function gallery() {
-    room.innerHTML = `<section class="ar-gal">
-      ${S.gallery.length ? `<p class="px-note">Saved on this device. Each piece is kept as its numbers and drawn fresh.</p><ul class="ar-gl">${S.gallery.map((x, i) => { const p = A.decodePiece(x.c, b64url); return p ? `<li><a class="ar-gi" href="#/games/art/${tabOf(p.k)}/${x.c}"><canvas width="240" height="240" data-i="${i}" aria-hidden="true"></canvas><span>${esc(A.describe(p))}</span></a><button type="button" class="ar-gdel" data-del="${i}" aria-label="Delete ${esc(A.describe(p))}">&times;</button></li>` : ''; }).join('')}</ul>`
-        : `<div class="ar-empty px-stage"><p class="md-lede">Nothing saved yet.</p><p>Make a mandala, press Save, and it lands here. Or let the studio pick one for you.</p><div class="px-row"><a class="md-btn md-btn--primary" href="#/games/art">Make a mandala</a></div></div>`}
+    room.innerHTML = `<section class="ms-gal">
+      ${S.gallery.length ? `<p class="px-note">Saved on this device. Each piece is kept as its numbers and drawn fresh.</p><ul class="ms-gl">${S.gallery.map((x, i) => { const p = A.decodePiece(x.c, b64url); return p ? `<li><a class="ms-gi" href="#/games/art/${tabOf(p.k)}/${x.c}"><canvas width="240" height="240" data-i="${i}" aria-hidden="true"></canvas><span>${esc(A.describe(p))}</span></a><button type="button" class="ms-gdel" data-del="${i}" aria-label="Delete ${esc(A.describe(p))}">&times;</button></li>` : ''; }).join('')}</ul>`
+        : `<div class="ms-empty px-stage"><p class="md-lede">Nothing saved yet.</p><p>Make a mandala, press Save, and it lands here. Or let the studio pick one for you.</p><div class="px-row"><a class="md-btn md-btn--primary" href="#/games/art">Make a mandala</a></div></div>`}
     </section>`;
     const paintAll = () => {
       const pal = readPal();
@@ -590,8 +590,8 @@ export function mount({ root, signal, params }) {
   }
 
   /* ---------- Palette chips ---------- */
-  function palChips(p) { return `<div class="ar-row ar-pals" role="radiogroup" aria-label="Colors">${A.PALETTES.map((x, i) => `<button type="button" role="radio" class="ar-pal ar-pal--${x.id}" data-pal="${i}" aria-checked="${i === p}"><i aria-hidden="true"></i>${x.name}</button>`).join('')}</div>`; }
-  function palWire(set) { on(room.querySelector('.ar-pals'), 'click', e => { const b = e.target.closest('[data-pal]'); if (!b) return; room.querySelectorAll('[data-pal]').forEach(x => x.setAttribute('aria-checked', String(x === b))); set(+b.dataset.pal); }, signal); }
+  function palChips(p) { return `<div class="ms-row ms-pals" role="radiogroup" aria-label="Colors">${A.PALETTES.map((x, i) => `<button type="button" role="radio" class="ms-pal ms-pal--${x.id}" data-pal="${i}" aria-checked="${i === p}"><i aria-hidden="true"></i>${x.name}</button>`).join('')}</div>`; }
+  function palWire(set) { on(room.querySelector('.ms-pals'), 'click', e => { const b = e.target.closest('[data-pal]'); if (!b) return; room.querySelectorAll('[data-pal]').forEach(x => x.setAttribute('aria-checked', String(x === b))); set(+b.dataset.pal); }, signal); }
 }
 
 /* A wallpaper: the piece centered on a large canvas, with a quiet caption */
