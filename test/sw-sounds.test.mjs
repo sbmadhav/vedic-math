@@ -8,9 +8,10 @@ import vm from 'node:vm';
 
 function load({ max } = {}) {
   const store = new Map(); // url -> body
+  const order = []; // urls in the order their puts completed (the order cache.keys() lists them)
   const cache = {
     match: async req => (store.has(req.url) ? { ok: true, type: 'basic', body: store.get(req.url), clone() { return this; } } : undefined),
-    put: async (req, res) => { await new Promise(r => setTimeout(r, Math.random() * 3)); store.set(req.url, res.body); },
+    put: async (req, res) => { await new Promise(r => setTimeout(r, Math.random() * 3)); store.delete(req.url); store.set(req.url, res.body); order.push(req.url); },
     keys: async () => [...store.keys()].map(url => ({ url })),
     delete: async req => store.delete(req.url),
   };
@@ -25,7 +26,7 @@ function load({ max } = {}) {
   if (max) src = src.replace(/const SOUNDS_MAX = \d+;/, `const SOUNDS_MAX = ${max};`);
   vm.createContext(ctx);
   vm.runInContext(src + '\n;globalThis.__soundFile = soundFile;', ctx);
-  return { soundFile: url => ctx.__soundFile({ url }), store, net };
+  return { soundFile: url => ctx.__soundFile({ url }), store, net, order };
 }
 const U = 'https://sbmadhav.com/vedic-math/sounds/';
 
@@ -56,7 +57,8 @@ test('a sound without ?v= is network first and falls back to the cache offline',
 });
 
 test('many misses at once (the idle prefetch and a tap) trim one at a time and keep the newest SOUNDS_MAX', async () => {
-  const { soundFile, store } = load({ max: 5 });
+  const { soundFile, store, order } = load({ max: 5 });
   await Promise.all(Array.from({ length: 12 }, (_, i) => soundFile(U + `sutras/s${i + 1}.m4a?v=${i}`)));
-  assert.equal(store.size, 5);
+  assert.equal(order.length, 12);
+  assert.deepEqual([...store.keys()], order.slice(-5), 'the five most recently stored survive; the oldest are dropped');
 });

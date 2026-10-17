@@ -109,8 +109,11 @@ test('when the clip cannot load, the device voice reads the Respelling and the s
 test('two taps that start a clip send two identical math/say/sutra events; a stopping tap sends none', async ({ page }) => {
   await fakeAudio(page, { clipSecs: 30 });
   await open(page, '#/sutras');
+  const started = async () => (await audioLog(page)).nodes.filter(n => n.kind === 'source' && n.started !== null).length;
   await page.locator('.sutra-card[data-id="s1"] .say-btn').click();
+  await expect.poll(started).toBe(1); // the first clip has really started before the second tap
   await page.locator('.sutra-card[data-id="s3"] .say-btn').click();
+  await expect.poll(started).toBe(2);
   await page.locator('.sutra-card[data-id="s3"] .say-btn').click(); // stops it
   await expect(page.locator('.sutra-card[data-id="s3"] .say-btn')).toHaveAttribute('aria-pressed', 'false');
   await page.waitForTimeout(300);
