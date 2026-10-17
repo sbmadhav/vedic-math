@@ -84,6 +84,23 @@ test.describe('Mandala Studio', () => {
     expect(await played(page, 'art/save')).toBe(1);
   });
 
+  test('deleting two of three saved pieces leaves exactly one', async ({ page, issues }) => {
+    const code = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url');
+    const gallery = [{ k: 'times', n: 200, m: 2, p: 2 }, { k: 'times', n: 240, m: 3, p: 1 }, { k: 'meru', rows: 32, mod: 2, p: 0 }].map(x => ({ c: code({ v: 1, ...x }), at: '2026-10-16' }));
+    await page.addInitScript(g => { if (!localStorage.getItem('vm.play.p1.art')) localStorage.setItem('vm.play.p1.art', JSON.stringify({ gallery: g, seen: ['drifted'] })); }, gallery);
+    await open(page, '#/games/art/gallery');
+    const items = page.locator('.ms-gl > li');
+    await expect(items).toHaveCount(3);
+    await items.first().locator('.ms-gdel').click();
+    await expect(items).toHaveCount(2);
+    await items.first().locator('.ms-gdel').click();
+    await expect(items).toHaveCount(1);
+    await expect(items.first()).toContainText('Meru-prastāra, 32 rows, mod 2');
+    const left = await page.evaluate(() => JSON.parse(localStorage.getItem('vm.play.p1.art') || '{}').gallery.length);
+    expect(left).toBe(1);
+    expect(issues.console).toEqual([]);
+  });
+
   test('the altar can be painted from the keyboard', async ({ page }) => {
     await open(page, '#/games/art/rope');
     await page.locator('[data-scene="altar"]').click();

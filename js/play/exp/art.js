@@ -600,22 +600,31 @@ export function mount({ root, signal, params }) {
   }
 
   /* ======================= Gallery ======================= */
+  /* The listeners and observers are wired once; a delete re-renders only the markup, so each click removes one piece */
   function gallery() {
-    room.innerHTML = `<section class="ms-gal">
-      ${S.gallery.length ? `<p class="px-note">Saved on this device. Each piece is kept as its numbers and drawn fresh.</p><ul class="ms-gl">${S.gallery.map((x, i) => { const p = A.decodePiece(x.c, b64url); return p ? `<li><a class="ms-gi" href="#/games/art/${tabOf(p.k)}/${x.c}"><canvas width="240" height="240" data-i="${i}" aria-hidden="true"></canvas><span>${esc(A.describe(p))}</span></a><button type="button" class="ms-gdel" data-del="${i}" aria-label="Delete ${esc(A.describe(p))}">&times;</button></li>` : ''; }).join('')}</ul>`
+    const render = () => {
+      room.innerHTML = `<section class="ms-gal">
+      ${S.gallery.length ? `<p class="px-note">Saved on this device. Each piece is kept as its numbers and drawn fresh.</p><ul class="ms-gl">${S.gallery.map((x, i) => { const p = A.decodePiece(x.c, b64url); return p ? `<li><a class="ms-gi" href="#/games/art/${tabOf(p.k)}/${encodeURIComponent(x.c)}"><canvas width="240" height="240" data-i="${i}" aria-hidden="true"></canvas><span>${esc(A.describe(p))}</span></a><button type="button" class="ms-gdel" data-del="${i}" aria-label="Delete ${esc(A.describe(p))}">&times;</button></li>` : ''; }).join('')}</ul>`
         : `<div class="ms-empty px-stage"><p class="md-lede">Nothing saved yet.</p><p>Make a mandala, press Save, and it lands here. Or let the studio pick one for you.</p><div class="px-row"><a class="md-btn md-btn--primary" href="#/games/art">Make a mandala</a></div></div>`}
     </section>`;
+      paintAll();
+    };
     const paintAll = () => {
       const pal = readPal();
       room.querySelectorAll('canvas[data-i]').forEach(cv => {
-        const p = A.decodePiece(S.gallery[+cv.dataset.i].c, b64url); if (!p) return;
+        const x = S.gallery[+cv.dataset.i], p = x && A.decodePiece(x.c, b64url); if (!p) return;
         const g = cv.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); D.background(g, 240, 240, pal); DRAW[p.k](g, 240, 240, pal, p, { scale: 0.6 });
       });
     };
-    paintAll();
+    render();
     const mo = new MutationObserver(paintAll); mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] }); onAbort(signal, () => mo.disconnect());
     on(matchMedia('(prefers-color-scheme: dark)'), 'change', paintAll, signal);
-    on(room, 'click', e => { const d = e.target.closest('[data-del]'); if (d) { S.gallery.splice(+d.dataset.del, 1); save(); gallery(); toast('Removed'); } }, signal);
+    on(room, 'click', e => {
+      const d = e.target.closest('[data-del]'); if (!d) return;
+      const i = +d.dataset.del; if (!(i >= 0 && i < S.gallery.length)) return;
+      S.gallery.splice(i, 1); save(); render(); toast('Removed');
+      const next = room.querySelector(`[data-del="${Math.min(i, S.gallery.length - 1)}"]`); if (next) next.focus();
+    }, signal);
   }
 
   /* ---------- Palette chips ---------- */
