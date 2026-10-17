@@ -42,7 +42,7 @@ h1:focus, h2:focus, [tabindex="-1"]:focus-visible { outline: none !important; }
   .theme { width: 36px; height: 36px; }
   .mq-nav a { padding: 6px 9px; }
 }
-@media (max-width: 420px) { .home .lt { display: none; } .top .mq-chip-t { display: none; } .top .mq-chip { padding-right: 3px; } }
+@media (max-width: 420px) { .home .lt { display: none; } .top .mq-sparkbar { width: 36px; } .top .mq-chip { padding-right: 8px; } } /* the bar to the next Title stays, shorter */
 @media (prefers-reduced-motion: reduce) { .home svg, .theme { transition: none; } .home:hover svg, .theme:hover { transform: none; } }
 html.motion-paused .home svg, body.calm .home svg, html.motion-paused .theme, body.calm .theme { transition: none; }
 html.motion-paused .home:hover svg, body.calm .home:hover svg, html.motion-paused .theme:hover, body.calm .theme:hover { transform: none; }

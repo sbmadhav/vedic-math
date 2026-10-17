@@ -45,11 +45,11 @@ The music control SHALL be a pill like the home page's, with a note, the word "M
 - **THEN** the music panel opens, and Escape closes it
 
 ### Requirement: Small screens
-Below 1180px the nav SHALL move to a second row of the header and scroll sideways on its own. At 320, 375 and 768px wide no part of the page SHALL scroll sideways and every header control SHALL be on screen. Under 600px Explore and Music SHALL show icons only and keep their accessible names.
+Below 1180px the nav SHALL move below the controls and wrap onto as many rows as it needs, so every nav link is on screen without scrolling. At 320, 375 and 768px wide no part of the page SHALL scroll sideways and every header control SHALL be on screen. Under 600px Explore and Music SHALL show icons only and keep their accessible names.
 
 #### Scenario: A 320px phone
 - **WHEN** a Player opens Vedic Math on a 320px wide screen in either scheme
-- **THEN** the brand, Explore, the color scheme button, Music and the Player chip are on the first row, the nav is on the second row, the page does not scroll sideways, and every nav link can be reached by scrolling the nav
+- **THEN** the brand, Explore, the color scheme button, Music and the Player chip are on the first row, the nav is below them, the page does not scroll sideways, every nav link is on screen without scrolling, and the Player chip shows the avatar and the bar to the next Title
 
 #### Scenario: Accessible header
 - **WHEN** axe checks the header at 1280px and 320px in both schemes, with the music panel closed and open
