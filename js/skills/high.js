@@ -18,7 +18,7 @@ export default [
     gen() {
       const p = rnz(-9, 9), q = rnz(-9, 9);
       return { q: `Expand: ${binom(p, q)}`, kind: 'expr', answer: polyText([1, p + q, p * q]),
-        hints: [`x &middot; x = x<sup>2</sup>, outer + inner = ${neg(p + q)}x, last = ${neg(p * q)}`], steps: [`<i>x</i>${sup(2)}${term(q, 'x', 1)}${term(p, 'x', 1)}${term(p * q, 'x', 0)}`, `= ${poly([1, p + q, p * q])}`] };
+        hints: [`x &middot; x = x<sup>2</sup>, outer + inner = ${term(p + q, 'x', 1, true) || '0'}, last = ${neg(p * q)}`], steps: [`<i>x</i>${sup(2)}${term(q, 'x', 1)}${term(p, 'x', 1)}${term(p * q, 'x', 0)}`, `= ${poly([1, p + q, p * q])}`] };
     } },
   { id: '9-factor', grade: 9, strand: 'alg', title: 'Factor quadratics', kid: 'Undo the box',
     idea: 'To factor x² + bx + c, find two numbers that multiply to c and add to b.',
@@ -206,7 +206,7 @@ export default [
     method: ['Inverse: swap x and y, then solve for y.', 'Composite: work from the inside out.'],
     gen() {
       const a = rnz(-5, 5), b = ri(-9, 9);
-      if (Math.random() < .5) return { q: `<i>f</i>(<i>x</i>) = ${poly([a, b])}. Find <i>f</i><sup>&minus;1</sup>(<i>x</i>).`, kind: 'expr', answer: inverseKey(a, b), hints: [`Swap: <i>x</i> = ${neg(a)}<i>y</i> ${b < 0 ? '&minus;' : '+'} ${Math.abs(b)}. Solve for y.`], steps: [`<i>f</i><sup>&minus;1</sup>(<i>x</i>) = (<i>x</i> ${b < 0 ? '+' : '&minus;'} ${Math.abs(b)}) &divide; ${paren(a)}`] };
+      if (Math.random() < .5) return { q: `<i>f</i>(<i>x</i>) = ${poly([a, b])}. Find <i>f</i><sup>&minus;1</sup>(<i>x</i>).`, kind: 'expr', answer: inverseKey(a, b), hints: [`Swap: <i>x</i> = ${term(a, 'y', 1, true)}${term(b, 'y', 0)}. Solve for y.`], steps: [`<i>f</i><sup>&minus;1</sup>(<i>x</i>) = (<i>x</i> ${b < 0 ? '+' : '&minus;'} ${Math.abs(b)}) &divide; ${paren(a)}`] };
       const c = rnz(-3, 3), d = ri(-5, 5), x = ri(-4, 4), g = c * x + d;
       return { q: `<i>f</i>(<i>x</i>) = ${poly([a, b])} and <i>g</i>(<i>x</i>) = ${poly([c, d])}. Find <i>f</i>(<i>g</i>(${neg(x)})).`, kind: 'num', answer: a * g + b, hints: [`First <i>g</i>(${neg(x)}) = ${neg(g)}.`], steps: [`<i>g</i>(${neg(x)}) = ${neg(g)}`, `<i>f</i>(${neg(g)}) = ${neg(a * g + b)}`] };
     } },
@@ -280,7 +280,7 @@ export default [
       const co = [ri(-3, 3), ri(-4, 4), rnz(-5, 5)], lo = ri(-2, 1), hi = lo + ri(1, 3);
       const F = x => co[0] * x ** 3 / 3 + co[1] * x ** 2 / 2 + co[2] * x, ans = Math.round((F(hi) - F(lo)) * 1e9) / 1e9;
       return { q: `Evaluate &int;<sub>${neg(lo)}</sub><sup>${neg(hi)}</sup> (${poly(co)}) d<i>x</i>`, viz: V.plane({ fns: [x => co[0] * x * x + co[1] * x + co[2]], range: 8 }), kind: 'num', answer: ans, tol: 1e-4,
-        hints: [`F(<i>x</i>) = ${[co[0] ? `${fr(co[0], 3)}<i>x</i><sup>3</sup>` : '', co[1] ? `${fr(co[1], 2)}<i>x</i><sup>2</sup>` : '', `${neg(co[2])}<i>x</i>`].filter(Boolean).join(' + ')}`], steps: [`F(${neg(hi)}) &minus; F(${neg(lo)}) = ${round(ans, 4)}`] };
+        hints: [`F(<i>x</i>) = ${[[co[0], 3, 3], [co[1], 2, 2], [co[2], 1, 1]].filter(([n]) => n).map(([n, d, pw], i) => { const a = fr(Math.abs(n), d); return (n < 0 ? (i ? ' &minus; ' : '&minus;') : (i ? ' + ' : '')) + (a === '1' ? '' : a) + `<i>x</i>${pw > 1 ? sup(pw) : ''}`; }).join('') || '0'}`], steps: [`F(${neg(hi)}) &minus; F(${neg(lo)}) = ${round(ans, 4)}`] };
     } },
   { id: '12-vectors', grade: 12, strand: 'trig', title: 'Vectors', kid: 'Arrows with size',
     idea: 'A vector has size and direction. Its magnitude is √(x² + y²). The dot product a·b = a₁b₁ + a₂b₂ is 0 for perpendicular vectors.',

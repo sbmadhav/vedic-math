@@ -27,7 +27,7 @@ const CASES = [
   ['whole dollars', '$54 with a 30% discount.', '54 dollars with a 30 percent discount.'],
   ['big number', 'Round 10,000 to the nearest ten.', 'Round 10000 to the nearest ten.'],
   ['small fraction', `${fr(2, 3)} + ${fr(1, 3)} = ?`, 'two thirds plus one third equals what?'],
-  ['mixed number', `What is 2 ${fr(3, 4)} as a fraction?`, 'What is 2 and three quarters as a fraction?'],
+  ['mixed number', `What is 2 ${fr(3, 4)} as a fraction?`, 'What is 2 and three fourths as a fraction?'],
   ['missing numerator', `${fr(5, 6)} = ${fr('?', 18)}`, 'five sixths equals what over 18'],
   ['squared and cubed', '<i>x</i><sup>2</sup> + <i>x</i><sup>3</sup>', 'x squared plus x cubed'],
   ['power placeholder', 'Simplify: <i>x</i><sup>2</sup> &middot; <i>x</i><sup>3</sup> = <i>x</i><sup>?</sup>', 'Simplify: x squared times x cubed equals x to the power of what?'],
@@ -47,7 +47,7 @@ const CASES = [
   ['ordinal plural', 'Keep the 12ths. 6 + 3 = 9.', 'Keep the twelfths. 6 plus 3 equals 9.'],
   ['ordinal range', 'In how many ways can 6 runners finish 1st through 3rd?', 'In how many ways can 6 runners finish first through third?'],
   // Fractions named, not "over"
-  ['fraction names', `${fr(6, 4)} &divide; ${fr(1, 7)} = ?`, 'six quarters divided by one seventh equals what?'],
+  ['fraction names', `${fr(6, 4)} &divide; ${fr(1, 7)} = ?`, 'six fourths divided by one seventh equals what?'],
   ['hundredths', `Write ${fr(40, 100)} as a decimal.`, 'Write 40 hundredths as a decimal.'],
   ['one hundredth', `log<sub>10</sub>(${fr(1, 100)}) = ?`, 'log base 10 of one hundredth equals what?'],
   ['thirteenths', `${fr(3, 13)} + ${fr(1, 13)}`, 'three thirteenths plus one thirteenth'],
@@ -55,32 +55,34 @@ const CASES = [
   ['negative fraction', `1 + &minus;${fr(1, 3)} + ${fr(1, 9)} + ...`, '1 plus negative one third plus one ninth, and so on'],
   ['letter over number', `${fr(2, 3)} = ${fr(10, '<i>x</i>')}`, 'two thirds equals 10 over x'],
   ['algebra fraction keeps its pauses', `lim<sub><i>x</i>&rarr;&minus;4</sub> ${fr('<i>x</i><sup>2</sup> + <i>x</i> &minus; 12', '<i>x</i> + 4')}`,
-    'the limit as x approaches negative 4 of x squared plus x minus 12, over the quantity x plus 4'],
+    'the limit as x approaches negative 4 of x squared plus x minus 12, all over x plus 4'],
   // Brackets: function arguments
   ['composition', 'Find <i>f</i>(<i>g</i>(1)).', 'Find f of g of 1.'],
   ['capital and other letters', 'F(<i>x</i>) = <i>x</i><sup>3</sup>. Evaluate p(0).', 'F of x equals x cubed. Evaluate p of 0.'],
   ['inverse', 'Find <i>f</i><sup>&minus;1</sup>(<i>x</i>).', 'Find f inverse of x.'],
-  ['trig', 'Find the exact value of cos(225°).', 'Find the exact value of the cosine of 225 degrees.'],
+  ['trig', 'Find the exact value of cos(225°).', 'Find the exact value of cosine of 225 degrees.'],
   ['trig word', 'sin = opposite &divide; hypotenuse', 'sine equals opposite divided by hypotenuse'],
   // Brackets: quantities keep their grouping
-  ['product of brackets', 'Expand: (<i>x</i> &minus; 7)(<i>x</i> &minus; 8)', 'Expand: the quantity x minus 7, times the quantity x minus 8'],
-  ['number times bracket', 'Simplify: 6(&minus;<i>x</i> &minus; 6) + 6<i>x</i>', 'Simplify: 6 times the quantity negative x minus 6, plus 6 x'],
-  ['power of a bracket', '<i>f</i>(<i>x</i>) = (4<i>x</i> + 3)<sup>4</sup>. Find <i>f</i>&prime;(2).', 'f of x equals the quantity 4 x plus 3, to the power of 4. Find f prime of 2.'],
-  ['chain rule hint', '<i>f</i>&prime;(<i>x</i>) = 4(4<i>x</i> + 3)<sup>3</sup> &middot; 4', 'f prime of x equals 4 times the quantity 4 x plus 3, cubed, times 4'],
-  ['power of a power', 'Simplify: (<i>x</i><sup>5</sup>)<sup>3</sup> = <i>x</i><sup>?</sup>', 'Simplify: the quantity x to the power of 5, cubed, equals x to the power of what?'],
-  ['bracketed negative squared', '&minus;1&middot;(&minus;4)<sup>2</sup> + (&minus;5)', 'negative 1 times the quantity negative 4, squared, plus negative 5'],
-  ['bracket then a letter', 'Transpose: (2 &minus; -4)x = 26 &minus; 8.', 'Transpose: the quantity 2 minus negative 4, times x equals 26 minus 8.'],
-  ['integrand', 'Evaluate &int;<sub>1</sub><sup>3</sup> (2<i>x</i> + 2) d<i>x</i>', 'Evaluate the integral from 1 to 3 of the quantity 2 x plus 2, d x'],
+  ['number times a sum (owner example)', '2(<i>x</i> + 3)', '2 times, x plus 3'],
+  ['fourths', `${fr(1, 4)} and ${fr(3, 4)} + ${fr(2, 4)} and ¾ and ¼`, 'one fourth and three fourths plus two fourths and three fourths and one fourth'],
+  ['product of brackets', 'Expand: (<i>x</i> &minus; 7)(<i>x</i> &minus; 8)', 'Expand: x minus 7, times x minus 8'],
+  ['number times bracket', 'Simplify: 6(&minus;<i>x</i> &minus; 6) + 6<i>x</i>', 'Simplify: 6 times, negative x minus 6, plus 6 x'],
+  ['power of a bracket', '<i>f</i>(<i>x</i>) = (4<i>x</i> + 3)<sup>4</sup>. Find <i>f</i>&prime;(2).', 'f of x equals 4 x plus 3, all to the power of 4. Find f prime of 2.'],
+  ['chain rule hint', '<i>f</i>&prime;(<i>x</i>) = 4(4<i>x</i> + 3)<sup>3</sup> &middot; 4', 'f prime of x equals 4 times, 4 x plus 3, all cubed, times 4'],
+  ['power of a power', 'Simplify: (<i>x</i><sup>5</sup>)<sup>3</sup> = <i>x</i><sup>?</sup>', 'Simplify: x to the power of 5, all cubed, equals x to the power of what?'],
+  ['bracketed negative squared', '&minus;1&middot;(&minus;4)<sup>2</sup> + (&minus;5)', 'negative 1 times, negative 4, all squared, plus negative 5'],
+  ['bracket then a letter', 'Transpose: (2 &minus; -4)x = 26 &minus; 8.', 'Transpose: 2 minus negative 4, times x equals 26 minus 8.'],
+  ['integrand', 'Evaluate &int;<sub>1</sub><sup>3</sup> (2<i>x</i> + 2) d<i>x</i>', 'Evaluate the integral from 1 to 3 of 2 x plus 2, d x'],
   ['absolute value', 'Solve: |<i>x</i> &minus; 3| = 8', 'Solve: the absolute value of x minus 3, equals 8'],
-  ['divide by a bracket', 'Use a(r<sup>n</sup> &minus; 1) &divide; (r &minus; 1).', 'Use a times the quantity r to the power of n, minus 1, divided by the quantity r minus 1.'],
-  ['opposite of a negative', '<i>x</i> = &minus;(&minus;4) &divide; (2&middot;&minus;2)', 'x equals the opposite of negative 4 divided by the quantity 2 times negative 2'],
-  ['complex product', '(&minus;4 + 4<i>i</i>) &middot; (&minus;3 + 2<i>i</i>) = ?', 'the quantity negative 4 plus 4 i, times the quantity negative 3 plus 2 i, equals what?'],
+  ['divide by a bracket', 'Use a(r<sup>n</sup> &minus; 1) &divide; (r &minus; 1).', 'Use a times, r to the power of n, minus 1, divided by, r minus 1.'],
+  ['opposite of a negative', '<i>x</i> = &minus;(&minus;4) &divide; (2&middot;&minus;2)', 'x equals the opposite of negative 4 divided by, 2 times negative 2'],
+  ['complex product', '(&minus;4 + 4<i>i</i>) &middot; (&minus;3 + 2<i>i</i>) = ?', 'negative 4 plus 4 i, times negative 3 plus 2 i, equals what?'],
   // Brackets: asides read as a pause, units moved into the question
   ['aside', 'Column 1 (straight down): 0×0 = 0. Write 0.', 'Column 1, straight down: 0 times 0 equals 0. Write 0.'],
   ['list aside', 'Last digit 7 → root ends in 3 (2 and 8 swap, 3 and 7 swap, the rest stay).', 'Last digit 7, so root ends in 3. 2 and 8 swap, 3 and 7 swap, the rest stay.'],
-  ['power of a sum', 'Solve: 3<sup><i>x</i> + 1</sup> = 1', 'Solve: 3 to the power of the quantity x plus 1, equals 1'],
-  ['number times a bracketed negative power', '4(&minus;<i>x</i>)<sup>3</sup>', '4 times the quantity negative x, cubed'],
-  ['root of a sum', '&radic;(<i>x</i><sup>2</sup> + <i>y</i><sup>2</sup>)', 'the square root of the quantity x squared plus y squared'],
+  ['power of a sum', 'Solve: 3<sup><i>x</i> + 1</sup> = 1', 'Solve: 3 to the power of x plus 1, equals 1'],
+  ['number times a bracketed negative power', '4(&minus;<i>x</i>)<sup>3</sup>', '4 times, negative x, all cubed'],
+  ['root of a sum', '&radic;(<i>x</i><sup>2</sup> + <i>y</i><sup>2</sup>)', 'the square root of x squared plus y squared'],
   ['letters after pi', 'Cylinder: 2&pi;rh', 'Cylinder: 2 pi r h'],
   ['two functions', '<i>f</i>(<i>x</i>) = 3<i>x</i> &minus; 3 and <i>g</i>(<i>x</i>) = 2<i>x</i>.', 'f of x equals 3 x minus 3, and g of x equals 2 x.'],
   ['aside at the end', 'Right part: 99 − 55 = 44 (all from 9).', 'Right part: 99 minus 55 equals 44, all from 9.'],
@@ -88,12 +90,12 @@ const CASES = [
   ['units label', 'What is the area of the rectangle? (square units)', 'What is the area of the rectangle in square units?'],
   ['letter aside', 'Across first (x), then up or down (y).', 'Across first, x, then up or down, y.'],
   // Points, vectors, matrices
-  ['two points', 'Find the midpoint of (&minus;5, &minus;5) and (&minus;11, 3).', 'Find the midpoint of the point negative 5, negative 5, and the point negative 11, 3.'],
+  ['two points', 'Find the midpoint of (&minus;5, &minus;5) and (&minus;11, 3).', 'Find the midpoint of the points negative 5, negative 5, and negative 11, 3.'],
   ['point named', 'Point (5, &minus;4). Where does it go?', 'Point 5, negative 4. Where does it go?'],
   ['dot product', 'Find the dot product &lang;&minus;5, &minus;6&rang; &middot; &lang;3, 6&rang;.', 'Find the dot product of the vector negative 5, negative 6, and the vector 3, 6.'],
   ['vector named', 'Find the magnitude of the vector &lang;7, 24&rang;.', 'Find the magnitude of the vector 7, 24.'],
   ['matrix', 'Find the determinant of <span class="mx"><span>&minus;8</span><span>9</span><span>&minus;7</span><span>7</span></span>',
-    'Find the determinant of the 2 by 2 matrix with top row negative 8, 9, and bottom row negative 7, 7'],
+    'Find the determinant of the matrix with top row negative 8, 9, and bottom row negative 7, 7'],
   // Negative numbers
   ['negative after a line break', 'Solve:<br>&minus;4<i>x</i> &minus; 2<i>y</i> = &minus;28<br>&minus;<i>x</i> + <i>y</i> = 2', 'Solve: negative 4 x minus 2 y equals negative 28. negative x plus y equals 2'],
   ['negative after a word', 'Each term adds &minus;2. Add -1 to x.', 'Each term adds negative 2. Add negative 1 to x.'],
@@ -125,7 +127,8 @@ test('normalize() says each kind of math the way a teacher reads it aloud', () =
 
 test('ordinal and denominator words', () => {
   assert.deepEqual([1, 2, 3, 12, 21, 40, 100, 1000].map(ordinalWord), ['first', 'second', 'third', 'twelfth', 'twenty first', 'fortieth', 'hundredth', 'thousandth']);
-  assert.deepEqual([2, 3, 4, 12].map(d => denomWord(d, true)), ['halves', 'thirds', 'quarters', 'twelfths']);
+  assert.deepEqual([2, 3, 4, 12].map(d => denomWord(d, true)), ['halves', 'thirds', 'fourths', 'twelfths']);
+  assert.equal(denomWord(4, false), 'fourth');
   assert.equal(denomWord(2, false), 'half');
 });
 

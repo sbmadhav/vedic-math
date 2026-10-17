@@ -14,22 +14,22 @@
 - **THEN** the words are "124 divided by 5 equals what, remainder what?"
 
 ### Requirement: Ordinals and fractions as words
-Ordinals SHALL be said as words. Fractions of whole numbers with a denominator from 2 to 100, or 1000, SHALL be named.
+Ordinals SHALL be said as words. Fractions of whole numbers with a denominator from 2 to 100, or 1000, SHALL be named, with 4 said as "fourths".
 
 #### Scenario: Ordinals
 - **WHEN** read aloud says "Keep the 12ths." and "the 6th multiple"
 - **THEN** the words are "Keep the twelfths." and "the sixth multiple"
 
 #### Scenario: Fraction names
-- **WHEN** read aloud says a fraction of 7 over 12
-- **THEN** the words are "seven twelfths"
+- **WHEN** read aloud says a fraction of 7 over 12, and 3 over 4
+- **THEN** the words are "seven twelfths" and "three fourths"
 
 ### Requirement: Brackets keep their grouping
 A bracketed expression SHALL be read by what it holds:
 - a function argument with "of";
 - an aside as a pause;
 - a pair of coordinates as "the point";
-- a multiplied or raised group as "the quantity".
+- a group of terms with a comma pause after it, "times," before it after a number, and "all" before a power or "over".
 
 #### Scenario: Composition
 - **WHEN** read aloud says "Find <i>f</i>(<i>g</i>(1))."
@@ -37,11 +37,22 @@ A bracketed expression SHALL be read by what it holds:
 
 #### Scenario: A power of a bracket
 - **WHEN** read aloud says "(4<i>x</i> + 3)<sup>4</sup>"
-- **THEN** the words are "the quantity 4 x plus 3, to the power of 4"
+- **THEN** the words are "4 x plus 3, all to the power of 4"
 
 #### Scenario: Two points
 - **WHEN** read aloud says "Find the midpoint of (&minus;5, &minus;5) and (&minus;11, 3)."
-- **THEN** the words are "Find the midpoint of the point negative 5, negative 5, and the point negative 11, 3."
+- **THEN** the words are "Find the midpoint of the points negative 5, negative 5, and negative 11, 3."
+
+#### Scenario: A number times a sum
+- **WHEN** read aloud says "2(<i>x</i> + 3)" and "(<i>x</i> &minus; 7)(<i>x</i> &minus; 8)"
+- **THEN** the words are "2 times, x plus 3" and "x minus 7, times x minus 8"
+
+### Requirement: Speed trick steps in clean form
+Speed trick questions and step text SHALL be written without a coefficient of 1, without "+ -", "- -" or "+ −", and without 0x terms, on screen and so when read aloud.
+
+#### Scenario: Transpose
+- **WHEN** the transpose trick shows the equation for a = 6, b = 2, c = −1, d = −12
+- **THEN** the step reads "Equation: 6x + 2 = −x − 12."
 
 ### Requirement: Negative numbers
 A minus with nothing to subtract from SHALL be read as "negative". This includes a minus at the start of a line or after a word.

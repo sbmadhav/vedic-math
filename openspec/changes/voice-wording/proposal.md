@@ -20,14 +20,14 @@ Read aloud is on by default for Explorer, and any Player can tap "Hear it". Ever
   - Ordinals and "12ths" are said as words.
   - Fractions are named up to hundredths ("seven twelfths"), not "7 over 12".
   - Brackets are read by what they hold:
-    - a function argument ("f of g of 1", "f inverse of x", "the cosine of 225 degrees");
+    - a function argument ("f of g of 1", "f inverse of x", "cosine of 225 degrees");
     - an aside, read as a pause;
     - a point ("the point 1, 4");
     - a single term;
-    - a quantity ("the quantity x minus 7, times the quantity x minus 8").
+    - a group of terms, with a comma pause and "all" where needed ("x minus 7, times x minus 8", "2 times, x plus 3", "4 x plus 3, all to the power of 4").
   - Powers of a bracket, powers of a sum, roots of a sum and fraction denominators keep their grouping.
   - "negative" is used at the start of a line and after a word, and "the opposite of negative 4" for −(−4).
-  - Vectors, 2 by 2 matrices, ellipses, money with cents, clock times, ² and ³, "45-45-90" and what to type ("3 slash 4") are read cleanly.
+  - Vectors, matrices, ellipses, money with cents, clock times, ² and ³, "45-45-90" and what to type ("3 slash 4") are read cleanly.
 - **An optional `say` on a question** (HTML, normalized the same way) when the screen text leans on a picture. `fx.speakQuestion(p)` speaks `p.say || p.q` at every question call site: Practice, Hear it, Kata, Arena tap rounds and towers, and Stars. Seven Skills get one:
   - `1-compare` and `3-fraccmp`: "Compare 89 and 57. Which sign goes in the box?"
   - `4-angles`, `10-triangle` and `8-pyth`: the known angles or sides.
@@ -42,6 +42,10 @@ Read aloud is on by default for Explorer, and any Player can tap "Hear it". Ever
   - "divided by (x + 0)" becomes "divided by x".
   - An empty "Subtract  from both sides" hint gets real wording.
   - An invalid `&frac43;` entity, which showed as text, becomes a real fraction.
+- **Owner answers (2026-10-17):**
+  - Fractions say "fourths" (voice, the "Keep the fourths" hint and the guide).
+  - Speed trick steps and questions are written cleanly on screen: "Equation: 6x + 2 = −x − 12." instead of "6x + 2 = -1x + -12.".
+  - No "the quantity": the shortest wording that keeps the meaning.
 - Answers and grading do not change.
 
 ## Modes and Players
@@ -52,5 +56,4 @@ All Modes and all Players. Explorer hears most of it, because read aloud is on b
 
 - Which voice speaks: the built-in voice, the natural voice and the studio voice are covered by `openspec/changes/better-voice`.
 - Bolt's lines, menus and Sky labels, which are never spoken.
-- Speed trick step text that mirrors the formula on purpose, such as "Equation: 6x + 2 = -1x + -12." It is read as shown ("plus negative 12", "1 x").
 - Questions whose picture is the answer (count the dots, the shaded fraction, the clock, a plotted point). Their words stay as they are.

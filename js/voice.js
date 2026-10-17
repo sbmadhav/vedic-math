@@ -25,8 +25,8 @@ export function ordinalWord(n) {
   if (n === 100) return 'hundredth';
   return n % 100 ? `${cardinal(n - (n % 100))} ${ordinalWord(n % 100)}` : `${cardinal(n)}th`;
 }
-/* The name of a denominator: 2 half or halves, 4 quarter or quarters, otherwise the ordinal (thirds, twelfths) */
-export const denomWord = (d, plural) => (d === 2 ? (plural ? 'halves' : 'half') : d === 4 ? (plural ? 'quarters' : 'quarter') : ordinalWord(d) + (plural ? 's' : ''));
+/* The name of a denominator: 2 half or halves, otherwise the ordinal (thirds, fourths, twelfths) */
+export const denomWord = (d, plural) => (d === 2 ? (plural ? 'halves' : 'half') : ordinalWord(d) + (plural ? 's' : ''));
 const named = d => (d >= 2 && d <= 100) || d === 1000; // denominators said as words: thirds to hundredths, and thousandths
 const ENT = {
   times: '×', divide: '÷', minus: '−', middot: '·', le: '≤', ge: '≥', lt: '<', gt: '>', pi: 'π', plusmn: '±', asymp: '≈',
@@ -38,7 +38,7 @@ const decodeEntities = s => s
   .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
   .replace(/&([a-z0-9]+);/gi, (m, k) => (k in ENT ? ENT[k] : ' '));
 const stripTags = s => s.replace(/<[^>]+>/g, '');
-const MARK = '\u0001'; // ends a spoken group ("the quantity x plus 3,"); removed before the words are returned
+const MARK = '\u0001'; // ends a spoken group ("x plus 3,"); removed before the words are returned
 const SIMPLE = /^\s*[−-]?\s*(?:\d+(?:\.\d+)?|[A-Za-zθπ])\s*$/; // one number, a negative number or one letter
 const ONE_TERM = /^\s*[−-]?\s*(?:\d+(?:\.\d+)?)?\s*[A-Za-zθπ]?\s*$/; // also 2x, -3y
 /* A fraction of whole numbers in words: two thirds, seven twelfths, 40 hundredths, negative one half; 3 over 13 */
@@ -55,17 +55,28 @@ function fracWords(n, d) {
   if (n === '?') return `what over ${d}`;
   const w = fracName(n, d); if (w) return FW + w + FE;
   const big = x => !ONE_TERM.test(decodeEntities(x).replace(/\^\{[^{}]*\}/g, ''));
-  if (big(d)) return ` ${n}, over the quantity ${d}, ${MARK}`;
+  if (big(d)) return big(n) ? ` ${n}, all over ${d}, ${MARK}` : ` ${n} over, ${d}, ${MARK}`;
   return big(n) ? ` ${n}, over ${d}, ${MARK}` : ` ${n} over ${d} `;
 }
-/* Function names that read "of" before their argument: f(x) f of x, F(x), p(0), sin(30°) the sine of 30 degrees */
+/* Function names that read "of" before their argument: f(x) f of x, F(x), p(0), sin(30°) sine of 30 degrees */
 const FN_LETTER = /(^|[^A-Za-z])([fghpqFGHPQ])\s*(′*)\s*(\^\{\s*[−-]\s*1\s*\})?\s*$/;
 const FN_WORD = /\b(sin|cos|tan|log|ln)\s*$/;
-const FN_NAME = { sin: 'the sine of', cos: 'the cosine of', tan: 'the tangent of', log: 'log of', ln: 'the natural log of' };
+const FN_NAME = { sin: 'sine of', cos: 'cosine of', tan: 'tangent of', log: 'log of', ln: 'natural log of' };
 const MATH_WORDS = /\b(sub|sin|cos|tan|log|ln|of|pi|sqrt)\b/g;
 const isProse = c => /[A-Za-z]{3,}/.test(c.replace(MATH_WORDS, ''));
 const operandEnd = pre => /(?:\d|[}′]|(?:^|[^A-Za-z])[A-Za-zθπ])\s*$/.test(pre) || pre.trimEnd().endsWith(MARK);
-/* One innermost (...) group, read by what it is: a function argument, an aside, a point, one term, or a quantity */
+/* One innermost (...) group, read by what it is: a function argument, an aside, a point, one term, or a group of terms.
+   A group of terms is said with a comma pause after it, and before it when it follows a number or an operator:
+   2(x + 3) "2 times, x plus 3,"; (x − 7)(x − 8) "x minus 7, times x minus 8,"; (4x + 3)⁴ "4 x plus 3, all to the power of 4" */
+/* What comes before a group of terms: "times," after a number or letter, "times" after another group, a pause after an operator */
+const lead = pre => {
+  const p = pre.trimEnd();
+  if (p.endsWith(MARK)) return ' times ';
+  if (operandEnd(pre)) return ' times, ';
+  if (/[×·]$/.test(p) && p.slice(0, -1).trimEnd().endsWith(MARK)) return ' '; // (a)·(b) reads like (a)(b)
+  if (/\S\s*[×·÷+−-]$/.test(p)) return ', ';
+  return ' ';
+};
 function group(pre, c, post) {
   const t = c.replace(/\u0002[^\u0003]*\u0003/g, '1'); // what the brackets hold, with a worded fraction as one number
   const tail = c.trim().endsWith(',') ? '' : ',', simple = SIMPLE.test(t);
@@ -75,7 +86,7 @@ function group(pre, c, post) {
     return [pre.slice(0, pre.length - m[0].length) + m[1] + name + ' of ', simple || ONE_TERM.test(t) ? ` ${c} ` : ` ${c}${tail} ${MARK} `];
   }
   if ((m = pre.match(FN_WORD))) return [pre.slice(0, pre.length - m[0].length) + FN_NAME[m[1]] + ' ', simple ? ` ${c} ` : ` ${c}${tail} ${MARK} `];
-  if (/√\s*$/.test(pre)) return [pre.replace(/√\s*$/, ' the square root of '), simple ? ` ${c} ` : ` the quantity ${c}${tail} ${MARK} `];
+  if (/√\s*$/.test(pre)) return [pre.replace(/√\s*$/, ' the square root of '), simple ? ` ${c} ` : ` ${c}${tail} ${MARK} `];
   if (isProse(t)) {
     c = c.trim();
     if (/[.!?]$/.test(c)) return [/[.!?]\s*$/.test(pre) ? pre : pre.trimEnd() + '.', ` ${c} `];
@@ -85,11 +96,11 @@ function group(pre, c, post) {
   }
   if (/^\s*[−-]?\s*[\w.]+\s*(?:,\s*[−-]?\s*[\w.]+\s*){1,2}$/.test(t)) return [pre, `${/\bpoint\s*$/i.test(pre) ? '' : ' the point '} ${c}, ${MARK} `];
   if (simple) {
-    if (/^\s*\^/.test(post)) return [pre, (operandEnd(pre) ? ' times ' : ' ') + (/[−-]/.test(t) ? `the quantity ${c}, ${MARK}` : /[A-Za-z]/.test(t) ? c : `${c}, ${MARK}`)];
+    if (/^\s*\^/.test(post)) return [pre, lead(pre) + (/[A-Za-z]/.test(t) && !/[−-]/.test(t) ? c : `${c}, ${MARK}`)];
     if (/[A-Za-z]{2,}\s*$/.test(pre) && /[A-Za-z]/.test(t)) return [pre.trimEnd(), `, ${c.trim()}, ${MARK} `];
     return [pre, (operandEnd(pre) ? ' times ' : ' ') + c + ' '];
   }
-  return [pre, (operandEnd(pre) ? ' times ' : ' ') + `the quantity ${c}${tail} ${MARK}` + (/^\s*(?:[\d√(]|[A-Za-z](?![A-Za-z]))/.test(post) ? ' times ' : ' ')];
+  return [pre, lead(pre) + `${c}${tail} ${MARK}` + (/^\s*(?:[\d√(]|[A-Za-z](?![A-Za-z]))/.test(post) ? ' times ' : ' ')];
 }
 function groups(s) {
   for (let guard = 0; guard < 400; guard++) {
@@ -105,7 +116,7 @@ const power = e => {
   if (e === '2') return ' squared ';
   if (e === '3') return ' cubed ';
   if (e === '?') return ' to the power of what ';
-  return SIMPLE.test(e) ? ` to the power of ${e}, ${MARK} ` : ` to the power of the quantity ${e}, ${MARK} `;
+  return ` to the power of ${e}, ${MARK} `;
 };
 const money = (d, c) => {
   const dollars = +d, cents = c === undefined ? 0 : +c.padEnd(2, '0');
@@ -117,7 +128,7 @@ export function normalize(input) {
   // Structure first, while the tags still say what things are
   s = s.replace(/<br\s*\/?>/gi, '\n').replace(/<\/?(?:p|div|li|tr|h\d)\b[^>]*>/gi, '\n');
   s = s.replace(/<span class="mx"><span>([\s\S]*?)<\/span><span>([\s\S]*?)<\/span><span>([\s\S]*?)<\/span><span>([\s\S]*?)<\/span><\/span>/g,
-    ' the 2 by 2 matrix with top row $1, $2, and bottom row $3, $4, ' + MARK + ' ');
+    ' the matrix with top row $1, $2, and bottom row $3, $4, ' + MARK + ' ');
   s = s.replace(/&int;\s*<sub>([\s\S]*?)<\/sub>\s*<sup>([\s\S]*?)<\/sup>/g, ' the integral from $1 to $2 of ');
   s = s.replace(/lim\s*<sub>([\s\S]*?)(?:&rarr;|→)([\s\S]*?)<\/sub>/g, ' the limit as $1 approaches $2 of ');
   s = s.replace(/log\s*<sub>([\s\S]*?)<\/sub>/g, ' log base $1 of ');
@@ -125,7 +136,7 @@ export function normalize(input) {
   s = s.replace(/<sup>([\s\S]*?)<\/sup>/g, (_, e) => `^{${stripTags(e)}}`);
   s = s.replace(/[²³]/g, c => `^{${c === '²' ? 2 : 3}}`).replace(/⁻¹/g, '^{−1}');
   s = s.replace(/<sub>([\s\S]*?)<\/sub>/g, ' sub $1 ').replace(/[₀-₉]/g, c => ` sub ${c.charCodeAt(0) - 8320} `);
-  s = s.replace(/(\d)\s*(?:&#8202;| )?\s*(<span class="fr">)/g, '$1 and $2'); // mixed numbers: 2 and 3 quarters
+  s = s.replace(/(\d)\s*(?:&#8202;| )?\s*(<span class="fr">)/g, '$1 and $2'); // mixed numbers: 2 and 3 fourths
   s = s.replace(/<span class="fr"><span>([\s\S]*?)<\/span><span>([\s\S]*?)<\/span><\/span>/g, (_, n, d) => ' ' + fracWords(stripTags(n), stripTags(d)) + ' ');
   s = s.replace(/<\/span>\s*<span[^>]*>/g, ', ');
   s = stripTags(s); // inline tags (b, i, span) join their neighbours: "<b>18</b>?" is "18?"
@@ -152,17 +163,17 @@ export function normalize(input) {
   s = groups(s);
   s = s.replace(/\bdot product\s*⟨([^⟩]*)⟩\s*·\s*⟨([^⟩]*)⟩/g, `dot product of the vector $1, ${MARK} and the vector $2, ${MARK} `);
   s = s.replace(/\bvector\s*⟨([^⟩]*)⟩/g, `vector $1, ${MARK} `).replace(/⟨([^⟩]*)⟩/g, ` the vector $1, ${MARK} `);
-  s = s.replace(new RegExp(`(${MARK}\\s*)\\^\\{([^{}]*)\\}`, 'g'), (_, m, e) => `${m}${power(e)}, ${MARK} `); // the quantity x plus 3, squared, ...
+  s = s.replace(new RegExp(`(${MARK}\\s*)\\^\\{([^{}]*)\\}`, 'g'), (_, m, e) => `${m} all ${power(e)}, ${MARK} `); // x plus 3, all squared, ...
   s = s.replace(/\^\{([^{}]*)\}/g, (_, e) => power(e));
   s = s.replace(/√\s*/g, ' the square root of ');
-  s = s.replace(/½/g, ' one half ').replace(/¼/g, ' one quarter ').replace(/¾/g, ' three quarters ').replace(/⅓/g, ' one third ').replace(/⅔/g, ' two thirds ');
+  s = s.replace(/½/g, ' one half ').replace(/¼/g, ' one fourth ').replace(/¾/g, ' three fourths ').replace(/⅓/g, ' one third ').replace(/⅔/g, ' two thirds ');
   s = s.replace(/[□▢☐◻]/g, ' blank ');
   s = s.replace(/′/g, ' prime ');
   s = s.replace(/\b(sin|cos|tan)\b(?=\s*[=,.]|\s*$)/g, m => ({ sin: 'sine', cos: 'cosine', tan: 'tangent' })[m]);
   s = s.replace(/\bd([xt])\b/g, 'd $1'); // dx
   s = s.replace(/π\s*([b-df-hj-np-tv-z]{2,3})\b/g, (_, v) => `π ${v.split('').join(' ')}`); // 2πrh: pi r h
   // Negative numbers: a minus with nothing to subtract from
-  const NEG = new RegExp(`(^|[=+×÷·,:;≤≥<>±\\[−]\\s*|[.!?]\\s+|\\b(?!(?:squared|cubed|pi|prime|inverse|infinity)\\b)[A-Za-z]{2,}\\s+)[−-]\\s*(?=[\\d(a-zA-Z√π\\u0002])`, 'g');
+  const NEG = new RegExp(`(^\\s*|[=+×÷·,:;≤≥<>±\\[−]\\s*|[.!?]\\s+|\\b(?!(?:squared|cubed|pi|prime|inverse|infinity)\\b)[A-Za-z]{2,}\\s+)[−-]\\s*(?=[\\d(a-zA-Z√π\\u0002])`, 'g');
   s = s.replace(NEG, '$1negative ').replace(NEG, '$1negative ');
   s = s.replace(/\bnegative\s+negative\b/g, 'the opposite of negative');
   s = s.replace(/(\d)([a-z])(?![a-z])/gi, '$1 $2'); // 5x to 5 x
@@ -189,6 +200,7 @@ export function normalize(input) {
   s = s.replace(/\s+,/g, ',').replace(/,(\s*,)+/g, ',').replace(/,\s*(?=[.?!:;]|$)/g, '').replace(/([.?!:])\s*,/g, '$1');
   s = s.replace(/\s+/g, ' ').replace(/\s+([.?!:;])/g, '$1').replace(/([.?!])\.+/g, '$1').replace(/:\./g, ':').trim();
   s = s.replace(/^[.,:;]\s*/, '');
+  s = s.replace(/\bthe point ([^,]+, [^,]+), and the point /g, 'the points $1, and '); // the points 1, 4, and 4, 1
   if (/\bwhat$/.test(s)) s += '?';
   return s;
 }

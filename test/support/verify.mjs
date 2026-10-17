@@ -308,8 +308,9 @@ export function verifyQuestion(item) {
 export function solveFields(item) {
   const text = plain(item.q); let m;
   if ((m = /^(\d+) \/ 9 = \? remainder \?$/.exec(text))) { const n = BigInt(m[1]); return [{ label: 'Quotient', answer: R(n / 9n) }, { label: 'Remainder', answer: R(n % 9n) }]; }
-  if ((m = new RegExp(`^Solve: ; ${N}x \\+ ${N}y = ${N} ; ${N}x \\+ ${N}y = ${N}$`).exec(text))) {
-    const [a, b, c, d, e, f] = m.slice(1, 7).map(num), det = a.mul(e).sub(b.mul(d));
+  const C = '(-?\\d*(?:\\.\\d+)?)', co = t => num(t === '' ? '1' : t === '-' ? '-1' : t); // a coefficient, where "x" is 1x
+  if ((m = new RegExp(`^Solve: ; ${C}x \\+ ${C}y = ${N} ; ${C}x \\+ ${C}y = ${N}$`).exec(text))) {
+    const [a, b, c, d, e, f] = m.slice(1, 7).map((t, i) => (i === 2 || i === 5 ? num(t) : co(t))), det = a.mul(e).sub(b.mul(d));
     if (det.isZero()) return undefined;
     return [{ label: 'x', answer: c.mul(e).sub(b.mul(f)).div(det) }, { label: 'y', answer: a.mul(f).sub(c.mul(d)).div(det) }];
   }

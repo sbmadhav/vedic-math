@@ -8,10 +8,10 @@
 ## 2. normalize() rules
 
 - [x] 2.1 `js/voice.js` `normalize()`:
-  - group brackets by what they hold (function argument, aside, point, term, quantity);
+  - group brackets by what they hold (function argument, aside, point, term, group of terms with a comma pause and "all");
   - powers, roots and denominators keep their grouping;
   - the negative rules;
-  - ordinals, fraction names to hundredths, money with cents, clock times, ellipses, vectors, 2 by 2 matrices, unicode powers and what to type.
+  - ordinals, fraction names to hundredths, money with cents, clock times, ellipses, vectors, matrices, unicode powers and what to type.
 
   It exports `ordinalWord()` and `denomWord()`.
   - Verify: `node --test test/voice-normalize.test.mjs`. Its table covers every fix class and the lines that were already right.
@@ -45,9 +45,18 @@
     - `test/support/verify.mjs` still checks every challenge answer.
     - The two Explorer daily set snapshots in `test/arena.test.mjs` were retaken. The questions and answers are the same; only "1 marbles" and "1 stars" changed.
 
-## 5. Release
+## 5. Owner answers (2026-10-17)
 
-- [x] 5.1 `docs/prototypes/voice/tools/inventory.mjs` samples `say` when present.
-- [x] 5.2 Run the full suite and the build: `node --test 'test/**/*.test.{js,mjs}'`, `python3 build.py --out /tmp/vw-site`, and `cd e2e && npx playwright test read-aloud practice arena star games dojo`.
-- [ ] 5.3 Owner listens to a sample of Explorer lines on a device before release.
-- [ ] 5.4 After release, archive this change. Then `openspec/specs/read-aloud-wording/spec.md` describes what is live.
+- [x] 5.1 Fractions say "fourths": `denomWord(4)`, ¼ and ¾, `lib.js` `denomName`, and the guide's "3 fourths".
+  - Verify: `test/voice-normalize.test.mjs` "fourths" and "ordinal and denominator words".
+- [x] 5.2 Speed trick steps and questions are clean on screen (`js/vedic.js` `lin()`): "x − 12", not "1x + -12"; no "+ -", "- -" or 0x terms. The same is done for the 9-expand, 11-inverse and 12-integral hints.
+  - Verify: `test/katas.test.mjs` "speed trick steps and questions are written in clean form" checks every Kata question and step and the animator at edge inputs. `test/support/verify.mjs` still works out every Kata answer from the new question text.
+- [x] 5.3 No "the quantity": a group of terms gets a comma pause, with "times," before it after a number and "all" before a power or "over".
+  - Verify: the table cases "number times a sum (owner example)", "product of brackets" and "power of a bracket".
+
+## 6. Release
+
+- [x] 6.1 `docs/prototypes/voice/tools/inventory.mjs` samples `say` when present.
+- [x] 6.2 Run the full suite and the build: `node --test 'test/**/*.test.{js,mjs}'`, `python3 build.py --out /tmp/vw-site`, and `cd e2e && npx playwright test read-aloud practice arena star games dojo`.
+- [ ] 6.3 Owner listens to a sample of Explorer lines on a device before release.
+- [ ] 6.4 After release, archive this change. Then `openspec/specs/read-aloud-wording/spec.md` describes what is live.
