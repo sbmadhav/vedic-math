@@ -20,7 +20,7 @@ import * as LV from './levels.js';
 import { LEVELS, LEVELS_PER_GAME, levelMedal, boardGame } from './games.js';
 import * as AD from './adapt.js';
 import { initAmbient, bgOn, setBg, BG_NOTES, stop as stopMusic, isPlaying as musicOn } from './ambient.js';
-import { on, later, every, child } from './life.js';
+import { on, later, every, child, onAbort } from './life.js';
 import * as metrics from './metrics.js';
 import { boltHTML } from './bolt.js';
 import { runStar } from './star.js';
@@ -30,6 +30,8 @@ import { openShell } from './shell.js';
 import { GROUPS, sectionsFor, tryFor, say, resolveTour, tourDue, tourState, setTourState } from './guide.js';
 import { artFor } from './guide-art.js';
 import { startTour } from './tour.js';
+import { sayButton, respellHTML, devaHTML, wireSay } from './say.js';
+import { sutraAmbience, ambienceButton, wireAmbience, settingsHTML as ambienceSettingsHTML, wireSettings as wireAmbienceSettings } from './sutra-ambience.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const view = $('#view');
@@ -238,7 +240,7 @@ function skyHome({ signal } = {}) {
   return out;
 }
 /* All places: the Sky as a plain list (#/places) */
-function placesView() {
+function placesView({ signal } = {}) {
   document.title = `All places: ${BRAND} · Madhav`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow places">
     ${crumbs([null, 'All places'])}
@@ -246,6 +248,7 @@ function placesView() {
     <h1 class="md-heading">All places</h1>
     ${placesHTML()}
   </div></section>`;
+  if (signal) wireSay(view, signal);
 }
 
 /* ---------- Learn ---------- */
@@ -295,7 +298,7 @@ function skillView(id, { signal } = {}) {
       <article class="mq-lesson md-card">
         <span class="md-tag${S.color === 'sun' ? '' : ' md-tag--' + S.color}">${both(S.pro, S.kid)}</span>
         <h1 class="mq-h1">${both(s.title, s.kid)}</h1>
-        ${trick ? `<p class="mq-sutra"><b lang="sa-Latn">${trick.sutra}</b><span>${trick.meaning}</span></p>` : ''}
+        ${trick ? `<div class="mq-sutra"><p class="mq-sutra-name"><b lang="sa-Latn">${trick.sutra}</b>${sayButton(trick.sutraId, { label: true })}</p>${respellHTML(trick.sutraId)}<span class="mq-sutra-mean">${trick.meaning}</span></div>` : ''}
         <p class="mq-idea">${s.idea}</p>
         <h2 class="mq-h3">How it works</h2>
         <ol class="mq-method">${(trick ? [trick.when] : s.method).map(m => `<li>${m}</li>`).join('')}</ol>
@@ -306,6 +309,7 @@ function skillView(id, { signal } = {}) {
     </div>
   </div></section>`;
   if (trick) mountAnimator(trick, signal); else showExample(s);
+  if (trick && signal) wireSay(view, signal);
   fillWatch($('[data-watch-for]'), s, trick, signal);
   return practice($('#practice'), () => s, { signal });
 }
@@ -497,7 +501,7 @@ function katasView(trickId) {
   document.title = `${t.title} katas: ${BRAND} · Madhav`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs(['#/dojo', 'Dojo'], [null, `${t.title}: katas`])}
-    <span class="md-tag md-tag--plum">${t.sutra}</span>
+    <span class="md-tag md-tag--plum" lang="sa-Latn">${t.sutra}</span>
     <h1 class="md-heading">${t.title}: ${LV.KATAS_PER_TRICK} katas</h1>
     <p class="md-lede">Each kata is a short drill of 5 to 8 problems that gets harder as you climb: bigger numbers, new bases, trickier cases. Get at least 60% right to finish one and unlock the next.</p>
     <p class="mq-small">${store.katasDoneWhere(`k:${trickId}:`)} of ${LV.KATAS_PER_TRICK} done · <a href="#/skill/v-${trickId}">Learn the trick first</a></p>
@@ -650,17 +654,19 @@ function challengeView(id, { signal } = {}) {
 /* ---------- Sutras: deep dive and card collection ---------- */
 const sutraId = (c, sub) => (sub ? 'u' : 's') + c.n;
 const ALL_SUTRAS = [...SUTRAS.map(c => ({ ...c, sub: false, id: 's' + c.n })), ...SUBSUTRAS.map(c => ({ ...c, sub: true, id: 'u' + c.n }))];
-function sutrasView() {
+let sutraAmb = null; /* the Sutra ambience of the Sutra page on screen (js/sutra-ambience.js) */
+function sutrasView({ signal } = {}) {
   document.title = `The sutras: ${BRAND} · Madhav`;
   store.markSeen('sutras');
   const got = ALL_SUTRAS.filter(gm.collectedCard).length;
+  /* The Say it button is the card's sibling of the flip button (a button cannot sit in a button), in its top corner */
   const card = c => { const have = gm.collectedCard(c); return `<article class="sutra-card${have ? ' got' : ''}" data-id="${c.id}" data-name="${esc(c.name)}">
-    <button class="sutra-face" aria-expanded="false" aria-label="${esc(c.name)}: ${esc(c.meaning)}. Flip card"><span class="sutra-n">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n}</span><b lang="sa-Latn">${c.name}</b><i>${c.meaning}</i>${have ? '<span class="sutra-got">Collected</span>' : '<span class="sutra-tap">Tap to flip</span>'}</button>
+    ${sayButton(c.id, { cls: 'say-btn--card' })}<button class="sutra-face" aria-expanded="false" aria-label="${esc(c.name)}: ${esc(c.meaning)}. Flip card"><span class="sutra-n">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n}</span><b lang="sa-Latn">${c.name}</b>${respellHTML(c.id)}<i>${c.meaning}</i>${have ? '<span class="sutra-got">Collected</span>' : '<span class="sutra-tap">Tap to flip</span>'}</button>
     <div class="sutra-back"><span>${c.plain}</span>${c.example ? `<code>${c.example}</code>` : ''}
       <span class="sutra-acts"><a class="sutra-more" href="#/sutras/${c.id}">Learn more ${icon('play')}</a><button type="button" class="sutra-flipback" aria-label="Flip back">${icon('loop')}</button></span></div></article>`; };
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs([null, 'Sutras'])}
-    <span class="md-tag md-tag--plum">Deep dive</span>
+    <div class="sutra-top"><span class="md-tag md-tag--plum">Deep dive</span>${ambienceButton()}</div>
     <h1 class="md-heading">The 16 sutras and 13 sub-sutras</h1>
     <p class="md-lede">Each sutra is a short word formula that packs a whole method into a phrase. Flip a card for the short version, then open <b>Learn more</b> for the full story: animated diagrams, why it works, worked examples and further reading. You have collected <b>${got} of ${ALL_SUTRAS.length}</b>.</p>
     <div class="mq-bar mq-bar--big sutra-bar"><i style="width:${pct(got / ALL_SUTRAS.length)}%"></i></div>
@@ -672,6 +678,11 @@ function sutrasView() {
   </div></section>`;
   const flip = (art, open) => { art.classList.toggle('flipped', open); art.querySelector('.sutra-face').setAttribute('aria-expanded', String(open)); fx.sfx('tap'); if (open) { collect(art.dataset.name); art.classList.add('got'); art.querySelector('.sutra-more').focus({ preventScroll: true }); } else art.querySelector('.sutra-face').focus({ preventScroll: true }); };
   view.querySelectorAll('.sutra-card').forEach(art => { art.querySelector('.sutra-face').onclick = () => flip(art, true); art.querySelector('.sutra-flipback').onclick = () => flip(art, false); });
+  if (signal) {
+    wireSay(view, signal); wireAmbience(view, signal);
+    const amb = sutraAmb = sutraAmbience({ signal }); /* a deep dive opening strikes again (openSutra) */
+    onAbort(signal, () => { if (sutraAmb === amb) sutraAmb = null; });
+  }
   // Outside reading on where the sutras come from, critiques included: Pro only
   if (linksOut()) W.loadVideos().then(({ LINKS }) => { const p = $('[data-history-links]'); if (!p) return; p.innerHTML = 'Read more: ' + LINKS.filter(l => l.history).map(l => outLink(l.url, esc(l.title))).join(' · '); p.hidden = false; }).catch(() => {});
 }
@@ -685,9 +696,9 @@ function sutraHTML(c) {
   const tricks = c.tricks.map(t => TRICKS.find(x => x.id === t)).filter(Boolean);
   // Learn more: videos play in the page for every Mode; pages on other sites only for Pro
   const reads = d.read.map(([label, to]) => (typeof to === 'object' ? playBtn(to.yt, `${icon('play')}<span>${esc(label)}</span>`) : outLink(to, `${icon('link')}<span>${esc(label)}</span>`))).filter(Boolean);
-  // The close button and the prev / next footer stay pinned while the deep dive scrolls under them
-  return `<div class="sd-bar"><button class="vp-x sd-x" aria-label="Close">${icon('close')}</button></div>
-  <header class="sd-head"><div><span class="md-tag md-tag--plum">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n} of ${c.sub ? 13 : 16}</span><h2 id="sdTitle" lang="sa-Latn">${c.name}</h2><p class="sd-mean">${c.meaning}</p></div></header>
+  // The close button (with the Ambience toggle beside it) and the prev / next footer stay pinned while the deep dive scrolls under them
+  return `<div class="sd-bar">${ambienceButton({ compact: true })}<button class="vp-x sd-x" aria-label="Close">${icon('close')}</button></div>
+  <header class="sd-head"><div><span class="md-tag md-tag--plum">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n} of ${c.sub ? 13 : 16}</span><h2 id="sdTitle" lang="sa-Latn">${c.name}</h2><p class="sd-say">${sayButton(c.id, { label: true })}${respellHTML(c.id)}</p>${devaHTML(c.id)}<p class="sd-mean">${c.meaning}</p></div></header>
   <div class="sd-body">
     <div class="sd-fig"><div class="sd-scene"></div><p class="mq-small">Diagram plays by itself. Use Back and Next to go at your own pace.</p></div>
     <div class="sd-text">
@@ -714,6 +725,8 @@ function openSutra(id, fromPage) {
   sutraDlg.innerHTML = `<div class="sd-inner">${sutraHTML(c)}</div>`;
   sutraScene = new AbortController();
   mountScene(sutraDlg.querySelector('.sd-scene'), DETAILS[c.name].scene, sutraScene.signal);
+  wireSay(sutraDlg, sutraScene.signal); wireAmbience(sutraDlg, sutraScene.signal);
+  if (sutraAmb) sutraAmb.strike();
   collect(c.name); track('sutra/' + id, 'Sutra: ' + c.name);
   document.title = `${c.name}: ${BRAND} · Madhav`;
   if (swapping) { sutraDlg.scrollTop = 0; sutraDlg.querySelector('.sd-x').focus(); return; }
@@ -1305,6 +1318,7 @@ function meView() {
     <h2 class="mq-strand">Settings</h2>
     ${skySwitchHTML(p)}
     <div class="me-set"><label><input type="checkbox" id="setSound" ${fx.soundOn() ? 'checked' : ''}> Sound effects</label><label><input type="checkbox" id="setVoice" ${fx.voiceOn() ? 'checked' : ''}> Read questions aloud</label></div>
+    ${ambienceSettingsHTML()}
     <h3 class="mq-h3" id="calmH">Calm and motion</h3>
     <div class="me-calm" role="group" aria-labelledby="calmH">
       <button type="button" class="md-switch" role="switch" id="setCalm" aria-checked="${fx.calmOn()}" aria-describedby="calmNote"><span>Calm</span><span class="md-track" aria-hidden="true"><span class="md-knob"></span></span></button>
@@ -1336,6 +1350,7 @@ function meView() {
   view.querySelectorAll('.me-size [data-size]').forEach(b => b.onclick = () => { fx.setTextSize(b.dataset.size); view.querySelectorAll('.me-size [data-size]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.size === fx.textSize()))); });
   $('#setVoice').onchange = e => { fx.setVoice(e.target.checked); if (e.target.checked) fx.speak('Read aloud is on.', true); else fx.stopSpeaking(); };
   fx.wireVoiceSettings(view, { player: p.id });
+  wireAmbienceSettings(view);
   wireWorldBoards(view);
   if (focusWorldBoards) { focusWorldBoards = false; const wb = $('#worldBoards'); wb.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); ($('#wbIn') || $('#wbSwitch') || wb).focus({ preventScroll: true }); }
   $('#pExport').onclick = async () => { const code = btoa(unescape(encodeURIComponent(store.exportData()))); try { await navigator.clipboard.writeText(code); msg('Backup code copied. Paste it somewhere safe.'); } catch (e) { prompt('Copy this backup code:', code); } };

@@ -49,17 +49,17 @@ Wherever a Say it button is shown, the system SHALL show the name's respelling u
 
 #### Scenario: Stored text matches the generator
 - **WHEN** the node tests run
-- **THEN** every `say` and `deva` in `js/sutras.js` equals what `tools/voice/sanskrit.mjs` makes from that entry's IAST
+- **THEN** every `say` and `deva` in `js/sutras.js` equals what `tools/sutra-voice/sanskrit.mjs` makes from that entry's IAST
 
 ### Requirement: Name clips
-The system SHALL ship one clip per name (29), made with the Kokoro Hindi voice the owner chose, from phonemes generated from the IAST, as AAC `.m4a` (mono, 24 kHz, 32 kbps) under `voice/sutras/`.
+The system SHALL ship one clip per name (29), made with the Kokoro voice the owner chose (the Alpha kid blend: Hindi Alpha 70%, Japanese Alpha 30%), from phonemes generated from the IAST, as AAC `.m4a` (mono, 24 kHz, 32 kbps) under `sounds/sutras/`.
 
 #### Scenario: Size
 - **WHEN** the clips are built
 - **THEN** there are 29, each under 30 KB, and all together under 500 KB
 
 ### Requirement: Clips load on use and stay for offline
-The system SHALL keep name clips out of the service worker's install precache and fetch a clip on the first tap that needs it. After the first Say it tap on a device, it SHALL fetch the remaining clips one at a time while the browser is idle, unless Save-Data is on. The service worker SHALL serve clips cache first.
+The system SHALL keep name clips out of the service worker's install precache and fetch a clip on the first tap that needs it. After the first Say it tap on a device, it SHALL fetch the remaining clips one at a time while the browser is idle, unless Save-Data is on. The service worker SHALL serve clips cache first. Every sound file URL SHALL carry a content-hash `?v=`, so a changed file is fetched again.
 
 #### Scenario: First tap
 - **WHEN** a Player on a new device taps Say it for Sutra 3

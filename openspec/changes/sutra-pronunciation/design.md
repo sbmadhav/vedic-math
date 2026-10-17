@@ -28,7 +28,7 @@
 
 **2. Phonemes from the IAST, not Hindi rules.** kokoro-js only ships an English front end. Kokoro's own Hindi pipeline (Python) uses eSpeak NG's Hindi rules, which delete final short vowels and read the names as Hindi ("ekādhiken pūrveṇ", "daśat"). `tools/voice/sanskrit.mjs` instead reads the IAST letter by letter into IPA in Kokoro's symbols: every short a said, ṃ shaped by the next consonant, ḥ with the echo of its vowel at a word end, jñ as "gy", and the light beat marked by the classical rule. The model gets those phonemes directly (`generate_from_ids` with the voice's style vector). The listening page keeps an eSpeak-Hindi row so the difference can be heard.
 
-**3. One voice: Alpha (`hf_alpha`), subject to the owner's ears.** Candidates, all Kokoro Hindi voices fed the same phonemes, speed 0.85:
+**3. One voice: the owner chose the Alpha kid blend (owner decision 1); Alpha (`hf_alpha`) was the recommendation.** Candidates, all Kokoro Hindi voices fed the same phonemes, speed 0.85:
 
 | Voice | All 29 | Largest | Typical pitch | Whisper match |
 |---|---|---|---|---|
@@ -89,12 +89,24 @@ Additive: no stored data changes. New settings default as in decision 9. Rollbac
 
 ## Owner decisions
 
-1. **Voice**: Alpha (recommended) or the Alpha kid blend? Listen on the listening page.
-2. **Meanings**: approve the three changes (sub-sutra 10 reversed, Sutra 9, sub-sutra 4).
-3. **Ambience default**: on (as asked) with the hum off; or off until turned on?
-4. **Calm and Pause motion** silence the ambience (as proposed), or only Sound effects off does?
-5. **Count ambience off** (`math/ambience/off`) to learn whether it bothers people? Not proposed.
-6. **A human recording**: ask a Sanskrit teacher to record the 29 names under CC0 or CC BY (about 3 minutes of audio) and replace the Kokoro clips? Kokoro ships now; a recording could replace it later with no code change.
+Answered on 2026-10-17.
+
+1. **Voice**: the Alpha kid blend ("kid blend (Alpha) is good"): Kokoro Hindi Alpha 70% blended with Kokoro's Japanese Alpha 30% (decision 3). All 29 clips are made with it (`tools/sutra-voice/make-sutra-clips.mjs`, voice id `kid_alpha_jalpha`): 369 KB in all, 9 to 21 KB each, AAC mono 24 kHz 32 kbps. Whisper check of the shipped clips (`tools/sutra-voice/check.json`): mean match 0.59, lowest u9 Antyayoreva (0.27), as the listening page found.
+2. **Meanings**: approved ("yes to all"): sub-sutra 10 Samuccayaguṇitaḥ "The product of the sums"; Sutra 9 Calana-Kalanābhyām "By motion and reckoning (calculus)"; sub-sutra 4 Kevalaiḥ Saptakaṃ Guṇyāt "For 7, multiply by 143". The deep dive text of the same three (`js/sutra-details.js`, `more`) follows. The spelling fixes (Pūrveṇa in three Tricks; ṃ in Nikhilaṃ and Śūnyaṃ) are research-confirmed corrections and needed no decision.
+3. **Ambience** (the owner's words): "a very mild singing bowl by default while learning the Sutras; a chanted Om is opt-in; a way to turn it off; it turns off automatically when the Player moves to another tab if no music was playing in the first place; if the site music was already playing, use that instead of the ambience (don't layer them)." So: Sutra ambience on by default with the hum off; Chanted Om off by default; the Ambience button on the Sutra page and in the deep dive, and the Me page settings; leaving the Sutra pages or hiding the tab fades it out; with Calm music playing as the page opens, no ambience starts and the music keeps playing.
+4. **Calm and Pause motion** silence the ambience, as proposed.
+5. **Ambience off is not counted.** Nothing about the ambience is sent (`test/metrics.test.mjs` checks `js/sutra-ambience.js` has no analytics call).
+6. **Human recording**: later, not now. The Kokoro clips ship now; a recording can replace `sounds/sutras/<id>.m4a` later with no code change (remake `js/say-clips.js` for the new hashes).
+
+## Changes made while building
+
+- **Folders.** The clips are `sounds/sutras/<id>.m4a` (ids as in `js/app.js`: `s1` to `s16`, `u1` to `u13`), next to `sounds/om.m4a`, not `voice/sutras/`: better-voice part B (in flight) publishes its studio recordings into `voice/` from a GitHub Release archive and fails the build on committed audio under `voice/`. `sw.js` serves `sounds/` cache first from its own cache, `vedic-math-sounds`, kept across deploys and trimmed to 120 entries; each clip URL carries `?v=<first 10 hex of its SHA-256>` from the generated `js/say-clips.js`, so a remade clip is fetched again. The tools are `tools/sutra-voice/` (own `package.json`), not `tools/voice/`, for the same reason. Note for better-voice part B: its `check_voice` must allow `sounds/` (these are small, dev-made clips committed on purpose).
+- **The visible label** in the deep dive and on Trick pages is "Hear how to say", not "Say it", so the visible words are part of the accessible name "Hear how to say <name>" (WCAG 2.5.3). On cards and in All places the button shows only the speaker icon.
+- **The ambience lives in `js/sutra-ambience.js`**, sharing `js/ambient.js`'s AudioContext (`audioContext()`), with its own gain bus and reverb. Its release after a fade is timed on the audio clock (a silent oscillator's `onended`), so no page timer outlives the view.
+- **The first gesture** on a fresh load strikes the pending bowl, except when that gesture is a tap on Say it or the Ambience button (so the bowl never talks over a name clip or an off switch).
+- **Fallback status** uses the app's polite toast (`fx.toast`).
+- **Review follow-ups (PR #49).** The `math/say/sutra` event is sent only once a clip has really started playing (`playClip`'s `onStart`), never for a failed fetch or decode, the fallback voice, or a tap superseded before playback. The Om URL carries its content hash too (`OM` in `js/say-clips.js`), so every sound URL is versioned and the long-lived `vedic-math-sounds` cache can never serve an old file for it; a `sounds/` request without `?v=` is network first with the cache as the offline fallback. The cache trim runs one at a time. `playClip` refuses URLs on another origin, and `clipUrl` builds URLs only from the index's own keys.
+- **Deep dive header** (after sutra-examples, #44): the compact Ambience toggle is pinned in #44's sticky `.sd-bar` beside Close, and the Say it button, Respelling and Devanagari sit under the name in `.sd-head`, which keeps 104 px clear on the right for the two pinned buttons. `e2e/tests/say.spec.ts` checks them with #44's examples and footer at 1280, 768, 375 and 320 px in both schemes.
 
 ## Open Questions
 

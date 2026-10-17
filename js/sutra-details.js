@@ -127,7 +127,7 @@ export const DETAILS = {
     ] }
   },
   'Calana-Kalanābhyām': {
-    more: 'Calana-kalana means "by sequential motion": how things change step by step. The book uses it for differences and rates of change, the idea at the heart of calculus. One striking use: for a quadratic ax² + bx + c = 0, its first derivative 2ax + b equals ± the square root of the discriminant.',
+    more: 'Calana-kalana means "by motion and reckoning": how things change step by step. The book uses it for differences and rates of change, the idea at the heart of calculus. One striking use: for a quadratic ax² + bx + c = 0, its first derivative 2ax + b equals ± the square root of the discriminant.',
     why: 'From the quadratic formula, x = (−b ± √(b² − 4ac)) / 2a, so 2ax + b = ±√(b² − 4ac). The left side is the slope of the parabola (its derivative), so the roots sit where the slope equals ± the root of the discriminant.',
     examples: [['6² from 5²', `Going from 5 to 6 adds 2 × 5 + 1 = 11. 25 + 11 = ${hl('36')}`], ['How fast x² grows', `Going from x to x + 1 adds ${hl('2x + 1')}, so near x the change is about 2x per step.`], ['x² − 5x + 6 = 0', `Derivative 2x − 5. Discriminant 25 − 24 = 1. So 2x − 5 = ±1 → ${hl('x = 3 or 2')}`], ['x² − 7x + 10 = 0', `Derivative 2x − 7. Discriminant 49 − 40 = 9, and √9 = 3. So 2x − 7 = ±3 → ${hl('x = 5 or 2')}`]],
     uses: ['Quadratics', 'Rates of change', 'Calculus intuition'],
@@ -275,7 +275,7 @@ export const DETAILS = {
     ] }
   },
   'Kevalaiḥ Saptakaṃ Guṇyāt': {
-    more: 'For 7, the multiplier is 143. Because 7 × 143 = 1001, the fraction 1/7 can be rewritten with a denominator made of nines, which makes its repeating decimal appear at once.',
+    more: 'For 7, multiply by 143. Because 7 × 143 = 1001, the fraction 1/7 can be rewritten with a denominator made of nines, which makes its repeating decimal appear at once.',
     why: '1/7 = 143/1001 = 143 × 999 / 999999. And 143 × 999 = 142857 (using "one less" and "all from 9"). A fraction over 999999 repeats its six digits: 1/7 = 0.142857 142857 …',
     examples: [['7 × 143', `7 × 140 = 980, 7 × 3 = 21 → ${hl('1001')}`], ['143 × 999', `142 | 857 → ${hl('142857')}`], ['2/7, 3/7 …', `The same six digits rotate: 2/7 = 0.${hl('285714')}…`]],
     uses: ['Decimals of sevenths', 'Cyclic numbers'],
@@ -358,7 +358,7 @@ export const DETAILS = {
     ] }
   },
   'Samuccayaguṇitaḥ': {
-    more: 'The sum of the products. When you multiply expressions, the sum of the coefficients of the product equals the product of the coefficient sums. A quick check for expanding brackets.',
+    more: 'The product of the sums. When you multiply expressions, the product of the coefficient sums equals the sum of the coefficients of the product. A quick check for expanding brackets.',
     why: 'Again, the coefficient sum is the value at x = 1, and values multiply: (f·g)(1) = f(1) · g(1).',
     examples: [['11 × 12 = 132', `Digit sums: 2 × 3 = 6 and 1 + 3 + 2 = 6 → ${hl('checks out')}`], ['(x + 4)(x + 5) = x² + 9x + 20', `(1 + 4)(1 + 5) = 30 and 1 + 9 + 20 = 30 → ${hl('checks out')}`], ['(x + 2)(x + 6) = x² + 8x + 8?', `(1 + 2)(1 + 6) = 21 but 1 + 8 + 8 = 17 → ${hl('wrong')} (the last term is 2 × 6 = 12)`], ['(2x + 3)(3x − 1) = 6x² + 7x − 3', `(2 + 3)(3 − 1) = 10 and 6 + 7 − 3 = 10 → ${hl('checks out')}`]],
     uses: ['Checking expansions'],

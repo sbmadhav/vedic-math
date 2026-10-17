@@ -1,0 +1,210 @@
+{
+ "model": "onnx-community/whisper-small",
+ "voice": "kid_alpha_jalpha",
+ "mean": 0.59,
+ "rows": [
+  {
+   "id": "s1",
+   "iast": "Ekādhikena Pūrveṇa",
+   "deva": "एकाधिकेन पूर्वेण",
+   "heard": "ये खाद्हिके ना पुर्वेनास",
+   "score": 0.48
+  },
+  {
+   "id": "s2",
+   "iast": "Nikhilaṃ Navataścaramaṃ Daśataḥ",
+   "deva": "निखिलं नवतश्चरमं दशतः",
+   "heard": "निक्हिलम नवतष्चरमम देशतहा",
+   "score": 0.61
+  },
+  {
+   "id": "s3",
+   "iast": "Ūrdhva-Tiryagbhyām",
+   "deva": "ऊर्ध्वतिर्यग्भ्याम्",
+   "heard": "उल्ट्वदिर्यक्ब्याम",
+   "score": 0.63
+  },
+  {
+   "id": "s4",
+   "iast": "Parāvartya Yojayet",
+   "deva": "परावर्त्य योजयेत्",
+   "heard": "बरावर्त्य योजिएत",
+   "score": 0.75
+  },
+  {
+   "id": "s5",
+   "iast": "Śūnyaṃ Sāmyasamuccaye",
+   "deva": "शून्यं साम्यसमुच्चये",
+   "heard": "इशून्यम, साम्या समुटची ए",
+   "score": 0.65
+  },
+  {
+   "id": "s6",
+   "iast": "Ānurūpye Śūnyamanyat",
+   "deva": "आनुरूप्ये शून्यमन्यत्",
+   "heard": "आनु रुप्य शूने मेनिट",
+   "score": 0.55
+  },
+  {
+   "id": "s7",
+   "iast": "Saṅkalana-Vyavakalanābhyām",
+   "deva": "सङ्कलनव्यवकलनाभ्याम्",
+   "heard": "संकल लिन लिव्य विकल नाभ्यां",
+   "score": 0.61
+  },
+  {
+   "id": "s8",
+   "iast": "Pūraṇāpūraṇābhyām",
+   "deva": "पूरणापूरणाभ्याम्",
+   "heard": "पुरे न दा पुरे नाभ्यां",
+   "score": 0.5
+  },
+  {
+   "id": "s9",
+   "iast": "Calana-Kalanābhyām",
+   "deva": "चलनकलनाभ्याम्",
+   "heard": "चेल निकल नाभ्याम",
+   "score": 0.79
+  },
+  {
+   "id": "s10",
+   "iast": "Yāvadūnam",
+   "deva": "यावदूनम्",
+   "heard": "याव डूनम",
+   "score": 0.75
+  },
+  {
+   "id": "s11",
+   "iast": "Vyaṣṭisamaṣṭiḥ",
+   "deva": "व्यष्टिसमष्टिः",
+   "heard": "उव्याश्टे समाश्टे ही",
+   "score": 0.5
+  },
+  {
+   "id": "s12",
+   "iast": "Śeṣāṇyaṅkena Carameṇa",
+   "deva": "शेषाण्यङ्केन चरमेण",
+   "heard": "शीशान्यंकिना चरमेना",
+   "score": 0.5
+  },
+  {
+   "id": "s13",
+   "iast": "Sopāntyadvayamantyam",
+   "deva": "सोपान्त्यद्वयमन्त्यम्",
+   "heard": "एसो पांतिद वेयमेंतियम",
+   "score": 0.48
+  },
+  {
+   "id": "s14",
+   "iast": "Ekanyūnena Pūrveṇa",
+   "deva": "एकन्यूनेन पूर्वेण",
+   "heard": "ये खण्यूनेना पुर्वेनास",
+   "score": 0.55
+  },
+  {
+   "id": "s15",
+   "iast": "Guṇitasamuccayaḥ",
+   "deva": "गुणितसमुच्चयः",
+   "heard": "गुन इतस मुच्या",
+   "score": 0.69
+  },
+  {
+   "id": "s16",
+   "iast": "Guṇakasamuccayaḥ",
+   "deva": "गुणकसमुच्चयः",
+   "heard": "गुन्न कस्मुच्छिया",
+   "score": 0.56
+  },
+  {
+   "id": "u1",
+   "iast": "Ānurūpyeṇa",
+   "deva": "आनुरूप्येण",
+   "heard": "आन्रुप्यनेद",
+   "score": 0.64
+  },
+  {
+   "id": "u2",
+   "iast": "Śiṣyate Śeṣasaṃjñaḥ",
+   "deva": "शिष्यते शेषसंज्ञः",
+   "heard": "शिश्यते शिशा संगय है",
+   "score": 0.53
+  },
+  {
+   "id": "u3",
+   "iast": "Ādyamādyenāntyamantyena",
+   "deva": "आद्यमाद्येनान्त्यमन्त्येन",
+   "heard": "आदिम आदिय नाजिम तेन",
+   "score": 0.44
+  },
+  {
+   "id": "u4",
+   "iast": "Kevalaiḥ Saptakaṃ Guṇyāt",
+   "deva": "केवलैः सप्तकं गुण्यात्",
+   "heard": "गेवले ही सबतकम गुन्यात",
+   "score": 0.55
+  },
+  {
+   "id": "u5",
+   "iast": "Veṣṭanam",
+   "deva": "वेष्टनम्",
+   "heard": "इवेश्टनाम",
+   "score": 0.56
+  },
+  {
+   "id": "u6",
+   "iast": "Yāvadūnaṃ Tāvadūnam",
+   "deva": "यावदूनं तावदूनम्",
+   "heard": "यावधुनम तावधुनम",
+   "score": 0.6
+  },
+  {
+   "id": "u7",
+   "iast": "Yāvadūnaṃ Tāvadūnīkṛtya Vargaṃ ca Yojayet",
+   "deva": "यावदूनं तावदूनीकृत्य वर्गं च योजयेत्",
+   "heard": "यावधुनम, तावधुनी करत्यवर्गम चे योजिएत.",
+   "score": 0.66
+  },
+  {
+   "id": "u8",
+   "iast": "Antyayordaśake'pi",
+   "deva": "अन्त्ययोर्दशकेऽपि",
+   "heard": "अन्तियोर दश्खेपी",
+   "score": 0.59
+  },
+  {
+   "id": "u9",
+   "iast": "Antyayoreva",
+   "deva": "अन्त्ययोरेव",
+   "heard": "अंटी यो लेग वख",
+   "score": 0.27
+  },
+  {
+   "id": "u10",
+   "iast": "Samuccayaguṇitaḥ",
+   "deva": "समुच्चयगुणितः",
+   "heard": "इसे मुच्ची या गुनित है",
+   "score": 0.61
+  },
+  {
+   "id": "u11",
+   "iast": "Lopanasthāpanābhyām",
+   "deva": "लोपनस्थापनाभ्याम्",
+   "heard": "लोपनिस तापनाभ्याम",
+   "score": 0.76
+  },
+  {
+   "id": "u12",
+   "iast": "Vilokanam",
+   "deva": "विलोकनम्",
+   "heard": "इविलो के नाम्या",
+   "score": 0.62
+  },
+  {
+   "id": "u13",
+   "iast": "Guṇitasamuccayaḥ Samuccayaguṇitaḥ",
+   "deva": "गुणितसमुच्चयः समुच्चयगुणितः",
+   "heard": "गुनित समुच्छिया, समुच्छिया गुनित हा",
+   "score": 0.67
+  }
+ ]
+}
