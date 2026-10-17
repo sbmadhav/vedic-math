@@ -66,8 +66,10 @@ export function mount({ root, signal, params }) {
       const n = e.target.closest('[data-n]'); if (n) { S.n = +n.dataset.n; save(); draw(); return; }
       const f = e.target.closest('[data-foe]'); if (f && !f.disabled) { S.foe = f.dataset.foe; save(); draw(); wrap.querySelector(`[data-foe="${S.foe}"]`).focus(); return; }
       if (e.target.closest('.gh-go')) {
-        const seed = G.freshSeed();
-        const foe = S.foe === 'best' && best() ? { ...best(), who: 'best' } : G.pacerGhost(S.foe, S.kind, lv, seed, S.n);
+        /* Your best ghost is raced on its own questions (its seed), so every split compares like with like */
+        const b = S.foe === 'best' && best();
+        const seed = b ? b.seed : G.freshSeed();
+        const foe = b ? { ...b, who: 'best' } : G.pacerGhost(S.foe, S.kind, lv, seed, S.n);
         run({ kind: S.kind, lv, seed, n: S.n, foe });
       }
     }, sig);
@@ -109,9 +111,9 @@ export function mount({ root, signal, params }) {
           <div class="gh-lane gh-lane--foe"><span class="gh-lane-l">${esc(name)}</span><div class="gh-road">${'<i></i>'.repeat(n - 1)}</div><div class="gh-runner gh-runner--foe is-${esc(foe.who)}">${runnerSvg('is-ghost')}</div></div>
           <div class="gh-flag" aria-hidden="true"></div>
         </div>
-        <div class="gh-hud"><span class="gh-clock" aria-label="Time">0.00s</span><span class="gh-count">1 / ${n}</span><span class="gh-gap" aria-live="off"></span></div>
+        <div class="gh-hud"><span class="gh-clock" role="timer" aria-label="Time">0.00s</span><span class="gh-count">1 / ${n}</span><span class="gh-gap" aria-live="off"></span></div>
         <div class="gh-play px-stage">
-          <div class="gh-q" aria-live="off"><span class="gh-q-text"></span><span class="gh-q-eq">=</span><span class="gh-typed" aria-label="Your answer"></span></div>
+          <div class="gh-q" aria-live="off"><span class="gh-q-text"></span><span class="gh-q-eq">=</span><span class="gh-typed" role="status" aria-label="Your answer"></span></div>
           <div class="gh-pad" role="group" aria-label="Number pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button type="button" data-k="${d}">${d}</button>`).join('')}<button type="button" data-k="back" aria-label="Delete">⌫</button><button type="button" data-k="0">0</button><button type="button" data-k="enter" class="gh-enter" aria-label="Check">✓</button></div>
           <p class="px-note gh-keys">Type with the keys too: digits, Backspace, Enter.</p>
         </div>
@@ -224,7 +226,7 @@ export function mount({ root, signal, params }) {
         if (e.target.closest('.gh-again')) {
           const best = S.best[bk];
           const nextFoe = foe.who === 'friend' ? foe : foe.who === 'best' ? { ...best, who: 'best' } : null;
-          const ns = foe.who === 'friend' ? seed : G.freshSeed();
+          const ns = foe.who === 'friend' ? seed : foe.who === 'best' && best ? best.seed : G.freshSeed();
           run({ kind, lv: qlv, seed: ns, n, foe: nextFoe || G.pacerGhost(foe.who, kind, qlv, ns, n) });
         }
       }, sig);
