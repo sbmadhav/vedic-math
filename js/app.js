@@ -712,7 +712,7 @@ function sayVerse(v, btn, signal) {
   fx.stopSpeaking();
   const synth = window.speechSynthesis;
   const reset = () => { btn.setAttribute('aria-pressed', 'false'); btn.querySelector('span').textContent = 'Listen'; };
-  if (!synth) { btn.closest('.verse').querySelector('.verse-say').classList.add('verse-say--hl'); return; }
+  if (!synth || typeof window.SpeechSynthesisUtterance !== 'function') { btn.closest('.verse').querySelector('.verse-say').classList.add('verse-say--hl'); return; } /* no speech: point at the respelling */
   if (btn.getAttribute('aria-pressed') === 'true') { verseTurn++; synth.cancel(); reset(); return; }
   synth.cancel();
   view.querySelectorAll('.verse-listen[aria-pressed="true"]').forEach(b => { b.setAttribute('aria-pressed', 'false'); b.querySelector('span').textContent = 'Listen'; });
