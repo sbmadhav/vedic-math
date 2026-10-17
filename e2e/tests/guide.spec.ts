@@ -19,7 +19,7 @@ test.describe('the guide page', () => {
     await expect(page.locator('.gd-group')).toHaveCount(5);
     const secs = page.locator('.gd-sec');
     expect(await secs.count()).toBeGreaterThanOrEqual(20);
-    for (const id of ['skills', 'practice', 'dojo', 'stars', 'sky', 'katas', 'sutras', 'games', 'arena', 'tower', 'duel', 'boards', 'watch', 'calm', 'voice', 'music', 'players', 'offline', 'parents']) {
+    for (const id of ['skills', 'practice', 'dojo', 'stars', 'sky', 'katas', 'sutras', 'games', 'arena', 'tower', 'party', 'playmore', 'boards', 'watch', 'calm', 'voice', 'music', 'players', 'offline', 'parents']) {
       await expect(page.locator(`#gd-${id}`), id).toHaveCount(1);
     }
     for (const s of await secs.all()) {
