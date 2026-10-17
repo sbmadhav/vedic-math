@@ -240,3 +240,15 @@ test('a prefetch left running by a closed view that then fails is retried by the
   assert.ok(log.fetched.some(u => /\/s2\.m4a/.test(u)), 'the new queue fetched s2 again');
   ctl.abort();
 });
+
+test('on a slow first tap the prefetch waits for the tapped clip and never requests it a second time', async () => {
+  const log = stubs({ manualStart: true }), ctl = new AbortController();
+  S.tap(btn('s1'), ctl.signal); // still loading: playback has not started
+  await wait(150);
+  assert.ok(!log.fetched.some(u => /\/s1\.m4a/.test(u)), 'the tapped clip is not prefetched while it loads');
+  log.starts[0](); // now it starts
+  await wait(200);
+  assert.equal(log.fetched.length, 28);
+  assert.ok(!log.fetched.some(u => /\/s1\.m4a/.test(u)));
+  ctl.abort();
+});

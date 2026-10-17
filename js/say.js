@@ -118,9 +118,13 @@ export function tap(btn, signal) {
   setPressed(btn, true);
   /* Counted once the clip has really started: not on a failure, the fallback voice, or a tap that was superseded.
      A clip that started is saved (its fetch went through the service worker), so the prefetch skips it. */
-  const onStart = () => { fetched.add(id); if (current === mine) deps.count(); };
+  /* While the tapped clip loads, the prefetch waits on it instead of requesting the same file a second time */
+  let settle; const loading = new Promise(r => { settle = r; });
+  if (!inflight.has(id)) { inflight.set(id, loading); loading.then(() => { if (inflight.get(id) === loading) inflight.delete(id); }); }
+  const onStart = () => { fetched.add(id); settle(); if (current === mine) deps.count(); };
   let p;
   try { p = Promise.resolve(deps.play(clipUrl(id), { onStart })); } catch (e) { p = Promise.reject(e); }
+  p.then(settle, settle);
   p.then(() => finish(mine), () => fallback(mine, signal));
   prefetch(signal);
 }
