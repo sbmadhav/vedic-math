@@ -105,6 +105,7 @@ Answered on 2026-10-17.
 - **The ambience lives in `js/sutra-ambience.js`**, sharing `js/ambient.js`'s AudioContext (`audioContext()`), with its own gain bus and reverb. Its release after a fade is timed on the audio clock (a silent oscillator's `onended`), so no page timer outlives the view.
 - **The first gesture** on a fresh load strikes the pending bowl, except when that gesture is a tap on Say it or the Ambience button (so the bowl never talks over a name clip or an off switch).
 - **Fallback status** uses the app's polite toast (`fx.toast`).
+- **Deep dive header** (after sutra-examples, #44): the compact Ambience toggle is pinned in #44's sticky `.sd-bar` beside Close, and the Say it button, Respelling and Devanagari sit under the name in `.sd-head`, which keeps 104 px clear on the right for the two pinned buttons. `e2e/tests/say.spec.ts` checks them with #44's examples and footer at 1280, 768, 375 and 320 px in both schemes.
 
 ## Open Questions
 

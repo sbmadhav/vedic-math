@@ -42,6 +42,14 @@ _Avoid_: shortcut, hack, strategy
 One of the short named rules from Bharati Krishna Tirtha's 1965 book. Tricks are grouped under the Sutra they come from.
 _Avoid_: formula, verse, Vedic sutra (never "from the Vedas")
 
+**Deep dive**:
+The dialog that opens from a Sutra card's Learn more (route `#/sutras/<id>`): the plain explanation, an animated diagram, why it works, Worked examples, where it is used and further reading. Its close button and the footer to the previous and next Sutra stay pinned while it scrolls.
+_Avoid_: modal, popup, detail page
+
+**Worked example**:
+One solved problem in a Deep dive: a question and the short steps the Sutra uses, ending in the result. Each Sutra and sub-sutra has at least three, from easy to harder; the first is shown open and the Player opens the others after trying them.
+_Avoid_: sample, demo, Kata (a Kata is a practice problem the Player answers)
+
 **Say it**:
 The speaker button beside a Sutra name that plays its Name clip (its accessible name is "Hear how to say <name>"; in the deep dive and on Trick pages it shows the words "Hear how to say"). It only ever plays after a tap, whether read aloud is on or off, and a second tap stops it.
 _Avoid_: pronounce button, audio button

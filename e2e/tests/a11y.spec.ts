@@ -210,3 +210,24 @@ for (const scheme of ['light', 'dark'] as const) {
     });
   });
 }
+
+/* The sutra deep dive (openspec sutra-examples): worked examples all open, scrolled to the middle so the pinned
+   footer and close button sit over the content, at desktop and phone widths, both schemes */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, sutra deep dive`, () => {
+    test.use({ colorScheme: scheme });
+    for (const width of [1280, 375]) {
+      test(`#/sutras/u9 at ${width}px with every example open has no serious or critical axe violations`, async ({ page }, testInfo) => {
+        chromiumOnly(testInfo);
+        await page.setViewportSize({ width, height: 760 });
+        await open(page, '#/sutras/u9');
+        const dlg = page.locator('dialog.sutra-modal');
+        await expect(dlg).toBeVisible();
+        await dlg.locator('.sd-ex details').evaluateAll(ds => ds.forEach(d => { (d as HTMLDetailsElement).open = true; }));
+        await dlg.evaluate(el => { el.scrollTop = (el.scrollHeight - el.clientHeight) / 2; });
+        await page.waitForLoadState('networkidle');
+        expect(await serious(page, '#/sutras/u9')).toEqual([]);
+      });
+    }
+  });
+}

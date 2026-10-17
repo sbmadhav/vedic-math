@@ -155,3 +155,46 @@ test('the Sutra fixes: the Trick spells Pūrveṇa', async ({ page }) => {
   await page.goto(`${APP}#/sutras/u10`);
   await expect(page.locator('dialog .sd-mean')).toHaveText('The product of the sums');
 });
+
+/* With the sticky close bar and footer of the deep dive (sutra-examples): the Ambience toggle is pinned beside Close,
+   the name's Say it button and Respelling sit clear of both, and everything works together at every width and in
+   both schemes */
+const overlap = (a: { x: number; y: number; width: number; height: number }, b: typeof a) =>
+  a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+for (const scheme of ['light', 'dark'] as const) {
+  for (const width of [1280, 768, 375, 320]) {
+    test(`deep dive at ${width}px (${scheme}): pinned Close and Ambience, Say it clear of them, examples and footer work`, async ({ page }) => {
+      await fakeAudio(page, { clipSecs: 30 });
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.setViewportSize({ width, height: width >= 768 ? 800 : 700 });
+      await open(page, '#/sutras/s2');
+      const d = page.locator('dialog.sutra-modal');
+      const close = d.locator('.sd-bar .sd-x'), amb = d.locator('.sd-bar').getByRole('button', { name: 'Ambience' });
+      const say = d.getByRole('button', { name: 'Hear how to say Nikhilaṃ Navataścaramaṃ Daśataḥ' });
+      for (const el of [close, amb, say, d.locator('.sd-say .say-resp'), d.locator('#sdTitle')]) await expect(el).toBeVisible();
+      const [cb, ab, sb, tb] = await Promise.all([close, amb, say, d.locator('#sdTitle')].map(x => x.boundingBox()));
+      for (const b of [sb!, tb!]) { expect(overlap(b, cb!)).toBe(false); expect(overlap(b, ab!)).toBe(false); }
+      expect(overlap(ab!, cb!)).toBe(false);
+      expect(ab!.width).toBeGreaterThanOrEqual(44);
+      // Say it plays, and the worked examples still open below
+      await say.click();
+      await expect(say).toHaveAttribute('aria-pressed', 'true');
+      const second = d.locator('.sd-ex > li').nth(1).locator('details');
+      await second.locator('summary').click();
+      await expect(second).toHaveAttribute('open', '');
+      // Scrolled to the bottom: Close, Ambience and the footer stay in view; nothing scrolls sideways
+      await d.evaluate(el => { el.scrollTop = el.scrollHeight; });
+      await expect(close).toBeInViewport();
+      await expect(amb).toBeInViewport();
+      await expect(d.locator('.sd-foot a').first()).toBeInViewport();
+      expect(await d.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
+      // The pinned toggle still works from there
+      await amb.click();
+      await expect(amb).toHaveAttribute('aria-pressed', 'true'); // the spec's beforeEach turns the ambience off
+      // Paging with the footer stops the clip and swaps the name
+      await d.locator('.sd-foot a.sd-next').click();
+      await expect(d.locator('#sdTitle')).toHaveText('Ūrdhva-Tiryagbhyām');
+      await expect.poll(async () => (await audioLog(page)).nodes.find(n => n.kind === 'source')?.stopped ?? null).not.toBeNull();
+    });
+  }
+}
