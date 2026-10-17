@@ -70,3 +70,10 @@ test('formatting and belts', () => {
   assert.equal(beltOf(0).id, 'white'); assert.equal(beltOf(PER_BELT).id, 'yellow');
   assert.equal(beltOf(999).id, 'black'); assert.equal(BELTS.length, 7);
 });
+
+test('singular place values read "1 ten" and "1 one", never "1 tens" or "1 ones"', () => {
+  for (const t of BANK) for (let i = 0; i < 300; i++) for (const slip of [false, true]) {
+    const w = t.gen(rng(`${t.id}:${i}`), slip);
+    for (const text of [w.q, ...w.steps.map(s => s.t)]) assert.ok(!/(^|[^\d.])1 (tens|ones|hundreds)\b/.test(text), `${t.id} seed ${i}: ${text}`);
+  }
+});

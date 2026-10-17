@@ -50,7 +50,7 @@ export function mount({ root, signal }) {
     ${head({ title: 'Teach the Apprentice', kicker: 'You are the teacher', intro: `${NAME} is learning math and works out loud. Find the step that went wrong and coach ${NAME} with the right tip. Careful: sometimes every step is right.`, color: 'coral' })}
     <div class="ap-belt" aria-live="off"></div>
     <div class="ap-stage">
-      <figure class="ap-bindu" data-mood="ok">${BINDU}<figcaption class="ap-bubble" aria-live="polite"></figcaption></figure>
+      <figure class="ap-bindu" data-mood="ok">${BINDU}<figcaption class="ap-bubble"></figcaption></figure>
       <section class="ap-board" aria-label="${NAME}'s chalkboard">
         <p class="ap-q"></p>
         <ol class="ap-steps"></ol>
@@ -73,6 +73,13 @@ export function mount({ root, signal }) {
       <span class="ap-belt-bar" role="progressbar" aria-label="Progress to the next belt" aria-valuemin="0" aria-valuemax="${A.PER_BELT}" aria-valuenow="${b.into}">${Array.from({ length: A.PER_BELT }, (_, i) => `<i class="${i < b.into ? 'is-on' : ''}"></i>`).join('')}</span>
       <span class="px-note">${b.index === A.BELTS.length - 1 ? 'Master of the chalkboard' : `Next: ${esc(A.BELTS[b.index + 1].name)}`}</span>`;
     if (up) beltEl.classList.add('is-up');
+  };
+  /* Caught, holds, crossed out and redone are colors and lines on screen; screen readers get the same words */
+  const mark = (li, text) => {
+    if (!li) return;
+    const host = li.querySelector('.ap-step-btn') || li;
+    let vh = host.querySelector('.ap-vh'); if (!vh) { vh = document.createElement('span'); vh.className = 'ap-vh'; host.append(vh); }
+    vh.textContent = `, ${text}`;
   };
   const stepHtml = (s, i, cls = '') => `<li class="ap-step ${cls}" style="--i:${i}"><button type="button" class="ap-step-btn" data-step="${i}"><span class="ap-step-n">${i + 1}</span><span class="ap-step-t">${esc(s.t)}</span></button></li>`;
 
@@ -122,15 +129,15 @@ export function mount({ root, signal }) {
   const redo = () => {
     const i = round.wrongAt;
     const li = stepsEl.children[i];
-    li.classList.add('is-crossed');
+    li.classList.add('is-crossed'); mark(li, 'crossed out');
     tone(PENTA[4], { dur: 0.15 }); tone(PENTA[7], { dur: 0.25, when: 0.12 });
     const olds = [...stepsEl.children];
     later(() => {
       round.right.slice(i).forEach((s, k) => {
         const old = olds[i + k];
         const fixed = document.createElement('li'); fixed.className = 'ap-step is-fixed'; fixed.style.setProperty('--i', k);
-        fixed.innerHTML = `<span class="ap-step-n" aria-hidden="true">${i + k + 1}</span><span class="ap-step-t">${esc(s.t)}</span>`;
-        old.after(fixed); if (k > 0) old.classList.add('is-crossed');
+        fixed.innerHTML = `<span class="ap-step-n" aria-hidden="true">${i + k + 1}</span><span class="ap-step-t">${esc(s.t)}</span><span class="ap-vh">, redone</span>`;
+        old.after(fixed); if (k > 0) { old.classList.add('is-crossed'); mark(old, 'crossed out'); }
       });
       stepsEl.querySelectorAll('.ap-step-btn').forEach(b => { b.disabled = true; });
       mood('happy', say1(r, 'fixed'));
@@ -145,10 +152,10 @@ export function mount({ root, signal }) {
     if (sb && phase === 'judge') {
       const i = +sb.dataset.step;
       if (i === round.wrongAt) {
-        sb.closest('li').classList.add('is-caught'); mood('oops', say1(r, 'found')); tone(PENTA[3], { dur: 0.1 }); tone(PENTA[1], { dur: 0.18, when: 0.1 });
+        sb.closest('li').classList.add('is-caught'); mark(sb.closest('li'), 'the wrong step'); mood('oops', say1(r, 'found')); tone(PENTA[3], { dur: 0.1 }); tone(PENTA[1], { dur: 0.18, when: 0.1 });
         say(`Yes, step ${i + 1} is wrong. Which tip fixes it?`); coach();
       } else {
-        misses++; sb.closest('li').classList.add('is-checked'); mood('ok', say1(r, 'wrongPick'));
+        misses++; sb.closest('li').classList.add('is-checked'); mark(sb.closest('li'), 'holds'); mood('ok', say1(r, 'wrongPick'));
         tone(220, { dur: 0.15, type: 'triangle', gain: 0.08 });
         say(`${NAME} says step ${i + 1} is right: ${round.steps[i].t}`);
       }
@@ -157,7 +164,7 @@ export function mount({ root, signal }) {
     if (e.target.closest('.ap-allright') && phase === 'judge') {
       if (round.wrongAt < 0) {
         mood('happy', say1(r, 'clean')); sfx('ok');
-        stepsEl.querySelectorAll('.ap-step').forEach(li => li.classList.add('is-good'));
+        stepsEl.querySelectorAll('.ap-step').forEach(li => { li.classList.add('is-good'); mark(li, 'right'); });
         stepsEl.querySelectorAll('.ap-step-btn').forEach(b => { b.disabled = true; });
         gain(); say(`Right: every step was correct.`);
         done('Every step was right. Trusting good work is part of teaching too.');
@@ -167,8 +174,16 @@ export function mount({ root, signal }) {
     const tb = e.target.closest('[data-tip]');
     if (tb && phase === 'coach') {
       const tip = round.tips[+tb.dataset.tip];
-      if (tip === round.fix) { phase = 'redo'; tb.classList.add('is-right'); actions.querySelectorAll('.ap-tip').forEach(b => { b.disabled = true; }); track('apprentice/coach', round.tpl.topic); redo(); }
-      else { misses++; tb.classList.add('is-wrong'); tb.disabled = true; mood('think', `“${tip}” ${say1(r, 'badTip')}`); tone(196, { dur: 0.2, type: 'triangle', gain: 0.08 }); }
+      if (tip === round.fix) {
+        phase = 'redo'; tb.classList.add('is-right'); actions.querySelectorAll('.ap-tip').forEach(b => { b.disabled = true; });
+        /* Only coaching without a miss is tracked (and earns Sparks): tapping through every step and tip does not */
+        if (misses === 0) track('apprentice/coach', round.tpl.topic);
+        redo();
+      } else {
+        misses++; tb.classList.add('is-wrong'); tb.disabled = true;
+        const line = say1(r, 'badTip'); mood('think', `“${tip}” ${line}`); say(`${NAME}: ${line}`);
+        tone(196, { dur: 0.2, type: 'triangle', gain: 0.08 });
+      }
       return;
     }
     if (e.target.closest('.ap-next')) next();

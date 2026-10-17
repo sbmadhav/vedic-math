@@ -105,3 +105,34 @@ test.describe('Pattern Wall', () => {
     expect(label).toBe(`1, ${weekday}`);
   });
 });
+
+test.describe('Teach the Apprentice', () => {
+  test.beforeEach(async ({ page }) => { await page.emulateMedia({ reducedMotion: 'reduce' }); });
+
+  test('coaching after a miss earns no coach credit, and step states have words for screen readers', async ({ page, issues }) => {
+    await recordPlay(page);
+    await open(page, '#/games/apprentice');
+    await expect(page.locator('.ap-bubble')).not.toHaveAttribute('aria-live', /.+/);
+    /* Say "every step is right" first: on a round with a wrong step that is a miss. Clean rounds are skipped. */
+    let found = false;
+    for (let round = 0; round < 12 && !found; round++) {
+      await page.locator('.ap-allright').click();
+      const next = page.locator('.ap-next');
+      if (await next.isVisible()) { await next.click(); continue; }
+      found = true;
+    }
+    expect(found).toBe(true);
+    const steps = page.locator('.ap-step-btn');
+    const n = await steps.count();
+    for (let i = 0; i < n && !(await page.locator('.ap-tips').isVisible()); i++) await steps.nth(i).click();
+    await expect(page.locator('.ap-step.is-caught .ap-vh')).toHaveText(', the wrong step');
+    const tips = page.locator('.ap-tip');
+    const m = await tips.count();
+    for (let i = 0; i < m && !(await page.locator('.ap-next').isVisible()); i++) if (await tips.nth(i).isEnabled()) await tips.nth(i).click();
+    await expect(page.locator('.ap-next')).toBeVisible();
+    await expect(page.locator('.ap-step.is-crossed .ap-vh').first()).toHaveText(', crossed out');
+    await expect(page.locator('.ap-step.is-fixed .ap-vh').first()).toHaveText(', redone');
+    expect(await plays(page, 'apprentice/coach')).toBe(0);
+    expect(issues.console).toEqual([]);
+  });
+});

@@ -38,7 +38,8 @@ export const BANK = [
   }),
   T('add-tens', 'explorer', 'Tens and ones', 'Tens join the tens and ones join the ones.', (r, s) => {
     const a = 10 * int(r, 1, 6) + int(r, 1, 6), k = int(r, 1, 3), b = 10 * k, w = s ? a + k : a + b;
-    return { q: `${a} + ${b}`, answer: a + b, steps: [st(`${b} is ${k} tens.`, k), st(s ? `Add the ${k} to the ones: ${w}.` : `Add ${k} tens to ${a}: ${w}.`, a + b, w), st(`So ${a} + ${b} = ${w}.`, w)] };
+    const tens = `${k} ten${k === 1 ? '' : 's'}`;
+    return { q: `${a} + ${b}`, answer: a + b, steps: [st(`${b} is ${tens}.`, k), st(s ? `Add the ${k} to the ones: ${w}.` : `Add ${tens} to ${a}: ${w}.`, a + b, w), st(`So ${a} + ${b} = ${w}.`, w)] };
   }),
   T('sub-trade', 'explorer', 'Taking away', 'When the top ones digit is smaller, trade a ten for ten ones first. Never flip the digits.', (r, s) => {
     let a1, a0, b1, b0;
@@ -62,7 +63,7 @@ export const BANK = [
   }),
   T('compare', 'explorer', 'Which is bigger', 'Look at the tens first: tens are worth more than ones.', (r, s) => {
     const x = int(r, 1, 8), y = int(r, x + 1, 9), A = 10 * x + y, B = 10 * y + x, w = s ? A : B;
-    return { q: `Which is bigger, ${A} or ${B}?`, answer: B, steps: [st(s ? `Look at the ones: ${y} beats ${x}, so ${A} wins.` : `Look at the tens: ${y} tens beats ${x} tens, so ${B} wins.`, B, w), st(`The bigger number is ${w}.`, w)] };
+    return { q: `Which is bigger, ${A} or ${B}?`, answer: B, steps: [st(s ? `Look at the ones: ${y} beats ${x}, so ${A} wins.` : `Look at the tens: ${y} tens beats ${x} ten${x === 1 ? '' : 's'}, so ${B} wins.`, B, w), st(`The bigger number is ${w}.`, w)] };
   }),
   T('three-add', 'explorer', 'Adding three numbers', 'Tick off each number as you use it, so none is used twice.', (r, s) => {
     const a = int(r, 1, 9), c = 10 - a; let b; do { b = int(r, 2, 9); } while (b === c);
@@ -71,7 +72,8 @@ export const BANK = [
   }),
   T('teen', 'explorer', 'Writing teen numbers', 'The ones go right next to the tens digit, in the ones place.', (r, s) => {
     const o = int(r, 1, 9), w = s ? 100 + o : 10 + o;
-    return { q: `Write 1 ten and ${o} ones as a number.`, answer: 10 + o, steps: [st('1 ten is 10.', 10), st(s ? `Write 10, then ${o}: ${w}.` : `Put the ${o} ones in the ones place: ${w}.`, 10 + o, w), st(`So the number is ${w}.`, w)] };
+    const ones = `${o} one${o === 1 ? '' : 's'}`;
+    return { q: `Write 1 ten and ${ones} as a number.`, answer: 10 + o, steps: [st('1 ten is 10.', 10), st(s ? `Write 10, then ${o}: ${w}.` : `Put the ${ones} in the ones place: ${w}.`, 10 + o, w), st(`So the number is ${w}.`, w)] };
   }),
   T('add-nine', 'explorer', 'Adding 9', '9 is one less than 10, so after adding 10, take one away.', (r, s) => {
     const a = int(r, 12, 80), w = s ? a + 11 : a + 9;

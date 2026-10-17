@@ -63,7 +63,7 @@
 .ap-step-btn:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 .ap-step-n { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; border: 2px solid currentColor; font: 700 .85rem/1 var(--font-sans); opacity: .75; }
 .ap-step.is-checked .ap-step-btn { border-color: var(--teal); border-style: solid; }
-.ap-step.is-checked .ap-step-btn::after { content: "\2713 holds"; margin-left: auto; font-size: .8rem; color: var(--teal); white-space: nowrap; }
+.ap-step.is-checked .ap-step-btn::after { content: "\2713 holds"; content: "\2713 holds" / ""; margin-left: auto; font-size: .8rem; color: var(--teal); white-space: nowrap; }
 .ap-step.is-caught .ap-step-btn { border: 2px solid var(--coral); background: color-mix(in srgb, var(--coral) 22%, transparent); animation: ap-wobble .4s ease; }
 .ap-step.is-crossed .ap-step-t { text-decoration: line-through; text-decoration-color: var(--coral); text-decoration-thickness: 3px; opacity: .55; }
 .ap-step.is-fixed { cursor: default; border: 2px solid var(--sun); background: color-mix(in srgb, var(--sun) 16%, transparent); animation: ap-write .5s ease both; animation-delay: calc(var(--i) * .25s); }
@@ -84,3 +84,5 @@
 @keyframes ap-write { from { opacity: 0; transform: translateX(-10px); clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
 @media (prefers-reduced-motion: reduce) { .ap *, .ap *::before { animation: none !important; transition: none !important; } }
 @media (max-width: 480px) { .ap-board { padding: var(--space-4); border-width: 4px; } .ap-step-btn, .ap-step.is-fixed { font-size: 1rem; padding: 9px 11px; } .ap-belt { border-radius: var(--radius-lg); } }
+/* Words for screen readers that the step colors and lines show on screen */
+.ap-vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
