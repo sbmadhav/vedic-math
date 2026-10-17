@@ -352,7 +352,10 @@ export function mount({ root, signal, params }) {
     const aim = m => {
       target = m;
       monsters.forEach(x => { x.el.classList.toggle('is-target', x === m); x.el.setAttribute('aria-pressed', String(x === m)); });
-      if (S.learned.length === 1) chosen = S.learned[0];
+      /* A new target needs its own choice of spell: carrying the last one over would cast it (or bounce it, and
+         reset the combo) without the Player choosing. With one spell learned there is nothing to choose. */
+      chosen = S.learned.length === 1 ? S.learned[0] : null;
+      if (!chosen && current) { current.stop(); current = null; }
       spellChips();
       if (chosen) begin(); else idle();
     };

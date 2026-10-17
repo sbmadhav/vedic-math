@@ -55,6 +55,24 @@ test('Spellbook: a learn link cannot skip ahead to a spell not yet unlocked', as
   await expect(page.locator('.sp-sutra')).toHaveText(want);
 });
 
+test('Spellbook: a new target starts with no spell chosen, so the last spell is never cast on it by itself', async ({ page, issues }) => {
+  await page.addInitScript(() => { try { localStorage.setItem('vm.play.p1.spells', JSON.stringify({ learned: ['crosswise', 'sq5'], pace: 'calm' })); } catch (e) { /* storage blocked */ } });
+  await open(page, '#/dojo/spells');
+  await expect(page.locator('.sp-m')).toHaveCount(2);
+  await expect(page.locator('.sp-idle')).toBeVisible();
+  await page.locator('[data-spell="crosswise"]').click();
+  await expect(page.locator('[data-spell="crosswise"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.sp-idle')).toHaveCount(0);
+  /* aim at the other monster: the choice is cleared and the host asks again */
+  await page.locator('.sp-m:not(.is-target)').click();
+  await expect(page.locator('.sp-m.is-target')).toHaveCount(1);
+  await expect(page.locator('.sp-idle')).toBeVisible();
+  await expect(page.locator('.sp-board, .sp-misfit')).toHaveCount(0);
+  await expect(page.locator('[data-spell][aria-pressed="true"]')).toHaveCount(0);
+  await expect(page.locator('.sp-combo')).toHaveText('×0');
+  expect(issues.console).toEqual([]);
+});
+
 /* Feed the Twin Wall three numbers, then predict two answers; returns when the level is cleared */
 async function clearFeedLevel(page: import('@playwright/test').Page) {
   for (let i = 0; i < 3; i++) {
