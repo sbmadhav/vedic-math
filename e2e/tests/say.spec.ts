@@ -184,7 +184,10 @@ for (const scheme of ['light', 'dark'] as const) {
       await say.click();
       await expect(say).toHaveAttribute('aria-pressed', 'true');
       const second = d.locator('.sd-ex > li').nth(1).locator('details');
-      await second.locator('summary').click();
+      // Opened from the keyboard: in WebKit on Linux (CI only, Deep Space, 320 and 768px) a pointer click on this summary
+      // never passed Playwright's "stable" check, so the 45 s timeout hid what this test is about
+      await second.locator('summary').focus();
+      await page.keyboard.press('Enter');
       await expect(second).toHaveAttribute('open', '');
       // Scrolled to the bottom: Close, Ambience and the footer stay in view; nothing scrolls sideways
       await d.evaluate(el => { el.scrollTop = el.scrollHeight; });
