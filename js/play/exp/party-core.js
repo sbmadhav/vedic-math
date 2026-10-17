@@ -19,6 +19,10 @@ export const OPEN_MS = 20000, STEAL_MS = 7000, SECRET_MS = 30000, FINAL_MS = 250
 /* Relay: a miss locks the answers for a moment (the team clock keeps running), so tapping at random costs time,
    and each runner scores for at most RELAY_CAP bonds (more still count toward the team goal) */
 export const RELAY_LOCK_MS = 1500, RELAY_CAP = 6;
+/* Calm (the app's device preference, vm.calm) means no clocks: no deadline anywhere, the relay ends after a fixed
+   number of runs (RELAY_SPARE extra runs per Player beyond the goal, so everyone runs equally often), a miss costs
+   a run instead of a timed lock, and an open buzz or steal can be passed ('pass') so the game always ends */
+export const RELAY_SPARE = 1;
 export const BASE = { buzz: 10, steal: 10, stealBonus: 5, estimate: 20, close: 5, relay: 5, relayGoal: 10, trick: 10, final: 10 };
 export const playerName = p => `${ADJ[p.adj % ADJ.length]} ${NOUNS[p.noun % NOUNS.length]}`;
 export const points = (base, level, handicap = true) => Math.round(base * (handicap ? MULT[level] || 1 : 1));
@@ -156,13 +160,13 @@ export const ROUND_INFO = {
   trick: { title: 'Vedic trick showdown', blurb: 'Learn one trick, then a lightning round using it.' },
   final: { title: 'Double or nothing', blurb: 'Bet some of your points on one last question. Right doubles the bet, wrong loses it.' }
 };
-export function plan(nPlayers, length = 'full') {
-  const q = length === 'quick';
+export function plan(nPlayers, length = 'full', calm = false) {
+  const q = length === 'quick', goal = nPlayers * (q ? 2 : 4);
   return [
     { type: 'buzz', n: q ? 3 : 5 },
     { type: 'steal', n: nPlayers * (q ? 1 : 2) },
     { type: 'estimate', n: q ? 1 : 3 },
-    { type: 'relay', ms: q ? 45000 : 75000, goal: nPlayers * (q ? 2 : 4) },
+    calm ? { type: 'relay', runs: goal + nPlayers * RELAY_SPARE, goal } : { type: 'relay', ms: q ? 45000 : 75000, goal },
     { type: 'trick', n: q ? 3 : 5 },
     { type: 'final', n: 1 }
   ];
@@ -170,11 +174,11 @@ export function plan(nPlayers, length = 'full') {
 
 /* ---------- The game reducer ---------- */
 /* players: [{ id, adj, noun, color, level }] */
-export function newGame({ players, seed = 1, length = 'full', handicap = true }) {
+export function newGame({ players, seed = 1, length = 'full', handicap = true, calm = false }) {
   return {
-    seed, length, handicap, seq: 0,
+    seed, length, handicap, calm: !!calm, seq: 0,
     players: players.slice(0, KEYS.length).map((p, i) => ({ id: p.id ?? i, adj: p.adj ?? i, noun: p.noun ?? i, color: p.color ?? COLORS[i], level: LEVELS.includes(p.level) ? p.level : 'challenger', score: 0, key: KEYS[i] })),
-    rounds: plan(players.length, length), ri: -1, qi: 0, phase: 'lobby',
+    rounds: plan(players.length, length, !!calm), ri: -1, qi: 0, phase: 'lobby',
     trick: TRICK_IDS[Math.floor(rng(seedOf('party-trick', String(seed)))() * TRICK_IDS.length)],
     qs: {}, buzzer: null, locked: [], deadline: 0, turn: 0, ready: false, guesses: {}, wagers: {}, finals: {}, count: 0, stealing: false,
     relayLock: 0, relayHits: {},
@@ -191,15 +195,17 @@ function genFor(s, p, salt = '') {
   if (t === 'relay') return bondQ(p.level, r);
   return mixQ(p.level, r);
 }
+/* A deadline ms from now, or none at all under Calm */
+const clock = (s, now, ms) => (s.calm ? 0 : now + ms);
 const award = (s, id, pts) => { const p = P(s, id); p.score = Math.max(0, p.score + pts); };
 function startQuestion(s, now) {
   const t = round(s).type;
   s.buzzer = null; s.locked = []; s.stealing = false; s.qs = {}; s.guesses = {}; s.results = null;
-  if (t === 'buzz' || t === 'trick') { s.players.forEach(p => { s.qs[p.id] = genFor(s, p); }); s.phase = 'open'; s.deadline = now + OPEN_MS; }
-  else if (t === 'steal') { const p = s.players[s.qi % s.players.length]; s.qs[p.id] = genFor(s, p); s.buzzer = p.id; s.phase = 'answer'; s.deadline = now + answerMs(p.level, s.handicap); }
+  if (t === 'buzz' || t === 'trick') { s.players.forEach(p => { s.qs[p.id] = genFor(s, p); }); s.phase = 'open'; s.deadline = clock(s, now, OPEN_MS); }
+  else if (t === 'steal') { const p = s.players[s.qi % s.players.length]; s.qs[p.id] = genFor(s, p); s.buzzer = p.id; s.phase = 'answer'; s.deadline = clock(s, now, answerMs(p.level, s.handicap)); }
   /* Secret turns have no clock until the Player says they are ready (the 'ready' action), so passing the device costs nothing */
   else if (t === 'estimate') { s.shared = estimateQ(qrng(s, 'all')); s.turn = 0; s.ready = false; s.phase = 'secret'; s.deadline = 0; }
-  else if (t === 'relay') { s.turn = 0; s.count = 0; s.relayEnd = now + round(s).ms; s.qs = { [s.players[0].id]: genFor(s, s.players[0], 'r0') }; s.phase = 'relay'; s.deadline = s.relayEnd; s.tries = 0; s.relayLock = 0; s.relayHits = {}; }
+  else if (t === 'relay') { s.turn = 0; s.count = 0; s.relayEnd = s.calm ? 0 : now + round(s).ms; s.qs = { [s.players[0].id]: genFor(s, s.players[0], 'r0') }; s.phase = 'relay'; s.deadline = s.relayEnd; s.tries = 0; s.relayLock = 0; s.relayHits = {}; }
   else if (t === 'final') { s.turn = 0; s.wagers = {}; s.finals = {}; s.phase = 'wager'; s.deadline = 0; }
 }
 function toReveal(s, ev) { s.phase = 'reveal'; s.deadline = 0; if (ev) s.event = ev; }
@@ -209,12 +215,12 @@ function wrong(s, id, now, timeout = false) {
   if (!s.locked.includes(id)) s.locked.push(id);
   if (t === 'steal') {
     const others = s.players.filter(p => !s.locked.includes(p.id));
-    if (others.length) { s.phase = 'stealopen'; s.buzzer = null; s.deadline = now + STEAL_MS; return; }
+    if (others.length) { s.phase = 'stealopen'; s.buzzer = null; s.deadline = clock(s, now, STEAL_MS); return; }
     return toReveal(s, { kind: 'nobody', pid: id });
   }
   const left = s.players.filter(p => !s.locked.includes(p.id));
   if (!left.length) return toReveal(s, { kind: 'nobody', pid: id });
-  s.phase = 'open'; s.buzzer = null; s.deadline = now + Math.max(6000, Math.min(OPEN_MS, s.openLeft || OPEN_MS));
+  s.phase = 'open'; s.buzzer = null; s.deadline = clock(s, now, Math.max(6000, Math.min(OPEN_MS, s.openLeft || OPEN_MS)));
 }
 function advance(s, now) {
   const r = round(s);
@@ -239,9 +245,14 @@ function finishFinal(s) {
   });
   s.results = res; toReveal(s, { kind: 'final' });
 }
+function endRelay(s) {
+  const r = round(s), done = s.count >= r.goal;
+  if (done) s.players.forEach(p => award(s, p.id, points(BASE.relayGoal, p.level, s.handicap)));
+  s.results = { count: s.count, goal: r.goal, done }; toReveal(s, { kind: 'relay', done });
+}
 export const wagerOptions = score => [...new Set([0, Math.floor(score / 2), score])];
 
-/* Actions: { type: 'start'|'next'|'ready'|'buzz'|'answer'|'wager'|'tick', now, pid, value, typed }
+/* Actions: { type: 'start'|'next'|'ready'|'buzz'|'answer'|'wager'|'tick'|'pass', now, pid, value, typed }
    tick may carry typed: what the Player on a secret turn has typed but not locked in yet (used if the clock runs out) */
 export function reduce(state, a) {
   const s = clone(state), now = a.now ?? 0, r = round(s);
@@ -254,15 +265,15 @@ export function reduce(state, a) {
       return state;
     case 'ready':
       if (s.phase !== 'secret' || s.ready) return state;
-      s.ready = true; s.deadline = now + (r.type === 'final' ? FINAL_MS : SECRET_MS); s.event = { kind: 'ready', pid: s.players[s.turn].id }; return s;
+      s.ready = true; s.deadline = clock(s, now, r.type === 'final' ? FINAL_MS : SECRET_MS); s.event = { kind: 'ready', pid: s.players[s.turn].id }; return s;
     case 'buzz': {
       const p = P(s, a.pid); if (!p) return state;
       if (s.phase === 'open' && !s.locked.includes(p.id)) {
-        s.openLeft = s.deadline - now; s.phase = 'answer'; s.buzzer = p.id; s.deadline = now + answerMs(p.level, s.handicap); s.event = { kind: 'buzz', pid: p.id }; return s;
+        s.openLeft = s.deadline - now; s.phase = 'answer'; s.buzzer = p.id; s.deadline = clock(s, now, answerMs(p.level, s.handicap)); s.event = { kind: 'buzz', pid: p.id }; return s;
       }
       if (s.phase === 'stealopen' && !s.locked.includes(p.id)) {
         s.qs[p.id] = genFor(s, p, 'steal' + s.locked.length); s.stealing = true;
-        s.phase = 'answer'; s.buzzer = p.id; s.deadline = now + answerMs(p.level, s.handicap); s.event = { kind: 'buzz', pid: p.id, steal: true }; return s;
+        s.phase = 'answer'; s.buzzer = p.id; s.deadline = clock(s, now, answerMs(p.level, s.handicap)); s.event = { kind: 'buzz', pid: p.id, steal: true }; return s;
       }
       return state;
     }
@@ -297,8 +308,9 @@ export function reduce(state, a) {
         if (ok) {
           s.count++; const hits = (s.relayHits[p.id] || 0) + 1; s.relayHits[p.id] = hits;
           const pts = hits <= RELAY_CAP ? points(BASE.relay, p.level, s.handicap) : 0; award(s, p.id, pts); s.event = { kind: 'relayok', pid: p.id, pts };
-        } else { s.relayLock = now + RELAY_LOCK_MS; s.event = { kind: 'relayno', pid: p.id, answer: s.qs[p.id].answer }; }
+        } else { s.relayLock = s.calm ? 0 : now + RELAY_LOCK_MS; s.event = { kind: 'relayno', pid: p.id, answer: s.qs[p.id].answer }; }
         s.tries++; s.turn = (s.turn + 1) % s.players.length;
+        if (s.calm && s.tries >= r.runs) { endRelay(s); return s; }
         const n = s.players[s.turn]; s.qs = { [n.id]: genFor(s, n, 'r' + s.tries) };
         return s;
       }
@@ -320,13 +332,15 @@ export function reduce(state, a) {
       if (s.phase === 'stealopen') { toReveal(s, { kind: 'nobody' }); return s; }
       /* Out of time: an estimate keeps what was typed; a final pick that never came leaves the bet unchanged */
       if (s.phase === 'secret') return reduce(state, { type: 'answer', value: r.type === 'final' ? null : a.typed ?? '', now, timeout: true });
-      if (s.phase === 'relay') {
-        const done = s.count >= r.goal;
-        if (done) s.players.forEach(p => award(s, p.id, points(BASE.relayGoal, p.level, s.handicap)));
-        s.results = { count: s.count, goal: r.goal, done }; toReveal(s, { kind: 'relay', done }); return s;
-      }
+      if (s.phase === 'relay') { endRelay(s); return s; }
       return state;
     }
+    /* Calm only: nobody wants to buzz (or steal), so show the answers; with clocks the deadline does this */
+    case 'pass':
+      if (!s.calm) return state;
+      if (s.phase === 'open') { toReveal(s, { kind: s.locked.length ? 'nobody' : 'timeout-all' }); return s; }
+      if (s.phase === 'stealopen') { toReveal(s, { kind: 'nobody' }); return s; }
+      return state;
   }
   return state;
 }

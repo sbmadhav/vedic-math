@@ -7,7 +7,7 @@ import { rng } from '../../js/play/kit.js';
 import {
   mixQ, bondQ, TRICKS, TRICK_IDS, estimateQ, choicesFor, judgeEstimate, points, MULT, BASE, ANSWER_MS, OPEN_MS, STEAL_MS,
   newGame, reduce, round, standings, wagerOptions, plan, playerName, ADJ, NOUNS,
-  SECRET_MS, FINAL_MS, RELAY_LOCK_MS, RELAY_CAP, cleanSeats, answerMs, COLORS
+  SECRET_MS, FINAL_MS, RELAY_LOCK_MS, RELAY_CAP, RELAY_SPARE, cleanSeats, answerMs, COLORS
 } from '../../js/play/exp/party-core.js';
 
 const LEVELS = ['explorer', 'challenger', 'pro'];
@@ -254,4 +254,68 @@ test('saved seats are cleaned: two to four, known names, unique colors, valid le
   assert.deepEqual(odd[1], { adj: 2, noun: 3, color: 'teal', level: 'explorer' });
   assert.ok(odd[0].adj < ADJ.length && odd[0].noun >= 0 && odd[0].color !== 'teal' && odd[0].level === 'challenger');
   assert.equal(newGame({ players: six, seed: 1 }).players.length, 4);
+});
+
+/* Calm (vm.calm): no clocks anywhere, and the game still always ends */
+const calm3 = () => newGame({ players: [{ level: 'explorer' }, { level: 'challenger' }, { level: 'pro' }], seed: 42, calm: true });
+test('Calm: no deadline in buzz, answer, steal, secret turns or the final; ticks never time anyone out', () => {
+  const far = 1e12;
+  let s = to('buzz', reduce(calm3(), { type: 'start', now: 0 }));
+  assert.ok(s.calm); assert.equal(s.phase, 'open'); assert.equal(s.deadline, 0);
+  assert.equal(reduce(s, { type: 'tick', now: far }), s, 'an open buzz never times out');
+  s = reduce(s, { type: 'buzz', pid: 0, now: 10 }); assert.equal(s.phase, 'answer'); assert.equal(s.deadline, 0);
+  assert.equal(reduce(s, { type: 'tick', now: far }), s, 'the buzzer is never timed out');
+  s = reduce(s, { type: 'answer', value: s.qs[0].answer + 1, now: 20 }); assert.equal(s.phase, 'open'); assert.equal(s.deadline, 0, 'reopened without a clock');
+  assert.equal(reduce(s, { type: 'pass', now: 30 }).phase, 'reveal', 'pass shows the answers');
+
+  s = to('steal', reduce(calm3(), { type: 'start', now: 0 }));
+  assert.equal(s.phase, 'answer'); assert.equal(s.deadline, 0); assert.equal(reduce(s, { type: 'tick', now: far }), s);
+  s = reduce(s, { type: 'answer', value: s.qs[s.buzzer].answer + 1, now: 5 }); assert.equal(s.phase, 'stealopen'); assert.equal(s.deadline, 0);
+  assert.equal(reduce(s, { type: 'tick', now: far }), s, 'the steal window stays open');
+  assert.equal(reduce(s, { type: 'pass', now: 6 }).event.kind, 'nobody');
+
+  s = to('estimate', reduce(calm3(), { type: 'start', now: 0 }));
+  s = reduce(s, { type: 'ready', now: 5 }); assert.ok(s.ready); assert.equal(s.deadline, 0); assert.equal(reduce(s, { type: 'tick', now: far, typed: '9' }), s);
+
+  s = to('final', reduce(calm3(), { type: 'start', now: 0 }));
+  for (let i = 0; i < 3; i++) s = reduce(s, { type: 'wager', value: 0, now: 0 });
+  s = reduce(s, { type: 'ready', now: 5 }); assert.equal(s.deadline, 0); assert.equal(reduce(s, { type: 'tick', now: far }), s, 'the final pick is never out of time');
+});
+test('Calm: pass does nothing with clocks on', () => {
+  const s = to('buzz'); assert.equal(reduce(s, { type: 'pass', now: 1 }), s);
+});
+test('Calm relay: a fixed number of runs, equal for every runner, no timed lock, then the reveal', () => {
+  const pl = plan(3, 'full', true).find(r => r.type === 'relay');
+  assert.equal(pl.ms, undefined); assert.equal(pl.runs, pl.goal + 3 * RELAY_SPARE); assert.equal(pl.runs % 3, 0, 'every runner runs equally often');
+  let s = to('relay', reduce(calm3(), { type: 'start', now: 0 }));
+  assert.equal(s.deadline, 0); assert.equal(reduce(s, { type: 'tick', now: 1e12 }), s, 'the relay has no clock');
+  const runs = round(s).runs, ran = [0, 0, 0];
+  for (let i = 0; i < runs; i++) {
+    assert.equal(s.phase, 'relay'); const p = s.players[s.turn]; ran[p.id]++;
+    s = reduce(s, { type: 'answer', value: i === 0 ? -1 : s.qs[p.id].answer, now: i });
+    if (i === 0) { assert.equal(s.event.kind, 'relayno'); assert.equal(s.relayLock, 0, 'a miss costs a run, not time'); }
+  }
+  assert.equal(s.phase, 'reveal'); assert.deepEqual(ran, [runs / 3, runs / 3, runs / 3]);
+  assert.equal(s.results.count, runs - 1); assert.ok(s.results.done);
+});
+test('Calm: a full game always reaches the podium without a single tick', () => {
+  for (const length of ['quick', 'full']) for (let seed = 1; seed <= 15; seed++) {
+    let s = newGame({ players: [{ level: 'explorer' }, { level: 'pro' }, { level: 'challenger' }, { level: 'pro' }].slice(0, 2 + (seed % 3)), seed, length, calm: true });
+    const r = rng('calm' + seed); let guard = 0;
+    s = reduce(s, { type: 'start', now: 0 });
+    while (s.phase !== 'podium') {
+      assert.ok(guard++ < 2000, 'game ends'); assert.equal(s.deadline, 0, 'no clock in ' + s.phase);
+      const coin = r() < 0.6;
+      if (s.phase === 'intro' || s.phase === 'reveal') s = reduce(s, { type: 'next', now: 0 });
+      else if (s.phase === 'open' || s.phase === 'stealopen') { const free = s.players.filter(p => !s.locked.includes(p.id)); s = r() < 0.2 ? reduce(s, { type: 'pass', now: 0 }) : reduce(s, { type: 'buzz', pid: free[Math.floor(r() * free.length)].id, now: 0 }); }
+      else if (s.phase === 'answer') { const q = s.qs[s.buzzer]; s = reduce(s, { type: 'answer', value: coin ? q.answer : q.choices.find(c => c !== q.answer), now: 0 }); }
+      else if (s.phase === 'secret') {
+        if (!s.ready) s = reduce(s, { type: 'ready', now: 0 });
+        if (round(s).type === 'estimate') s = reduce(s, { type: 'answer', value: 100, now: 0 });
+        else s = reduce(s, { type: 'answer', value: coin ? s.qs[s.players[s.turn].id].answer : -1, now: 0 });
+      } else if (s.phase === 'relay') s = reduce(s, { type: 'answer', value: coin ? s.qs[s.players[s.turn].id].answer : -1, now: 0 });
+      else if (s.phase === 'wager') s = reduce(s, { type: 'wager', value: 0, now: 0 });
+      else assert.fail('unknown phase ' + s.phase);
+    }
+  }
 });

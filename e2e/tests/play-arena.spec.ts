@@ -46,6 +46,46 @@ test('Party: each buzzer is described by its question and status; no full screen
   await expect(page.locator('#ptZq0')).not.toBeEmpty();
 });
 
+test.describe('Party under Calm', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('vm.calm', '1'); } catch (e) { /* storage blocked */ } });
+  });
+  test('no clock shows, a buzz or an answer never times out, and Show the answers moves on', async ({ page, issues }) => {
+    await page.clock.install();
+    await open(page, '#/arena/party');
+    await expect(page.locator('.pt-calm')).toContainText('Calm is on: no clocks');
+    await page.locator('.pt-start').click();
+    const stage = page.locator('.pt-stage');
+    await expect(page.locator('.pt-stage .pt-calm')).toBeVisible();
+    await expect(page.locator('.pt-timer')).toBeHidden();
+    await page.locator('.pt-go').click();
+    await expect(stage).toHaveAttribute('data-phase', 'open');
+    await page.clock.fastForward('02:00');
+    await expect(stage).toHaveAttribute('data-phase', 'open');
+    await expect(page.locator('#ptZq0')).not.toBeEmpty();
+    /* player 1 buzzes and thinks for two minutes */
+    await page.keyboard.press('q');
+    await expect(stage).toHaveAttribute('data-phase', 'answer');
+    await page.clock.fastForward('02:00');
+    await expect(stage).toHaveAttribute('data-phase', 'answer');
+    await expect(page.locator('.pt-timer')).toBeHidden();
+    /* a wrong pick reopens the buzz, still without a clock; Show the answers ends the question */
+    const answer = await page.evaluate(() => { const q = document.querySelector('.pt-main .pt-q')!.textContent!.replace(' = ?', ''); return q; });
+    const choices = await page.locator('.pt-main .pt-choice span').allTextContents();
+    const wrong = choices.find(c => String(Function(`return (${answer.replace(/×/g, '*').replace(/−/g, '-').replace(/÷/g, '/').replace(/(\d+)²/g, '($1*$1)').replace(/Double (\d+)/, '2*$1')})`)()) !== c)!; /* test-only check of generated arithmetic */
+    await page.locator('.pt-main .pt-choice', { hasText: wrong }).first().click();
+    await expect(stage).toHaveAttribute('data-phase', 'open');
+    await page.locator('.pt-pass').click();
+    await expect(stage).toHaveAttribute('data-phase', 'reveal');
+    /* the reveal waits for Next */
+    await page.clock.fastForward('00:20');
+    await expect(stage).toHaveAttribute('data-phase', 'reveal');
+    await page.locator('.pt-next').click();
+    await expect(stage).toHaveAttribute('data-phase', 'open');
+    expect(issues.console).toEqual([]);
+  });
+});
+
 test('Daily Number: keyboard play keeps focus on the board and the operations', async ({ page, issues }) => {
   await open(page, '#/arena/daily-number');
   const first = page.locator('.dn-board [data-slot="0"]');

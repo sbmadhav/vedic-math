@@ -14,6 +14,11 @@ const freshSeed = () => (Math.random() * 2 ** 31) >>> 0;
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
 const fsCan = () => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
 const fsExit = () => { try { const p = (document.exitFullscreen || document.webkitExitFullscreen)?.call(document); if (p && p.catch) p.catch(() => {}); } catch (e) {} };
+/* Calm, the app's device preference (fx.calmOn): no clocks in this game either (party-core.js newGame calm) */
+const calmOn = () => { try { return localStorage.getItem('vm.calm') === '1'; } catch (e) { return false; } };
+const CALM_NOTE = 'Calm is on: no clocks. Take your time; End game or Show the answers moves things on.';
+const CALM_RELAY = 'Team round! Pass the baton. Everyone runs the same number of times. Can the family reach the goal?';
+const blurbOf = (type, calm) => (calm && type === 'relay' ? CALM_RELAY : C.ROUND_INFO[type].blurb);
 const defaults = () => ({ seats: [{ adj: 0, noun: 0, color: 'coral', level: 'explorer' }, { adj: 1, noun: 1, color: 'teal', level: 'pro' }], length: 'full', handicap: true, games: 0 });
 
 /* Avatar: shape and color both identify a player (never color alone) */
@@ -38,6 +43,7 @@ const LINES = {
   wrong: ['Ooh, not quite, {n}.', 'So close, {n}!', 'Nope, {n}. Anyone else?'],
   timeout: ['Time is up for {n}.', 'The clock beat {n} that time.'],
   nobody: ['Nobody got that one. The answer was {a}.', 'That one escaped! It was {a}.'],
+  passed: ['Nobody buzzed. Here are the answers.', 'Answers time! Nobody buzzed that one.'],
   timeoutAll: ['Silence! Nobody buzzed. Answers below.', 'Crickets... nobody buzzed in time.'],
   relayok: ['{n} passes the baton!', 'Go team! {n} got it.', '{n}, nice! Next runner!'],
   relayno: ['Fumble! It was {a}. Next runner!', 'Oops, {a}. Keep running!'],
@@ -104,9 +110,10 @@ export async function mount({ root, signal }) {
           <p class="px-note">Explorers score ×1.5 and get more time, Challengers ×1.25, Pros ×1. Everyone always gets questions at their own level.</p></div>
       </div>
       <div class="pt-startrow"><button type="button" class="md-btn md-btn--primary pt-start">Start the party</button><span class="px-note">Keys: ${seats.map((p, i) => `<kbd>${C.KEYS[i].toUpperCase()}</kbd> ${esc(C.playerName(p))}`).join(', ')}. Or tap your corner.</span></div>
+      ${calmOn() ? `<p class="px-note pt-calm">${CALM_NOTE}</p>` : ''}
       <p class="px-note pt-future">Everyone shares this one screen for now. Using phones as buzzers needs a server to connect them, so that is saved for a later version.</p>
     </section>
-    <section class="pt-rounds" aria-labelledby="ptRoundsH"><h2 id="ptRoundsH" class="pt-h2">Six rounds</h2><ol>${Object.values(C.ROUND_INFO).map(r => `<li><b>${esc(r.title)}</b> ${esc(r.blurb)}</li>`).join('')}</ol></section></div>`;
+    <section class="pt-rounds" aria-labelledby="ptRoundsH"><h2 id="ptRoundsH" class="pt-h2">Six rounds</h2><ol>${Object.entries(C.ROUND_INFO).map(([k, r]) => `<li><b>${esc(r.title)}</b> ${esc(blurbOf(k, calmOn()))}</li>`).join('')}</ol></section></div>`;
   }
   const seatHtml = (p, i) => `<li class="pt-seat pt-c--${p.color}" data-i="${i}">
     <span class="pt-av">${avatar(p.color, 64)}</span>
@@ -127,7 +134,7 @@ export async function mount({ root, signal }) {
     if (gameCtl) gameCtl.abort(); gameCtl = child(signal); const sig = gameCtl.signal;
     S.games++; save(); track('party/start', `${S.seats.length} players ${S.length}`);
     root.querySelector('.pt').classList.add('is-playing');
-    let s = C.newGame({ players: S.seats.map((p, i) => ({ ...p, id: i })), seed, length: S.length, handicap: S.handicap });
+    let s = C.newGame({ players: S.seats.map((p, i) => ({ ...p, id: i })), seed, length: S.length, handicap: S.handicap, calm: calmOn() });
     const n = s.players.length;
     body.innerHTML = `<div class="pt-stage" data-n="${n}" tabindex="-1">
       <div class="pt-top">
@@ -137,12 +144,13 @@ export async function mount({ root, signal }) {
         <button type="button" class="md-btn md-btn--sm pt-snd" aria-pressed="${!muted()}">${muted() ? 'Sound off' : 'Sound on'}</button>
         <button type="button" class="md-btn md-btn--sm pt-quit">End game</button>
       </div>
+      ${s.calm ? `<p class="px-note pt-calm">${CALM_NOTE}</p>` : ''}
       <ol class="pt-board" aria-label="Scores">${s.players.map(p => `<li class="pt-score pt-c--${p.color}" data-p="${p.id}"><span class="pt-av">${avatar(p.color, 40)}</span><span class="pt-sname">${esc(C.playerName(p))}<small>${LV_SHORT[p.level]}</small></span><b class="pt-pts">0</b><span class="pt-sbar" aria-hidden="true"><i></i></span></li>`).join('')}</ol>
       <div class="pt-arena">
         ${s.players.map(p => `<button type="button" class="pt-zone pt-zone--${p.id} pt-c--${p.color}" data-buzz="${p.id}" aria-label="${esc(C.playerName(p))} buzzer, key ${p.key.toUpperCase()}" aria-describedby="ptZq${p.id} ptZst${p.id}"><span class="pt-zhead"><span class="pt-av">${avatar(p.color, 48)}</span><span class="pt-zname">${esc(C.playerName(p))}</span><kbd>${p.key.toUpperCase()}</kbd></span><span class="pt-zq" id="ptZq${p.id}"></span><span class="pt-zst" id="ptZst${p.id}"></span></button>`).join('')}
         <section class="pt-center" aria-label="Game">
           <p class="pt-host"></p>
-          <div class="pt-timer" aria-hidden="true"><i></i></div>
+          <div class="pt-timer" aria-hidden="true"${s.calm ? ' hidden' : ''}><i></i></div>
           <div class="pt-main"></div>
         </section>
       </div>
@@ -169,7 +177,7 @@ export async function mount({ root, signal }) {
         case 'wrong': narrate(line('wrong', { n: nameOf(e.pid) })); sfx('no'); break;
         case 'timeout': narrate(line('timeout', { n: nameOf(e.pid) })); sfx('no'); break;
         case 'nobody': narrate(line('nobody', { a: answersText(prev) })); break;
-        case 'timeout-all': narrate(line('timeoutAll')); tone(196, { dur: 0.3, type: 'triangle', gain: 0.1 }); break;
+        case 'timeout-all': narrate(line(s.calm ? 'passed' : 'timeoutAll')); tone(196, { dur: 0.3, type: 'triangle', gain: 0.1 }); break;
         case 'relayok': narrate(line('relayok', { n: nameOf(e.pid) })); tone(PENTA[Math.min(10, 2 + s.count % 9)], { dur: 0.14, type: 'triangle', gain: 0.12 }); break;
         case 'relayno': narrate(line('relayno', { a: e.answer })); sfx('no'); break;
         case 'relay': narrate(e.done ? `Team goal reached! ${s.results.count} bonds. Everyone gets a bonus!` : `${s.results.count} bonds! The goal was ${s.results.goal}. So close, team.`); e.done ? sfx('win') : sfx('tap'); if (e.done) confetti(50); break;
@@ -179,7 +187,7 @@ export async function mount({ root, signal }) {
         case 'wager': sfx('tap'); break;
         case 'final': { const ok = s.results.filter(x => x.ok).map(x => nameOf(x.id)); narrate(ok.length ? `Big moment! Right: ${ok.join(', ')}.` : 'Ouch! Nobody got the final.'); sfx(ok.length ? 'win' : 'no'); break; }
         case 'podium': narrate(line('podium')); later(() => { confetti(90); sfx('win'); }, 400, sig); track('party/finish', `${n} players`); break;
-        case 'question': if (C.round(s).type === 'estimate') narrate('Everyone gets the same question. Secret guesses!'); else if (C.round(s).type === 'relay') narrate('Go go go! The clock is running.'); else if (s.phase === 'open') narrate(pick(Math.random, ['Read your own question. Buzz when you know it!', 'Eyes on your corner. Buzz!', 'Fingers on buzzers...'])); else if (s.phase === 'answer') narrate(`${nameOf(s.buzzer)}, this one is yours.`); else if (s.phase === 'wager') narrate('The final round. Place your bets!'); break;
+        case 'question': if (C.round(s).type === 'estimate') narrate('Everyone gets the same question. Secret guesses!'); else if (C.round(s).type === 'relay') narrate(s.calm ? 'Go go go! Pass the baton.' : 'Go go go! The clock is running.'); else if (s.phase === 'open') narrate(pick(Math.random, ['Read your own question. Buzz when you know it!', 'Eyes on your corner. Buzz!', 'Fingers on buzzers...'])); else if (s.phase === 'answer') narrate(`${nameOf(s.buzzer)}, this one is yours.`); else if (s.phase === 'wager') narrate('The final round. Place your bets!'); break;
       }
     };
     const answersText = st => { const ids = Object.keys(st.qs); return ids.length === 1 ? String(st.qs[ids[0]].answer) : 'shown below'; };
@@ -191,7 +199,8 @@ export async function mount({ root, signal }) {
       stage.dataset.phase = s.phase; stage.dataset.round = t || '';
       drawBoard(); drawZones(); drawCenter();
       if (stepCtl) { stepCtl.abort(); stepCtl = null; }
-      if (s.phase === 'reveal' && ['buzz', 'steal', 'trick'].includes(t)) { stepCtl = child(sig); later(() => dispatch({ type: 'next' }), reducedMotion() ? 5500 : 4200, stepCtl.signal); }
+      /* Under Calm the reveal waits for Next instead of moving on by itself */
+      if (s.phase === 'reveal' && !s.calm && ['buzz', 'steal', 'trick'].includes(t)) { stepCtl = child(sig); later(() => dispatch({ type: 'next' }), reducedMotion() ? 5500 : 4200, stepCtl.signal); }
       if (prev && (s.phase !== prev.phase || s.phase === 'relay')) { const f = main.querySelector('[data-autofocus]'); if (f && (document.activeElement === document.body || stage.contains(document.activeElement))) f.focus({ preventScroll: true }); }
     };
     const drawBoard = () => {
@@ -230,14 +239,14 @@ export async function mount({ root, signal }) {
       let h = '';
       if (s.phase === 'intro') {
         const info = C.ROUND_INFO[t];
-        h = `<p class="pt-rnum">Round ${s.ri + 1}</p><h2 class="pt-rtitle">${esc(info.title)}</h2><p class="pt-rblurb">${esc(info.blurb)}</p>`;
+        h = `<p class="pt-rnum">Round ${s.ri + 1}</p><h2 class="pt-rtitle">${esc(info.title)}</h2><p class="pt-rblurb">${esc(blurbOf(t, s.calm))}</p>`;
         if (t === 'trick') { const tr = C.TRICKS[s.trick]; h += `<div class="pt-trick"><p class="pt-trick-n">${esc(tr.name)}${tr.sutra ? ` <small>${esc(tr.sutra)}, from Bharati Krishna Tirtha's 1965 book</small>` : ''}</p><p>${esc(tr.line)}</p><ol class="pt-demo">${tr.demo.map((d, i) => `<li style="--i:${i}">${esc(d)}</li>`).join('')}</ol><p class="px-note">Each player gets a version at their own level.</p></div>`; }
-        if (t === 'relay') h += `<p class="pt-goal">Team goal: <b>${r.goal}</b> bonds in ${r.ms / 1000} seconds</p>`;
+        if (t === 'relay') h += `<p class="pt-goal">Team goal: <b>${r.goal}</b> bonds ${s.calm ? `in ${r.runs} runs` : `in ${r.ms / 1000} seconds`}</p>`;
         h += `<button type="button" class="md-btn md-btn--primary pt-next pt-go" data-autofocus>Let's go</button><p class="pt-hint">Press Enter</p>`;
       } else if (s.phase === 'open') {
-        h = `<p class="pt-callout">Buzz!</p><p class="pt-sub">${t === 'trick' ? `Use the trick: ${esc(C.TRICKS[s.trick].line)}` : 'Everyone has their own question in their corner. Know it? Buzz!'}</p>`;
+        h = `<p class="pt-callout">Buzz!</p><p class="pt-sub">${t === 'trick' ? `Use the trick: ${esc(C.TRICKS[s.trick].line)}` : 'Everyone has their own question in their corner. Know it? Buzz!'}</p>${s.calm ? '<button type="button" class="md-btn pt-pass">Show the answers</button>' : ''}`;
       } else if (s.phase === 'stealopen') {
-        h = `<p class="pt-callout pt-callout--steal">Steal!</p><p class="pt-sub">${esc(nameOf(s.locked[0]))} missed it. Buzz to steal with a question at your level.</p>`;
+        h = `<p class="pt-callout pt-callout--steal">Steal!</p><p class="pt-sub">${esc(nameOf(s.locked[0]))} missed it. Buzz to steal with a question at your level.</p>${s.calm ? '<button type="button" class="md-btn pt-pass">No steal, show the answer</button>' : ''}`;
       } else if (s.phase === 'answer') {
         const p = s.players.find(x => x.id === s.buzzer), q = s.qs[p.id];
         h = `<p class="pt-who pt-c--${p.color}"><span class="pt-av">${avatar(p.color, 40)}</span>${esc(C.playerName(p))}${s.stealing ? ' steals' : ''}</p><p class="pt-q">${esc(q.text)} = ?</p>${choicesHtml(q)}`;
@@ -251,7 +260,7 @@ export async function mount({ root, signal }) {
         h = `<p class="pt-who pt-c--${cur.color}"><span class="pt-av">${avatar(cur.color, 40)}</span>${esc(C.playerName(cur))} has ${cur.score}</p><p class="pt-sub">How much will you bet on your final question? Right doubles the bet (plus a bonus), wrong loses it.</p><div class="pt-choices pt-choices--wager">${opts.map((v, i) => `<button type="button" class="pt-choice" data-wager="${v}"${i === 0 ? ' data-autofocus' : ''}><kbd>${i + 1}</kbd><span>${v === 0 ? 'Play safe' : v === cur.score ? `All in: ${v}` : `Half: ${v}`}</span></button>`).join('')}</div>`;
       } else if (s.phase === 'relay') {
         const q = s.qs[cur.id];
-        h = `<div class="pt-relay"><p class="pt-count"><b>${s.count}</b><span>/ ${r.goal} bonds</span></p><p class="pt-clock" aria-hidden="true"></p></div><p class="pt-who pt-c--${cur.color}"><span class="pt-av">${avatar(cur.color, 40)}</span>${esc(C.playerName(cur))} runs</p><p class="pt-q">${esc(q.text)}</p>${choicesHtml(q, !!s.relayLock)}${s.relayLock ? '<p class="pt-sub">Fumble! Catch your breath...</p>' : ''}`;
+        h = `<div class="pt-relay"><p class="pt-count"><b>${s.count}</b><span>/ ${r.goal} bonds</span></p>${s.calm ? `<p class="pt-runs">${r.runs - s.tries} ${r.runs - s.tries === 1 ? 'run' : 'runs'} left</p>` : '<p class="pt-clock" aria-hidden="true"></p>'}</div><p class="pt-who pt-c--${cur.color}"><span class="pt-av">${avatar(cur.color, 40)}</span>${esc(C.playerName(cur))} runs</p><p class="pt-q">${esc(q.text)}</p>${choicesHtml(q, !!s.relayLock)}${s.relayLock ? '<p class="pt-sub">Fumble! Catch your breath...</p>' : ''}`;
       } else if (s.phase === 'reveal') h = revealHtml(t);
       else if (s.phase === 'podium') h = podiumHtml();
       main.innerHTML = h;
@@ -270,7 +279,7 @@ export async function mount({ root, signal }) {
       if (t === 'final' && s.results) return `<ul class="pt-res">${s.results.map(x => { const p = s.players.find(q => q.id === x.id); return `<li class="pt-c--${p.color}${x.ok ? ' is-win' : ''}"><span class="pt-av">${avatar(p.color, 28)}</span>${esc(C.playerName(p))}<b>${x.ok ? 'Right' : x.out ? 'Out of time' : 'Missed'}</b><em>${x.pts > 0 ? '+' : ''}${x.pts}</em></li>`; }).join('')}</ul>${next}`;
       const ids = Object.keys(s.qs).map(Number);
       const rows = ids.map(id => { const p = s.players.find(q => q.id === id), q = s.qs[id]; return `<li class="pt-c--${p.color}${e.pid === id && e.kind === 'correct' ? ' is-win' : ''}"><span class="pt-av">${avatar(p.color, 28)}</span>${esc(q.text)} = <b>${q.answer}</b>${q.how ? `<small>${esc(q.how)}</small>` : ''}</li>`; }).join('');
-      const head_ = e.kind === 'correct' ? `<p class="pt-callout">+${e.pts}</p><p class="pt-sub">${esc(nameOf(e.pid))}${e.steal ? ' stole it' : ' got it'}!</p>` : `<p class="pt-callout pt-callout--soft">${e.kind === 'timeout-all' ? 'Time!' : 'Nobody'}</p>`;
+      const head_ = e.kind === 'correct' ? `<p class="pt-callout">+${e.pts}</p><p class="pt-sub">${esc(nameOf(e.pid))}${e.steal ? ' stole it' : ' got it'}!</p>` : `<p class="pt-callout pt-callout--soft">${e.kind === 'timeout-all' ? (s.calm ? 'Answers' : 'Time!') : 'Nobody'}</p>`;
       return `${head_}<ul class="pt-res pt-res--answers">${rows}</ul>${next}`;
     };
     const podiumHtml = () => {
@@ -306,6 +315,7 @@ export async function mount({ root, signal }) {
       const k = e.target.closest('[data-key]'); if (k) { padKey(k.dataset.key); return; }
       if (e.target.closest('.pt-ready')) { ready(); return; }
       if (e.target.closest('.pt-next')) { dispatch({ type: 'next' }); return; }
+      if (e.target.closest('.pt-pass')) { dispatch({ type: 'pass' }); return; }
       if (e.target.closest('.pt-fs')) { fsToggle(); return; }
       if (e.target.closest('.pt-snd')) { setMuted(!muted()); const b = e.target.closest('.pt-snd'); b.setAttribute('aria-pressed', String(!muted())); b.textContent = muted() ? 'Sound off' : 'Sound on'; return; }
       if (e.target.closest('.pt-quit')) { if (globalThis.confirm && !globalThis.confirm('End this game?')) return; if (fsEl()) fsExit(); setup(); return; }

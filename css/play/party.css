@@ -140,6 +140,9 @@
 .pt-count b { font: 700 clamp(3rem, 6vw, 6rem)/1 var(--font-display); color: var(--teal-strong); }
 .pt-count span { font-weight: 800; font-size: clamp(1rem, 1.5vw, 1.5rem); color: var(--ink-muted); }
 .pt-clock { margin: 0; font: 700 clamp(1.8rem, 3vw, 3rem)/1 var(--font-mono); color: var(--coral-strong); }
+.pt-runs { margin: 0; font-weight: 800; font-size: clamp(1rem, 1.5vw, 1.5rem); color: var(--ink-muted); }
+.pt-calm { margin: var(--space-2) 0; }
+.pt-pass { margin-top: var(--space-3); }
 .pt-answer { font-size: clamp(1.3rem, 2.2vw, 2.4rem); } .pt-answer b { font-family: var(--font-display); color: var(--teal-strong); }
 .pt-line { position: relative; width: 100%; max-width: 760px; height: 64px; margin: var(--space-2) 0; }
 .pt-line::before { content: ""; position: absolute; left: 3%; right: 3%; top: 50%; height: 4px; border-radius: 2px; background: var(--line); }
