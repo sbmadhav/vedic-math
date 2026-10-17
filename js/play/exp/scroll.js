@@ -147,7 +147,8 @@ export function mount({ root, signal, params }) {
         on(ex, 'click', e => { if (e.target.closest('.sc-next-p')) { const k = ps.findIndex((pp, i) => i > at && !P.solved[`${lv}:${pp.id}`]); at = k >= 0 ? k : ps.findIndex(pp => !P.solved[`${lv}:${pp.id}`]); if (at < 0) at = ps.length - 1; steps(); show(); box.querySelector('.sc-p-title').focus({ preventScroll: true }); box.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); } }, sig);
         ex.querySelector('.sc-next-p')?.focus({ preventScroll: true });
       };
-      WIDGETS[p.kind](box.querySelector('.sc-widget'), p, attempt, sig);
+      /* A puzzle solved earlier opens showing its answer (the widgets that hold a position start there) */
+      WIDGETS[p.kind](box.querySelector('.sc-widget'), p, attempt, sig, solved ? p.answer : null);
       if (solved) { fb.className = 'sc-feedback is-ok'; fb.textContent = 'Solved already. Here is what you found.'; box.classList.add('is-solved'); box.querySelectorAll('.sc-widget button, .sc-widget input').forEach(b => { b.disabled = true; }); showAnswer(box.querySelector('.sc-widget'), p); explain(p); }
     }
 
@@ -274,10 +275,10 @@ const WIDGETS = {
       if (e.target.closest('.sc-undo')) { seq.pop(); draw(); }
     }, sig);
   },
-  rope(el, p, attempt, sig) { rope(el, p, attempt, sig); },
-  square(el, p, attempt, sig) { square(el, p, attempt, sig); },
-  meter(el, p, attempt, sig) {
-    let pat = 'G'.repeat(p.n);
+  rope(el, p, attempt, sig, start) { rope(el, p, attempt, sig, start); },
+  square(el, p, attempt, sig, start) { square(el, p, attempt, sig, start); },
+  meter(el, p, attempt, sig, start) {
+    let pat = typeof start === 'string' && start.length === p.n ? start : 'G'.repeat(p.n);
     const draw = () => {
       el.innerHTML = `<div class="sc-dials" role="group" aria-label="Syllable dials">${[...pat].map((c, i) => `<button type="button" class="sc-dial sc-m-${c}" data-i="${i}" aria-label="Dial ${i + 1}: ${c === 'L' ? 'laghu, short' : 'guru, long'}. Tap to switch."><span class="sc-dial-g sc-dial-g--${c}" aria-hidden="true"></span><small>${c}</small></button>`).join('')}</div>
         <div class="px-row"><button type="button" class="md-btn md-btn--primary sc-try">Try the lock</button></div>`;
@@ -307,7 +308,7 @@ function tiles(el, p, attempt, sig, pool, sub, noun) {
     if (e.target.closest('.sc-try')) attempt(seq.slice());
   }, sig);
 }
-/* Show the stored answer in a widget for a puzzle solved earlier */
+/* Show the stored answer in a widget for a puzzle solved earlier (rope, square and meter start at it instead) */
 function showAnswer(el, p) {
   if (p.kind === 'number') { const i = el.querySelector('input'); if (i) i.value = p.answer; }
   else if (p.kind === 'kp' || p.kind === 'bhuta') el.querySelector('.sc-built').innerHTML = p.answer.map(s => `<span class="sc-chip">${esc(s)}</span>`).join('<i aria-hidden="true">·</i>');
@@ -316,8 +317,11 @@ function showAnswer(el, p) {
 }
 
 /* ----- Rope and pegs: a 12-knot loop. Drag pegs B and C along the rope; the triangle follows. ----- */
-function rope(el, p, attempt, sig) {
-  const K = p.knots; let b = 2, c = 6, drag = null;
+/* start: [b, c] to show (a solved puzzle's answer); a solved puzzle's pegs no longer move */
+function rope(el, p, attempt, sig, start) {
+  const K = p.knots, ok0 = Array.isArray(start) && start[0] >= 1 && start[0] < start[1] && start[1] <= K - 1;
+  let b = ok0 ? start[0] : 2, c = ok0 ? start[1] : 6, drag = null;
+  const frozen = () => !!el.closest('.is-solved');
   el.innerHTML = `<div class="sc-rope">
     <svg class="sc-rope-tri" viewBox="0 0 300 200" role="img" aria-live="off"><g class="sc-tri"></g></svg>
     <p class="sc-rope-read" aria-live="polite"></p>
@@ -361,9 +365,9 @@ function rope(el, p, attempt, sig) {
     read.innerHTML = ok ? `Sides: <b class="sc-t-a">${ab}</b>, <b class="sc-t-b">${bc}</b>, <b class="sc-t-c">${ca}</b>${right ? ' <span class="sc-tick">square corner!</span>' : ''}` : `Sides ${ab}, ${bc}, ${ca}: the rope is slack.`;
   };
   const norm = (U, V) => { const dx = U[0] - V[0], dy = U[1] - V[1], l = Math.hypot(dx, dy) || 1; return [dx / l, dy / l]; };
-  const set = (peg, k) => { if (peg === 'b') b = Math.max(1, Math.min(c - 1, k)); else c = Math.max(b + 1, Math.min(K - 1, k)); tone(PENTA[(peg === 'b' ? b : c) % PENTA.length], { dur: 0.06, type: 'triangle', gain: 0.05 }); draw(); };
+  const set = (peg, k) => { if (frozen()) return; if (peg === 'b') b = Math.max(1, Math.min(c - 1, k)); else c = Math.max(b + 1, Math.min(K - 1, k)); tone(PENTA[(peg === 'b' ? b : c) % PENTA.length], { dur: 0.06, type: 'triangle', gain: 0.05 }); draw(); };
   const toKnot = e => { const pt = strip.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; const q = pt.matrixTransform(strip.getScreenCTM().inverse()); return Math.round(((q.x - 14) / 292) * K); };
-  on(strip, 'pointerdown', e => { const g = e.target.closest('[data-peg]'); if (!g) return; drag = g.dataset.peg; strip.setPointerCapture(e.pointerId); g.focus(); e.preventDefault(); }, sig);
+  on(strip, 'pointerdown', e => { const g = e.target.closest('[data-peg]'); if (!g || frozen()) return; drag = g.dataset.peg; strip.setPointerCapture(e.pointerId); g.focus(); e.preventDefault(); }, sig);
   on(strip, 'pointermove', e => { if (!drag) return; const k = toKnot(e); if (k !== (drag === 'b' ? b : c)) set(drag, k); }, sig);
   on(strip, 'pointerup', () => { drag = null; }, sig);
   on(strip, 'pointercancel', () => { drag = null; }, sig);
@@ -373,9 +377,11 @@ function rope(el, p, attempt, sig) {
 }
 
 /* ----- Doubling the square: drag peg P; a square is built on the rope from O to P ----- */
-function square(el, p, attempt, sig) {
-  const s0 = p.base, R = s0 + 2 + (s0 > 3 ? 1 : 0);
-  let px = s0 + 1, py = 0, drag = false;
+/* start: [x, y] of peg P to show (a solved puzzle's answer); a solved puzzle's peg no longer moves */
+function square(el, p, attempt, sig, start) {
+  const s0 = p.base, R = s0 + 2 + (s0 > 3 ? 1 : 0), ok0 = Array.isArray(start) && start.every(v => Number.isInteger(v) && v >= 0 && v <= R);
+  let px = ok0 ? start[0] : s0 + 1, py = ok0 ? start[1] : 0, drag = false;
+  const frozen = () => !!el.closest('.is-solved');
   const u = 20, vb = `${-(R + 0.6) * u} ${-(2 * R + 0.6) * u} ${(2 * R + 1.6) * u} ${(2 * R + 1.2) * u}`;
   el.innerHTML = `<div class="sc-sq">
     <svg class="sc-sq-svg" viewBox="${vb}" role="group" aria-label="Grid. Drag peg P, or focus it and use the arrow keys. The rope from O to P is one side of the new square.">
@@ -399,8 +405,8 @@ function square(el, p, attempt, sig) {
     const A = S.squareArea(px, py);
     read.innerHTML = `Old square: <b class="sc-t-a">${s0 * s0}</b>. New square: <b class="sc-t-b">${A}</b>${A === p.target ? ' <span class="sc-tick">double!</span>' : ''}${level() === 'explorer' ? '' : ` <span class="px-note">(${px}² + ${py}²)</span>`}`;
   };
-  const clamp = (x, y) => { px = Math.max(0, Math.min(R, x)); py = Math.max(0, Math.min(R, y)); if (px === 0 && py === 0) px = 1; };
-  on(svg, 'pointerdown', e => { if (!e.target.closest('.sc-sq-p')) return; drag = true; svg.setPointerCapture(e.pointerId); peg.focus(); e.preventDefault(); }, sig);
+  const clamp = (x, y) => { if (frozen()) return; px = Math.max(0, Math.min(R, x)); py = Math.max(0, Math.min(R, y)); if (px === 0 && py === 0) px = 1; };
+  on(svg, 'pointerdown', e => { if (frozen() || !e.target.closest('.sc-sq-p')) return; drag = true; svg.setPointerCapture(e.pointerId); peg.focus(); e.preventDefault(); }, sig);
   on(svg, 'pointermove', e => { if (!drag) return; const q = svg.createSVGPoint(); q.x = e.clientX; q.y = e.clientY; const r = q.matrixTransform(svg.getScreenCTM().inverse()); const nx = Math.round(r.x / u), ny = Math.round(-r.y / u); if (nx !== px || ny !== py) { clamp(nx, ny); tone(PENTA[(px + py) % PENTA.length], { dur: 0.05, type: 'triangle', gain: 0.05 }); draw(); } }, sig);
   on(svg, 'pointerup', () => { drag = false; }, sig);
   on(svg, 'pointercancel', () => { drag = false; }, sig);

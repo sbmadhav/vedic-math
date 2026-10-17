@@ -178,6 +178,41 @@ test('Lost Scroll: a chapter 1 puzzle is solved and saved; in preview nothing is
   expect(issues.console).toEqual([]);
 });
 
+test('Lost Scroll: solved rope, square and meter puzzles reopen showing their answer, and stay put', async ({ page, issues }) => {
+  await page.goto('/vedic-math/');
+  const want = await page.evaluate(async () => {
+    const S = await import('/vedic-math/js/play/exp/scroll-core.js' as string);
+    const solved: Record<string, boolean> = {}, at: Record<string, [number, number, unknown]> = {};
+    for (const n of [2, 4]) S.puzzlesFor(n, 'challenger').forEach((p: { id: string, kind: string, answer: unknown }, i: number) => { solved[`challenger:${p.id}`] = true; if (['rope', 'square', 'meter'].includes(p.kind)) at[p.kind] = [n, i, p.answer]; });
+    localStorage.setItem('vm.play.p1.scroll', JSON.stringify({ solved, pieces: [] }));
+    return at;
+  });
+  const step = async (n: number, i: number) => {
+    await open(page, `#/sutras/lost-scroll/preview/${n}`);
+    await page.locator(`.sc-step[data-step="${i}"]`).click();
+    await expect(page.locator('.sc-puzzle.is-solved .sc-feedback')).toHaveText('Solved already. Here is what you found.');
+  };
+  const [rn, ri, [b, c]] = want.rope as [number, number, [number, number]];
+  await step(rn, ri);
+  const pegB = page.locator('[data-peg="b"]');
+  await expect(pegB).toHaveAttribute('aria-valuenow', String(b));
+  await expect(page.locator('[data-peg="c"]')).toHaveAttribute('aria-valuenow', String(c));
+  await expect(page.locator('.sc-rope-read .sc-tick')).toHaveText('square corner!');
+  await pegB.focus(); await page.keyboard.press('ArrowRight');
+  await expect(pegB).toHaveAttribute('aria-valuenow', String(b));
+
+  const [sn, si, [x, y]] = want.square as [number, number, [number, number]];
+  await step(sn, si);
+  await expect(page.locator('.sc-sq-p')).toHaveAttribute('aria-valuetext', `${x} across, ${y} up`);
+  await expect(page.locator('.sc-sq-read .sc-tick')).toHaveText('double!');
+
+  const [mn, mi, pat] = want.meter as [number, number, string];
+  await step(mn, mi);
+  await expect(page.locator('button.sc-dial small')).toHaveText([...pat]);
+  await expect(page.locator('button.sc-dial').first()).toBeDisabled();
+  expect(issues.console).toEqual([]);
+});
+
 for (const scheme of ['light', 'dark'] as const) {
   test.describe(`${scheme} scheme`, () => {
     test.use({ colorScheme: scheme });
