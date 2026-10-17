@@ -472,12 +472,12 @@ export function mount({ root, signal, params }) {
           <div class="ms-row"><button type="button" class="md-btn md-btn--sm ms-beat" aria-pressed="false">Hear the gap</button><button type="button" class="md-btn md-btn--sm ms-reset">Start over</button></div>`;
         rootRead();
       } else {
-        steps.innerHTML = `<p class="ms-task">Each square inside is half the one around it: the doubling, run backwards. Pick a color and tap the altar.</p>
+        steps.innerHTML = `<p class="ms-task">Each square inside is half the one around it: the doubling, run backwards. Pick a color and tap the altar. With a keyboard, arrows pick a piece and Enter paints it.</p>
           <div class="ms-row ms-brushes" role="radiogroup" aria-label="Color">${[[1, 'coral'], [2, 'sun'], [3, 'teal'], [4, 'ink'], [0, 'clear']].map(([v, n]) => `<button type="button" role="radio" class="ms-brush ms-brush--${n}" data-b="${v}" aria-checked="${v === brush}" aria-label="${n}">${n === 'clear' ? 'clear' : ''}</button>`).join('')}</div>
           <div class="ms-row"><button type="button" class="md-chip ms-mirror" aria-pressed="${mirror}">Mirror all four</button><button type="button" class="md-chip ms-lv" data-d="-1" aria-label="Fewer squares">&minus; square</button><button type="button" class="md-chip ms-lv" data-d="1" aria-label="More squares">+ square</button><button type="button" class="md-chip ms-fill">Fill for me</button></div>`;
         cap.textContent = A.describe(altarPiece);
       }
-      cv.setAttribute('aria-label', `Rope construction: ${SCENES.find(s => s.id === id).name}`);
+      cv.setAttribute('aria-label', `Rope construction: ${SCENES.find(s => s.id === id).name}${id === 'altar' ? '. Arrow keys pick a piece, Enter paints it.' : ''}`); hover = -1;
       room.querySelectorAll('.ms-save, .ms-share, .ms-wall').forEach(x => { x.hidden = id !== 'altar'; });
       view.redraw();
     };
@@ -529,9 +529,17 @@ export function mount({ root, signal, params }) {
     const up = () => { st.drag = null; if (st.frozen) { st.frozen = null; view.redraw(); } };
     on(cv, 'pointerup', up, signal); on(cv, 'pointercancel', up, signal);
     on(cv, 'pointerleave', () => { if (hover >= 0) { hover = -1; view.redraw(); } }, signal);
+    on(cv, 'blur', () => { if (hover >= 0) { hover = -1; view.redraw(); } }, signal);
     /* keyboard: arrows move the knot or the corner when the canvas has focus */
     cv.tabIndex = 0;
     on(cv, 'keydown', e => {
+      /* on the altar, arrows walk from region to region and Enter or Space paints the one outlined */
+      if (scene === 'altar') {
+        const n = A.altar(altarPiece.levels).length, step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+        if (step) { e.preventDefault(); hover = hover < 0 ? (step > 0 ? 0 : n - 1) : (hover + step + n) % n; const r = A.altar(altarPiece.levels)[hover]; say(r.ring === altarPiece.levels ? 'The center square' : `Ring ${r.ring + 1}, triangle ${r.i + 1}`); view.redraw(); }
+        else if ((e.key === 'Enter' || e.key === ' ') && hover >= 0) { e.preventDefault(); paintRegion(hover); }
+        return;
+      }
       const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key]; if (!d) return;
       e.preventDefault();
       if (scene === 'right' && !st.snapped) { st.knot = A.reach([st.knot[0] + d[0] * 0.1, st.knot[1] + d[1] * 0.1], [0, 0], 5, [4, 0], 3); if (A.isTaut(st.knot, [0, 0], 5, [4, 0], 3, 0.03) && st.knot[1] < 0) snapRight(); view.redraw(); }
@@ -564,12 +572,13 @@ export function mount({ root, signal, params }) {
       }
       const br = b.closest('[data-b]'); if (br) { brush = +br.dataset.b; steps.querySelectorAll('[data-b]').forEach(x => x.setAttribute('aria-checked', String(x === br))); }
       if (b.closest('.ms-mirror')) { mirror = !mirror; b.closest('.ms-mirror').setAttribute('aria-pressed', String(mirror)); }
-      const lvb = b.closest('.ms-lv'); if (lvb) { altarPiece = A.cleanPiece({ ...altarPiece, levels: altarPiece.levels + +lvb.dataset.d }); cap.textContent = A.describe(altarPiece); view.redraw(); }
+      const lvb = b.closest('.ms-lv'); if (lvb) { altarPiece = A.cleanPiece({ ...altarPiece, levels: altarPiece.levels + +lvb.dataset.d }); hover = -1; cap.textContent = A.describe(altarPiece); view.redraw(); }
       if (b.closest('.ms-fill')) { const r = rng(seedOf('altar', Date.now())); const cols = [1 + Math.floor(r() * 3), 1 + Math.floor(r() * 3), 4, 0]; altarPiece.f = A.altar(altarPiece.levels).map(reg => cols[(reg.ring + (reg.ring === altarPiece.levels ? 1 : 0)) % cols.length]); view.redraw(); }
     }, signal);
     const regionAt = p => { const regs = A.altar(altarPiece.levels); for (let i = regs.length - 1; i >= 0; i--) if (A.inPoly(p[0], p[1], regs[i].pts)) return i; return -1; };
-    const paintAt = p => {
-      const i = regionAt(p); if (i < 0) return;
+    const paintAt = p => paintRegion(regionAt(p));
+    const paintRegion = i => {
+      if (i < 0) return;
       const regs = A.altar(altarPiece.levels), ring = regs[i].ring;
       regs.forEach((r, j) => { if (j === i || (mirror && r.ring === ring)) altarPiece.f[j] = brush; });
       ensemble().bell(A.PENTA[Math.min(14, 2 + ring * 2)], 0, 0.1, 1.2);

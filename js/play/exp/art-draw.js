@@ -147,6 +147,8 @@ export function altar(g, w, h, pal, piece, { hover = -1, scale = 1 } = {}) {
     g.fillStyle = f ? A.rgba(fills[f], 0.92) : A.rgba(pal.ink, i === hover ? 0.12 : 0.04); g.fill();
     g.strokeStyle = A.rgba(pal.ink, 0.65); g.lineWidth = 2 * scale; g.stroke();
   });
+  /* the region under the pointer or the keyboard cursor gets a heavy outline, visible on any fill */
+  if (hover >= 0 && regs[hover]) { g.beginPath(); regs[hover].pts.forEach((p, j) => { const [x, y] = G.map(p); j ? g.lineTo(x, y) : g.moveTo(x, y); }); g.closePath(); g.strokeStyle = A.rgba(pal.ink, 0.95); g.lineWidth = 4.5 * scale; g.stroke(); }
   /* pegs at every corner, like the stakes of the rope */
   const seen = new Set();
   regs.forEach(r => r.pts.forEach(p => { const key = p.map(v => v.toFixed(3)).join(); if (seen.has(key)) return; seen.add(key); const [x, y] = G.map(p); g.beginPath(); g.arc(x, y, 3.5 * scale, 0, TAU); g.fillStyle = A.rgba(pal.bg); g.fill(); g.strokeStyle = A.rgba(pal.ink, 0.9); g.lineWidth = 1.8 * scale; g.stroke(); }));
