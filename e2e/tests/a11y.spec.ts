@@ -127,6 +127,27 @@ test('the Explore menu has no serious or critical axe violations', async ({ page
   expect(res.violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => `${v.id}: ${v.nodes.map(n => n.target.join(' ')).join(' | ')}`)).toEqual([]);
 });
 
+/* The site header (site-header spec): wide and on a 320px phone, in both schemes, with the music panel open */
+for (const scheme of ['light', 'dark'] as const) {
+  for (const width of [1280, 320]) {
+    test.describe(`${scheme} scheme, header at ${width}px`, () => {
+      test.use({ colorScheme: scheme, viewport: { width, height: 800 } });
+      test('the header has no serious or critical axe violations', async ({ page }, testInfo) => {
+        chromiumOnly(testInfo);
+        await open(page, '#/learn');
+        const check = async () => {
+          const res = await new AxeBuilder({ page }).include('body > header').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice']).analyze();
+          return res.violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => `${v.id}: ${v.nodes.map(n => n.target.join(' ')).join(' | ')}`);
+        };
+        expect(await check()).toEqual([]);
+        await page.locator('#vmMBtn').click();
+        await expect(page.locator('#vmMPanel')).toBeVisible();
+        expect(await check()).toEqual([]);
+      });
+    });
+  }
+}
+
 /* Posting consent: the age sheet and the Parent step on the Me page, in both color schemes and every Mode */
 const axeIn = async (page: import('@playwright/test').Page, sel: string) => {
   const res = await new AxeBuilder({ page }).include(sel).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice']).analyze();

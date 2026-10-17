@@ -321,7 +321,7 @@ export const TOUR_STEPS = [
     { sel: '#skyHome .sky-bolt', title: 'Your Sky', body: 'Every Star is a short round on one trick. Bolt waits at a good one to start with, and every Star is open.' },
     { sel: '#skyHome .sky-frame', title: 'Your Sky', body: 'Every Star is a short round on one trick. Bolt shows a good one to start with, and every Star is open.' },
     { sel: '.play-tile', title: w('Tap to play', 'Pick something to play'), body: w('Tap a picture to start. Have fun!', 'Each tile opens a game, a skill or a race.') }] },
-  { id: 'nav', options: [{ sel: '.mq-nav .md-wrap',
+  { id: 'nav', options: [{ sel: '.mq-nav',
     title: w('Go anywhere', 'The menu'),
     body: w('Learn, races, games and videos are all up here.', 'Learn skills, train tricks in the Dojo, race in the Arena, play Games and watch videos. On a phone, swipe it sideways.') }] },
   { id: 'music', options: [{ sel: '#vmMBtn',
