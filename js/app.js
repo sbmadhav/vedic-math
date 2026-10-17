@@ -5,6 +5,7 @@ import { SKILLS, byId, skillsFor, GRADES, STRANDS, gradeOf, withPlain } from './
 import { TRICKS, BELTS } from './vedic.js';
 import { GAMES, keepFocus } from './games.js';
 import { SUTRAS, SUBSUTRAS, HISTORY } from './sutras.js';
+import { GROUPS as VERSE_GROUPS, SLOKAS, slokasIn, slokasFor } from './slokas.js';
 import { DETAILS } from './sutra-details.js';
 import { mountScene } from './scenes.js';
 import * as W from './watch.js';
@@ -20,7 +21,7 @@ import * as LV from './levels.js';
 import { LEVELS, LEVELS_PER_GAME, levelMedal, boardGame } from './games.js';
 import * as AD from './adapt.js';
 import { initAmbient, bgOn, setBg, BG_NOTES, stop as stopMusic, isPlaying as musicOn } from './ambient.js';
-import { on, later, every, child } from './life.js';
+import { on, later, every, child, onAbort } from './life.js';
 import * as metrics from './metrics.js';
 import { boltHTML } from './bolt.js';
 import { runStar } from './star.js';
@@ -650,7 +651,7 @@ function challengeView(id, { signal } = {}) {
 /* ---------- Sutras: deep dive and card collection ---------- */
 const sutraId = (c, sub) => (sub ? 'u' : 's') + c.n;
 const ALL_SUTRAS = [...SUTRAS.map(c => ({ ...c, sub: false, id: 's' + c.n })), ...SUBSUTRAS.map(c => ({ ...c, sub: true, id: 'u' + c.n }))];
-function sutrasView() {
+function sutrasView({ signal } = {}) {
   document.title = `The sutras: ${BRAND} · Madhav`;
   store.markSeen('sutras');
   const got = ALL_SUTRAS.filter(gm.collectedCard).length;
@@ -669,11 +670,64 @@ function sutrasView() {
     <div class="md-card history roots"><h2 class="mq-h3">Older roots: what you see in the background</h2><p>The 1965 sutras stand on a much older tradition of Indian mathematics. The moving background draws real pieces of it.</p><ul>${BG_NOTES.map(([h, b]) => `<li><b>${h}.</b> ${b}</li>`).join('')}</ul></div>
     <h2 class="mq-strand">The 16 sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => !c.sub).map(card).join('')}</div>
     <h2 class="mq-strand">The 13 sub-sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => c.sub).map(card).join('')}</div>
+    ${versesHTML()}
   </div></section>`;
   const flip = (art, open) => { art.classList.toggle('flipped', open); art.querySelector('.sutra-face').setAttribute('aria-expanded', String(open)); fx.sfx('tap'); if (open) { collect(art.dataset.name); art.classList.add('got'); art.querySelector('.sutra-more').focus({ preventScroll: true }); } else art.querySelector('.sutra-face').focus({ preventScroll: true }); };
   view.querySelectorAll('.sutra-card').forEach(art => { art.querySelector('.sutra-face').onclick = () => flip(art, true); art.querySelector('.sutra-flipback').onclick = () => flip(art, false); });
+  if (signal) wireVerses(view, signal);
   // Outside reading on where the sutras come from, critiques included: Pro only
   if (linksOut()) W.loadVideos().then(({ LINKS }) => { const p = $('[data-history-links]'); if (!p) return; p.innerHTML = 'Read more: ' + LINKS.filter(l => l.history).map(l => outLink(l.url, esc(l.title))).join(' · '); p.hidden = false; }).catch(() => {});
+}
+/* ---------- Mathematics in Sanskrit verse (openspec sanskrit-verses, js/slokas.js) ---------- */
+const VERSE_KIND = { verse: 'Verse (śloka)', sutra: 'Sutra (prose rule)', mantra: 'Vedic mantra' };
+function verseHTML(v) {
+  const lines = t => esc(t).split('\n').join('<br>');
+  const refs = v.refs.map(([t, u]) => outLink(u, esc(t)) || `<span>${esc(t)}</span>`).join('</li><li>');
+  return `<article class="verse md-card" id="verse-${v.id}" aria-labelledby="vh-${v.id}">
+    <header class="verse-head"><span class="md-tag md-tag--sun">${VERSE_KIND[v.kind]}${v.meter ? ` · ${esc(v.meter)}` : ''}</span><h4 id="vh-${v.id}">${esc(v.title)}</h4></header>
+    <p class="verse-deva" lang="sa">${lines(v.deva)}</p>
+    <p class="verse-iast" lang="sa-Latn">${lines(v.iast)}</p>
+    <p class="verse-say"><span class="mq-small">Say it:</span> ${esc(v.say).replace(/ \| /g, ' <span aria-hidden="true">|</span> ')}</p>
+    <p class="verse-acts"><button type="button" class="md-btn md-btn--sm verse-listen" data-verse="${v.id}" aria-pressed="false">${icon('play')}<span>Listen</span></button></p>
+    <p class="verse-meaning"><b>Meaning.</b> ${esc(v.meaning)}</p>
+    <p class="verse-plain"><b>The math.</b> ${esc(v.plain)} <span class="verse-math">${esc(v.math)}</span></p>
+    <details class="verse-more"><summary>Word by word, source and notes</summary>
+      <dl class="verse-words">${v.words.map(([sa, en]) => `<dt lang="sa-Latn">${esc(sa)}</dt><dd>${esc(en)}</dd>`).join('')}</dl>
+      <p><b>Source.</b> ${esc(v.source)}</p>
+      <p><b>Good to know.</b> ${esc(v.note)}</p>
+      <p class="mq-small">Checked against:</p><ul class="verse-refs mq-small"><li>${refs}</li></ul>
+    </details></article>`;
+}
+function versesHTML() {
+  return `<section class="verses" aria-labelledby="versesH">
+    <h2 class="mq-strand" id="versesH">Mathematics in Sanskrit verse</h2>
+    <div class="md-card history"><p>The 16 sutras above are short phrases, not verses, and no older text contains them: the 1965 book's own editor says they point to the Swami's own discovery. But India has a long tradition of real mathematics written as verse (<span lang="sa-Latn">śloka</span>), so that rules could be learned by heart and chanted. Here are ${SLOKAS.length} of them, from the Vedic texts to the Kerala school, each checked against the original text.</p>
+      <p class="mq-small">Listen uses your device's Hindi voice when it has one, otherwise an English voice reading the respelling, so treat it as a guide to the sounds, not a recitation.</p></div>
+    ${VERSE_GROUPS.map(g => `<section class="verse-group" aria-labelledby="vg-${g.id}"><h3 class="mq-h3" id="vg-${g.id}">${g.title}</h3><p class="mq-small">${g.blurb}</p><div class="verse-grid">${slokasIn(g.id).map(verseHTML).join('')}</div></section>`).join('')}
+  </section>`;
+}
+/* Listen: a Hindi or Sanskrit system voice reads the Devanagari; otherwise an English voice reads the respelling */
+function sayVerse(v, btn) {
+  fx.stopSpeaking();
+  const synth = window.speechSynthesis;
+  const reset = () => { btn.setAttribute('aria-pressed', 'false'); btn.querySelector('span').textContent = 'Listen'; };
+  if (!synth) { btn.closest('.verse').querySelector('.verse-say').classList.add('verse-say--hl'); return; }
+  if (btn.getAttribute('aria-pressed') === 'true') { synth.cancel(); reset(); return; }
+  synth.cancel();
+  view.querySelectorAll('.verse-listen[aria-pressed="true"]').forEach(b => { b.setAttribute('aria-pressed', 'false'); b.querySelector('span').textContent = 'Listen'; });
+  const indic = synth.getVoices().find(x => /^(sa|hi)([-_]|$)/i.test(x.lang));
+  const text = indic ? v.deva.replace(/[।॥|]+/g, ', ') : v.say.replace(/\|/g, ',').replace(/-/g, '').toLowerCase();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = indic ? indic.lang : 'en-US';
+  if (indic) try { u.voice = indic; } catch (e) {} /* the language alone still picks a Hindi voice */
+  u.rate = 0.75; u.onend = u.onerror = reset;
+  btn.setAttribute('aria-pressed', 'true'); btn.querySelector('span').textContent = 'Stop';
+  synth.speak(u);
+  track('sloka/listen', 'Sanskrit verse: listen');
+}
+function wireVerses(root, signal) {
+  on(root, 'click', e => { const b = e.target.closest('.verse-listen'); if (!b) return; const v = SLOKAS.find(x => x.id === b.dataset.verse); if (v) sayVerse(v, b); }, signal);
+  onAbort(signal, () => { try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {} });
 }
 function collect(name) { if (store.markSeen('sutra:' + name)) store.addSparks(5, 'sutra'); }
 
@@ -691,6 +745,7 @@ function sutraHTML(c) {
     <div class="sd-text">
       <h3>In plain words</h3><p>${c.plain}</p><p>${d.more}</p>
       <h3>Why it works</h3><p>${d.why}</p>
+      ${slokasFor(c.id).map(v => `<div class="sd-verse"><h3>In Sanskrit verse: ${esc(v.title)}</h3><p class="verse-deva" lang="sa">${esc(v.deva).split('\n').join('<br>')}</p><p class="verse-iast" lang="sa-Latn">${esc(v.iast).split('\n').join('<br>')}</p><p>${esc(v.meaning)}</p><p class="mq-small">${esc(v.note)} More verses are at the end of the Sutras page.</p></div>`).join('')}
       <h3>Worked examples</h3><ul class="sd-ex">${d.examples.map(([q, a]) => `<li><b>${q}</b><span>${a}</span></li>`).join('')}</ul>
       <h3>Where it is used</h3><p class="sd-uses">${d.uses.map(u => `<span>${u}</span>`).join('')}</p>
       ${tricks.length ? `<h3>Try it yourself</h3><p class="sd-try">${tricks.map(t => `<a class="md-btn md-btn--sm md-btn--primary" href="#/skill/v-${t.id}">${icon('bolt')} ${t.title}</a>`).join(' ')}</p>` : ''}
