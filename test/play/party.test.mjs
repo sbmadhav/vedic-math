@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { rng } from '../../js/play/kit.js';
 import {
   mixQ, bondQ, TRICKS, TRICK_IDS, estimateQ, choicesFor, judgeEstimate, points, MULT, BASE, ANSWER_MS, OPEN_MS, STEAL_MS,
-  newGame, reduce, round, standings, wagerOptions, plan, playerName, ADJ, NOUNS
+  newGame, reduce, round, standings, wagerOptions, plan, playerName, ADJ, NOUNS, cleanSeats, COLORS
 } from '../../js/play/exp/party-core.js';
 
 const LEVELS = ['explorer', 'challenger', 'pro'];
@@ -180,4 +180,15 @@ test('a full game always reaches the podium; double or nothing doubles or loses 
     for (let i = 1; i < st.length; i++) assert.ok(st[i].score <= st[i - 1].score);
   }
   assert.equal(plan(3, 'full').length, 6);
+});
+
+test('saved seats are cleaned: two to four, known names, unique colors, valid levels', () => {
+  for (const bad of [null, 'x', {}, [], [{ level: 'pro' }], [null, 3]]) assert.equal(cleanSeats(bad), null, JSON.stringify(bad));
+  const six = Array.from({ length: 6 }, (_, i) => ({ adj: i, noun: i, color: 'coral', level: 'pro' }));
+  const c = cleanSeats(six);
+  assert.equal(c.length, 4); assert.equal(new Set(c.map(x => x.color)).size, 4); assert.ok(c.every(x => COLORS.includes(x.color)));
+  const odd = cleanSeats([{ adj: 99, noun: -1, color: 'pink', level: 'wizard' }, { adj: 2, noun: 3, color: 'teal', level: 'explorer' }]);
+  assert.deepEqual(odd[1], { adj: 2, noun: 3, color: 'teal', level: 'explorer' });
+  assert.ok(odd[0].adj < ADJ.length && odd[0].noun >= 0 && odd[0].color !== 'teal' && odd[0].level === 'challenger');
+  assert.equal(newGame({ players: six, seed: 1 }).players.length, 4);
 });

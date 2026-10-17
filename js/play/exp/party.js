@@ -39,10 +39,21 @@ const LINES = {
   relayno: ['Fumble! It was {a}. Next runner!', 'Oops, {a}. Keep running!'],
   podium: ['What a game! Here is your podium.', 'And the champions of math night are...']
 };
+/* Saved settings, cleaned: a bad or old record (too many seats, unknown colors) falls back to the defaults
+   instead of breaking Party Mode on every visit */
+function loadSettings() {
+  const d = defaults(), raw = store.get(KEY, {}), o = raw && typeof raw === 'object' ? raw : {};
+  return {
+    seats: C.cleanSeats(o.seats) || d.seats,
+    length: o.length === 'quick' ? 'quick' : 'full',
+    handicap: typeof o.handicap === 'boolean' ? o.handicap : d.handicap,
+    games: Number.isInteger(o.games) && o.games >= 0 ? o.games : 0
+  };
+}
 const line = (k, vars = {}) => pick(Math.random, LINES[k]).replace(/\{(\w)\}/g, (_, v) => vars[v] ?? '');
 
 export async function mount({ root, signal }) {
-  const S = Object.assign(defaults(), store.get(KEY, {}));
+  const S = loadSettings();
   const save = () => store.set(KEY, S);
   root.innerHTML = `<div class="pt">
     <div class="md-wrap">${head({ title: 'Party Mode', kicker: 'Family math night', intro: 'Two to four players on one screen, a buzzer each. Everyone gets questions at their own level, so the youngest and the grown ups can all win.', color: 'sun' })}</div>
@@ -50,10 +61,32 @@ export async function mount({ root, signal }) {
   </div>`;
   const body = root.querySelector('.pt-body');
   let gameCtl = null;
-  const setup = () => { if (gameCtl) gameCtl.abort(); gameCtl = child(signal); root.querySelector('.pt').classList.remove('is-playing'); drawSetup(gameCtl.signal); };
+  /* The setup screen: its listeners are added once here (under the screen's own signal); every change only re-renders */
+  const setup = () => {
+    if (gameCtl) gameCtl.abort(); gameCtl = child(signal); const sig = gameCtl.signal;
+    root.querySelector('.pt').classList.remove('is-playing');
+    drawSetup();
+    const redraw = () => { save(); drawSetup(); };
+    on(body, 'change', e => { const sel = e.target.closest('select[data-f]'); if (!sel) return; S.seats[+sel.dataset.i][sel.dataset.f] = +sel.value; save(); body.querySelector(`.pt-seat[data-i="${sel.dataset.i}"] .pt-seat-name`).textContent = C.playerName(S.seats[+sel.dataset.i]); }, sig);
+    on(body, 'click', e => {
+      const t = e.target;
+      if (t.closest('.pt-add')) { if (S.seats.length >= C.KEYS.length) return; const used = S.seats.map(s => s.color); S.seats.push({ adj: (S.seats.length * 3) % C.ADJ.length, noun: (S.seats.length * 5) % C.NOUNS.length, color: C.COLORS.find(c => !used.includes(c)), level: 'challenger' }); redraw(); body.querySelector('.pt-seat:last-child select').focus(); return; }
+      const rm = t.closest('[data-rm]'); if (rm) { if (S.seats.length <= 2) return; S.seats.splice(+rm.dataset.rm, 1); redraw(); (body.querySelector('.pt-add') || body.querySelector('.pt-start')).focus(); return; }
+      const sh = t.closest('[data-shuffle]'); if (sh) { const s = S.seats[+sh.dataset.shuffle]; s.adj = Math.floor(Math.random() * C.ADJ.length); s.noun = Math.floor(Math.random() * C.NOUNS.length); sfx('tap'); redraw(); body.querySelector(`[data-shuffle="${sh.dataset.shuffle}"]`).focus(); return; }
+      const col = t.closest('[data-color]'); if (col) {
+        const i = +col.dataset.i, c = col.dataset.color, other = S.seats.findIndex(s => s.color === c);
+        if (other >= 0 && other !== i) S.seats[other].color = S.seats[i].color;
+        S.seats[i].color = c; redraw(); body.querySelector(`[data-i="${i}"][data-color="${c}"]`).focus(); return;
+      }
+      const lvb = t.closest('[data-lvl]'); if (lvb) { S.seats[+lvb.dataset.i].level = lvb.dataset.lvl; redraw(); body.querySelector(`[data-i="${lvb.dataset.i}"][data-lvl="${lvb.dataset.lvl}"]`).focus(); return; }
+      const len = t.closest('[data-len]'); if (len) { S.length = len.dataset.len; redraw(); body.querySelector(`[data-len="${S.length}"]`).focus(); return; }
+      if (t.closest('.pt-hc')) { S.handicap = !S.handicap; redraw(); body.querySelector('.pt-hc').focus(); return; }
+      if (t.closest('.pt-start')) startGame(freshSeed());
+    }, sig);
+  };
 
   /* ---------- Setup ---------- */
-  function drawSetup(sig) {
+  function drawSetup() {
     const seats = S.seats;
     body.innerHTML = `<div class="md-wrap"><section class="pt-setup px-stage" aria-labelledby="ptWho">
       <h2 id="ptWho" class="pt-h2">Who is playing?</h2>
@@ -70,23 +103,6 @@ export async function mount({ root, signal }) {
       <p class="px-note pt-future">Everyone shares this one screen for now. Using phones as buzzers needs a server to connect them, so that is saved for a later version.</p>
     </section>
     <section class="pt-rounds" aria-labelledby="ptRoundsH"><h2 id="ptRoundsH" class="pt-h2">Six rounds</h2><ol>${Object.values(C.ROUND_INFO).map(r => `<li><b>${esc(r.title)}</b> ${esc(r.blurb)}</li>`).join('')}</ol></section></div>`;
-    const redraw = () => { save(); drawSetup(sig); };
-    on(body, 'change', e => { const sel = e.target.closest('select[data-f]'); if (!sel) return; S.seats[+sel.dataset.i][sel.dataset.f] = +sel.value; save(); body.querySelector(`.pt-seat[data-i="${sel.dataset.i}"] .pt-seat-name`).textContent = C.playerName(S.seats[+sel.dataset.i]); }, sig);
-    on(body, 'click', e => {
-      const t = e.target;
-      if (t.closest('.pt-add')) { const used = S.seats.map(s => s.color); S.seats.push({ adj: (S.seats.length * 3) % C.ADJ.length, noun: (S.seats.length * 5) % C.NOUNS.length, color: C.COLORS.find(c => !used.includes(c)), level: 'challenger' }); redraw(); body.querySelector('.pt-seat:last-child select').focus(); return; }
-      const rm = t.closest('[data-rm]'); if (rm) { S.seats.splice(+rm.dataset.rm, 1); redraw(); body.querySelector('.pt-add')?.focus(); return; }
-      const sh = t.closest('[data-shuffle]'); if (sh) { const s = S.seats[+sh.dataset.shuffle]; s.adj = Math.floor(Math.random() * C.ADJ.length); s.noun = Math.floor(Math.random() * C.NOUNS.length); sfx('tap'); redraw(); body.querySelector(`[data-shuffle="${sh.dataset.shuffle}"]`).focus(); return; }
-      const col = t.closest('[data-color]'); if (col) {
-        const i = +col.dataset.i, c = col.dataset.color, other = S.seats.findIndex(s => s.color === c);
-        if (other >= 0 && other !== i) S.seats[other].color = S.seats[i].color;
-        S.seats[i].color = c; redraw(); body.querySelector(`[data-i="${i}"][data-color="${c}"]`).focus(); return;
-      }
-      const lvb = t.closest('[data-lvl]'); if (lvb) { S.seats[+lvb.dataset.i].level = lvb.dataset.lvl; redraw(); body.querySelector(`[data-i="${lvb.dataset.i}"][data-lvl="${lvb.dataset.lvl}"]`).focus(); return; }
-      const len = t.closest('[data-len]'); if (len) { S.length = len.dataset.len; redraw(); body.querySelector(`[data-len="${S.length}"]`).focus(); return; }
-      if (t.closest('.pt-hc')) { S.handicap = !S.handicap; redraw(); body.querySelector('.pt-hc').focus(); return; }
-      if (t.closest('.pt-start')) startGame(freshSeed());
-    }, sig);
   }
   const seatHtml = (p, i) => `<li class="pt-seat pt-c--${p.color}" data-i="${i}">
     <span class="pt-av">${avatar(p.color, 64)}</span>

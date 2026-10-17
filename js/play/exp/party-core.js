@@ -20,6 +20,22 @@ export const BASE = { buzz: 10, steal: 10, stealBonus: 5, estimate: 20, close: 5
 export const playerName = p => `${ADJ[p.adj % ADJ.length]} ${NOUNS[p.noun % NOUNS.length]}`;
 export const points = (base, level, handicap = true) => Math.round(base * (handicap ? MULT[level] || 1 : 1));
 
+/* Saved seats from storage: two to four, each with a known name, a color nobody else has and a level.
+   Returns null when fewer than two usable seats are left (the caller then uses its defaults). */
+export function cleanSeats(seats) {
+  if (!Array.isArray(seats)) return null;
+  const idx = (v, n, d) => (Number.isInteger(v) && v >= 0 && v < n ? v : d);
+  const out = [];
+  for (const p of seats) {
+    if (out.length >= KEYS.length) break;
+    if (!p || typeof p !== 'object') continue;
+    const used = out.map(x => x.color), i = out.length;
+    const color = COLORS.includes(p.color) && !used.includes(p.color) ? p.color : COLORS.find(c => !used.includes(c));
+    out.push({ adj: idx(p.adj, ADJ.length, i % ADJ.length), noun: idx(p.noun, NOUNS.length, i % NOUNS.length), color, level: LEVELS.includes(p.level) ? p.level : 'challenger' });
+  }
+  return out.length >= 2 ? out : null;
+}
+
 /* ---------- Questions ---------- */
 const ri = (r, lo, hi) => lo + Math.floor(r() * (hi - lo + 1));
 const pk = (r, a) => a[Math.floor(r() * a.length)];
@@ -152,7 +168,7 @@ export function plan(nPlayers, length = 'full') {
 export function newGame({ players, seed = 1, length = 'full', handicap = true }) {
   return {
     seed, length, handicap, seq: 0,
-    players: players.map((p, i) => ({ id: p.id ?? i, adj: p.adj ?? i, noun: p.noun ?? i, color: p.color ?? COLORS[i], level: LEVELS.includes(p.level) ? p.level : 'challenger', score: 0, key: KEYS[i] })),
+    players: players.slice(0, KEYS.length).map((p, i) => ({ id: p.id ?? i, adj: p.adj ?? i, noun: p.noun ?? i, color: p.color ?? COLORS[i], level: LEVELS.includes(p.level) ? p.level : 'challenger', score: 0, key: KEYS[i] })),
     rounds: plan(players.length, length), ri: -1, qi: 0, phase: 'lobby',
     trick: TRICK_IDS[Math.floor(rng(seedOf('party-trick', String(seed)))() * TRICK_IDS.length)],
     qs: {}, buzzer: null, locked: [], deadline: 0, turn: 0, guesses: {}, wagers: {}, finals: {}, count: 0, stealing: false,
