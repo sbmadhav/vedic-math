@@ -18,7 +18,7 @@ export default [
     gen() {
       const p = rnz(-9, 9), q = rnz(-9, 9);
       return { q: `Expand: ${binom(p, q)}`, kind: 'expr', answer: polyText([1, p + q, p * q]),
-        hints: [`x &middot; x = x<sup>2</sup>, outer + inner = ${neg(p + q)}x, last = ${neg(p * q)}`], steps: [`<i>x</i>${sup(2)}${term(q, 'x', 1)}${term(p, 'x', 1)}${term(p * q, 'x', 0)}`, `= ${poly([1, p + q, p * q])}`] };
+        hints: [`x &middot; x = x<sup>2</sup>, outer + inner = ${term(p + q, 'x', 1, true) || '0'}, last = ${neg(p * q)}`], steps: [`<i>x</i>${sup(2)}${term(q, 'x', 1)}${term(p, 'x', 1)}${term(p * q, 'x', 0)}`, `= ${poly([1, p + q, p * q])}`] };
     } },
   { id: '9-factor', grade: 9, strand: 'alg', title: 'Factor quadratics', kid: 'Undo the box',
     idea: 'To factor x² + bx + c, find two numbers that multiply to c and add to b.',
@@ -91,7 +91,7 @@ export default [
     method: ['Add the angles you know.', 'Subtract from 180°.'],
     gen() {
       const a = ri(20, 100), b = ri(20, 160 - a - 10), c = 180 - a - b;
-      return { q: 'Find the missing angle.', viz: V.triangle({ angles: [a + '°', b + '°', '?'] }), kind: 'num', answer: c, unit: '°', hints: [`${a} + ${b} = ${a + b}`], steps: [`180 &minus; ${a + b} = ${c}°`] };
+      return { q: 'Find the missing angle.', say: `A triangle has angles of ${a}° and ${b}°. Find the missing angle.`, viz: V.triangle({ angles: [a + '°', b + '°', '?'] }), kind: 'num', answer: c, unit: '°', hints: [`${a} + ${b} = ${a + b}`], steps: [`180 &minus; ${a + b} = ${c}°`] };
     } },
   { id: '10-similar', grade: 10, strand: 'geo', title: 'Similar figures', kid: 'Same shape, new size',
     idea: 'Similar shapes have equal angles and proportional sides. Find the scale factor and use it everywhere.',
@@ -115,7 +115,7 @@ export default [
     gen() {
       const n = pick([5, 6, 8, 9, 10, 12]), t = pick(['sum', 'each', 'ext']), name = { 5: 'pentagon', 6: 'hexagon', 8: 'octagon', 9: 'nonagon', 10: 'decagon', 12: 'dodecagon' }[n];
       const ans = t === 'sum' ? (n - 2) * 180 : t === 'each' ? (n - 2) * 180 / n : 360 / n;
-      return { q: t === 'sum' ? `What do the interior angles of a ${name} add up to?` : t === 'each' ? `What is each interior angle of a regular ${name}?` : `What is each exterior angle of a regular ${name}?`, kind: 'num', answer: ans, unit: '°',
+      return { q: t === 'sum' ? `What do the interior angles of ${n === 8 ? 'an' : 'a'} ${name} add up to?` : t === 'each' ? `What is each interior angle of a regular ${name}?` : `What is each exterior angle of a regular ${name}?`, kind: 'num', answer: ans, unit: '°',
         hints: [t === 'ext' ? 'Exterior angles add to 360°.' : `${n} sides make ${n - 2} triangles.`], steps: [t === 'sum' ? `(${n} &minus; 2) &times; 180 = ${ans}°` : t === 'each' ? `${(n - 2) * 180} &divide; ${n} = ${ans}°` : `360 &divide; ${n} = ${ans}°`] };
     } },
   { id: '10-arc', grade: 10, strand: 'geo', title: 'Arcs and sectors', kid: 'Pizza slices',
@@ -191,7 +191,7 @@ export default [
     method: ['Find a from (x − a).', 'Evaluate p(a).'],
     gen() {
       const co = [rnz(-3, 3), ri(-5, 5), ri(-5, 5), ri(-9, 9)], a = ri(-3, 3), val = co.reduce((s, c) => s * a + c, 0);
-      return { q: `Find the remainder when ${poly(co)} is divided by (<i>x</i> ${a <= 0 ? '+' : '&minus;'} ${Math.abs(a)}).`, kind: 'num', answer: val, hints: [`Evaluate p(${neg(a)}).`], steps: [`p(${neg(a)}) = ${neg(val)}`] };
+      return { q: `Find the remainder when ${poly(co)} is divided by ${a ? `(<i>x</i> ${a < 0 ? '+' : '&minus;'} ${Math.abs(a)})` : '<i>x</i>'}.`, kind: 'num', answer: val, hints: [`Evaluate p(${neg(a)}).`], steps: [`p(${neg(a)}) = ${neg(val)}`] };
     } },
   { id: '11-series', grade: 11, strand: 'func', title: 'Series sums', kid: 'Adding patterns',
     idea: 'Arithmetic series: n × (first + last) ÷ 2. Geometric series: a₁(1 − rⁿ) ÷ (1 − r).',
@@ -206,7 +206,7 @@ export default [
     method: ['Inverse: swap x and y, then solve for y.', 'Composite: work from the inside out.'],
     gen() {
       const a = rnz(-5, 5), b = ri(-9, 9);
-      if (Math.random() < .5) return { q: `<i>f</i>(<i>x</i>) = ${poly([a, b])}. Find <i>f</i><sup>&minus;1</sup>(<i>x</i>).`, kind: 'expr', answer: inverseKey(a, b), hints: [`Swap: <i>x</i> = ${neg(a)}<i>y</i> ${b < 0 ? '&minus;' : '+'} ${Math.abs(b)}. Solve for y.`], steps: [`<i>f</i><sup>&minus;1</sup>(<i>x</i>) = (<i>x</i> ${b < 0 ? '+' : '&minus;'} ${Math.abs(b)}) &divide; ${paren(a)}`] };
+      if (Math.random() < .5) return { q: `<i>f</i>(<i>x</i>) = ${poly([a, b])}. Find <i>f</i><sup>&minus;1</sup>(<i>x</i>).`, kind: 'expr', answer: inverseKey(a, b), hints: [`Swap: <i>x</i> = ${term(a, 'y', 1, true)}${term(b, 'y', 0)}. Solve for y.`], steps: [`<i>f</i><sup>&minus;1</sup>(<i>x</i>) = (<i>x</i> ${b < 0 ? '+' : '&minus;'} ${Math.abs(b)}) &divide; ${paren(a)}`] };
       const c = rnz(-3, 3), d = ri(-5, 5), x = ri(-4, 4), g = c * x + d;
       return { q: `<i>f</i>(<i>x</i>) = ${poly([a, b])} and <i>g</i>(<i>x</i>) = ${poly([c, d])}. Find <i>f</i>(<i>g</i>(${neg(x)})).`, kind: 'num', answer: a * g + b, hints: [`First <i>g</i>(${neg(x)}) = ${neg(g)}.`], steps: [`<i>g</i>(${neg(x)}) = ${neg(g)}`, `<i>f</i>(${neg(g)}) = ${neg(a * g + b)}`] };
     } },
@@ -253,7 +253,7 @@ export default [
     method: ['Try plugging in.', 'If you get 0/0, factor the top and cancel the common factor.', 'Plug in again.'],
     gen() {
       const a = ri(-6, 6), b = ri(-6, 6);
-      return { q: `lim<sub><i>x</i>&rarr;${neg(a)}</sub> <span class="fr"><span>${poly([1, -(a + b), a * b])}</span><span><i>x</i> ${a <= 0 ? '+' : '&minus;'} ${Math.abs(a)}</span></span>`, kind: 'num', answer: a - b,
+      return { q: `lim<sub><i>x</i>&rarr;${neg(a)}</sub> <span class="fr"><span>${poly([1, -(a + b), a * b])}</span><span>${a ? `<i>x</i> ${a < 0 ? '+' : '&minus;'} ${Math.abs(a)}` : '<i>x</i>'}</span></span>`, kind: 'num', answer: a - b,
         hints: ['Plugging in gives 0/0. Factor the top.'], steps: [`${binom(-a, -b)} &divide; (<i>x</i> ${a <= 0 ? '+' : '&minus;'} ${Math.abs(a)}) = <i>x</i> ${b <= 0 ? '+' : '&minus;'} ${Math.abs(b)}`, `At <i>x</i> = ${neg(a)}: ${neg(a - b)}`] };
     } },
   { id: '12-deriv', grade: 12, strand: 'calc', title: 'Derivatives with the power rule', kid: 'Speed of change',
@@ -280,7 +280,7 @@ export default [
       const co = [ri(-3, 3), ri(-4, 4), rnz(-5, 5)], lo = ri(-2, 1), hi = lo + ri(1, 3);
       const F = x => co[0] * x ** 3 / 3 + co[1] * x ** 2 / 2 + co[2] * x, ans = Math.round((F(hi) - F(lo)) * 1e9) / 1e9;
       return { q: `Evaluate &int;<sub>${neg(lo)}</sub><sup>${neg(hi)}</sup> (${poly(co)}) d<i>x</i>`, viz: V.plane({ fns: [x => co[0] * x * x + co[1] * x + co[2]], range: 8 }), kind: 'num', answer: ans, tol: 1e-4,
-        hints: [`F(<i>x</i>) = ${[co[0] ? `${fr(co[0], 3)}<i>x</i><sup>3</sup>` : '', co[1] ? `${fr(co[1], 2)}<i>x</i><sup>2</sup>` : '', `${neg(co[2])}<i>x</i>`].filter(Boolean).join(' + ')}`], steps: [`F(${neg(hi)}) &minus; F(${neg(lo)}) = ${round(ans, 4)}`] };
+        hints: [`F(<i>x</i>) = ${[[co[0], 3, 3], [co[1], 2, 2], [co[2], 1, 1]].filter(([n]) => n).map(([n, d, pw], i) => { const a = fr(Math.abs(n), d); return (n < 0 ? (i ? ' &minus; ' : '&minus;') : (i ? ' + ' : '')) + (a === '1' ? '' : a) + `<i>x</i>${pw > 1 ? sup(pw) : ''}`; }).join('') || '0'}`], steps: [`F(${neg(hi)}) &minus; F(${neg(lo)}) = ${round(ans, 4)}`] };
     } },
   { id: '12-vectors', grade: 12, strand: 'trig', title: 'Vectors', kid: 'Arrows with size',
     idea: 'A vector has size and direction. Its magnitude is √(x² + y²). The dot product a·b = a₁b₁ + a₂b₂ is 0 for perpendicular vectors.',

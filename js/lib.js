@@ -69,6 +69,8 @@ export const rootText = (a, b) => b === 1 ? String(a) : `${a === 1 ? '' : a}sqrt
 
 /* 1st, 2nd, 3rd, 4th, 11th, 12th, 13th, 21st, 101st, 111th */
 export const ordinal = n => { const a = Math.abs(n) % 100, b = a % 10; return `${n}${a >= 11 && a <= 13 ? 'th' : b === 1 ? 'st' : b === 2 ? 'nd' : b === 3 ? 'rd' : 'th'}`; };
+/* A denominator's plural name, as the read-aloud voice says it (js/voice.js denomWord): 3 thirds, 4 fourths, 12 twelfths */
+export const denomName = d => ['', 'wholes', 'halves', 'thirds', 'fourths', 'fifths', 'sixths', 'sevenths', 'eighths', 'ninths', 'tenths', 'elevenths', 'twelfths'][d] || `${d}ths`;
 export const nameNum = n => ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'][n] || String(n);
 export const PEOPLE = ['Maya', 'Leo', 'Aria', 'Kai', 'Zoe', 'Ravi', 'Nia', 'Sam', 'Ivy', 'Omar', 'Lena', 'Theo'];
 export const THINGS = ['apples', 'stickers', 'marbles', 'shells', 'cards', 'stars', 'beads', 'pencils', 'cookies', 'blocks'];

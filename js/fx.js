@@ -112,6 +112,8 @@ export function speak(text, force = false) {
   if (!(force || voiceOn()) || !voice.supported()) return;
   try { voice.speak(text); } catch (e) {} // voice.js: math-aware wording, best built-in voice, or the opt-in natural voice
 }
+/* A question's spoken words: its optional say (for a question whose screen text leans on a picture), else its q */
+export const speakQuestion = (p, force = false) => speak(p.say || p.q, force);
 export const stopSpeaking = () => voice.stop();
 export { settingsHTML as voiceSettingsHTML, wireSettings as wireVoiceSettings } from './voice.js';
 

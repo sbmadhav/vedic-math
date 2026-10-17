@@ -239,7 +239,7 @@ export function sections(n) {
 
     { id: 'voice', group: 'extras', art: 'voice', covers: [],
       title: w('Read aloud', 'Read-aloud voice'),
-      what: w('The app can read the questions to you.', 'The app can read questions out loud, saying math the natural way ("3 quarters", "x squared").'),
+      what: w('The app can read the questions to you.', 'The app can read questions out loud, saying math the natural way ("3 fourths", "x squared").'),
       how: [
         w('On Home, tap Read questions aloud.', 'Explorer Home has a Read questions aloud button, and read-aloud starts on in Explorer.'),
         w('Tap Hear it to hear a question again.', 'In any practice, Hear it reads the current question.'),
