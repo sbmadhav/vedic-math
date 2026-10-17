@@ -86,6 +86,35 @@ test.describe('Party under Calm', () => {
   });
 });
 
+test.describe('Party motion', () => {
+  test.use({ reducedMotion: 'no-preference' });
+  /* base.css stops every animation inside .px-view under Calm (body.calm) and Pause motion (html.motion-paused) */
+  const anims = (page: import('@playwright/test').Page) => page.evaluate(() => {
+    const main = document.querySelector('.pt-main')!;
+    main.insertAdjacentHTML('beforeend', '<div class="pt-podium"><div class="pt-step pt-step--1 pt-c--coral"><span class="pt-av"><svg class="pt-avsvg"></svg></span></div></div>');
+    const a = (sel: string) => getComputedStyle(document.querySelector(sel)!).animationName;
+    return { zone: a('.pt-zone.is-live'), step: a('.pt-step--1'), bob: a('.pt-step--1 .pt-avsvg') };
+  });
+  const toOpen = async (page: import('@playwright/test').Page) => {
+    await open(page, '#/arena/party');
+    await page.locator('.pt-start').click();
+    await page.locator('.pt-go').click();
+    await expect(page.locator('.pt-zone.is-live').first()).toBeVisible();
+  };
+  test('Party zones and the podium animate normally, and not at all under Calm or Pause motion', async ({ page }) => {
+    await toOpen(page);
+    expect(await anims(page)).toEqual({ zone: 'pt-pulse', step: 'pt-rise', bob: 'pt-bob' });
+    await page.evaluate(() => document.documentElement.classList.add('motion-paused'));
+    expect(await anims(page)).toEqual({ zone: 'none', step: 'none', bob: 'none' });
+  });
+  test('Calm: Party zones and the podium have no animation', async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('vm.calm', '1'); } catch (e) { /* storage blocked */ } });
+    await toOpen(page);
+    await expect(page.locator('body')).toHaveClass(/\bcalm\b/);
+    expect(await anims(page)).toEqual({ zone: 'none', step: 'none', bob: 'none' });
+  });
+});
+
 test('Daily Number: keyboard play keeps focus on the board and the operations', async ({ page, issues }) => {
   await open(page, '#/arena/daily-number');
   const first = page.locator('.dn-board [data-slot="0"]');
