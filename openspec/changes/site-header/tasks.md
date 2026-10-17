@@ -9,7 +9,7 @@
 
 ## 2. Tests
 
-- [x] 2.1 `e2e/tests/header.spec.ts` (new): same parts, order and measured look as the live home page header (chromium); Explore opens the menu; the color scheme button works and persists; the nav highlights the current route; no sideways scroll at 320, 375 and 768px in both schemes. Verify: `cd e2e && BASE_URL=http://localhost:8126 npx playwright test tests/header.spec.ts --project=chromium --project=webkit --project=mobile` against `node e2e/local-server.mjs 8126`.
+- [x] 2.1 `e2e/tests/header.spec.ts` (new): same parts, order and measured look as the live home page header (chromium); Explore opens the menu; the color scheme button works and persists; the nav highlights the current route; no sideways scroll and every tab on screen at 320, 375 and 768px in both schemes. Verify: `cd e2e && BASE_URL=http://localhost:8126 npx playwright test tests/header.spec.ts --project=chromium --project=webkit --project=mobile` against `node e2e/local-server.mjs 8126`.
 - [x] 2.2 `e2e/tests/load.spec.ts` and `e2e/tests/csp.spec.ts` use `#themeBtn` instead of the `.md-modes` picker. Verify: `load.spec.ts` on chromium and webkit; `csp.spec.ts` against the built site (`python3 build.py --out /tmp/sh-site`, `node e2e/local-server.mjs 8127 /tmp/sh-site`).
 - [x] 2.3 `e2e/tests/a11y.spec.ts`: axe on the header alone at 1280 and 320px, both schemes, with the music panel closed and open. Verify: `npx playwright test tests/a11y.spec.ts --project=chromium`.
 - [x] 2.4 The rest of the suite still passes. Verify: `E2E_SKIP_COV=1 BASE_URL=http://localhost:8126 npx playwright test --project=chromium --project=webkit`.

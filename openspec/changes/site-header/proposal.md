@@ -10,7 +10,7 @@ The owner asked for the Vedic Math header to match the header on the rest of sbm
 - The color scheme control becomes the home page's round button: a sun in Daybreak, a moon in Deep Space. A click switches to the other scheme; a choice that differs from the system is saved under the same `theme` key the rest of the site uses, and switching back to match the system clears it. The System / Daybreak / Deep Space picker (`.md-modes`) is removed from this page.
 - The music button becomes a pill like the home page's (note, "Music", a small equalizer, filled with ink while playing). It still opens Vedic Math's music panel (tracks, volume, Moving background).
 - The current route's nav link is a filled pill (the design system's selected state) instead of an underline.
-- Below 1180px, where the home page hides its section links, the nav moves to a second row of the same header and scrolls sideways on its own, so the page never does. Under 600px Explore and Music show icons only (with their names kept for assistive tech), and under 420px the brand shows only Bolt and the Player chip only the avatar, as on the home page.
+- Below 1180px, where the home page hides its section links, the nav moves to its own rows in the same header and wraps, so every tab is on screen and nothing scrolls sideways. Under 600px Explore and Music show icons only (with their names kept for assistive tech), and under 420px the brand shows only Bolt and the Player chip only the avatar, as on the home page.
 
 Out of scope:
 

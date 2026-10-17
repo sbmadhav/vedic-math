@@ -25,14 +25,14 @@ Vedic Math compared with the home page header.
 | Explore | Shared `xp-btn` (106px with "Explore", 40px icon under 600px) | Same button; reads "Star map" in Explorer and Challenger (by design) |
 | Content width | `.wrap`: 1120px including its 24px padding | `md-wrap`: 1120px plus its padding (1168px), so the brand sits 24px further left at wide widths |
 | 768px | One row, links hidden, no sideways scroll | The tab strip makes the page 795px wide (sideways scroll) |
-| 375 / 320px | Row one: Bolt, Explore, scheme, Music; row two: kid mode switch | Row one: Bolt, Explore icon, squeezed three-button picker; row two: tabs scrolling sideways |
+| 375 / 320px | Row one: Bolt, Explore, scheme, Music; row two: kid mode switch | Row one: Bolt, Explore icon, squeezed three-button picker; row two: tabs scrolling sideways, Sutras, Watch and Guide off the right edge |
 | Daybreak / Deep Space | Same tokens in both; sun or moon shows the scheme | Same tokens; the picker shows the choice as a filled button |
 
 ## Decisions
 
 **1. One bar in the home page's order.** `header.top > .md-wrap` holds, in order: `a.home` (brand), `nav.mq-nav` (the Vedic Math links, right-aligned with `margin-left: auto` like the home page's links), `#exploreBtn`, `#themeBtn`, `#mqMusic`, `#mqChip`. The Player chip takes the kid mode switch's place at the end, so the order of every shared part is the home page's. At 1280px it is one 67px row, measured the same as the home page (height, background, border, blur, Bolt size, Explore size, scheme button size and shape).
 
-**2. The nav stays visible, as a second row below 1180px.** The home page hides its section links below 1180px because they are jump links also listed in Explore. Vedic Math's nav is how a Player moves around the app, so instead of hiding it, the bar wraps: the controls stay on row one (Explore pushed right, as on the home page) and the nav takes row two, full width, scrolling sideways on its own (`overflow-x: auto`, no scrollbar), so the page never scrolls sideways. Row one keeps the home page's 66px rhythm; the whole header is 106 to 108px, close to the home page's 105px on phones.
+**2. The nav stays visible, as a second row below 1180px.** The home page hides its section links below 1180px because they are jump links also listed in Explore. Vedic Math's nav is how a Player moves around the app, so instead of hiding it, the bar wraps: the controls stay on row one (Explore pushed right, as on the home page) and the nav takes row two, full width, and wraps onto a third row when it needs to, so every tab is on screen. (A sideways-scrolling row was tried first: on a phone it hid Sutras, Watch and Guide off the right edge with no sign they were there.) Row one keeps the home page's 66px rhythm; the whole header is 106 to 108px, close to the home page's 105px on phones.
 
 **3. The home page's color scheme button.** Same markup (`button.theme#themeBtn` with the sun and moon SVGs, token colors only), same behavior and the same `theme` key: a click switches to the other scheme; when the new scheme matches the system the saved choice is cleared (`''`), otherwise `light` or `dark` is saved; the label says what a click will do ("Switch to Deep Space (dark) scheme"), the title adds "(following your system)" while no choice is saved, and `meta[name=theme-color]` follows `--bg` (read from the tokens, no hex in code). The pre-paint script in `<head>` is unchanged. The `md-modes` picker is removed from this page.
 
@@ -52,7 +52,7 @@ Screenshots (`after-vm-*.png`, attached to the PR):
 
 - 1280px, both schemes: one bar like the home page: Bolt and "Madhav" on the left; Home (filled), Learn, Dojo, Arena, Games, Sutras, Watch, Guide as pills; Explore; the sun (Daybreak) or moon (Deep Space) button; the Music pill; the Player chip.
 - 768px: row one Bolt and "Madhav", then Explore, the scheme button, Music and the chip on the right; row two the eight pills, no sideways scroll.
-- 375 and 320px: row one Bolt, then Explore, scheme and music icons and the chip avatar on the right; row two the pills, scrolling sideways within the header.
+- 375 and 320px: row one Bolt, then Explore, scheme and music icons and the chip avatar on the right; rows two and three the pills (five, then three), every one on screen.
 
 ## Left for the owner (shared files, not edited here)
 

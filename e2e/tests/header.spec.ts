@@ -176,13 +176,18 @@ for (const width of [320, 375, 768]) {
           expect(b.x, sel).toBeGreaterThanOrEqual(0);
           expect(b.x + b.width, sel).toBeLessThanOrEqual(width);
         }
-        // The nav is a second row below the controls; on a phone it scrolls sideways on its own
+        // The nav sits below the controls and wraps: every tab is on screen with no scrolling (a sideways-scrolling
+        // row hid Sutras, Watch and Guide off the right edge of a phone)
         const nav = (await page.locator('header .mq-nav').boundingBox())!, xp = (await page.locator('#exploreBtn').boundingBox())!;
         expect(nav.y).toBeGreaterThanOrEqual(xp.y + xp.height);
-        const guide = page.locator('header .mq-nav a[href="#/guide"]');
-        await guide.scrollIntoViewIfNeeded();
-        await expect(guide).toBeInViewport();
-        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+        const tabs = page.locator('header .mq-nav a:visible');
+        expect(await tabs.count()).toBeGreaterThanOrEqual(8);
+        for (const tab of await tabs.all()) {
+          const b = (await tab.boundingBox())!;
+          expect(b.x, await tab.innerText()).toBeGreaterThanOrEqual(0);
+          expect(b.x + b.width, await tab.innerText()).toBeLessThanOrEqual(width);
+        }
+        expect(await page.locator('header .mq-nav').evaluate(n => n.scrollWidth <= n.clientWidth)).toBe(true);
         if (width < 600) {
           // Labels give way to icons on phones, and each icon keeps its name
           await expect(page.locator('#exploreBtn')).toHaveAttribute('aria-label', /Explore/);
