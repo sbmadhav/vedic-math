@@ -45,7 +45,11 @@ export function setAge(age) {
 export const setParentOk = on => updatePlayer({ parentOk: on ? Date.now() : null });
 /* Removing a Player drops their record and progress; cloud.js hears 'removed' and forgets their World board
    identity on this device (their entries already posted stay). */
-export function removePlayer(id) { players(); if (P.list.length < 2) return; const gone = P.list.find(p => p.id === id); if (!gone) return; P.list = P.list.filter(p => p.id !== id); try { localStorage.removeItem(LEGACY + '.' + id); } catch (e) {} if (P.active === id) P.active = P.list[0].id; put(PKEY, P); S = null; emit('removed', gone); emit('player', player()); }
+/* A removed Player's play-experience progress (vm.play.<player id>.<key>, js/play/kit.js) goes with them */
+function forgetPlay(id) {
+  try { const pre = `vm.play.${id}.`, keys = []; for (let i = 0; i < (localStorage.length || 0); i++) { const k = localStorage.key(i); if (k && k.startsWith(pre)) keys.push(k); } keys.forEach(k => localStorage.removeItem(k)); } catch (e) {}
+}
+export function removePlayer(id) { players(); if (P.list.length < 2) return; const gone = P.list.find(p => p.id === id); if (!gone) return; P.list = P.list.filter(p => p.id !== id); try { localStorage.removeItem(LEGACY + '.' + id); } catch (e) {} forgetPlay(id); if (P.active === id) P.active = P.list[0].id; put(PKEY, P); S = null; emit('removed', gone); emit('player', player()); }
 
 /* ---------- Progress for the active player ---------- */
 const key = () => LEGACY + '.' + player().id;
