@@ -16,11 +16,13 @@ async function seedable(page: Page) {
   });
 }
 
-/* Builds the duel's question set for a few seeds and returns the first seed (and its set) for which pick() is true */
-async function findSeed(page: Page, league: string, pick: string) {
+/* Builds the duel's question set for a few seeds and returns the first seed (and its set) that fits: 'count' wants a
+   "How many dots?" question in the first 9, 'any' takes the first seed. A named check, not a function built from a
+   string, because the page's Content-Security-Policy has no 'unsafe-eval'. */
+async function findSeed(page: Page, league: string, pick: 'count' | 'any') {
   return page.evaluate(async ([lg, src]) => {
     const A = await import('/vedic-math/js/arena.js' as string);
-    const ok = new Function('set', `return (${src})(set);`) as (s: unknown[]) => boolean;
+    const ok = (rows: { q: string }[]) => src === 'any' || rows.slice(0, 9).some(r => /^How many dots/.test(r.q));
     for (let sd = 1; sd < 400; sd++) {
       (window as any).__seed(sd);
       const set = A.makeSet(lg, null, 120);
@@ -50,7 +52,7 @@ test.describe('explorer duel counting question', () => {
       await expect(page.locator('[data-l="explorer"]')).toHaveAttribute('aria-pressed', 'true');
       if (flip) await page.locator('#dFlip').check();
       // A seed whose duel deals a counting question within the first 9 questions (before anyone can reach 10)
-      const { seed, rows } = await findSeed(page, 'explorer', `rows => rows.slice(0, 9).some(r => /^How many dots/.test(r.q))`);
+      const { seed, rows } = await findSeed(page, 'explorer', 'count');
       const at = rows.findIndex(r => COUNT.test(r.q));
       await startDuel(page, seed);
       for (let i = 0; i < at; i++) {
@@ -94,7 +96,7 @@ test('winning tap: the side that reaches 10 wins and later taps change nothing',
   await heldClock(page);
   await open(page, '#/duel');
   await page.locator('[data-l="challenger"]').click();
-  const { seed, rows } = await findSeed(page, 'challenger', `rows => true`);
+  const { seed, rows } = await findSeed(page, 'challenger', 'any');
   await startDuel(page, seed);
   const tapRight = async (p: number, i: number) => page.locator(`.duel-p${p + 1} .ar-choice[data-v="${rows[i].answer}"]`).click();
   // Player 1 scores 3, then Player 2 scores 10 (13 questions)
