@@ -212,7 +212,7 @@ stage "Delete the key you pasted in chat"
 say "That key is in a chat transcript, and Text-to-Speech refuses it anyway."
 open_url "https://console.cloud.google.com/apis/credentials"
 step "Pick the project at the top if asked."
-step "Under 'API Keys', find the key starting AQ.Ab8RN6..."
+step "Under 'API Keys', find the key starting AQ. (the one pasted in chat)"
 step "Click the three dots on its row, then 'Delete API key', then confirm."
 note "We will not use an API key at all: you sign in with gcloud instead (stage 2)."
 pause "Done? Press Enter."
@@ -258,8 +258,9 @@ say "This records the 12 test lines in Aoede, Leda, Kore and Achernar: about 6,0
 say "characters, inside the free 1 million a month (list price would be about 18 cents)."
 if confirm "Record now?"; then
   GOOGLE_TTS_TOKEN="$(gcloud auth print-access-token)" GOOGLE_CLOUD_PROJECT="$GCP_PROJECT" \
-    ONLY=chirp3-aoede,chirp3-leda,chirp3-kore,chirp3-achernar node make-clips.mjs 2>&1 | grep -v -i "warn" | grep -E "made|Error|error|budget" || true
-  printf '  %s✓ recorded%s\n' "$GREEN" "$RESET"
+    ONLY=chirp3-aoede,chirp3-leda,chirp3-kore,chirp3-achernar node make-clips.mjs \
+    && printf '  %s✓ recorded%s\n' "$GREEN" "$RESET" \
+    || { warn "recording failed: see the message above"; SKIPPED+=("Record the samples: re-run this wizard"); }
 else
   SKIPPED+=("Record the samples: re-run this wizard")
 fi
