@@ -78,6 +78,12 @@ export function mount({ root, signal, params }) {
     const $ = s => wrap.querySelector(s);
     const panel = $('.lk-panel'), inVal = $('.lk-in-val'), outVal = $('.lk-out-val'), machine = $('.lk-machine'), tapeList = $('.lk-tape-list'), hintEl = $('.lk-hint');
 
+    /* The panel is redrawn after each step, and a pressed button is disabled at once, so keyboard focus would
+       fall to the page. Note whether focus was in the panel when a step starts, and put it back on the
+       first enabled button of the new panel. */
+    let focusIn = false;
+    const markFocus = () => { focusIn = panel.contains(document.activeElement); };
+    const refocus = sel => { if (!focusIn) return; focusIn = false; const b = [...panel.querySelectorAll(sel)].find(x => !x.disabled); if (b) b.focus({ preventScroll: true }); };
     const drawLevels = () => {
       $('.lk-levels').innerHTML = levels.map((l, i) => {
         const can = i <= C.done;
@@ -116,6 +122,7 @@ export function mount({ root, signal, params }) {
       /* Arriving straight at a later level: the lock shows a few of its answers first, so there is evidence */
       if (!tape.length && lvl.kind !== 'feed') { const r0 = rng(fresh()); for (let k = 0; k < 3; k++) { const x = ch.gen(r0, 'main', lv); addTape(x, ch.out(x)); } }
       ({ feed, predict: predictLevel, quick: predictLevel, rule, stretch: predictLevel })[lvl.kind](ctl.signal);
+      refocus('.lk-offer, .lk-slot');
     };
     const cleared = () => {
       /* Sparks (js/app.js) are paid for the first clear of a level, not for replays */
@@ -144,12 +151,13 @@ export function mount({ root, signal, params }) {
       draw();
       on(panel, 'click', e => {
         const b = e.target.closest('.lk-offer'); if (!b || b.disabled || machine.classList.contains('is-running')) return;
+        markFocus();
         const x = offers[+b.dataset.i]; used.add(+b.dataset.i); b.disabled = true;
         run(x, sig, y => {
           addTape(x, y); fed++;
           say(`${ch.ask(x)} gives ${fmtOut(ch, y)}.`);
           if (fed >= lvl.feeds) later(() => predictPhase(sig, lvl.need, false, 'main', 'Now you guess before the lock does.'), 600, sig);
-          else draw();
+          else { draw(); refocus('.lk-offer'); }
         });
       }, sig);
     }
@@ -176,6 +184,7 @@ export function mount({ root, signal, params }) {
           ${ch.lamp ? `<div class="lk-lampkeys"><button type="button" class="md-btn lk-say-lit" data-v="1"><span class="lk-mini-bulb is-lit"></span>Lights up</button><button type="button" class="md-btn lk-say-dark" data-v="0"><span class="lk-mini-bulb"></span>Stays dark</button></div>`
             : `<div class="lk-pad" role="group" aria-label="Number pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button type="button" data-k="${n}">${n}</button>`).join('')}<button type="button" data-k="back" aria-label="Delete">⌫</button><button type="button" data-k="0">0</button><button type="button" data-k="go" class="lk-go" aria-label="Check my guess">Go</button></div>`}
           <p class="lk-result" aria-live="polite"></p>`;
+        refocus('.lk-pad button, .lk-lampkeys button');
         say(`What does the lock say for ${ch.ask(x)}?`);
         t0 = performance.now();
         if (timed) {
@@ -185,7 +194,7 @@ export function mount({ root, signal, params }) {
       };
       const show = () => { const o = panel.querySelector('.lk-q-typed'); if (o) o.textContent = typed || '?'; };
       const submit = guess => {
-        if (busy) return; busy = true;
+        if (busy) return; busy = true; markFocus();
         const secs = (performance.now() - t0) / 1000;
         run(x, qctl.c.signal, y => {
           const ok = guess === y, slow = timed && secs > lvl.secs;
@@ -262,7 +271,9 @@ export function mount({ root, signal, params }) {
           machine.classList.remove('is-rattle'); void machine.offsetWidth; machine.classList.add('is-rattle');
           tone(140, { dur: 0.12, type: 'square', gain: 0.05 }); tone(120, { dur: 0.12, type: 'square', gain: 0.05, when: 0.1 });
           const misses = (vis.ok ? all.rows : vis.rows).filter(rw => !rw.ok).length;
+          markFocus();
           draw(`<p class="lk-no">The lock rattles but holds. ${vis.ok ? 'Your rule fits the evidence, but not this new number:' : `${misses} of these do not match.`}</p><ul class="lk-rows">${rows}</ul>`);
+          refocus('.lk-test');
           say(`The lock holds. ${misses} numbers do not match your rule.`);
         }
       }, sig);
@@ -315,7 +326,7 @@ export function mount({ root, signal, params }) {
       tone(PENTA[5], { dur: 0.2, gain: 0.06 });
     };
     on($('.lk-nudge'), 'click', nudge, signal);
-    on(panel, 'click', e => { if (e.target.closest('.lk-next')) { history.replaceState(null, '', `#/dojo/locks/${ch.id}/${li + 1}`); start(li + 1); } }, signal);
+    on(panel, 'click', e => { if (e.target.closest('.lk-next')) { markFocus(); history.replaceState(null, '', `#/dojo/locks/${ch.id}/${li + 1}`); start(li + 1); } }, signal);
     start(startLevel);
   }
 }
