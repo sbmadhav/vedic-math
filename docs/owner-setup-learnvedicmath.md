@@ -103,7 +103,9 @@ The Studio voice (about 23,700 files, 414 MB) is too many files for Workers stat
 2. **Create bucket** `learnvedicmath-voice`, location Automatic, storage class Standard.
 3. The bucket > Settings > **Custom Domains** > Connect domain > `voice.learnvedicmath.com`. Leave the `r2.dev` public URL **disabled**.
 4. Settings > **CORS policy**: allow origin `https://learnvedicmath.com`, method `GET`, headers `Range`, max age 86400.
-5. learnvedicmath.com > Rules > **Cache Rules** > Create: when hostname equals `voice.learnvedicmath.com`, eligible for cache, Edge TTL: override, 1 year.
+5. learnvedicmath.com > Rules > **Cache Rules** > Create: when hostname equals `voice.learnvedicmath.com`:
+   - Cache eligibility: **Eligible for cache** (`.m4a` is not cached by default, so this setting is required, not just the TTL).
+   - Edge TTL: **Use cache-control header if present** (objects carry `max-age=31536000, immutable`), and under **Status code TTL** set `200` and `206` to 1 year and `404` (and any 4xx/5xx) to **No store**, so a file asked for before its upload is never cached as missing.
 6. Rules > **Transform Rules** > Modify response header: when hostname equals `voice.learnvedicmath.com`, set `Cross-Origin-Resource-Policy: same-site` and `X-Content-Type-Options: nosniff`.
 7. R2 > **Manage R2 API Tokens** > Create API token: name `github-actions-voice-upload`, permission **Object Read & Write**, **Apply to specific buckets only** > `learnvedicmath-voice`, TTL one year. Cloudflare shows an Access Key ID and a Secret Access Key **once**.
 8. In a terminal: `gh secret set R2_ACCESS_KEY_ID --env production` and `gh secret set R2_SECRET_ACCESS_KEY --env production` (paste each at the hidden prompt), then `gh variable set R2_ACCOUNT_ID --body <your account id>`.

@@ -76,19 +76,26 @@ A preview build SHALL send `X-Robots-Tag: noindex, nofollow` on every response. 
 - **WHEN** a crawler requests `https://learnvedicmath.com/robots.txt`
 - **THEN** it allows crawling and points to `https://learnvedicmath.com/sitemap.xml`
 
-### Requirement: Studio voice files are not static assets
-The Studio voice files SHALL be served from the voice host chosen in design D17 (by default an R2 bucket on `https://voice.learnvedicmath.com`), named by content hash, with `Cache-Control: public, max-age=31536000, immutable` and readable cross-origin only from `https://learnvedicmath.com`. The build SHALL fail if any voice file is in the site's output, and the deploy SHALL upload only files whose SHA-256 matches the recording manifest, never deleting or overwriting one.
+### Requirement: Studio voice files follow the chosen voice host
+The Studio voice files SHALL be served from the voice host chosen by decision L8 (design D17), named by content hash, with `Cache-Control: public, max-age=31536000, immutable`, and every file SHALL match the recording manifest's SHA-256 before it is published. With an outside voice host (the default: R2 on `https://voice.learnvedicmath.com`, readable cross-origin only from `https://learnvedicmath.com`), the build SHALL fail if any voice file is in the site's output, and uploads SHALL never delete or overwrite an object.
 
-#### Scenario: Build output
-- **WHEN** the build runs with a voice release in the index
+#### Scenario: A corrupted file
+- **WHEN** a voice file's bytes do not match the manifest hash
+- **THEN** publishing fails and names the file
+
+#### Scenario: Build output with an outside voice host
+- **WHEN** the build runs with a voice release in the index and the outside voice host
 - **THEN** `_site` holds no voice audio and has fewer than 20,000 files
 
-#### Scenario: A corrupted upload
-- **WHEN** a voice file's bytes do not match the manifest hash
-- **THEN** the upload job fails and names the file, and nothing is uploaded for it
+### Requirement: Voice as static assets needs Workers Paid
+With voice as static assets (L8 option b), the build SHALL place the voice files under `/voice/`, and the site SHALL be deployed on the Workers Paid plan.
+
+#### Scenario: Build output with voice as static assets
+- **WHEN** the build runs with `--voice static`
+- **THEN** `_site/voice/` holds every file the index names, and the build checks the output against the 100,000-file limit
 
 ### Requirement: Within the host's limits
-The build SHALL fail when the output has more than 20,000 files, a file larger than 25 MiB, more than 100 header rules, a header line longer than 2,000 characters, or more than 2,000 static redirects.
+The build SHALL fail when the output has more files than the plan allows (20,000 on Workers Free, 100,000 on Workers Paid, chosen with the voice option), a file larger than 25 MiB, more than 100 header rules, a header line longer than 2,000 characters, or more than 2,000 static redirects.
 
 #### Scenario: An oversized file
 - **WHEN** a 30 MiB file is added to the publishable files

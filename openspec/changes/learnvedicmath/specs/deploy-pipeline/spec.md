@@ -31,6 +31,17 @@ Preview uploads SHALL use a separate token, `CLOUDFLARE_PREVIEW_TOKEN`, held in 
 - **WHEN** the preview job runs for a pull request from a branch of this repo
 - **THEN** it can read `CLOUDFLARE_PREVIEW_TOKEN` and cannot read `CLOUDFLARE_API_TOKEN`
 
+### Requirement: Voice files exist before the site that names them
+On every push to `main`, the deploy SHALL wait for the voice step, which SHALL publish any new voice files and then confirm that every file named by the committed voice index exists on the voice host. If the voice step fails or does not run, nothing SHALL be deployed.
+
+#### Scenario: A new recording
+- **WHEN** a push changes `js/voice-index.js` to a new release
+- **THEN** the site is deployed only after every file of that release is on the voice host
+
+#### Scenario: A push without voice changes
+- **WHEN** a push does not change the voice index
+- **THEN** the voice step still runs, finds nothing to upload, confirms the files exist, and the deploy goes ahead
+
 ### Requirement: A preview for every branch
 A pull request from a branch of this repo SHALL get a preview version on `workers.dev` with an alias for that pull request, built with the preview flag (no indexing), whose URL is posted on the pull request.
 
