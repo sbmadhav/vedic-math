@@ -82,6 +82,8 @@ test('slider: log scale round trips, and the middle never gives the answer away'
 test('typed numbers: digits, commas and number words', () => {
   assert.equal(B.parseNum('1,200'), 1200); assert.equal(B.parseNum('1.2k'), 1200); assert.equal(B.parseNum('3 million'), 3e6);
   assert.equal(B.parseNum('5 lakh'), 5e5); assert.equal(B.parseNum('1.2 crore'), 1.2e7); assert.equal(B.parseNum('2e6'), 2e6); assert.equal(B.parseNum('0.5'), 0.5);
+  /* m is metres in these questions, never million: refused, so the box is marked instead of reading 8.8 billion */
+  assert.ok(Number.isNaN(B.parseNum('8800 m'))); assert.ok(Number.isNaN(B.parseNum('3m'))); assert.equal(B.parseNum('3 mn'), 3e6); assert.equal(B.parseNum('3 million'), 3e6);
   assert.ok(Number.isNaN(B.parseNum(''))); assert.ok(Number.isNaN(B.parseNum('lots'))); assert.ok(Number.isNaN(B.parseNum('-5'))); assert.ok(Number.isNaN(B.parseNum('0')));
   assert.equal(B.show(604800), '604,800'); assert.equal(B.show(18446744073709551615), '18.4 quintillion');
 });
@@ -128,6 +130,7 @@ test('typed numbers read back everything show() writes', () => {
   for (const v of vals) {
     const txt = B.show(v), back = B.parseNum(txt);
     assert.ok(back > 0, `${v} shows as "${txt}", which parses`);
+    assert.ok(!/\d\s*m$/.test(txt), `show never writes a bare m: "${txt}"`);
     assert.ok(Math.abs(back / v - 1) < 0.006, `${v} -> "${txt}" -> ${back}`);
     assert.equal(B.show(back), txt, `show is stable for "${txt}"`);
   }

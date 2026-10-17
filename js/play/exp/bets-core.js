@@ -208,8 +208,9 @@ export const fromSlider = (s, [lo, hi]) => nice(10 ** (Math.log10(lo) + (s / 100
 /* Rounds to 2 significant figures so slider values read like guesses (340, not 337.2) */
 export const nice = v => (v > 0 ? +v.toPrecision(2) : v);
 
-/* Typed numbers: 1200, 1,200, 1.2k, 3 million, 2.5 crore, 4 lakh, 1e6, 1e+6, and every word show() writes */
-const WORDS = { k: 1e3, thousand: 1e3, lakh: 1e5, lakhs: 1e5, m: 1e6, mn: 1e6, million: 1e6, millions: 1e6, crore: 1e7, crores: 1e7, cr: 1e7, b: 1e9, bn: 1e9, billion: 1e9, billions: 1e9, t: 1e12, trillion: 1e12, trillions: 1e12, quadrillion: 1e15, quadrillions: 1e15, quintillion: 1e18, quintillions: 1e18 };
+/* Typed numbers: 1200, 1,200, 1.2k, 3 million, 3 mn, 2.5 crore, 4 lakh, 1e6, 1e+6, and every word show() writes.
+   A bare m is not a word here: questions ask in metres, so 8800 m is refused (marked) rather than read as 8.8 billion. */
+const WORDS = { k: 1e3, thousand: 1e3, lakh: 1e5, lakhs: 1e5, mn: 1e6, million: 1e6, millions: 1e6, crore: 1e7, crores: 1e7, cr: 1e7, b: 1e9, bn: 1e9, billion: 1e9, billions: 1e9, t: 1e12, trillion: 1e12, trillions: 1e12, quadrillion: 1e15, quadrillions: 1e15, quintillion: 1e18, quintillions: 1e18 };
 export function parseNum(text) {
   const s = String(text || '').trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ');
   const m = s.match(/^(\d*\.?\d+(?:e[+-]?\d+)?)\s*([a-z]*)$/);
