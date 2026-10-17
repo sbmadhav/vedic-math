@@ -11,7 +11,7 @@ Prerequisites (owner Q15): `learnvedicmath` archived (paths `/play/` and `/js/`,
 
 - [ ] 2.1 `js/store.js`: `player.reading` (`{ grade }` or `{ age }` with `at`), `setReading()`, `clearReading()`, `S.readingCard`; per-Player `voice`, and the one-time copy of `vm.voice` to every existing Player. Verify: `test/store.test.mjs`: round trip through the backup code; removing a Player removes it; the migration runs once and leaves `vm.voice` in place.
 - [ ] 2.2 `gradeQuestion()` sheet (decision 1): buttons, "Tell my age instead", Skip, speaker button, Bolt's line; first visit before the Mode picker; the home card for existing Players; Me "For grown-ups: Reading help" with Change and Clear. Listeners on the view's `signal` (`js/life.js`). Verify: new `e2e/tests/bands.spec.ts`: a new visitor sees the question before the Mode picker; Skip leads to the picker with no answer saved; the card appears once for a seeded existing Player and Not now retires it; Change and Clear in Me take effect on the next question; nothing is spoken until the speaker button is tapped. `test/lifecycle-scan.test.mjs` passes.
-- [ ] 2.3 Age reuse (decision 8, after the owner confirms). Verify: `e2e/tests/consent.spec.ts`: age 15 at the grade question means no age question at the first post; grade 8 still gets the age question; an existing Age answer of 11 is kept.
+- [ ] 2.3 Age reuse (decision 8, accepted by the owner as AB2). Verify: `e2e/tests/consent.spec.ts`: age 15 at the grade question means no age question at the first post; grade 8 still gets the age question; an existing Age answer of 11 is kept.
 - [ ] 2.4 Mode picker "Suggested" tag (decision 7). Verify: `bands.spec.ts`: grade 1 tags Explorer, age 10 tags Challenger, Grown-up tags Pro; nothing is preselected and every Mode can be chosen.
 
 ## 3. The copy table (`js/copy.js`)
@@ -37,7 +37,7 @@ Prerequisites (owner Q15): `learnvedicmath` archived (paths `/play/` and `/js/`,
 
 ## 6. Docs
 
-- [ ] 6.1 `GLOSSARY.md`: drop "(Proposed in the `age-bands` change.)" from Grade answer, Reading band and Copy table once live, and update Read aloud and Mode. Mark `docs/adr/0008` accepted; add ADR 0001's consequence for decision 8 if the owner confirmed it. Verify: reviewer reads the diff.
+- [ ] 6.1 `GLOSSARY.md`: drop "(Proposed in the `age-bands` change.)" from Grade answer, Reading band and Copy table once live, and update Read aloud and Mode. Mark `docs/adr/0008` accepted; add ADR 0001's consequence for decision 8 (an age from the grade question is the Age answer; a grade never decides posting). Verify: reviewer reads the diff.
 - [ ] 6.2 `/opsx:archive age-bands` after `placement` is archived and this ships. Verify: `openspec validate --strict` passes; `openspec/specs/` gains `reading-bands` and `band-copy`.
 
 ## 7. Release check

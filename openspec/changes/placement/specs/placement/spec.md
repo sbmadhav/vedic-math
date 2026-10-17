@@ -159,7 +159,7 @@ Me SHALL let a Player take Placement again at any time. A retake SHALL replace t
 - **THEN** Me shows about grade 4, and every saved Rating is unchanged
 
 ### Requirement: Placement stays on the device
-The Placement level, the steps climbed and every Placement answer SHALL be stored only on the device, in the Player's record, and SHALL NOT be posted to any Board or included in any request leaving the device. Placement answers SHALL NOT count as answered questions for quests, badges, mastery, Sparks or the first-win measure.
+Only the result of a Placement (the Placement level, the steps climbed and when it was taken) SHALL be saved, only on the device, in the Player's record. Placement answers SHALL be kept only while the climb runs and SHALL NOT be saved. Neither SHALL be posted to any Board or included in any request leaving the device. Placement answers SHALL NOT count as answered questions for quests, badges, mastery, Sparks or the first-win measure.
 
 #### Scenario: Nothing sent
 - **WHEN** a Player finishes a Placement

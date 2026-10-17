@@ -109,6 +109,16 @@ Every step has at least 2 Skills, so the second try at a step is a different Ski
 
 Nothing to migrate: Players with no `S.placement` behave as today. The existing-Player card is the only new prompt. Rollback: remove the route and the card; saved Placement fields are ignored by older code.
 
-## Open Questions
+## Owner decisions
 
-Listed in the PR for the owner (grill-me style).
+The owner accepted every open question from PR #51 as recommended on 2026-10-17:
+
+- PL1: the result is the **Placement level** in code and docs (Level stays a game stage); kid copy says "your level" and "steps" (decision 1).
+- PL2: with no step right, the level is the step below the start (Challenger 2, Pro 7, Explorer K) (decision 3).
+- PL3: neutral miss line with no answer shown, an "I'm not sure" button that counts as a miss, and no Sparks for Placement (decision 3).
+- PL4: no Ratings are written at Placement time; Practice reads the level only when there is no Rating; game Levels keep their fixed starts (decision 6).
+- PL5: raise-only for existing Players also raises saved game Ratings that Ranked game rounds use, upward only and opt-in (decision 7).
+- PL6: Explorer gets a "Start here" Skill tile, not Stars (decision 6).
+- PL7: Players placed at grade 7 or above start at the blue belt or later and get no Hook (decision 10).
+
+No questions remain open.

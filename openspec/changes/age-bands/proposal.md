@@ -24,7 +24,7 @@ Today the Mode is the only knob. Explorer (about 4 to 7) gets read aloud by defa
 - **Never math difficulty.** A band never changes Ratings, question generators, Kata problems, Star bands, the daily Arena set, Placement's start step or scoring. A test enforces it.
 - **The Mode picker suggests a Mode** from the Grade answer with a "Suggested" tag; the Player still chooses freely.
 - **Placement** (the `placement` change): Explorer's automatic read aloud and 3 big choices become the Early band's behavior in every Mode; Explorer Players with no band keep them.
-- **An age given instead of a grade is also the Age answer**, so it is never asked twice; a grade never decides posting (pending owner confirmation, see the PR).
+- **An age given instead of a grade is also the Age answer**, so it is never asked twice; a grade never decides posting (accepted by the owner on 2026-10-17).
 
 Out of scope:
 

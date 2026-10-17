@@ -77,7 +77,7 @@ export const COPY = {
 
 **7. The Mode suggestion.** With a Grade answer, the Mode picker tags one card "Suggested": Pre-K to 2 or ages 3 to 7 Explorer, 3 to 7 or ages 8 to 12 Challenger, 8 to 12, 13 and up or Grown-up Pro (the `MODES` grade ranges). Nothing is preselected; any Mode can be chosen.
 
-**8. Age answer reuse.** If the Player answered with an age (not a grade), that age is also saved as their Age answer (`store.setAge`) when they have none, so the posting question is not asked again. A grade answer never sets or changes the Age answer, and neither answer ever makes posting less strict than the Age answer alone. Rationale: after the move, the Age answer only chooses World or Device boards, and the grade question is as neutral as the age question. This needs the owner's yes (PR question) and an ADR 0001 consequence update.
+**8. Age answer reuse.** If the Player answered with an age (not a grade), that age is also saved as their Age answer (`store.setAge`) when they have none, so the posting question is not asked again. A grade answer never sets or changes the Age answer, and neither answer ever makes posting less strict than the Age answer alone. Rationale: after the move, the Age answer only chooses World or Device boards, and the grade question is as neutral as the age question. Accepted by the owner on 2026-10-17 (AB2); ADR 0001 gains the consequence (task 6.1).
 
 **9. Privacy (ADR 0008).** The Grade answer is personal information about a child if an operator collects it. This app never collects it: it stays in the browser's storage, is not in any request (including analytics, Boards and the Firebase SDK), and is carried only in the backup code and the learnvedicmath progress hand-off (device to device in the URL fragment, which is never sent to the server). The privacy policy, the parent note and `cloud/README.md` say so. Removing a Player removes it. `privacy.spec.ts` checks every request body and URL during a session with each band.
 
@@ -103,7 +103,7 @@ Paths after the move. "Copy" means the screen's fixed strings move to `js/copy.j
 | Me | `js/app.js` `meView()` | "For grown-ups: Reading help" (Change, Clear); per-Player Read aloud |
 | Age question (posting) | `js/app.js` `askAge()` | skipped when an age came from the grade question (decision 8) |
 | Parent note | `js/app.js` `parentNote()` | one sentence: the Grade answer stays on this device |
-| Guide, Sutra pages, Watch, Duel, Play experiences | | unchanged (out of scope) |
+| Guide, Sutra pages, Watch, Duel (retired by #47 if it merges first), Play experiences | | unchanged (out of scope) |
 
 ## Risks / Trade-offs
 
@@ -116,6 +116,15 @@ Paths after the move. "Copy" means the screen's fixed strings move to `js/copy.j
 
 Existing Players have no Grade answer, so nothing changes until they answer. The only migration is `vm.voice` to per-Player `voice` (decision 4), run once per device. Rollback: older code ignores `reading` and `voice` on the Player record and reads `vm.voice` again (left in place for one release).
 
-## Open Questions
+## Owner decisions
 
-Listed in the PR for the owner (grill-me style).
+The owner accepted every open question from PR #51 as recommended on 2026-10-17:
+
+- AB1: first visit is grade question, Mode pick (with the suggestion), Placement offer, home (decisions 2 and 7).
+- AB2: an age given instead of a grade is also the Age answer; a grade never decides posting (decision 8).
+- AB3: Ranked rounds keep the League's clock length, input and choices for every band (decision 4).
+- AB4: Read aloud becomes per Player, with a one-time copy of the device setting (decision 4).
+- AB5: the Guide, Sutra pages, Watch, Duel, the Play experiences (#47) and generator question text keep Mode wording in this change; a follow-up adds variants (proposal, out of scope).
+- AB6: Q17 is (b) only: age shapes the Vedic Math Modes, not the sbmadhav.com "Explain it like I'm 8" switch.
+
+No questions remain open.
