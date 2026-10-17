@@ -13,13 +13,15 @@ export function mount({ root, signal, params }) {
   const lv = level();
   const P = store.get(KEY, null) || {};
   P.solved = P.solved || {}; P.pieces = P.pieces || [];
-  const save = () => store.set(KEY, P);
   const preview = params[0] === 'preview';
+  /* Preview opens every chapter for testing, so nothing solved there is saved or counted (no Sparks) */
+  const save = () => { if (!preview) store.set(KEY, P); };
+  const count = (action, title) => { if (!preview) track(action, title); };
   const base = preview ? '#/sutras/lost-scroll/preview' : '#/sutras/lost-scroll';
   const day = dayNumber();
   const canOpen = n => preview || S.isOpen(n, day);
   const wrap = document.createElement('div'); wrap.className = 'md-wrap sc'; root.append(wrap);
-  const banner = preview ? '<p class="sc-preview" role="note"><b>Preview mode.</b> Every chapter is open for testing. Players see one new chapter each week.</p>' : '';
+  const banner = preview ? '<p class="sc-preview" role="note"><b>Preview mode.</b> Every chapter is open for testing, and nothing solved here is saved. Players see one new chapter each week.</p>' : '';
   if (preview) track('scroll/preview', 'Scroll preview');
   const want = +(preview ? params[1] : params[0]);
   if (want && S.chapter(want) && canOpen(want)) return play(S.chapter(want));
@@ -127,7 +129,7 @@ export function mount({ root, signal, params }) {
       const win = () => {
         const first = !P.solved[`${lv}:${p.id}`];
         P.solved[`${lv}:${p.id}`] = true; save();
-        if (first) track('scroll/solve', `Chapter ${ch.n} ${p.id}`);
+        if (first) count('scroll/solve', `Chapter ${ch.n} ${p.id}`);
         sfx('win');
         fb.className = 'sc-feedback is-ok';
         fb.textContent = pickOne(['That is it!', 'The lock clicks open.', 'Kili squawks with delight.', 'Exactly right.']);
@@ -151,7 +153,7 @@ export function mount({ root, signal, params }) {
 
     function finish() {
       const firstPiece = !P.pieces.includes(ch.n);
-      if (firstPiece) { P.pieces.push(ch.n); P.pieces.sort(); save(); track('scroll/chapter', `Chapter ${ch.n} complete`); }
+      if (firstPiece) { P.pieces.push(ch.n); P.pieces.sort(); save(); count('scroll/chapter', `Chapter ${ch.n} complete`); }
       const end = $('.sc-end'); end.hidden = false;
       const whole = P.pieces.length === 6;
       const finale = ch.n === 6;
