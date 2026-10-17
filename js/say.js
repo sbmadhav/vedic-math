@@ -57,6 +57,7 @@ function finish(mine) { if (current !== mine) return; current = null; setPressed
 export function stopSay() {
   const c = current; if (!c) return;
   current = null; setPressed(c.btn, false); deps.stop();
+  if (c.release) c.release(); // a stopped or superseded clip no longer holds the prefetch's lock on its file
 }
 
 function fallback(mine, signal) {
@@ -78,6 +79,7 @@ function fallback(mine, signal) {
 const fetched = new Set(); // ids whose clip is saved (a prefetch got it, or it played)
 const inflight = new Map(); // id -> the prefetch request still running for it (settles, never rejects)
 let queue = null; // ids still to fetch, while a prefetch runs under some signal
+const LOCK_WAIT = 8000; // ms a queue waits on another request for the same clip before fetching it itself
 /* One prefetch request; only a successful response marks the clip saved, so an HTTP error or a network failure is
    tried again by a later prefetch. A request outlives the view that started it, and a newer queue waits for it. */
 function fetchOne(id) {
@@ -103,7 +105,9 @@ function prefetch(signal) {
     const id = mine.shift(); if (!id) { queue = null; return; }
     if (fetched.has(id)) return step();
     /* A request an older queue left running is awaited; if it did not save the clip, this queue fetches it again */
-    (inflight.get(id) || Promise.resolve()).then(() => (fetched.has(id) || signal.aborted ? null : fetchOne(id)))
+    const lock = inflight.get(id);
+    (lock ? new Promise(r => { lock.then(r); later(r, LOCK_WAIT, signal); }) : Promise.resolve()) // a lock that never settles is waited on at most LOCK_WAIT
+      .then(() => (fetched.has(id) || signal.aborted ? null : fetchOne(id)))
       .finally(() => { if (!signal.aborted) idle(step, signal); });
   };
   idle(step, signal);
@@ -121,6 +125,7 @@ export function tap(btn, signal) {
   /* While the tapped clip loads, the prefetch waits on it instead of requesting the same file a second time */
   let settle; const loading = new Promise(r => { settle = r; });
   if (!inflight.has(id)) { inflight.set(id, loading); loading.then(() => { if (inflight.get(id) === loading) inflight.delete(id); }); }
+  mine.release = settle; onAbort(signal, settle); // stopping, superseding or leaving releases it too
   const onStart = () => { fetched.add(id); settle(); if (current === mine) deps.count(); };
   let p;
   try { p = Promise.resolve(deps.play(clipUrl(id), { onStart })); } catch (e) { p = Promise.reject(e); }

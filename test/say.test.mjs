@@ -252,3 +252,16 @@ test('on a slow first tap the prefetch waits for the tapped clip and never reque
   assert.ok(!log.fetched.some(u => /\/s1\.m4a/.test(u)));
   ctl.abort();
 });
+
+test('a tapped clip whose fetch never settles does not block the prefetch once it is stopped, superseded or left', async () => {
+  const log = stubs({ manualStart: true });
+  let ctl = new AbortController();
+  S.tap(btn('s1'), ctl.signal); // s1 hangs: playback never starts and never fails
+  ctl.abort(); // the Player leaves
+  ctl = new AbortController();
+  S.tap(btn('s3'), ctl.signal); log.starts[1](); // back, taps another name, which starts
+  await wait(250);
+  assert.ok(log.fetched.some(u => /\/s1\.m4a/.test(u)), 'the stalled s1 is fetched by the new queue');
+  assert.equal(log.fetched.length, 28, 'and every other name except the playing s3');
+  ctl.abort();
+});
