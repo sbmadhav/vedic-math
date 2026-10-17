@@ -34,4 +34,6 @@ Each experience has its own stylesheet, loaded with its page (about 200 KB in al
 
 - **Sound is untested by ear.** Tala Lab and Mandala Studio synthesize sound with Web Audio; the scheduler is tested, the timbres are not.
 - **Camera reading** (Math Lens) has only been tested on synthetic images; typing the digits always works.
+- **The digit reader and the page's policy.** The reader (Tesseract.js 5.1.1) is imported from cdn.jsdelivr.net on first use, but the Content-Security-Policy that `build.py` writes lists no such host, and the reader would also need `connect-src` for its model, a `blob:` worker and `'wasm-unsafe-eval'`. On the published site the camera is therefore not offered (Math Lens reads the policy and shows "Not ready on this site yet"), so no Player is asked for a camera that could read nothing. Turning it on is an owner decision: serve the pinned reader files from `/vedic-math/` (only `'wasm-unsafe-eval'` added, no third party sees the visit), or list jsDelivr in the policy, or drop camera reading.
+- **Camera and microphone** turn off on a route change, a hidden tab and errors, and are asked for only after a tap next to a line saying what they are for.
 - **Precache size** grows by the play modules and styles for every visitor.
