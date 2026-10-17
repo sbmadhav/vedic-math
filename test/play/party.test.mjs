@@ -6,7 +6,8 @@ import assert from 'node:assert/strict';
 import { rng } from '../../js/play/kit.js';
 import {
   mixQ, bondQ, TRICKS, TRICK_IDS, estimateQ, choicesFor, judgeEstimate, points, MULT, BASE, ANSWER_MS, OPEN_MS, STEAL_MS,
-  newGame, reduce, round, standings, wagerOptions, plan, playerName, ADJ, NOUNS, cleanSeats, COLORS
+  newGame, reduce, round, standings, wagerOptions, plan, playerName, ADJ, NOUNS,
+  SECRET_MS, FINAL_MS, RELAY_LOCK_MS, RELAY_CAP, cleanSeats, answerMs, COLORS
 } from '../../js/play/exp/party-core.js';
 
 const LEVELS = ['explorer', 'challenger', 'pro'];
@@ -132,9 +133,12 @@ test('estimation: secret turns in order, closest (with handicap) wins, timeouts 
   s = reduce(s, { type: 'next', now: 0 });
   assert.equal(s.phase, 'secret'); assert.equal(s.turn, 0);
   const A = s.shared.answer;
+  s = reduce(s, { type: 'ready', now: 1 });
   s = reduce(s, { type: 'answer', value: A, now: 1 }); assert.equal(s.turn, 1); assert.equal(s.event.kind, 'locked');
+  s = reduce(s, { type: 'ready', now: 2 });
   s = reduce(s, { type: 'tick', now: 1e9 }); assert.equal(s.turn, 2); assert.equal(s.guesses[1], null);
-  s = reduce(s, { type: 'answer', value: A * 2, now: 2 });
+  s = reduce(s, { type: 'ready', now: 3 });
+  s = reduce(s, { type: 'answer', value: A * 2, now: 3 });
   assert.equal(s.phase, 'reveal'); assert.deepEqual(s.event.winners, [0]);
   assert.equal(s.players[0].score, points(BASE.estimate + BASE.close, 'explorer'));
 });
@@ -166,6 +170,7 @@ test('a full game always reaches the podium; double or nothing doubles or loses 
       else if (s.phase === 'open' || s.phase === 'stealopen') { const free = s.players.filter(p => !s.locked.includes(p.id)); s = r() < 0.15 ? reduce(s, { type: 'tick', now: s.deadline }) : reduce(s, { type: 'buzz', pid: free[Math.floor(r() * free.length)].id, now }); }
       else if (s.phase === 'answer') { const q = s.qs[s.buzzer]; s = reduce(s, { type: 'answer', value: coin ? q.answer : q.choices.find(c => c !== q.answer), now }); }
       else if (s.phase === 'secret') {
+        if (!s.ready) s = reduce(s, { type: 'ready', now });
         if (round(s).type === 'estimate') s = reduce(s, { type: 'answer', value: Math.round(s.shared.answer * (0.5 + r())), now });
         else { const p = s.players[s.turn]; s = reduce(s, { type: 'answer', value: coin ? s.qs[p.id].answer : -1, now }); }
       } else if (s.phase === 'relay') s = r() < 0.1 ? reduce(s, { type: 'tick', now: s.deadline }) : reduce(s, { type: 'answer', value: coin ? s.qs[s.players[s.turn].id].answer : -1, now });
@@ -180,6 +185,64 @@ test('a full game always reaches the podium; double or nothing doubles or loses 
     for (let i = 1; i < st.length; i++) assert.ok(st[i].score <= st[i - 1].score);
   }
   assert.equal(plan(3, 'full').length, 6);
+});
+
+/* Skip ahead to the first question of a round type, treating every earlier question as revealed */
+const to = (type, s = reduce(three(), { type: 'start', now: 0 })) => {
+  while (round(s).type !== type) { s = reduce(s, { type: 'next', now: 0 }); if (!['intro', 'reveal'].includes(s.phase)) s = { ...s, phase: 'reveal' }; }
+  return reduce(s, { type: 'next', now: 0 });
+};
+
+test('relay: a miss locks answers for a moment, so mashing costs time; each runner scores for a capped number of bonds', () => {
+  let s = to('relay');
+  const p0 = s.players[s.turn];
+  s = reduce(s, { type: 'answer', value: s.qs[p0.id].answer + 1, now: 1000 });
+  assert.equal(s.event.kind, 'relayno'); assert.equal(s.relayLock, 1000 + RELAY_LOCK_MS);
+  const locked = s, p1 = s.players[s.turn];
+  assert.equal(reduce(s, { type: 'answer', value: s.qs[p1.id].answer, now: 1000 + RELAY_LOCK_MS - 1 }), locked, 'answers are ignored while locked');
+  s = reduce(s, { type: 'tick', now: 1000 + RELAY_LOCK_MS }); assert.equal(s.relayLock, 0, 'the tick clears the lock'); assert.equal(s.phase, 'relay');
+  s = reduce(s, { type: 'answer', value: s.qs[p1.id].answer, now: 1000 + RELAY_LOCK_MS + 1 }); assert.equal(s.event.kind, 'relayok'); assert.equal(s.count, 1);
+  /* one runner keeps getting it right: points stop at the cap, the team count keeps going */
+  let t = to('relay'); const solo = t.players[0]; let now = 0;
+  for (let i = 0; i < (RELAY_CAP + 3) * t.players.length; i++) { const p = t.players[t.turn]; t = reduce(t, { type: 'answer', value: t.qs[p.id].answer, now: now += 10 }); }
+  assert.equal(t.count, (RELAY_CAP + 3) * t.players.length);
+  assert.equal(t.players[0].score, RELAY_CAP * points(BASE.relay, solo.level));
+});
+
+test('secret turns: no clock until the Player is ready; a timeout keeps a typed guess', () => {
+  let s = to('estimate');
+  assert.equal(s.deadline, 0, 'no clock while the device is passed');
+  assert.equal(reduce(s, { type: 'tick', now: 1e9 }), s, 'waiting at the gate never times out');
+  assert.equal(reduce(s, { type: 'answer', value: 5, now: 1 }), s, 'no answers before ready');
+  s = reduce(s, { type: 'ready', now: 5000 }); assert.equal(s.deadline, 5000 + SECRET_MS); assert.ok(s.ready);
+  s = reduce(s, { type: 'tick', now: 5000 + SECRET_MS, typed: '1234' });
+  assert.equal(s.guesses[0], 1234, 'the typed but unlocked guess counts'); assert.equal(s.turn, 1); assert.equal(s.deadline, 0); assert.equal(s.ready, false);
+  s = reduce(s, { type: 'ready', now: 6000 }); s = reduce(s, { type: 'tick', now: 6000 + SECRET_MS });
+  assert.equal(s.guesses[1], null, 'nothing typed is no guess');
+});
+
+test('double or nothing: the clock starts at ready; running out of time leaves the bet unchanged', () => {
+  let s = to('final');
+  s = { ...s, players: s.players.map(p => ({ ...p, score: 40 })) };
+  for (let i = 0; i < 3; i++) s = reduce(s, { type: 'wager', value: 40, now: 0 });
+  assert.equal(s.phase, 'secret'); assert.equal(s.deadline, 0);
+  s = reduce(s, { type: 'ready', now: 100 }); assert.equal(s.deadline, 100 + FINAL_MS);
+  s = reduce(s, { type: 'tick', now: 100 + FINAL_MS }); assert.equal(s.event.kind, 'outoftime'); assert.equal(s.turn, 1); assert.equal(s.deadline, 0);
+  s = reduce(s, { type: 'ready', now: 200 }); s = reduce(s, { type: 'answer', value: s.qs[1].answer, now: 300 });
+  s = reduce(s, { type: 'ready', now: 400 }); s = reduce(s, { type: 'answer', value: s.qs[2].answer + 1, now: 500 });
+  assert.equal(s.phase, 'reveal');
+  const res = Object.fromEntries(s.results.map(x => [x.id, x]));
+  assert.equal(res[0].pts, 0); assert.ok(res[0].out); assert.equal(s.players[0].score, 40);
+  assert.equal(res[1].pts, 40 + points(BASE.final, 'challenger'));
+  assert.equal(res[2].pts, -40); assert.equal(s.players[2].score, 0);
+});
+
+test('Fair play off: everyone gets the same answer time', () => {
+  assert.equal(answerMs('explorer', true), ANSWER_MS.explorer);
+  assert.equal(answerMs('explorer', false), answerMs('pro', false));
+  let s = newGame({ players: [{ level: 'explorer' }, { level: 'pro' }], seed: 3, handicap: false });
+  s = reduce(reduce(s, { type: 'start', now: 0 }), { type: 'next', now: 0 });
+  s = reduce(s, { type: 'buzz', pid: 0, now: 1000 }); assert.equal(s.deadline, 1000 + answerMs('pro', false));
 });
 
 test('saved seats are cleaned: two to four, known names, unique colors, valid levels', () => {

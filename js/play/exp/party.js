@@ -144,7 +144,7 @@ export async function mount({ root, signal }) {
       </div>
     </div>`;
     const stage = body.querySelector('.pt-stage'), main = stage.querySelector('.pt-main'), hostEl = stage.querySelector('.pt-host'), bar = stage.querySelector('.pt-timer i'), prog = stage.querySelector('.pt-progress');
-    let gate = -1, pad = '', tStart = 0, tTotal = 0, lastBeep = 99, stepCtl = null, shown = {};
+    let pad = '', tStart = 0, tTotal = 0, lastBeep = 99, stepCtl = null, shown = {};
     s.players.forEach(p => { shown[p.id] = 0; });
     const nameOf = id => C.playerName(s.players.find(p => p.id === id));
     const narrate = text => { hostEl.textContent = text; hostEl.classList.remove('is-pop'); void hostEl.offsetWidth; hostEl.classList.add('is-pop'); say(text); };
@@ -157,7 +157,7 @@ export async function mount({ root, signal }) {
     const effects = prev => {
       const e = s.event || {}, P = id => s.players.find(p => p.id === id);
       if (s.deadline !== prev.deadline) { tStart = Date.now(); tTotal = Math.max(1, s.deadline - tStart); lastBeep = 99; }
-      if (s.turn !== prev.turn || s.phase !== prev.phase) { gate = -1; pad = ''; }
+      if (s.turn !== prev.turn || s.phase !== prev.phase) pad = '';
       switch (e.kind) {
         case 'round': { const t = C.round(s).type; narrate(line('round', { r: s.ri + 1, t: C.ROUND_INFO[t].title })); [0, 2, 4, 7].forEach((k, i) => tone(PENTA[k + 2], { dur: 0.2, when: i * 0.1, type: 'triangle', gain: 0.12 })); break; }
         case 'buzz': narrate(line(e.steal ? 'steal' : 'buzz', { n: nameOf(e.pid) })); tone(PENTA[3 + e.pid * 2], { dur: 0.3, type: 'square', gain: 0.07 }); tone(PENTA[5 + e.pid * 2], { dur: 0.3, type: 'square', gain: 0.06, when: 0.08 }); break;
@@ -171,6 +171,7 @@ export async function mount({ root, signal }) {
         case 'relay': narrate(e.done ? `Team goal reached! ${s.results.count} bonds. Everyone gets a bonus!` : `${s.results.count} bonds! The goal was ${s.results.goal}. So close, team.`); e.done ? sfx('win') : sfx('tap'); if (e.done) confetti(50); break;
         case 'estimate': { const w = e.winners.map(nameOf); narrate(w.length ? `Closest: ${w.join(' and ')}!` : 'No guesses at all? Brave strategy.'); sfx('win'); break; }
         case 'locked': sfx('tap'); narrate(`${nameOf(e.pid)} is locked in.`); break;
+        case 'outoftime': sfx('tap'); narrate(`Out of time, ${nameOf(e.pid)}. Your bet stays as it was.`); break;
         case 'wager': sfx('tap'); break;
         case 'final': { const ok = s.results.filter(x => x.ok).map(x => nameOf(x.id)); narrate(ok.length ? `Big moment! Right: ${ok.join(', ')}.` : 'Ouch! Nobody got the final.'); sfx(ok.length ? 'win' : 'no'); break; }
         case 'podium': narrate(line('podium')); later(() => { confetti(90); sfx('win'); }, 400, sig); track('party/finish', `${n} players`); break;
@@ -187,7 +188,7 @@ export async function mount({ root, signal }) {
       drawBoard(); drawZones(); drawCenter();
       if (stepCtl) { stepCtl.abort(); stepCtl = null; }
       if (s.phase === 'reveal' && ['buzz', 'steal', 'trick'].includes(t)) { stepCtl = child(sig); later(() => dispatch({ type: 'next' }), reducedMotion() ? 5500 : 4200, stepCtl.signal); }
-      if (prev && s.phase !== prev.phase) { const f = main.querySelector('[data-autofocus]'); if (f && (document.activeElement === document.body || stage.contains(document.activeElement))) f.focus({ preventScroll: true }); }
+      if (prev && (s.phase !== prev.phase || s.phase === 'relay')) { const f = main.querySelector('[data-autofocus]'); if (f && (document.activeElement === document.body || stage.contains(document.activeElement))) f.focus({ preventScroll: true }); }
     };
     const drawBoard = () => {
       const max = Math.max(1, ...s.players.map(p => p.score)), lead = Math.max(...s.players.map(p => p.score));
@@ -217,7 +218,7 @@ export async function mount({ root, signal }) {
         st.textContent = locked && ['open', 'stealopen', 'answer'].includes(s.phase) ? 'Locked out' : s.buzzer === p.id && s.phase === 'answer' ? 'Answering' : canBuzz ? (s.phase === 'stealopen' ? 'Buzz to steal!' : 'Buzz!') : turnP && turnP.id === p.id ? (s.phase === 'relay' ? 'Running' : 'Your turn') : s.phase === 'reveal' && s.event && s.event.pid === p.id && s.event.kind === 'correct' ? `+${s.event.pts}` : '';
       });
     };
-    const choicesHtml = q => `<div class="pt-choices" role="group" aria-label="Answers">${q.choices.map((c, i) => `<button type="button" class="pt-choice" data-ans="${c}"${i === 0 ? ' data-autofocus' : ''}><kbd>${i + 1}</kbd><span>${c}</span></button>`).join('')}</div>`;
+    const choicesHtml = (q, off = false) => `<div class="pt-choices" role="group" aria-label="Answers">${q.choices.map((c, i) => `<button type="button" class="pt-choice" data-ans="${c}"${off ? ' disabled' : i === 0 ? ' data-autofocus' : ''}><kbd>${i + 1}</kbd><span>${c}</span></button>`).join('')}</div>`;
     const gateHtml = p => `<div class="pt-gate pt-c--${p.color}"><span class="pt-av">${avatar(p.color, 72)}</span><p class="pt-gate-t"><b>${esc(C.playerName(p))}</b>, your secret turn.</p><p class="pt-gate-s">Everyone else, look away!</p><button type="button" class="md-btn md-btn--primary pt-ready" data-autofocus>I am ready</button></div>`;
     const keypadHtml = () => `<div class="pt-pad"><output class="pt-padout" aria-label="Your guess">${pad || '<span class="pt-ph">type a guess</span>'}</output><div class="pt-keys" role="group" aria-label="Number keypad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button type="button" data-key="${d}">${d}</button>`).join('')}<button type="button" data-key="back" aria-label="Delete">⌫</button><button type="button" data-key="0">0</button><button type="button" data-key="ok" class="pt-ok" aria-label="Lock in" data-autofocus>Lock</button></div></div>`;
     function drawCenter() {
@@ -237,16 +238,16 @@ export async function mount({ root, signal }) {
         const p = s.players.find(x => x.id === s.buzzer), q = s.qs[p.id];
         h = `<p class="pt-who pt-c--${p.color}"><span class="pt-av">${avatar(p.color, 40)}</span>${esc(C.playerName(p))}${s.stealing ? ' steals' : ''}</p><p class="pt-q">${esc(q.text)} = ?</p>${choicesHtml(q)}`;
       } else if (s.phase === 'secret' && t === 'estimate') {
-        h = `<p class="pt-q pt-q--est">${esc(s.shared.text)}</p>` + (gate === s.turn ? `<p class="pt-sub"><b>${esc(C.playerName(cur))}</b>, type your guess and lock it in.</p>${keypadHtml()}` : gateHtml(cur));
+        h = `<p class="pt-q pt-q--est">${esc(s.shared.text)}</p>` + (s.ready ? `<p class="pt-sub"><b>${esc(C.playerName(cur))}</b>, type your guess and lock it in.</p>${keypadHtml()}` : gateHtml(cur));
       } else if (s.phase === 'secret' && t === 'final') {
         const q = s.qs[cur.id];
-        h = gate === s.turn ? `<p class="pt-who pt-c--${cur.color}"><span class="pt-av">${avatar(cur.color, 40)}</span>${esc(C.playerName(cur))}, betting ${s.wagers[cur.id] || 0}</p><p class="pt-q">${esc(q.text)} = ?</p>${choicesHtml(q)}` : gateHtml(cur);
+        h = s.ready ? `<p class="pt-who pt-c--${cur.color}"><span class="pt-av">${avatar(cur.color, 40)}</span>${esc(C.playerName(cur))}, betting ${s.wagers[cur.id] || 0}</p><p class="pt-q">${esc(q.text)} = ?</p>${choicesHtml(q)}` : gateHtml(cur);
       } else if (s.phase === 'wager') {
         const opts = C.wagerOptions(cur.score);
         h = `<p class="pt-who pt-c--${cur.color}"><span class="pt-av">${avatar(cur.color, 40)}</span>${esc(C.playerName(cur))} has ${cur.score}</p><p class="pt-sub">How much will you bet on your final question? Right doubles the bet (plus a bonus), wrong loses it.</p><div class="pt-choices pt-choices--wager">${opts.map((v, i) => `<button type="button" class="pt-choice" data-wager="${v}"${i === 0 ? ' data-autofocus' : ''}><kbd>${i + 1}</kbd><span>${v === 0 ? 'Play safe' : v === cur.score ? `All in: ${v}` : `Half: ${v}`}</span></button>`).join('')}</div>`;
       } else if (s.phase === 'relay') {
         const q = s.qs[cur.id];
-        h = `<div class="pt-relay"><p class="pt-count"><b>${s.count}</b><span>/ ${r.goal} bonds</span></p><p class="pt-clock" aria-hidden="true"></p></div><p class="pt-who pt-c--${cur.color}"><span class="pt-av">${avatar(cur.color, 40)}</span>${esc(C.playerName(cur))} runs</p><p class="pt-q">${esc(q.text)}</p>${choicesHtml(q)}`;
+        h = `<div class="pt-relay"><p class="pt-count"><b>${s.count}</b><span>/ ${r.goal} bonds</span></p><p class="pt-clock" aria-hidden="true"></p></div><p class="pt-who pt-c--${cur.color}"><span class="pt-av">${avatar(cur.color, 40)}</span>${esc(C.playerName(cur))} runs</p><p class="pt-q">${esc(q.text)}</p>${choicesHtml(q, !!s.relayLock)}${s.relayLock ? '<p class="pt-sub">Fumble! Catch your breath...</p>' : ''}`;
       } else if (s.phase === 'reveal') h = revealHtml(t);
       else if (s.phase === 'podium') h = podiumHtml();
       main.innerHTML = h;
@@ -262,7 +263,7 @@ export async function mount({ root, signal }) {
           <ul class="pt-res">${s.results.map(x => { const p = s.players.find(q => q.id === x.id); return `<li class="pt-c--${p.color}${x.win ? ' is-win' : ''}"><span class="pt-av">${avatar(p.color, 28)}</span>${esc(C.playerName(p))}<b>${x.guess == null ? 'no guess' : x.guess.toLocaleString('en-US')}</b><em>${x.pts ? `+${x.pts}` : ''}</em></li>`; }).join('')}</ul>${next}`;
       }
       if (t === 'relay' && s.results) return `<p class="pt-callout${s.results.done ? '' : ' pt-callout--soft'}">${s.results.count} / ${s.results.goal}</p><p class="pt-sub">${s.results.done ? 'Team goal reached! Bonus points for everyone.' : 'Not quite the goal this time. Every bond still scored.'}</p>${next}`;
-      if (t === 'final' && s.results) return `<ul class="pt-res">${s.results.map(x => { const p = s.players.find(q => q.id === x.id); return `<li class="pt-c--${p.color}${x.ok ? ' is-win' : ''}"><span class="pt-av">${avatar(p.color, 28)}</span>${esc(C.playerName(p))}<b>${x.ok ? 'Right' : 'Missed'}</b><em>${x.pts > 0 ? '+' : ''}${x.pts}</em></li>`; }).join('')}</ul>${next}`;
+      if (t === 'final' && s.results) return `<ul class="pt-res">${s.results.map(x => { const p = s.players.find(q => q.id === x.id); return `<li class="pt-c--${p.color}${x.ok ? ' is-win' : ''}"><span class="pt-av">${avatar(p.color, 28)}</span>${esc(C.playerName(p))}<b>${x.ok ? 'Right' : x.out ? 'Out of time' : 'Missed'}</b><em>${x.pts > 0 ? '+' : ''}${x.pts}</em></li>`; }).join('')}</ul>${next}`;
       const ids = Object.keys(s.qs).map(Number);
       const rows = ids.map(id => { const p = s.players.find(q => q.id === id), q = s.qs[id]; return `<li class="pt-c--${p.color}${e.pid === id && e.kind === 'correct' ? ' is-win' : ''}"><span class="pt-av">${avatar(p.color, 28)}</span>${esc(q.text)} = <b>${q.answer}</b>${q.how ? `<small>${esc(q.how)}</small>` : ''}</li>`; }).join('');
       const head_ = e.kind === 'correct' ? `<p class="pt-callout">+${e.pts}</p><p class="pt-sub">${esc(nameOf(e.pid))}${e.steal ? ' stole it' : ' got it'}!</p>` : `<p class="pt-callout pt-callout--soft">${e.kind === 'timeout-all' ? 'Time!' : 'Nobody'}</p>`;
@@ -278,17 +279,17 @@ export async function mount({ root, signal }) {
     /* ---------- Input ---------- */
     const choose = v => {
       if (s.phase === 'wager') return dispatch({ type: 'wager', value: v });
-      if (s.phase === 'secret' && C.round(s).type === 'final' && gate !== s.turn) return;
+      if (s.phase === 'secret' && !s.ready) return;
       dispatch({ type: 'answer', value: v });
     };
     const padKey = k => {
-      if (!(s.phase === 'secret' && C.round(s).type === 'estimate' && gate === s.turn)) return;
+      if (!(s.phase === 'secret' && C.round(s).type === 'estimate' && s.ready)) return;
       if (k === 'ok') { if (pad) dispatch({ type: 'answer', value: Number(pad) }); return; }
       pad = k === 'back' ? pad.slice(0, -1) : (pad + k).replace(/^0+(?=\d)/, '').slice(0, 9);
       tone(PENTA[(+k || 0) % PENTA.length], { dur: 0.06, type: 'triangle', gain: 0.06 });
       const o = main.querySelector('.pt-padout'); if (o) o.innerHTML = pad ? Number(pad).toLocaleString('en-US') : '<span class="pt-ph">type a guess</span>';
     };
-    const ready = () => { gate = s.turn; drawCenter(); main.querySelector('[data-autofocus]')?.focus({ preventScroll: true }); say(C.round(s).type === 'estimate' ? `${s.shared.text} Type a guess.` : `${s.qs[s.players[s.turn].id].text}. Pick an answer.`); };
+    const ready = () => { if (!dispatch({ type: 'ready' })) return; main.querySelector('[data-autofocus]')?.focus({ preventScroll: true }); say(C.round(s).type === 'estimate' ? `${s.shared.text} Type a guess.` : `${s.qs[s.players[s.turn].id].text}. Pick an answer.`); };
     const fsToggle = () => { if (document.fullscreenElement) document.exitFullscreen?.(); else body.requestFullscreen?.().catch(() => {}); };
     on(stage, 'click', e => {
       const z = e.target.closest('[data-buzz]'); if (z) { dispatch({ type: 'buzz', pid: +z.dataset.buzz }); return; }
@@ -307,9 +308,11 @@ export async function mount({ root, signal }) {
     on(document, 'keydown', e => {
       if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest?.('input, select, textarea')) return;
       const k = e.key.toLowerCase(), onBtn = e.target.closest?.('button');
+      /* A held key is one press, not a stream of buzzes and answers (Enter or Space held on a button would click it again) */
+      if (e.repeat) { if (C.KEYS.includes(k) || /^[0-9]$/.test(k) || k === 'enter' || k === ' ' || k === 'backspace') e.preventDefault(); return; }
       const pi = C.KEYS.indexOf(k);
       if (pi >= 0 && pi < s.players.length) { if (dispatch({ type: 'buzz', pid: pi })) e.preventDefault(); return; }
-      if (s.phase === 'secret' && C.round(s).type === 'estimate' && gate === s.turn) {
+      if (s.phase === 'secret' && C.round(s).type === 'estimate' && s.ready) {
         if (/^\d$/.test(k)) { padKey(k); e.preventDefault(); return; }
         if (k === 'backspace') { padKey('back'); e.preventDefault(); return; }
         if (k === 'enter' && !onBtn) { padKey('ok'); e.preventDefault(); return; }
@@ -321,7 +324,7 @@ export async function mount({ root, signal }) {
     on(document, 'fullscreenchange', () => { const b = stage.querySelector('.pt-fs'); const fs = document.fullscreenElement === body; b.setAttribute('aria-pressed', String(fs)); b.textContent = fs ? 'Exit full screen' : 'Full screen'; stage.classList.toggle('is-fs', fs); }, sig);
 
     /* Clock: the reducer gets the time; the bar and countdown beeps are drawn every frame */
-    every(() => dispatch({ type: 'tick' }), 200, sig);
+    every(() => dispatch({ type: 'tick', typed: pad }), 200, sig);
     loop(() => {
       if (!s.deadline) { bar.style.width = '0%'; return; }
       const left = Math.max(0, s.deadline - Date.now()), k = left / tTotal;

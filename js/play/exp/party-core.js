@@ -16,9 +16,14 @@ export const LEVEL_NAME = { explorer: 'Explorer', challenger: 'Challenger', pro:
 export const MULT = { explorer: 1.5, challenger: 1.25, pro: 1 };
 export const ANSWER_MS = { explorer: 14000, challenger: 10000, pro: 8000 };
 export const OPEN_MS = 20000, STEAL_MS = 7000, SECRET_MS = 30000, FINAL_MS = 25000;
+/* Relay: a miss locks the answers for a moment (the team clock keeps running), so tapping at random costs time,
+   and each runner scores for at most RELAY_CAP bonds (more still count toward the team goal) */
+export const RELAY_LOCK_MS = 1500, RELAY_CAP = 6;
 export const BASE = { buzz: 10, steal: 10, stealBonus: 5, estimate: 20, close: 5, relay: 5, relayGoal: 10, trick: 10, final: 10 };
 export const playerName = p => `${ADJ[p.adj % ADJ.length]} ${NOUNS[p.noun % NOUNS.length]}`;
 export const points = (base, level, handicap = true) => Math.round(base * (handicap ? MULT[level] || 1 : 1));
+/* Time to answer: by level with Fair play on, the same for everyone with it off */
+export const answerMs = (level, handicap = true) => (handicap ? ANSWER_MS[level] || ANSWER_MS.challenger : ANSWER_MS.challenger);
 
 /* Saved seats from storage: two to four, each with a known name, a color nobody else has and a level.
    Returns null when fewer than two usable seats are left (the caller then uses its defaults). */
@@ -171,7 +176,8 @@ export function newGame({ players, seed = 1, length = 'full', handicap = true })
     players: players.slice(0, KEYS.length).map((p, i) => ({ id: p.id ?? i, adj: p.adj ?? i, noun: p.noun ?? i, color: p.color ?? COLORS[i], level: LEVELS.includes(p.level) ? p.level : 'challenger', score: 0, key: KEYS[i] })),
     rounds: plan(players.length, length), ri: -1, qi: 0, phase: 'lobby',
     trick: TRICK_IDS[Math.floor(rng(seedOf('party-trick', String(seed)))() * TRICK_IDS.length)],
-    qs: {}, buzzer: null, locked: [], deadline: 0, turn: 0, guesses: {}, wagers: {}, finals: {}, count: 0, stealing: false,
+    qs: {}, buzzer: null, locked: [], deadline: 0, turn: 0, ready: false, guesses: {}, wagers: {}, finals: {}, count: 0, stealing: false,
+    relayLock: 0, relayHits: {},
     event: null, results: null
   };
 }
@@ -190,9 +196,10 @@ function startQuestion(s, now) {
   const t = round(s).type;
   s.buzzer = null; s.locked = []; s.stealing = false; s.qs = {}; s.guesses = {}; s.results = null;
   if (t === 'buzz' || t === 'trick') { s.players.forEach(p => { s.qs[p.id] = genFor(s, p); }); s.phase = 'open'; s.deadline = now + OPEN_MS; }
-  else if (t === 'steal') { const p = s.players[s.qi % s.players.length]; s.qs[p.id] = genFor(s, p); s.buzzer = p.id; s.phase = 'answer'; s.deadline = now + ANSWER_MS[p.level]; }
-  else if (t === 'estimate') { s.shared = estimateQ(qrng(s, 'all')); s.turn = 0; s.phase = 'secret'; s.deadline = now + SECRET_MS; }
-  else if (t === 'relay') { s.turn = 0; s.count = 0; s.relayEnd = now + round(s).ms; s.qs = { [s.players[0].id]: genFor(s, s.players[0], 'r0') }; s.phase = 'relay'; s.deadline = s.relayEnd; s.tries = 0; }
+  else if (t === 'steal') { const p = s.players[s.qi % s.players.length]; s.qs[p.id] = genFor(s, p); s.buzzer = p.id; s.phase = 'answer'; s.deadline = now + answerMs(p.level, s.handicap); }
+  /* Secret turns have no clock until the Player says they are ready (the 'ready' action), so passing the device costs nothing */
+  else if (t === 'estimate') { s.shared = estimateQ(qrng(s, 'all')); s.turn = 0; s.ready = false; s.phase = 'secret'; s.deadline = 0; }
+  else if (t === 'relay') { s.turn = 0; s.count = 0; s.relayEnd = now + round(s).ms; s.qs = { [s.players[0].id]: genFor(s, s.players[0], 'r0') }; s.phase = 'relay'; s.deadline = s.relayEnd; s.tries = 0; s.relayLock = 0; s.relayHits = {}; }
   else if (t === 'final') { s.turn = 0; s.wagers = {}; s.finals = {}; s.phase = 'wager'; s.deadline = 0; }
 }
 function toReveal(s, ev) { s.phase = 'reveal'; s.deadline = 0; if (ev) s.event = ev; }
@@ -217,23 +224,25 @@ function advance(s, now) {
   s.phase = 'intro'; s.deadline = 0; s.event = { kind: 'round', type: round(s).type };
 }
 function nextSecret(s, now) {
-  s.turn++;
-  if (s.turn < s.players.length) { s.deadline = now + SECRET_MS; return; }
+  s.turn++; s.ready = false; s.deadline = 0;
+  if (s.turn < s.players.length) return;
   const res = judgeEstimate(s.shared.answer, s.guesses, s.players, s.handicap);
   for (const x of res) { const p = P(s, x.id); x.pts = (x.win ? points(BASE.estimate, p.level, s.handicap) : 0) + (x.close ? points(BASE.close, p.level, s.handicap) : 0); award(s, x.id, x.pts); }
   s.results = res; toReveal(s, { kind: 'estimate', winners: res.filter(x => x.win).map(x => x.id) });
 }
 function finishFinal(s) {
   const res = s.players.map(p => {
-    const ok = s.finals[p.id] === true, w = s.wagers[p.id] || 0;
-    const pts = ok ? w + points(BASE.final, p.level, s.handicap) : -w;
-    award(s, p.id, pts); return { id: p.id, ok, wager: w, pts };
+    /* finals[id]: true right, false wrong, null out of time (the bet stands: no change) */
+    const ok = s.finals[p.id] === true, out = s.finals[p.id] == null, w = s.wagers[p.id] || 0;
+    const pts = ok ? w + points(BASE.final, p.level, s.handicap) : out ? 0 : -w;
+    award(s, p.id, pts); return { id: p.id, ok, out, wager: w, pts };
   });
   s.results = res; toReveal(s, { kind: 'final' });
 }
 export const wagerOptions = score => [...new Set([0, Math.floor(score / 2), score])];
 
-/* Actions: { type: 'start'|'next'|'buzz'|'answer'|'wager'|'tick', now, pid, value } */
+/* Actions: { type: 'start'|'next'|'ready'|'buzz'|'answer'|'wager'|'tick', now, pid, value, typed }
+   tick may carry typed: what the Player on a secret turn has typed but not locked in yet (used if the clock runs out) */
 export function reduce(state, a) {
   const s = clone(state), now = a.now ?? 0, r = round(s);
   s.seq = (state.seq || 0) + 1;
@@ -243,14 +252,17 @@ export function reduce(state, a) {
       if (s.phase === 'intro') { startQuestion(s, now); s.event = { kind: 'question' }; return s; }
       if (s.phase === 'reveal') { advance(s, now); return s; }
       return state;
+    case 'ready':
+      if (s.phase !== 'secret' || s.ready) return state;
+      s.ready = true; s.deadline = now + (r.type === 'final' ? FINAL_MS : SECRET_MS); s.event = { kind: 'ready', pid: s.players[s.turn].id }; return s;
     case 'buzz': {
       const p = P(s, a.pid); if (!p) return state;
       if (s.phase === 'open' && !s.locked.includes(p.id)) {
-        s.openLeft = s.deadline - now; s.phase = 'answer'; s.buzzer = p.id; s.deadline = now + ANSWER_MS[p.level]; s.event = { kind: 'buzz', pid: p.id }; return s;
+        s.openLeft = s.deadline - now; s.phase = 'answer'; s.buzzer = p.id; s.deadline = now + answerMs(p.level, s.handicap); s.event = { kind: 'buzz', pid: p.id }; return s;
       }
       if (s.phase === 'stealopen' && !s.locked.includes(p.id)) {
         s.qs[p.id] = genFor(s, p, 'steal' + s.locked.length); s.stealing = true;
-        s.phase = 'answer'; s.buzzer = p.id; s.deadline = now + ANSWER_MS[p.level]; s.event = { kind: 'buzz', pid: p.id, steal: true }; return s;
+        s.phase = 'answer'; s.buzzer = p.id; s.deadline = now + answerMs(p.level, s.handicap); s.event = { kind: 'buzz', pid: p.id, steal: true }; return s;
       }
       return state;
     }
@@ -265,21 +277,27 @@ export function reduce(state, a) {
         }
         wrong(s, id, now); s.event.value = Number(a.value); return s;
       }
+      if (s.phase === 'secret' && !s.ready && !a.timeout) return state;
       if (s.phase === 'secret' && r.type === 'estimate') {
         const p = s.players[s.turn]; const v = Number(a.value);
         s.guesses[p.id] = Number.isFinite(v) && String(a.value).trim() !== '' ? v : null; s.event = { kind: 'locked', pid: p.id };
         nextSecret(s, now); return s;
       }
       if (s.phase === 'secret' && r.type === 'final') {
-        const p = s.players[s.turn]; s.finals[p.id] = Number(a.value) === s.qs[p.id].answer; s.event = { kind: 'locked', pid: p.id };
-        s.turn++;
-        if (s.turn < s.players.length) { const n = s.players[s.turn]; s.qs[n.id] = genFor(s, n, 'final'); s.deadline = now + FINAL_MS; return s; }
+        const p = s.players[s.turn], none = a.value == null || a.value === '' || Number.isNaN(Number(a.value));
+        s.finals[p.id] = none ? null : Number(a.value) === s.qs[p.id].answer; s.event = { kind: none ? 'outoftime' : 'locked', pid: p.id };
+        s.turn++; s.ready = false; s.deadline = 0;
+        if (s.turn < s.players.length) { const n = s.players[s.turn]; s.qs[n.id] = genFor(s, n, 'final'); return s; }
         finishFinal(s); return s;
       }
       if (s.phase === 'relay') {
+        if (now < s.relayLock) return state;
         const p = s.players[s.turn], ok = Number(a.value) === s.qs[p.id].answer;
-        if (ok) { s.count++; const pts = points(BASE.relay, p.level, s.handicap); award(s, p.id, pts); s.event = { kind: 'relayok', pid: p.id, pts }; }
-        else s.event = { kind: 'relayno', pid: p.id, answer: s.qs[p.id].answer };
+        s.relayLock = 0;
+        if (ok) {
+          s.count++; const hits = (s.relayHits[p.id] || 0) + 1; s.relayHits[p.id] = hits;
+          const pts = hits <= RELAY_CAP ? points(BASE.relay, p.level, s.handicap) : 0; award(s, p.id, pts); s.event = { kind: 'relayok', pid: p.id, pts };
+        } else { s.relayLock = now + RELAY_LOCK_MS; s.event = { kind: 'relayno', pid: p.id, answer: s.qs[p.id].answer }; }
         s.tries++; s.turn = (s.turn + 1) % s.players.length;
         const n = s.players[s.turn]; s.qs = { [n.id]: genFor(s, n, 'r' + s.tries) };
         return s;
@@ -291,15 +309,17 @@ export function reduce(state, a) {
       const p = s.players[s.turn]; const opts = wagerOptions(p.score);
       s.wagers[p.id] = opts.includes(Number(a.value)) ? Number(a.value) : 0; s.event = { kind: 'wager', pid: p.id };
       s.turn++;
-      if (s.turn >= s.players.length) { s.turn = 0; const f = s.players[0]; s.qs = { [f.id]: genFor(s, f, 'final') }; s.phase = 'secret'; s.deadline = now + FINAL_MS; }
+      if (s.turn >= s.players.length) { s.turn = 0; const f = s.players[0]; s.qs = { [f.id]: genFor(s, f, 'final') }; s.phase = 'secret'; s.ready = false; s.deadline = 0; }
       return s;
     }
     case 'tick': {
+      if (s.phase === 'relay' && s.relayLock && now >= s.relayLock && now < s.deadline) { s.relayLock = 0; s.event = { kind: 'relaygo' }; return s; }
       if (!s.deadline || now < s.deadline) return state;
       if (s.phase === 'open') { toReveal(s, { kind: s.locked.length ? 'nobody' : 'timeout-all' }); return s; }
       if (s.phase === 'answer') { wrong(s, s.buzzer, now, true); return s; }
       if (s.phase === 'stealopen') { toReveal(s, { kind: 'nobody' }); return s; }
-      if (s.phase === 'secret') return reduce(state, { type: 'answer', value: r.type === 'final' ? NaN : '', now });
+      /* Out of time: an estimate keeps what was typed; a final pick that never came leaves the bet unchanged */
+      if (s.phase === 'secret') return reduce(state, { type: 'answer', value: r.type === 'final' ? null : a.typed ?? '', now, timeout: true });
       if (s.phase === 'relay') {
         const done = s.count >= r.goal;
         if (done) s.players.forEach(p => award(s, p.id, points(BASE.relayGoal, p.level, s.handicap)));
