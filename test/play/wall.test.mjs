@@ -44,6 +44,20 @@ test('each pattern matches its own cells, and its canonical rule is true and fit
   }
 });
 
+/* Every calendar month for three years, since the Calendar grid is the current month */
+const gridsOf = id => (id === 'calendar' ? Array.from({ length: 36 }, (_, i) => W.makeGrid('calendar', { y: 2026 + Math.floor(i / 12), m: (i % 12) + 1 })) : [grids[id]]);
+
+test('decoy tiles are false for every variant of their pattern, while the true rule holds', () => {
+  for (const p of W.PATTERNS) for (const g of gridsOf(p.grid)) for (const v of W.variantsOf(p, g)) {
+    const r = W.ruleFor(p, v.key), canon = W.evalRule(r, g, v.set);
+    assert.ok(canon.ok && canon.fits, `${p.id}/${v.key} true rule`);
+    for (const d of p.decoys) {
+      assert.notEqual(d, r.c, `${p.id}/${v.key}: decoy ${d} is the true rule`);
+      for (const s of new Set([r.s, 'painted'])) { const e = W.evalRule({ s, c: d }, g, v.set); assert.ok(!(e.ok && e.fits), `${p.id}/${v.key}: decoy "${W.ruleText({ s, c: d })}" is true`); }
+    }
+  }
+});
+
 test('near misses (one cell more or less) do not match the same pattern variant', () => {
   for (const p of W.PATTERNS) {
     const g = grids[p.grid];
