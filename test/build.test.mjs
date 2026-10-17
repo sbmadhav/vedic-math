@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dir = mkdtempSync(join(tmpdir(), 'vedic-math-build-'));
-for (const f of ['build.py', '_config.yml', '.gitignore', 'index.html', 'math.css', 'sw.js', 'manifest.webmanifest', 'js', 'CLAUDE.md', 'README.md', 'cloud/firestore.rules', 'test/index.js', '.github'])
+for (const f of ['build.py', '_config.yml', '.gitignore', 'index.html', 'math.css', 'sw.js', 'manifest.webmanifest', 'js', 'CLAUDE.md', 'README.md', 'cloud/firestore.rules', 'test/index.js', '.github', 'sounds', 'tools/sutra-voice/names.mjs'])
   cpSync(join(repo, f), join(dir, f), { recursive: true });
 writeFileSync(join(dir, '_notes.txt'), 'starts with _');
 /* Run git and the build in the temp copy only. A pre-commit hook exports GIT_DIR, GIT_INDEX_FILE and friends;
@@ -167,4 +167,16 @@ test('the build fails on a CSP in the source, an inline event handler or a javas
     assert.notEqual(r.status, 0);
     assert.match(r.stderr, /CSP|Content-Security-Policy/);
   }
+});
+
+/* Sounds (openspec sutra-pronunciation): the name clips and the Om are published, never in the install precache
+   (only Players who tap Say it download one), and the clip tools stay repo-only */
+test('sounds/ is published and left out of the precache; tools/ is not published', () => {
+  build();
+  for (const f of ['sounds/om.m4a', 'sounds/sutras/s1.m4a', 'sounds/sutras/u13.m4a']) assert.ok(existsSync(join(out, f)), `${f} is published`);
+  assert.ok(!existsSync(join(out, 'tools')), 'tools/ must not be published');
+  const urls = sw().precache.map(([u]) => u);
+  assert.deepEqual(urls.filter(u => /\/sounds\/|\.m4a/.test(u)), []);
+  assert.ok(urls.some(u => u.startsWith('/vedic-math/js/say-clips.js?v=')), 'the clip index is a module and is precached');
+  assert.match(read('sw.js'), /url\.pathname\.startsWith\(SOUNDS\)\) return event\.respondWith\(soundFile\(req\)\)/);
 });

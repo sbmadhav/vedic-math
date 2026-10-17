@@ -172,3 +172,8 @@ export function returnCheck(now = Date.now()) {
 export function shareClick(surface) {
   if (SHARE_SURFACES.includes(surface)) send('share_click/' + surface, 'Vedic Math: share');
 }
+
+/* ---------- Say it (openspec sutra-pronunciation) ---------- */
+/* A tap on a Say it button that starts a name clip. Fixed path and title: never the Sutra, the voice or the Mode.
+   A tap that stops a playing clip sends nothing. */
+export function say() { send('say/sutra', 'Say a Sutra name'); }

@@ -171,14 +171,33 @@ export function streakDays() {
 export const playedBefore = () => { load(); const t = today(); return Object.keys(S.days || {}).some(d => d < t && S.days[d] > 0); };
 export function touchDay() { load(); S.days[today()] = (S.days[today()] || 0) + 1; save(); }
 export function setBest(game, score) { load(); const isBest = score > (S.best[game] || 0); if (isBest) { S.best[game] = score; save(); } return isBest; }
-export const best = game => (load(), S.best[game] || 0);
-export const sparks = () => (load(), S.sparks);
+export const best = game => (load(), +S.best[game] || 0);
+export const sparks = () => (load(), +S.sparks || 0);
 export const lastSkill = () => (load(), S.last);
 export const setGrade = g => { load(); S.grade = String(g); save(); };
 export const savedGrade = () => (load(), S.grade);
 export function reset() { S = blank(); save(); emit('player', player()); }
 export function exportData() { load(); return JSON.stringify({ player: player(), data: S }); }
-export function importData(txt) { const d = JSON.parse(txt); const data = d.data || d; if (!data || typeof data.skills !== 'object') throw new Error('bad'); S = { ...blank(), ...migrate(data) }; save(); emit('import'); }
+export function importData(txt) { const d = JSON.parse(txt); const data = d.data || d; if (!isObj(data) || !isObj(data.skills)) throw new Error('bad'); S = { ...blank(), ...migrate(clean(data)) }; save(); emit('import'); }
+
+/* A backup code is outside data that pages later put into HTML. clean keeps only the record's known fields, each in
+   its own shape: counts and times are finite numbers 0 or more, and keys and ids hold no markup characters.
+   Anything else is dropped. A field added to the record must be added here too, or a restore loses it. */
+const KEY = /^[^<>"'&`]{1,120}$/;
+const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
+const num = v => typeof v === 'number' && Number.isFinite(v) && v >= 0;
+const numMap = m => (isObj(m) ? Object.fromEntries(Object.entries(m).filter(([k, v]) => KEY.test(k) && num(v))) : {});
+const mapOf = (m, fn) => (isObj(m) ? Object.fromEntries(Object.entries(m).filter(([k]) => KEY.test(k)).map(([k, v]) => [k, fn(v)])) : {});
+const keyOrNull = v => (typeof v === 'string' && KEY.test(v) ? v : null);
+export function clean(d) {
+  const out = { skills: mapOf(d.skills, numMap) };
+  for (const f of ['v', 'sparks', 'xp', 'skyMigrated']) if (num(d[f])) out[f] = d[f];
+  for (const f of ['days', 'best', 'badges', 'counts', 'seen', 'medals', 'katasDone', 'ratings', 'weekSparks', 'belts', 'weekXp', 'stars']) if (f in d) out[f] = numMap(d[f]);
+  out.last = keyOrNull(d.last); out.grade = keyOrNull(d.grade);
+  if (isObj(d.questDay) && keyOrNull(d.questDay.day)) out.questDay = { day: d.questDay.day, base: numMap(d.questDay.base), done: numMap(d.questDay.done) };
+  if (isObj(d.sky)) out.sky = { lit: numMap(d.sky.lit), skipped: numMap(d.sky.skipped), last: mapOf(d.sky.last, a => (Array.isArray(a) ? a.filter(keyOrNull) : [])) };
+  return out;
+}
 
 /* ---------- Device leaderboard: every player on this device ---------- */
 export function boardAdd(board, score) {

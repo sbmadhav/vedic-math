@@ -41,7 +41,7 @@ They are not `?v=` stamped (this repo cannot hash them). Do not copy them in; ch
 - `e2e/tests/cov/` holds one spec per live OpenSpec scenario. In CI they run on chromium only, and the run after a push leaves them out (`E2E_SKIP_COV=1`), so the live run stays under GitHub Pages' rate limit and the job timeout. Locally every project runs them.
 - The live pages carry a Content-Security-Policy without `'unsafe-eval'`: never build a function from a string inside `page.evaluate` (`new Function`, `eval`); pass a named option and keep the code in the page function.
 - `.github/workflows/e2e.yml` runs the suite daily, on demand (optional `base_url`) and on pushes to `main` (after waiting for the Pages deploy).
-- Repo-only files are listed in `exclude` in `_config.yml` (`cloud/`, `test/`, `docs/`, `e2e/`, this file, the README, `build.py`). Add new ones there.
+- Repo-only files are listed in `exclude` in `_config.yml` (`cloud/`, `test/`, `docs/`, `tools/`, `e2e/`, this file, the README, `build.py`). Add new ones there.
 
 ## Offline
 
@@ -53,6 +53,7 @@ They are not `?v=` stamped (this repo cannot hash them). Do not copy them in; ch
 - New same-origin files the page loads must be in `index.html` or the manifest (build.py lists them), and a module worker must be started with `import.meta.resolve(...)` so it gets its `?v=` stamp.
 - To retire it, set `KILL = true` in `sw.js` and deploy (see the comment there).
 - `manifest.webmanifest` here makes Vedic Math its own installable app (scope `/vedic-math/`); the main site's manifest is unchanged.
+- `sounds/` (the 29 Sutra name clips in `sounds/sutras/` and the Om) is served cache first from `vedic-math-sounds`, a cache every deploy keeps, and is never precached. The clips are made by `tools/sutra-voice/make-sutra-clips.mjs`, which also writes `js/say-clips.js` (each clip's size and `?v=` content hash); remake both together (`test/say.test.mjs` checks them).
 
 ## Play experiences (`js/play/`)
 

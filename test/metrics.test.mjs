@@ -262,3 +262,15 @@ test('the scan catches a Nickname or Player id in an event', () => {
     assert.ok(vals.some(v => !ALLOWED.has(v)), src);
   }
 });
+
+/* ---------- Say it (openspec sutra-pronunciation) ---------- */
+test('say() sends math/say/sutra titled "Say a Sutra name", with no Sutra in it', () => {
+  clear();
+  M.say(); M.say();
+  assert.deepEqual(sent, [['math/say/sutra', 'Say a Sutra name'], ['math/say/sutra', 'Say a Sutra name']]);
+});
+test('js/say.js counts through metrics.say() only, and turning the ambience off is not counted', () => {
+  const say = readFileSync(new URL('../js/say.js', import.meta.url), 'utf8'), amb = readFileSync(new URL('../js/sutra-ambience.js', import.meta.url), 'utf8');
+  assert.deepEqual(callSites(say).map(c => `${c.fn}(${c.args})`), ['metrics.say()']);
+  assert.deepEqual(callSites(amb), [], 'the ambience sends nothing (owner decision 5)');
+});

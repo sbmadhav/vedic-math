@@ -113,7 +113,8 @@ html.motion-paused .home:hover svg, body.calm .home:hover svg, html.motion-pause
 .mq-lesson .mq-ans, .mq-practice .mq-ans { color: var(--ink); }
 .mq-sutra { display: flex; flex-direction: column; gap: 2px; margin: 0 0 12px; padding: 10px 14px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--plum) 14%, var(--card)); }
 .mq-sutra b { font: 600 1.1rem/1.3 var(--display); color: var(--plum-strong); }
-.mq-sutra span { font-size: 14px; color: var(--ink-muted); font-style: italic; }
+.mq-sutra .mq-sutra-mean { font-size: 14px; color: var(--ink-muted); font-style: italic; }
+.mq-sutra-name { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0; }
 .mq-method { margin: 0; padding-left: 1.3em; }
 .mq-method li { margin: 4px 0; }
 .mq-example { margin-top: 6px; }
@@ -617,11 +618,15 @@ html.motion-paused .vm-player[open], body.calm .vm-player[open] { animation: non
 
 
 /* Sutra deep-dive modal */
-.sutra-modal { width: min(1100px, 96vw); max-width: 96vw; max-height: 92dvh; padding: 0; border: 2px solid var(--edge); border-radius: var(--radius-xl); background: var(--bg); color: var(--ink); box-shadow: 0 40px 100px -24px rgba(0,0,0,.55); overflow: auto; transform-origin: top left; }
+.sutra-modal { width: min(1100px, 96vw); max-width: 96vw; max-height: 92dvh; padding: 0; border: 2px solid var(--edge); border-radius: var(--radius-xl); background: var(--bg); color: var(--ink); box-shadow: 0 40px 100px -24px rgba(0,0,0,.55); overflow: auto; transform-origin: top left; scroll-padding: 64px 0 76px; } /* anything scrolled or focused into view lands clear of the pinned Close bar and footer (WCAG 2.4.11) */
 .sutra-modal::backdrop { background: rgba(10,12,17,.6); backdrop-filter: blur(5px); }
-.sd-inner { padding: 22px 26px 18px; }
-@media (max-width: 600px) { .sd-inner { padding: 16px; } }
-.sd-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+/* The dialog scrolls; the close button (top) and the prev / next footer (bottom) stay pinned over the content */
+.sd-inner { --sd-pad: 26px; padding: 22px var(--sd-pad) 0; }
+@media (max-width: 600px) { .sd-inner { --sd-pad: 16px; padding-top: 16px; } }
+.sd-bar { position: sticky; top: 10px; z-index: 3; height: 0; display: flex; justify-content: flex-end; align-items: flex-start; gap: var(--space-2); }
+.sd-bar .amb-btn { box-shadow: 0 4px 14px -6px color-mix(in srgb, var(--ink) 45%, transparent); }
+.sd-bar .sd-x { box-shadow: 0 4px 14px -6px color-mix(in srgb, var(--ink) 45%, transparent); }
+.sd-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding-right: 104px; } /* room for the pinned Ambience and Close buttons */
 .sd-head h2 { font: 600 clamp(1.5rem, 3.4vw, 2.2rem)/1.15 var(--display); color: var(--plum-strong); margin: 10px 0 4px; }
 .sd-mean { font-style: italic; color: var(--ink-muted); margin: 0; font-size: 1.05rem; }
 .sd-body { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 26px; margin-top: 18px; }
@@ -631,12 +636,25 @@ html.motion-paused .vm-player[open], body.calm .vm-player[open] { animation: non
 .sd-text h3 { font: 600 1.1rem/1.2 var(--display); margin: 18px 0 6px; }
 .sd-text h3:first-child { margin-top: 0; }
 .sd-text p { margin: 6px 0; line-height: 1.6; }
+/* Worked examples: each one a disclosure (the first open), so a Player can try it before seeing the steps */
+.sd-ex-tip { margin: 0 0 8px; color: var(--ink-muted); }
 .sd-ex { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.sd-ex li { display: grid; gap: 4px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--line); }
+.sd-ex li { border-radius: var(--radius-md); background: var(--card); border: 1px solid var(--line); }
+.sd-ex summary { display: grid; grid-template-columns: 1fr auto; column-gap: 10px; align-items: center; padding: 10px 12px; min-height: 44px; box-sizing: border-box; cursor: pointer; list-style: none; border-radius: var(--radius-md); }
+.sd-ex summary::-webkit-details-marker { display: none; }
+.sd-ex summary::after { content: '+'; grid-column: 2; grid-row: 1 / span 2; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--edge); font-weight: 800; color: var(--ink-muted); }
+.sd-ex details[open] > summary::after { content: '\2212'; }
+.sd-ex summary:hover { background: var(--bg-alt); }
+.sd-ex summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.sd-exn { grid-column: 1; font-size: 12.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-muted); }
+.sd-ex summary b { grid-column: 1; overflow-wrap: anywhere; }
+.sd-ex details > p { margin: 0; padding: 0 12px 12px; line-height: 1.6; overflow-wrap: anywhere; }
 .sd-uses { display: flex; flex-wrap: wrap; gap: 6px; } .sd-uses span { padding: 4px 10px; border-radius: 99px; background: color-mix(in srgb, var(--teal) 16%, var(--card)); font-size: 13.5px; font-weight: 700; }
 .sd-try { display: flex; flex-wrap: wrap; gap: 8px; }
-.sd-foot { display: flex; justify-content: space-between; gap: 10px; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--line); flex-wrap: wrap; }
-.sd-foot a { text-decoration: none; }
+.sd-foot { position: sticky; bottom: 0; z-index: 3; display: flex; justify-content: space-between; gap: 10px; margin: 20px calc(-1 * var(--sd-pad)) 0; padding: 12px var(--sd-pad) calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--bg); border-top: 1px solid var(--line); }
+.sd-foot a { text-decoration: none; min-width: 0; max-width: calc(50% - 5px); }
+.sd-foot a > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.sd-foot .sd-next { margin-left: auto; }
 
 /* Animated scenes */
 .sc-stage { min-height: 220px; display: grid; place-items: center; }
@@ -1216,3 +1234,35 @@ html.motion-paused .tour-ring, body.calm .tour-ring, html.motion-paused .tour-ca
 .play-card--coral { --c: var(--coral); --cs: var(--coral-strong); } .play-card--sun { --c: var(--sun-strong); --cs: var(--sun-strong); } .play-card--teal { --c: var(--teal); --cs: var(--teal-strong); }
 @media (prefers-reduced-motion: reduce) { .play-card { transition: none; } .play-card:hover, .play-card:focus-visible { transform: none; } }
 html.motion-paused .play-card, body.calm .play-card { transition: none; } html.motion-paused .play-card:hover, body.calm .play-card:hover, html.motion-paused .play-card:focus-visible, body.calm .play-card:focus-visible { transform: none; }
+
+/* ---------- Say it and the Respelling (openspec sutra-pronunciation) ---------- */
+.say-btn { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-width: 44px; min-height: 44px; padding: 0 10px; border: 2px solid var(--edge); border-radius: var(--radius-pill); background: var(--card); color: var(--plum-strong); font: 700 .9rem/1 var(--font-sans); cursor: pointer; vertical-align: middle; }
+.say-btn svg { width: 20px; height: 20px; flex: none; }
+.say-btn:hover { background: color-mix(in srgb, var(--plum) 16%, var(--card)); }
+.say-btn:focus-visible, .amb-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.say-btn[aria-pressed="true"] { background: var(--plum-strong); border-color: var(--plum-strong); color: var(--on-accent); }
+.say-btn--label { padding: 0 14px 0 10px; }
+.say-btn--card { position: absolute; top: 8px; right: 8px; z-index: 2; width: 44px; padding: 0; }
+.sutra-card.flipped .say-btn--card { visibility: hidden; }
+.sutra-card .sutra-n, .sutra-card .sutra-face > b { padding-right: 44px; }
+.say-resp { display: block; font: 600 .95rem/1.35 var(--font-sans); color: var(--ink-muted); letter-spacing: .01em; overflow-wrap: anywhere; }
+.sutra-face .say-resp { font-size: .85rem; }
+.say-vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.say-deva { display: block; margin: 2px 0 6px; font-size: 1.05rem; color: var(--ink-muted); }
+.sd-say { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin: 0 0 4px; }
+.sd-say .say-resp { flex: 1 1 12em; min-width: 0; }
+.sd-head > div:first-child { min-width: 0; }
+.places-h .say-btn { margin: 0 2px; }
+.places-c > .say-resp { margin: -4px 0 8px; }
+
+/* ---------- Sutra ambience toggle and settings (openspec sutra-ambience) ---------- */
+.sutra-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.amb-btn { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 44px; padding: 0 14px 0 10px; border: 2px solid var(--edge); border-radius: var(--radius-pill); background: var(--card); color: var(--ink); font: 700 .85rem/1 var(--font-sans); cursor: pointer; }
+.amb-btn svg { width: 20px; height: 20px; flex: none; }
+.amb-btn[aria-pressed="true"] { background: color-mix(in srgb, var(--teal) 22%, var(--card)); border-color: var(--teal-strong); }
+.amb-btn--compact span { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.amb-btn--compact { width: 44px; padding: 0; justify-content: center; }
+.amb-set { display: flex; flex-direction: column; gap: var(--space-2); margin: var(--space-3) 0; font-weight: 600; }
+.amb-set .mq-h3 { margin: 0; }
+.amb-set input { width: 18px; height: 18px; accent-color: var(--teal-strong); }
+.amb-set .mq-small { margin: 0; font-weight: 400; }

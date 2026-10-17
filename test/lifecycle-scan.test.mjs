@@ -66,3 +66,11 @@ test('the router owns one AbortController per render and there is no cleanup var
   assert.doesNotMatch(app, /\bcleanup\s*=/);
   assert.match(app, /new AbortController\(\)/);
 });
+
+test('Say it (js/say.js) and the Sutra ambience (js/sutra-ambience.js): no bare listeners or timers; they go through life.js', () => {
+  for (const f of ['say.js', 'sutra-ambience.js']) {
+    assert.deepEqual(hits(f, /\.?addEventListener\(/), [], f);
+    assert.deepEqual(hits(f, TIMERS), [], f);
+    assert.match(readFileSync(new URL(`../js/${f}`, import.meta.url), 'utf8'), /import \{[^}]*\bon\b[^}]*\} from '\.\/life\.js'/, f);
+  }
+});
