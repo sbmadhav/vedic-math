@@ -107,15 +107,18 @@ export function mount({ root, signal, params }) {
   /* Save, share and wallpaper for whatever piece getPiece() returns */
   function wireTools(getPiece) {
     on(room.querySelector('.ms-save'), 'click', () => {
-      const p = getPiece(), c = A.encodePiece(p, b64url);
+      const p = getPiece(), c = A.encodePiece(p, b64url), fresh = !S.gallery.some(x => x.c === c);
       S.gallery = [{ c, at: dayKey() }, ...S.gallery.filter(x => x.c !== c)].slice(0, 40); save();
+      if (!fresh) { toast('Already in your gallery'); say(`${A.describe(p)} is already in your gallery`); return; }
+      /* only a piece new to the gallery is tracked (and so earns Sparks): saving the same one again pays nothing */
       toast('Saved to your gallery'); say(`Saved ${A.describe(p)} to your gallery`); track('art/save', A.describe(p));
     }, signal);
     on(room.querySelector('.ms-share'), 'click', () => { const p = getPiece(); share({ title: 'Mandala Studio', text: `${A.describe(p)}: a piece I made from math.`, url: shareUrl(`#/games/art/${tabOf(p.k)}/${A.encodePiece(p, b64url)}`) }); }, signal);
     on(room.querySelector('.ms-download'), 'click', () => {
       const p = getPiece(), size = room.querySelector('[name="arSize"]:checked').value, bg = room.querySelector('[name="arBg"]:checked').value;
-      const cv = exportCanvas(p, WALL[size], wallPal(readPal(), bg));
-      downloadCanvas(cv, `mandala-${p.k}-${size}.png`); toast('Wallpaper saved'); track('art/wallpaper', `${p.k} ${size} ${bg}`);
+      try { downloadCanvas(exportCanvas(p, WALL[size], wallPal(readPal(), bg)), `mandala-${p.k}-${size}.png`); }
+      catch (e) { toast('The wallpaper could not be made here. Try a smaller size.'); return; }
+      toast('Wallpaper saved'); track('art/wallpaper', `${p.k} ${size} ${bg}`);
       room.querySelector('.ms-wall').open = false;
     }, signal);
   }
@@ -482,7 +485,7 @@ export function mount({ root, signal, params }) {
     const rootRead = () => {
       const s = A.SQRT2_STEPS[st.step], err = Math.abs(s.value - Math.SQRT2);
       read.innerHTML = `<table class="ms-table"><tbody>${A.SQRT2_STEPS.slice(0, st.step + 1).map((x, i) => `<tr${i === st.step ? ' class="is-now"' : ''}><td>${i ? esc(x.add) : 'Start with the side'}</td><td class="ms-mono">${x.value.toFixed(7)}</td>${lv === 'pro' ? `<td class="ms-mono">${x.frac[0]}/${x.frac[1]}</td>` : ''}</tr>`).join('')}<tr class="ms-true"><td>The true diagonal √2</td><td class="ms-mono">${Math.SQRT2.toFixed(7)}</td>${lv === 'pro' ? '<td></td>' : ''}</tr></tbody></table>
-        <p class="${st.step === 3 ? 'ms-yes' : 'px-note'}">${st.step === 3 ? `Off by ${err.toFixed(7)}: about 1 part in ${Math.round(Math.SQRT2 / err).toLocaleString()}. On a 10 metre altar that is a twentieth of a millimetre.${lv === 'pro' ? ' And 577² − 2 × 408² = 1, which is why this fraction is so close.' : ''}` : `The gap is ${err.toFixed(4)}.`}</p>`;
+        <p class="${st.step === 3 ? 'ms-yes' : 'px-note'}">${st.step === 3 ? `Off by ${err.toFixed(7)}: about 1 part in ${Math.round(Math.SQRT2 / err).toLocaleString()}. On a 10 metre altar that is about a fiftieth of a millimetre.${lv === 'pro' ? ' And 577² − 2 × 408² = 1, which is why this fraction is so close.' : ''}` : `The gap is ${err.toFixed(4)}.`}</p>`;
       cap.textContent = `Rope ${s.value.toFixed(5)}`;
       if (strings) strings.set(330, A.ropePitch(st.len));
       const b = room.querySelector('.ms-beat'); if (b && strings) b.textContent = `Gap: ${A.beatRate(st.len).toFixed(st.step === 3 ? 4 : 2)} beats a second`;
