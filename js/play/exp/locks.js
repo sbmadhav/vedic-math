@@ -124,9 +124,9 @@ export function mount({ root, signal, params }) {
       const last = li === levels.length - 1;
       if (last) { confetti(70); machine.classList.add('is-open'); }
       panel.innerHTML = `<div class="lk-clear"><p class="lk-clear-big">${last ? 'Lock fully cracked!' : 'Level cleared'}</p>
-        <p>${last ? `You found it, used it and stretched it. ${esc(ch.sutra)} is yours.` : esc(levels[li + 1].name) + ' is next.'}</p>
+        <p>${last ? `You found it, used it and stretched it. ${esc(ch.found ? ch.found[0].toUpperCase() + ch.found.slice(1) : ch.sutra)} is yours.` : esc(levels[li + 1].name) + ' is next.'}</p>
         <div class="px-row">${last ? '<a class="md-btn md-btn--primary" href="#/dojo/locks">Back to all locks</a>' : '<button type="button" class="md-btn md-btn--primary lk-next">Next level</button>'}</div></div>`;
-      say(last ? `Lock fully cracked. You discovered ${ch.sutra}.` : `Level cleared. Next: ${levels[li + 1].name}.`);
+      say(last ? `Lock fully cracked. You discovered ${ch.found || ch.sutra}.` : `Level cleared. Next: ${levels[li + 1].name}.`);
       drawLevels();
       panel.querySelector('.md-btn')?.focus({ preventScroll: true });
     };
@@ -273,13 +273,13 @@ export function mount({ root, signal, params }) {
       const x = tape[0]?.x ?? ch.gen(rng(1), 'main', lv);
       const lines = ch.reveal.lines(x);
       panel.innerHTML = `<div class="lk-reveal">
-        <p class="lk-reveal-k">You just discovered</p>
+        <p class="lk-reveal-k">${ch.found ? `You just discovered ${esc(ch.found)}. It goes with` : 'You just discovered'}</p>
         <h2 class="lk-reveal-s">${esc(ch.sutra)}</h2>
-        <p class="lk-reveal-m">“${esc(ch.meaning)}”, a sutra from Bharati Krishna Tirtha's 1965 book.</p>
+        <p class="lk-reveal-m">“${esc(ch.meaning)}”, a sutra from Bharati Krishna Tirtha's 1965 book.${ch.credit ? ` <span class="px-note">${esc(ch.credit)}</span>` : ''}</p>
         ${ch.reveal.picture === 'area' ? area(x) : ch.reveal.picture === 'columns' ? columns(x) : ''}
         <ol class="lk-why-lines">${lines.map((l, i) => `<li style="--i:${i}">${esc(l)}</li>`).join('')}</ol>
         <div class="px-row"><button type="button" class="md-btn md-btn--primary lk-go-on">Keep going</button></div></div>`;
-      say(`You just discovered ${ch.sutra}, ${ch.meaning}. ${lines.join(' ')}`);
+      say(`You just discovered ${ch.found ? `${ch.found}. ${ch.credit}` : `${ch.sutra}, ${ch.meaning}.`} ${lines.join(' ')}`);
       confetti(40);
       if (L.discover(C, levels.findIndex(l => l.kind === 'rule'))) track('locks/discover', ch.sutra);
       save();

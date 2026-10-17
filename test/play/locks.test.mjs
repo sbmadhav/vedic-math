@@ -82,3 +82,23 @@ test('a level counts only the first time it is cleared; a sutra is discovered on
   /* progress saved before discoveries were recorded: the rule level is already cleared */
   assert.equal(discover({ done: ruleAt + 1 }, ruleAt), false);
 });
+
+test('rule wording matches the numbers the lock is fed', () => {
+  /* Nines Gate: the stretch is times the next row of nines, so the label names both round numbers */
+  for (const lv of LEVELS) {
+    const c = chapterById('nines'), R = c.rule(lv), right = R.slots.B[R.answer.B].label;
+    const r = rng(`label:${lv}`);
+    for (const stage of ['main', 'stretch']) for (let i = 0; i < 50; i++) {
+      const x = c.gen(r, stage, lv);
+      assert.ok(right.includes(String(x.z + 1)), `${lv} ${stage}: "${right}" should name ${x.z + 1}`);
+    }
+  }
+  /* Base Camp: read literally, the rule must say what to do when R is too long (81 x 83: 64 and 323 -> 6723) */
+  const nb = chapterById('nearbase').rule('challenger').parts.join(' ');
+  assert.match(nb, /too many digits, carry the extra/);
+  assert.match(nb, /a 0 in front if it is short/);
+  /* Nine Lamp teaches casting out nines and says so */
+  const lamp = chapterById('lamp');
+  assert.equal(lamp.found, 'casting out nines');
+  assert.match(lamp.credit, /digit sums/);
+});

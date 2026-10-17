@@ -96,12 +96,13 @@ const nines = {
   },
   out: x => x.n * x.z, ask: x => `${x.n} ${TIMES} ${x.z}`,
   rule: lv => {
-    const Z = lv === 'explorer' ? 9 : 99;
+    /* main inputs are times Z, stretch inputs times the next row of nines: the labels name both round numbers */
+    const Z = lv === 'explorer' ? 9 : 99, Z2 = Z * 10 + 9;
     return {
-      parts: ['Write', 'A', ', then', 'B', 'right after it.'],
+      parts: ['Write', 'A', ', then', 'B', 'right after it, with as many digits as there are nines (a 0 in front if it is short).'],
       slots: {
         A: [{ label: 'one less than the number', f: x => x.n - 1 }, { label: 'the number', f: x => x.n }, { label: 'one more than the number', f: x => x.n + 1 }],
-        B: [{ label: `the rest of the way to ${Z + 1}`, f: x => x.z + 1 - x.n }, { label: `the rest of the way to ${Z}`, f: x => x.z - x.n }, { label: 'the number again', f: x => x.n }]
+        B: [{ label: `the rest of the way to ${Z + 1} (${Z2 + 1} for ${Z2})`, f: x => x.z + 1 - x.n }, { label: `the rest of the way to ${Z} (${Z2} for ${Z2})`, f: x => x.z - x.n }, { label: 'the number again', f: x => x.n }]
       },
       combine: (v, x) => v.A * (x.z + 1) + v.B,
       answer: { A: 0, B: 0 }
@@ -129,7 +130,7 @@ const nearbase = {
   },
   out: x => x.a * x.b, ask: pairShow,
   rule: lv => ({
-    parts: ['Gap means how far a number is below the base. Write', 'L', ', then', 'R', 'as the last digits.'],
+    parts: ['Gap means how far a number is below the base. Write', 'L', ', then', 'R', 'as the last digits: R fills as many digits as the base has zeros (a 0 in front if it is short), and if R has too many digits, carry the extra to the left part.'],
     slots: {
       L: [{ label: 'the first number minus the other gap', f: x => x.a - gapOf(x.b, x.B) }, { label: 'the two numbers added', f: x => x.a + x.b }, { label: 'the first number minus its own gap', f: x => x.a - gapOf(x.a, x.B) }],
       R: [{ label: 'gap times gap', f: x => gapOf(x.a, x.B) * gapOf(x.b, x.B) }, { label: 'gap plus gap', f: x => gapOf(x.a, x.B) + gapOf(x.b, x.B) }, { label: 'the last digits multiplied', f: x => (x.a % 10) * (x.b % 10) }]
@@ -176,6 +177,10 @@ const buddies = {
 
 const lamp = {
   id: 'lamp', title: 'The Nine Lamp', sutra: 'Guṇitasamuccayaḥ', meaning: 'The product of the sums is the sum of the product', color: 'sun',
+  /* The lamp teaches casting out nines (digit sums). The book's Guṇitasamuccayaḥ is a check of a product by the
+     sums of its parts, and digit sums are how that check is usually done: related, not the same thing. */
+  found: 'casting out nines',
+  credit: 'Casting out nines is an old check, older than the 1965 book. Bharati Krishna Tirtha checks answers with digit sums like this under Guṇitasamuccayaḥ.',
   blurb: 'A lamp that lights up for some numbers and stays dark for others. Which ones?',
   label: '', lamp: true,
   gen(r, stage, lv) {
