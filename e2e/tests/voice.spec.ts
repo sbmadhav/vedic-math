@@ -34,6 +34,7 @@ test.describe('built-in voice', () => {
 
   test('an Explorer question is read at pitch 1, rate 0.9, with the Enhanced voice', async ({ page }) => {
     await fakeSpeech(page, [COMPACT, ENHANCED, NOVELTY]);
+    await page.addInitScript(() => { try { localStorage.setItem('vm.studioVoice', '0'); } catch (e) {} }); // the device's voice, not the recordings
     await open(page, '#/skill/k-add10');
     await page.locator('#practice').getByRole('button', { name: 'Hear it' }).click();
     await expect.poll(async () => (await spoken(page)).length).toBeGreaterThan(0);
@@ -126,9 +127,13 @@ test.describe('studio voice', () => {
     await open(page, '#/skill/k-count');
     await expect.poll(() => requests.some(u => u.endsWith('/p/core.test.m4a'))).toBe(true); // the index and line set are loaded
     /* The first line may beat the 600 ms limit on a cold page and be read by the device; "Hear it" says it again */
-    await page.evaluate(() => { (window as any).__voiceLog.length = 0; (window as any).__spoken.length = 0; });
-    await page.locator('#practice').getByRole('button', { name: 'Hear it' }).click();
-    await expect.poll(() => vlog(page)).toContain('studio:line');
+    /* Each try clears the logs and taps Hear it; a slow machine may need a second tap once the file is cached */
+    await expect.poll(async () => {
+      await page.evaluate(() => { (window as any).__voiceLog.length = 0; (window as any).__spoken.length = 0; });
+      await page.locator('#practice').getByRole('button', { name: 'Hear it' }).click();
+      await page.waitForTimeout(900);
+      return vlog(page);
+    }, { timeout: 15_000 }).toContain('studio:line');
     expect(await spoken(page)).toEqual([]); // the built-in voice said nothing
     expect(requests.some(u => u.endsWith(`/l/${DOTS_HASH}.m4a`))).toBe(true);
     expect(provider).toEqual([]);

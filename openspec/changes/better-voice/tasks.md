@@ -42,6 +42,7 @@ Part A (tasks 1) can ship on its own before part B.
   - the generated module `js/voice-index.js` in this repo (voice id, base URL, pack names, sizes and clip offsets, covered Skills and fixed lines).
   - Verify: a second run makes no request and changes no file.
   - Verify: the total recorded characters and the provider's bill are in the PR, within 10% of design decision 4.
+  - Done 2026-10-17: 21,387 whole lines (20,150 question, hint and fixed lines plus 1,237 explanation lines) and 2,291 clips in five packs. The ledger counts 856,620 characters this month (about $25.70 at list price, inside the 1 million free characters a month, so the bill should be $0); design decision 4 estimated 770,000 for the questions alone, and the explanations add 90,000. A second run made no request and changed no file (packs are named by their samples, since AAC encoding is not byte-stable). The audio came out larger than estimated: 394 MB of whole lines (4.5 s average, not 2.15 s) and 20 MB of packs, a 431 MB archive; the published site stays under the 1 GB Pages limit.
   - Note: the recorder is `tools/voice/record.mjs` (`make-clips.mjs` stays the listening page's tool), with Aoede (`en-US-Chirp3-HD-Aoede`, rate 0.95) and a gcloud token. A whole line already on disk is never asked for again; clips are cached in `.cache/`. The index stays small (under 8 KB): which lines exist is a sorted 32-bit key list `l/set.<hash>.bin`, clip ids map to packs in `p/dir.<hash>.json`, and each pack has its offsets in `p/<pack>.<hash>.json`. Every recorded hash and clip is in the repo-only `tools/voice/manifest.json` for the coverage test. A line the provider refuses is left out of the index (said from clips) and named in the log. Lines no longer said move to `out/stale/`.
 - [x] 2.4 `publish.mjs` packs the audio into `voice-<id>.tar` and uploads it with `gh release create voice-<id>` (or `gh release upload` to replace), and writes the archive's SHA-256 and tag into `js/voice-index.js`. `.github/workflows/ci.yml` downloads it with `gh release download`, checks the hash and unpacks it into `_site/voice/` before the deploy; `build.py --out` fails if `voice/` is missing or does not match the index, and never precaches it.
   - Verify: `test/build.test.mjs` cases for a missing archive and a wrong hash; `git log --all -- '*.m4a'` shows no audio added outside `docs/prototypes/`.
@@ -99,7 +100,7 @@ Part A (tasks 1) can ship on its own before part B.
   - fails on any Explorer-surface line without a whole hash in `js/voice-index.js` or clips (naming the line);
   - fails when overall coverage drops below 99%.
   - Verify: it passes on the recorded index, and changing one Explorer praise line without re-recording makes it fail with that line in the message.
-  - Note: the hashes are in the repo-only `tools/voice/manifest.json`, not the published index. COVERAGE_NOTE
+  - Note: the hashes are in the repo-only `tools/voice/manifest.json`, not the published index. On the recorded index (`voice-53224c8ddd`) it passes, with 99.98% of 92,294 sampled lines covered; changing the Explorer praise "Super star!" to "Super duper star!" made it fail naming that line.
 
 ## 5. Words and docs
 

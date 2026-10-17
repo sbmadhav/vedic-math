@@ -11,7 +11,7 @@
    Spend: voice-lib.mjs's guard refuses anything past BUDGET_USD (default 300) a month or RUN_USD (default 50) a run,
    and paces requests to RATE_PER_MIN (default 300).
    LIMIT=20 records only the first 20 whole lines and their clips into out-test/, and leaves the repo files alone. */
-import { writeFileSync, readFileSync, existsSync, mkdirSync, renameSync, rmSync, readdirSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync, renameSync, rmSync, readdirSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { lineHash, lineKey, planLine, clipText as clipTextOf } from '../../js/voice-plan.js';
@@ -74,7 +74,6 @@ async function recordWhole() {
 
 async function recordPacks() {
   mkdirSync(OUT + 'p', { recursive: true });
-  for (const f of readdirSync(OUT + 'p')) rmSync(OUT + 'p/' + f);
   const sayClip = await speakerFor('google'); // cached in .cache/, charged by the same ledger
   const packs = [];
   for (const name of L.packs) {
@@ -86,19 +85,24 @@ async function recordPacks() {
       chunks.push(a, new Float32Array(Math.round(GAP * RATE))); at += a.length + Math.round(GAP * RATE);
     }
     const all = new Float32Array(at); let o = 0; for (const c of chunks) { all.set(c, o); o += c.length; }
-    const tmp = `${OUT}p/${name}.m4a`; const bytes = m4a(all, tmp);
-    const audio = `p/${name}.${short(readFileSync(tmp))}.m4a`; renameSync(tmp, OUT + audio);
+    /* Named by the hash of its samples, so an unchanged pack keeps its name and file (AAC encoding is not byte-stable) */
+    const audio = `p/${name}.${short(Buffer.from(all.buffer))}.m4a`;
+    const bytes = existsSync(OUT + audio) ? statSync(OUT + audio).size : m4a(all, OUT + audio);
     const json = JSON.stringify({ rate: RATE, gap: GAP, clips: map }), mapFile = `p/${name}.${short(json)}.json`;
     writeFileSync(OUT + mapFile, json);
     packs.push({ name, audio, map: mapFile, bytes, clips: ids.length });
     console.log(`pack ${name}: ${ids.length} clips, ${(bytes / 1e6).toFixed(2)} MB`);
   }
+  /* Packs and maps no longer named are left behind by an older recording: remove them */
+  const keep = new Set(packs.flatMap(p => [p.audio, p.map]));
+  for (const f of readdirSync(OUT + 'p')) if (!f.startsWith('dir.') && !keep.has('p/' + f)) rmSync(OUT + 'p/' + f);
   return packs;
 }
 
 await recordWhole();
 const packs = await recordPacks();
 const dirJson = JSON.stringify(Object.fromEntries(clipIds.map(id => [id, L.clips[id]])));
+for (const f of readdirSync(OUT + 'p').filter(f => f.startsWith('dir.'))) rmSync(OUT + 'p/' + f);
 const dir = `p/dir.${short(dirJson)}.json`; writeFileSync(OUT + dir, dirJson);
 const hashes = [...new Set(whole.map(w => lineHash(L.voice, w.words)))].filter(h => existsSync(`${OUT}l/${h}.m4a`)).sort(); // only lines on disk
 const keys = Uint32Array.from(new Set(hashes.map(lineKey))).sort();

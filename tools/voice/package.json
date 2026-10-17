@@ -2,12 +2,15 @@
   "name": "better-voice-prototype-tools",
   "private": true,
   "type": "module",
-  "description": "Repo-only tools for the better-voice listening prototype: inventory of spoken text and local Kokoro clip generation.",
+  "description": "Repo-only tools for the studio voice: the line list, recording and publishing (steps in the repo README), the inventory, and local Kokoro clips for the listening page.",
   "scripts": {
     "inventory": "node inventory.mjs",
     "clips": "node make-clips.mjs"
   },
   "dependencies": {
     "kokoro-js": "1.2.1"
+  },
+  "overrides": {
+    "sharp": "^0.35.5"
   }
 }
