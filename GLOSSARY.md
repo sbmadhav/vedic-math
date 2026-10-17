@@ -13,7 +13,7 @@ A made-up name built from fixed word lists (adjective, noun, number). Never type
 _Avoid_: username, display name, handle
 
 **Mode**:
-The play level a Player chooses: Explorer (about 4 to 7), Challenger (about 8 to 12) or Pro (13 to adult). It sets the wording, the grade range and the controls. It says nothing about the Player's real age.
+The play level a Player chooses: Explorer (about 4 to 7), Challenger (about 8 to 12) or Pro (13 to adult). It sets the wording, the grade range and the controls. It says nothing about the Player's real age. Once a Player has a Placement level, that level, not the Mode, sets where Practice starts; and a Reading band adjusts wording and answers within the Mode. (Both proposed in the `placement` and `age-bands` changes.)
 _Avoid_: difficulty, age group, kid mode (Explorer is not the site-wide kid mode)
 
 **League**:
@@ -23,6 +23,14 @@ _Avoid_: division, bracket, tier
 **Age answer**:
 A Player's reply to one neutral question about their age. It is the only thing that decides whether the Parent step is needed.
 _Avoid_: age gate, age check, birthday
+
+**Grade answer**:
+A Player's reply to "What grade are you in?" (Pre-K to 12 or Grown-up), or their age if they chose to give it instead. Kept only on the device and never sent. It decides the Reading band and nothing else. (Proposed in the `age-bands` change.)
+_Avoid_: grade level, age gate, school grade (in code), grade (alone: that is a Skill map page)
+
+**Reading band**:
+How much reading help a Player gets, from their Grade answer: Early (about 4 to 6), Growing (about 7 to 9) or Fluent (10 and up). It changes read aloud, wording, answer buttons, the number of choices, Practice timers and Bolt's tone, in every Mode, and never math difficulty. A Player with no Grade answer has no band. Never shown to the Player. (Proposed in the `age-bands` change.)
+_Avoid_: age band (in copy), age group, reading level, kid mode
 
 **Parent step**:
 A grown-up's one-time permission, on this device, for a Player under 13 to post to World boards. Without it, nothing the Player does leaves the device.
@@ -87,12 +95,20 @@ The bronze, silver or gold result for one game Level.
 _Avoid_: stars (a Star is a Star Quest step), trophy, grade
 
 **Hook**:
-The opening of a new Player's first Star: a dare to beat the calculator, a short reveal of the Trick, then quick wins.
+The opening of a new Player's first Star (the one Placement points to): a dare to beat the calculator, a short reveal of the Trick, then quick wins.
 _Avoid_: first run, onboarding, tutorial
 
 **Placement**:
-A short check after the Hook that sets a new Player's starting Ratings and Belt, and the first Star Bolt suggests.
-_Avoid_: test, quiz, assessment
+The optional, untimed climb offered right after the Mode pick: one question per Step from school Skills, starting at the Mode's first grade, climbing on each right answer and ending at the second miss on a Step or after 12 questions. It finds the Placement level. Skippable and retakable from Me. (Proposed in the `placement` change.)
+_Avoid_: test, quiz, assessment, intro challenge (in code)
+
+**Placement level**:
+The school grade, K to 12, that a Placement found: the highest Step answered right. It sets where Practice starts (Ratings with no saved value), the suggested Skills and the first Star; never the League or a Ranked round. The Player sees Steps climbed; grown-ups see "about grade N". Kept on the device. (Proposed in the `placement` change.)
+_Avoid_: Level (that is a game stage), grade level, rank, placement score
+
+**Step**:
+One grade on the Placement climb. "You climbed 7 steps" counts the right answers.
+_Avoid_: level, stage, question
 
 **Bolt**:
 The robot co-pilot who shows each Trick and reacts to the Player's answers. A teacher, never a pet: nothing to feed, dress or keep happy.
@@ -115,8 +131,12 @@ A website or game on the Watch shelf that opens in a new tab. Pro only, like eve
 _Avoid_: resource, external site
 
 **Read aloud**:
-The setting that speaks questions, hints and praise. On by default for Explorer, off for Challenger and Pro. Speech only ever follows a tap.
+The setting that speaks questions, hints and praise. On by default for Explorer, off for Challenger and Pro. Speech only ever follows a tap. (Proposed in the `age-bands` change: a choice per Player, on by default for the Early Reading band in every Mode.)
 _Avoid_: TTS, narration, voice mode
+
+**Copy table**:
+The one list of app wording that varies by Mode or Reading band (`js/copy.js`): each line with its Mode variants or a default, and Early and Growing variants. (Proposed in the `age-bands` change.)
+_Avoid_: strings file, translations, i18n
 
 **Built-in voice**:
 The speech voice that comes with the Player's browser or device. The fallback for anything the Studio voice cannot say.
