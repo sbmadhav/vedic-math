@@ -1,5 +1,6 @@
 import type { BrowserContext, Page, Route } from '@playwright/test';
-import { test, expect, APP, open, cloudLog, openExplore, FIREBASE_SDK, FIREBASE_AUTH, FIRESTORE } from './fixtures';
+import { test, expect, APP, open, cloudLog, openExplore, chromiumOnly, FIREBASE_SDK, FIREBASE_AUTH, FIRESTORE } from './fixtures';
+import { fakeAudio, audioLog } from './audio-fake';
 
 /* Offline: /vedic-math/sw.js (scope /vedic-math/) saves the app after one visit, so every route, the
    Dojo and the games keep working without a connection, and the leaderboards fall back to this device.
@@ -290,4 +291,30 @@ test('the main site\'s root worker leaves /vedic-math/ alone', async ({ page, ba
   expect(names.some(n => n.startsWith(OWN_PREFIX)), names.join(', ')).toBe(true);
   for (const [name, paths] of Object.entries(caches_))
     if (name.startsWith('madhav-')) expect(paths.filter(p => p.startsWith('/vedic-math')), `${name} holds Vedic Math files`).toEqual([]);
+});
+
+/* Say it (openspec sutra-pronunciation 2.3): after one tap online, the other name clips are saved while the browser
+   is idle (sounds/ is cache first in vedic-math-sounds), so another name plays offline from the cache. */
+test('a Sutra name heard once online lets every other name play offline', async ({ page, context }, testInfo) => {
+  chromiumOnly(testInfo, 'one engine is enough for the cache rule');
+  await page.addInitScript(() => { try { localStorage.setItem('vm.sutraAmb', '0'); } catch (e) { /* storage blocked */ } });
+  await fakeAudio(page, { clipSecs: 0.3 });
+  await open(page, '#/sutras/s1');
+  await workerReady(page);
+  await page.reload(); // now the worker controls the page
+  await expect(page.locator('dialog .say-btn')).toBeVisible();
+  await page.locator('dialog .say-btn').click();
+  await expect.poll(() => audioLog(page).then(l => l.decoded)).toBe(1);
+  await expect.poll(() => page.evaluate(async () => (await (await caches.open('vedic-math-sounds')).keys()).length), { message: 'the idle prefetch saves all 29 clips', timeout: 30_000 }).toBe(29);
+  await goOffline(context);
+  try {
+    await expectOffline(page);
+    await page.evaluate(() => { location.hash = '#/sutras/s3'; });
+    await expect(page.locator('#sdTitle')).toHaveText('Ūrdhva-Tiryagbhyām');
+    await page.locator('dialog .say-btn').click();
+    await expect.poll(() => audioLog(page).then(l => l.decoded)).toBe(2);
+    await expect(page.locator('.fx-toasts')).toHaveCount(0);
+  } finally {
+    await goOnline(context); // back online even when an assertion above fails
+  }
 });

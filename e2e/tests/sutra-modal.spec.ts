@@ -99,3 +99,23 @@ test('the footer is opaque and pinned in Deep Space and with Calm on', async ({ 
   await d.locator('.sd-x').click();
   await expect(d).toBeHidden();
 });
+
+/* Keyboard focus never hides under the pinned Close bar or footer (WCAG 2.4.11): Tab through the worked examples on a
+   small phone and every focused summary is fully visible between the two */
+test('focus on a worked example is never under the pinned bar or footer at 320px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto(`${APP}#/sutras/s2`);
+  const d = page.locator('dialog.sutra-modal');
+  await expect(d.locator('.sd-ex summary').first()).toBeVisible();
+  const n = await d.locator('.sd-ex summary').count();
+  for (let i = 0; i < n; i++) {
+    await d.locator('.sd-ex summary').nth(i).focus();
+    const r = await page.evaluate(() => {
+      const dlg = document.querySelector('dialog.sutra-modal')!, f = document.activeElement!.getBoundingClientRect();
+      const bar = dlg.querySelector('.sd-bar .sd-x')!.getBoundingClientRect(), foot = dlg.querySelector('.sd-foot')!.getBoundingClientRect();
+      return { top: f.top, bottom: f.bottom, barBottom: bar.bottom, footTop: foot.top };
+    });
+    expect(r.top, `example ${i + 1} top`).toBeGreaterThanOrEqual(r.barBottom);
+    expect(r.bottom, `example ${i + 1} bottom`).toBeLessThanOrEqual(r.footTop);
+  }
+});

@@ -60,3 +60,13 @@ test('no star counts or star glyphs for Katas, game Levels or the tower', () => 
   const app = readFileSync(join(root, 'js', 'app.js'), 'utf8');
   assert.doesNotMatch(app, /&#9733;|★|\\u2605|lv-stars/);
 });
+
+/* Sutra ambience (openspec honest-framing, "Om is labelled as atmosphere") */
+test('the Om note is shipped verbatim and nothing calls the Om or the ambience Vedic', async () => {
+  const NOTE = 'Om is a sacred syllable added here for atmosphere. It is not part of the 1965 book.';
+  assert.ok(readFileSync(join(root, 'js/sutra-ambience.js'), 'utf8').includes(NOTE));
+  const hits = FILES.flatMap(f => readFileSync(f, 'utf8').split('\n').map((l, i) => [l, i])
+    .filter(([l]) => /\b(om|ambience|singing bowl)\b/i.test(l) && /\bvedic\b/i.test(l) && !/^\s*(\/\*|\*|\/\/)/.test(l) && !/import|vedic\.js|vedic-math/i.test(l))
+    .map(([, i]) => `${relative(root, f)}:${i + 1}`));
+  assert.deepEqual(hits, []);
+});
