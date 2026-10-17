@@ -16,6 +16,12 @@ export function mount({ root, signal, params }) {
   const save = () => store.set(KEY, S);
   const kinds = G.sprintsFor(lv);
   if (!kinds.includes(S.kind)) S.kind = kinds[0];
+  /* Stored settings are read back only as values the lobby offers, and stored ghosts only with a known sprint */
+  if (!G.LENGTHS.includes(S.n)) S.n = G.LENGTHS[0];
+  if (S.foe !== 'best' && !G.PACERS.some(p => p.id === S.foe)) S.foe = 'best';
+  const okGhost = g => !!g && typeof g === 'object' && Object.hasOwn(G.SPRINTS, g.kind) && Array.isArray(g.t) && Array.isArray(g.miss) && Number.isInteger(g.n) && g.n >= 1 && g.n <= G.MAX_QUESTIONS;
+  S.best = S.best && typeof S.best === 'object' ? Object.fromEntries(Object.entries(S.best).filter(([, g]) => okGhost(g))) : {};
+  S.runs = Array.isArray(S.runs) ? S.runs.filter(r => r && Object.hasOwn(G.SPRINTS, r.kind)) : [];
   root.innerHTML = '';
   const wrap = document.createElement('div'); wrap.className = 'md-wrap gh'; root.append(wrap);
   let page = null; /* each screen (lobby, invite, race) runs under its own child signal */
@@ -58,7 +64,7 @@ export function mount({ root, signal, params }) {
       const runs = S.runs.filter(r => r.lv === lv).slice(-6).reverse();
       const bests = Object.entries(S.best).filter(([k]) => k.split(':')[1] === lv);
       side.innerHTML = `<h2 class="gh-h">Your ghosts</h2>
-        ${bests.length ? `<ul class="gh-bests">${bests.map(([k, g]) => `<li><span>${esc(G.SPRINTS[g.kind].short)} <small>${g.n} q</small></span><b>${G.fmt(G.total(g))}</b></li>`).join('')}</ul>` : '<p class="px-note">No ghosts yet. Your first finished race becomes your first ghost.</p>'}
+        ${bests.length ? `<ul class="gh-bests">${bests.map(([k, g]) => `<li><span>${esc(G.SPRINTS[g.kind].short)} <small>${esc(g.n)} q</small></span><b>${G.fmt(G.total(g))}</b></li>`).join('')}</ul>` : '<p class="px-note">No ghosts yet. Your first finished race becomes your first ghost.</p>'}
         ${runs.length ? `<h3 class="gh-h gh-h--sm">Recent races</h3><ul class="gh-runs">${runs.map(r => `<li><span>${esc(G.SPRINTS[r.kind].short)}</span><span>${G.fmt(r.total)}</span><span class="${r.won ? 'is-won' : ''}">${r.won ? 'won' : 'lost'}</span></li>`).join('')}</ul>` : ''}`;
     };
     on(wrap, 'click', e => {

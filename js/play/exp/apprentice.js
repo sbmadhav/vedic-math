@@ -117,7 +117,7 @@ export function mount({ root, signal }) {
   };
   const done = (msg) => {
     phase = 'done';
-    actions.innerHTML = `<p class="ap-prompt">${msg}</p><button type="button" class="md-btn md-btn--primary ap-next">Next problem</button>`;
+    actions.innerHTML = `<p class="ap-prompt">${esc(msg)}</p><button type="button" class="md-btn md-btn--primary ap-next">Next problem</button>`;
     actions.querySelector('.ap-next').focus({ preventScroll: true });
   };
 

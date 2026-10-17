@@ -47,3 +47,23 @@ test('Daily Number: an archived day stored with markup for its stars renders num
   await expect(page.locator('.dn-day.is-part .dn-day-s').first()).toHaveText('2/9 ★');
   expect(issues.console).toEqual([]);
 });
+
+test('Ghost Races: stored settings and ghosts with markup or unknown sprints open a clean lobby', async ({ page, issues }) => {
+  await page.addInitScript(() => {
+    if (localStorage.getItem('vm.play.p1.ghosts')) return;
+    localStorage.setItem('vm.play.p1.ghosts', JSON.stringify({
+      n: '<img id="pwn" src="x">', foe: '<b id="pwn2">x</b>',
+      best: { 'constructor:challenger:10': { kind: 'constructor', lv: 'challenger', n: 10, t: [1000], miss: [] }, 'x:challenger:7': { kind: 'add20', lv: 'challenger', n: '<i id="pwn3">', t: [1000], miss: [] } },
+      runs: [{ kind: '__proto__', lv: 'challenger', total: 1000, won: true }]
+    }));
+  });
+  await open(page, '#/arena/ghosts');
+  await expect(page.locator('.gh-go')).toBeVisible();
+  await expect(page.locator('#pwn, #pwn2, #pwn3')).toHaveCount(0);
+  await expect(page.locator('.gh-lens [aria-checked="true"]')).toHaveText('10 questions');
+  await expect(page.locator('.gh-bests li')).toHaveCount(0);
+  await expect(page.locator('.gh-foes [aria-checked="true"]')).toHaveCount(1);
+  await page.locator('.gh-go').click();
+  await expect(page.locator('.gh-count')).toHaveText('1 / 10');
+  expect(issues.console).toEqual([]);
+});
