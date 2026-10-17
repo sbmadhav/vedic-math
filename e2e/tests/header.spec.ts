@@ -202,3 +202,19 @@ test('the music button opens the music panel from the header', async ({ page }) 
   await page.keyboard.press('Escape');
   await expect(page.locator('#vmMPanel')).toBeHidden();
 });
+
+/* Before a Mode is picked every route shows the mode picker, so tabs would do nothing: they appear only after the pick */
+test.describe('tabs wait for a Mode', () => {
+  test.use({ seedMode: null });
+  test('no tabs before the Mode is picked; tabs work after', async ({ page }) => {
+    await open(page, '#/');
+    await expect(page.locator('.mode-pick .mode-card')).toHaveCount(3);
+    await expect(page.locator('.mq-nav')).toBeHidden();
+    await page.locator('.mode-card[data-mode="challenger"]').click();
+    const nav = page.locator('.mq-nav');
+    await expect(nav).toBeVisible();
+    await nav.getByRole('link', { name: 'Learn' }).click();
+    await expect(page).toHaveURL(/#\/learn$/);
+    await expect(nav.getByRole('link', { name: 'Learn' })).toHaveAttribute('aria-current', 'true');
+  });
+});

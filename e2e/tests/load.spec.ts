@@ -24,7 +24,9 @@ test.describe('first visit', () => {
     await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', '/vedic-math/manifest.webmanifest');
     await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href', '/assets/icons/apple-touch-icon.png');
     await expect(page.locator('a.skip[href="#view"]')).toHaveCount(1);
-    await expect(page.locator('nav.mq-nav')).toBeVisible();
+    // The Vedic Math tabs are in the page but hidden until a Mode is picked (header.spec.ts 'tabs wait for a Mode')
+    await expect(page.locator('nav.mq-nav')).toHaveCount(1);
+    await expect(page.locator('nav.mq-nav')).toBeHidden();
   });
 });
 

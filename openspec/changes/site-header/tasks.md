@@ -18,3 +18,7 @@
 
 - [ ] 3.1 Owner review of the before and after screenshots in the PR, and of the shared-file notes (design system picker vs round button, `md-wrap` width).
 - [ ] 3.2 After the deploy, the daily E2E run passes against https://sbmadhav.com/vedic-math/. Then archive this change.
+
+## Follow-up (owner, 2026-10-17)
+
+- [x] Hide the Vedic Math tabs until the Player picks a Mode (before that every route shows the mode picker, so tabs did nothing when clicked). `math.css`: `.mode-none .mq-nav { display: none; }`. Verify: `e2e/tests/header.spec.ts` "tabs wait for a Mode" (no tabs before the pick; Learn works after) and `e2e/tests/load.spec.ts` first visit (tabs present but hidden).

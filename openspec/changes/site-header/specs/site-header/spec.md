@@ -54,3 +54,15 @@ Below 1180px the nav SHALL move to a second row of the header and scroll sideway
 #### Scenario: Accessible header
 - **WHEN** axe checks the header at 1280px and 320px in both schemes, with the music panel closed and open
 - **THEN** it finds no serious or critical violation
+
+### Requirement: Tabs appear after a Mode is picked
+Before a Player has picked a Mode, the Vedic Math tabs SHALL be hidden, because every route shows the mode picker until then. They SHALL appear as soon as a Mode is picked.
+
+#### Scenario: First visit
+- **WHEN** a new Player opens Vedic Math and has not picked a Mode
+- **THEN** the mode picker shows and no Vedic Math tabs are visible
+
+#### Scenario: After picking
+- **WHEN** the Player picks Challenger
+- **THEN** the tabs appear and Learn opens the Learn page
+
