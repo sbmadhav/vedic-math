@@ -6,6 +6,8 @@ import { on, later, loop, child } from '../life.js';
 import * as L from './locks-core.js';
 
 const KEY = 'locks';
+/* Calm, the app's device preference (fx.calmOn): no clocks, so "Beat the lock" is untimed */
+const calmOn = () => { try { return localStorage.getItem('vm.calm') === '1'; } catch (e) { return false; } };
 const fresh = () => (Math.random() * 2 ** 32) >>> 0;
 const fmtOut = (ch, y) => (ch.lamp ? (y ? 'lights up' : 'stays dark') : String(y));
 const GEAR = (cx, cy, r, n, cls) => {
@@ -50,7 +52,7 @@ export function mount({ root, signal, params }) {
 
   /* ---------- Playing a chapter ---------- */
   function play(ch, startLevel) {
-    const levels = L.levelsFor(lv);
+    const levels = L.levelsFor(lv, calmOn());
     const C = P[ch.id] || (P[ch.id] = { done: 0, hints: 0 });
     let li = startLevel, lvl, ctl = null, tape = [], hintShown = 0, wrongs = 0;
     wrap.innerHTML = `
@@ -165,8 +167,8 @@ export function mount({ root, signal, params }) {
 
     /* ----- Predict (also quick and stretch): type what the lock will say ----- */
     function predictLevel(sig) {
-      const intro = { predict: 'Guess each answer before the lock shows it.', quick: `Beat the lock: answer within ${lvl.secs} seconds.`, stretch: 'New, bigger numbers. Does your rule still hold?' }[lvl.kind];
-      predictPhase(sig, lvl.need, lvl.kind === 'quick', lvl.kind === 'stretch' ? 'stretch' : 'main', intro, true);
+      const intro = { predict: 'Guess each answer before the lock shows it.', quick: lvl.secs ? `Beat the lock: answer within ${lvl.secs} seconds.` : 'Beat the lock: use the shortcut. Calm is on: no clocks, so take your time.', stretch: 'New, bigger numbers. Does your rule still hold?' }[lvl.kind];
+      predictPhase(sig, lvl.need, lvl.kind === 'quick' && lvl.secs > 0, lvl.kind === 'stretch' ? 'stretch' : 'main', intro, true);
     }
     function predictPhase(sig, need, timed, stage, intro, streakMode = false) {
       const r = rng(fresh());
@@ -198,7 +200,7 @@ export function mount({ root, signal, params }) {
         if (busy) return; busy = true; markFocus();
         const secs = (performance.now() - t0) / 1000;
         run(x, qctl.c.signal, y => {
-          const ok = guess === y, slow = timed && secs > lvl.secs;
+          const ok = guess === y, slow = ok && timed && !L.counts(lvl, ok, secs);
           addTape(x, y, ok ? undefined : false);
           const res = panel.querySelector('.lk-result');
           if (ok && !slow) { count++; wrongs = 0; sfx('ok'); res.innerHTML = `<b class="lk-ok">${pick(Math.random, ['Yes!', 'Exactly.', 'You beat it.', 'Spot on.'])}</b> ${timed ? `${secs.toFixed(1)} seconds.` : ''}`; say(`Right. ${ch.ask(x)} gives ${fmtOut(ch, y)}.`); }

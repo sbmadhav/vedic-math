@@ -10,16 +10,20 @@ const dsum = n => digits(n).reduce((s, d) => s + d, 0);
 const rank = lv => ({ explorer: 0, challenger: 1, pro: 2 }[lv] ?? 1);
 
 /* ---------- Levels: the same five beats in every chapter ---------- */
-export function levelsFor(lv) {
+/* calm: the app's Calm preference (vm.calm), which means no clocks, so "Beat the lock" is untimed (secs 0) */
+export function levelsFor(lv, calm = false) {
   const e = lv === 'explorer';
   return [
     { kind: 'feed', name: 'Feed the lock', feeds: 3, need: e ? 1 : 2 },
     { kind: 'predict', name: 'Predict', need: e ? 2 : 3 },
-    { kind: 'quick', name: 'Beat the lock', need: e ? 2 : 3, secs: [25, 14, 9][rank(lv)] },
+    { kind: 'quick', name: 'Beat the lock', need: e ? 2 : 3, secs: calm ? 0 : [25, 14, 9][rank(lv)] },
     { kind: 'rule', name: 'Name the rule' },
     { kind: 'stretch', name: 'Stretch it', need: e ? 2 : 3 }
   ];
 }
+
+/* Does an answer count toward the level? A right answer counts unless the level has a clock (secs > 0) and it came too late */
+export const counts = (lvl, ok, secs) => !!ok && !(lvl.secs > 0 && secs > lvl.secs);
 
 /* ---------- Chapters ----------
    gen(r, stage, lv) -> input x (stage 'main' or 'stretch'); out(x) -> the machine's answer; ask(x) -> what the

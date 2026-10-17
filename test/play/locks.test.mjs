@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rng } from '../../js/play/kit.js';
-import { CHAPTERS, levelsFor, runRule, checkRule, testInputs, allPicks, compare, chapterById, clearLevel, discover } from '../../js/play/exp/locks-core.js';
+import { CHAPTERS, levelsFor, runRule, checkRule, testInputs, allPicks, compare, chapterById, clearLevel, discover, counts } from '../../js/play/exp/locks-core.js';
 
 const LEVELS = ['explorer', 'challenger', 'pro'];
 
@@ -101,4 +101,14 @@ test('rule wording matches the numbers the lock is fed', () => {
   const lamp = chapterById('lamp');
   assert.equal(lamp.found, 'casting out nines');
   assert.match(lamp.credit, /digit sums/);
+});
+
+test('Calm: "Beat the lock" is untimed and a right answer counts whatever the time', () => {
+  for (const lv of LEVELS) {
+    const timed = levelsFor(lv).find(l => l.kind === 'quick'), calm = levelsFor(lv, true).find(l => l.kind === 'quick');
+    assert.ok(timed.secs > 0); assert.equal(calm.secs, 0); assert.equal(calm.need, timed.need);
+    assert.equal(levelsFor(lv, true).length, levelsFor(lv).length);
+    assert.equal(counts(timed, true, timed.secs - 1), true); assert.equal(counts(timed, true, timed.secs + 1), false, 'too slow with a clock');
+    assert.equal(counts(calm, true, 1e6), true, 'no clock under Calm'); assert.equal(counts(calm, false, 1), false);
+  }
 });

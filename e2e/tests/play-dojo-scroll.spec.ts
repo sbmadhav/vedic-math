@@ -142,6 +142,30 @@ test('Locks: an offer clicked after the last required feed is refused, so only o
   expect(issues.console).toEqual([]);
 });
 
+test.describe('Calm on', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('vm.calm', '1'); if (!localStorage.getItem('vm.play.p1.locks')) localStorage.setItem('vm.play.p1.locks', JSON.stringify({ eleven: { done: 2, hints: 0 } })); } catch (e) { /* storage blocked */ } });
+  });
+  test('Locks: "Beat the lock" has no clock under Calm, and a slow right answer still counts', async ({ page, issues }) => {
+    await page.clock.install();
+    await open(page, '#/dojo/locks/eleven/2');
+    await expect(page.locator('.lk-lv.is-now')).toContainText('Beat the lock');
+    await expect(page.locator('.lk-say')).toContainText('Calm is on: no clocks');
+    const ask = page.locator('.lk-q-ask');
+    await expect(ask).toBeVisible();
+    await expect(page.locator('.lk-timer')).toHaveCount(0);
+    /* a whole minute passes before the answer */
+    await page.clock.fastForward('01:00');
+    const x = parseInt((await ask.textContent()) || '', 10);
+    await page.keyboard.type(String(x * 11));
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.lk-result .lk-ok')).toBeVisible();
+    await expect(page.locator('.lk-result')).not.toContainText('quicker');
+    await expect(page.locator('.lk-goal i.is-on')).toHaveCount(1);
+    expect(issues.console).toEqual([]);
+  });
+});
+
 test.describe('the scroll with two pieces found', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => { try { if (!localStorage.getItem('vm.play.p1.scroll')) localStorage.setItem('vm.play.p1.scroll', JSON.stringify({ solved: {}, pieces: [1, 2] })); } catch (e) { /* storage blocked */ } });
