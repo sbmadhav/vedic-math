@@ -1,5 +1,7 @@
 # Proposal
 
+> **Superseded by `placement` (owner Q14, 2026-10-17).** The Hook now opens the first Star that Placement points to. Its requirements live in `openspec/changes/placement/specs/hook/spec.md` and its tasks in `placement`'s tasks.md section 4. Do not apply or archive this change; `placement` task 7.2 deletes this folder.
+
 ## Why
 
 The plan's big idea is "become the human calculator", and every persona's best moment in the age panel was seeing a Trick work (`docs/PLAN.md`, "Panel insight"). Phase 1 planned a separate "Beat the calculator" Hook screen; the grilling folded it into Star Quest: the Hook becomes the opening of a new Player's first Star, and returning Players skip it (`docs/star-quest.md` decision 25). Today a new Player picks a Mode and lands on a tile home (`modePicker()`, `home()`, `js/app.js:119`, `:148`) with nothing that shows a Trick beating anything.

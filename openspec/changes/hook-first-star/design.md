@@ -1,5 +1,7 @@
 # Design
 
+> **Superseded by `placement` (owner Q14, 2026-10-17).** The Hook now opens the first Star that Placement points to. Its requirements live in `openspec/changes/placement/specs/hook/spec.md` and its tasks in `placement`'s tasks.md section 4. Do not apply or archive this change; `placement` task 7.2 deletes this folder.
+
 ## Context
 
 - `star-round` provides `runStar(root, { trick, star, signal, back, findVideo })`, the replay renderer (steps every 2.5 s, Skip and Escape), `fx.noMotion()`, `fx.announce()` and Bolt's poses.
