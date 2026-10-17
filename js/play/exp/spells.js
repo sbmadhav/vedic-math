@@ -219,7 +219,8 @@ export function mount({ root, signal, params }) {
   root.innerHTML = '';
   const wrap = document.createElement('div'); wrap.className = 'md-wrap sp'; root.append(wrap);
   if (params[0] === 'book') return book();
-  if (params[0] === 'learn' && C.spellById(params[1])) return learn(params[1]);
+  /* A learn link opens a spell already learned (practice) or the next one in order, never one further on */
+  if (params[0] === 'learn' && C.spellById(params[1]) && (S.learned.includes(params[1]) || params[1] === nextUnlearned())) return learn(params[1]);
   if (!S.learned.length) return learn(order[0]);
   return arena();
 
@@ -244,11 +245,14 @@ export function mount({ root, signal, params }) {
         <div class="sp-after" hidden></div>
       </section>`;
     const host = wrap.querySelector('.sp-castwrap'), after = wrap.querySelector('.sp-after');
+    /* each slow-motion run is its own board (its own child signal); starting again stops the last one */
+    let cur = null;
     const run = () => {
+      if (cur) cur.stop();
       after.hidden = true;
       const r = rng(`learn:${id}:${practice}`);
       const problem = spell.gen(r, 0, lv);
-      castBoard(host, {
+      cur = castBoard(host, {
         spell, problem, guided: true, slow: true, signal,
         onDone(value) {
           const first = !S.learned.includes(id);
