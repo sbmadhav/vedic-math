@@ -77,7 +77,7 @@ A preview build SHALL send `X-Robots-Tag: noindex, nofollow` on every response. 
 - **THEN** it allows crawling and points to `https://learnvedicmath.com/sitemap.xml`
 
 ### Requirement: Studio voice files follow the chosen voice host
-The Studio voice files SHALL be served from the voice host chosen by decision L8 (design D17), named by content hash, with `Cache-Control: public, max-age=31536000, immutable`. Every file SHALL match the recording manifest's SHA-256 before it is published. With an outside voice host (by default R2 on `voice.learnvedicmath.com`, readable only from this site), the build SHALL fail if any voice file is in its output, and uploads SHALL never delete or overwrite an object.
+The Studio voice files SHALL be served from the voice host chosen by decision L8 (design D17), named by content hash, with `Cache-Control: public, max-age=31536000, immutable`. Every file SHALL match the recording manifest's SHA-256 before it is published. With an outside voice host (by default R2 on `voice.learnvedicmath.com`, public by design; its CORS rule only limits which web pages may read the files in a browser), the build SHALL fail if any voice file is in its output, and uploads SHALL never delete or overwrite an object.
 
 #### Scenario: A corrupted file
 - **WHEN** a voice file's bytes do not match the manifest hash
