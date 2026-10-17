@@ -42,3 +42,5 @@ Decided in the 2026-10-15 grilling; every recommended answer was accepted. Nothi
 One OpenSpec change for the shelf (data file, filters, hand matching, in-page only, Mode and made-for-kids rules, the daily check, the parent note, migrating the 67 entries), then the channel list for the owner to approve, then batch 1 (Tricks).
 
 Batch 1 (Tricks), 2026-10-15: 23 videos from the approved channels, each checked as in `openspec/changes/archive/2026-10-15-watch-shelf/HANDOFF.md`. Tricks still without a video that meets the bar: `by9s` (beyond the nines table), `duplex`, `osculator`, `zero-sum`, `add-sub` and `ratio-zero`.
+
+Batch 2 (kindergarten to grade 5 Skills), 2026-10-17: 130 videos from the approved channels, 70 for Explorer and 60 for Challenger, 118 of them made for kids and 8 of them Shorts, each checked the same way. Every one of the 50 Skills from kindergarten to grade 5 now has two or more hand-matched videos, and every kindergarten to grade 2 Skill has two or more for Explorer (`test/videos.test.mjs` holds this). Explorer's shelf goes from 2 videos to 72.
