@@ -140,15 +140,19 @@ export function schedule({ clock, pattern, bpm, signal, onCue = () => {}, onEnd 
 }
 
 /* ---------- Microphone (opt in) ---------- */
-/* Listens for claps with an onset detector on loudness. Audio stays on this device; nothing is stored.
-   onClap(clockTime). Returns a stop function; stops on its own when signal aborts. */
+/* Listens for claps with an onset detector on loudness. Audio only (no camera), analysed here frame by frame;
+   nothing is recorded, stored or sent. Call it from a user gesture. onClap(clockTime). Returns a stop function;
+   stops on its own when signal aborts, including when it aborted while the permission prompt was open. */
 export async function listen({ clock, signal, detector, onClap, onLevel = () => {} }) {
   const a = clock.audio; if (!a || !navigator.mediaDevices?.getUserMedia) throw new Error('no-mic');
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false } });
-  const src = a.createMediaStreamSource(stream), an = a.createAnalyser(); an.fftSize = 512; src.connect(an);
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false }, video: false });
+  const endTracks = () => stream.getTracks().forEach(t => t.stop());
+  let src, an;
+  try { src = a.createMediaStreamSource(stream); an = a.createAnalyser(); an.fftSize = 512; src.connect(an); }
+  catch (e) { endTracks(); throw e; }
   const buf = new Float32Array(an.fftSize);
   let live = true;
-  const stop = () => { if (!live) return; live = false; stream.getTracks().forEach(t => t.stop()); src.disconnect(); };
+  const stop = () => { if (!live) return; live = false; endTracks(); try { src.disconnect(); } catch (e) {} };
   onAbort(signal, stop);
   const ctl = child(signal);
   loop(() => {
@@ -156,8 +160,9 @@ export async function listen({ clock, signal, detector, onClap, onLevel = () => 
     an.getFloatTimeDomainData(buf);
     let s = 0; for (let i = 0; i < buf.length; i++) s += buf[i] * buf[i];
     const level = Math.sqrt(s / buf.length); onLevel(level);
-    /* the frame holds the last fftSize samples; the clap began about half a frame ago */
-    if (detector(level, a.currentTime * 1000)) onClap(a.currentTime - an.fftSize / a.sampleRate / 2 - (a.baseLatency || 0));
+    /* the frame holds the last fftSize samples; the clap began about half a frame ago. The player clapped with
+       what they heard, which left the context base and output latency earlier, so both come off. */
+    if (detector(level, a.currentTime * 1000)) onClap(a.currentTime - an.fftSize / a.sampleRate / 2 - (a.baseLatency || 0) - (a.outputLatency || 0));
   }, ctl.signal);
   return () => { stop(); ctl.abort(); };
 }

@@ -120,8 +120,9 @@ export function mount({ root, signal, params }) {
                     <button type="button" class="md-chip" data-tgt="beat" aria-pressed="${target === 'beat'}">Tap the beat</button>
                     <button type="button" class="md-chip" data-tgt="count" aria-pressed="${target === 'count'}">Tap every syllable</button>
                   </div>
-                  <button type="button" class="md-chip tl-mic" aria-pressed="false">Clap to the mic</button>
+                  <button type="button" class="md-chip tl-mic" aria-pressed="false" aria-describedby="tlMicNote">Clap to the mic</button>
                 </div>
+                <p class="px-note tl-micnote" id="tlMicNote">${t({ explorer: 'The mic only listens for claps, right here. Nothing is recorded or sent.', challenger: 'Listens for your claps on this device only. Nothing is recorded or sent.', pro: 'Claps are detected on this device only. No audio is recorded, stored or sent.' })}</p>
               </div>
             </div>
           </div>
@@ -221,18 +222,28 @@ export function mount({ root, signal, params }) {
     micToggle(scene.querySelector('.tl-mic'), time => { if (!P.on) return; pad.classList.remove('is-hit'); void pad.offsetWidth; pad.classList.add('is-hit'); judge(time, true); });
   }
 
-  /* Microphone toggle: opt in, processed here, never stored */
+  /* Microphone toggle: opt in with a click (the browser asks), explained next to the button before that,
+     processed here, never stored. Off again on a second click, a hidden tab or leaving the page. */
   function micToggle(btn, onClap) {
-    let stopMic = null;
+    let stopMic = null, pending = false;
+    const off = () => { if (stopMic) { stopMic(); stopMic = null; } btn.setAttribute('aria-pressed', 'false'); btn.textContent = 'Clap to the mic'; };
     on(btn, 'click', async () => {
-      if (stopMic) { stopMic(); stopMic = null; btn.setAttribute('aria-pressed', 'false'); btn.textContent = 'Clap to the mic'; return; }
+      /* a second click while the permission prompt is open must not ask for a second stream */
+      if (pending) return;
+      if (stopMic) { off(); return; }
+      pending = true; btn.setAttribute('aria-busy', 'true');
       try {
         const clock = await P.ensureClock();
-        stopMic = await listen({ clock, signal, detector: C.onsetDetector(), onClap });
+        const stop = await listen({ clock, signal, detector: C.onsetDetector(), onClap });
+        /* the page was left or hidden while the browser was asking: the stream that arrives goes straight off */
+        if (signal.aborted || document.hidden) { stop(); return; }
+        stopMic = stop;
         btn.setAttribute('aria-pressed', 'true'); btn.textContent = 'Mic on (stays on this device)';
         toast('Listening for claps. Headphones help it ignore the drums.'); track('tala/mic', 'Mic on');
-      } catch (e) { toast('No microphone here. Tapping works just as well.'); }
+      } catch (e) { off(); if (!signal.aborted) toast('No microphone here. Tapping works just as well.'); }
+      finally { pending = false; btn.removeAttribute('aria-busy'); }
     }, signal);
+    on(document, 'visibilitychange', () => { if (document.hidden && stopMic) { off(); say('Microphone off'); } }, signal);
   }
 
   /* ======================= b) Polyrhythm necklace ======================= */

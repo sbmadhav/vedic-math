@@ -250,3 +250,4 @@
 .tl-c.is-sam::after { content: "sam"; position: absolute; top: -8px; left: 50%; transform: translateX(-50%); padding: 1px 5px; border-radius: var(--radius-pill); background: var(--sun); color: var(--on-accent); font: 700 .58rem/1.2 var(--font-sans); letter-spacing: .03em; }
 .tl-c.is-sam i { visibility: visible; }
 .tl-tl { row-gap: 12px; }
+.tl-micnote { margin: 0; font-size: .82rem; }
