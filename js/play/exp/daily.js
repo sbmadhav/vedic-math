@@ -234,8 +234,12 @@ export function mount({ root, signal, params }) {
       if (k === 'Backspace' || k === 'u') { e.preventDefault(); undo(); return; }
       if (k === 'Escape') { sel = null; op = null; draw(); }
     }, signal);
-    /* Keys work anywhere on the page while this view is open */
-    on(document, 'keydown', e => { if (!wrap.contains(e.target) && (e.target === document.body || e.target.id === 'view')) wrap.dispatchEvent(new KeyboardEvent('keydown', { key: e.key, bubbles: true })); }, signal);
+    /* Keys work anywhere on the page while this view is open. Shortcuts with Ctrl, Meta or Alt (Ctrl+1, Cmd+Backspace,
+       zoom with Ctrl and +) belong to the browser, so they are not forwarded; the modifiers travel with the copy anyway. */
+    on(document, 'keydown', e => {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.defaultPrevented) return;
+      if (!wrap.contains(e.target) && (e.target === document.body || e.target.id === 'view')) wrap.dispatchEvent(new KeyboardEvent('keydown', { key: e.key, shiftKey: e.shiftKey, metaKey: e.metaKey, ctrlKey: e.ctrlKey, altKey: e.altKey, bubbles: true }));
+    }, signal);
 
     draw();
     say(`Daily Number ${label(key)}. ${P.tiers.map(x => `${x.name} target ${x.target}`).join('. ')}. Numbers: ${P.tiers[cur].nums.join(', ')}.`);
@@ -246,9 +250,11 @@ export function mount({ root, signal, params }) {
     const start = [D.addDays(LAUNCH, -14), D.addDays(today, -60)].sort().pop();
     const keys = []; for (let k = D.addDays(today, -1); k >= start; k = D.addDays(k, -1)) keys.push(k);
     const pc = S.played.length, best = D.bestStreak(S.played);
+    /* A stored day as its stars per tier (-1 for a tier not done), read as whole numbers 0 to 3 whatever storage holds */
+    const archived = k => { const r = playedOn(k); if (!r || !Array.isArray(r.tiers)) return null; return r.tiers.map(x => (x && x.done ? (Number.isInteger(x.stars) ? Math.min(3, Math.max(0, x.stars)) : 0) : -1)); };
     wrap.innerHTML = `${head({ title: 'Daily Number', kicker: 'Archive', intro: 'Past days are practice: play any of them, as often as you like. Only today counts toward your streak.', color: 'teal' })}
       <div class="dn-bar"><span class="dn-chip"><b>${D.streak(S.played, today)}</b> day streak</span><span class="dn-chip"><b>${best}</b> best streak</span><span class="dn-chip"><b>${pc}</b> days played</span><span class="px-sp"></span><a class="md-btn md-btn--primary md-btn--sm" href="#/arena/daily-number">Today's puzzle</a></div>
-      ${keys.length ? `<ul class="dn-arch">${keys.map(k => { const r = playedOn(k), st = r ? r.tiers.reduce((s, x) => s + (x.done ? x.stars : 0), 0) : 0, max = D.TIER_COUNT(lv) * 3; return `<li><a href="#/arena/daily-number/${k}" class="dn-day${r && r.tiers.every(x => x.done) ? ' is-done' : r ? ' is-part' : ''}"><span class="dn-day-n">${label(k)}</span><span class="dn-day-d">${esc(fmtDate(k))}</span><span class="dn-day-s">${r ? `${st}/${max} ★` : 'Play'}</span></a></li>`; }).join('')}</ul>` : '<p class="px-note">No past days yet.</p>'}
+      ${keys.length ? `<ul class="dn-arch">${keys.map(k => { const r = archived(k), st = r ? r.reduce((s, x) => s + Math.max(0, x), 0) : 0, max = D.TIER_COUNT(lv) * 3; return `<li><a href="#/arena/daily-number/${k}" class="dn-day${r && r.every(x => x >= 0) ? ' is-done' : r ? ' is-part' : ''}"><span class="dn-day-n">${label(k)}</span><span class="dn-day-d">${esc(fmtDate(k))}</span><span class="dn-day-s">${r ? `${st}/${max} ★` : 'Play'}</span></a></li>`; }).join('')}</ul>` : '<p class="px-note">No past days yet.</p>'}
       <p class="px-note">Warm-ups are the practice puzzles from the days before Daily Number began.</p>`;
   }
 }
