@@ -42,6 +42,17 @@ function castBoard(host, { spell, problem, guided = false, slow = false, signal,
     const vis = C.visibleNodes(board, cast);
     nodesBox.innerHTML = vis.map(n => `<button type="button" class="sp-node${n.base ? ' sp-node--base' : ''}${n.hidden ? ' is-hidden' : ''}${n.ghost ? ' is-ghost' : ''}${n.morphed ? ' is-morphed' : ''}${String(n.label).length > 2 ? ' is-wide' : ''}${selected === n.id ? ' is-sel' : ''}" data-id="${n.id}" style="${pct(n.x, n.y)}" ${n.hidden ? 'tabindex="-1" aria-hidden="true"' : ''} aria-label="${esc(`${n.ghost ? 'Empty twin' : n.label}, ${nodeName(n)}`)}" aria-pressed="${selected === n.id}">${n.hidden ? '?' : esc(n.label)}${n.morphed && n.morph.tag ? `<small>${esc(n.morph.tag)}</small>` : ''}</button>`).join('');
   };
+  /* Redrawing replaces the digit buttons, so keyboard focus would fall to the page: when focus was on a digit,
+     put it back on the same digit (or on want, the digit just pressed) */
+  let keep = null;
+  const redraw = (want = keep) => {
+    const was = nodesBox.contains(document.activeElement) ? document.activeElement.dataset.id : null;
+    drawNodes();
+    if (!was) return;
+    const find = id => id && nodesBox.querySelector(`.sp-node[data-id="${id}"]:not(.is-hidden)`);
+    const b = find(want) || find(was) || nodesBox.querySelector('.sp-node:not(.is-hidden)');
+    if (b) b.focus({ preventScroll: true });
+  };
   const drawAnswer = () => {
     const a = C.assemble(board.parts, C.partsDone(board, cast));
     ansEl.innerHTML = a.cells.slice().reverse().map(c => `<span class="sp-cell is-${c.state}">${c.carryIn ? `<i class="sp-carry">+${c.carryIn}</i>` : ''}${esc(c.text)}</span>`).join('');
@@ -108,7 +119,7 @@ function castBoard(host, { spell, problem, guided = false, slow = false, signal,
     for (const k of keys) {
       const res = C.applyEdge(board, cast, k);
       if (res.kind === 'dup') continue;
-      if (res.kind !== 'ok') { fizzle(res, at); drawNodes(); return; }
+      if (res.kind !== 'ok') { fizzle(res, at); redraw(); return; }
       const color = STEP_COLORS[res.step % 3];
       gLines.append(line(k, `sp-lit sp-lit--${color}`));
       const s = board.steps[res.step];
@@ -128,7 +139,7 @@ function castBoard(host, { spell, problem, guided = false, slow = false, signal,
         onStep(res.step, cast);
       }
     }
-    drawNodes(); const a = drawAnswer();
+    redraw(); const a = drawAnswer();
     if (C.castDone(cast) && !finished) {
       finished = true; gGuide.innerHTML = '';
       el.classList.add('is-cast');
@@ -171,15 +182,14 @@ function castBoard(host, { spell, problem, guided = false, slow = false, signal,
   /* Taps and keys: pick one digit, then another, to join them */
   const tap = id => {
     if (finished) return;
-    if (!selected) { selected = id; tone(660, { dur: 0.05, type: 'triangle', gain: 0.06 }); drawNodes(); focusNode(id); return; }
-    if (selected === id) { selected = null; drawNodes(); focusNode(id); return; }
+    if (!selected) { selected = id; tone(660, { dur: 0.05, type: 'triangle', gain: 0.06 }); redraw(id); return; }
+    if (selected === id) { selected = null; redraw(id); return; }
     const a = selected; selected = null;
     const at = [(byId[a].x + byId[id].x) / 2, (byId[a].y + byId[id].y) / 2];
-    apply([C.ek(a, id)], at); focusNode(id);
+    keep = id; apply([C.ek(a, id)], at); keep = null;
   };
-  const focusNode = id => { const b = nodesBox.querySelector(`[data-id="${id}"]`); if (b && document.activeElement && document.activeElement.closest('.sp-board')) b.focus({ preventScroll: true }); };
   on(nodesBox, 'click', e => { const b = e.target.closest('.sp-node'); if (b && e.detail === 0) tap(b.dataset.id); }, sig);
-  on(nodesBox, 'keydown', e => { if (e.key === 'Escape' && selected) { selected = null; drawNodes(); } }, sig);
+  on(nodesBox, 'keydown', e => { if (e.key === 'Escape' && selected) { const id = selected; selected = null; redraw(id); } }, sig);
 
   drawNodes(); drawAnswer(); status();
   return { cast, board, showHint() { hint = true; drawGuide(); }, stop: () => ctl.abort() };
