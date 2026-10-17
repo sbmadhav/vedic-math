@@ -184,7 +184,7 @@ export function mount({ root, signal, params }) {
           ${ch.lamp ? `<div class="lk-lampkeys"><button type="button" class="md-btn lk-say-lit" data-v="1"><span class="lk-mini-bulb is-lit"></span>Lights up</button><button type="button" class="md-btn lk-say-dark" data-v="0"><span class="lk-mini-bulb"></span>Stays dark</button></div>`
             : `<div class="lk-pad" role="group" aria-label="Number pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button type="button" data-k="${n}">${n}</button>`).join('')}<button type="button" data-k="back" aria-label="Delete">⌫</button><button type="button" data-k="0">0</button><button type="button" data-k="go" class="lk-go" aria-label="Check my guess">Go</button></div>`}
           <p class="lk-result" aria-live="polite"></p>`;
-        refocus('.lk-pad button, .lk-lampkeys button');
+        refocus('.lk-go, .lk-lampkeys button');
         say(`What does the lock say for ${ch.ask(x)}?`);
         t0 = performance.now();
         if (timed) {
