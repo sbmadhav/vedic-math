@@ -28,7 +28,7 @@ concurrency:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 50
     defaults:
       run:
         working-directory: e2e
@@ -67,8 +67,11 @@ jobs:
       - run: npx playwright install --with-deps chromium webkit
 
       # The daily run and a manual run also check every Watch shelf video on YouTube (tests/videos.live.spec.ts,
-      # tagged @live-videos, chromium only); the run after a push leaves that check out
+      # tagged @live-videos, chromium only) and run the scenario coverage specs in tests/cov (chromium only, see
+      # playwright.config.ts); the run after a push leaves both out
       - name: Playwright tests
+        env:
+          E2E_SKIP_COV: ${{ github.event_name == 'push' && '1' || '' }}
         run: npx playwright test ${{ github.event_name == 'push' && '--grep-invert @live-videos' || '' }}
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

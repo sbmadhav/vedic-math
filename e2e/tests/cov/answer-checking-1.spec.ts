@@ -13,11 +13,21 @@ async function seedRandom(page: Page, seed: number) {
   }, seed);
 }
 
-/* Skips questions in the page until want(answer) holds for the answer computed by `solve` (a function body
-   given the #prQ element). Returns the number of questions skipped. */
-async function untilAnswer(page: Page, solve: string, want: number) {
-  const skipped = await page.evaluate(({ solve, want }) => {
-    const answer = new Function('q', solve) as (q: Element) => number;
+/* Skips questions in the page until want(answer) holds for the answer the named solver reads off the #prQ element
+   ('frac': a/d + b/d or a/d − b/d; 'slope': the slope through (x1, y1) and (x2, y2), with U+2212 minus signs).
+   The solvers live inside the page function, not in strings, because the page's Content-Security-Policy has no
+   'unsafe-eval'. Returns the number of questions skipped. */
+async function untilAnswer(page: Page, solver: 'frac' | 'slope', want: number) {
+  const skipped = await page.evaluate(({ solver, want }) => {
+    const answer = (q: Element) => {
+      const text = q.textContent || '';
+      if (solver === 'frac') {
+        const [[a, d], [b]] = [...q.querySelectorAll('.fr')].map(e => [...e.children].map(c => Number(c.textContent)));
+        return (text.includes('\u2212') ? a - b : a + b) / d;
+      }
+      const [x1, y1, x2, y2] = (text.replace(/\u2212/g, '-').match(/-?\d+/g) || []).map(Number);
+      return (y2 - y1) / (x2 - x1);
+    };
     for (let k = 0; k < 3000; k++) {
       const q = document.querySelector('#practice #prQ')!;
       if (Math.abs(answer(q) - want) < 1e-9) return k;
@@ -25,29 +35,16 @@ async function untilAnswer(page: Page, solve: string, want: number) {
       (document.querySelector('#practice #prCheck') as HTMLButtonElement).click();
     }
     return -1;
-  }, { solve, want });
+  }, { solver, want });
   expect(skipped, `a question with answer ${want} came up`).toBeGreaterThanOrEqual(0);
   return skipped;
 }
-
-/* a/d + b/d or a/d − b/d */
-const FRAC_SUM = `
-  const parts = [...q.querySelectorAll('.fr')].map(e => [...e.children].map(c => Number(c.textContent)));
-  const sub = (q.textContent || '').includes('\\u2212');
-  const [[a, d], [b]] = parts;
-  return (sub ? a - b : a + b) / d;`;
-
-/* "Find the slope of the line through (x1, y1) and (x2, y2)." with U+2212 minus signs */
-const SLOPE = `
-  const n = ((q.textContent || '').replace(/\\u2212/g, '-').match(/-?\\d+/g) || []).map(Number);
-  const [x1, y1, x2, y2] = n;
-  return (y2 - y1) / (x2 - x1);`;
 
 test('mixed number for a fraction sum: 1 3/4 is right when the answer is 7/4', async ({ page }) => {
   await seedRandom(page, 21);
   await open(page, '#/skill/4-fracadd');
   const box = page.locator('#practice');
-  const skipped = await untilAnswer(page, FRAC_SUM, 7 / 4);
+  const skipped = await untilAnswer(page, 'frac', 7 / 4);
   await box.locator('.ans-in').fill('1 3/4');
   await box.locator('#prCheck').click();
   await expect(box.locator('#prSay')).toHaveClass(/\bok\b/);
@@ -60,7 +57,7 @@ test('negative mixed number: -2 1/2 is right when the answer is -2.5', async ({ 
   await open(page, '#/skill/8-slope');
   const box = page.locator('#practice');
   await expect(box.locator('#prQ')).toContainText('slope');
-  const skipped = await untilAnswer(page, SLOPE, -2.5);
+  const skipped = await untilAnswer(page, 'slope', -2.5);
   await box.locator('.ans-in').fill('-2 1/2');
   await box.locator('#prCheck').click();
   await expect(box.locator('#prSay')).toHaveClass(/\bok\b/);

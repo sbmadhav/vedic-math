@@ -7,6 +7,13 @@ import { defineConfig, devices } from '@playwright/test';
 // Production Firestore is never written to: see tests/fixtures.ts.
 export const BASE_URL = (process.env.BASE_URL || 'https://sbmadhav.com').replace(/\/$/, '');
 
+// tests/cov holds one spec per live OpenSpec scenario (about 1,000 tests per project). Against the live site
+// that is too many requests for GitHub Pages (HTTP 429) and the 30-minute job, so in CI they run on chromium
+// only, and E2E_SKIP_COV=1 (the run after a push) leaves them out. Locally every project runs them.
+const COV = '**/cov/**';
+const skipCov = process.env.E2E_SKIP_COV ? [COV] : [];
+const covChromiumOnly = process.env.CI ? [COV] : skipCov;
+
 export default defineConfig({
   testDir: './tests',
   // Fails fast with a clear message when the site is unreachable or GitHub Pages is rate limiting us
@@ -35,8 +42,8 @@ export default defineConfig({
     serviceWorkers: 'block',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
-    { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] }, testIgnore: skipCov },
+    { name: 'webkit', use: { ...devices['Desktop Safari'] }, testIgnore: covChromiumOnly },
+    { name: 'mobile', use: { ...devices['Pixel 7'] }, testIgnore: covChromiumOnly },
   ],
 });
