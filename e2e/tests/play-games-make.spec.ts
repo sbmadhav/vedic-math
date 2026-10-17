@@ -136,3 +136,18 @@ test.describe('Teach the Apprentice', () => {
     expect(issues.console).toEqual([]);
   });
 });
+
+test.describe('Estimation Bets', () => {
+  test('a typed high end below the low end, then Enter, still resolves the question', async ({ page, issues }) => {
+    await open(page, '#/games/bets');
+    await page.locator('[data-chips="1"]').click();
+    /* Below any low end the slider starts at, and typed without leaving the box, so no change event swaps it first */
+    await page.locator('.bt-hi').fill('0.001');
+    await page.locator('.bt-hi').press('Enter');
+    await expect(page.locator('.bt-reveal')).toBeVisible();
+    await expect(page.locator('.bt-verdict')).toContainText(/You said 0\.001 to \S+( \w+)? with 1 chip/);
+    await page.locator('.bt-next').click();
+    await expect(page.locator('.bt-count')).toHaveText('Question 2 of 5');
+    expect(issues.console).toEqual([]);
+  });
+});

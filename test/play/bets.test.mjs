@@ -95,3 +95,40 @@ test('calibration counts bets and hits per chip level; rounds deal new questions
   assert.deepEqual(r.slice(0, 3).sort(), pool.slice(-3).sort());
   assert.deepEqual(B.deal('pro', [], 5, 9), B.deal('pro', [], 5, 9));
 });
+
+test('the answer as shown counts: a range holding the shown (rounded) answer catches it', () => {
+  const ev = B.byId('everest'), c = B.byId('light-speed');
+  assert.equal(B.show(ev.a), '8,849');
+  assert.ok(B.score(8849, 8849, 1, ev.a).hit, 'Everest shows as 8,849');
+  assert.ok(B.score(299792, 299792, 3, c.a).hit, 'light shows as 299,792');
+  assert.ok(!B.score(8850, 8900, 1, ev.a).hit);
+  for (const x of B.BANK) { const v = B.parseNum(B.show(x.a)); assert.ok(B.score(v, v, 1, x.a).hit, `${x.id}: ${B.show(x.a)}`); }
+});
+
+test('a miss always costs at least the chips bet, even for a huge range', () => {
+  for (const c of [1, 2, 3]) {
+    const s = B.score(1, 1e12, c, 1e15);
+    assert.ok(!s.hit && s.points <= -c, `${c} chips: ${s.points}`);
+    assert.ok(!Object.is(s.points, -0));
+    assert.equal(B.stakes(1, 1e12, c).lose, -s.points, 'the preview shows what a miss costs');
+  }
+  for (const [lo, hi] of [[90, 110], [50, 200], [1, 1e6]]) for (const c of [1, 2, 3]) {
+    assert.equal(B.score(lo, hi, c, 100).points, B.stakes(lo, hi, c).win);
+    assert.equal(B.score(lo, hi, c, 1e9).points, -B.stakes(lo, hi, c).lose);
+  }
+});
+
+test('typed numbers read back everything show() writes', () => {
+  assert.equal(B.parseNum('1e+6'), 1e6); assert.equal(B.parseNum('3e-2'), 0.03);
+  assert.equal(B.parseNum('18.4 quintillion'), 18.4e18); assert.equal(B.parseNum('2 quadrillion'), 2e15); assert.equal(B.parseNum('4 trillions'), 4e12);
+  assert.equal(B.show(999999999), '1 billion');
+  const vals = [];
+  for (let e = -3; e <= 26; e += 0.137) vals.push(10 ** e);
+  for (const x of B.BANK) { vals.push(x.a); const [lo, hi] = B.bounds(x); vals.push(lo, hi); }
+  for (const v of vals) {
+    const txt = B.show(v), back = B.parseNum(txt);
+    assert.ok(back > 0, `${v} shows as "${txt}", which parses`);
+    assert.ok(Math.abs(back / v - 1) < 0.006, `${v} -> "${txt}" -> ${back}`);
+    assert.equal(B.show(back), txt, `show is stable for "${txt}"`);
+  }
+});

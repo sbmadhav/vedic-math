@@ -167,16 +167,21 @@ export const tightness = (lo, hi) => 10 / (1 + 3.32 * width(lo, hi));
    is the honest one (the chip part is a proper scoring rule; width is rewarded on top). */
 export const WIN = [0, 1, 2, 3];
 export const LOSE = [0, 0.5, 2, 6];
-export const contains = (lo, hi, a) => a >= lo * (1 - 1e-9) && a <= hi * (1 + 1e-9);
+const inside = (lo, hi, v) => v >= lo * (1 - 1e-9) && v <= hi * (1 + 1e-9);
+/* The answer as the player sees it (Everest shows as 8,849): a range that holds the shown answer catches it */
+export const shown = v => parseNum(show(v));
+export const contains = (lo, hi, a) => inside(lo, hi, a) || inside(lo, hi, shown(a));
+/* What a bet can win and lose. A miss always costs at least the chips bet, so a huge range is never free. */
+export const stakes = (lo, hi, chips) => { const k = tightness(lo, hi); return { tight: k, win: Math.round(k * WIN[chips]), lose: Math.max(chips, Math.round(k * LOSE[chips])) }; };
 export function score(lo, hi, chips, answer) {
-  if (!(lo > 0) || !(hi >= lo) || !WIN[chips]) throw new RangeError('bad bet');
-  const k = tightness(lo, hi), hit = contains(lo, hi, answer);
-  return { hit, tight: k, points: Math.round(hit ? k * WIN[chips] : -k * LOSE[chips]) };
+  if (!(lo > 0) || !(hi >= lo) || !Number.isFinite(hi) || !WIN[chips]) throw new RangeError('bad bet');
+  const { tight, win, lose } = stakes(lo, hi, chips), hit = contains(lo, hi, answer);
+  return { hit, tight, points: hit ? win : -lose };
 }
 /* The confidence (chance of being right) at which each chip count stops being the best bet */
 export const breakEven = c => (LOSE[c + 1] - LOSE[c]) / (WIN[c + 1] - WIN[c] + LOSE[c + 1] - LOSE[c]);
 export const TARGET = { 1: 'about half the time', 2: 'about 7 in 10', 3: '8 in 10 or more' };
-export const RULE = 'Catch the answer to win your chips times a tightness score (up to 10); a miss costs more the more chips you bet, so 3 chips only pay when you are really sure.';
+export const RULE = 'Catch the answer to win your chips times a tightness score (up to 10); a miss costs more the more chips you bet (never less than the chips themselves), so 3 chips only pay when you are really sure.';
 
 /* ---------- Calibration ---------- */
 /* history: [{ chips, hit }] -> { 1: { n, hit }, 2: ..., 3: ... } */
@@ -203,23 +208,24 @@ export const fromSlider = (s, [lo, hi]) => nice(10 ** (Math.log10(lo) + (s / 100
 /* Rounds to 2 significant figures so slider values read like guesses (340, not 337.2) */
 export const nice = v => (v > 0 ? +v.toPrecision(2) : v);
 
-/* Typed numbers: 1200, 1,200, 1.2k, 3 million, 2.5 crore, 4 lakh, 1e6 */
-const WORDS = { k: 1e3, thousand: 1e3, lakh: 1e5, lakhs: 1e5, m: 1e6, mn: 1e6, million: 1e6, millions: 1e6, crore: 1e7, crores: 1e7, cr: 1e7, b: 1e9, bn: 1e9, billion: 1e9, billions: 1e9, t: 1e12, trillion: 1e12 };
+/* Typed numbers: 1200, 1,200, 1.2k, 3 million, 2.5 crore, 4 lakh, 1e6, 1e+6, and every word show() writes */
+const WORDS = { k: 1e3, thousand: 1e3, lakh: 1e5, lakhs: 1e5, m: 1e6, mn: 1e6, million: 1e6, millions: 1e6, crore: 1e7, crores: 1e7, cr: 1e7, b: 1e9, bn: 1e9, billion: 1e9, billions: 1e9, t: 1e12, trillion: 1e12, trillions: 1e12, quadrillion: 1e15, quadrillions: 1e15, quintillion: 1e18, quintillions: 1e18 };
 export function parseNum(text) {
   const s = String(text || '').trim().toLowerCase().replace(/,/g, '').replace(/\s+/g, ' ');
-  const m = s.match(/^(\d*\.?\d+(?:e\d+)?)\s*([a-z]*)$/);
+  const m = s.match(/^(\d*\.?\d+(?:e[+-]?\d+)?)\s*([a-z]*)$/);
   if (!m) return NaN;
   const mult = m[2] ? WORDS[m[2]] : 1;
   if (!mult) return NaN;
-  const v = parseFloat(m[1]) * mult;
+  /* 15 significant figures clears float dust, so 18.4 quintillion is exactly 1.84e19 */
+  const v = +(parseFloat(m[1]) * mult).toPrecision(15);
   return v > 0 && Number.isFinite(v) ? v : NaN;
 }
 /* Friendly display: 604,800 / 1.3 million / 0.5 / 18.4 quintillion */
 export function show(v) {
   if (!Number.isFinite(v)) return '?';
-  const big = [[1e18, 'quintillion'], [1e15, 'quadrillion'], [1e12, 'trillion'], [1e9, 'billion']];
-  for (const [d, w] of big) if (v >= d) return `${+(v / d).toPrecision(3)} ${w}`;
-  if (v >= 1e7) return `${+(v / 1e6).toPrecision(3)} million`;
+  const big = [[1e18, 'quintillion'], [1e15, 'quadrillion'], [1e12, 'trillion'], [1e9, 'billion'], [1e6, 'million']];
+  /* Round first, so 999,999,999 reads 1 billion (not 1000 million) and parseNum reads back what is shown */
+  if (v >= 1e7) { const r = +v.toPrecision(3); for (const [d, w] of big) if (r >= d) return `${+(r / d).toPrecision(3)} ${w}`; }
   if (v >= 100) return Math.round(v).toLocaleString('en-US');
   return String(+v.toPrecision(4));
 }

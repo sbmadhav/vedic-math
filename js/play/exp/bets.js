@@ -77,8 +77,8 @@ export function mount({ root, signal, params }) {
         fill.style.left = `${a / 10}%`; fill.style.right = `${100 - b / 10}%`;
         sLo.setAttribute('aria-valuetext', `${B.show(lo)} ${q.unit}`); sHi.setAttribute('aria-valuetext', `${B.show(hi)} ${q.unit}`);
         sLo.style.zIndex = a > 900 ? 3 : 2;
-        const tight = B.tightness(lo, hi);
-        preview.innerHTML = chips ? `Right: <b class="is-win">+${Math.round(tight * B.WIN[chips])}</b> · Wrong: <b class="is-lose">−${Math.round(tight * B.LOSE[chips])}</b> <span class="px-note">(tightness ${tight.toFixed(1)} of 10)</span>` : `Tightness <b>${tight.toFixed(1)}</b> of 10. Now pick your chips.`;
+        const tight = B.tightness(lo, hi), st = chips ? B.stakes(lo, hi, chips) : null;
+        preview.innerHTML = st ? `Right: <b class="is-win">+${st.win}</b> · Wrong: <b class="is-lose">−${st.lose}</b> <span class="px-note">(tightness ${tight.toFixed(1)} of 10)</span>` : `Tightness <b>${tight.toFixed(1)}</b> of 10. Now pick your chips.`;
         lock.disabled = !chips;
       };
       on(sLo, 'input', () => { const v = +sLo.value; if (v > +sHi.value) sLo.value = sHi.value; lo = B.fromSlider(+sLo.value, bd); if (lo > hi) lo = hi; sync('slider'); }, qsig);
@@ -98,9 +98,12 @@ export function mount({ root, signal, params }) {
       if (k) stage.querySelector('.bt-q').focus({ preventScroll: false });
     };
 
-    const reveal = (q, bd, lo, hi, chips) => {
+    const reveal = (q, bd, a, b, chips) => {
+      /* A typed high below the low (Enter can come before the change event that would swap them) */
+      const lo = Math.min(a, b), hi = Math.max(a, b);
+      let res; try { res = B.score(lo, hi, chips, q.a); } catch (e) { return; }
+      /* Only now that the bet is scored do this question's listeners go */
       if (qctl) qctl.abort();
-      const res = B.score(lo, hi, chips, q.a);
       total += res.points; if (res.hit) hits++;
       totalEl.textContent = signed(total);
       S.history.push({ id: q.id, chips, hit: res.hit, points: res.points, w: +B.width(lo, hi).toFixed(3) }); S.history = S.history.slice(-400);
@@ -216,7 +219,7 @@ export function mount({ root, signal, params }) {
         <p>${esc(B.RULE)}</p>
         <table class="bt-table"><caption class="px-note">Points for a range with tightness 5 (high end twice the low end)</caption>
           <thead><tr><th scope="col">Chips</th><th scope="col">Right</th><th scope="col">Wrong</th><th scope="col">Worth it when you are</th></tr></thead>
-          <tbody>${[1, 2, 3].map(c => `<tr><th scope="row">${c}</th><td>+${5 * B.WIN[c]}</td><td>−${5 * B.LOSE[c]}</td><td>${c === 1 ? 'less than 60% sure' : c === 2 ? '60 to 80% sure' : 'over 80% sure'}</td></tr>`).join('')}</tbody></table>
+          <tbody>${[1, 2, 3].map(c => `<tr><th scope="row">${c}</th><td>+${B.stakes(1, 2, c).win}</td><td>−${B.stakes(1, 2, c).lose}</td><td>${c === 1 ? 'less than 60% sure' : c === 2 ? '60 to 80% sure' : 'over 80% sure'}</td></tr>`).join('')}</tbody></table>
         <p class="px-note">Your bets stay in this browser. Nothing about you is asked or sent.</p>
         <a class="md-btn md-btn--primary" href="#/games/bets">Play a round</a>
       </section>`;
