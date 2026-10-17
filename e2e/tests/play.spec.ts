@@ -50,11 +50,50 @@ test.describe('explorer', () => {
   });
 });
 
-test('#/duel opens Party Mode, and the Arena tile and Sky place point there', async ({ page }) => {
+test('#/duel opens Party Mode, and the Home tile and Sky place point there', async ({ page }) => {
   await open(page, '#/duel');
   await expect(page).toHaveURL(/#\/arena\/party$/);
   await expect(page.locator('#view h1').first()).toHaveText('Party Mode');
   await expect(page.locator('.pt-start')).toBeVisible();
+  await open(page, '#/tiles');
+  await expect(page.locator('#view a.play-tile[href="#/arena/party"]')).toHaveCount(1);
+  await expect(page.locator('#view a[href="#/duel"]')).toHaveCount(0);
+  await open(page, '#/places');
+  await expect(page.locator('.places-list').getByRole('link', { name: 'Party', exact: true })).toHaveAttribute('href', '#/arena/party');
+});
+
+test("a shelf does not restyle Home's tile grid (its own grid class)", async ({ page }) => {
+  await open(page, '#/games');
+  await expect(page.locator('.play-shelf .play-shelf-grid')).toHaveCount(1);
+  await open(page, '#/tiles');
+  const grid = page.locator('#view .play-grid').first();
+  await expect(grid).toHaveCSS('margin-top', '18px');
+  expect(await grid.evaluate(el => getComputedStyle(el).listStyleType)).not.toBe('none');
+});
+
+test.describe('motion allowed by the device', () => {
+  // The suite runs with reduced motion; here the device allows motion, so only Calm or Pause motion can stop it
+  test.use({ reducedMotion: 'no-preference' });
+  const moving = (page: import('@playwright/test').Page) => page.evaluate(() => [...document.querySelectorAll('#view *')].filter(el => getComputedStyle(el).animationName !== 'none').length);
+  test('an experience page animates, and Calm stops every animation on it', async ({ page }) => {
+    await open(page, '#/games/apprentice');
+    await expect(page.locator('#view h1').first()).toBeVisible();
+    await expect.poll(() => moving(page)).toBeGreaterThan(0);
+    await page.evaluate(() => document.body.classList.add('calm'));
+    expect(await moving(page)).toBe(0);
+  });
+  test('Pause motion (html.motion-paused) stops them too', async ({ page }) => {
+    await open(page, '#/games/apprentice');
+    await expect.poll(() => moving(page)).toBeGreaterThan(0);
+    await page.evaluate(() => document.documentElement.classList.add('motion-paused'));
+    expect(await moving(page)).toBe(0);
+  });
+});
+
+test('a malformed escape in a play link opens the page instead of breaking it', async ({ page, issues }) => {
+  await open(page, '#/arena/ghosts/r/%E0%A4');
+  await expect(page.locator('#view h1').first()).toHaveText('Ghost Races');
+  expect(issues.console.filter(m => /URIError/.test(m))).toEqual([]);
 });
 
 test('Party Mode: Start the party begins the first round', async ({ page, issues }) => {
