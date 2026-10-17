@@ -2,7 +2,8 @@
    worked examples, where it is used, an animated diagram and further reading.
    read: [label, url] for a page that opens in a new tab (Pro only), or [label, { yt }] for a video in js/videos.js
    that plays in the page for every Mode.
-   Every worked example here was checked numerically. Text is original. */
+   examples: [question, steps] pairs, at least three, easy to harder, each step text ending in the result in hl().
+   Every worked example here is checked numerically by test/sutra-examples.test.mjs. Text is original. */
 import { R, T, L, P, C, DOT, BOX } from './scenes.js';
 
 const W = 'https://en.wikipedia.org/wiki/';
@@ -15,7 +16,7 @@ export const DETAILS = {
   'Ekādhikena Pūrveṇa': {
     more: 'Ekādhika means "one more". The sutra tells you to take the digit (or number) before, add one, and use it as a multiplier. Its most famous use is squaring numbers that end in 5, but the same "one more" also generates the endless decimals of 1/19, 1/29 and 1/49 digit by digit, and gives the magic multipliers for divisibility tests.',
     why: `A number ending in 5 is 10a + 5. Squaring it: (10a + 5)² = 100a² + 100a + 25 = 100 × a(a + 1) + 25. So the answer is always a × (a + 1) followed by 25. The picture shows the same thing with areas: the two thin strips of 5 slide together into one strip of 10.`,
-    examples: [['65²', `6 × 7 = 42, then 25 → ${hl('4225')}`], ['115²', `11 × 12 = 132, then 25 → ${hl('13225')}`], ['1/19', 'One more than 1 is 2. Write 1 at the right, keep doubling leftwards with carries: …789473684210526315 → 0.052631578947368421…']],
+    examples: [['25²', `One more than 2 is 3. 2 × 3 = 6, then 25 → ${hl('625')}`], ['65²', `6 × 7 = 42, then 25 → ${hl('4225')}`], ['115²', `11 × 12 = 132, then 25 → ${hl('13225')}`], ['1/19', `One more than 1 is 2. Write 1 at the right, keep doubling leftwards with carries: …789473684210526315 → ${hl('0.052631578947368421…')}`]],
     uses: ['Squares ending in 5', 'Recurring decimals', 'Divisibility tests'],
     read: [['How to square numbers ending in 5 (video)', { yt: 'oV7Kxm3Zr_c' }], VM],
     scene: { w: 460, h: 340, steps: [
@@ -31,7 +32,7 @@ export const DETAILS = {
   'Nikhilaṃ Navataścaramaṃ Daśataḥ': {
     more: 'Nikhilam means "all". Take every digit from 9 and the last digit from 10. The result is the complement: how far a number is from the next power of ten. That turns subtracting from 100, 1000 or 10000 into one pass with no borrowing, and it is the engine behind multiplying numbers near a base (each number is replaced by its small distance from the base).',
     why: '10000 − 368 equals 9999 − 368 + 1. Subtracting from 9999 never needs borrowing because every digit is 9, so each digit simply becomes 9 minus itself. The final +1 is the same as taking the last digit from 10 instead of 9.',
-    examples: [['1000 − 368', `9 − 3 = 6, 9 − 6 = 3, 10 − 8 = 2 → ${hl('632')}`], ['97 × 94 (near 100)', `Distances −3 and −6. Cross: 97 − 6 = 91. Multiply: 3 × 6 = 18 → ${hl('9118')}`], ['$100 − $47.35 change', `Digits from 9, last from 10: ${hl('$52.65')}`]],
+    examples: [['100 − 43', `4 from 9 is 5, the last digit 3 from 10 is 7 → ${hl('57')}`], ['1000 − 368', `9 − 3 = 6, 9 − 6 = 3, 10 − 8 = 2 → ${hl('632')}`], ['$100 − $47.35 change', `Digits from 9, last from 10: ${hl('$52.65')}`], ['97 × 94 (near 100)', `Distances −3 and −6. Cross: 97 − 6 = 91. Multiply: 3 × 6 = 18 → ${hl('9118')}`]],
     uses: ['Change at the shop', 'Near-base multiplication', 'Division by 9, 8, 89'],
     read: [['Nikhilam multiplication for beginners (video)', { yt: 'f0W32SwhAwM' }], VM],
     scene: { w: 420, h: 250, steps: [
@@ -45,7 +46,7 @@ export const DETAILS = {
   'Ūrdhva-Tiryagbhyām': {
     more: 'Ūrdhva means vertical and tiryak means crosswise. You build the answer one column at a time, from right to left: multiply straight down, then add the cross products, then straight down again. It works for any numbers of any length, and the same pattern multiplies algebra expressions.',
     why: '(10a + b)(10c + d) = 100ac + 10(ad + bc) + bd. The units come from b × d (vertical), the tens from ad + bc (the cross), and the hundreds from a × c (vertical). Carries move left exactly as in ordinary place value.',
-    examples: [['23 × 41', `3 × 1 = 3; 2×1 + 3×4 = 14 (write 4, carry 1); 2 × 4 + 1 = 9 → ${hl('943')}`], ['(2x + 3)(x + 4)', `2x·x = 2x²; 2x·4 + 3·x = 11x; 3·4 = 12 → ${hl('2x² + 11x + 12')}`]],
+    examples: [['12 × 13', `Right column: 2 × 3 = 6. Crosswise: 1 × 3 + 2 × 1 = 5. Left column: 1 × 1 = 1 → ${hl('156')}`], ['23 × 41', `3 × 1 = 3; 2×1 + 3×4 = 14 (write 4, carry 1); 2 × 4 + 1 = 9 → ${hl('943')}`], ['123 × 321', `3 × 1 = 3; 2×1 + 3×2 = 8; 1×1 + 2×2 + 3×3 = 14 (write 4, carry 1); 1×2 + 2×3 = 8, plus 1 is 9; 1 × 3 = 3 → ${hl('39483')}`], ['(2x + 3)(x + 4)', `2x·x = 2x²; 2x·4 + 3·x = 11x; 3·4 = 12 → ${hl('2x² + 11x + 12')}`]],
     uses: ['Any multiplication', 'Algebra products', 'Squares (duplex)'],
     read: [['tecmath: fast multiplication with Vedic math (video)', { yt: 'kvLjpQ0XGao' }], ['Multiplication algorithm (Wikipedia)', W + 'Multiplication_algorithm']],
     scene: { w: 420, h: 280, steps: [
@@ -59,7 +60,7 @@ export const DETAILS = {
   'Parāvartya Yojayet': {
     more: 'Parāvartya means "having transposed". Move a term to the other side and flip its sign, or flip the operation, then apply it. In equations it is the one-line version of the balance method. In division, it lets you divide by numbers just above a base, like 12 or 112, by using the "flipped" digits −2 or −1, −2 as helpers.',
     why: 'An equation is a balance: subtracting the same thing from both sides keeps it level. Writing x on one side and −x on the other in one move is exactly that, just faster. For ax + b = cx + d, the result is always x = (d − b) ÷ (a − c).',
-    examples: [['3x + 4 = x + 10', `Transpose: 3x − x = 10 − 4 → 2x = 6 → ${hl('x = 3')}`], ['7x − 5 = 2x + 20', `x = (20 + 5) ÷ (7 − 2) = ${hl('5')}`]],
+    examples: [['x + 5 = 12', `Move 5 across and its sign flips: x = 12 − 5 → ${hl('x = 7')}`], ['3x + 4 = x + 10', `Transpose: 3x − x = 10 − 4 → 2x = 6 → ${hl('x = 3')}`], ['7x − 5 = 2x + 20', `x = (20 + 5) ÷ (7 − 2) = ${hl('5')}`], ['1452 ÷ 12', `12 is 10 + 2, so use −2. Bring down 1. Next: 4 + 1 × (−2) = 2. Next: 5 + 2 × (−2) = 1. Last digit: 2 + 1 × (−2) = 0, the remainder → ${hl('121')}, remainder 0`]],
     uses: ['Linear equations', 'Division by 11 to 19, 112 …', 'Rearranging formulas'],
     read: [VM],
     scene: { kind: 'eq', steps: [
@@ -73,7 +74,7 @@ export const DETAILS = {
   'Śūnyaṃ Sāmyasamuccaye': {
     more: 'Samuccaya means "total" or "combination", and śūnya means zero. When the same total appears on both sides of an equation, that total must be zero. The book lists several kinds of total: a common factor (like x in 12x + 3x = 4x + 5x), the sum of numerators equal to the sum of denominators, and equal constant products.',
     why: 'If an expression E appears as E × (something) on both sides with different multipliers, then E × (p − q) = 0, and since p ≠ q, E = 0. For fractions N₁/D₁ = N₂/D₂, when N₁ + N₂ is a multiple of D₁ + D₂ (or equal to it), cross-multiplying leaves exactly that total times a constant.',
-    examples: [[`${frac('3x + 4', '6x + 7')} = ${frac('x + 1', '2x + 3')}`, `Numerators add to 4x + 5, denominators to 8x + 10 = 2(4x + 5). So 4x + 5 = 0 → ${hl('x = −5/4')}`], ['(x + 3)(x + 8) = (x + 4)(x + 6)', `3 × 8 = 24 = 4 × 6, so ${hl('x = 0')}`], ['12x + 3x = 4x + 5x', `Common factor x, different totals (15 and 9) → ${hl('x = 0')}`]],
+    examples: [['12x + 3x = 4x + 5x', `Common factor x, different totals (15 and 9) → ${hl('x = 0')}`], ['(x + 3)(x + 8) = (x + 4)(x + 6)', `3 × 8 = 24 = 4 × 6, so ${hl('x = 0')}`], [`${frac('3x + 4', '6x + 7')} = ${frac('x + 1', '2x + 3')}`, `Numerators add to 4x + 5, denominators to 8x + 10 = 2(4x + 5). So 4x + 5 = 0 → ${hl('x = −5/4')}`]],
     uses: ['Spot-the-zero equations', 'Fractions with linked parts'],
     read: [VM],
     scene: { kind: 'eq', steps: [
@@ -87,7 +88,7 @@ export const DETAILS = {
   '(Ānurūpye) Śūnyamanyat': {
     more: 'Ānurūpya means "in proportion". In a pair of equations, if the coefficients of one letter are in the same ratio as the numbers on the right, then the other letter must be zero. You can see it before doing any elimination.',
     why: 'Suppose by = c and ky = kc fit both equations when x = 0. If the y coefficients are b and kb and the constants are c and kc, then x = 0, y = c/b satisfies both, and for independent equations that solution is the only one.',
-    examples: [['6x + 7y = 8, 19x + 14y = 16', `7 : 14 = 8 : 16, so ${hl('x = 0')} and y = 8/7`], ['3x + 5y = 10, 7x + 15y = 30', `5 : 15 = 10 : 30, so x = 0 and ${hl('y = 2')}`]],
+    examples: [['3x + 5y = 10, 7x + 15y = 30', `5 : 15 = 10 : 30, so x = 0 and ${hl('y = 2')}`], ['4x + 5y = 12, 7x + 10y = 21', `This time the x numbers match: 4 : 7 = 12 : 21, so y = 0 and 4x = 12 → ${hl('x = 3')}`], ['6x + 7y = 8, 19x + 14y = 16', `7 : 14 = 8 : 16, so ${hl('x = 0')} and y = 8/7`]],
     uses: ['Simultaneous equations', 'Checking before eliminating'],
     read: [VM],
     scene: { kind: 'eq', steps: [
@@ -101,7 +102,7 @@ export const DETAILS = {
   'Saṅkalana-Vyavakalanābhyām': {
     more: 'Saṅkalana is addition and vyavakalana is subtraction. When two equations have the x and y coefficients swapped, adding them and subtracting them gives x + y and x − y directly. Then one more add and subtract finishes the job.',
     why: 'ax + by = c and bx + ay = d. Adding: (a + b)(x + y) = c + d. Subtracting: (a − b)(x − y) = c − d. Two tiny equations instead of one big elimination.',
-    examples: [['45x − 23y = 113, 23x − 45y = 91', `Add: 68(x − y) = 204 → x − y = 3. Subtract: 22(x + y) = 22 → x + y = 1. So ${hl('x = 2, y = −1')}`], ['5x + 3y = 13, 3x + 5y = 11', `x + y = 3, x − y = 1 → ${hl('x = 2, y = 1')}`]],
+    examples: [['x + y = 10, x − y = 4', `Add: 2x = 14, so x = 7. Subtract: 2y = 6, so y = 3 → ${hl('x = 7, y = 3')}`], ['5x + 3y = 13, 3x + 5y = 11', `x + y = 3, x − y = 1 → ${hl('x = 2, y = 1')}`], ['45x − 23y = 113, 23x − 45y = 91', `Add: 68(x − y) = 204 → x − y = 3. Subtract: 22(x + y) = 22 → x + y = 1. So ${hl('x = 2, y = −1')}`]],
     uses: ['Symmetric simultaneous equations'],
     read: [VM],
     scene: { kind: 'eq', steps: [
@@ -114,7 +115,7 @@ export const DETAILS = {
   'Pūraṇāpūraṇābhyām': {
     more: 'Pūraṇa means completion. Add the missing piece to make a perfect square (or cube), solve the complete shape, then take the piece away again. This is completing the square, and the picture shows why it is called that: there is literally a missing corner.',
     why: 'x² + bx is a square of side x with two strips of b/2. The missing corner has area (b/2)². Adding it makes (x + b/2)². So x² + bx = k becomes (x + b/2)² = k + (b/2)².',
-    examples: [['x² + 6x = 7', `Add 9: (x + 3)² = 16 → x + 3 = ±4 → ${hl('x = 1 or −7')}`], ['x³ + 6x² + 12x = 19', `Add 8: (x + 2)³ = 27 → x + 2 = 3 → ${hl('x = 1')}`]],
+    examples: [['x² + 4x = 12', `Half of 4 is 2, so add 2² = 4: (x + 2)² = 16 → x + 2 = ±4 → ${hl('x = 2 or −6')}`], ['x² + 6x = 7', `Add 9: (x + 3)² = 16 → x + 3 = ±4 → ${hl('x = 1 or −7')}`], ['x³ + 6x² + 12x = 19', `Add 8: (x + 2)³ = 27 → x + 2 = 3 → ${hl('x = 1')}`]],
     uses: ['Quadratic equations', 'Vertex of a parabola', 'Cubes'],
     read: [['Completing the square (Wikipedia)', W + 'Completing_the_square']],
     scene: { w: 440, h: 320, steps: [
@@ -128,7 +129,7 @@ export const DETAILS = {
   'Calana-Kalanābhyām': {
     more: 'Calana-kalana means "by sequential motion": how things change step by step. The book uses it for differences and rates of change, the idea at the heart of calculus. One striking use: for a quadratic ax² + bx + c = 0, its first derivative 2ax + b equals ± the square root of the discriminant.',
     why: 'From the quadratic formula, x = (−b ± √(b² − 4ac)) / 2a, so 2ax + b = ±√(b² − 4ac). The left side is the slope of the parabola (its derivative), so the roots sit where the slope equals ± the root of the discriminant.',
-    examples: [['x² − 5x + 6 = 0', `Derivative 2x − 5. Discriminant 25 − 24 = 1. So 2x − 5 = ±1 → ${hl('x = 3 or 2')}`], ['How fast x² grows', 'Going from x to x + 1 adds 2x + 1, so near x the change is about 2x per step.']],
+    examples: [['6² from 5²', `Going from 5 to 6 adds 2 × 5 + 1 = 11. 25 + 11 = ${hl('36')}`], ['How fast x² grows', `Going from x to x + 1 adds ${hl('2x + 1')}, so near x the change is about 2x per step.`], ['x² − 5x + 6 = 0', `Derivative 2x − 5. Discriminant 25 − 24 = 1. So 2x − 5 = ±1 → ${hl('x = 3 or 2')}`], ['x² − 7x + 10 = 0', `Derivative 2x − 7. Discriminant 49 − 40 = 9, and √9 = 3. So 2x − 7 = ±3 → ${hl('x = 5 or 2')}`]],
     uses: ['Quadratics', 'Rates of change', 'Calculus intuition'],
     read: [['Derivative (Wikipedia)', W + 'Derivative']],
     scene: { w: 440, h: 300, steps: [
@@ -141,7 +142,7 @@ export const DETAILS = {
   'Yāvadūnam': {
     more: 'Yāvadūnam means "whatever the deficiency". Find how far a number is from its base, go that far again, then attach the square of the gap. It squares numbers near 10, 100 or 1000 in seconds, and it extends to cubes.',
     why: '(100 − d)² = 10000 − 200d + d² = 100(100 − 2d) + d². The left part 100 − 2d is the number minus d again; the right part is d², written in two digits.',
-    examples: [['96²', `4 short. 96 − 4 = 92, 4² = 16 → ${hl('9216')}`], ['993²', `7 short. 993 − 7 = 986, 7² = 049 → ${hl('986049')}`]],
+    examples: [['9² (base 10)', `1 short. 9 − 1 = 8, 1² = 1 → ${hl('81')}`], ['96²', `4 short. 96 − 4 = 92, 4² = 16 → ${hl('9216')}`], ['993²', `7 short. 993 − 7 = 986, 7² = 049 → ${hl('986049')}`]],
     uses: ['Squares near a base'],
     read: [VM],
     scene: { w: 440, h: 320, steps: [
@@ -155,7 +156,7 @@ export const DETAILS = {
   'Vyaṣṭisamaṣṭiḥ': {
     more: 'Vyaṣṭi is the individual and samaṣṭi the whole. Look at a pair of numbers through their average (the whole) and their distance from it (the parts). Two numbers that are equally far from a round number multiply as "average squared minus distance squared".',
     why: '(m − d)(m + d) = m² − d². The rectangle is the square of the average with a small d × d square missing.',
-    examples: [['48 × 52', `Average 50, distance 2: 2500 − 4 = ${hl('2496')}`], ['97 × 103', `10000 − 9 = ${hl('9991')}`], ['Two numbers add to 20, multiply to 96', `Around 10: 10 ± 2 because 100 − 4 = 96 → ${hl('8 and 12')}`]],
+    examples: [['9 × 11', `Average 10, distance 1: 100 − 1 = ${hl('99')}`], ['48 × 52', `Average 50, distance 2: 2500 − 4 = ${hl('2496')}`], ['97 × 103', `10000 − 9 = ${hl('9991')}`], ['Two numbers add to 20, multiply to 96', `Around 10: 10 ± 2 because 100 − 4 = 96 → ${hl('8 and 12')}`]],
     uses: ['Products around a midpoint', 'Factoring', 'Sum and product puzzles'],
     read: [['Difference of two squares (Wikipedia)', W + 'Difference_of_two_squares']],
     scene: { w: 440, h: 320, steps: [
@@ -169,7 +170,7 @@ export const DETAILS = {
   'Śeṣāṇyaṅkena Carameṇa': {
     more: 'Śeṣa means remainder and carama the last. Write the remainders of a long division, then multiply each by the last digit of the divisor and keep the last digit of each product. Those are the decimal digits. It makes fractions like 1/7 appear in a neat cycle.',
     why: 'Each division step says 7 × (digit) = 10 × (old remainder) − (new remainder). Looking only at last digits, 7 × digit ends like −(new remainder). Multiply by 7 once more: 49 × digit ends like the digit itself (49 ends in 9, which acts like −1), and −7 × (−new remainder) is 7 × new remainder. So each digit is the last digit of 7 × its remainder.',
-    examples: [['1/7', `Remainders 3, 2, 6, 4, 5, 1. Times 7: 21, 14, 42, 28, 35, 7. Last digits → ${hl('0.142857…')}`], ['1/7 again', 'The cycle has 6 digits, the most a divisor of 7 can have.']],
+    examples: [['1/3', `10 ÷ 3 leaves 1, every time. The last digit of 1 × 3 is 3 → ${hl('0.333…')}`], ['1/7', `Remainders 3, 2, 6, 4, 5, 1. Times 7: 21, 14, 42, 28, 35, 7. Last digits → ${hl('0.142857…')}`], ['1/7 again', `The cycle has ${hl('6 digits')}, the most a divisor of 7 can have.`], ['1/13', `Remainders 10, 9, 12, 3, 4, 1. Times 13: 130, 117, 156, 39, 52, 13. Last digits → ${hl('0.076923…')}`]],
     uses: ['Recurring decimals', 'Cyclic numbers'],
     read: [['Repeating decimal (Wikipedia)', W + 'Repeating_decimal']],
     scene: { w: 440, h: 330, steps: [
@@ -181,7 +182,7 @@ export const DETAILS = {
   'Sopāntyadvayamantyam': {
     more: 'Sopāntya-dvayam-antyam means "the last and twice the second last". It solves a special family of equations built from four factors in steady steps, like (x + 2), (x + 3), (x + 4), (x + 5). For the pattern 1/(AB) + 1/(AC) = 1/(AD) + 1/(BC), the answer comes from setting D + 2C = 0.',
     why: 'Clearing denominators and simplifying this pattern, with A, B, C, D in arithmetic progression, leaves a single linear factor equal to D + 2C, the last term plus twice the penultimate. The worked example below checks out numerically.',
-    examples: [[`${frac(1, '(x+2)(x+3)')} + ${frac(1, '(x+2)(x+4)')} = ${frac(1, '(x+2)(x+5)')} + ${frac(1, '(x+3)(x+4)')}`, `D + 2C = (x + 5) + 2(x + 4) = 3x + 13 = 0 → ${hl('x = −13/3')}`]],
+    examples: [[`${frac(1, '(x+1)(x+2)')} + ${frac(1, '(x+1)(x+3)')} = ${frac(1, '(x+1)(x+4)')} + ${frac(1, '(x+2)(x+3)')}`, `The factors x + 1, x + 2, x + 3, x + 4 step by 1. Last is D = x + 4, second last C = x + 3. D + 2C = 3x + 10 = 0 → ${hl('x = −10/3')}`], [`${frac(1, '(x+2)(x+3)')} + ${frac(1, '(x+2)(x+4)')} = ${frac(1, '(x+2)(x+5)')} + ${frac(1, '(x+3)(x+4)')}`, `D + 2C = (x + 5) + 2(x + 4) = 3x + 13 = 0 → ${hl('x = −13/3')}`], [`${frac(1, '(x+1)(x+3)')} + ${frac(1, '(x+1)(x+5)')} = ${frac(1, '(x+1)(x+7)')} + ${frac(1, '(x+3)(x+5)')}`, `Now the factors step by 2, and the rule still holds. D + 2C = (x + 7) + 2(x + 5) = 3x + 17 = 0 → ${hl('x = −17/3')}`]],
     uses: ['Special rational equations'],
     read: [VM],
     scene: { kind: 'eq', steps: [
@@ -194,7 +195,7 @@ export const DETAILS = {
   'Ekanyūnena Pūrveṇa': {
     more: 'Ekanyūna means "one less". When you multiply by a number made of nines (9, 99, 999 …) with at least as many digits as the other number, the left part of the answer is one less than that number, and the right part is the nines minus the left part.',
     why: 'n × 99 = n × 100 − n = (n − 1) × 100 + (100 − n). The left part n − 1 is "one less"; the right part 100 − n equals 99 − (n − 1), which is the "all from 9" complement.',
-    examples: [['67 × 99', `66 | 99 − 66 = 33 → ${hl('6633')}`], ['357 × 999', `356 | 643 → ${hl('356643')}`], ['8 × 9', `7 | 2 → ${hl('72')} (the nines finger trick)`]],
+    examples: [['8 × 9', `7 | 2 → ${hl('72')} (the nines finger trick)`], ['67 × 99', `66 | 99 − 66 = 33 → ${hl('6633')}`], ['357 × 999', `356 | 643 → ${hl('356643')}`]],
     uses: ['Times 9, 99, 999', 'The 9s times table'],
     read: [['Easy 9 times table trick (video)', { yt: 'c8hyYXepGvI' }], VM],
     scene: { kind: 'eq', steps: [
@@ -207,7 +208,7 @@ export const DETAILS = {
   'Guṇitasamuccayaḥ': {
     more: 'The product of the sums is the sum of the product. Reduce each number to its digit sum (casting out nines), multiply those, and compare with the digit sum of the answer. If they differ, the answer is wrong. With algebra, the same idea uses the sums of coefficients.',
     why: 'A number and its digit sum leave the same remainder when divided by 9, because 10, 100, 1000 … all leave remainder 1. Remainders multiply consistently, so (digit sum of a) × (digit sum of b) must match the digit sum of a × b.',
-    examples: [['47 × 23 = 1081?', `4 + 7 → 2, 2 + 3 → 5, 2 × 5 = 10 → 1. And 1 + 0 + 8 + 1 = 10 → 1. ${hl('Passes')}`], ['47 × 23 = 1071?', `1 + 0 + 7 + 1 = 9 → 0, not 1. ${hl('Caught the mistake')}`]],
+    examples: [['12 × 3 = 36?', `1 + 2 = 3, and 3 × 3 = 9. Answer: 3 + 6 = 9. ${hl('Passes')}`], ['47 × 23 = 1081?', `4 + 7 → 2, 2 + 3 → 5, 2 × 5 = 10 → 1. And 1 + 0 + 8 + 1 = 10 → 1. ${hl('Passes')}`], ['47 × 23 = 1071?', `1 + 0 + 7 + 1 = 9 → 0, not 1. ${hl('Caught the mistake')}`]],
     uses: ['Checking multiplication', 'Checking algebra products'],
     read: [['Casting out nines (Wikipedia)', W + 'Casting_out_nines']],
     scene: { kind: 'eq', steps: [
@@ -221,7 +222,7 @@ export const DETAILS = {
   'Guṇakasamuccayaḥ': {
     more: 'The factors of the sum are the sum of the factors. When you factor an expression, the sum of its coefficients must equal the product of the coefficient sums of the factors. It is a two-second check on any factorization.',
     why: 'The sum of coefficients of a polynomial is its value at x = 1. If p(x) = f(x) g(x), then p(1) = f(1) × g(1). So the totals must agree.',
-    examples: [['x² + 5x + 6 = (x + 2)(x + 3)?', `1 + 5 + 6 = 12 and 3 × 4 = 12 → ${hl('correct')}`], ['x² + 5x + 6 = (x + 1)(x + 6)?', `2 × 7 = 14 ≠ 12 → ${hl('wrong')}`]],
+    examples: [['x² + 5x + 6 = (x + 2)(x + 3)?', `1 + 5 + 6 = 12 and 3 × 4 = 12 → ${hl('correct')}`], ['x² + 5x + 6 = (x + 1)(x + 6)?', `2 × 7 = 14 ≠ 12 → ${hl('wrong')}`], ['x² − x − 6 = (x − 3)(x + 2)?', `Minus signs count too: 1 − 1 − 6 = −6 and (1 − 3)(1 + 2) = −2 × 3 = −6 → ${hl('correct')}`]],
     uses: ['Checking factorization'],
     read: [VM],
     scene: { kind: 'eq', steps: [
@@ -236,7 +237,7 @@ export const DETAILS = {
   'Ānurūpyeṇa': {
     more: 'Proportionately. If a base is awkward, scale it. 50 is 100 ÷ 2, 25 is 100 ÷ 4, 20 is 2 × 10. Do the easy work with the friendly base, then scale the result.',
     why: 'Multiplying near 50: (50 + a)(50 + b) = 50(50 + a + b) + ab. Since 50 = 5 × 10, the left part is (number + other distance) × 5, in tens.',
-    examples: [['46 × 43 (working base 50)', `Cross: 46 − 7 = 39. Scale: 39 × 5 = 195 tens. Right: (−4)(−7) = 28 → 1950 + 28 = ${hl('1978')}`], ['36 × 25', `× 100 ÷ 4: 3600 ÷ 4 = ${hl('900')}`]],
+    examples: [['5 × 18', `5 is 10 ÷ 2: 18 × 10 = 180, then half → ${hl('90')}`], ['36 × 25', `× 100 ÷ 4: 3600 ÷ 4 = ${hl('900')}`], ['21 × 23 (working base 20)', `Both just over 20: 21 + 3 = 24. Scale by 2: 48 tens. Right: 1 × 3 = 3 → 480 + 3 = ${hl('483')}`], ['46 × 43 (working base 50)', `Cross: 46 − 7 = 39. Scale: 39 × 5 = 195 tens. Right: (−4)(−7) = 28 → 1950 + 28 = ${hl('1978')}`]],
     uses: ['Working bases', 'Times 5, 25, 125'],
     read: [VM],
     scene: { kind: 'eq', steps: [
@@ -250,7 +251,7 @@ export const DETAILS = {
   'Śiṣyate Śeṣasaṃjñaḥ': {
     more: 'The remainder remains constant. Remainders in a long division fall into a fixed, repeating pattern, so once you spot the pattern you know every future remainder without dividing again.',
     why: 'Each step multiplies the remainder by 10 and divides by the same number, so there are only finitely many remainders. As soon as one repeats, the whole sequence repeats.',
-    examples: [['Powers of 10 divided by 7', `Remainders 1, 3, 2, 6, 4, 5, then 1 again: ${hl('a cycle of 6')}`], ['10ⁿ divided by 9', `Always remainder ${hl('1')}, which is why digit sums work`]],
+    examples: [['1234 ÷ 9: what is left over?', `Each 10, 100 and 1000 leaves 1, so add the digits: 1 + 2 + 3 + 4 = 10, and 10 leaves 1 → ${hl('1')}`], ['10ⁿ divided by 9', `Always remainder ${hl('1')}, which is why digit sums work`], ['Powers of 10 divided by 7', `Remainders 1, 3, 2, 6, 4, 5, then 1 again: ${hl('a cycle of 6')}`]],
     uses: ['Recurring decimals', 'Divisibility'],
     read: [['Repeating decimal (Wikipedia)', W + 'Repeating_decimal']],
     scene: { w: 440, h: 320, steps: [
@@ -262,7 +263,7 @@ export const DETAILS = {
   'Ādyamādyenāntyamantyena': {
     more: 'The first by the first and the last by the last. When you factor a quadratic, the first terms of the factors multiply to give the first term, and the last terms multiply to give the last term. Only the middle term needs a cross check.',
     why: '(px + q)(rx + s) = pr·x² + (ps + qr)x + qs. The first coefficient is p × r and the last is q × s, exactly "first by first, last by last".',
-    examples: [['2x² + 7x + 6', `First 2x² = 2x · x, last 6 = 3 · 2, middle 2x·2 + 3·x = 7x → ${hl('(2x + 3)(x + 2)')}`], ['3x² + 10x + 8', `${hl('(3x + 4)(x + 2)')}: 6x + 4x = 10x`]],
+    examples: [['x² + 5x + 6', `First x² = x · x, last 6 = 2 · 3, middle 2x + 3x = 5x → ${hl('(x + 2)(x + 3)')}`], ['2x² + 7x + 6', `First 2x² = 2x · x, last 6 = 3 · 2, middle 2x·2 + 3·x = 7x → ${hl('(2x + 3)(x + 2)')}`], ['3x² + 10x + 8', `${hl('(3x + 4)(x + 2)')}: 6x + 4x = 10x`], ['6x² + 13x + 6', `First 6x² = 2x · 3x, last 6 = 3 · 2. Middle: 2x·2 + 3·3x = 4x + 9x = 13x → ${hl('(2x + 3)(3x + 2)')}`]],
     uses: ['Factoring quadratics'],
     read: [['Factorization (Wikipedia)', W + 'Factorization']],
     scene: { w: 440, h: 300, steps: [
@@ -276,7 +277,7 @@ export const DETAILS = {
   'Kevalaiḥ Saptakaṃ Guṇyāt': {
     more: 'For 7, the multiplier is 143. Because 7 × 143 = 1001, the fraction 1/7 can be rewritten with a denominator made of nines, which makes its repeating decimal appear at once.',
     why: '1/7 = 143/1001 = 143 × 999 / 999999. And 143 × 999 = 142857 (using "one less" and "all from 9"). A fraction over 999999 repeats its six digits: 1/7 = 0.142857 142857 …',
-    examples: [['7 × 143', hl('1001')], ['143 × 999', `142 | 857 → ${hl('142857')}`], ['2/7, 3/7 …', `The same six digits rotate: 2/7 = 0.${hl('285714')}…`]],
+    examples: [['7 × 143', `7 × 140 = 980, 7 × 3 = 21 → ${hl('1001')}`], ['143 × 999', `142 | 857 → ${hl('142857')}`], ['2/7, 3/7 …', `The same six digits rotate: 2/7 = 0.${hl('285714')}…`]],
     uses: ['Decimals of sevenths', 'Cyclic numbers'],
     read: [['Cyclic number (Wikipedia)', W + 'Cyclic_number']],
     scene: { kind: 'eq', steps: [
@@ -289,7 +290,7 @@ export const DETAILS = {
   'Veṣṭanam': {
     more: 'By osculation. To test divisibility by 7, 13, 19 or 29 (and others), chop off the last digit, multiply it by a fixed "osculator", and add it to what is left. Repeat until the number is small. The osculator comes from Ekādhika: for 7, use 7 × 7 = 49 and one more than 4 is 5.',
     why: 'Multiply 10a + b by 5: you get 50a + 5b = 49a + (a + 5b). 49a is a multiple of 7, and 5 shares no factor with 7, so 10a + b is divisible by 7 exactly when a + 5b is. The same reasoning gives 4 for 13 (40 = 39 + 1), 2 for 19 and 3 for 29.',
-    examples: [['Is 3192 divisible by 7?', `319 + 2×5 = 329 → 32 + 9×5 = 77 = 7 × 11 → ${hl('yes')} (3192 = 7 × 456)`], ['Osculators', '7 → 5, 13 → 4, 19 → 2, 29 → 3']],
+    examples: [['Osculators', `Multiply to reach a number ending in 9, add 1 and drop the 0: 7 × 7 = 49 → ${hl('5')}; 13 × 3 = 39 → 4; 19 → 2; 29 → 3`], ['Is 91 divisible by 7?', `Osculator 5: 9 + 1 × 5 = 14 = 7 × 2 → ${hl('yes')} (91 = 7 × 13)`], ['Is 3192 divisible by 7?', `319 + 2×5 = 329 → 32 + 9×5 = 77 = 7 × 11 → ${hl('yes')} (3192 = 7 × 456)`], ['Is 1729 divisible by 13?', `Osculator 4: 172 + 9 × 4 = 208 → 20 + 8 × 4 = 52 = 13 × 4 → ${hl('yes')} (1729 = 13 × 133)`]],
     uses: ['Divisibility tests'],
     read: [['Divisibility rule (Wikipedia)', W + 'Divisibility_rule']],
     scene: { kind: 'eq', steps: [
@@ -302,7 +303,7 @@ export const DETAILS = {
   'Yāvadūnaṃ Tāvadūnam': {
     more: 'Lessen by the deficiency. If a number is short of the base by some amount, take that same amount away from it again. This is the first half of the squaring trick near a base.',
     why: 'For a number n = B − d, the left part of n² over a base B is n − d = B − 2d, because (B − d)² = B(B − 2d) + d².',
-    examples: [['97²', `3 short: 97 − 3 = 94, 3² = 09 → ${hl('9409')}`], ['8² (base 10)', `2 short: 8 − 2 = 6, 2² = 4 → ${hl('64')}`]],
+    examples: [['8² (base 10)', `2 short: 8 − 2 = 6, 2² = 4 → ${hl('64')}`], ['97²', `3 short: 97 − 3 = 94, 3² = 09 → ${hl('9409')}`], ['988²', `12 short of 1000: 988 − 12 = 976, 12² = 144 → ${hl('976144')}`]],
     uses: ['Squares below a base'],
     read: [VM],
     scene: { kind: 'eq', steps: [
@@ -316,7 +317,7 @@ export const DETAILS = {
   'Yāvadūnaṃ Tāvadūnīkṛtya Vargaṃ ca Yojayet': {
     more: 'Lessen by the deficiency and set up the square of the deficiency. The complete recipe for squares near a base, and it works above the base too, where the deficiency is a surplus and you add instead.',
     why: '(B + s)² = B(B + 2s) + s². Above the base you move up by the surplus again, then attach s².',
-    examples: [['104²', `4 over: 104 + 4 = 108, 4² = 16 → ${hl('10816')}`], ['1012²', `12 over: 1024 | 144 → ${hl('1024144')}`]],
+    examples: [['7² (base 10)', `3 short: 7 − 3 = 4, then add the square 3² = 9 → ${hl('49')}`], ['98²', `2 short: 98 − 2 = 96, 2² = 04 → ${hl('9604')}`], ['104²', `4 over, so add instead: 104 + 4 = 108, 4² = 16 → ${hl('10816')}`], ['1012²', `12 over: 1024 | 144 → ${hl('1024144')}`]],
     uses: ['Squares above and below a base'],
     read: [VM],
     scene: { w: 440, h: 320, steps: [
@@ -330,7 +331,7 @@ export const DETAILS = {
   'Antyayordaśake\'pi': {
     more: 'When the last digits add to ten. If two numbers share the same front part and their last digits add to 10, multiply the front by one more than itself, then attach the product of the last digits as two digits.',
     why: '(10a + b)(10a + c) with b + c = 10: = 100a² + 10a(b + c) + bc = 100a(a + 1) + bc. The rectangle picture shows the 3 × 40 strip sliding over to complete a 40 by 50 block.',
-    examples: [['43 × 47', `4 × 5 = 20, 3 × 7 = 21 → ${hl('2021')}`], ['62 × 68', `6 × 7 = 42, 2 × 8 = 16 → ${hl('4216')}`], ['104 × 106', `10 × 11 = 110, 4 × 6 = 24 → ${hl('11024')}`]],
+    examples: [['14 × 16', `4 + 6 = 10. 1 × 2 = 2, 4 × 6 = 24 → ${hl('224')}`], ['43 × 47', `4 × 5 = 20, 3 × 7 = 21 → ${hl('2021')}`], ['51 × 59', `5 × 6 = 30, 1 × 9 = 9, written as 09 → ${hl('3009')}`], ['62 × 68', `6 × 7 = 42, 2 × 8 = 16 → ${hl('4216')}`], ['104 × 106', `10 × 11 = 110, 4 × 6 = 24 → ${hl('11024')}`]],
     uses: ['Products with last digits summing to 10'],
     read: [VM],
     scene: { w: 460, h: 320, steps: [
@@ -346,7 +347,7 @@ export const DETAILS = {
   'Antyayoreva': {
     more: 'Only the last terms. In some fraction equations, the main parts of the numerator and denominator are already in the same ratio as the other side. Then only the last terms matter, and you can solve by comparing them alone.',
     why: 'Write the left side as (x(x + 1) + 1) / (x(x + 3) + 3). The big parts x(x + 1) and x(x + 3) are in the ratio (x + 1) : (x + 3), the same as the right side. For the whole fractions to match, the leftover last terms must be in that ratio too.',
-    examples: [[`${frac('x² + x + 1', 'x² + 3x + 3')} = ${frac('x + 1', 'x + 3')}`, `Last terms 1 and 3: ${frac('x + 1', 'x + 3')} = ${frac(1, 3)} → ${hl('x = 0')}`]],
+    examples: [[`${frac(13, 26)} in lowest terms`, `13 = 10 + 3 and 26 = 20 + 6. The tens 10 : 20 and the last parts 3 : 6 are the same ratio, so the last parts alone give ${hl(frac(1, 2))}`], [`${frac('x² + x + 1', 'x² + 3x + 3')} = ${frac('x + 1', 'x + 3')}`, `Last terms 1 and 3: ${frac('x + 1', 'x + 3')} = ${frac(1, 3)} → ${hl('x = 0')}`], [`${frac('x² + 2x + 1', 'x² + 5x + 2')} = ${frac('x + 2', 'x + 5')}`, `x² + 2x = x(x + 2) and x² + 5x = x(x + 5), so only the last terms 1 and 2 matter: ${frac('x + 2', 'x + 5')} = ${frac(1, 2)} → 2x + 4 = x + 5 → ${hl('x = 1')}`], [`${frac('2x² + x + 1', '3x² + x + 2')} = ${frac('2x + 1', '3x + 1')}`, `2x² + x = x(2x + 1) and 3x² + x = x(3x + 1). Last terms 1 and 2: ${frac('2x + 1', '3x + 1')} = ${frac(1, 2)} → 4x + 2 = 3x + 1 → ${hl('x = −1')}`]],
     uses: ['Special fraction equations'],
     read: [VM],
     scene: { kind: 'eq', steps: [
@@ -359,7 +360,7 @@ export const DETAILS = {
   'Samuccayaguṇitaḥ': {
     more: 'The sum of the products. When you multiply expressions, the sum of the coefficients of the product equals the product of the coefficient sums. A quick check for expanding brackets.',
     why: 'Again, the coefficient sum is the value at x = 1, and values multiply: (f·g)(1) = f(1) · g(1).',
-    examples: [['(x + 4)(x + 5) = x² + 9x + 20', `(1 + 4)(1 + 5) = 30 and 1 + 9 + 20 = 30 → ${hl('checks out')}`]],
+    examples: [['11 × 12 = 132', `Digit sums: 2 × 3 = 6 and 1 + 3 + 2 = 6 → ${hl('checks out')}`], ['(x + 4)(x + 5) = x² + 9x + 20', `(1 + 4)(1 + 5) = 30 and 1 + 9 + 20 = 30 → ${hl('checks out')}`], ['(x + 2)(x + 6) = x² + 8x + 8?', `(1 + 2)(1 + 6) = 21 but 1 + 8 + 8 = 17 → ${hl('wrong')} (the last term is 2 × 6 = 12)`], ['(2x + 3)(3x − 1) = 6x² + 7x − 3', `(2 + 3)(3 − 1) = 10 and 6 + 7 − 3 = 10 → ${hl('checks out')}`]],
     uses: ['Checking expansions'],
     read: [VM],
     scene: { kind: 'eq', steps: [
@@ -372,7 +373,7 @@ export const DETAILS = {
   'Lopanasthāpanābhyām': {
     more: 'By alternate elimination and retention. To factor a big expression in x, y and z, remove one letter at a time (set it to zero), factor the small pieces, then put the pieces back together.',
     why: 'If the expression factors as (ax + by + cz)(dx + ey + fz), then setting z = 0 leaves (ax + by)(dx + ey), and setting y = 0 leaves (ax + cz)(dx + fz). Each smaller factoring reveals part of the answer.',
-    examples: [['2x² + 6y² + 3z² + 7xy + 11yz + 7zx', `z = 0: (x + 2y)(2x + 3y). y = 0: (x + 3z)(2x + z). Combine → ${hl('(x + 2y + 3z)(2x + 3y + z)')}`]],
+    examples: [['x² + y² + z² + 2xy + 2yz + 2zx', `z = 0: x² + 2xy + y² = (x + y)². y = 0: (x + z)². Combine → ${hl('(x + y + z)²')}`], ['x² + 2y² + 3z² + 3xy + 5yz + 4zx', `z = 0: (x + y)(x + 2y). y = 0: (x + z)(x + 3z). Combine → ${hl('(x + y + z)(x + 2y + 3z)')}`], ['2x² + 6y² + 3z² + 7xy + 11yz + 7zx', `z = 0: (x + 2y)(2x + 3y). y = 0: (x + 3z)(2x + z). Combine → ${hl('(x + 2y + 3z)(2x + 3y + z)')}`]],
     uses: ['Factoring in several variables'],
     read: [VM],
     scene: { kind: 'eq', steps: [
@@ -385,7 +386,7 @@ export const DETAILS = {
   'Vilokanam': {
     more: 'By mere observation. Some answers can simply be seen once you know what to look for: square and cube roots of perfect powers from their last digits, or equations like x + 1/x = 10/3 that are already shaped like the answer.',
     why: 'Squares end only in 0, 1, 4, 5, 6 or 9, and each ending comes from at most two possible last digits. Cubes are even better: each last digit of a cube comes from exactly one last digit of the root.',
-    examples: [['√1849', `Ends in 9 → root ends in 3 or 7. 18 is between 16 and 25 → 4_. 45² = 2025 > 1849 → ${hl('43')}`], ['∛50653', `Ends in 3 → root ends in 7. 50 is between 27 and 64 → 3_. ${hl('37')}`], ['x + 1/x = 10/3', `10/3 = 3 + 1/3 → ${hl('x = 3 or 1/3')}`]],
+    examples: [['√625', `Ends in 5 → root ends in 5. 6 is between 4 and 9 → 2_ → ${hl('25')}`], ['√1849', `Ends in 9 → root ends in 3 or 7. 18 is between 16 and 25 → 4_. 45² = 2025 > 1849 → ${hl('43')}`], ['∛50653', `Ends in 3 → root ends in 7. 50 is between 27 and 64 → 3_. ${hl('37')}`], ['x + 1/x = 10/3', `10/3 = 3 + 1/3 → ${hl('x = 3 or 1/3')}`]],
     uses: ['Square and cube roots', 'Equations by inspection'],
     read: [['Square root (Wikipedia)', W + 'Square_root']],
     scene: { kind: 'eq', steps: [
@@ -398,7 +399,7 @@ export const DETAILS = {
   'Guṇitasamuccayaḥ Samuccayaguṇitaḥ': {
     more: 'The product of the sum of the coefficients in the factors equals the sum of the coefficients in the product. It extends the checking idea to any number of factors, including cubes.',
     why: 'Evaluate at x = 1: every product of factors becomes a product of their coefficient sums.',
-    examples: [['(2x + 1)(x + 3) = 2x² + 7x + 3', `3 × 4 = 12 = 2 + 7 + 3 → ${hl('correct')}`], ['(x + 1)(x + 2)(x + 3) = x³ + 6x² + 11x + 6', `2 × 3 × 4 = 24 = 1 + 6 + 11 + 6 → ${hl('correct')}`]],
+    examples: [['12 × 12 = 144', `Digit sums: 3 × 3 = 9 and 1 + 4 + 4 = 9 → ${hl('correct')}`], ['(2x + 1)(x + 3) = 2x² + 7x + 3', `3 × 4 = 12 = 2 + 7 + 3 → ${hl('correct')}`], ['(x + 1)(x + 2)(x + 3) = x³ + 6x² + 11x + 6', `2 × 3 × 4 = 24 = 1 + 6 + 11 + 6 → ${hl('correct')}`]],
     uses: ['Checking products of several factors'],
     read: [VM],
     scene: { kind: 'eq', steps: [
