@@ -707,26 +707,36 @@ function versesHTML() {
   </section>`;
 }
 /* Listen: a Hindi or Sanskrit system voice reads the Devanagari; otherwise an English voice reads the respelling */
-function sayVerse(v, btn) {
+let verseTurn = 0; /* the latest Listen tap; an older tap still waiting for the voice list gives way */
+function sayVerse(v, btn, signal) {
   fx.stopSpeaking();
   const synth = window.speechSynthesis;
   const reset = () => { btn.setAttribute('aria-pressed', 'false'); btn.querySelector('span').textContent = 'Listen'; };
   if (!synth) { btn.closest('.verse').querySelector('.verse-say').classList.add('verse-say--hl'); return; }
-  if (btn.getAttribute('aria-pressed') === 'true') { synth.cancel(); reset(); return; }
+  if (btn.getAttribute('aria-pressed') === 'true') { verseTurn++; synth.cancel(); reset(); return; }
   synth.cancel();
   view.querySelectorAll('.verse-listen[aria-pressed="true"]').forEach(b => { b.setAttribute('aria-pressed', 'false'); b.querySelector('span').textContent = 'Listen'; });
-  const indic = synth.getVoices().find(x => /^(sa|hi)([-_]|$)/i.test(x.lang));
+  btn.setAttribute('aria-pressed', 'true'); btn.querySelector('span').textContent = 'Stop';
+  const turn = ++verseTurn;
+  /* Speak at once when the voices are listed (Safari wants speech started inside the tap); Chrome often lists them
+     only after a moment, so then wait for them rather than falling back to English too early */
+  const now = synth.getVoices();
+  if (now.length) speakVerse(v, btn, now, reset);
+  else fx.loadVoices().then(list => { if (turn === verseTurn && !(signal && signal.aborted) && btn.getAttribute('aria-pressed') === 'true') speakVerse(v, btn, list, reset); });
+}
+function speakVerse(v, btn, voices, reset) {
+  const synth = window.speechSynthesis;
+  const indic = voices.find(x => /^(sa|hi)([-_]|$)/i.test(x.lang));
   const text = indic ? v.deva.replace(/[।॥|]+/g, ', ') : v.say.replace(/\|/g, ',').replace(/-/g, '').toLowerCase();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = indic ? indic.lang : 'en-US';
   if (indic) try { u.voice = indic; } catch (e) {} /* the language alone still picks a Hindi voice */
   u.rate = 0.75; u.onend = u.onerror = reset;
-  btn.setAttribute('aria-pressed', 'true'); btn.querySelector('span').textContent = 'Stop';
   synth.speak(u);
   track('sloka/listen', 'Sanskrit verse: listen');
 }
 function wireVerses(root, signal) {
-  on(root, 'click', e => { const b = e.target.closest('.verse-listen'); if (!b) return; const v = SLOKAS.find(x => x.id === b.dataset.verse); if (v) sayVerse(v, b); }, signal);
+  on(root, 'click', e => { const b = e.target.closest('.verse-listen'); if (!b) return; const v = SLOKAS.find(x => x.id === b.dataset.verse); if (v) sayVerse(v, b, signal); }, signal);
   onAbort(signal, () => { try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {} });
 }
 function collect(name) { if (store.markSeen('sutra:' + name)) store.addSparks(5, 'sutra'); }

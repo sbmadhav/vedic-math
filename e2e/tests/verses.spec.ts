@@ -4,20 +4,23 @@ import { test, expect, open } from './fixtures';
    grouped by era, a Listen button, word-by-word notes, and the related verse inside a sutra deep dive. */
 
 /* A fake speech engine: one Hindi voice (or none), and every utterance recorded on window.__said */
-async function fakeSpeech(page: import('@playwright/test').Page, withHindi: boolean) {
-  await page.addInitScript(({ withHindi }) => {
+async function fakeSpeech(page: import('@playwright/test').Page, withHindi: boolean, lateMs = 0) {
+  await page.addInitScript(({ withHindi, lateMs }) => {
     const said: { text: string; lang: string }[] = [];
     (window as any).__said = said;
     const voices = withHindi ? [{ name: 'Lekha', lang: 'hi-IN', default: false, localService: true, voiceURI: 'hi' }] : [{ name: 'Sam', lang: 'en-US', default: true, localService: true, voiceURI: 'en' }];
+    /* lateMs: the list is empty until then, like Chrome before voiceschanged */
+    let ready = !lateMs; const heard: Function[] = [];
     const synth = {
       speaking: false, pending: false, paused: false, onvoiceschanged: null,
-      getVoices: () => voices,
+      getVoices: () => (ready ? voices : []),
       speak(u: any) { said.push({ text: u.text, lang: u.lang }); },
       cancel() {}, pause() {}, resume() {},
-      addEventListener() {}, removeEventListener() {}
+      addEventListener(type: string, fn: Function) { if (type === 'voiceschanged') heard.push(fn); }, removeEventListener() {}
     };
+    if (lateMs) setTimeout(() => { ready = true; heard.splice(0).forEach(f => f()); }, lateMs);
     Object.defineProperty(window, 'speechSynthesis', { value: synth, configurable: true });
-  }, { withHindi });
+  }, { withHindi, lateMs });
 }
 
 test('the Sutras page ends with the verses, grouped by era, each with Devanagari, IAST and a respelling', async ({ page, issues }) => {
@@ -51,6 +54,17 @@ test('Listen reads the Devanagari with a Hindi voice, and a second tap stops', a
   expect(said.at(-1).text).toContain('चतुरधिकं');
   await btn.click();
   await expect(btn).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('when the voice list arrives late (Chrome), Listen waits for it and still uses the Hindi voice', async ({ page }) => {
+  await fakeSpeech(page, true, 400);
+  await open(page, '#/sutras');
+  await page.evaluate(() => { (window as any).__said.length = 0; });
+  await page.locator('#verse-aryabhata-pi .verse-listen').click();
+  await expect.poll(() => page.evaluate(() => (window as any).__said.length)).toBe(1);
+  const said = await page.evaluate(() => (window as any).__said);
+  expect(said[0].lang).toBe('hi-IN');
+  expect(said[0].text).toContain('चतुरधिकं');
 });
 
 test('with no Hindi voice, Listen reads the respelling in English', async ({ page }) => {
