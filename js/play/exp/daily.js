@@ -9,7 +9,7 @@ const KEY = 'daily';
 const blank = () => ({ days: {}, played: [], paid: [] });
 const fmtDate = key => new Date(key + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
 const stepText = s => `${s.a} ${D.OP_SIGN[s.op]} ${s.b} = ${s.r}`;
-const starHtml = n => `<span class="dn-stars" aria-label="${n} of 3 stars">${[0, 1, 2].map(i => `<i class="${i < n ? 'on' : ''}" aria-hidden="true">★</i>`).join('')}</span>`;
+const starHtml = n => `<span class="dn-stars" role="img" aria-label="${n} of 3 stars">${[0, 1, 2].map(i => `<i class="${i < n ? 'on' : ''}" aria-hidden="true">★</i>`).join('')}</span>`;
 const TIER_COLOR = ['teal', 'sun', 'coral'];
 
 export function mount({ root, signal, params }) {
@@ -52,7 +52,7 @@ export function mount({ root, signal, params }) {
         <a class="dn-link" href="#/arena/daily-number/archive">Archive</a>
         ${official ? '' : `<a class="dn-link" href="#/arena/daily-number">Today</a>`}
       </div>
-      ${P.tiers.length > 1 ? `<div class="dn-tiers" role="tablist" aria-label="Targets"></div>` : ''}
+      ${P.tiers.length > 1 ? `<div class="dn-tiers" role="group" aria-label="Targets"></div>` : ''}
       <section class="px-stage dn-stage" aria-label="Puzzle board">
         <div class="dn-target"><span class="dn-make">Make</span><b class="dn-goal"></b><span class="dn-near"></span></div>
         <div class="dn-board" role="group" aria-label="Numbers"></div>
@@ -76,7 +76,7 @@ export function mount({ root, signal, params }) {
     const slotsOf = i => D.replay(P.tiers[i].nums, tierState(i).moves);
     const drawTabs = () => {
       if (!tabs) return;
-      tabs.innerHTML = P.tiers.map((tr, i) => { const st = tierState(i); return `<button type="button" role="tab" class="dn-tab dn-tab--${TIER_COLOR[i]}" data-tier="${i}" aria-selected="${i === cur}" aria-label="${tr.name} target ${tr.target}${rec.tiers[i].done ? `, ${rec.tiers[i].stars} stars` : ''}">
+      tabs.innerHTML = P.tiers.map((tr, i) => { const st = tierState(i); return `<button type="button" class="dn-tab dn-tab--${TIER_COLOR[i]}" data-tier="${i}" aria-pressed="${i === cur}" aria-label="${tr.name} target ${tr.target}${rec.tiers[i].done ? `, ${rec.tiers[i].stars} stars` : ''}">
         <span>${tr.name}</span><b>${tr.target}</b>${rec.tiers[i].done ? starHtml(rec.tiers[i].stars) : `<small>${st.moves.length ? 'in progress' : 'new'}</small>`}</button>`; }).join('');
     };
     const draw = () => {
@@ -106,6 +106,7 @@ export function mount({ root, signal, params }) {
     const pickSlot = i => {
       const st = tierState(cur); if (st.done) return;
       const slots = slotsOf(cur); if (slots[i] == null) return;
+      noteFocus();
       if (sel == null || op == null) { sel = sel === i ? null : i; op = null; tone(PENTA[3 + Math.min(i, 5)], { dur: 0.08, type: 'triangle', gain: 0.07 }); draw(); say(sel == null ? 'Unpicked.' : `Picked ${slots[i]}.`); focusSlot(i); return; }
       if (i === sel) { op = null; draw(); focusSlot(i); return; }
       const a = slots[sel], b = slots[i], r = D.apply(a, op, b);
@@ -119,14 +120,24 @@ export function mount({ root, signal, params }) {
       note(`${a} ${D.OP_SIGN[o]} ${b} = ${r}.`);
       draw(); focusSlot(i);
     };
-    const focusSlot = i => { const b = board.querySelector(`[data-slot="${i}"]`); if (b && wrap.contains(document.activeElement) && document.activeElement.closest('.dn-board, .dn-ops')) b.focus({ preventScroll: true }); };
+    /* draw() rebuilds the board and the operations, so keyboard focus is noted first and put back after:
+       on the same operation, else the given tile, else Undo or the first tile when the focused button went away */
+    let kbd = null;
+    const noteFocus = () => { const a = document.activeElement; kbd = a && wrap.contains(a) && a.closest('.dn-board, .dn-ops, .dn-actions') ? a : null; };
+    const focusIn = q => { const b = q && wrap.querySelector(q); if (b && !b.disabled && !b.hidden) { b.focus({ preventScroll: true }); return true; } return false; };
+    const focusSlot = i => {
+      const was = kbd; kbd = null; if (!was) return;
+      if (was.dataset.op && focusIn(`[data-op="${was.dataset.op}"]`)) return;
+      if (was.isConnected && !was.disabled) { was.focus({ preventScroll: true }); return; }
+      focusIn(i != null ? `[data-slot="${i}"]` : null) || focusIn('.dn-undo') || focusIn('.dn-board button');
+    };
     const pickOp = o => {
       const st = tierState(cur); if (st.done || sel == null || !P.tiers[cur].ops.includes(o)) return;
-      op = op === o ? null : o; tone(880, { dur: 0.05, type: 'triangle', gain: 0.05 }); draw();
+      noteFocus(); op = op === o ? null : o; tone(880, { dur: 0.05, type: 'triangle', gain: 0.05 }); draw(); focusSlot(sel);
       if (op) say(`${slotsOf(cur)[sel]} ${D.OP_NAME[o]}. Pick the second number.`);
     };
-    const undo = () => { const st = tierState(cur); if (st.done || !st.moves.length) return; st.moves.pop(); sel = null; op = null; if (!fun[cur]) save(); draw(); say('Undone.'); };
-    const reset = () => { const st = tierState(cur); if (st.done || !st.moves.length) return; st.moves = []; sel = null; op = null; if (!fun[cur]) save(); draw(); say('Back to the six numbers.'); };
+    const undo = () => { const st = tierState(cur); if (st.done || !st.moves.length) return; noteFocus(); st.moves.pop(); sel = null; op = null; if (!fun[cur]) save(); draw(); focusSlot(null); say('Undone.'); };
+    const reset = () => { const st = tierState(cur); if (st.done || !st.moves.length) return; noteFocus(); st.moves = []; sel = null; op = null; if (!fun[cur]) save(); draw(); focusSlot(null); say('Back to the six numbers.'); };
 
     const finish = value => {
       const tr = P.tiers[cur], st = tierState(cur), stars = D.stars(tr.target, value, lv);
@@ -144,7 +155,8 @@ export function mount({ root, signal, params }) {
       say(stars === 3 ? `Exactly ${tr.target}! Three stars.` : `You finished with ${value}, ${Math.abs(value - tr.target)} away. ${stars} star${stars === 1 ? '' : 's'}.`);
       wrap.querySelector('.dn-streak').textContent = D.streak(S.played, today);
       draw();
-      done.querySelector('.md-btn--primary')?.focus({ preventScroll: true });
+      /* the next tier, else (all done) the share button, else the replay button */
+      (done.querySelector('.dn-next') || (!summary.hidden && summary.querySelector('.dn-share')) || done.querySelector('.dn-fun'))?.focus({ preventScroll: true });
       done.scrollIntoView({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
     };
 
@@ -181,7 +193,7 @@ export function mount({ root, signal, params }) {
       summary.innerHTML = `<div class="dn-sum px-stage">
         <div><p class="md-kicker">${official ? 'Today is done' : 'Practice done'}</p>
         <p class="dn-sum-big">${total} of ${rec.tiers.length * 3} stars</p>
-        <pre class="dn-grid" aria-label="Your share grid">${esc(text)}</pre>
+        <pre class="dn-grid" role="img" aria-label="Your share grid: ${total} of ${rec.tiers.length * 3} stars">${esc(text)}</pre>
         <p class="px-note">The grid shows the operations you used and your stars, never the numbers, so nobody gets spoiled.</p></div>
         <div class="dn-sum-side">
           <button type="button" class="md-btn md-btn--primary dn-share">Share my grid</button>
@@ -201,7 +213,7 @@ export function mount({ root, signal, params }) {
 
     on(wrap, 'click', e => {
       const tab = e.target.closest('[data-tier]');
-      if (tab) { cur = +tab.dataset.tier; sel = null; op = null; draw(); say(`${P.tiers[cur].name} target: ${P.tiers[cur].target}.`); if (tab.classList.contains('dn-next')) wrap.querySelector('.dn-stage').scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); return; }
+      if (tab) { cur = +tab.dataset.tier; sel = null; op = null; draw(); if (!tab.isConnected) (tab.classList.contains('dn-next') ? focusIn('.dn-board button') : focusIn(`.dn-tab[data-tier="${cur}"]`)) || focusIn('.dn-board button'); say(`${P.tiers[cur].name} target: ${P.tiers[cur].target}.`); if (tab.classList.contains('dn-next')) wrap.querySelector('.dn-stage').scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); return; }
       const sl = e.target.closest('[data-slot]'); if (sl) return pickSlot(+sl.dataset.slot);
       const ob = e.target.closest('[data-op]'); if (ob) return pickOp(ob.dataset.op);
       if (e.target.closest('.dn-reload')) { location.reload(); return; }

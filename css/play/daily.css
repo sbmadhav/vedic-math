@@ -15,8 +15,8 @@
 .dn-tab span { font-size: .75rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); }
 .dn-tab b { font: 700 1.5rem/1.1 var(--font-display); }
 .dn-tab small { font-size: .75rem; color: var(--ink-muted); }
-.dn-tab[aria-selected="true"] { border-color: var(--c); box-shadow: 0 3px 0 var(--c); transform: translateY(-1px); }
-.dn-tab[aria-selected="true"]::before { opacity: 1; }
+.dn-tab[aria-pressed="true"] { border-color: var(--c); box-shadow: 0 3px 0 var(--c); transform: translateY(-1px); }
+.dn-tab[aria-pressed="true"]::before { opacity: 1; }
 .dn-tab--sun { --c: var(--sun); } .dn-tab--coral { --c: var(--coral); }
 .dn-stars { display: inline-flex; gap: 1px; letter-spacing: 0; }
 .dn-stars i { font-style: normal; color: var(--line); font-size: .95em; }
