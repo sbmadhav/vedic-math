@@ -4,7 +4,8 @@ import { test, expect, open, chromiumOnly, FIRESTORE, FIREBASE_AUTH, FIREBASE_SD
    leaderboards shown in the Arena lobby and on a game page, as a fresh device that has never posted.
    Viewing needs no identity (docs/adr/0002), so it must not load Auth or make any sign-in request.
    It is read-only: the fixture aborts and fails on any write-shaped Firestore request, and the test
-   never plays a round or earns Sparks. Chromium only, serial, no retries. */
+   never plays a round or earns Sparks. Chromium only, serial, no retries. It is also the suite's only check
+   that the Content-Security-Policy (openspec content-security) lets the real SDK and App Check run. */
 
 test.use({ liveFirebase: true });
 test.describe.configure({ mode: 'serial', retries: 0 });
@@ -15,6 +16,10 @@ test('World leaderboards load from live Firestore (read-only)', async ({ page },
   test.skip(!/^https:\/\/sbmadhav\.com$/.test(testInfo.project.use.baseURL || ''), 'live Firebase only answers https://sbmadhav.com');
   test.setTimeout(90_000);
   const firestore: string[] = [], signIn: string[] = [], sdk: string[] = [];
+  await page.addInitScript(() => {
+    (window as any).__csp = [];
+    document.addEventListener('securitypolicyviolation', e => (window as any).__csp.push(`${e.effectiveDirective} ${e.blockedURI}`));
+  });
   page.on('request', r => {
     if (FIRESTORE.test(r.url())) firestore.push(`${r.method()} ${isFirestoreWrite(r.method(), r.url()) ? 'WRITE' : 'read'} ${r.url().split('?')[0]}`);
     if (FIREBASE_AUTH.test(r.url())) signIn.push(r.url().split('?')[0]);
@@ -43,4 +48,5 @@ test('World leaderboards load from live Firestore (read-only)', async ({ page },
   expect(sdk, 'Auth is never loaded to view a World board').not.toContain('firebase-auth.js');
   expect(firestore.some(r => r.includes(' read '))).toBe(true);
   expect(firestore.filter(r => r.includes('WRITE'))).toEqual([]);
+  expect(await page.evaluate(() => (window as any).__csp), 'no CSP violation from the real SDK, App Check or reCAPTCHA').toEqual([]);
 });

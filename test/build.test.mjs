@@ -115,3 +115,55 @@ test('the build fails if stamps are committed to the source', () => {
     assert.match(r.stderr, /source must/);
   }
 });
+
+/* Content-Security-Policy (openspec/specs/content-security): written into the built index.html only. */
+const policy = () => {
+  const m = read('index.html').match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)">/);
+  assert.ok(m, 'the built index.html has a CSP <meta>');
+  return Object.fromEntries(m[1].split(/;\s*/).map(d => { const [k, ...v] = d.split(/\s+/); return [k, v]; }));
+};
+
+test('the build writes a CSP that allows each inline script, the import map included, by its hash', () => {
+  build();
+  const html = read('index.html'), csp = policy();
+  assert.ok(html.indexOf('http-equiv="Content-Security-Policy"') < html.indexOf('<script'), 'the policy comes before the first script');
+  assert.ok(html.indexOf('<meta charset="utf-8">') < html.indexOf('http-equiv="Content-Security-Policy"'));
+  assert.match(html, /<meta name="referrer" content="strict-origin-when-cross-origin">/);
+  const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]);
+  assert.equal(inline.length, 3, 'the color scheme script, the import map and the color mode buttons');
+  for (const body of inline) assert.ok(csp['script-src'].includes(`'sha256-${createHash('sha256').update(body).digest('base64')}'`), `no hash for ${body.slice(0, 40)}`);
+  for (const bad of ["'unsafe-inline'", "'unsafe-eval'", "'wasm-unsafe-eval'", '*', 'https:', 'data:', 'blob:']) assert.ok(!csp['script-src'].includes(bad), `script-src must not allow ${bad}`);
+  assert.deepEqual(csp['object-src'], ["'none'"]);
+  assert.deepEqual(csp['default-src'], ["'self'"]);
+  assert.ok(csp['frame-src'].includes('https://www.youtube-nocookie.com'));
+  assert.ok(csp['img-src'].includes('https://i.ytimg.com'));
+  assert.ok(csp['connect-src'].includes('https://firestore.googleapis.com'));
+  assert.ok(csp['script-src'].includes('https://www.gstatic.com/firebasejs/'));
+  assert.ok(!JSON.stringify(csp).includes('gc.zgo.at'), 'GoatCounter count.js is served from this site');
+  assert.ok(!/http-equiv="Content-Security-Policy"/.test(readFileSync(join(repo, 'index.html'), 'utf8')), 'the source has no policy');
+});
+
+test('with leaderboards off the CSP lists no Firebase or Google host', () => {
+  const cfg = join(dir, 'js/cloud-config.js'), orig = readFileSync(cfg, 'utf8');
+  writeFileSync(cfg, orig.replace(/export const FIREBASE = \{[\s\S]*?\};/, 'export const FIREBASE = null;'));
+  try { build(); } finally { writeFileSync(cfg, orig); }
+  const text = JSON.stringify(policy());
+  assert.ok(!/google|gstatic|firebase/.test(text), text);
+});
+
+test('the build fails on a CSP in the source, an inline event handler or a javascript: URL', () => {
+  for (const edit of [
+    s => s.replace('<meta charset="utf-8">', `<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="default-src 'self'">`),
+    s => s.replace('<button type="button" class="linkbtn mq-reset" id="resetMode">', '<button type="button" class="linkbtn mq-reset" id="resetMode" onclick="go()">'),
+    s => s.replace('href="#/learn"', 'href="javascript:void(0)"'),
+  ]) {
+    const orig = readFileSync(join(dir, 'index.html'), 'utf8');
+    const changed = edit(orig);
+    assert.notEqual(changed, orig);
+    writeFileSync(join(dir, 'index.html'), changed);
+    const r = tryBuild();
+    writeFileSync(join(dir, 'index.html'), orig);
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /CSP|Content-Security-Policy/);
+  }
+});
