@@ -23,7 +23,7 @@ function castBoard(host, { spell, problem, guided = false, slow = false, signal,
   let selected = null, hint = guided, finished = false;
   const { w: VW, h: VH } = C.VIEW;
   host.innerHTML = `
-    <div class="sp-eq" aria-live="off"><span class="sp-eq-q">${esc(C.show(problem))}</span><span class="sp-eq-is">=</span><span class="sp-ans" aria-label="Answer so far"></span></div>
+    <div class="sp-eq" aria-live="off"><span class="sp-eq-q">${esc(C.show(problem))}</span><span class="sp-eq-is">=</span><span class="sp-ans" role="group" aria-label="Answer so far"></span></div>
     <div class="sp-board" role="group" aria-label="Spell board for ${esc(C.show(problem))}. Draw across digits, or press one digit and then another to join them.">
       <svg class="sp-ink" viewBox="0 0 ${VW} ${VH}" aria-hidden="true">
         <g class="sp-guide"></g><g class="sp-lines"></g><path class="sp-trail" d=""/><g class="sp-puffs"></g>
@@ -303,7 +303,7 @@ export function mount({ root, signal, params }) {
       <div class="sp-arena">
         <div class="sp-left">
           <div class="sp-hud">
-            <span class="sp-chip" aria-label="Combo"><b class="sp-combo">×0</b> combo</span>
+            <span class="sp-chip"><b class="sp-combo">×0</b> combo</span>
             <span class="sp-chip"><b class="sp-spark">${S.sparkles}</b> sparkles</span>
             <span class="px-sp"></span>
             <div class="sp-pace" role="group" aria-label="Pace">
@@ -311,7 +311,7 @@ export function mount({ root, signal, params }) {
               <button type="button" class="md-chip" data-pace="brisk" aria-pressed="${S.pace === 'brisk'}">Brisk</button>
             </div>
           </div>
-          <div class="sp-lane" aria-label="Number monsters">
+          <div class="sp-lane" role="group" aria-label="Number monsters">
             <div class="sp-ward" aria-hidden="true"></div>
             <div class="sp-ms"></div>
           </div>

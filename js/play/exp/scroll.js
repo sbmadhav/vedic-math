@@ -47,9 +47,9 @@ export function mount({ root, signal, params }) {
           <span class="sc-ch-art" aria-hidden="true"><svg viewBox="0 0 400 180" preserveAspectRatio="xMidYMid slice">${SCENES[c.scene]}</svg></span>
           <b>${open ? esc(c.title) : 'Sealed'}</b>
           <span class="sc-ch-place">${open ? esc(c.place) : `Opens ${fmtDate(S.openKey(c.n, LAUNCH))}`}</span>
-          ${open ? `<span class="sc-pips" aria-label="${got} of ${ps.length} puzzles solved">${ps.map(p => `<i class="${P.solved[`${lv}:${p.id}`] ? 'is-on' : ''}"></i>`).join('')}</span>` : `<span class="sc-seal" aria-hidden="true">${lockSvg()}</span>`}
+          ${open ? `<span class="sc-pips" role="img" aria-label="${got} of ${ps.length} puzzles solved">${ps.map(p => `<i class="${P.solved[`${lv}:${p.id}`] ? 'is-on' : ''}"></i>`).join('')}</span>` : `<span class="sc-seal" aria-hidden="true">${lockSvg()}</span>`}
           ${done ? '<span class="sc-ch-done">Piece found</span>' : ''}`;
-        return `<li>${open ? `<a class="sc-ch sc-ch--${c.color}${done ? ' is-done' : ''}" href="${base}/${c.n}">${inner}</a>` : `<div class="sc-ch is-sealed" aria-label="Chapter ${c.n}, sealed until ${fmtDate(S.openKey(c.n, LAUNCH))}">${inner}</div>`}</li>`;
+        return `<li>${open ? `<a class="sc-ch sc-ch--${c.color}${done ? ' is-done' : ''}" href="${base}/${c.n}">${inner}</a>` : `<div class="sc-ch is-sealed" role="group" aria-label="Chapter ${c.n}, sealed until ${fmtDate(S.openKey(c.n, LAUNCH))}">${inner}</div>`}</li>`;
       }).join('')}</ol>
       ${nextN ? `<p class="sc-next" aria-live="off">Chapter ${nextN} opens in <b class="sc-count"></b>. A new chapter every week.</p>` : ''}
       <p class="px-note sc-honest">The story and its people are made up. The mathematics is real: Katapayadi and bhūta-saṅkhyā number words, the rope geometry of the Śulba Sūtras (appendices to the Kalpa Sūtras from the late Vedic period), Piṅgala's syllable lists and the Meru-prastāra described by Halāyudha. Each puzzle tells you its history once you solve it.</p>`;
@@ -204,10 +204,10 @@ function wrongWords(p, v, n) {
 function figure(p) {
   const f = p.fig; if (!f) return '';
   switch (f.type) {
-    case 'kp': return `<div class="sc-fig"><p class="sc-sylls" aria-label="Syllables: ${esc(f.syll.join(', '))}">${f.syll.map(s => `<span class="sc-syl">${esc(s)}</span>`).join('<i aria-hidden="true">·</i>')}</p>${f.word ? `<p class="px-note">The whole name: ${esc(f.word)}</p>` : ''}${kpKey(f.easy)}</div>`;
+    case 'kp': return `<div class="sc-fig"><p class="sc-sylls" role="group" aria-label="Syllables: ${esc(f.syll.join(', '))}">${f.syll.map(s => `<span class="sc-syl">${esc(s)}</span>`).join('<i aria-hidden="true">·</i>')}</p>${f.word ? `<p class="px-note">The whole name: ${esc(f.word)}</p>` : ''}${kpKey(f.easy)}</div>`;
     case 'kpkey': return `<div class="sc-fig">${kpKey(f.easy)}</div>`;
     case 'rect': return `<div class="sc-fig">${rectSvg(f.w, f.h)}</div>`;
-    case 'recipe': return `<div class="sc-fig sc-recipe" aria-label="${f.pro ? '1 plus one third plus one third of one fourth minus one thirty-fourth of that' : '1 plus one third plus one third of one fourth'}"><span>1</span><b>+</b><span class="sc-frac"><i>1</i><i>3</i></span><b>+</b><span class="sc-frac"><i>1</i><i>3 × 4</i></span>${f.pro ? '<b>−</b><span class="sc-frac"><i>1</i><i>3 × 4 × 34</i></span>' : ''}</div>`;
+    case 'recipe': return `<div class="sc-fig sc-recipe" role="img" aria-label="${f.pro ? '1 plus one third plus one third of one fourth minus one thirty-fourth of that' : '1 plus one third plus one third of one fourth'}"><span>1</span><b>+</b><span class="sc-frac"><i>1</i><i>3</i></span><b>+</b><span class="sc-frac"><i>1</i><i>3 × 4</i></span>${f.pro ? '<b>−</b><span class="sc-frac"><i>1</i><i>3 × 4 × 34</i></span>' : ''}</div>`;
     case 'meru': return `<div class="sc-fig">${meruSvg(f)}</div>`;
     case 'syllables': { const ex = 'G'.repeat(f.k) + 'L'.repeat(f.n - f.k); return `<div class="sc-fig"><p class="px-note">One of them:</p>${meterRow(ex)}<p class="px-note">G is guru (long), L is laghu (short).</p></div>`; }
     case 'prastara': { const rows = S.prastara(f.n).slice(0, f.show); return `<div class="sc-fig sc-pr"><ol class="sc-pr-list">${rows.map((r, i) => `<li><span>${i + 1}</span>${meterRow(r, true)}</li>`).join('')}${f.show < 2 ** f.n ? '<li class="sc-pr-more"><span>…</span></li>' : ''}</ol><div class="sc-pr-ask"><span>The lock shows</span>${meterRow(f.ask)}<span>Row ?</span></div></div>`; }
@@ -226,7 +226,7 @@ function bhutaKey(pool) {
   const by = d => S.BHUTA.filter(e => e.d === d && pool.includes(e.w));
   return `<details class="sc-key" open><summary>Star-counter's words</summary><ul class="sc-key-grid sc-key-grid--w">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(d => `<li><b>${d}</b><span>${by(d).map(e => `${esc(e.w)} <small>${esc(e.en)}</small>`).join('<br>')}</span></li>`).join('')}</ul></details>`;
 }
-const meterRow = (pat, small) => `<span class="sc-meter${small ? ' is-small' : ''}" aria-label="${[...pat].map(c => (c === 'L' ? 'laghu' : 'guru')).join(', ')}">${[...pat].map(c => `<i class="sc-m-${c}">${c}</i>`).join('')}</span>`;
+const meterRow = (pat, small) => `<span class="sc-meter${small ? ' is-small' : ''}" role="img" aria-label="${[...pat].map(c => (c === 'L' ? 'laghu' : 'guru')).join(', ')}">${[...pat].map(c => `<i class="sc-m-${c}">${c}</i>`).join('')}</span>`;
 function rectSvg(w, h) {
   const s = Math.min(240 / w, 150 / h), W = w * s, H = h * s;
   const grid = (w <= 8 && h <= 15) ? Array.from({ length: w - 1 }, (_, i) => `<path class="sc-r-grid" d="M${(i + 1) * s} 0V${H}"/>`).join('') + Array.from({ length: h - 1 }, (_, i) => `<path class="sc-r-grid" d="M0 ${(i + 1) * s}H${W}"/>`).join('') : '';
@@ -263,7 +263,7 @@ const WIDGETS = {
   order(el, p, attempt, sig) {
     let seq = [];
     const draw = () => {
-      el.innerHTML = `<p class="sc-built" aria-label="Your order">${seq.length ? seq.map((id, i) => `<span class="sc-chip">${i + 1}. ${esc(p.items.find(x => x.id === id).label)}</span>`).join('') : '<span class="px-note">Tap the pieces in order.</span>'}</p>
+      el.innerHTML = `<p class="sc-built" role="group" aria-label="Your order">${seq.length ? seq.map((id, i) => `<span class="sc-chip">${i + 1}. ${esc(p.items.find(x => x.id === id).label)}</span>`).join('') : '<span class="px-note">Tap the pieces in order.</span>'}</p>
         <div class="sc-pool" role="group" aria-label="Pieces">${p.items.map(it => `<button type="button" class="sc-tile" data-id="${it.id}" ${seq.includes(it.id) ? 'disabled' : ''}>${esc(it.label)}</button>`).join('')}</div>
         <div class="px-row"><button type="button" class="md-btn md-btn--sm sc-undo" ${seq.length ? '' : 'disabled'}>Undo</button></div>`;
     };
@@ -294,7 +294,7 @@ const WIDGETS = {
 function tiles(el, p, attempt, sig, pool, sub, noun) {
   let seq = [];
   const draw = () => {
-    el.innerHTML = `<p class="sc-built" aria-label="Your ${noun}s: ${esc(seq.join(', ') || 'none yet')}">${seq.length ? seq.map((s, i) => `<button type="button" class="sc-chip" data-rm="${i}" aria-label="Remove ${esc(s)}">${esc(s)}</button>`).join('<i aria-hidden="true">·</i>') : `<span class="px-note">Tap a ${noun} for each digit.</span>`}</p>
+    el.innerHTML = `<p class="sc-built" role="group" aria-label="Your ${noun}s: ${esc(seq.join(', ') || 'none yet')}">${seq.length ? seq.map((s, i) => `<button type="button" class="sc-chip" data-rm="${i}" aria-label="Remove ${esc(s)}">${esc(s)}</button>`).join('<i aria-hidden="true">·</i>') : `<span class="px-note">Tap a ${noun} for each digit.</span>`}</p>
       <div class="sc-pool" role="group" aria-label="${noun}s">${pool.map(s => `<button type="button" class="sc-tile" data-s="${esc(s)}">${esc(s)}<small>${esc(sub(s))}</small></button>`).join('')}</div>
       <div class="px-row"><button type="button" class="md-btn md-btn--sm sc-undo" ${seq.length ? '' : 'disabled'}>Undo</button><button type="button" class="md-btn md-btn--primary sc-try" ${seq.length ? '' : 'disabled'}>Say it</button></div>`;
   };
@@ -321,7 +321,7 @@ function rope(el, p, attempt, sig) {
   el.innerHTML = `<div class="sc-rope">
     <svg class="sc-rope-tri" viewBox="0 0 300 200" role="img" aria-live="off"><g class="sc-tri"></g></svg>
     <p class="sc-rope-read" aria-live="polite"></p>
-    <svg class="sc-rope-strip" viewBox="0 0 320 64" aria-label="The rope, 12 knots. Drag pegs B and C, or focus a peg and use the arrow keys.">
+    <svg class="sc-rope-strip" viewBox="0 0 320 64" role="group" aria-label="The rope, 12 knots. Drag pegs B and C, or focus a peg and use the arrow keys.">
       <path class="sc-strip-base" d="M14 30H306"/>
       <path class="sc-strip-seg sc-side--a"/><path class="sc-strip-seg sc-side--b"/><path class="sc-strip-seg sc-side--c"/>
       ${Array.from({ length: K + 1 }, (_, i) => `<circle class="sc-strip-knot" cx="${14 + (i * 292) / K}" cy="30" r="4"/><text class="sc-strip-n" x="${14 + (i * 292) / K}" y="58">${i}</text>`).join('')}
@@ -378,7 +378,7 @@ function square(el, p, attempt, sig) {
   let px = s0 + 1, py = 0, drag = false;
   const u = 20, vb = `${-(R + 0.6) * u} ${-(2 * R + 0.6) * u} ${(2 * R + 1.6) * u} ${(2 * R + 1.2) * u}`;
   el.innerHTML = `<div class="sc-sq">
-    <svg class="sc-sq-svg" viewBox="${vb}" aria-label="Grid. Drag peg P, or focus it and use the arrow keys. The rope from O to P is one side of the new square.">
+    <svg class="sc-sq-svg" viewBox="${vb}" role="group" aria-label="Grid. Drag peg P, or focus it and use the arrow keys. The rope from O to P is one side of the new square.">
       ${(() => { let o = ''; for (let x = -R; x <= R; x++) for (let y = 0; y <= 2 * R; y++) o += `<circle class="sc-lat" cx="${x * u}" cy="${-y * u}" r="1.6"/>`; return o; })()}
       <rect class="sc-sq-old" x="0" y="${-s0 * u}" width="${s0 * u}" height="${s0 * u}"/>
       <path class="sc-sq-new"/>

@@ -30,7 +30,7 @@ export function mount({ root, signal, params }) {
     const total = L.CHAPTERS.length * L.levelsFor(lv).length;
     const got = L.CHAPTERS.reduce((s, c) => s + Math.min(L.levelsFor(lv).length, P[c.id]?.done || 0), 0);
     wrap.innerHTML = `${head({ title: 'Discovery Locks', kicker: 'Find the trick before it finds you', intro: 'Each lock hides a shortcut. Feed it numbers, guess what comes out, and when you can beat it, name its secret. Only then does it tell you which sutra you found.', color: 'teal' })}
-      <p class="lk-total" aria-label="Progress">${got} of ${total} levels open</p>
+      <p class="lk-total">${got} of ${total} levels open</p>
       <ul class="lk-map">${L.CHAPTERS.map((c, i) => {
         const d = P[c.id]?.done || 0, n = L.levelsFor(lv).length, solved = d > 3;
         return `<li><a class="lk-card lk-card--${c.color}${d >= n ? ' is-open' : ''}" href="#/dojo/locks/${c.id}">
@@ -39,7 +39,7 @@ export function mount({ root, signal, params }) {
           <b>${esc(c.title)}</b>
           <span class="lk-card-blurb">${esc(c.blurb)}</span>
           <span class="lk-card-sutra">${solved ? `${esc(c.sutra)}` : 'Sutra hidden until you crack it'}</span>
-          <span class="lk-pips" aria-label="${Math.min(d, n)} of ${n} levels">${Array.from({ length: n }, (_, k) => `<i class="${k < d ? 'is-on' : ''}"></i>`).join('')}</span>
+          <span class="lk-pips" role="img" aria-label="${Math.min(d, n)} of ${n} levels">${Array.from({ length: n }, (_, k) => `<i class="${k < d ? 'is-on' : ''}"></i>`).join('')}</span>
         </a></li>`;
       }).join('')}</ul>
       <p class="px-note lk-honest">The shortcuts are speed tricks from Bharati Krishna Tirtha's 1965 book <i>Vedic Mathematics</i>. They work because of place value and a little algebra, and every lock shows you why once you crack it.</p>`;
@@ -178,7 +178,7 @@ export function mount({ root, signal, params }) {
         typed = ''; busy = false;
         inVal.textContent = ch.ask(x); outVal.textContent = '?'; machine.classList.remove('is-lit', 'is-dark');
         panel.innerHTML = `<p class="lk-say">${esc(intro)}</p>
-          <div class="lk-goal" aria-label="${count} of ${need}">${Array.from({ length: need }, (_, i) => `<i class="${i < count ? 'is-on' : ''}"></i>`).join('')}<span>${streakMode ? 'in a row' : 'right'}</span></div>
+          <div class="lk-goal" role="img" aria-label="${count} of ${need} ${streakMode ? 'in a row' : 'right'}">${Array.from({ length: need }, (_, i) => `<i class="${i < count ? 'is-on' : ''}"></i>`).join('')}<span>${streakMode ? 'in a row' : 'right'}</span></div>
           <div class="lk-q"><span class="lk-q-ask">${esc(ch.ask(x))}</span><span class="lk-q-arrow" aria-hidden="true">→</span>
             ${ch.lamp ? '' : `<output class="lk-q-typed" aria-label="Your guess">?</output>`}${timed ? '<span class="lk-timer" aria-hidden="true"></span>' : ''}</div>
           ${ch.lamp ? `<div class="lk-lampkeys"><button type="button" class="md-btn lk-say-lit" data-v="1"><span class="lk-mini-bulb is-lit"></span>Lights up</button><button type="button" class="md-btn lk-say-dark" data-v="0"><span class="lk-mini-bulb"></span>Stays dark</button></div>`
@@ -214,6 +214,7 @@ export function mount({ root, signal, params }) {
             if (wrongs >= 2 && hintShown < 1) nudge();
           }
           panel.querySelectorAll('.lk-goal i').forEach((el, i) => el.classList.toggle('is-on', i < count));
+          panel.querySelector('.lk-goal')?.setAttribute('aria-label', `${count} of ${need} ${streakMode ? 'in a row' : 'right'}`);
           if (count >= need) later(cleared, 900, qctl.c.signal);
           else { panel.querySelectorAll('.lk-pad button, .lk-lampkeys button').forEach(b => { b.disabled = true; }); later(next, ok ? 900 : 2300, qctl.c.signal); }
         });
@@ -266,7 +267,7 @@ export function mount({ root, signal, params }) {
           const wide = L.testInputs(ch, lv, rng(`rule:${ch.id}:${lv}`), 40, false);
           const vis = L.checkRule(ch, lv, pickNow, shown), all = L.checkRule(ch, lv, pickNow, wide);
           const bad = all.rows.find(rw => !rw.ok);
-          const rows = vis.rows.concat(vis.ok && bad ? [bad] : []).map(rw => `<li class="${rw.ok ? 'is-ok' : 'is-bad'}"><span>${esc(ch.ask(rw.x))}</span><span>rule: <b>${esc(fmtOut(ch, rw.got))}</b></span><span>lock: <b>${esc(fmtOut(ch, rw.want))}</b></span><i aria-label="${rw.ok ? 'match' : 'no match'}">${rw.ok ? '✓' : '✗'}</i></li>`).join('');
+          const rows = vis.rows.concat(vis.ok && bad ? [bad] : []).map(rw => `<li class="${rw.ok ? 'is-ok' : 'is-bad'}"><span>${esc(ch.ask(rw.x))}</span><span>rule: <b>${esc(fmtOut(ch, rw.got))}</b></span><span>lock: <b>${esc(fmtOut(ch, rw.want))}</b></span><i role="img" aria-label="${rw.ok ? 'match' : 'no match'}">${rw.ok ? '✓' : '✗'}</i></li>`).join('');
           if (all.ok && vis.ok) { machine.classList.add('is-open'); sfx('magic'); reveal(); return; }
           machine.classList.remove('is-rattle'); void machine.offsetWidth; machine.classList.add('is-rattle');
           tone(140, { dur: 0.12, type: 'square', gain: 0.05 }); tone(120, { dur: 0.12, type: 'square', gain: 0.05, when: 0.1 });
