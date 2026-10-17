@@ -102,7 +102,7 @@ export function mount({ root, signal, params }) {
       box.className = `sc-puzzle px-stage sc-k-${p.kind}`;
       box.innerHTML = `
         <p class="sc-p-n">Puzzle ${at + 1} of ${ps.length}</p>
-        <h2 class="sc-p-title">${esc(p.title)}</h2>
+        <h2 class="sc-p-title" tabindex="-1">${esc(p.title)}</h2>
         <p class="sc-p-prompt">${esc(p.prompt)}</p>
         ${figure(p)}
         <div class="sc-widget"></div>
@@ -144,7 +144,7 @@ export function mount({ root, signal, params }) {
         const ex = box.querySelector('.sc-explain'); ex.hidden = false;
         const last = at === ps.length - 1;
         ex.innerHTML = `<p class="sc-ex-k">The real math</p><p>${esc(q.explain)}</p>${last && solvedHere() === ps.length ? '' : `<div class="px-row"><button type="button" class="md-btn md-btn--primary sc-next-p">${last ? 'Back to the first unsolved puzzle' : 'Next puzzle'}</button></div>`}`;
-        on(ex, 'click', e => { if (e.target.closest('.sc-next-p')) { const k = ps.findIndex((pp, i) => i > at && !P.solved[`${lv}:${pp.id}`]); at = k >= 0 ? k : ps.findIndex(pp => !P.solved[`${lv}:${pp.id}`]); if (at < 0) at = ps.length - 1; steps(); show(); box.querySelector('.sc-p-title').focus?.(); box.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); } }, sig);
+        on(ex, 'click', e => { if (e.target.closest('.sc-next-p')) { const k = ps.findIndex((pp, i) => i > at && !P.solved[`${lv}:${pp.id}`]); at = k >= 0 ? k : ps.findIndex(pp => !P.solved[`${lv}:${pp.id}`]); if (at < 0) at = ps.length - 1; steps(); show(); box.querySelector('.sc-p-title').focus({ preventScroll: true }); box.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); } }, sig);
         ex.querySelector('.sc-next-p')?.focus({ preventScroll: true });
       };
       WIDGETS[p.kind](box.querySelector('.sc-widget'), p, attempt, sig);
