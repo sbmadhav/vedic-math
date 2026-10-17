@@ -118,9 +118,8 @@ export function mount({ root, signal, params }) {
       ({ feed, predict: predictLevel, quick: predictLevel, rule, stretch: predictLevel })[lvl.kind](ctl.signal);
     };
     const cleared = () => {
-      const first = li >= C.done;
-      if (first) { C.done = li + 1; save(); }
-      track('locks/level', `${ch.title} ${li + 1}`);
+      /* Sparks (js/app.js) are paid for the first clear of a level, not for replays */
+      if (L.clearLevel(C, li)) { save(); track('locks/level', `${ch.title} ${li + 1}`); }
       sfx('win');
       const last = li === levels.length - 1;
       if (last) { confetti(70); machine.classList.add('is-open'); }
@@ -281,7 +280,9 @@ export function mount({ root, signal, params }) {
         <ol class="lk-why-lines">${lines.map((l, i) => `<li style="--i:${i}">${esc(l)}</li>`).join('')}</ol>
         <div class="px-row"><button type="button" class="md-btn md-btn--primary lk-go-on">Keep going</button></div></div>`;
       say(`You just discovered ${ch.sutra}, ${ch.meaning}. ${lines.join(' ')}`);
-      confetti(40); track('locks/discover', ch.sutra);
+      confetti(40);
+      if (L.discover(C, levels.findIndex(l => l.kind === 'rule'))) track('locks/discover', ch.sutra);
+      save();
       later(() => panel.querySelector('.lk-area')?.classList.add('is-moved'), reducedMotion() ? 0 : 1400, ctl.signal);
       on(panel.querySelector('.lk-go-on'), 'click', cleared, ctl.signal);
       panel.querySelector('.lk-go-on').focus({ preventScroll: true });

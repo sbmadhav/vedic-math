@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rng } from '../../js/play/kit.js';
-import { CHAPTERS, levelsFor, runRule, checkRule, testInputs, allPicks, compare, chapterById } from '../../js/play/exp/locks-core.js';
+import { CHAPTERS, levelsFor, runRule, checkRule, testInputs, allPicks, compare, chapterById, clearLevel, discover } from '../../js/play/exp/locks-core.js';
 
 const LEVELS = ['explorer', 'challenger', 'pro'];
 
@@ -67,4 +67,18 @@ test('wrong predictions are informative', () => {
 test('reveals render concrete lines for real inputs', () => {
   for (const c of CHAPTERS) { const x = c.gen(rng('rev' + c.id), 'main', 'challenger'); const lines = c.reveal.lines(x); assert.ok(lines.length >= 3); assert.ok(lines.every(l => typeof l === 'string' && l.length)); }
   assert.match(chapterById('lamp').reveal.lines(288).join(' '), /2 × 99 \+ 8 × 9/);
+});
+
+test('a level counts only the first time it is cleared; a sutra is discovered once', () => {
+  const c = { done: 0 };
+  assert.equal(clearLevel(c, 0), true); assert.equal(c.done, 1);
+  assert.equal(clearLevel(c, 0), false, 'replaying level 1'); assert.equal(c.done, 1);
+  assert.equal(clearLevel(c, 1), true); assert.equal(c.done, 2);
+  const ruleAt = levelsFor('challenger').findIndex(l => l.kind === 'rule');
+  const d = { done: ruleAt };
+  assert.equal(discover(d, ruleAt), true);
+  assert.equal(discover(d, ruleAt), false, 'solving the rule level again');
+  clearLevel(d, ruleAt); assert.equal(discover(d, ruleAt), false);
+  /* progress saved before discoveries were recorded: the rule level is already cleared */
+  assert.equal(discover({ done: ruleAt + 1 }, ruleAt), false);
 });

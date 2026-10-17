@@ -255,3 +255,9 @@ export function compare(guess, actual) {
 /* Saved progress: { [chapterId]: { done: number of levels finished, stars } } */
 export const nextLevel = (prog, ch) => Math.min(levelsFor('challenger').length, prog?.[ch.id]?.done || 0);
 export const chapterDone = (prog, ch) => (prog?.[ch.id]?.done || 0) >= levelsFor('challenger').length;
+/* Clearing level li of a chapter (c = that chapter's saved record): only the first clear moves progress on
+   and counts (Sparks); replaying a level returns false */
+export function clearLevel(c, li) { const first = li >= (c.done || 0); if (first) c.done = li + 1; return first; }
+/* Discovering a chapter's sutra (solving its rule level, at index ruleAt) counts once per Player. Progress saved
+   before discoveries were recorded counts as found when the rule level was already cleared. */
+export function discover(c, ruleAt) { const first = !c.found && (c.done || 0) <= ruleAt; c.found = true; return first; }
