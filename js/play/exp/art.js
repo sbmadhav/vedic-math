@@ -102,6 +102,8 @@ export function mount({ root, signal, params }) {
     return { cv: room.querySelector('.ms-cv'), cap: room.querySelector('.ms-cap'), hearBtn: room.querySelector('.ms-hear') };
   }
   function setHear(btn, on) { btn.setAttribute('aria-pressed', String(on)); btn.querySelector('.ms-hear-l').textContent = on ? 'Stop' : 'Hear it'; }
+  /* A background tab keeps the audio clock running, so each room silences itself when the page is hidden */
+  function onHide(fn) { on(document, 'visibilitychange', () => { if (document.hidden) fn(); }, signal); }
   /* Save, share and wallpaper for whatever piece getPiece() returns */
   function wireTools(getPiece) {
     on(room.querySelector('.ms-save'), 'click', () => {
@@ -152,29 +154,32 @@ export function mount({ root, signal, params }) {
       view.redraw();
     };
     update(true);
-    on(nIn, 'input', () => { piece.n = +nIn.value; update(); }, signal);
-    on(mIn, 'input', () => { piece.m = +mIn.value; stopDrift(); update(); }, signal);
+    /* Hear it ends when anything else takes over the drawing */
+    const stopHear = () => { if (!ens) return; ens.stop(); ens = null; upto = Infinity; hot = -1; setHear(hearBtn, false); view.redraw(); };
+    on(nIn, 'input', () => { stopHear(); piece.n = +nIn.value; update(); }, signal);
+    on(mIn, 'input', () => { stopHear(); piece.m = +mIn.value; stopDrift(); update(); }, signal);
     on(room, 'click', e => {
       const b = e.target.closest('[data-m]'), nd = e.target.closest('.ms-nudge');
       if (b) { stopDrift(); glide(+b.dataset.m); track('art/try', 'm ' + b.dataset.m); }
-      if (nd) { stopDrift(); piece.m = Math.round(Math.min(mMax, Math.max(1, piece.m + +nd.dataset.d)) * 100) / 100; update(); }
+      if (nd) { stopHear(); stopDrift(); piece.m = Math.round(Math.min(mMax, Math.max(1, piece.m + +nd.dataset.d)) * 100) / 100; update(); }
     }, signal);
     palWire(p => { piece.p = p; view.redraw(); });
     /* glide smoothly to a new multiplier (instant in reduced motion) */
     const glide = to => {
+      stopHear();
       if (reducedMotion()) { piece.m = to; update(); return; }
       const from = piece.m, t0 = globalThis.performance.now(), dur = Math.min(2600, 500 + Math.abs(to - from) * 60);
       view.animate(now => { const x = Math.min(1, (now - t0) / dur), e = x < 0.5 ? 2 * x * x : 1 - (-2 * x + 2) ** 2 / 2; piece.m = Math.round((from + (to - from) * e) * 100) / 100; update(x < 1); return x < 1; });
     };
     const stopDrift = () => { if (!drift) return; drift = 0; driftBtn.setAttribute('aria-pressed', 'false'); view.stopAnim(); };
     const startDrift = () => {
-      drift = 1; driftBtn.setAttribute('aria-pressed', 'true'); let last = globalThis.performance.now();
+      stopHear(); drift = 1; driftBtn.setAttribute('aria-pressed', 'true'); let last = globalThis.performance.now();
       view.animate(now => { const dt = Math.min(0.1, (now - last) / 1000); last = now; piece.m = piece.m + dt * 0.12 * drift; if (piece.m > mMax) piece.m = 1; update(true); return !!drift; });
     };
     on(driftBtn, 'click', () => (drift ? stopDrift() : startDrift()), signal);
     /* Hear it: draw chord by chord, each chord a bell */
     on(hearBtn, 'click', () => {
-      if (ens) { ens.stop(); ens = null; upto = Infinity; hot = -1; setHear(hearBtn, false); view.stopAnim(); view.redraw(); return; }
+      if (ens) { stopHear(); view.stopAnim(); return; }
       stopDrift(); ens = ensemble(); setHear(hearBtn, true);
       const n = piece.n, dur = Math.min(14, Math.max(5, n * 0.05)), every = Math.max(1, Math.ceil(n / 110)), now = clockOf(ens), t0 = now() + 0.15;
       for (let k = 0; k < n; k += every) ens.bell(A.PENTA[A.chordNote(k, A.target(k, piece.m, n), n)], t0 + (k / n) * dur, 0.1, 1.4);
@@ -188,6 +193,7 @@ export function mount({ root, signal, params }) {
       track('art/hear', 'times'); say(`Playing ${n} chords`);
     }, signal);
     onAbort(signal, () => ens && ens.stop());
+    onHide(() => { if (ens) { stopHear(); view.stopAnim(); } });
     wireTools(() => ({ ...piece, m: Math.round(piece.m * 100) / 100 }));
     if (!shared && !reducedMotion() && !S.seen.includes('drifted')) { S.seen.push('drifted'); save(); later(startDrift, 900, signal); }
   }
@@ -234,23 +240,26 @@ export function mount({ root, signal, params }) {
       vals.forEach((v, i) => e2.bell(A.PENTA[A.noteIndex(Math.log1p(Number(v)) / Math.log1p(max), 1, 13)], at + i * 0.09, res[i] === 0 ? gain * 0.35 : gain, 1.2));
       return vals.length * 0.09;
     };
+    /* Hear it ends when a row tap, the diagonals or a new setting takes over */
+    const hearing = () => hearBtn.getAttribute('aria-pressed') === 'true';
+    const stopHear = () => { if (!hearing()) return; if (ens) ens.stop(); ens = null; upto = Infinity; setHear(hearBtn, false); view.redraw(); };
     const tapRow = r => {
-      row = r; diag = -1; diagBtn.setAttribute('aria-pressed', 'false'); showRow(r); view.redraw();
+      stopHear(); row = r; diag = -1; diagBtn.setAttribute('aria-pressed', 'false'); showRow(r); view.redraw();
       if (ens) ens.stop();
       ens = ensemble(); playRow(r, clockOf(ens)() + 0.05, ens, 0.12); say(`Row ${r}`);
     };
     update();
-    on(rowsIn, 'input', () => { piece.rows = +rowsIn.value; if (row >= piece.rows) row = -1; update(); }, signal);
+    on(rowsIn, 'input', () => { stopHear(); piece.rows = +rowsIn.value; if (row >= piece.rows) row = -1; update(); }, signal);
     on(room, 'click', e => {
       const b = e.target.closest('[data-mod]'), rb = e.target.closest('.ms-rowb');
-      if (b) { piece.mod = +b.dataset.mod; room.querySelectorAll('[data-mod]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); update(); track('art/meru-mod', 'mod ' + piece.mod); }
+      if (b) { stopHear(); piece.mod = +b.dataset.mod; room.querySelectorAll('[data-mod]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); update(); track('art/meru-mod', 'mod ' + piece.mod); }
       if (rb) tapRow(Math.max(0, Math.min(piece.rows - 1, (row < 0 ? -1 : row) + +rb.dataset.d)));
     }, signal);
     palWire(p => { piece.p = p; view.redraw(); });
     on(cv, 'pointerdown', e => { if (!geom) return; const [, y] = view.toLocal(e), r = Math.round((y - geom.top) / (geom.s * 0.866)); if (r >= 0 && r < piece.rows) tapRow(r); }, signal);
     on(diagBtn, 'click', () => {
       if (diag >= 0) { diag = -1; diagBtn.setAttribute('aria-pressed', 'false'); read.innerHTML = ''; view.redraw(); return; }
-      diagBtn.setAttribute('aria-pressed', 'true'); row = -1; if (piece.rows > 16 && lv !== 'pro') { piece.rows = 12; rowsIn.value = 12; update(); }
+      stopHear(); diagBtn.setAttribute('aria-pressed', 'true'); row = -1; if (piece.rows > 16 && lv !== 'pro') { piece.rows = 12; rowsIn.value = 12; update(); }
       let d = 1; diag = d; showDiag(d); view.redraw();
       const e2 = ensemble(); if (ens) ens.stop(); ens = e2; const now = clockOf(e2);
       const t0 = now(); let last = 0; e2.bell(A.PENTA[3], t0 + 0.05, 0.1);
@@ -263,9 +272,9 @@ export function mount({ root, signal, params }) {
       track('art/meru-fib', 'diagonals');
     }, signal);
     on(hearBtn, 'click', () => {
-      if (ens && hearBtn.getAttribute('aria-pressed') === 'true') { ens.stop(); ens = null; upto = Infinity; setHear(hearBtn, false); view.stopAnim(); view.redraw(); return; }
+      if (hearing()) { stopHear(); view.stopAnim(); return; }
       if (ens) ens.stop();
-      ens = ensemble(); setHear(hearBtn, true); row = -1; diag = -1;
+      ens = ensemble(); setHear(hearBtn, true); row = -1; diag = -1; diagBtn.setAttribute('aria-pressed', 'false');
       const now = clockOf(ens), t0 = now() + 0.1, R = Math.min(piece.rows, 24), starts = [];
       let at = t0; for (let r = 0; r < R; r++) { starts.push(at); at += playRow(r, at, ens, 0.08) * (r < 6 ? 1.6 : 0.9) + 0.05; }
       const end = at, mine = ens;
@@ -277,6 +286,7 @@ export function mount({ root, signal, params }) {
       track('art/hear', 'meru'); say(`Playing ${R} rows, top to bottom`);
     }, signal);
     onAbort(signal, () => ens && ens.stop());
+    onHide(() => { if (hearing()) { stopHear(); view.stopAnim(); } else if (ens) { ens.stop(); ens = null; } });
     wireTools(() => ({ ...piece }));
   }
 
@@ -312,14 +322,16 @@ export function mount({ root, signal, params }) {
       else if (d) { piece.d = +d.dataset.d; room.querySelectorAll('[data-d]').forEach(x => x.setAttribute('aria-pressed', String(x === d))); ensemble().bell(A.PENTA[piece.d + 1], 0, 0.1); }
       else if (a) { piece.a = +a.dataset.a; room.querySelectorAll('[data-a]').forEach(x => x.setAttribute('aria-pressed', String(x === a))); }
       else return;
-      update(); if (!reducedMotion()) drawIn(false);
+      stopHear(); update(); if (!reducedMotion()) drawIn(false);
     }, signal);
     palWire(p => { piece.p = p; view.redraw(); });
     const steps = () => (piece.view === 'grid' ? A.cellsOf(piece.d).length : piece.view === 'star' ? 9 : A.turtle(piece.d, piece.a).pts.length - 1);
     const digitAt = s => (piece.view === 'grid' ? piece.d : A.rowOf(piece.d)[s % 9]);
     /* draw the path in, with or without sound */
+    /* Hear it ends when a new view, digit or angle is picked */
+    const stopHear = () => { if (ens) ens.stop(); ens = null; if (hearBtn.getAttribute('aria-pressed') === 'true') { upto = Infinity; setHear(hearBtn, false); view.redraw(); } };
     const drawIn = sound => {
-      if (ens) ens.stop();
+      stopHear();
       ens = sound ? ensemble() : null;
       const n = steps(), per = piece.view === 'spiral' ? Math.max(0.07, Math.min(0.2, 6 / n)) : 0.22, clock = ens ? clockOf(ens) : () => globalThis.performance.now() / 1000, t0 = clock() + 0.08, mine = ens;
       if (ens) for (let s = 0; s < n; s++) ens.bell(A.PENTA[digitAt(s) + 1], t0 + s * per, 0.09, 1.1);
@@ -330,8 +342,9 @@ export function mount({ root, signal, params }) {
         if (x >= n) { upto = Infinity; if (sound) { setHear(hearBtn, false); ens = null; } return false; }
       });
     };
-    on(hearBtn, 'click', () => { if (ens) { ens.stop(); ens = null; upto = Infinity; setHear(hearBtn, false); view.stopAnim(); view.redraw(); return; } drawIn(true); track('art/hear', 'square'); say('Playing the path'); }, signal);
+    on(hearBtn, 'click', () => { if (ens) { stopHear(); view.stopAnim(); return; } drawIn(true); track('art/hear', 'square'); say('Playing the path'); }, signal);
     onAbort(signal, () => ens && ens.stop());
+    onHide(() => { if (ens) { stopHear(); view.stopAnim(); } });
     wireTools(() => ({ ...piece }));
   }
 
@@ -474,8 +487,12 @@ export function mount({ root, signal, params }) {
       if (strings) strings.set(330, A.ropePitch(st.len));
       const b = room.querySelector('.ms-beat'); if (b && strings) b.textContent = `Gap: ${A.beatRate(st.len).toFixed(st.step === 3 ? 4 : 2)} beats a second`;
     };
-    const P_stopStrings = () => { if (strings) { strings.stop(); strings = null; } };
+    const P_stopStrings = () => {
+      if (strings) { strings.stop(); strings = null; }
+      const b = room.querySelector('.ms-beat'); if (b) { b.setAttribute('aria-pressed', 'false'); b.textContent = 'Hear the gap'; }
+    };
     onAbort(signal, P_stopStrings);
+    onHide(P_stopStrings);
     const snapRight = () => {
       const pts = A.taut([0, 0], 5, [4, 0], 3); st.knot = pts.sort((p, q) => p[1] - q[1])[0]; st.snapped = true;
       pluckChord([3, 4, 5]); room.querySelector('.ms-build').disabled = false;
@@ -538,7 +555,7 @@ export function mount({ root, signal, params }) {
       if (b.closest('.ms-reset')) setScene('root2');
       const beat = b.closest('.ms-beat');
       if (beat) {
-        if (strings) { P_stopStrings(); beat.setAttribute('aria-pressed', 'false'); beat.textContent = 'Hear the gap'; return; }
+        if (strings) { P_stopStrings(); return; }
         strings = twoStrings(); strings.set(330, A.ropePitch(st.len)); beat.setAttribute('aria-pressed', 'true'); rootRead();
         toast('One string is the true diagonal, one is the rope. The wobble is the gap.');
       }
