@@ -39,6 +39,14 @@ export function clean(img) {
   return { threshold: th, flipped: flip };
 }
 
+/* The reader loads from cdn.jsdelivr.net. The published page's Content-Security-Policy (build.py) does not list that
+   host, so there the camera could be turned on but nothing could ever be read: the camera is then not offered at all
+   (no permission prompt for nothing). Allowing it is an owner decision recorded in the play-experiences change. */
+export function readerAllowed() {
+  const m = typeof document !== 'undefined' && document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+  return !m || /(^|[\s;])script-src[^;]*https:\/\/cdn\.jsdelivr\.net/.test(m.getAttribute('content') || '');
+}
+
 let reader = null; /* one reader per page load; terminated when the view closes */
 async function getReader(onProgress) {
   if (reader) return reader;

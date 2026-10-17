@@ -5,7 +5,7 @@
 import { head, level, setLevel, LEVELS, store, rng, say, sfx, tone, PENTA, confetti, toast, share, shareUrl, track, esc, dayKey, reducedMotion } from '../kit.js';
 import { on, later, child } from '../life.js';
 import * as C from './lens-core.js';
-import { camera } from './lens-cam.js';
+import { camera, readerAllowed } from './lens-cam.js';
 
 const KEY = 'lens';
 const blank = () => ({ journal: [], solved: 0, clues: { 3: [], 9: [], 11: [] } });
@@ -27,7 +27,8 @@ export async function mount({ root, signal, params }) {
     <section class="ln-find px-stage" aria-labelledby="lnFindH">
       <h2 id="lnFindH" class="ln-h2">Catch some digits</h2>
       <div class="ln-ways" role="group" aria-label="How to get digits">
-        <button type="button" class="ln-way" data-way="camera" aria-pressed="false">${ICON.camera}<b>Point the camera</b><small>Plate, clock, receipt, page</small></button>
+        ${readerAllowed() ? `<button type="button" class="ln-way" data-way="camera" aria-pressed="false">${ICON.camera}<b>Point the camera</b><small>Plate, clock, receipt, page</small></button>`
+          : `<button type="button" class="ln-way" data-way="camera" aria-pressed="false" disabled>${ICON.camera}<b>Point the camera</b><small>Not ready on this site yet. Type the digits instead.</small></button>`}
         <button type="button" class="ln-way" data-way="type" aria-pressed="false">${ICON.type}<b>Type them</b><small>No camera needed</small></button>
         <button type="button" class="ln-way" data-way="surprise" aria-pressed="false">${ICON.surprise}<b>Surprise me</b><small>We make some up</small></button>
       </div>
@@ -267,7 +268,7 @@ export async function mount({ root, signal, params }) {
   };
   on(play, 'click', e => {
     const tb = e.target.closest('[data-tab]'); if (tb) { go(+tb.dataset.tab, false); return; }
-    if (e.target.closest('.ln-new')) { wrap.querySelector('.ln-find').scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); wrap.querySelector('[data-way="camera"]').focus({ preventScroll: true }); return; }
+    if (e.target.closest('.ln-new')) { wrap.querySelector('.ln-find').scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); wrap.querySelector('[data-way]:not(:disabled)').focus({ preventScroll: true }); return; }
     if (e.target.closest('.ln-send')) {
       /* A plate or number is shared as its digits only (the challenges use only the digits), so letters someone
          typed never travel in the link or the message; a clock and a receipt are shared as the time or amounts */

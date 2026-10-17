@@ -35,6 +35,15 @@ async function hide(page: import('@playwright/test').Page, hidden: boolean) {
 test.beforeEach(async ({ page }) => {
   await fakeCamera(page);
   await page.route(/^https:\/\/cdn\.jsdelivr\.net\//, r => r.abort());
+  // A published build's policy does not list the reader's host, so Math Lens does not offer the camera there (see
+  // csp.spec.ts). These tests are about the camera itself, so the page they load has its policy <meta> removed;
+  // the reader stays unreachable because its host is refused above.
+  await page.route(/\/vedic-math\/(index\.html)?(\?[^#]*)?$/, async r => {
+    if (r.request().resourceType() !== 'document') return r.fallback();
+    const res = await r.fetch();
+    const body = (await res.text()).replace(/<meta http-equiv="Content-Security-Policy"[^>]*>\n?/, '');
+    await r.fulfill({ response: res, body });
+  });
 });
 
 test('the camera is asked for only after Turn on the camera, next to what it is for', async ({ page, issues }) => {

@@ -13,6 +13,7 @@
 .ln-way svg { width: 34px; height: 34px; color: var(--teal-strong); margin-bottom: var(--space-1); }
 .ln-way b { font: 700 1.1rem/1.15 var(--font-display); }
 .ln-way small { color: var(--ink-muted); font-weight: 700; font-size: .82rem; }
+.ln-way:disabled { cursor: not-allowed; opacity: .7; box-shadow: none; }
 .ln-way:hover { transform: translateY(-2px); }
 .ln-way[aria-pressed="true"] { background: var(--teal); color: var(--on-accent); }
 .ln-way[aria-pressed="true"] svg, .ln-way[aria-pressed="true"] small { color: var(--on-accent); }
