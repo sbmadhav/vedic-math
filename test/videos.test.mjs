@@ -52,6 +52,13 @@ test('every kindergarten to grade 5 Skill has two or more hand-matched videos, a
   }
 });
 
+test('every grade 6 to 8 Skill has two or more hand-matched videos for Challenger', () => {
+  for (const s of Object.values(byId).filter(s => [6, 7, 8].includes(s.grade))) {
+    const n = VIDEOS.filter(v => v.skills.includes(s.id) && v.modes.includes('challenger')).length;
+    assert.ok(n >= 2, `${s.id}: ${n} hand-matched video(s) for Challenger`);
+  }
+});
+
 test('critiques are for Pro only', () => {
   for (const v of VIDEOS) if (v.critique) assert.deepEqual(v.modes, ['pro'], v.id);
 });
