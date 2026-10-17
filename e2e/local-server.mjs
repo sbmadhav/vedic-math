@@ -15,7 +15,7 @@ const root = process.argv[3] ? path.resolve(process.cwd(), process.argv[3]) : re
 const port = +(process.argv[2] || process.env.PORT || 8124);
 const LIVE = 'https://sbmadhav.com';
 const PREFIX = '/vedic-math/';
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.txt': 'text/plain' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.txt': 'text/plain', '.m4a': 'audio/mp4' };
 // Repo-only paths that GitHub Pages does not publish (see _config.yml exclude)
 const BLOCKED = /^\/(e2e|test|cloud|node_modules|\.git|\.github|\.githooks)(\/|$)|^\/(CLAUDE|README)\.md$|^\/build\.py$|^\/_config\.yml$/;
 

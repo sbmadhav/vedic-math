@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sutra Names Listening Test</title>
+<meta name="robots" content="noindex">
+<script>try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}</script>
+<link rel="stylesheet" href="/design-system/tokens.css">
+<link rel="stylesheet" href="/design-system/components.css">
+<style>
+/* Throwaway prototype for the sutra-pronunciation change. Repo-only (docs/ is excluded from the build). */
+body { background: var(--page, var(--bg)); color: var(--ink); font-family: var(--font-sans); margin: 0; }
+.sv { max-width: 920px; margin: 0 auto; padding: var(--space-6) var(--space-4) var(--space-9); }
+.sv h1 { font-family: var(--font-display); font-size: clamp(28px, 6vw, 40px); margin: 0 0 var(--space-2); }
+.sv-lede { color: var(--ink-muted); margin: 0 0 var(--space-5); line-height: 1.5; }
+.sv-panel { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-4); margin-bottom: var(--space-5); box-shadow: var(--shadow-card); }
+.sv-panel h2 { font-family: var(--font-display); font-size: 20px; margin: 0 0 var(--space-2); }
+.sv-panel p, .sv-panel li { font-size: 15px; line-height: 1.5; }
+.sv-muted { color: var(--ink-muted); }
+.sv-ctrl { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; margin-top: var(--space-3); font-size: 14px; }
+.sv-ctrl input[type=range] { width: 160px; accent-color: var(--teal-strong); }
+.sv-ctrl input[type=checkbox] { accent-color: var(--teal-strong); }
+.sv-sets { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); margin: var(--space-2) 0 0; padding: 0; list-style: none; font-size: 14px; }
+.sv-sets b { color: var(--ink); }
+.sv-items { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+.sv-item { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-4); box-shadow: var(--shadow-card); }
+.sv-item header { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: baseline; justify-content: space-between; }
+.sv-tag { font-size: 12px; font-weight: 700; border-radius: var(--radius-pill); padding: 2px var(--space-2); background: var(--bg-alt); color: var(--ink-muted); }
+.sv-deva { font-size: 26px; margin: var(--space-2) 0 0; overflow-wrap: anywhere; }
+.sv-name { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin: var(--space-1) 0 0; }
+.sv-name b { font-family: var(--font-display); font-size: 22px; overflow-wrap: anywhere; }
+.sv-say { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 44px; min-height: 44px; border-radius: var(--radius-pill); border: 1px solid var(--line); background: var(--bg-alt); color: var(--ink); cursor: pointer; font: inherit; font-size: 14px; padding: 0 var(--space-3); }
+.sv-say:focus-visible, .sv-btns button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.sv-say svg { width: 18px; height: 18px; }
+.sv-resp { font-size: 16px; margin: var(--space-1) 0 0; letter-spacing: .01em; overflow-wrap: anywhere; }
+.sv-mean { color: var(--ink-muted); margin: var(--space-1) 0 0; font-size: 15px; }
+.sv-flag { margin: var(--space-2) 0 0; font-size: 14px; background: var(--bg-alt); border-left: 4px solid var(--coral); border-radius: var(--radius-md); padding: var(--space-2) var(--space-3); }
+.sv-ipa { font-family: var(--font-mono); font-size: 12px; color: var(--ink-muted); margin: var(--space-2) 0 0; overflow-wrap: anywhere; }
+.sv-btns { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); margin-top: var(--space-3); }
+.sv-btns button { min-height: 44px; white-space: normal; text-align: center; justify-content: center; }
+.sv-btns button[aria-pressed=true] { outline: 3px solid var(--focus); outline-offset: 2px; }
+.sv-btns button.rec { border-left: 4px solid var(--teal); }
+.sv-btns button.cmp { border-left: 4px solid var(--ink-muted); }
+.sv-heard { font-size: 12px; color: var(--ink-muted); margin: var(--space-2) 0 0; overflow-wrap: anywhere; }
+.sv-heard span { word-break: break-all; }
+.sv-heard .lo { color: var(--coral-strong); font-weight: 700; }
+table.sv-t { width: 100%; border-collapse: collapse; font-size: 14px; }
+.sv-t th, .sv-t td { text-align: left; padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); }
+.sv-scroll { overflow-x: auto; }
+@media (max-width: 640px) { .sv-btns { grid-template-columns: 1fr 1fr; } .sv-deva { font-size: 22px; } .sv-name b { font-size: 19px; } }
+</style>
+</head>
+<body>
+<main class="sv">
+  <h1>Sutra names: how to say them</h1>
+  <p class="sv-lede">A listening test for the <b>sutra-pronunciation</b> change. Every Sutra and sub-sutra name from Bharati Krishna Tirtha's 1965 book, in Devanagari and IAST, with a respelling kids can read and clips made on a laptop with the free Kokoro model. Nothing here is in the app yet.</p>
+
+  <section class="sv-panel" aria-labelledby="howH">
+    <h2 id="howH">How to read the respelling</h2>
+    <p>Syllables are joined by hyphens. Long names are cut into their parts. One syllable in each part is in <b>CAPITALS</b>: that is where reciters put a light beat today (the second last syllable if it is long or closed, else the one before). It is a small lift, not a strong English stress. What matters more is length: <b>ah, ee, oo, ay, oh</b> are held a little longer, <b>uh, i, u</b> are quick.</p>
+    <p class="sv-muted">uh as in "sofa" · ah as in "father" · i as in "sit" · ee as in "see" · u as in "put" · oo as in "food" · ay as in "say" · oh as in "go" · ai as in "Thai" · ch as in "chair" · sh as in "ship" · dh, bh, kh, th: say the letter with a puff of air (th is never the "th" in "this") · gy for jñ · ri for ṛ.</p>
+  </section>
+
+  <section class="sv-panel" aria-labelledby="voiceH">
+    <h2 id="voiceH">The voices</h2>
+    <ul class="sv-sets" id="svSets"><li>Loading clips...</li></ul>
+    <p class="sv-muted" id="svBuiltIn">Built-in voice: checking this device...</p>
+    <div class="sv-ctrl">
+      <label><input type="checkbox" id="svWhisper"> Show what a speech recognizer heard (Whisper, Hindi mode)</label>
+    </div>
+  </section>
+
+  <section class="sv-panel" aria-labelledby="ambH">
+    <h2 id="ambH">Sutra ambience</h2>
+    <p>Very quiet sound for the Sutra pages. The bowl is made live in the browser (no file). The Om is a 1.3 second recording by Tito Dutta on Wikimedia Commons, CC0, played slowly with a soft echo. Om is a sacred syllable added here for atmosphere; it is not part of the 1965 book.</p>
+    <div class="sv-ctrl">
+      <button type="button" class="md-btn md-btn--sm" id="svStrike">Bowl strike (page opens)</button>
+      <button type="button" class="md-btn md-btn--sm" id="svHum" aria-pressed="false">Low hum while reading</button>
+      <button type="button" class="md-btn md-btn--sm" id="svOm" aria-pressed="false">Om instead (opt in)</button>
+      <button type="button" class="md-btn md-btn--sm" id="svStop">Stop (fade out)</button>
+      <label>Volume <input type="range" id="svVol" min="0" max="1" step="0.05" value="0.5"></label>
+    </div>
+    <p class="sv-muted" id="svAmbNote" role="status" aria-live="polite"></p>
+  </section>
+
+  <section class="sv-items" id="svItems" aria-label="Names"><p>Loading...</p></section>
+</main>
+<script type="module" src="proto.js"></script>
+</body>
+</html>
