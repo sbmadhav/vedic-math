@@ -96,6 +96,8 @@ function idle(fn, signal) {
     onAbort(signal, () => { try { cancelIdleCallback(h); } catch (e) {} });
   } else later(fn, 400, signal);
 }
+/* A queue moves on after lockWait even if its own request never settles; the clip stays unsaved, so a later queue retries it */
+const bounded = (p, signal) => new Promise(r => { p.then(r); later(r, deps.lockWait, signal); });
 function prefetch(signal) {
   if (queue || deps.saveData()) return;
   const mine = queue = Object.keys(CLIPS).filter(id => !fetched.has(id));
@@ -107,7 +109,7 @@ function prefetch(signal) {
     /* A request an older queue left running is awaited; if it did not save the clip, this queue fetches it again */
     const lock = inflight.get(id);
     (lock ? new Promise(r => { lock.then(r); later(r, deps.lockWait, signal); }) : Promise.resolve()) // a lock that never settles is waited on at most lockWait
-      .then(() => (fetched.has(id) || signal.aborted ? null : fetchOne(id)))
+      .then(() => (fetched.has(id) || signal.aborted ? null : bounded(fetchOne(id), signal)))
       .finally(() => { if (!signal.aborted) idle(step, signal); });
   };
   idle(step, signal);

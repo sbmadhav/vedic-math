@@ -284,3 +284,34 @@ test('a late request that settles after a newer one started never removes the ne
     ctl.abort();
   } finally { S.deps.lockWait = 8000; }
 });
+
+for (const how of ['a second tap on it', 'a tap on another name']) {
+  test(`a stalled tapped clip stopped by ${how} releases its lock: the queue fetches it and all the rest`, async () => {
+    const log = stubs({ manualStart: true }), ctl = new AbortController(), a = btn('s1');
+    S.tap(a, ctl.signal); // s1 hangs: playback never starts and never fails
+    await wait(50);
+    assert.equal(log.fetched.length, 0, 'the queue waits on the tapped s1 first');
+    if (how === 'a second tap on it') S.tap(a, ctl.signal); else { S.tap(btn('s3'), ctl.signal); log.starts[1](); }
+    await wait(250);
+    assert.ok(log.fetched.some(u => /\/s1\.m4a/.test(u)), 's1 is fetched by the queue');
+    assert.equal(log.fetched.length, how === 'a second tap on it' ? 29 : 28);
+    ctl.abort();
+  });
+}
+
+test('a queue-owned prefetch request that never settles does not stall the queue; that clip stays unsaved', async () => {
+  const log = stubs(); S.deps.lockWait = 20;
+  try {
+    log.hold = { s2: new Promise(() => {}) }; // s2 never answers
+    const ctl = new AbortController();
+    S.tap(btn('s1'), ctl.signal);
+    await wait(300);
+    assert.equal(log.fetched.length, 28, 'every other name is still fetched');
+    ctl.abort();
+    log.hold = {}; log.fetched.length = 0;
+    const ctl2 = new AbortController();
+    S.tap(btn('s3'), ctl2.signal); await wait(150);
+    assert.ok(log.fetched.some(u => /\/s2\.m4a/.test(u)), 'a later queue retries s2');
+    ctl2.abort();
+  } finally { S.deps.lockWait = 8000; }
+});
