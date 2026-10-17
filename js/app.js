@@ -1332,7 +1332,7 @@ function meView() {
   $('#setCalm').onclick = e => { fx.setCalm(!fx.calmOn()); e.currentTarget.setAttribute('aria-checked', String(fx.calmOn())); };
   view.querySelectorAll('.me-size [data-size]').forEach(b => b.onclick = () => { fx.setTextSize(b.dataset.size); view.querySelectorAll('.me-size [data-size]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.size === fx.textSize()))); });
   $('#setVoice').onchange = e => { fx.setVoice(e.target.checked); if (e.target.checked) fx.speak('Read aloud is on.', true); else fx.stopSpeaking(); };
-  fx.wireVoiceSettings(view);
+  fx.wireVoiceSettings(view, { player: p.id });
   wireWorldBoards(view);
   if (focusWorldBoards) { focusWorldBoards = false; const wb = $('#worldBoards'); wb.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); ($('#wbIn') || $('#wbSwitch') || wb).focus({ preventScroll: true }); }
   $('#pExport').onclick = async () => { const code = btoa(unescape(encodeURIComponent(store.exportData()))); try { await navigator.clipboard.writeText(code); msg('Backup code copied. Paste it somewhere safe.'); } catch (e) { prompt('Copy this backup code:', code); } };

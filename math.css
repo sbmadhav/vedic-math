@@ -651,6 +651,11 @@ html.motion-paused .sutra-card, body.calm .sutra-card { transition: none; }
 .vv-select { font: 600 14px/1.2 var(--font-sans); color: var(--ink); background: var(--card); border: 2px solid var(--edge); border-radius: var(--radius-sm); padding: 6px 10px; max-width: 100%; min-width: 0; }
 .vv-select:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .vv-status:empty { display: none; }
+.vv-poor { padding: var(--space-3) var(--space-4); border: 2px solid var(--edge); border-radius: var(--radius-md); background: var(--bg-alt); color: var(--ink); }
+.vv-poor[hidden] { display: none; }
+.vv-poor p { margin: 0 0 var(--space-2); }
+.vv-poor ul { margin: 0 0 var(--space-2); padding-left: var(--space-5); }
+.vv-poor li { margin-bottom: var(--space-1); overflow-wrap: anywhere; }
 .vv-pill { position: fixed; right: var(--space-4); bottom: var(--space-4); z-index: 111; display: grid; gap: 6px; padding: 8px 14px; border: 2px solid var(--edge); border-radius: var(--radius-pill); background: var(--card); color: var(--ink); box-shadow: var(--shadow-ledge); font-size: 13px; font-weight: 700; }
 .vv-bar { display: block; width: 140px; height: 6px; border-radius: var(--radius-pill); background: var(--line); overflow: hidden; }
 .vv-bar i { display: block; height: 100%; background: var(--teal); transition: width .3s; }

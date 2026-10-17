@@ -98,7 +98,7 @@ Copy, with no em dashes:
 
 > The voices on this device sound robotic. The game uses its own studio voice where it can. For a clearer voice everywhere, add an Enhanced English voice: on iPhone or iPad, Settings, Accessibility, Spoken Content, Voices; on a Mac, System Settings, Accessibility, Spoken Content, System voice, Manage Voices; on Windows, Settings, Time and language, Speech, Add voices; on Android, Settings, Text-to-speech output, Speech Services by Google.
 
-It shows in Me only, once per Player, until "Got it".
+It shows in Me only, once per Player, until "Got it". Part A ships first, so until the studio voice exists the note leaves out the studio sentence and ends with "Then reload this page and pick it under Built-in voice." The sentence comes back with part B.
 
 **4. The studio voice is a paid neural voice, recorded once at dev time.**
 Prices are list prices found in October 2026. Check them before buying.

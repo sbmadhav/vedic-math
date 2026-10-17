@@ -122,24 +122,26 @@ function setStatus(next) { status = { ...status, ...next }; listeners.forEach(fn
 
 /* ---------- Tier 1: built-in Web Speech, ranked and tuned ---------- */
 const hasSynth = () => typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
-const NOVELTY = /espeak|\b(fred|albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|junior|ralph|kathy|hysterical|deranged|pipe organ)\b/i;
-const QUALITY = [
-  [/\b(natural|neural)\b/i, 100], [/\bonline\b/i, 90], [/google us english/i, 82], [/google uk english female/i, 78], [/\bsiri\b/i, 72],
-  [/\b(samantha|ava|allison|susan|karen|moira|tessa|serena|zoe|nicky|evan|joelle|veena|isha|rishi)\b/i, 60], [/google uk english/i, 55], [/\bgoogle\b/i, 45],
-  [/\b(aria|jenny|libby|sonia|neerja|emma|michelle)\b/i, 40], [/\b(zira|hazel|heera)\b/i, 22]
+/* Every English voice is rated good, ok or poor (openspec better-voice, design decision 2). Poor voices (novelty,
+   eSpeak, Apple compact, Windows desktop) are never picked when a good or ok one exists. */
+const NOVELTY = /espeak|\b(fred|albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|junior|ralph|kathy|hysterical|deranged|pipe organ|grandma|grandpa|rocko|shelley|eddy|flo|reed|sandy)\b/i;
+const GOOD = [
+  [/\b(natural|neural)\b/i, 100], [/\bonline\b/i, 95], [/\bsiri\b/i, 90], [/\bpremium\b/i, 88], [/\benhanced\b/i, 84], [/^google\b/i, 75]
 ];
-export function scoreVoice(v) {
-  if (!v || !/^en([-_]|$)/i.test(v.lang || '')) return -Infinity;
-  const name = v.name || '';
-  if (NOVELTY.test(name)) return -500;
-  let s = 0;
-  for (const [re, pts] of QUALITY) if (re.test(name)) { s = Math.max(s, pts); }
-  if (/\b(enhanced|premium)\b/i.test(name)) s += 25;
-  const lang = (v.lang || '').replace('_', '-').toLowerCase();
-  s += lang === 'en-us' ? 10 : lang === 'en-gb' ? 8 : lang === 'en-in' ? 7 : lang === 'en-au' || lang === 'en-ca' || lang === 'en-ie' ? 5 : 2;
-  if (v.default) s += 1;
-  return s;
+/* Within the ok tier, system voices known to sound clear come first */
+const OK_NAMES = /\b(samantha|ava|allison|susan|karen|moira|tessa|serena|zoe|nicky|evan|joelle|veena|isha|rishi|daniel|alex)\b/i;
+const langPts = v => { const l = (v.lang || '').replace('_', '-').toLowerCase(); return l === 'en-us' ? 4 : l === 'en-gb' ? 3 : l === 'en-in' ? 2 : l === 'en-au' || l === 'en-ca' || l === 'en-ie' ? 1.5 : 1; };
+export function rateVoice(v) {
+  if (!v || !/^en([-_]|$)/i.test(v.lang || '')) return null;
+  const name = v.name || '', uri = v.voiceURI || '', both = name + ' ' + uri;
+  if (NOVELTY.test(name)) return { tier: 'poor', pts: langPts(v) };
+  if (/\bcompact\b/i.test(uri)) return { tier: 'poor', pts: 5 + langPts(v) };
+  if (/^microsoft\b/i.test(name) && !/\bonline\b/i.test(name)) return { tier: 'poor', pts: 8 + langPts(v) };
+  for (const [re, pts] of GOOD) if (re.test(both)) return { tier: 'good', pts: 1000 + pts + langPts(v) + (v.default ? 0.5 : 0) };
+  return { tier: 'ok', pts: 500 + (OK_NAMES.test(name) ? 20 : 0) + langPts(v) + (v.default ? 0.5 : 0) };
 }
+/* Kept for callers that only need a number: higher is better, -Infinity for non-English */
+export const scoreVoice = v => { const r = rateVoice(v); return r ? r.pts : -Infinity; };
 let voicesReady = null;
 function loadVoices() {
   if (!hasSynth()) return Promise.resolve([]);
@@ -152,16 +154,22 @@ function loadVoices() {
   }).then(v => { voicesReady = null; return v; });
   return voicesReady;
 }
-/* English voices, best first. Novelty voices are left out unless they are all there is. */
+/* English voices, best first: good, then ok, then poor */
 export function englishVoices(all = hasSynth() ? speechSynthesis.getVoices() : []) {
-  const ranked = all.map(v => ({ v, s: scoreVoice(v) })).filter(x => x.s > -Infinity).sort((a, b) => b.s - a.s || a.v.name.localeCompare(b.v.name));
-  const good = ranked.filter(x => x.s > -500);
-  return (good.length ? good : ranked).map(x => x.v);
+  return all.map(v => ({ v, r: rateVoice(v) })).filter(x => x.r).sort((a, b) => b.r.pts - a.r.pts || a.v.name.localeCompare(b.v.name)).map(x => x.v);
 }
-function bestVoice() {
-  const list = englishVoices(), want = voiceName();
+/* True when the device has English voices and every one of them is poor */
+export const onlyPoorVoices = (all = hasSynth() ? speechSynthesis.getVoices() : []) => {
+  const rated = all.map(rateVoice).filter(Boolean);
+  return rated.length > 0 && rated.every(r => r.tier === 'poor');
+};
+/* The voice to speak with: the one the Player picked by name, else the best rated */
+export function bestVoice(all) {
+  const list = englishVoices(all), want = voiceName();
   return (want && list.find(v => v.name === want)) || list[0] || null;
 }
+/* Pitch 1 always (a raised pitch made voices sound strained); a calm rate, slower for Explorer */
+export const builtInTuning = kid => ({ pitch: 1, rate: kid ? 0.9 : 0.95 });
 
 let token = 0; // bumps on every new speech so stale work stops
 function speakBuiltIn(text, my) {
@@ -170,9 +178,7 @@ function speakBuiltIn(text, my) {
   const kid = explorer();
   loadVoices().then(() => {
     if (my !== token) return;
-    const v = bestVoice(), natural = v && /natural|neural|online/i.test(v.name);
-    const rate = natural ? (kid ? 0.92 : 0.96) : (kid ? 0.9 : 0.94);
-    const pitch = natural ? (kid ? 1.08 : 1.04) : (kid ? 1.15 : 1.07);
+    const v = bestVoice(), { rate, pitch } = builtInTuning(kid);
     let i = 0;
     const next = () => {
       if (my !== token || i >= parts.length) return;
@@ -323,17 +329,34 @@ export function settingsHTML() {
     <div class="vv-row"><label for="setVoiceName">Built-in voice</label><select id="setVoiceName" class="vv-select"><option value="">Best available</option></select><button type="button" class="md-btn md-btn--sm" id="vvTest">Test voice</button></div>
     <div class="vv-row"><label class="vv-check"><input type="checkbox" id="setNatural" ${naturalOn() ? 'checked' : ''}> Natural voice (downloads about 100 MB once)</label>
       <select id="setNaturalVoice" class="vv-select" aria-label="Natural voice" ${naturalOn() ? '' : 'hidden'}>${NATURAL_VOICES.map(v => `<option value="${v.id}" ${v.id === naturalVoice() ? 'selected' : ''}>${v.name} (${v.note})</option>`).join('')}</select></div>
+    <div class="vv-poor" id="vvPoor" hidden>
+      <p><b>The voices on this device sound robotic.</b> For a clearer reading voice, add an Enhanced English voice:</p>
+      <ul>
+        <li>iPhone or iPad: Settings, Accessibility, Spoken Content, Voices, English.</li>
+        <li>Mac: System Settings, Accessibility, Spoken Content, System voice, Manage Voices.</li>
+        <li>Windows: Settings, Time and language, Speech, Add voices.</li>
+        <li>Android: Settings, Text-to-speech output, Speech Services by Google.</li>
+      </ul>
+      <p>Then reload this page and pick it under Built-in voice.</p>
+      <button type="button" class="md-btn md-btn--sm" id="vvPoorOk">Got it</button>
+    </div>
     <p class="mq-small vv-status" id="vvStatus" role="status" aria-live="polite"></p>
   </div>`;
 }
-export function wireSettings(root = document) {
+/* The poor-voice note is shown once per Player (on this device) until Got it */
+const noteKey = player => 'voiceNoteSeen' + (player ? '.' + player : '');
+export function wireSettings(root = document, { player = '' } = {}) {
   const sel = root.querySelector('#setVoiceName'), test = root.querySelector('#vvTest'), nat = root.querySelector('#setNatural'), natSel = root.querySelector('#setNaturalVoice'), out = root.querySelector('#vvStatus');
   if (!sel) return;
   const fill = () => {
     const list = englishVoices(), want = voiceName();
-    sel.innerHTML = '<option value="">Best available</option>' + list.map(v => `<option value="${escAttr(v.name)}" ${v.name === want ? 'selected' : ''}>${escAttr(v.name)} (${escAttr(v.lang)})</option>`).join('');
+    sel.innerHTML = '<option value="">Best available</option>' + list.map(v => `<option value="${escAttr(v.name)}" ${v.name === want ? 'selected' : ''}>${escAttr(v.name)} (${escAttr(v.lang)})${rateVoice(v).tier === 'poor' ? ' (robotic)' : ''}</option>`).join('');
     sel.disabled = !list.length;
+    const poor = root.querySelector('#vvPoor');
+    if (poor) poor.hidden = !(onlyPoorVoices() && get(noteKey(player), '0') !== '1');
   };
+  const ok = root.querySelector('#vvPoorOk');
+  if (ok) ok.onclick = () => { put(noteKey(player), '1'); const poor = root.querySelector('#vvPoor'); if (poor) poor.hidden = true; sel.focus(); };
   fill(); loadVoices().then(fill);
   if (hasSynth()) try { speechSynthesis.addEventListener('voiceschanged', fill); } catch (e) {}
   const sample = () => speak('Hi there! 7 &times; 8 = 56. Great job!', {});
