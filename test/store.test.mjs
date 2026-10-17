@@ -139,3 +139,34 @@ test('upgrade(fn) saves only when fn changed the record, and importData tells li
   off();
   assert.ok(seen.includes('import'));
 });
+
+test('importData keeps a backup round trip and drops markup and non-numbers from a restored record', () => {
+  store.addSparks(40); store.setBest('run-1', 12); store.lightStar('by11', 1); store.setStarLast('by11', 1, ['a', 'b']);
+  const before = JSON.parse(store.exportData()).data;
+  store.importData(store.exportData());
+  const after = JSON.parse(store.exportData()).data;
+  for (const f of ['sparks', 'best', 'skills', 'days', 'medals', 'katasDone', 'weekSparks', 'sky', 'questDay']) assert.deepEqual(after[f], before[f], f);
+  const day = store.today(), x = '<img src=x onerror=alert(1)>';
+  store.importData(JSON.stringify({ data: {
+    skills: { 'mul-11': { n: 3, c: x, m: 0.5 }, [x]: { n: 1 } }, sparks: x, best: { 'run-1': x, ['arena-' + day]: '9', 'run-2': 7, [x]: 1 },
+    last: x, grade: x, counts: { answers: Infinity, right: -3, runs: 2 }, questDay: { day: x, base: {}, done: {} },
+    sky: { lit: { 'by11:1': x }, skipped: {}, last: { 'by11:1': ['ok', x, 3] } }, evil: x,
+  } }));
+  const d = JSON.parse(store.exportData()).data;
+  assert.equal(store.sparks(), 0);
+  assert.equal(store.best('run-1'), 0);
+  assert.equal(store.best('arena-' + day), 0);
+  assert.equal(store.best('run-2'), 7);
+  assert.deepEqual(d.skills, { 'mul-11': { n: 3, m: 0.5 } });
+  assert.equal(d.last, null); assert.equal(d.grade, null); assert.equal(d.questDay, null); assert.equal(d.evil, undefined);
+  assert.deepEqual(d.counts, { runs: 2 });
+  assert.deepEqual(d.sky, { lit: {}, skipped: {}, last: { 'by11:1': ['ok'] } });
+  assert.ok(!store.exportData().includes('<img'));
+});
+
+test('importData refuses a backup whose skills are null or a list, and keeps the progress it had', () => {
+  store.importData(JSON.stringify({ data: { skills: {}, sparks: 55 } }));
+  for (const skills of [null, [], 'x']) assert.throws(() => store.importData(JSON.stringify({ data: { skills, sparks: 1 } })), String(skills));
+  assert.throws(() => store.importData('[]'));
+  assert.equal(store.sparks(), 55);
+});
