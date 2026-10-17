@@ -28,7 +28,7 @@ const add = (src, t) => { if (t) items.push([src, t]); };
 for (const s of SKILLS) for (const lv of [1, 2, 3]) for (let i = 0; i < N; i++) {
   let p; try { p = s.gen(lv); } catch (e) { continue; }
   const band = String(s.grade) === 'V' ? 'V' : ['K', '1', '2'].includes(String(s.grade)) ? 'K-2' : ['3', '4', '5'].includes(String(s.grade)) ? '3-5' : ['6', '7', '8'].includes(String(s.grade)) ? '6-8' : '9-12';
-  add('practice.q.' + band, p.q);
+  add('practice.q.' + band, p.say || p.q);
   if (p.hints && p.hints[0]) add('practice.hint.' + band, p.hints[0]);
 }
 // Katas (all 1,050) and so Star rounds, which deal Kata problems

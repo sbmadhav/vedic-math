@@ -46,7 +46,7 @@ export default [
     method: ['Start at the bigger number.', 'Count on the smaller one: say the next numbers.'],
     gen() {
       const a = ri(0, 9), b = ri(0, 10 - a), who = pick(PEOPLE), th = pick(THINGS);
-      return { q: Math.random() < .4 ? `${who} has ${a} ${th} and gets ${b} more. How many now?` : `${a} + ${b} = ?`, viz: V.tenFrame(a, b, 1), kind: 'num', answer: a + b,
+      return { q: Math.random() < .4 ? `${who} has ${a} ${a === 1 ? th.slice(0, -1) : th} and gets ${b} more. How many now?` : `${a} + ${b} = ?`, viz: V.tenFrame(a, b, 1), kind: 'num', answer: a + b,
         hints: [`Start at ${Math.max(a, b)} and count on ${Math.min(a, b)}.`], steps: [`${Math.max(a, b)}, then count on ${Math.min(a, b)}: ${a + b}.`] };
     } },
   { id: 'k-sub10', grade: 'K', strand: 'add', title: 'Subtract within 10', kid: 'Take away',
@@ -135,7 +135,7 @@ export default [
     gen(lv) {
       const max = lv === 3 ? 999 : 99, a = ri(10, max); let b = Math.random() < .3 ? a - (a % 10) + ri(0, 9) : ri(10, max); if (Math.random() < .1) b = a;
       const ans = a > b ? '>' : a < b ? '<' : '=';
-      return { q: `${a} &#9633; ${b}`, kind: 'choice', choices: ['<', '=', '>'], answer: ans,
+      return { q: `${a} &#9633; ${b}`, say: `Compare ${a} and ${b}. Which sign goes in the box: less than, equals, or greater than?`, kind: 'choice', choices: ['<', '=', '>'], answer: ans,
         hints: ['The open side of the sign faces the bigger number.'], steps: [`${a} ${ans === '<' ? 'is less than' : ans === '>' ? 'is greater than' : 'equals'} ${b}.`] };
     } },
   { id: '1-time', grade: 1, strand: 'geo', title: 'Tell time to the half hour', kid: 'What time is it?',

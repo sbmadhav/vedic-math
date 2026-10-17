@@ -91,7 +91,7 @@ export default [
     method: ['Add the angles you know.', 'Subtract from 180°.'],
     gen() {
       const a = ri(20, 100), b = ri(20, 160 - a - 10), c = 180 - a - b;
-      return { q: 'Find the missing angle.', viz: V.triangle({ angles: [a + '°', b + '°', '?'] }), kind: 'num', answer: c, unit: '°', hints: [`${a} + ${b} = ${a + b}`], steps: [`180 &minus; ${a + b} = ${c}°`] };
+      return { q: 'Find the missing angle.', say: `A triangle has angles of ${a}° and ${b}°. Find the missing angle.`, viz: V.triangle({ angles: [a + '°', b + '°', '?'] }), kind: 'num', answer: c, unit: '°', hints: [`${a} + ${b} = ${a + b}`], steps: [`180 &minus; ${a + b} = ${c}°`] };
     } },
   { id: '10-similar', grade: 10, strand: 'geo', title: 'Similar figures', kid: 'Same shape, new size',
     idea: 'Similar shapes have equal angles and proportional sides. Find the scale factor and use it everywhere.',
@@ -115,7 +115,7 @@ export default [
     gen() {
       const n = pick([5, 6, 8, 9, 10, 12]), t = pick(['sum', 'each', 'ext']), name = { 5: 'pentagon', 6: 'hexagon', 8: 'octagon', 9: 'nonagon', 10: 'decagon', 12: 'dodecagon' }[n];
       const ans = t === 'sum' ? (n - 2) * 180 : t === 'each' ? (n - 2) * 180 / n : 360 / n;
-      return { q: t === 'sum' ? `What do the interior angles of a ${name} add up to?` : t === 'each' ? `What is each interior angle of a regular ${name}?` : `What is each exterior angle of a regular ${name}?`, kind: 'num', answer: ans, unit: '°',
+      return { q: t === 'sum' ? `What do the interior angles of ${n === 8 ? 'an' : 'a'} ${name} add up to?` : t === 'each' ? `What is each interior angle of a regular ${name}?` : `What is each exterior angle of a regular ${name}?`, kind: 'num', answer: ans, unit: '°',
         hints: [t === 'ext' ? 'Exterior angles add to 360°.' : `${n} sides make ${n - 2} triangles.`], steps: [t === 'sum' ? `(${n} &minus; 2) &times; 180 = ${ans}°` : t === 'each' ? `${(n - 2) * 180} &divide; ${n} = ${ans}°` : `360 &divide; ${n} = ${ans}°`] };
     } },
   { id: '10-arc', grade: 10, strand: 'geo', title: 'Arcs and sectors', kid: 'Pizza slices',
@@ -191,7 +191,7 @@ export default [
     method: ['Find a from (x − a).', 'Evaluate p(a).'],
     gen() {
       const co = [rnz(-3, 3), ri(-5, 5), ri(-5, 5), ri(-9, 9)], a = ri(-3, 3), val = co.reduce((s, c) => s * a + c, 0);
-      return { q: `Find the remainder when ${poly(co)} is divided by (<i>x</i> ${a <= 0 ? '+' : '&minus;'} ${Math.abs(a)}).`, kind: 'num', answer: val, hints: [`Evaluate p(${neg(a)}).`], steps: [`p(${neg(a)}) = ${neg(val)}`] };
+      return { q: `Find the remainder when ${poly(co)} is divided by ${a ? `(<i>x</i> ${a < 0 ? '+' : '&minus;'} ${Math.abs(a)})` : '<i>x</i>'}.`, kind: 'num', answer: val, hints: [`Evaluate p(${neg(a)}).`], steps: [`p(${neg(a)}) = ${neg(val)}`] };
     } },
   { id: '11-series', grade: 11, strand: 'func', title: 'Series sums', kid: 'Adding patterns',
     idea: 'Arithmetic series: n × (first + last) ÷ 2. Geometric series: a₁(1 − rⁿ) ÷ (1 − r).',
@@ -253,7 +253,7 @@ export default [
     method: ['Try plugging in.', 'If you get 0/0, factor the top and cancel the common factor.', 'Plug in again.'],
     gen() {
       const a = ri(-6, 6), b = ri(-6, 6);
-      return { q: `lim<sub><i>x</i>&rarr;${neg(a)}</sub> <span class="fr"><span>${poly([1, -(a + b), a * b])}</span><span><i>x</i> ${a <= 0 ? '+' : '&minus;'} ${Math.abs(a)}</span></span>`, kind: 'num', answer: a - b,
+      return { q: `lim<sub><i>x</i>&rarr;${neg(a)}</sub> <span class="fr"><span>${poly([1, -(a + b), a * b])}</span><span>${a ? `<i>x</i> ${a < 0 ? '+' : '&minus;'} ${Math.abs(a)}` : '<i>x</i>'}</span></span>`, kind: 'num', answer: a - b,
         hints: ['Plugging in gives 0/0. Factor the top.'], steps: [`${binom(-a, -b)} &divide; (<i>x</i> ${a <= 0 ? '+' : '&minus;'} ${Math.abs(a)}) = <i>x</i> ${b <= 0 ? '+' : '&minus;'} ${Math.abs(b)}`, `At <i>x</i> = ${neg(a)}: ${neg(a - b)}`] };
     } },
   { id: '12-deriv', grade: 12, strand: 'calc', title: 'Derivatives with the power rule', kid: 'Speed of change',

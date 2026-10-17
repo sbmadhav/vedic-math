@@ -1,5 +1,5 @@
 /* Grades 3 to 5: multiplication strategies, division, fractions, decimals, area, volume and the coordinate plane. */
-import { ri, pick, shuffle, gcd, lcm, simp, fr, frRaw, mixed, factors, isPrime, round, PEOPLE, THINGS, ordinal } from '../lib.js';
+import { ri, pick, shuffle, gcd, lcm, simp, fr, frRaw, mixed, factors, isPrime, round, PEOPLE, THINGS, ordinal, denomName } from '../lib.js';
 import * as V from '../viz.js';
 
 /* Strategy hint for a times fact, built from facts a learner already knows */
@@ -81,7 +81,7 @@ export default [
       const same = pick(['den', 'num']); let a, b, c, d;
       if (same === 'den') { b = d = pick([4, 5, 6, 8, 10]); a = ri(1, b - 1); c = ri(1, d - 1); } else { a = c = ri(1, 3); b = ri(a + 1, 10); d = ri(a + 1, 12); }
       const ans = a / b > c / d ? '>' : a / b < c / d ? '<' : '=';
-      return { q: `${frRaw(a, b)} &#9633; ${frRaw(c, d)}`, viz: V.fracBar(a, b) + V.fracBar(c, d, { cls: 'vz-teal' }), kind: 'choice', choices: ['<', '=', '>'], answer: ans,
+      return { q: `${frRaw(a, b)} &#9633; ${frRaw(c, d)}`, say: `Compare ${frRaw(a, b)} and ${frRaw(c, d)}. Which sign goes in the box: less than, equals, or greater than?`, viz: V.fracBar(a, b) + V.fracBar(c, d, { cls: 'vz-teal' }), kind: 'choice', choices: ['<', '=', '>'], answer: ans,
         hints: [same === 'den' ? 'Same size parts. Who has more of them?' : 'Same number of parts. Whose parts are bigger?'], steps: [`${frRaw(a, b)} ${ans} ${frRaw(c, d)}`] };
     } },
   { id: '3-area', grade: 3, strand: 'geo', title: 'Area and perimeter', kid: 'Fill it and fence it',
@@ -89,7 +89,7 @@ export default [
     method: ['Area: rows times columns.', 'Perimeter: add all four sides, or 2 × (length + width).'],
     gen(lv) {
       const w = ri(2, lv === 1 ? 8 : 15), h = ri(2, lv === 1 ? 6 : 12), area = Math.random() < .55;
-      return { q: `What is the ${area ? 'area' : 'perimeter'} of the rectangle? (${area ? 'square units' : 'units'})`, viz: V.rect(w, h, { grid: lv === 1 && w * h <= 60 }), kind: 'num', answer: area ? w * h : 2 * (w + h),
+      return { q: `What is the ${area ? 'area' : 'perimeter'} of the rectangle? (${area ? 'square units' : 'units'})`, say: `A rectangle is ${w} units long and ${h} units wide. What is its ${area ? 'area, in square units' : 'perimeter, in units'}?`, viz: V.rect(w, h, { grid: lv === 1 && w * h <= 60 }), kind: 'num', answer: area ? w * h : 2 * (w + h),
         hints: [area ? `${h} rows of ${w} squares.` : `Go around: ${w} + ${h} + ${w} + ${h}.`], steps: [area ? `${w} &times; ${h} = ${w * h}` : `2 &times; (${w} + ${h}) = ${2 * (w + h)}`] };
     } },
   { id: '3-twostep', grade: 3, strand: 'mult', title: 'Two-step word problems', kid: 'Story puzzles',
@@ -144,7 +144,7 @@ export default [
       const d = pick([3, 4, 5, 6, 8, 10, 12]), a = ri(1, d + 3), b = ri(1, d), sub = Math.random() < .4 && a > b;
       const n = sub ? a - b : a + b;
       return { q: `${frRaw(a, d)} ${sub ? '&minus;' : '+'} ${frRaw(b, d)} = ?`, kind: 'num', answer: n / d,
-        hints: [`Keep the ${d}ths. ${a} ${sub ? '&minus;' : '+'} ${b} = ${n}.`], steps: [`${frRaw(n, d)}${gcd(n, d) > 1 || n >= d ? ' = ' + mixed(n, d) : ''}`] };
+        hints: [`Keep the ${denomName(d)}. ${a} ${sub ? '&minus;' : '+'} ${b} = ${n}.`], steps: [`${frRaw(n, d)}${gcd(n, d) > 1 || n >= d ? ' = ' + mixed(n, d) : ''}`] };
     } },
   { id: '4-fracwhole', grade: 4, strand: 'frac', title: 'Fraction times a whole number', kid: 'Groups of pieces',
     idea: '4 × 2/3 means four groups of 2/3, which is 8 thirds.',
@@ -161,14 +161,14 @@ export default [
       const hund = Math.random() < .5, n = hund ? ri(1, 99) : ri(1, 9), d = hund ? 100 : 10, toDec = Math.random() < .5;
       const dec = (n / d).toFixed(hund ? 2 : 1);
       return toDec ? { q: `Write ${frRaw(n, d)} as a decimal.`, kind: 'num', answer: n / d, asDecimal: true, hints: [hund ? 'Two places after the point for hundredths.' : 'One place after the point for tenths.'], steps: [`${frRaw(n, d)} = ${dec}`] }
-        : { q: `${dec} = <span class="fr"><span>?</span><span>${d}</span></span>`, viz: hund ? V.hundredGrid(n) : V.fracBar(n, 10), kind: 'num', answer: n, hints: [`Read it: ${dec} is ${n} ${hund ? 'hundredths' : 'tenths'}.`], steps: [`${dec} = ${frRaw(n, d)}`] };
+        : { q: `${dec} = <span class="fr"><span>?</span><span>${d}</span></span>`, viz: hund ? V.hundredGrid(n) : V.fracBar(n, 10), kind: 'num', answer: n, hints: [`Read it: ${dec} is ${n} ${hund ? 'hundredth' : 'tenth'}${n === 1 ? '' : 's'}.`], steps: [`${dec} = ${frRaw(n, d)}`] };
     } },
   { id: '4-angles', grade: 4, strand: 'geo', title: 'Measure angles', kid: 'Angle hunter',
     idea: 'A straight line is 180°. A square corner (right angle) is 90°. Parts of an angle add up to the whole.',
     method: ['Decide whether the whole is 90° or 180°.', 'Subtract the part you know.'],
     gen() {
       const kind = pick(['straight', 'right']), tot = kind === 'straight' ? 180 : 90, b = ri(2, tot / 5 - 2) * 5;
-      return { q: 'What is the missing angle?', viz: V.anglePair(kind, '?', b), kind: 'num', answer: tot - b, unit: '°',
+      return { q: 'What is the missing angle?', say: `One angle is ${b}°. What is the missing angle?`, viz: V.anglePair(kind, '?', b), kind: 'num', answer: tot - b, unit: '°',
         hints: [kind === 'straight' ? 'The two angles make a straight line: 180°.' : 'The two angles make a right angle: 90°.'], steps: [`${tot} &minus; ${b} = ${tot - b}°`] };
     } },
 
@@ -228,7 +228,7 @@ export default [
     method: ['Find the area of the base (length × width).', 'Multiply by the height (how many layers).'],
     gen() {
       const l = ri(2, 12), w = ri(2, 8), h = ri(2, 10);
-      return { q: 'What is the volume of the box in cubic units?', viz: V.prism(l, w, h), kind: 'num', answer: l * w * h,
+      return { q: 'What is the volume of the box in cubic units?', say: `A box is ${l} long, ${w} wide and ${h} tall. What is its volume in cubic units?`, viz: V.prism(l, w, h), kind: 'num', answer: l * w * h,
         hints: [`Base: ${l} &times; ${w} = ${l * w}`], steps: [`${l * w} &times; ${h} = ${l * w * h}`] };
     } },
   { id: '5-coord', grade: 5, strand: 'func', title: 'Points on the coordinate plane', kid: 'Treasure map',

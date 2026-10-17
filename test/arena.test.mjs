@@ -125,9 +125,11 @@ test('daily Arena rounds: pool skills exist, answers are correct, choices hold t
   }
 });
 
-/* Snapshots of the daily sets taken before the Pro Arena became mental arithmetic (sha256 of the JSON, first 16 hex) */
+/* Snapshots of the daily sets taken before the Pro Arena became mental arithmetic (sha256 of the JSON, first 16 hex).
+   Explorer 2026-10-14 and 2026-10-18 were retaken for openspec voice-wording: one question each now says "1 marble"
+   and "1 star" instead of "1 marbles" and "1 stars"; the questions, order and answers are the same. */
 const BEFORE = {
-  'explorer 2026-10-14': '6f6c85434416c347', 'explorer 2026-10-15': '3a40ecf9d56054ff', 'explorer 2026-10-18': '5a22dc6ccd28f472',
+  'explorer 2026-10-14': 'ee93b3cb1bcf681c', 'explorer 2026-10-15': '3a40ecf9d56054ff', 'explorer 2026-10-18': 'd26da2ee0848f779',
   'challenger 2026-10-14': '3459ead06eae6dd3', 'challenger 2026-10-15': '314a7474d7b50233', 'challenger 2026-10-18': '68546f2f50ffa1c8',
   'pro 2026-10-14': 'bebe78defa65947d', 'pro 2026-10-15': '68cb3ae2acb8c395', 'pro 2026-10-18': 'c94c2512cf2c9136'
 };

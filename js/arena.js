@@ -6,7 +6,7 @@ import { answerText } from './answers.js';
 import { shuffle } from './lib.js';
 import { mentalQ, FAMILIES } from './mental.js';
 import { levelFor } from './adapt.js';
-import { sfx, speak, confetti, t } from './fx.js';
+import { sfx, speakQuestion, confetti, t } from './fx.js';
 import { on, later, loop, child } from './life.js';
 import { keypadOnly } from './shell.js';
 
@@ -35,7 +35,7 @@ const withSeed = (seedText, fn) => { const real = Math.random; if (seedText) Mat
 /* An Arena item from a generated question: four choices (for tap play) around the answer */
 const item = (p, league, extra) => {
   const near = [...new Set([p.answer, p.answer + 1, p.answer - 1, p.answer + 2, p.answer + 10, p.answer - 10].filter(v => league !== 'explorer' || v >= 0))];
-  return { q: p.q, viz: league === 'explorer' ? p.viz : '', answer: p.answer, choices: shuffle([p.answer, ...shuffle(near.slice(1)).slice(0, 3)]), ...extra };
+  return { q: p.q, ...(p.say ? { say: p.say } : {}), viz: league === 'explorer' ? p.viz : '', answer: p.answer, choices: shuffle([p.answer, ...shuffle(near.slice(1)).slice(0, 3)]), ...extra };
 };
 /* One question from a skill pool at a generator level (1 to 3), or null when the skill gave an answer the keypad cannot take */
 function poolItem(pool, league, level, d) {
@@ -120,7 +120,7 @@ export function runArena(root, { league, day = null, dial, signal, onEnd, untime
     const p = at(), qEl = $('#arQ');
     qEl.innerHTML = p.q; $('#arViz').innerHTML = p.viz || '';
     if (p.d) qEl.dataset.d = p.d; else delete qEl.dataset.d;
-    if (tapMode) { $('#arIn').innerHTML = `<div class="ar-choices">${p.choices.map(c => `<button class="ar-choice" data-v="${c}">${c}</button>`).join('')}</div>`; speak(p.q); }
+    if (tapMode) { $('#arIn').innerHTML = `<div class="ar-choices">${p.choices.map(c => `<button class="ar-choice" data-v="${c}">${c}</button>`).join('')}</div>`; speakQuestion(p); }
     else { $('#arIn').innerHTML = `<form class="ar-form" id="arForm"><output class="ar-entry" id="arEntry" aria-label="Your answer"></output><input class="ar-hidden" id="arType" inputmode="numeric" autocomplete="off" aria-label="Type your answer"><button class="md-btn md-btn--primary">Go</button></form><div class="ar-pad">${PAD.map(k => `<button type="button" class="ar-key" data-k="${k}">${k === 'del' ? 'Del' : k === '-' ? '&minus;' : k}</button>`).join('')}</div>`;
       const typ = $('#arType'); keypadOnly(typ); if (matchMedia('(pointer: fine)').matches) typ.focus({ preventScroll: true });
       on(typ, 'input', () => { typ.value = typ.value.replace(/[^0-9-]/g, '').slice(0, 7); $('#arEntry').textContent = typ.value; }, rs);
@@ -248,7 +248,7 @@ export function runChallenge(root, ch, set, { onEnd, tap = false, signal, untime
     $('#arQ').innerHTML = p.q; $('#arViz').innerHTML = tap ? p.viz || '' : '';
     if (p.kind === 'choice' || tap) {
       const ch2 = p.kind === 'choice' ? p.choices : shuffle([...new Set([p.answer, p.answer + 1, p.answer - 1, p.answer + 2].map(v => Math.round(v * 1000) / 1000))]).slice(0, 4);
-      $('#arIn').innerHTML = `<div class="ar-choices">${ch2.map(c => `<button class="ar-choice" data-v="${c}">${c}</button>`).join('')}</div>`; if (tap) speak(p.q);
+      $('#arIn').innerHTML = `<div class="ar-choices">${ch2.map(c => `<button class="ar-choice" data-v="${c}">${c}</button>`).join('')}</div>`; if (tap) speakQuestion(p);
     } else {
       $('#arIn').innerHTML = `<form class="ar-form" id="arForm"><output class="ar-entry" id="arEntry" aria-label="Your answer"></output><input class="ar-hidden" id="arType" inputmode="decimal" autocomplete="off" aria-label="Type your answer"><button class="md-btn md-btn--primary">Go</button></form><div class="ar-pad ar-pad--wide">${PAD2.map(k => `<button type="button" class="ar-key" data-k="${k}">${k === 'del' ? 'Del' : k === '-' ? '&minus;' : k}</button>`).join('')}</div>`;
       const typ = $('#arType'); keypadOnly(typ); if (matchMedia('(pointer: fine)').matches) typ.focus({ preventScroll: true });

@@ -235,7 +235,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     else say(st.k === 0 ? `Star ${star}: four questions. Go!` : st.k === st.qs.length - 1 ? 'Last one!' : pickOne(['Next one.', 'Keep going.', 'You got this.']), 'idle');
     root.querySelectorAll('.star-choice').forEach(b => on(b, 'click', () => { if (input) answer(b.dataset.v === p.answer); }, ps));
     root.querySelectorAll('.star-field').forEach(b => on(b, 'click', () => { active = +b.dataset.f; showEntry(); }, ps));
-    hud(); showEntry(); input = true; fx.speak(p.q);
+    hud(); showEntry(); input = true; fx.speakQuestion(p);
     if (shown++) $('#stQ').focus({ preventScroll: true });
   }
 

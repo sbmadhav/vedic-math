@@ -241,7 +241,7 @@ const SOLVERS = [
   [re('Convert (\\d*)pi(?:/(\\d+))? radians to degrees\\.'), m => R(180n * BigInt(m[1] || 1), BigInt(m[2] || 1))],
   [re('Convert (\\d+) degrees to radians\\. Give the answer as a multiple of pi\\.'), m => R(BigInt(m[1]), 180n)],
   [re(`Scores have mean ${N} and standard deviation ${N}\\. What is the z-score of ${N}\\?`), m => num(m[3]).sub(num(m[1])).div(num(m[2]))],
-  [re('A bag has (\\d+) red, (\\d+) blue(?: and (\\d+) green)? marbles\\. You pick one without looking\\. What is the probability it is (red|blue|green)\\? Give a fraction\\.'), m => R(BigInt(m[{ red: 1, blue: 2, green: 3 }[m[4]]] || 0), BigInt(m[1]) + BigInt(m[2]) + BigInt(m[3] || 0))],
+  [re('A bag has (\\d+) red(?:, | and )(\\d+) blue(?: and (\\d+) green)? marbles\\. You pick one without looking\\. What is the probability it is (red|blue|green)\\? Give a fraction\\.'), m => R(BigInt(m[{ red: 1, blue: 2, green: 3 }[m[4]]] || 0), BigInt(m[1]) + BigInt(m[2]) + BigInt(m[3] || 0))],
   [re(`A price goes from \\$${N} to \\$${N}\\. What is the percent change\\? \\(Use a negative number for a decrease\\.\\)`), m => num(m[2]).sub(num(m[1])).mul(R(100)).div(num(m[1]))],
   [re('\\$(\\d+) with an? (\\d+)% sales tax\\. What is the final price\\?'), m => ({ round: 2, x: R(BigInt(m[1])).mul(R(100n + BigInt(m[2]), 100n)) })],
   [re('\\$(\\d+) (?:with|after) an? (\\d+)% (?:discount|off)\\. What is the (?:sale|final) price\\?'), m => ({ round: 2, x: R(BigInt(m[1])).mul(R(100n - BigInt(m[2]), 100n)) })],
@@ -258,6 +258,7 @@ const SOLVERS = [
   [re(`f\\(x\\) = (.+) and g\\(x\\) = (.+)\\. Find f\\(g\\(${N}\\)\\)\\.`), m => evaluate(m[1]).at(evaluate(m[2]).at(num(m[3])))],
   [re(`f\\(x\\) = (.+) and g\\(x\\) = (.+)\\. Find g\\(f\\(${N}\\)\\)\\.`), m => evaluate(m[2]).at(evaluate(m[1]).at(num(m[3])))],
   [re(`Find the remainder when (.+) is divided by \\(x ([-+]) (\\d+)\\)\\.`), m => evaluate(m[1]).at(num((m[2] === '-' ? '' : '-') + m[3]))],
+  [re(`Find the remainder when (.+) is divided by x\\.`), m => evaluate(m[1]).at(num('0'))],
   [re(`Evaluate INT_?(-?\\d+)\\^\\((-?\\d+)\\) \\((.+)\\) dx`), m => { const F = evaluate(m[3]).integ(); return F.at(num(m[2])).sub(F.at(num(m[1]))); }],
   [re(`lim_?x->(-?\\d+) \\(\\((.+)\\)/\\((.+)\\)\\)`), m => evaluate(m[2]).divExact(evaluate(m[3])).at(num(m[1]))]
 ];
