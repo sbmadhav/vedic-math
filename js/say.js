@@ -47,6 +47,7 @@ export const deps = {
   status: text => import('./fx.js').then(m => m.toast(esc(text))).catch(() => {}),
   fetch: url => fetch(url),
   saveData: () => { try { return !!(navigator.connection && navigator.connection.saveData); } catch (e) { return false; } },
+  lockWait: 8000, // ms a prefetch queue waits on another request for the same clip before fetching it itself
   synth: () => (typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance === 'function' ? speechSynthesis : null),
 };
 
@@ -79,14 +80,13 @@ function fallback(mine, signal) {
 const fetched = new Set(); // ids whose clip is saved (a prefetch got it, or it played)
 const inflight = new Map(); // id -> the prefetch request still running for it (settles, never rejects)
 let queue = null; // ids still to fetch, while a prefetch runs under some signal
-const LOCK_WAIT = 8000; // ms a queue waits on another request for the same clip before fetching it itself
 /* One prefetch request; only a successful response marks the clip saved, so an HTTP error or a network failure is
    tried again by a later prefetch. A request outlives the view that started it, and a newer queue waits for it. */
 function fetchOne(id) {
   const run = Promise.resolve().then(() => deps.fetch(clipUrl(id)))
     .then(r => { if (!r || !r.ok) throw new Error('not saved'); return r.arrayBuffer(); })
     .then(() => { fetched.add(id); }, () => {})
-    .finally(() => { inflight.delete(id); });
+    .finally(() => { if (inflight.get(id) === run) inflight.delete(id); }); // a late request never removes a newer one's entry
   inflight.set(id, run);
   return run;
 }
@@ -106,7 +106,7 @@ function prefetch(signal) {
     if (fetched.has(id)) return step();
     /* A request an older queue left running is awaited; if it did not save the clip, this queue fetches it again */
     const lock = inflight.get(id);
-    (lock ? new Promise(r => { lock.then(r); later(r, LOCK_WAIT, signal); }) : Promise.resolve()) // a lock that never settles is waited on at most LOCK_WAIT
+    (lock ? new Promise(r => { lock.then(r); later(r, deps.lockWait, signal); }) : Promise.resolve()) // a lock that never settles is waited on at most lockWait
       .then(() => (fetched.has(id) || signal.aborted ? null : fetchOne(id)))
       .finally(() => { if (!signal.aborted) idle(step, signal); });
   };

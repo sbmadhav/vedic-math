@@ -265,3 +265,22 @@ test('a tapped clip whose fetch never settles does not block the prefetch once i
   assert.equal(log.fetched.length, 28, 'and every other name except the playing s3');
   ctl.abort();
 });
+
+test('a late request that settles after a newer one started never removes the newer one from inflight', async () => {
+  const log = stubs(); S.deps.lockWait = 20; let releaseOld;
+  try {
+    log.hold = { s2: new Promise(r => { releaseOld = r; }) }; // the first s2 request hangs
+    let ctl = new AbortController();
+    S.tap(btn('s1'), ctl.signal); await wait(30); ctl.abort(); // s2 in flight, view left
+    log.hold = { s2: new Promise(() => {}) }; // the next s2 request hangs too
+    ctl = new AbortController();
+    S.tap(btn('s3'), ctl.signal); await wait(80); // the new queue gives up waiting and starts its own s2 request
+    assert.equal(log.fetched.filter(u => /\/s2\.m4a/.test(u)).length, 2);
+    releaseOld(false); await wait(20); // the old request fails late
+    ctl.abort(); ctl = new AbortController();
+    S.deps.lockWait = 10000;
+    S.tap(btn('s4'), ctl.signal); await wait(60); // a third queue while the second s2 request is still pending
+    assert.equal(log.fetched.filter(u => /\/s2\.m4a/.test(u)).length, 2, 'it waits on the pending request instead of starting a third');
+    ctl.abort();
+  } finally { S.deps.lockWait = 8000; }
+});
