@@ -89,10 +89,10 @@ export function scrollPieces(found, glyphs) {
   const W = 92, x0 = 26;
   const pieces = Array.from({ length: 6 }, (_, i) => {
     const l = x0 + i * W, r = l + W, n = i + 1, has = found.includes(n);
-    return `<g class="sp-piece${has ? ' is-found' : ''}" style="--i:${i}"><path d="${pathFor(l, r, i)}"/>${has ? `<g class="sp-glyph" transform="translate(${l + W / 2} 52)">${glyphs[i]}</g>` : `<text class="sp-num" x="${l + W / 2}" y="60">${n}</text>`}</g>`;
+    return `<g class="sc-piece${has ? ' is-found' : ''}" style="--i:${i}"><path d="${pathFor(l, r, i)}"/>${has ? `<g class="sc-pglyph" transform="translate(${l + W / 2} 52)">${glyphs[i]}</g>` : `<text class="sc-pnum" x="${l + W / 2}" y="60">${n}</text>`}</g>`;
   });
-  return `<svg class="sp-svg" viewBox="0 0 600 104" role="img" aria-label="The scroll: ${found.length} of 6 pieces found">
-    <rect class="sp-rod" x="14" y="0" width="12" height="104" rx="6"/><rect class="sp-rod" x="574" y="0" width="12" height="104" rx="6"/>${pieces.join('')}</svg>`;
+  return `<svg class="sc-psvg" viewBox="0 0 600 104" role="img" aria-label="The scroll: ${found.length} of 6 pieces found">
+    <rect class="sc-prod" x="14" y="0" width="12" height="104" rx="6"/><rect class="sc-prod" x="574" y="0" width="12" height="104" rx="6"/>${pieces.join('')}</svg>`;
 }
 /* A torn piece between x = l and x = r: straight top and bottom, jagged shared edges */
 function pathFor(l, r, i) {
@@ -101,10 +101,10 @@ function pathFor(l, r, i) {
   return 'M' + [...R, ...Lft.slice().reverse()].map(p => p.join(' ')).join(' L') + ' Z';
 }
 export const GLYPHS = [
-  '<circle r="9" cy="-6" class="sp-g"/><path class="sp-g" d="M6 -8l8 3-8 3z"/><ellipse class="sp-g" cy="10" rx="8" ry="12"/>',
-  '<path class="sp-g sp-g--line" d="M-18 14H18L-18 -14Z"/><path class="sp-g--line" d="M-18 6h8v8"/>',
-  '<g class="sp-g">' + [[0, -16], [-7, -4], [7, -4], [-14, 8], [0, 8], [14, 8]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="5"/>`).join('') + '</g>',
-  '<g class="sp-g">' + [-18, -6, 6, 18].map((x, i) => (i % 2 ? `<circle cx="${x}" cy="0" r="3.5"/>` : `<rect x="${x - 5}" y="-2.5" width="10" height="5" rx="2"/>`)).join('') + '</g>',
-  '<path class="sp-g" d="M0 -18l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z"/>',
-  '<g class="sp-g--line"><circle r="14"/><rect x="-10" y="-10" width="20" height="20"/></g>'
+  '<circle r="9" cy="-6" class="sc-pg"/><path class="sc-pg" d="M6 -8l8 3-8 3z"/><ellipse class="sc-pg" cy="10" rx="8" ry="12"/>',
+  '<path class="sc-pg sc-pg--line" d="M-18 14H18L-18 -14Z"/><path class="sc-pg--line" d="M-18 6h8v8"/>',
+  '<g class="sc-pg">' + [[0, -16], [-7, -4], [7, -4], [-14, 8], [0, 8], [14, 8]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="5"/>`).join('') + '</g>',
+  '<g class="sc-pg">' + [-18, -6, 6, 18].map((x, i) => (i % 2 ? `<circle cx="${x}" cy="0" r="3.5"/>` : `<rect x="${x - 5}" y="-2.5" width="10" height="5" rx="2"/>`)).join('') + '</g>',
+  '<path class="sc-pg" d="M0 -18l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z"/>',
+  '<g class="sc-pg--line"><circle r="14"/><rect x="-10" y="-10" width="20" height="20"/></g>'
 ];

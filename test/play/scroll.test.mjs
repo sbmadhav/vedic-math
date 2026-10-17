@@ -125,3 +125,11 @@ test('no em dashes in any chapter text', () => {
     assert.ok(!txt.includes('—'), `${lv} ch${c.n}`);
   }
 });
+
+test('the scroll art uses its own class prefix, never the Spellbook\'s sp- classes', async () => {
+  /* play stylesheets stay loaded after a visit, so a shared class name would restyle the scroll */
+  const A = await import('../../js/play/exp/scroll-art.js');
+  const svg = A.scrollPieces([1, 3, 6], A.GLYPHS) + A.GLYPHS.join('') + Object.values(A.SCENES).join('');
+  assert.doesNotMatch(svg, /class="[^"]*\bsp-/);
+  for (const c of ['sc-psvg', 'sc-prod', 'sc-piece', 'sc-pglyph', 'sc-pnum', 'sc-pg']) assert.match(svg, new RegExp(`\\b${c}\\b`), c);
+});
