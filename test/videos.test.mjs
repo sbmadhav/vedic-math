@@ -44,6 +44,14 @@ test('Skills and Tricks named by an entry exist', () => {
   }
 });
 
+test('every kindergarten to grade 5 Skill has two or more hand-matched videos, and K to 2 have them for Explorer', () => {
+  for (const s of Object.values(byId).filter(s => ['K', 1, 2, 3, 4, 5].includes(s.grade))) {
+    const early = ['K', 1, 2].includes(s.grade);
+    const n = VIDEOS.filter(v => v.skills.includes(s.id) && v.modes.some(m => (early ? ['explorer'] : ['explorer', 'challenger']).includes(m))).length;
+    assert.ok(n >= 2, `${s.id}: ${n} hand-matched video(s) for ${early ? 'Explorer' : 'Challenger'}`);
+  }
+});
+
 test('every grade 6 to 8 Skill has two or more hand-matched videos for Challenger', () => {
   for (const s of Object.values(byId).filter(s => [6, 7, 8].includes(s.grade))) {
     const n = VIDEOS.filter(v => v.skills.includes(s.id) && v.modes.includes('challenger')).length;

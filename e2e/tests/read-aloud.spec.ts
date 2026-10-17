@@ -2,12 +2,21 @@ import { test, expect, open, cloudLog, type Page } from './fixtures';
 
 /* What the read-aloud voice says (openspec voice-wording): a question's optional say is what is heard, the screen
    text stays as it was, and the hint read after a second wrong try is the hint on screen. speechSynthesis.speak is
-   replaced by a recorder, so nothing is spoken and every utterance can be read back. */
+   replaced by a recorder, so nothing is spoken and every utterance can be read back. The whole engine is a fake (as in
+   voice.spec.ts): in WebKit, replacing only speechSynthesis.speak on the real engine records nothing. */
 async function recordSpeech(page: Page) {
   await page.addInitScript(() => {
-    (window as any).__said = [];
-    if (!('speechSynthesis' in window)) return;
-    speechSynthesis.speak = (u: SpeechSynthesisUtterance) => { (window as any).__said.push(u.text); setTimeout(() => u.onend && u.onend(new Event('end') as SpeechSynthesisEvent), 0); };
+    const w = window as any;
+    w.__said = [];
+    const voice = { name: 'Samantha', lang: 'en-US', voiceURI: 'Samantha', localService: true, default: true };
+    const fake = {
+      getVoices: () => [voice], pending: false, speaking: false, paused: false,
+      speak(u: any) { w.__said.push(u.text); setTimeout(() => u.onend && u.onend(), 0); },
+      cancel() {}, pause() {}, resume() {}, addEventListener() {}, removeEventListener() {}
+    };
+    Object.defineProperty(window, 'speechSynthesis', { value: fake, configurable: true });
+    class Utterance { text: string; voice: unknown = null; lang = ''; pitch = 1; rate = 1; volume = 1; onend: null | (() => void) = null; onerror = null; constructor(t: string) { this.text = t; } }
+    Object.defineProperty(window, 'SpeechSynthesisUtterance', { value: Utterance, configurable: true });
   });
 }
 const said = (page: Page) => page.evaluate(() => ((window as any).__said as string[]).join(' '));

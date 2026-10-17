@@ -43,4 +43,6 @@ One OpenSpec change for the shelf (data file, filters, hand matching, in-page on
 
 Batch 1 (Tricks), 2026-10-15: 23 videos from the approved channels, each checked as in `openspec/changes/archive/2026-10-15-watch-shelf/HANDOFF.md`. Tricks still without a video that meets the bar: `by9s` (beyond the nines table), `duplex`, `osculator`, `zero-sum`, `add-sub` and `ratio-zero`.
 
+Batch 2 (kindergarten to grade 5 Skills), 2026-10-17: 130 videos from the approved channels, 70 for Explorer and 60 for Challenger, 118 of them made for kids and 8 of them Shorts, each checked the same way. Every one of the 50 Skills from kindergarten to grade 5 now has two or more hand-matched videos, and every kindergarten to grade 2 Skill has two or more for Explorer (`test/videos.test.mjs` holds this). Explorer's shelf goes from 2 videos to 72.
+
 Batch 3 (grades 6 to 8 Skills), 2026-10-17: 112 videos from the approved channels, 3 to 5 for each of the 29 grade 6 to 8 Skills, checked the same way (oEmbed 200; length, captions and made-for-kids from the watch page; embedded playback at the site's origin; captions read). No approved channel had a video that meets the bar for the six Tricks above: tecmath's squaring videos use the nearest ten, not the duplex, and the divisibility by 7 videos double and subtract instead of using the osculator.

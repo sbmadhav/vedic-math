@@ -685,19 +685,22 @@ function sutraHTML(c) {
   const tricks = c.tricks.map(t => TRICKS.find(x => x.id === t)).filter(Boolean);
   // Learn more: videos play in the page for every Mode; pages on other sites only for Pro
   const reads = d.read.map(([label, to]) => (typeof to === 'object' ? playBtn(to.yt, `${icon('play')}<span>${esc(label)}</span>`) : outLink(to, `${icon('link')}<span>${esc(label)}</span>`))).filter(Boolean);
-  return `<header class="sd-head"><div><span class="md-tag md-tag--plum">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n} of ${c.sub ? 13 : 16}</span><h2 id="sdTitle" lang="sa-Latn">${c.name}</h2><p class="sd-mean">${c.meaning}</p></div><button class="vp-x sd-x" aria-label="Close">${icon('close')}</button></header>
+  // The close button and the prev / next footer stay pinned while the deep dive scrolls under them
+  return `<div class="sd-bar"><button class="vp-x sd-x" aria-label="Close">${icon('close')}</button></div>
+  <header class="sd-head"><div><span class="md-tag md-tag--plum">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n} of ${c.sub ? 13 : 16}</span><h2 id="sdTitle" lang="sa-Latn">${c.name}</h2><p class="sd-mean">${c.meaning}</p></div></header>
   <div class="sd-body">
     <div class="sd-fig"><div class="sd-scene"></div><p class="mq-small">Diagram plays by itself. Use Back and Next to go at your own pace.</p></div>
     <div class="sd-text">
       <h3>In plain words</h3><p>${c.plain}</p><p>${d.more}</p>
       <h3>Why it works</h3><p>${d.why}</p>
-      <h3>Worked examples</h3><ul class="sd-ex">${d.examples.map(([q, a]) => `<li><b>${q}</b><span>${a}</span></li>`).join('')}</ul>
+      <h3 id="sdExH">Worked examples</h3><p class="mq-small sd-ex-tip">${fx.t({ explorer: 'Easy first, then harder. Try each one yourself, then open it to see the steps.', challenger: 'Easy first, then harder. Try each one, then open it to check the steps.', pro: 'Ordered from easy to harder. Try each one, then open it for the steps.' })}</p>
+      <ol class="sd-ex" aria-labelledby="sdExH">${d.examples.map(([q, a], k) => `<li><details${k ? '' : ' open'}><summary><span class="sd-exn">Example ${k + 1} of ${d.examples.length}</span><b>${q}</b></summary><p>${a}</p></details></li>`).join('')}</ol>
       <h3>Where it is used</h3><p class="sd-uses">${d.uses.map(u => `<span>${u}</span>`).join('')}</p>
       ${tricks.length ? `<h3>Try it yourself</h3><p class="sd-try">${tricks.map(t => `<a class="md-btn md-btn--sm md-btn--primary" href="#/skill/v-${t.id}">${icon('bolt')} ${t.title}</a>`).join(' ')}</p>` : ''}
       ${reads.length ? `<h3>Learn more</h3><div class="rel-links">${reads.join('')}</div>` : ''}
     </div>
   </div>
-  <footer class="sd-foot">${prev ? `<a class="md-btn md-btn--sm" href="#/sutras/${prev.id}" data-swap>&larr; ${prev.name}</a>` : '<span></span>'}${next ? `<a class="md-btn md-btn--sm" href="#/sutras/${next.id}" data-swap>${next.name} &rarr;</a>` : ''}</footer>`;
+  <footer class="sd-foot">${prev ? `<a class="md-btn md-btn--sm sd-prev" href="#/sutras/${prev.id}" data-swap aria-label="Previous: ${esc(prev.name)}">&larr; <span lang="sa-Latn">${prev.name}</span></a>` : '<span></span>'}${next ? `<a class="md-btn md-btn--sm sd-next" href="#/sutras/${next.id}" data-swap aria-label="Next: ${esc(next.name)}"><span lang="sa-Latn">${next.name}</span> &rarr;</a>` : ''}</footer>`;
 }
 function openSutra(id, fromPage) {
   const c = ALL_SUTRAS.find(x => x.id === id); if (!c) return;
