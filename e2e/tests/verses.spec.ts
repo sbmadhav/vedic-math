@@ -3,24 +3,27 @@ import { test, expect, open } from './fixtures';
 /* Mathematics in Sanskrit verse (openspec sanskrit-verses): a section at the end of the Sutras page with the verses
    grouped by era, a Listen button, word-by-word notes, and the related verse inside a sutra deep dive. */
 
-/* A fake speech engine: one Hindi voice (or none), and every utterance recorded on window.__said */
-async function fakeSpeech(page: import('@playwright/test').Page, withHindi: boolean, lateMs = 0) {
-  await page.addInitScript(({ withHindi, lateMs }) => {
+/* A fake speech engine: one Hindi voice (or none). Every utterance is recorded on window.__said, and the utterance
+   objects on window.__utts so a test can fire their end or error late. late: the voice list stays empty, like Chrome
+   before voiceschanged, until the test calls window.__releaseVoices(). */
+async function fakeSpeech(page: import('@playwright/test').Page, withHindi: boolean, late = false) {
+  await page.addInitScript(({ withHindi, late }) => {
     const said: { text: string; lang: string }[] = [];
+    const utts: any[] = [];
     (window as any).__said = said;
+    (window as any).__utts = utts;
     const voices = withHindi ? [{ name: 'Lekha', lang: 'hi-IN', default: false, localService: true, voiceURI: 'hi' }] : [{ name: 'Sam', lang: 'en-US', default: true, localService: true, voiceURI: 'en' }];
-    /* lateMs: the list is empty until then, like Chrome before voiceschanged */
-    let ready = !lateMs; const heard: Function[] = [];
+    let ready = !late; const heard: Function[] = [];
     const synth = {
       speaking: false, pending: false, paused: false, onvoiceschanged: null,
       getVoices: () => (ready ? voices : []),
-      speak(u: any) { said.push({ text: u.text, lang: u.lang }); },
+      speak(u: any) { said.push({ text: u.text, lang: u.lang }); utts.push(u); },
       cancel() {}, pause() {}, resume() {},
       addEventListener(type: string, fn: Function) { if (type === 'voiceschanged') heard.push(fn); }, removeEventListener() {}
     };
-    if (lateMs) setTimeout(() => { ready = true; heard.splice(0).forEach(f => f()); }, lateMs);
+    (window as any).__releaseVoices = () => { ready = true; heard.splice(0).forEach(f => f()); };
     Object.defineProperty(window, 'speechSynthesis', { value: synth, configurable: true });
-  }, { withHindi, lateMs });
+  }, { withHindi, late });
 }
 
 test('the Sutras page ends with the verses, grouped by era, each with Devanagari, IAST and a respelling', async ({ page, issues }) => {
@@ -64,14 +67,37 @@ test('Listen reads the Devanagari with a Hindi voice, and a second tap stops', a
 });
 
 test('when the voice list arrives late (Chrome), Listen waits for it and still uses the Hindi voice', async ({ page }) => {
-  await fakeSpeech(page, true, 400);
+  await fakeSpeech(page, true, true);
   await open(page, '#/sutras');
   await page.evaluate(() => { (window as any).__said.length = 0; });
-  await page.locator('#verse-aryabhata-pi .verse-listen').click();
+  const btn = page.locator('#verse-aryabhata-pi .verse-listen');
+  await btn.click();
+  await expect(btn).toHaveAttribute('aria-pressed', 'true');
+  // Nothing is spoken while the list is empty (no early English fallback)
+  expect(await page.evaluate(() => (window as any).__said.length)).toBe(0);
+  await page.evaluate(() => (window as any).__releaseVoices());
   await expect.poll(() => page.evaluate(() => (window as any).__said.length)).toBe(1);
   const said = await page.evaluate(() => (window as any).__said);
   expect(said[0].lang).toBe('hi-IN');
   expect(said[0].text).toContain('चतुरधिकं');
+});
+
+test('a stopped verse that ends late does not reset the button of the verse playing now', async ({ page }) => {
+  await fakeSpeech(page, true);
+  await open(page, '#/sutras');
+  const btn = page.locator('#verse-aryabhata-pi .verse-listen');
+  await btn.click();
+  await btn.click();
+  await expect(btn).toHaveAttribute('aria-pressed', 'false');
+  await btn.click();
+  await expect(btn).toHaveAttribute('aria-pressed', 'true');
+  // The first, canceled utterance reports its error only now
+  await page.evaluate(() => { const u = (window as any).__utts.at(-2); u.onerror && u.onerror({}); });
+  await expect(btn).toHaveAttribute('aria-pressed', 'true');
+  await expect(btn).toHaveText(/Stop/);
+  // The current one ending still resets it
+  await page.evaluate(() => { const u = (window as any).__utts.at(-1); u.onend && u.onend({}); });
+  await expect(btn).toHaveAttribute('aria-pressed', 'false');
 });
 
 test('with no Hindi voice, Listen reads the respelling in English', async ({ page }) => {

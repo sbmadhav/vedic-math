@@ -712,7 +712,7 @@ function verseHTML(v) {
 function versesHTML() {
   return `<section class="verses" aria-labelledby="versesH">
     <h2 class="mq-strand" id="versesH">Mathematics in Sanskrit verse</h2>
-    <div class="md-card history"><p>The 16 sutras above are short phrases, not verses, and no older text contains them: the 1965 book's own editor says they point to the Swami's own discovery. But India has a long tradition of real mathematics written as verse (<span lang="sa-Latn">śloka</span>), so that rules could be learned by heart and chanted. Here are ${SLOKAS.length} of them, from the Vedic texts to the Kerala school, each checked against the original text.</p>
+    <div class="md-card history"><p>The 16 sutras above are short phrases, not verses, and no older text contains them: the 1965 book's own editor says they point to the Swami's own discovery. But India has a long tradition of real mathematics written as verse (<span lang="sa-Latn">śloka</span>), so that rules could be learned by heart and chanted. Here are ${SLOKAS.length} of them, from the Vedic texts to the Kerala school. Each card lists the editions and studies it was checked against.</p>
       <p class="mq-small">Listen uses your device's Hindi voice when it has one, otherwise an English voice reading the respelling, so treat it as a guide to the sounds, not a recitation.</p></div>
     ${VERSE_GROUPS.map(g => `<section class="verse-group" aria-labelledby="vg-${g.id}"><h3 class="mq-h3" id="vg-${g.id}">${g.title}</h3><p class="mq-small">${g.blurb}</p><div class="verse-grid">${slokasIn(g.id).map(verseHTML).join('')}</div></section>`).join('')}
   </section>`;
@@ -732,17 +732,17 @@ function sayVerse(v, btn, signal) {
   /* Speak at once when the voices are listed (Safari wants speech started inside the tap); Chrome often lists them
      only after a moment, so then wait for them rather than falling back to English too early */
   const now = synth.getVoices();
-  if (now.length) speakVerse(v, btn, now, reset);
-  else fx.loadVoices().then(list => { if (turn === verseTurn && !(signal && signal.aborted) && btn.getAttribute('aria-pressed') === 'true') speakVerse(v, btn, list, reset); });
+  if (now.length) speakVerse(v, btn, now, reset, turn);
+  else fx.loadVoices().then(list => { if (turn === verseTurn && !(signal && signal.aborted) && btn.getAttribute('aria-pressed') === 'true') speakVerse(v, btn, list, reset, turn); });
 }
-function speakVerse(v, btn, voices, reset) {
+function speakVerse(v, btn, voices, reset, turn) {
   const synth = window.speechSynthesis;
   const indic = voices.find(x => /^(sa|hi)([-_]|$)/i.test(x.lang));
   const text = indic ? v.deva.replace(/[।॥|]+/g, ', ') : v.say.replace(/\|/g, ',').replace(/-/g, '').toLowerCase();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = indic ? indic.lang : 'en-US';
   if (indic) try { u.voice = indic; } catch (e) {} /* the language alone still picks a Hindi voice */
-  u.rate = 0.75; u.onend = u.onerror = reset;
+  u.rate = 0.75; u.onend = u.onerror = () => { if (turn === verseTurn) reset(); }; /* a canceled utterance's late end or error leaves a newer one alone */
   synth.speak(u);
   track('sloka/listen', 'Sanskrit verse: listen');
 }
