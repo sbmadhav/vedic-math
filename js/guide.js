@@ -99,7 +99,7 @@ export function sections(n) {
 
     { id: 'dojo', group: 'tricks', art: 'belts', covers: ['#/dojo', '#/tricks', '#/skill/v-from9'],
       title: w('Dojo and speed tricks', 'Dojo: speed tricks and belts'),
-      what: w('Fast math tricks. Each trick has a page that shows how it works.', `${n.tricks} speed tricks from the sutras in Bharati Krishna Tirtha's 1965 book, in ${n.belts} belts from white to black.`),
+      what: w('Fast math tricks. Each trick has a page that shows how it works. Belts and Stars come with Challenger and Pro.', `${n.tricks} speed tricks from the sutras in Bharati Krishna Tirtha's 1965 book, in ${n.belts} belts from white to black.`),
       how: [
         w('The Dojo is not in the Explorer menu, so use the button below.', 'Open the Dojo from the menu bar.'),
         w('Tap a trick to open its page.', `Each belt has three tricks. Light all ${n.starsPerBelt} Stars of a belt's three tricks to earn it.`),

@@ -84,7 +84,7 @@ A fixed practice problem for one Trick, numbered from easy to hard. Stars draw t
 _Avoid_: drill, exercise
 
 **Belt**:
-A rank, white to black, earned by lighting every Star of its three Tricks. The Sky's suggested path follows Belt order.
+A rank, white to black, earned by lighting every Star of its three Tricks. The Sky's suggested path follows Belt order. Belts and Stars come with Challenger and Pro: Explorer's Dojo shows the Tricks grouped by belt, with no Star counts or belt progress, and the Me page lists a belt badge to Explorer only once it is earned.
 _Avoid_: level, rank, grade
 
 **Rating**:
