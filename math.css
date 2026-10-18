@@ -1218,6 +1218,33 @@ html.tour-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .tour-ring, .tour-card { transition: none; } }
 html.motion-paused .tour-ring, body.calm .tour-ring, html.motion-paused .tour-card, body.calm .tour-card { transition: none; }
 
+/* ---------- Mathematics in Sanskrit verse (openspec sanskrit-verses): Sutras page and deep dives. Tokens only.
+   Devanagari uses the device's own fonts (no download): Noto on Android and Linux, Kohinoor on Apple, Nirmala on Windows. */
+.verses { margin-top: var(--space-6); }
+.verse-group { margin-top: var(--space-5); }
+.verse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: var(--space-4); align-items: start; margin-top: var(--space-3); }
+.verse { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); min-width: 0; scroll-margin-top: 170px; overflow-wrap: anywhere; }
+.verse:hover { transform: none; }
+.verse-head h4 { font: 700 1.15rem/1.3 var(--font-display); margin: var(--space-2) 0 0; }
+.verse-deva, .sd-verse .verse-deva { font-family: "Noto Sans Devanagari", "Kohinoor Devanagari", "Nirmala UI", "Mangal", sans-serif; font-size: 1.2rem; line-height: 1.7; margin: 0; color: var(--ink); }
+.verse-iast, .sd-verse .verse-iast { font-style: italic; line-height: 1.6; margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+.verse-say { margin: 0; font-family: var(--font-mono); font-size: .85rem; color: var(--ink-muted); overflow-wrap: anywhere; }
+.verse-say--hl { outline: 2px dashed var(--sun-strong); outline-offset: 4px; }
+.verse-acts { margin: 0; }
+.verse-listen { display: inline-flex; align-items: center; gap: var(--space-1); min-height: 44px; }
+.verse-listen svg { width: 18px; height: 18px; }
+.verse-listen[aria-pressed="true"] { background: var(--sun); color: var(--on-accent); border-color: var(--sun-strong); }
+.verse-meaning, .verse-plain { margin: 0; }
+.verse-math { display: block; margin-top: var(--space-1); font-family: var(--font-mono); font-size: .85rem; color: var(--teal-strong); overflow-wrap: anywhere; }
+.verse-more summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
+.verse-words { display: grid; grid-template-columns: max-content 1fr; gap: var(--space-1) var(--space-3); margin: var(--space-2) 0; }
+.verse-words dt { font-style: italic; }
+.verse-words dd { margin: 0; color: var(--ink-muted); }
+.verse-refs { padding-left: var(--space-4); }
+.verse-refs a { overflow-wrap: anywhere; }
+.sd-verse { overflow-wrap: anywhere; margin-top: var(--space-4); padding: var(--space-3); border-left: 4px solid var(--sun); background: color-mix(in srgb, var(--sun) 8%, transparent); border-radius: var(--radius-sm); }
+@media (max-width: 420px) { .verse-words { grid-template-columns: 1fr; } .verse-words dd { margin-bottom: var(--space-1); } }
+
 /* ---------- Say it and the Respelling (openspec sutra-pronunciation) ---------- */
 .say-btn { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-width: 44px; min-height: 44px; padding: 0 10px; border: 2px solid var(--edge); border-radius: var(--radius-pill); background: var(--card); color: var(--plum-strong); font: 700 .9rem/1 var(--font-sans); cursor: pointer; vertical-align: middle; }
 .say-btn svg { width: 20px; height: 20px; flex: none; }
