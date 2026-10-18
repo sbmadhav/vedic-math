@@ -10,8 +10,8 @@ The parent note SHALL say, in the words of the Player's Mode, that the only game
 - **THEN** it says what an online Duel sends and what it uses to run safely, that there is no chat, and that under-13 Players can only duel friends by code
 
 ### Requirement: The note says how long Duel data is kept
-The parent note SHALL say that nothing about a Duel is kept more than 10 minutes after it ends, except reports (30 days, with no names) and, for Random Duels, Block pairs of scrambled weekly Duel keys (7 days).
+The parent note SHALL say that nothing about a Duel is kept more than 10 minutes after it ends, except reports (30 days, with no names) and, for Random Duels, Block pairs and automatic limits on scrambled weekly Duel keys (7 days).
 
 #### Scenario: Grown-up checks what is kept
 - **WHEN** a grown-up opens the parent note in any Mode
-- **THEN** it gives the three retention times: 10 minutes for a Duel, 30 days for a report and 7 days for a Block pair
+- **THEN** it gives the retention times: 10 minutes for a Duel, 30 days for a report and 7 days for a Block pair or an automatic limit

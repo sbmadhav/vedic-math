@@ -65,7 +65,7 @@ All bodies are JSON, at most 1 KB; every response is `Cache-Control: no-store`; 
 | `POST /api/duel/rooms` | `{ v, league, name, avatar, turnstile }` | `201 { code, ticket, expiresIn }`. Makes a Friend Duel room with a fresh code. |
 | `POST /api/duel/rooms/:code/join` | `{ v, name, avatar, turnstile }` | `200 { ticket, league, host: { name, avatar } }`, or `404 no-room`, `409 full`, `410 expired`. |
 | `POST /api/duel/rooms/:code/resume` | `{ v, seat, resume }` | `200 { ticket }` or `410 gone`. No Turnstile (rate limited instead). |
-| `POST /api/duel/queue` | `{ v, league, name, avatar, teen: true, key, turnstile }` | `200 { ticket }` for the League's queue. `key` is the hash of the Duel key (D13). |
+| `POST /api/duel/queue` | `{ v, league, name, avatar, teen: true, key, prev?, turnstile }` | `200 { ticket }` for the League's queue. `key` is the hash of the Duel key, `prev` the hash of last week's key (D13). |
 | `GET /api/duel/ws` with `Upgrade: websocket` | ticket in `Sec-WebSocket-Protocol: vm-duel.1, t.<ticket>` | `101`, echoing only `vm-duel.1`. Routed to the room or queue named in the ticket. |
 | `GET /api/duel/status` | | `200 { open: true, v: 1 }` or `503 { open: false }` (the off switch, D18). |
 
@@ -104,6 +104,7 @@ JSON text frames. Every message has `t` (type). Client frames are at most 256 by
 | `react` | `seat`, `r` | A Reaction (not echoed to a Player who muted Reactions; muting is local, D12). |
 | `paused` / `resumed` | `ms` | A seat dropped; the question clock is frozen / runs again with `ms` left. |
 | `sync` | the full visible state | After a resume. |
+| `matched` | `ticket` | Queue sockets only: a partner was found; the client connects to the room with this ticket, and the queue closes the socket (D9). |
 | `end` | `winner` (seat or null), `scores`, `why` (`goal`, `left`, `limit`, `idle`, `report`, `server`) | The match is over. |
 | `error` | `code` (`upgrade`, `bad-ticket`, `full`, `expired`, `rate`, `invalid`, `closed`), `retry?` | Followed by a close unless `retry`. |
 
@@ -218,7 +219,7 @@ While a match runs, the room keeps its timers with `setTimeout` (it is busy anyw
 - **Report** (on the match and end screens, two taps): reasons "Answers too fast to be real", "Mean Reactions", "I don't know this player" (Friend Duels) and "Something else" (no text box). Reporting ends the match for the reporter, blocks, and sends `report` to the room, which writes one record to `DuelSafety`:
   `{ id, at, league, kind: 'friend' | 'random', reason, reportedKey?, summary: { questions, tooFast: [a, b], reactions: [a, b], medianMs: [a, b], why } }`. No Nickname, no IP, no code, no text. Kept 30 days, then deleted by an alarm.
 - **Block:** in a Random Duel, the room asks the League's `DuelQueue` to store the pair `(blockerKey, blockedKey)` for 7 days, both ways, so they are never paired again that week. In a Friend Duel, Block ends the match and closes the room (the code dies); there is nothing to remember because there is no friend list.
-- **Duel key (13+ only):** at a Player's first Random Duel the app makes a random 128-bit key, saved on the device as `vm.duelKey.<player id>` with its ISO week, and makes a new one each week. Only `SHA-256(key)` is sent. It lets Block and the automatic limits work across matches for up to a week, and then it is gone. Under-13 Players never get one.
+- **Duel key (13+ only):** at a Player's first Random Duel the app makes a random 128-bit key, saved on the device as `vm.duelKey.<player id>` with its ISO week, and makes a new one each week. Only `SHA-256(key)` is sent. The replaced key is kept on the device for 7 more days and its hash is sent as `prev` with each queue join, and the queue checks Block pairs against both hashes, so a Block made just before the week changes still lasts its full 7 days. It lets Block and the automatic limits work across matches for up to a week, and then it is gone (the old key after 7 more days). Under-13 Players never get one.
 - **Automatic limits (Random Duels):** a key reported by 3 different keys within 24 hours cannot join the queue until it changes (at most a week), and gets `error closed` with copy that does not say why. A key with too-fast answers in 3 matches in a day is treated the same. Clearing storage gets a new key; Turnstile and the IP limits make that slow.
 - **Review:** the owner reviews a weekly digest (`npm run reports` in `worker/`, reading `DuelSafety` through an admin endpoint behind Cloudflare Access, which is free for one user). Counts by reason and League, and any key over a limit. No action needs anyone's identity, and there is none to look up.
 - **Nicknames on the screen:** a Player's own generated Nickname and color, as on Boards. Teens who post to World boards could be recognised from a Board, which holds only the same Nickname and color; nothing else can be learned.
@@ -235,7 +236,7 @@ Not legal advice; the owner's lawyer reviews it with the move's privacy policy b
 | League | Make, queue | Pick questions and the waiting line | As above |
 | Choice indices, Reactions, ready, rematch, leave | During the match | Play | Question log in the room's storage until 10 minutes after the match |
 | `teen: true` | Queue | Open the 13+ waiting line | Not stored |
-| `SHA-256(Duel key)` (13+ only) | Queue | Block and limits for up to a week | In the queue only while waiting; Block pairs and automatic-limit records 7 days; in a report 30 days |
+| `SHA-256(Duel key)` and last week's (13+ only) | Queue | Block and limits for up to a week | In the queue only while waiting; Block pairs and automatic-limit records 7 days; in a report 30 days |
 | Report reason and match summary | Report | Abuse handling | 30 days |
 | Turnstile token | Make, join, queue | Bot check | Not stored (verified once) |
 | IP address | Every request (the network needs it) | Delivering the connection; rate limits | Never stored or logged by us; only a salted hash is used as a counter key for up to a minute |
@@ -314,7 +315,7 @@ A typical match: about 18 questions at about 4 s each plus lobby, countdown and 
 
 Duration is the Free quota that runs out first: at 600 matches a day requests are at 6% and rows written at 42%. The waiting line hibernates between arrivals, so it adds little.
 
-**When a daily Free quota runs out.** New Duels fail closed: a room or queue call that fails with a limit error answers `503 closed` (D18). A match already running keeps its state in memory, so a failed storage write does not stop it; it only loses the ability to continue after a restart until the reset. If the request or duration quota stops the running room itself, the match ends with `end server` (no winner; Sparks follow the D15 rules for what was played) and the app shows the resting message. The owner moves to Paid before D19's thresholds, so this is a safety net, not the plan. Load tests (D20) at full size need the Paid plan or must run before launch, because staging shares the account's daily Free quota.
+**When a daily Free quota runs out.** New Duels fail closed: a room or queue call that fails with a limit error answers `503 closed` (D18). A match already running cannot be kept safely once its state stops being saved (hibernation or a restart would reload an older state), so a failed storage write ends the match at once with `end server` (no winner, no rematch; Sparks follow the D15 rules for what was played), the room closes its sockets and refuses resume, and the app shows the resting message. The same happens if the request or duration quota stops the room. The owner moves to Paid before D19's thresholds, so this is a safety net, not the plan. Load tests (D20) at full size need the Paid plan or must run before launch, because staging shares the account's daily Free quota.
 
 ### D20. Load test plan
 
@@ -331,7 +332,7 @@ Duration is the Free quota that runs out first: at 600 matches a day requests ar
 | L5 soak | 20 matches back to back for an hour | Storage is empty 10 minutes after the last match; no alarm left behind; memory flat |
 | L6 distance | Bots in two regions (a GitHub runner in the US and one in Europe) | Matches complete; the 150 ms cap keeps either side from winning more than 60% with equal bots |
 
-L1 to L6 cost about 15,000 GB-s, which fits one day of the Free quota before launch. Results go in `worker/test/load/RESULTS.md`.
+L1 to L6 cost about 15,000 GB-s, more than one day of the Free quota (13,000 GB-s), so on Free they run over two days (L1 to L3, then L4 to L6, each well under the quota), or in one day on Paid. Results go in `worker/test/load/RESULTS.md`.
 
 ## Risks and trade-offs
 

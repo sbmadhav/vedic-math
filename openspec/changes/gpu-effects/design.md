@@ -51,7 +51,7 @@ js/gfx/
 
 In order, re-evaluated whenever a setting changes:
 
-1. `fx.noMotion()` (reduced motion, Pause motion, Calm): **none** for celebrations; **still** for the backdrop and the Moving background (one frame drawn with the 2D renderer, then nothing).
+1. `fx.noMotion()` (reduced motion, Pause motion, Calm): **none** for celebrations; **still** for the backdrop and the Moving background (one frame drawn with the 2D renderer, then nothing; when motion turns off on a page already on gl-worker, the worker draws that frame instead, D4).
 2. Moving background switched off: nothing for that scene.
 3. Save-Data on, or `navigator.deviceMemory` at most 2: **still** (one 2D frame).
 4. `OffscreenCanvas`, `HTMLCanvasElement.prototype.transferControlToOffscreen` and module workers present, and the worker reports a WebGL 2 context created with `failIfMajorPerformanceCaveat: true` (refuses software rendering such as SwiftShader): **gl-worker**.
@@ -61,8 +61,8 @@ The decision is cached for the page in memory (not in storage) and exposed as `d
 
 ### D4. Motion settings and pausing
 
-- `gfx.js` listens (through `js/life.js`, on the app's root signal) to the reduced-motion media query, `sitemotion` (Pause motion) and `vmcalm` (Calm). Turning motion off stops every running scene at once: the worker gets `stop` and draws one still frame of the backdrop, celebrations in flight are removed. Turning it back on resumes.
-- Off screen or hidden: each backdrop host is watched with `life.observe` (IntersectionObserver, from `render-performance`) and `visibilitychange`; the worker gets `pause` and `resume` per scene.
+- `gfx.js` listens (through `js/life.js`, on the app's root signal) to the reduced-motion media query, `sitemotion` (Pause motion) and `vmcalm` (Calm). Turning motion off stops every running scene at once: on the gl-worker path the worker gets `stop` and draws one still frame of the backdrop on the canvas it already owns (no canvas changes hands), celebrations in flight are removed. Turning it back on resumes on that same canvas. A page already on **2d** draws its still frame with the 2D renderer.
+- Off screen or hidden: each mounted scene host (the backdrops and the Mandala glow) is watched with `life.observe` (IntersectionObserver, from `render-performance`) and `visibilitychange`; the worker gets `pause` and `resume` per scene.
 - During rounds: the Sky is not on screen during a round, and the Moving background holds still while the game shell is open (`render-performance` D9); the engine keeps that rule.
 - Celebrations never start under no motion. The text or status line that goes with them (a toast, a screen reader message) is unchanged.
 

@@ -14,7 +14,7 @@ Status: proposed 2026-10-17 in the `duel-online` change (owner decision M2, acce
 ## Consequences
 
 - One vendor and one deploy for the site and the game server; Duel API calls are the only requests that run Worker code, so static pages stay free.
-- The Free plan covers about 600 matches a day (13,000 GB-s); Workers Paid ($5 a month) covers about 20,000 a month, and about 100,000 a month costs about $25 (design D19 in `duel-online`). Hitting a Free daily limit (requests, duration, SQLite rows read or written) refuses new Duels instead of billing; a match already running continues from memory if only storage writes fail, and otherwise ends with `end server` (`duel-online` D19).
+- The Free plan covers about 600 matches a day (13,000 GB-s); Workers Paid ($5 a month) covers about 20,000 a month, and about 100,000 a month costs about $25 (design D19 in `duel-online`). Hitting a Free daily limit (requests, duration, SQLite rows read or written) refuses new Duels instead of billing; a match already running ends with `end server` (`duel-online` D19).
 - Rooms are placed near their first caller, so far-apart friends see more latency; the referee caps the latency allowance at 150 ms.
 - Deploys drop WebSockets; rooms persist their state after every step and clients resume within a 20 s grace.
 - The question generators, Nickname lists, protocol and referee rules must stay DOM-free shared modules (`js/questions.js`, `js/names.js`, `js/duel/`), used by both the app and the Worker.

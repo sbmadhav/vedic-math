@@ -198,7 +198,7 @@ Ending a Duel so the two Players are not paired again: for a week in Random Duel
 _Avoid_: ban, mute (mute only hides Reactions)
 
 **Duel key**:
-A random key made on the device for a Player 13 or over at their first Random Duel and replaced every week. Only its hash is sent, and only Block and the automatic limits use it. Under-13 Players never have one.
+A random key made on the device for a Player 13 or over at their first Random Duel and replaced every week (the old one is kept 7 more days so a Block lasts its full week). Only its hash is sent, and only Block and the automatic limits use it. Under-13 Players never have one.
 _Avoid_: user id, device id, account
 
 **Title**:
@@ -272,7 +272,7 @@ Moving pictures that carry no information and take no input: the Sky backdrop, t
 _Avoid_: effects, animations (too broad), graphics
 
 **Performance budget**:
-The written limits a build or pull request must meet: under 150 KB of compressed JS before play, first contentful paint under 1.5 s on a mid phone over 4G, and the rest in `docs/perf/baseline.md`. CI fails when one is missed. (Proposed in the `render-performance` change.)
+The written limits a build or pull request must meet: under 150 KB of Brotli-compressed JS before play, first contentful paint under 1.5 s on a mid phone over 4G, and the rest in `docs/perf/baseline.md`. CI fails when one is missed. (Proposed in the `render-performance` change.)
 _Avoid_: target, goal (a budget fails the build)
 
 ## The move to learnvedicmath.com
