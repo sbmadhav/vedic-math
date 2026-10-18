@@ -103,6 +103,25 @@ test('a typed plate with other words is shared as its digits only', async ({ pag
   expect(shared[0].text).not.toMatch(/call|<b>|KA/i);
 });
 
+test('a typed plate shows in full, and its digits are the ones the challenges use', async ({ page }) => {
+  await open(page, '#/games/lens');
+  await page.locator('[data-way="type"]').click();
+  await page.locator('#lnDigits').fill('ka 05 mh 1234');
+  await page.locator('#lnDigits').press('Enter');
+  await expect(page.locator('.ln-big')).toHaveText('KA 05 MH 1234');
+  await page.evaluate(() => { (window as any).__shared = []; (navigator as any).share = async (d: any) => { (window as any).__shared.push(d); }; });
+  await page.locator('.ln-send').first().click();
+  const shared = await page.evaluate(() => (window as any).__shared as { url: string }[]);
+  expect(decodeURIComponent(shared[0].url.split('/').pop()!)).toBe('051234');
+});
+
+test('a sent link with a kind that is not one of Math Lens\'s (constructor) plays as a plate', async ({ page, issues }) => {
+  await open(page, '#/games/lens/d/constructor/4721');
+  await expect(page.locator('.ln-big')).toHaveText('4721');
+  await expect(page.locator('.ln-kicker')).toHaveText('Plate or sign');
+  expect(issues.console).toEqual([]);
+});
+
 test('Read the digits loads the reader from this site only and reads the frozen frame', async ({ page, baseURL }) => {
   test.setTimeout(120_000);
   await page.unroute(/\/vedic-math\/vendor\/tesseract\//);

@@ -244,10 +244,16 @@ export function sourceFrom(raw, kind = guessKind(raw)) {
     const total = items.reduce((x, y) => x + y, 0);
     return { kind, raw: money(total), digits: String(total), total, items: items.length > 1 ? items.map(c => ({ name: '', cents: c })) : [] };
   }
-  /* A plate or a number keeps only what a plate shows (capital letters, digits, a space or hyphen), at most 12
-     characters: the label is shown and goes into a shared link, so it never carries other typed text */
-  const label = s.toUpperCase().replace(/[^A-Z0-9 -]/g, '').replace(/\s+/g, ' ').slice(0, 12).trim();
-  return { kind, raw: label || digits.slice(0, 9), digits: digits.slice(0, 9) };
+  /* A plate or a number keeps only what a plate shows (capital letters, digits, a space or hyphen): the label is
+     shown and kept in the journal, so it never carries other typed text (a share link carries the digits only). It
+     ends after the ninth digit and at 20 characters, and the digits the challenges use are the label's own, so the
+     plate shown and the puzzle always agree. A label with no digit left shows the digits alone. */
+  const plate = s.toUpperCase().replace(/[^A-Z0-9 -]/g, '').replace(/\s+/g, ' ').trim();
+  let label = '', n = 0;
+  for (const ch of plate) { if (/\d/.test(ch) && ++n > 9) break; label += ch; }
+  label = label.slice(0, 20).replace(/[\s-]+$/, '');
+  const own = label.replace(/\D/g, '');
+  return own ? { kind, raw: label, digits: own } : { kind, raw: digits.slice(0, 9), digits: digits.slice(0, 9) };
 }
 
 /* "Surprise me": a realistic plate, clock, receipt or number, seeded */

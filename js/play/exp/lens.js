@@ -306,7 +306,7 @@ export async function mount({ root, signal, params }) {
 
   /* Digits someone sent: #/games/lens/d/<kind>/<digits> */
   if (params[0] === 'd' && params[1] && params[2]) {
-    const s = C.sourceFrom(params[2], C.KINDS[params[1]] ? params[1] : undefined);
+    const s = C.sourceFrom(params[2], Object.prototype.hasOwnProperty.call(C.KINDS, params[1]) ? params[1] : undefined); /* own keys only: never 'constructor' */
     if (s) { if (s.kind === 'receipt' && s.items?.length) s.items = s.items.map((x, i) => ({ name: `Item ${i + 1}`, cents: x.cents })); later(() => begin(s, 'link'), 0, signal); }
   }
 }

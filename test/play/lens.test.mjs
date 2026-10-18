@@ -173,9 +173,19 @@ test('image clean-up: grayscale, contrast and threshold give black digits on whi
 });
 
 test('a typed or linked plate keeps only plate characters, so a shared link never carries other typed text', () => {
-  assert.equal(sourceFrom('ka 05 mh 1234', 'plate').raw, 'KA 05 MH 1234'.slice(0, 12).trim());
   const s = sourceFrom('my name is Asha, call 98450 12345 <b>', 'plate');
-  assert.ok(/^[A-Z0-9 -]{1,12}$/.test(s.raw), s.raw);
+  assert.ok(/^[A-Z0-9 -]{1,20}$/.test(s.raw), s.raw);
   assert.ok(!/<|>|,/.test(s.raw));
-  assert.equal(sourceFrom('12345678901234', 'number').digits, '123456789');
+});
+
+test('the plate shown and the digits the challenges use always agree', () => {
+  assert.deepEqual(sourceFrom('ka 05 mh 1234', 'plate'), { kind: 'plate', raw: 'KA 05 MH 1234', digits: '051234' });
+  assert.deepEqual(sourceFrom('22 BH 1234 AA', 'plate'), { kind: 'plate', raw: '22 BH 1234 AA', digits: '221234' });
+  assert.deepEqual(sourceFrom('12345678901234', 'number'), { kind: 'number', raw: '123456789', digits: '123456789' });
+  assert.deepEqual(sourceFrom('KA-05-MH-12345678', 'plate'), { kind: 'plate', raw: 'KA-05-MH-1234567', digits: '051234567' });
+  for (const t of ['my name is Asha, call 98450 12345', 'KA 05 call me 4721 <b>', 'MH 12 DE 1433', 'abc 7', '  9 9 9 9 9 9 9 9 9 9 9 ', 'A'.repeat(30) + ' 42']) {
+    const x = sourceFrom(t, 'plate');
+    assert.equal(x.raw.replace(/\D/g, ''), x.digits, t);
+    assert.ok(x.digits.length >= 1 && x.digits.length <= 9 && x.raw.length <= 20, t);
+  }
 });
