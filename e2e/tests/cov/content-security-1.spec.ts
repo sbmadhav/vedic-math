@@ -68,11 +68,8 @@ test('An injected inline script: it does not run and a securitypolicyviolation e
   await open(page);
   await policy(page, baseURL);
   await page.evaluate(() => { (window as any).__ran = false; const s = document.createElement('script'); s.textContent = 'window.__ran = true;'; document.body.appendChild(s); });
-  await page.waitForTimeout(200);
+  await expect.poll(async () => (await list()).some(x => /script-src/.test(x.directive)), { message: 'a securitypolicyviolation for script-src' }).toBe(true);
   expect(await page.evaluate(() => (window as any).__ran)).toBe(false);
-  const v = await list();
-  expect(v.length).toBeGreaterThanOrEqual(1);
-  expect(v.some(x => /script-src/.test(x.directive))).toBe(true);
 });
 
 test('An inline handler in the source: the published page has no inline event handler attribute and no javascript: link', async ({ page, baseURL }) => {

@@ -36,4 +36,5 @@ Prerequisites: `sparks-replace-xp` (`katasDone`) and `star-round` (`S.sky`, `run
 
 ## 6. Release check
 
-- [x] 6.1 Node, build and Playwright suites pass locally; after deploy the live E2E run is green. Manual check on a phone and a Chromebook: the Sky scrolls inside its frame, every Star is reachable by touch and by keyboard, and All places works with VoiceOver. (Automated parts done: merged in #29 on 2026-10-16; daily E2E runs of 2026-10-16 and 2026-10-17 green. The manual phone, Chromebook and VoiceOver checks stay with the owner (listed in the archive PR).)
+- [x] 6.1 Node, build and Playwright suites pass locally; after deploy the live E2E run is green. Manual check on a phone and a Chromebook: the Sky scrolls inside its frame, every Star is reachable by touch and by keyboard, and All places works with VoiceOver. (The automated part: merged in #29 on 2026-10-16; daily E2E runs of 2026-10-16 and 2026-10-17 green. The manual checks are 6.2.)
+- [ ] 6.2 Owner follow-up after archiving: on a phone and a Chromebook, the Sky scrolls inside its frame, every Star is reachable by touch and by keyboard, and All places works with VoiceOver.

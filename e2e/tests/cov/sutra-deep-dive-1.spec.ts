@@ -36,9 +36,7 @@ test('Plain numbers first: Ekādhikena Pūrveṇa opens on 25² = 625, before 65
   await expect(sums.nth(3)).toContainText('1/19');
 });
 
-test('A wrong result fails the build: every highlighted result on the page is the one the checked table computes', async ({ page }) => {
-  // The node test fails the build on a wrong result; the shipped page must show results that recompute: a result that is
-  // a plain integer or decimal is re-derived from its example's numbers where the form is "a op b = r" or "a² = r"
+test('A wrong result fails the build: the shipped 25² and 65² results are the checked values (test/sutra-examples.test.mjs checks every example at build time)', async ({ page }) => {
   await openDeepDive(page, 's1');
   const results: { ex: string; hl: string }[] = await dlg(page).locator('.sd-ex > li').evaluateAll(els => els.map(li => ({ ex: (li.querySelector('summary')?.textContent || '').trim(), hl: (li.querySelector('.hl')?.textContent || '').trim() })));
   expect(results.length).toBeGreaterThanOrEqual(3);
@@ -46,6 +44,7 @@ test('A wrong result fails the build: every highlighted result on the page is th
   expect(sq, 'the first example is 25²').toBeTruthy();
   expect(Number(sq!.hl.replace(/[^\d.]/g, ''))).toBe(625);
   const second = results.find(r => /65²/.test(r.ex));
+  expect(second, 'the second example is 65²').toBeTruthy();
   expect(Number(second!.hl.replace(/[^\d.]/g, ''))).toBe(4225);
 });
 

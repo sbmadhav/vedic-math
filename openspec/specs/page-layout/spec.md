@@ -24,7 +24,7 @@ The main view SHALL reserve at least the screen height before its content render
 - **THEN** the measured cumulative layout shift is below 0.1
 
 ### Requirement: Play fills the screen with the keypad in view
-Every timed round (Arena, Duel, game rounds, tower challenges) and every Star round SHALL play in a full-screen, fixed layout where the question, the answer and the on-screen keypad or choices all fit on screen without scrolling, on phones and Chromebooks, in either orientation, with the device's own keyboard kept from covering them. Leaving the play screen SHALL return focus to the control that started the round.
+Every timed round (Arena, Party Mode, game rounds, tower challenges) and every Star round SHALL play in a full-screen, fixed layout where the question, the answer and the on-screen keypad or choices all fit on screen without scrolling, on phones and Chromebooks, in either orientation, with the device's own keyboard kept from covering them. Leaving the play screen SHALL return focus to the control that started the round.
 
 #### Scenario: Arena on a phone
 - **WHEN** a Player starts an Arena round on a 390 by 844 phone screen

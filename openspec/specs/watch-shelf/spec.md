@@ -75,7 +75,7 @@ The Watch shelf SHALL open filtered to the Player's Mode and SHALL let the Playe
 
 #### Scenario: Longer videos
 - **WHEN** a Player picks "8 to 12 min"
-- **THEN** only videos from 8 minutes up to 12 minutes long are shown, or a note that none match
+- **THEN** only videos from 8 minutes up to, but not including, 12 minutes long are shown, or a note that none match
 
 ### Requirement: Hand-picked videos first, keywords as a fallback
 A Skill or Trick page SHALL show 2 or 3 videos matched by hand to that Skill or Trick, by the rules above. Only when it has no hand-matched video visible to the Player SHALL it fall back to whole-word keyword matching, and it SHALL show nothing when neither finds one.
@@ -122,4 +122,4 @@ Every video and Short on the Watch shelf SHALL be under 12 minutes long, for eve
 
 #### Scenario: Explorer
 - **WHEN** an Explorer Player opens the Watch shelf
-- **THEN** it may list videos up to 12 minutes long, made for kids and shortest first as before
+- **THEN** it may list videos under 12 minutes long, made for kids and shortest first as before

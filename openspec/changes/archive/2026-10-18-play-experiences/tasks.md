@@ -25,4 +25,5 @@
 
 ## 5. After release
 
-- [x] 5.1 Listen to Tala Lab and Mandala Studio on a phone and a laptop; try Math Lens on real plates and receipts; then archive this change. (Implementation merged in #47 on 2026-10-18; CI and CodeRabbit green. The owner listening and Math Lens field checks stay with the owner (listed in the archive PR). Archived in this PR.)
+- [x] 5.1 Listen to Tala Lab and Mandala Studio on a phone and a laptop; try Math Lens on real plates and receipts; then archive this change. (Implementation merged in #47 on 2026-10-18; CI and CodeRabbit green; archived in PR #69. The listening and field checks are 5.2.)
+- [ ] 5.2 Owner follow-up after archiving: listen to Tala Lab and Mandala Studio on a phone and a laptop; try Math Lens on real plates and receipts.

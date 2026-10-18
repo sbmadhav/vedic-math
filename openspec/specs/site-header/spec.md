@@ -61,7 +61,7 @@ Below 1180px the nav SHALL move below the controls and wrap onto as many rows as
 - **THEN** it finds no serious or critical violation
 
 ### Requirement: Tabs appear after a Mode is picked
-Before a Player has picked a Mode, the Vedic Math tabs SHALL be hidden, because every route shows the mode picker until then. They SHALL appear as soon as a Mode is picked.
+Before a Player has picked a Mode, the Vedic Math tabs SHALL be hidden, because every route that depends on a Mode shows the mode picker until then (Watch, the Sutras and the guide open without one). They SHALL appear as soon as a Mode is picked.
 
 #### Scenario: First visit
 - **WHEN** a new Player opens Vedic Math and has not picked a Mode

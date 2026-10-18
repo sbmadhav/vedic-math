@@ -1,7 +1,7 @@
 # content-security Specification
 
 ## Purpose
-A Content-Security-Policy on the published page, added by the build, so a script injected through a bug or a third party cannot run or act as a Player.
+A Content-Security-Policy on the published page, added by the build: scripts run only from this site and, by hash, from the build's own inline scripts, so a script injected through a bug or a third party cannot run or act as a Player.
 
 ## Requirements
 

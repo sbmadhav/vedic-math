@@ -43,7 +43,7 @@ Every Star on the Sky SHALL be open and SHALL show one of three states, in its l
 - **THEN** its round starts
 
 ### Requirement: A suggested path in Belt order
-The Sky SHALL suggest one next Star: the first Star, in Belt order (white to black; within a Belt its three Tricks in order; within a Trick Stars 1 to 3), that is neither lit nor skipped. Bolt SHALL wait at that Star, and a dotted path SHALL lead from it through the next two suggested Stars. When a Placement result names a starting Belt, the path SHALL start at that Belt.
+The Sky SHALL suggest one next Star: the first Star, in Belt order (white to black; within a Belt its three Tricks in order; within a Trick Stars 1 to 3), that is neither lit nor skipped. Bolt SHALL wait at that Star, and a dotted path SHALL lead from it through the next two suggested Stars. When a Placement result names a starting Belt, the path SHALL start at that Belt. With only skipped Stars left, the skipped ones are suggested in the same order; with every Star lit, none is.
 
 #### Scenario: New Player
 - **WHEN** a Player with no Star progress and no Placement opens the Sky
@@ -80,7 +80,7 @@ The first time a Player's progress loads after this change, each Star SHALL star
 - **THEN** Star 2 is not lit
 
 ### Requirement: Landmarks
-Around the Sky's edge, Landmarks SHALL lead to the Arena (race track), Duel (ring), Games (arcade), Watch (observatory) and the Skill map (library). Each SHALL be a link with a visible text label.
+Around the Sky's edge, Landmarks SHALL lead to the Arena (race track), Party Mode (ring), Games (arcade), Watch (observatory) and the Skill map (library). Each SHALL be a link with a visible text label.
 
 #### Scenario: Arena Landmark
 - **WHEN** a Player chooses the race track Landmark

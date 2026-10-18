@@ -41,9 +41,10 @@ test('Tap while read aloud speaks: Say it on the Trick page stops the reading an
   // Count cancel() calls on the fake engine, so a stopped reading is observable
   await page.addInitScript(() => { const s = (window as any).speechSynthesis; (window as any).__cancels = 0; s.cancel = () => { (window as any).__cancels++; }; });
   await open(page, '#/skill/v-div9');
-  // Read aloud reads the question or the Hear it line on this page; make sure something was spoken first
-  const hear = page.locator('#view').getByRole('button', { name: /hear it/i }).first();
-  if (await hear.count()) await hear.click();
+  // Hear it reads the question: a reading the Player started, then the Say it tap must stop it
+  const hear = page.locator('#prHear');
+  await expect(hear).toBeVisible();
+  await hear.click();
   await expect.poll(() => said(page).then(s => s.length)).toBeGreaterThan(0);
   const before = await page.evaluate(() => (window as any).__cancels as number);
   await page.locator('.mq-sutra .say-btn').click();

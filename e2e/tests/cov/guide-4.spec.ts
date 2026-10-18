@@ -24,7 +24,11 @@ test('Phone: on a 390px screen the Guide step scrolls the menu bar to its link a
   await page.locator('.mode-card[data-mode="explorer"]').click();
   const dlg = tour(page);
   await expect(dlg).toBeVisible();
-  while (await dlg.getAttribute('data-step') !== 'guide') await dlg.locator('[data-act="next"]').click();
+  // Next through the steps to the Guide step; a tour with more than 8 steps or no guide step fails here, not at the timeout
+  for (let i = 0; await dlg.getAttribute('data-step') !== 'guide'; i++) {
+    expect(i, 'the tour has a guide step within 8 steps').toBeLessThan(8);
+    await dlg.locator('[data-act="next"]').click();
+  }
   for (const box of [await page.locator('.mq-nav a[href="#/guide"]').boundingBox(), await dlg.locator('.tour-card').boundingBox()]) {
     expect(box).not.toBeNull();
     expect(box!.x).toBeGreaterThanOrEqual(0); expect(box!.y).toBeGreaterThanOrEqual(0);

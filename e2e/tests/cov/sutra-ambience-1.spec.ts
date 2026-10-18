@@ -13,12 +13,13 @@ const tapPage = (page: Page) => page.locator('#view h1').click();
 const goSutra = (page: Page, id: string) => page.evaluate(h => { location.hash = h; }, `#/sutras/${id}`);
 
 test('Opening a deep dive: with Sutra ambience on, Learn more plays one bowl strike with a slow fade', async ({ page }) => {
+  await page.clock.install();
   await fakeAudio(page); await prefs(page);
   await open(page, '#/sutras');
   await tapPage(page);
   await expect.poll(async () => strikes(await log(page))).toBe(1);
   const before = strikes(await log(page));
-  await page.waitForTimeout(4500);
+  await page.clock.fastForward(4500); // past the 4 second gap between strikes
   const card = page.locator('.sutra-card[data-id="s2"]');
   await card.locator('.sutra-face').click(); // flip the card
   await card.locator('a.sutra-more').click(); // its Learn more

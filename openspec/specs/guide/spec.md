@@ -10,7 +10,7 @@ The system SHALL offer a guide at `#/guide` with one section per feature area, g
 
 #### Scenario: Reading the guide
 - **WHEN** a Challenger Player opens `#/guide`
-- **THEN** sections for the skill map, practice, the Dojo, Stars, Katas, Sutra cards, Games, the Arena, the Challenge tower, Duel, Boards, Watch, Calm, read-aloud, music, players, offline use and privacy are shown, each with what it is, how to use it, a tip and an illustration
+- **THEN** sections for the skill map, practice, the Dojo, Stars, Katas, Sutra cards, Games, the Arena, the Challenge tower, Party Mode, Boards, Watch, Calm, read-aloud, music, players, offline use and privacy are shown, each with what it is, how to use it, a tip and an illustration
 
 #### Scenario: Try it
 - **WHEN** a Player follows the Try it link of the Katas section
