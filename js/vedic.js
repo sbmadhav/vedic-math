@@ -1,6 +1,8 @@
 /* Speed tricks from the sutras in Bharati Krishna Tirtha's 1965 book. Each trick has a step-by-step animator
    (steps for any numbers the learner types) and a practice generator that plugs into the skill engine.
-   Explanations are written fresh; the sutra names and meanings are traditional. */
+   Explanations are written fresh; the sutra names and meanings are traditional.
+   sutraId: the Sutra card the Trick's sutra line names (s1 to s16, u1 to u13 in js/app.js), so its Say it button plays
+   that name clip; a bracketed note such as "(division by 9)" is not said. */
 import { ri, pick } from './lib.js';
 
 const H = (s, c = 'coral') => `<b class="hl hl-${c}">${s}</b>`;
@@ -24,7 +26,7 @@ const less = (p, q) => `${sn(p)} ${q < 0 ? '+' : M} ${Math.abs(q)}`; // p − q
 const times = (k, group) => (k === 1 ? group : k === -1 ? M + group : sn(k) + group); // k(x + y)
 
 export const TRICKS = [
-  { id: 'sq5', sutra: 'Ekādhikena Pūrvena', meaning: 'By one more than the one before', title: 'Square numbers ending in 5', kid: 'Fives squared in one breath', grade: 4,
+  { id: 'sq5', sutra: 'Ekādhikena Pūrveṇa', sutraId: 's1', meaning: 'By one more than the one before', title: 'Square numbers ending in 5', kid: 'Fives squared in one breath', grade: 4,
     when: 'Any number that ends in 5: 35², 85², 115².',
     idea: 'Take the part before the 5, multiply it by one more than itself, then write 25 after it.',
     inputs: [{ label: 'Number ending in 5', min: 15, max: 995 }], random: () => [ri(1, 19) * 10 + 5],
@@ -37,7 +39,7 @@ export const TRICKS = [
       ]; },
     answer: ([n]) => n * n },
 
-  { id: 'near-base', sutra: 'Nikhilam Navataścaramam Daśataḥ', meaning: 'All from 9 and the last from 10', title: 'Multiply numbers near 10, 100 or 1000', kid: 'Near-100 magic', grade: 5,
+  { id: 'near-base', sutra: 'Nikhilaṃ Navataścaramaṃ Daśataḥ', sutraId: 's2', meaning: 'All from 9 and the last from 10', title: 'Multiply numbers near 10, 100 or 1000', kid: 'Near-100 magic', grade: 5,
     when: 'Both numbers are close to the same power of ten: 97 × 94, 103 × 108, 996 × 989.',
     idea: 'Write how far each number is from the base. Cross-subtract (or add) one distance from the other number for the left part. Multiply the distances for the right part.',
     inputs: [{ label: 'First number', min: 6, max: 1999 }, { label: 'Second number', min: 6, max: 1999 }], random: () => { const b = pick([10, 100, 100, 1000]); const s = Math.max(2, Math.round(b * 0.12)); return [b + ri(-s, s), b + ri(-s, s)]; },
@@ -59,7 +61,7 @@ export const TRICKS = [
     },
     answer: ([a, b]) => a * b },
 
-  { id: 'crosswise', sutra: 'Ūrdhva Tiryagbhyām', meaning: 'Vertically and crosswise', title: 'Multiply any two numbers in one line', kid: 'Criss-cross multiply', grade: 5,
+  { id: 'crosswise', sutra: 'Ūrdhva Tiryagbhyām', sutraId: 's3', meaning: 'Vertically and crosswise', title: 'Multiply any two numbers in one line', kid: 'Criss-cross multiply', grade: 5,
     when: 'Any multiplication. Fastest for 2-digit and 3-digit numbers.',
     idea: 'Work right to left one column at a time. Multiply straight down, then crosswise, then straight down again, carrying as you go.',
     inputs: [{ label: 'First number', min: 10, max: 999 }, { label: 'Second number', min: 10, max: 999 }], random: () => [ri(12, 99), ri(12, 99)],
@@ -79,7 +81,7 @@ export const TRICKS = [
     },
     answer: ([a, b]) => a * b },
 
-  { id: 'from9', sutra: 'Nikhilam Navataścaramam Daśataḥ', meaning: 'All from 9 and the last from 10', title: 'Subtract from 100, 1000, 10000', kid: 'Zero-proof subtracting', grade: 3,
+  { id: 'from9', sutra: 'Nikhilaṃ Navataścaramaṃ Daśataḥ', sutraId: 's2', meaning: 'All from 9 and the last from 10', title: 'Subtract from 100, 1000, 10000', kid: 'Zero-proof subtracting', grade: 3,
     when: 'Subtracting from a power of ten, like 1000 − 387 or 10000 − 2456 (change at the store).',
     idea: 'Subtract every digit from 9, except the last one, which you subtract from 10. No borrowing at all.',
     inputs: [{ label: 'Number to subtract', min: 11, max: 9999 }], random: () => { let n; do { n = ri(101, 9999); } while (n % 10 === 0); return [n]; },
@@ -92,7 +94,7 @@ export const TRICKS = [
       ]; },
     answer: ([n]) => 10 ** String(n).length - n },
 
-  { id: 'by9s', sutra: 'Ekanyūnena Pūrvena', meaning: 'By one less than the one before', title: 'Multiply by 9, 99 or 999', kid: 'Nines made easy', grade: 4,
+  { id: 'by9s', sutra: 'Ekanyūnena Pūrveṇa', sutraId: 's14', meaning: 'By one less than the one before', title: 'Multiply by 9, 99 or 999', kid: 'Nines made easy', grade: 4,
     when: 'Multiplying by a string of nines that has at least as many digits as the other number: 42 × 99, 357 × 999.',
     idea: 'Left part: one less than the number. Right part: subtract that left part from the nines (all from 9).',
     inputs: [{ label: 'Number', min: 2, max: 999 }, { label: 'Nines (9, 99, 999)', min: 9, max: 999 }], random: () => { const k = pick([2, 3]); return [ri(10 ** (k - 1), 10 ** k - 1), 10 ** k - 1]; },
@@ -105,7 +107,7 @@ export const TRICKS = [
       ]; },
     answer: ([n, m]) => n * m },
 
-  { id: 'ends10', sutra: 'Antyayordaśake\'pi', meaning: 'When the last digits add to ten', title: 'Same start, last digits add to 10', kid: 'Ten-buddies multiply', grade: 5,
+  { id: 'ends10', sutra: 'Antyayordaśake\'pi', sutraId: 'u8', meaning: 'When the last digits add to ten', title: 'Same start, last digits add to 10', kid: 'Ten-buddies multiply', grade: 5,
     when: 'Both numbers start the same and their last digits add to 10: 43 × 47, 62 × 68, 104 × 106.',
     idea: 'Multiply the shared start by one more than itself. Then multiply the last digits and write that as two digits.',
     inputs: [{ label: 'First number', min: 11, max: 999 }, { label: 'Second number', min: 11, max: 999 }], random: () => { const t = ri(1, 15), u = ri(1, 9); return [t * 10 + u, t * 10 + 10 - u]; },
@@ -119,7 +121,7 @@ export const TRICKS = [
       ]; },
     answer: ([a, b]) => a * b },
 
-  { id: 'square-near', sutra: 'Yāvadūnam', meaning: 'Whatever the extent of its deficiency', title: 'Square numbers near a base', kid: 'Near-100 squares', grade: 6,
+  { id: 'square-near', sutra: 'Yāvadūnam', sutraId: 's10', meaning: 'Whatever the extent of its deficiency', title: 'Square numbers near a base', kid: 'Near-100 squares', grade: 6,
     when: 'Squaring numbers near 10, 100 or 1000: 97², 104², 1012².',
     idea: 'Find how far the number is from the base. Move that far again (left part), then square the distance (right part).',
     inputs: [{ label: 'Number near a base', min: 7, max: 1300 }], random: () => { const b = pick([100, 100, 1000, 10]); return [b + ri(-Math.round(b * 0.1), Math.round(b * 0.1)) || b + 3]; },
@@ -136,7 +138,7 @@ export const TRICKS = [
       return st; },
     answer: ([n]) => n * n },
 
-  { id: 'by11', sutra: 'Ūrdhva Tiryagbhyām (special case)', meaning: 'Vertically and crosswise, with a multiplier of 11', title: 'Multiply by 11', kid: 'The 11 sandwich', grade: 3,
+  { id: 'by11', sutra: 'Ūrdhva Tiryagbhyām (special case)', sutraId: 's3', meaning: 'Vertically and crosswise, with a multiplier of 11', title: 'Multiply by 11', kid: 'The 11 sandwich', grade: 3,
     when: 'Any number times 11.',
     idea: 'Keep the outside digits and fill the middle with the sums of neighbouring digits, carrying when a sum is 10 or more.',
     inputs: [{ label: 'Number', min: 10, max: 99999 }], random: () => [ri(12, 999)],
@@ -149,7 +151,7 @@ export const TRICKS = [
       ]; },
     answer: ([n]) => n * 11 },
 
-  { id: 'div9', sutra: 'Nikhilam (division by 9)', meaning: 'All from 9: dividing by 9 with running sums', title: 'Divide by 9 with running sums', kid: 'Nine sharing', grade: 4,
+  { id: 'div9', sutra: 'Nikhilaṃ (division by 9)', sutraId: 's2', meaning: 'All from 9: dividing by 9 with running sums', title: 'Divide by 9 with running sums', kid: 'Nine sharing', grade: 4,
     when: 'Dividing any number by 9.',
     idea: 'The quotient digits are running totals of the digits. The remainder is the total of all the digits. Fix up if the remainder is 9 or more.',
     inputs: [{ label: 'Number', min: 10, max: 99999 }], random: () => [ri(100, 9999)],
@@ -162,7 +164,7 @@ export const TRICKS = [
       ]; },
     answer: ([n]) => Math.floor(n / 9) },
 
-  { id: 'check9', sutra: 'Guṇita Samuccayaḥ', meaning: 'The product of the sums is the sum of the product', title: 'Check answers with digit sums', kid: 'The nine checker', grade: 4,
+  { id: 'check9', sutra: 'Guṇita Samuccayaḥ', sutraId: 's15', meaning: 'The product of the sums is the sum of the product', title: 'Check answers with digit sums', kid: 'The nine checker', grade: 4,
     when: 'Checking any multiplication (or addition) answer in seconds.',
     idea: 'Add the digits of each number until one digit is left (9 counts as 0). The digit sums must multiply to the digit sum of the answer.',
     inputs: [{ label: 'First number', min: 2, max: 99999 }, { label: 'Second number', min: 2, max: 99999 }], random: () => [ri(23, 999), ri(12, 99)],
@@ -175,7 +177,7 @@ export const TRICKS = [
       ]; },
     answer: ([a, b]) => (a * b) % 9 },
 
-  { id: 'recip', sutra: 'Ekādhikena Pūrvena', meaning: 'By one more than the one before', title: 'Decimals of 1/19, 1/29, 1/49', kid: 'Endless decimals', grade: 7,
+  { id: 'recip', sutra: 'Ekādhikena Pūrveṇa', sutraId: 's1', meaning: 'By one more than the one before', title: 'Decimals of 1/19, 1/29, 1/49', kid: 'Endless decimals', grade: 7,
     when: 'Fractions with a denominator ending in 9: 1/19, 1/29, 1/39, 1/49.',
     idea: 'The "one more" of 19 is 2 (one more than 1). Start with 1 at the right and keep multiplying by 2 leftwards, carrying, until the digits repeat.',
     inputs: [{ label: 'Denominator (19, 29, 39 or 49)', min: 19, max: 49 }], random: () => [pick([19, 29, 39, 49])],
@@ -191,7 +193,7 @@ export const TRICKS = [
       ]; },
     answer: ([d]) => 1 / d },
 
-  { id: 'transpose', sutra: 'Parāvartya Yojayet', meaning: 'Transpose and apply', title: 'Solve linear equations by transposing', kid: 'Flip and solve', grade: 7,
+  { id: 'transpose', sutra: 'Parāvartya Yojayet', sutraId: 's4', meaning: 'Transpose and apply', title: 'Solve linear equations by transposing', kid: 'Flip and solve', grade: 7,
     when: 'Equations like ax + b = cx + d.',
     idea: 'Move terms across the equals sign and their sign flips: x = (d − b) ÷ (a − c). It is the balance method in one move.',
     inputs: [{ label: 'a', min: -20, max: 20 }, { label: 'b', min: -50, max: 50 }, { label: 'c', min: -20, max: 20 }, { label: 'd', min: -50, max: 50 }], random: () => { const x = ri(-6, 6), a = ri(2, 9), c = ri(-5, a - 1) || 1, b = ri(-12, 12); return [a, b, c, (a - c) * x + b]; },
@@ -204,7 +206,7 @@ export const TRICKS = [
       ]; },
     answer: ([a, b, c, d]) => (d - b) / (a - c) },
 
-  { id: 'zero-sum', sutra: 'Śūnyam Sāmyasamuccaye', meaning: 'When the samuccaya is the same, it is zero', title: 'Spot equations whose answer is zero', kid: 'Zero spotter', grade: 9,
+  { id: 'zero-sum', sutra: 'Śūnyaṃ Sāmyasamuccaye', sutraId: 's5', meaning: 'When the samuccaya is the same, it is zero', title: 'Spot equations whose answer is zero', kid: 'Zero spotter', grade: 9,
     when: 'Equations like (x + a)(x + b) = (x + c)(x + d) where a × b = c × d.',
     idea: 'If the constant products on both sides are equal, the x² terms and the constants cancel, leaving only an x term. So x must be 0. Spot it, skip the algebra.',
     inputs: [{ label: 'a', min: 1, max: 30 }, { label: 'b', min: 1, max: 30 }, { label: 'c', min: 1, max: 30 }, { label: 'd', min: 1, max: 60 }], random: () => pick([[2, 12, 3, 8], [3, 8, 4, 6], [2, 9, 3, 6], [4, 9, 6, 6], [2, 15, 5, 6], [3, 10, 5, 6], [1, 12, 3, 4]]),
@@ -220,7 +222,7 @@ export const TRICKS = [
 
 /* Deeper sutras: proportional bases, observation (roots), osculation, duplex squaring and simultaneous equations */
 TRICKS.push(
-  { id: 'times5', sutra: 'Ānurūpyeṇa', meaning: 'Proportionately', title: 'Multiply by 5, 25, 50 and 125', kid: 'Halve the tens', grade: 3,
+  { id: 'times5', sutra: 'Ānurūpyeṇa', sutraId: 'u1', meaning: 'Proportionately', title: 'Multiply by 5, 25, 50 and 125', kid: 'Halve the tens', grade: 3,
     when: 'Multiplying by 5, 25, 50 or 125.',
     idea: '5 is 10 ÷ 2, 25 is 100 ÷ 4, 50 is 100 ÷ 2 and 125 is 1000 ÷ 8. Multiply by the easy power of ten, then divide.',
     inputs: [{ label: 'Number', min: 2, max: 9999 }, { label: 'Times (5, 25, 50 or 125)', min: 5, max: 125 }], random: () => { const m = pick([5, 25, 50, 125]); return [m === 125 ? 8 * ri(2, 40) : m === 25 ? 4 * ri(3, 60) : 2 * ri(6, 99), m]; },
@@ -233,7 +235,7 @@ TRICKS.push(
       ]; },
     answer: ([n, m]) => n * m, q: v => `${v[0]} &times; ${v[1]} = ?` },
 
-  { id: 'sub-base', sutra: 'Ānurūpyeṇa', meaning: 'Proportionately', title: 'Multiply with a working base like 50', kid: 'Secret base', grade: 6,
+  { id: 'sub-base', sutra: 'Ānurūpyeṇa', sutraId: 'u1', meaning: 'Proportionately', title: 'Multiply with a working base like 50', kid: 'Secret base', grade: 6,
     when: 'Both numbers sit near 20, 30, 40, 50 ... like 46 × 43 or 52 × 48.',
     idea: 'Use a working base such as 50 = 5 × 10. Do the near-base trick from 10, then multiply the left part by 5.',
     inputs: [{ label: 'First number', min: 11, max: 99 }, { label: 'Second number', min: 11, max: 99 }], random: () => { const k = ri(3, 8), b = 10 * k; return [b + ri(-5, 5), b + ri(-5, 5)]; },
@@ -246,7 +248,7 @@ TRICKS.push(
       ]; },
     answer: ([a, b]) => a * b, q: v => `${v[0]} &times; ${v[1]} = ?` },
 
-  { id: 'duplex', sutra: 'Ūrdhva Tiryagbhyām (duplex)', meaning: 'Vertically and crosswise, used for squares', title: 'Square any two-digit number', kid: 'Square in one line', grade: 6,
+  { id: 'duplex', sutra: 'Ūrdhva Tiryagbhyām (duplex)', sutraId: 's3', meaning: 'Vertically and crosswise, used for squares', title: 'Square any two-digit number', kid: 'Square in one line', grade: 6,
     when: 'Squaring any two-digit number, like 47² or 83².',
     idea: 'For ab²: write a², then 2 × a × b in the middle, then b², and carry from right to left.',
     inputs: [{ label: 'Two-digit number', min: 10, max: 99 }], random: () => [ri(13, 99)],
@@ -259,7 +261,7 @@ TRICKS.push(
       ]; },
     answer: ([n]) => n * n, q: v => `${v[0]}<sup>2</sup> = ?` },
 
-  { id: 'sqroot', sutra: 'Vilokanam', meaning: 'By mere observation', title: 'Square roots by looking', kid: 'Root detective', grade: 7,
+  { id: 'sqroot', sutra: 'Vilokanam', sutraId: 'u12', meaning: 'By mere observation', title: 'Square roots by looking', kid: 'Root detective', grade: 7,
     when: 'Square roots of perfect squares up to 9801.',
     idea: 'The last digit narrows the answer to two choices. The front digits give the tens. One comparison with a square ending in 5 picks the winner.',
     inputs: [{ label: 'Perfect square', min: 121, max: 9801 }], random: () => { let r; do { r = ri(11, 99); } while (r % 10 === 0); return [r * r]; },
@@ -272,7 +274,7 @@ TRICKS.push(
       ]; },
     answer: ([n]) => Math.round(Math.sqrt(n)), q: v => `&radic;${v[0]} = ?` },
 
-  { id: 'cuberoot', sutra: 'Vilokanam', meaning: 'By mere observation', title: 'Cube roots in two seconds', kid: 'Cube root magic', grade: 8,
+  { id: 'cuberoot', sutra: 'Vilokanam', sutraId: 'u12', meaning: 'By mere observation', title: 'Cube roots in two seconds', kid: 'Cube root magic', grade: 8,
     when: 'Cube roots of perfect cubes up to 970299 (roots up to 99).',
     idea: 'Each last digit of a cube comes from exactly one last digit of the root. The thousands part tells the tens digit.',
     inputs: [{ label: 'Perfect cube', min: 1000, max: 970299 }], random: () => [ri(11, 99) ** 3],
@@ -285,7 +287,7 @@ TRICKS.push(
       ]; },
     answer: ([n]) => Math.round(Math.cbrt(n)), q: v => `<sup>3</sup>&radic;${v[0].toLocaleString('en-US')} = ?` },
 
-  { id: 'osculator', sutra: 'Veṣṭanam (with Ekādhika)', meaning: 'By osculation', title: 'Divisibility by 7, 13, 19 and 29', kid: 'Divisible or not?', grade: 7,
+  { id: 'osculator', sutra: 'Veṣṭanam (with Ekādhika)', sutraId: 'u5', meaning: 'By osculation', title: 'Divisibility by 7, 13, 19 and 29', kid: 'Divisible or not?', grade: 7,
     when: 'Testing if a big number divides by 7, 13, 19 or 29.',
     idea: 'Each divisor has a magic multiplier (7 → 5, 13 → 4, 19 → 2, 29 → 3). Chop off the last digit, multiply it by the magic number and add it to the rest. Repeat until small.',
     inputs: [{ label: 'Number', min: 20, max: 999999 }, { label: 'Divisor (7, 13, 19, 29)', min: 7, max: 29 }], random: () => { const d = pick([7, 13, 19, 29]); return [Math.random() < .6 ? d * ri(20, 9000) : ri(200, 99999), d]; },
@@ -296,7 +298,7 @@ TRICKS.push(
       return st; },
     answer: ([n, d]) => (n % d === 0 ? 'Yes' : 'No'), q: v => `Is ${v[0]} divisible by ${v[1]}?`, choice: ['Yes', 'No'] },
 
-  { id: 'add-sub', sutra: 'Saṅkalana-Vyavakalanābhyām', meaning: 'By adding and by subtracting', title: 'Solve swapped equations instantly', kid: 'Mirror equations', grade: 9,
+  { id: 'add-sub', sutra: 'Saṅkalana-Vyavakalanābhyām', sutraId: 's7', meaning: 'By adding and by subtracting', title: 'Solve swapped equations instantly', kid: 'Mirror equations', grade: 9,
     when: 'Two equations with swapped coefficients, like 5x + 3y = 13 and 3x + 5y = 11.',
     idea: 'Add them to get x + y, subtract them to get x − y. Then add and halve.',
     inputs: [{ label: 'a', min: 1, max: 20 }, { label: 'b', min: 1, max: 20 }, { label: 'c', min: -200, max: 200 }, { label: 'd', min: -200, max: 200 }], random: () => { let a, b; do { a = ri(2, 9); b = ri(1, 9); } while (a === b); const x = ri(-6, 9), y = ri(-6, 9); return [a, b, a * x + b * y, b * x + a * y]; },
@@ -311,7 +313,7 @@ TRICKS.push(
     q: v => `Solve:<br>${lin([v[0], '<i>x</i>'], [v[1], '<i>y</i>'])} = ${sn(v[2])}<br>${lin([v[1], '<i>x</i>'], [v[0], '<i>y</i>'])} = ${sn(v[3])}`,
     fields: v => { const s = (v[2] + v[3]) / (v[0] + v[1]), t = (v[2] - v[3]) / (v[0] - v[1]); return [{ label: 'x', answer: (s + t) / 2 }, { label: 'y', answer: (s - t) / 2 }]; } },
 
-  { id: 'ratio-zero', sutra: '(Ānurūpye) Śūnyamanyat', meaning: 'If one is in ratio, the other is zero', title: 'Spot the zero in two equations', kid: 'Zero spy', grade: 9,
+  { id: 'ratio-zero', sutra: '(Ānurūpye) Śūnyamanyat', sutraId: 's6', meaning: 'If one is in ratio, the other is zero', title: 'Spot the zero in two equations', kid: 'Zero spy', grade: 9,
     when: 'Two equations where one letter\'s numbers are in the same ratio as the answers.',
     idea: 'If the y numbers are in the same ratio as the right-hand sides, x must be zero (and the other way round). Then y is one division away.',
     inputs: [{ label: 'a (x in eq 1)', min: 1, max: 30 }, { label: 'b (y in eq 1)', min: 1, max: 30 }, { label: 'c (answer 1)', min: 1, max: 200 }, { label: 'k (scale for eq 2)', min: 2, max: 9 }], random: () => { const b = ri(2, 9), y = ri(1, 9); return [ri(2, 20), b, b * y, ri(2, 5)]; },

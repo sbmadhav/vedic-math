@@ -496,7 +496,8 @@ async function speakStudio(words, my, done = () => {}) {
   for (const p of plan) if (p.clip) { const name = sb.dir[p.clip]; if (!name) { vlog('studio:missing'); return false; } need.add(name); }
   const missing = [...need].filter(n => !packReady.has(n));
   if (missing.length) { missing.forEach(n => loadPack(sb, n).catch(() => {})); return false; } // this line: built-in; later lines: clips
-  if (plan.some(p => p.clip && !packReady.get(sb.dir[p.clip]).map.clips[p.clip])) return false;
+  /* Every clip must be in its pack before any is scheduled, so a gap never leaves half a line in the studio voice */
+  if (plan.some(p => p.clip && !packReady.get(sb.dir[p.clip]).map.clips[p.clip])) { vlog('studio:missing'); return false; }
   const lastClip = plan.map(p => !!p.clip).lastIndexOf(true);
   let at = audioCtx().currentTime + 0.05;
   plan.forEach((p, i) => {
@@ -506,6 +507,38 @@ async function speakStudio(words, my, done = () => {}) {
   });
   vlog('studio:clips');
   return true;
+}
+
+/* ---------- Name clips (openspec sutra-pronunciation) ----------
+   playClip(url) plays one short recorded file, such as a Sutra name clip, on the same AudioContext and under the
+   same stop token as read aloud: it stops anything being read, and stop() or the next speak() stops it. Resolves
+   'ended' when it played to the end, 'stopped' when something stopped it; rejects when the file cannot be fetched,
+   decoded or played (the caller falls back). The context is made and resumed before the first await, inside the tap.
+   onStart() runs once, when the clip has really started (not on a failure or when superseded first).
+   Only this site's own files are fetched: a URL on another origin is refused. */
+export async function playClip(url, { onStart } = {}) {
+  stop(); const my = token;
+  const AC = typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext);
+  if (typeof AC !== 'function' || typeof fetch !== 'function') throw new Error('no Web Audio');
+  const own = new URL(url, location.href);
+  if (own.origin !== location.origin) throw new Error('playClip plays this site\'s own files only');
+  url = own.href;
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {} // iOS: play with the ringer off
+  actx = actx || new AC();
+  if (actx.state === 'suspended') actx.resume().catch(() => {});
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
+  const data = await res.arrayBuffer();
+  if (my !== token) return 'stopped';
+  const buf = await new Promise((ok, no) => { const p = actx.decodeAudioData(data, ok, no); if (p && p.catch) p.catch(no); });
+  if (my !== token) return 'stopped';
+  return new Promise(resolve => {
+    const src = actx.createBufferSource(), g = actx.createGain(); g.gain.value = 0.95;
+    src.buffer = buf; src.connect(g).connect(actx.destination);
+    src.onended = () => { if (playing === src) playing = null; resolve(my === token ? 'ended' : 'stopped'); };
+    playing = src; src.start();
+    if (onStart) try { onStart(); } catch (e) {}
+  });
 }
 
 /* ---------- Public API ---------- */

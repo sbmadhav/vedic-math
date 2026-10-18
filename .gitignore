@@ -9,5 +9,6 @@ e2e/blob-report/
 # Studio voice: recordings are built locally and published as a GitHub Release archive, never committed
 tools/voice/out/
 tools/voice/voice-*.tar
+tools/voice/voice.tar
 /voice/
 tools/voice/out-test/

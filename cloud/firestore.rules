@@ -73,9 +73,11 @@ service cloud.firestore {
           && d.exp is timestamp && d.exp > request.time + duration.value(1, 'd') && d.exp < request.time + duration.value(60, 'd');
       }
 
-      // Reads: your own entry (checked before a submit) and top-20 lists. No browsing other players' entries one by one.
-      // Lists need no sign-in, so viewing a World board creates no identity (docs/adr/0002). They hold only
-      // nicknames, avatar colors, scores and times. Getting one entry by its id still needs that identity.
+      // Reads: your own entry (checked before a submit) and lists of at most 20. Lists need no sign-in, so viewing a
+      // World board creates no identity (docs/adr/0002). Every entry is public: a list can page past the top 20 with a
+      // cursor or filter on an entry's id, and that is fine because an entry holds only a generated nickname, an avatar
+      // color, a score and times, never anything personal. Keep it that way: a field that is not public needs its own
+      // owner-only collection. get is limited to the owner only so the client has no reason to fetch others' entries.
       allow get: if validBoard() && signedInAs();
       allow list: if validBoard() && request.query.limit <= 20;
 

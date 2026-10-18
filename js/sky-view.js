@@ -7,6 +7,7 @@ import * as store from './store.js';
 import * as fx from './fx.js';
 import { boltHTML } from './bolt.js';
 import { on } from './life.js';
+import { sayButton, respellHTML } from './say.js';
 import { TRICKS } from './vedic.js';
 import { CONSTELLATIONS, SKY_LAYOUT, SKY_SIZE, WHEEL, PATH, LANDMARKS, upcoming, parseKey, labelLines, sectorAngle, starAt, startBeltOf, boltSpot, BOLT_BOX } from './sky.js';
 
@@ -111,11 +112,13 @@ export function skyView(root, { signal, focus = null } = {}) {
 
 /* ---------- All places ---------- */
 const OTHER = [['#/dojo', 'Dojo', 'Belts, Tricks and Katas'], ['#/sutras', 'Sutra cards', 'All 29 sutras and sub-sutras'], ['#/tower', 'Challenge tower', '1,000 challenges in 40 chapters'], ['#/me', 'Me', 'Badges, players and settings'], ['#/tiles', 'The tile home', 'The home before the Sky']];
+/* The Sutra card a Constellation names (its Tricks share it), for the Say it button (openspec sutra-pronunciation) */
+const sutraOf = c => (TRICKS.find(t => t.id === c.tricks[0]) || {}).sutraId;
 export function placesHTML() {
   const st = store.starStates(), sugg = upcoming(st, startBelt(), 1)[0] || null;
   const stars = t => `<ul class="places-stars">${[1, 2, 3].map(n => { const k = `${t}:${n}`, s = stateOf(st, k); return `<li><a class="places-star places-star--${s}" href="${href(k)}" aria-label="${esc(starName(k, s))}">Star ${n}, ${STATE_WORD[s]}</a>${k === sugg ? ' <small class="places-next">Bolt suggests this one</small>' : ''}</li>`; }).join('')}</ul>`;
   return `<p class="md-lede">Every place in the app as a plain list. Each Sutra is a Constellation, and each of its Tricks has three Stars. Every Star is open.</p>
-    ${CONSTELLATIONS.map(c => `<section class="places-c" aria-labelledby="pc-${c.id}"><h2 class="mq-strand places-h" id="pc-${c.id}"><span lang="sa-Latn">${esc(c.sutra)}</span> <small>${esc(c.meaning)}</small></h2>
+    ${CONSTELLATIONS.map(c => `<section class="places-c" aria-labelledby="pc-${c.id}"><h2 class="mq-strand places-h" id="pc-${c.id}"><span lang="sa-Latn">${esc(c.sutra)}</span> ${sayButton(sutraOf(c))} <small>${esc(c.meaning)}</small></h2>${respellHTML(sutraOf(c), 'p')}
       <ul class="places-tricks">${c.tricks.map(t => `<li><b>${esc(title(t))}</b>${stars(t)}</li>`).join('')}</ul></section>`).join('')}
     <h2 class="mq-strand" id="placesMarks">Landmarks</h2>
     <ul class="places-list" aria-labelledby="placesMarks">${LANDMARKS.map(m => `<li><a href="${m.href}">${m.name}</a> <small>the ${m.what}</small></li>`).join('')}</ul>

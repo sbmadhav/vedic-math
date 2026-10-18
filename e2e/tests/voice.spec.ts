@@ -94,7 +94,7 @@ const NUMBER_IDS = [...Array.from({ length: 100 }, (_, n) => [`n:${n}`, `n:${n}.
 const FRAMES = ['f:plus', 'f:minus', 'f:equals what?', 'f:equals', 'f:How many dots are there?'];
 const PROVIDERS = /texttospeech\.googleapis\.com|api\.elevenlabs\.io|api\.openai\.com|tts\.speech\.microsoft\.com|amazonaws\.com\/.*polly/;
 
-async function fakeStudio(page: Page, { lineStatus = 200, lineDelay = 0 } = {}) {
+async function fakeStudio(page: Page, { lineStatus = 200, lineDelay = 0, mapDrop = [] as string[] } = {}) {
   await page.addInitScript(() => { (window as any).__voiceLog = []; });
   const index = { voice: 'en-US-Chirp3-HD-Aoede', speed: 0.95, base: '/vedic-math/voice/', tag: 'voice-0123456789', sha256: '0'.repeat(64),
     lineSet: 'l/set.test.bin', dir: 'p/dir.test.json', packs: [{ name: 'core', audio: 'p/core.test.m4a', map: 'p/core.test.json', bytes: PACK_M4A.length, clips: 0 }],
@@ -107,7 +107,7 @@ async function fakeStudio(page: Page, { lineStatus = 200, lineDelay = 0 } = {}) 
     const u = new URL(r.request().url()).pathname.replace('/vedic-math/voice/', '');
     if (u === 'l/set.test.bin') return r.fulfill({ contentType: 'application/octet-stream', body: Buffer.from(Uint32Array.from([DOTS_KEY]).buffer) });
     if (u === 'p/dir.test.json') return r.fulfill({ json: Object.fromEntries(ids.map(id => [id, 'core'])) });
-    if (u === 'p/core.test.json') return r.fulfill({ json: { rate: 24000, gap: 0.25, clips: Object.fromEntries(ids.map(id => [id, [0.25, 0.4]])) } });
+    if (u === 'p/core.test.json') return r.fulfill({ json: { rate: 24000, gap: 0.25, clips: Object.fromEntries(ids.filter(id => !mapDrop.includes(id)).map(id => [id, [0.25, 0.4]])) } });
     if (u === 'p/core.test.m4a') return r.fulfill({ contentType: 'audio/mp4', body: PACK_M4A });
     if (u === `l/${DOTS_HASH}.m4a` && lineDelay) await new Promise(res => setTimeout(res, lineDelay));
     if (u === `l/${DOTS_HASH}.m4a`) return lineStatus === 200 ? r.fulfill({ contentType: 'audio/mp4', body: LINE_M4A }) : r.fulfill({ status: lineStatus, body: 'not found' });
@@ -148,6 +148,25 @@ test.describe('studio voice', () => {
     await page.waitForTimeout(300); // decode
     await page.locator('#practice').getByRole('button', { name: 'Hear it' }).click();
     await expect.poll(async () => (await vlog(page)).at(-1)).toBe('studio:clips');
+  });
+
+  test('a clip missing from its pack: no clip plays and the built-in voice says the whole line', async ({ page }) => {
+    await fakeSpeech(page, [ENHANCED]);
+    await fakeStudio(page, { mapDrop: ['f:plus', 'f:minus'] }); // the directory names these clips, but the pack's map lacks them
+    await page.addInitScript(() => {
+      const w = window as any; w.__starts = 0;
+      const start = AudioBufferSourceNode.prototype.start;
+      AudioBufferSourceNode.prototype.start = function (...a: any[]) { w.__starts++; return (start as any).apply(this, a); };
+    });
+    const core = page.waitForResponse(r => r.url().endsWith('/vedic-math/voice/p/core.test.m4a'));
+    await open(page, '#/skill/2-add1000');
+    await core;
+    await page.waitForTimeout(300); // decode
+    await page.evaluate(() => { const w = window as any; w.__voiceLog.length = 0; w.__spoken.length = 0; w.__starts = 0; });
+    await page.locator('#practice').getByRole('button', { name: 'Hear it' }).click();
+    await expect.poll(() => vlog(page)).toEqual(['studio:missing', 'builtin']);
+    expect(await page.evaluate(() => (window as any).__starts)).toBe(0); // nothing in the studio voice, not even the first number
+    await expect.poll(async () => (await spoken(page)).length).toBeGreaterThan(0);
   });
 
   test('a missing recording falls back to the built-in voice for the whole line', async ({ page }) => {
@@ -191,7 +210,13 @@ test.describe('studio voice', () => {
     await fakeSpeech(page, [ENHANCED]);
     await fakeStudio(page);
     await open(page, '#/skill/k-count');
-    await expect.poll(() => vlog(page)).toContain('studio:line');
+    /* As in the first test, the automatic first line may miss the 600 ms limit on a cold page; Hear it says it again */
+    await expect.poll(async () => {
+      await page.evaluate(() => { (window as any).__voiceLog.length = 0; });
+      await page.locator('#practice').getByRole('button', { name: 'Hear it' }).click();
+      await page.waitForTimeout(900);
+      return vlog(page);
+    }, { timeout: 15_000 }).toContain('studio:line');
     await page.locator('.mq-nav a[href="#/learn"]').first().click();
     await expect.poll(async () => (await vlog(page)).slice((await vlog(page)).indexOf('studio:line'))).toContain('stop');
     const after = await vlog(page);

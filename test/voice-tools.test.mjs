@@ -40,10 +40,11 @@ test('the month carries across runs; each run starts its own run total', () => {
 });
 
 test('requests are paced, also when several workers ask at once', async () => {
-  let t = 0; const g = makeGuard({ ledger: join(dir, 'd.json'), perMin: 6000, now: () => t });
+  const g = makeGuard({ ledger: join(dir, 'd.json'), perMin: 6000 }); // 10 ms apart
   const times = [];
-  await Promise.all([1, 2, 3].map(() => g.pace().then(() => { times.push(t); t += 0; })));
+  await Promise.all([1, 2, 3].map(() => g.pace().then(() => times.push(performance.now()))));
   assert.equal(times.length, 3);
+  for (let i = 1; i < times.length; i++) assert.ok(times[i] - times[i - 1] >= 9, `gap ${times[i] - times[i - 1]} ms`);
 });
 
 test('the default caps are the owner\'s: $300 a month, $50 a run', () => {
