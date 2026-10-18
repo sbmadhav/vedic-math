@@ -11,6 +11,8 @@ export async function fakeAudio(page: Page, { clipSecs = 1.2 } = {}) {
     w.__clipSecs = secs;
     const A = (w.__audio = { nodes: [] as any[], decoded: 0, contexts: 0 });
     const t0 = performance.now();
+    // The fake clock every context shares, readable by a spec as window.__audio.currentTime
+    Object.defineProperty(A, 'currentTime', { get: () => (performance.now() - t0) / 1000 });
     const param = (v: number) => {
       const p: any = { value: v, ramps: [] as any[] };
       for (const m of ['setValueAtTime', 'linearRampToValueAtTime', 'exponentialRampToValueAtTime', 'setTargetAtTime', 'cancelScheduledValues'])
@@ -20,7 +22,7 @@ export async function fakeAudio(page: Page, { clipSecs = 1.2 } = {}) {
     class Ctx {
       state = 'running'; sampleRate = 24000; destination: any = { kind: 'destination' }; id: number;
       constructor() { this.id = ++A.contexts; }
-      get currentTime() { return (performance.now() - t0) / 1000; }
+      get currentTime() { return (A as any).currentTime as number; }
       resume() { this.state = 'running'; return Promise.resolve(); }
       suspend() { this.state = 'suspended'; return Promise.resolve(); }
       close() { return Promise.resolve(); }

@@ -33,10 +33,12 @@ async function expectNoViolations(page: Page, v: Awaited<ReturnType<typeof watch
   expect(v.console, `CSP console messages on ${where}`).toEqual([]);
 }
 
-/** The page's policy; skips when a plain local checkout has none. */
+/** The page's policy; skips only an unbuilt local checkout (no import map). */
 async function policy(page: Page, baseURL?: string) {
   const meta = page.locator('meta[http-equiv="Content-Security-Policy"]');
-  if (!/^https:/.test(baseURL || '') && await meta.count() === 0) test.skip(true, 'No CSP in the unbuilt source: serve a build (node e2e/local-server.mjs 8124 _site)');
+  // The build adds an import map: skip only the unbuilt source, so a build that lost its policy fails here
+  const built = await page.locator('script[type="importmap"]').count() > 0;
+  if (!/^https:/.test(baseURL || '') && !built) test.skip(true, 'Unbuilt source (no import map): serve a build (node e2e/local-server.mjs 8124 _site)');
   await expect(meta, 'the build adds a CSP <meta>').toHaveCount(1);
   return (await meta.getAttribute('content'))!;
 }
@@ -137,8 +139,10 @@ test('the Explore menu, the natural voice worker and GoatCounter run with no CSP
     try {
       const w = new Worker(url, { type: 'module' });
       w.onerror = e => resolve('error: ' + (e.message || 'worker failed'));
-      w.postMessage({ type: 'clear' });
-      setTimeout(() => { w.terminate(); resolve('ok'); }, 1500);
+      // An unloaded worker answers a gen with genError 'not loaded': that reply proves it started
+      w.onmessage = e => { if (e.data?.type === 'genError' && e.data.id === 'csp-probe') { w.terminate(); resolve('ok'); } };
+      w.postMessage({ type: 'gen', id: 'csp-probe', text: '' });
+      setTimeout(() => { w.terminate(); resolve('no reply from the worker'); }, 10_000);
     } catch (e) { resolve('threw: ' + e); }
   }));
   expect(started).toBe('ok');

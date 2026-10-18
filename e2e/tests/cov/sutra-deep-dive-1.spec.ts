@@ -14,9 +14,14 @@ async function openDeepDive(page: Page, id: string) {
 }
 
 test('Every Deep dive teaches with three or more: each of the 29 lists at least three numbered examples, the first open with its result highlighted', async ({ page }) => {
+  test.setTimeout(90_000); // 29 Deep dives, each waited for in turn
   await openDeepDive(page, 's1');
-  for (const id of IDS) {
+  let title = await dlg(page).locator('#sdTitle').textContent();
+  for (const [i, id] of IDS.entries()) {
     await page.evaluate(h => location.replace(h), `#/sutras/${id}`);
+    // The hashchange re-render is a later task: wait for this Sutra's title before counting its examples
+    if (i > 0) await expect(dlg(page).locator('#sdTitle'), id).not.toHaveText(title!);
+    title = await dlg(page).locator('#sdTitle').textContent();
     const items = dlg(page).locator('.sd-ex > li');
     await expect.poll(() => items.count(), { message: id }).toBeGreaterThanOrEqual(3);
     const n = await items.count();

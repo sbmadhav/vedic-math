@@ -19,7 +19,9 @@ async function watchViolations(page: Page) {
 }
 async function policy(page: Page, baseURL?: string) {
   const meta = page.locator('meta[http-equiv="Content-Security-Policy"]');
-  if (!/^https:/.test(baseURL || '') && await meta.count() === 0) test.skip(true, 'No CSP in the unbuilt source: serve a build');
+  // The build adds an import map: skip only the unbuilt source, so a build that lost its policy fails here
+  const built = await page.locator('script[type="importmap"]').count() > 0;
+  if (!/^https:/.test(baseURL || '') && !built) test.skip(true, 'Unbuilt source (no import map): serve a build');
   await expect(meta).toHaveCount(1);
   return (await meta.getAttribute('content'))!;
 }

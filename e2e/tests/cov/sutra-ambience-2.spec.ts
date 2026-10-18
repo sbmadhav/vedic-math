@@ -81,13 +81,15 @@ test('Route change: leaving for #/dojo fades the hum out within 2 seconds and no
   await open(page, '#/sutras');
   await tapPage(page);
   await expect.poll(async () => hums(await log(page)).length).toBe(1);
+  // The fade is measured from the route change, on the fake audio clock
+  const leftAt: number = await page.evaluate(() => (window as any).__audio.currentTime);
   await page.evaluate(() => { location.hash = '#/dojo'; });
   await expect(page.locator('#view .dojo-nodes').first()).toBeVisible();
   await expect.poll(async () => rampedToZero(ambienceBus(await log(page))[0])).toBe(true);
   const after = await log(page);
   const hum = hums(after)[0];
   expect(hum.stopAt).not.toBeUndefined();
-  expect(hum.stopAt! - hum.started!).toBeLessThanOrEqual(2.5);
+  expect(hum.stopAt! - leftAt).toBeLessThanOrEqual(2.5);
   await page.clock.fastForward(60_000);
   const later = await log(page);
   expect(later.nodes.filter(x => x.kind === 'osc').length, 'no ambience timer fires later').toBe(after.nodes.filter(x => x.kind === 'osc').length);

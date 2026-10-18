@@ -24,7 +24,7 @@ test('Size: 29 clips, each under 30 KB and all together under 500 KB', async ({ 
   expect(urls).toHaveLength(29);
   let total = 0;
   for (const u of urls) {
-    const r = await page.request.get(u);
+    const r = await page.request.get(new URL(u, page.url()).href);
     expect(r.ok(), u).toBeTruthy();
     const bytes = (await r.body()).length;
     expect(bytes, u).toBeLessThan(30 * 1024);

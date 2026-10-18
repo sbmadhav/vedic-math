@@ -34,14 +34,24 @@ test.describe('motion allowed', () => {
     chromiumOnly(testInfo, 'canvas frames: chromium');
     await open(page, '#/arena');
     await page.locator('[data-t="practice"]').click();
+    const running = () => page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running' && !((a.effect as KeyframeEffect | null)?.target as Element | null)?.closest('.ar-bar, dialog.xpm')).length);
+    // The Explore menu's own Pause motion control. A round's shell makes the site header inert (js/shell.js),
+    // so the menu is reached on the game page, before the round starts.
+    await page.locator('#exploreBtn').click();
+    const pause = page.locator('dialog.xpm #xpMotion');
+    await expect(pause).toHaveAttribute('aria-pressed', 'false');
+    await pause.click();
+    await expect(pause).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('html')).toHaveClass(/\bmotion-paused\b/);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('dialog.xpm')).toBeHidden();
+    await page.waitForTimeout(150);
+    expect(await running(), 'motion stops at once on the game page').toBe(0);
     await page.locator('#arGo').click();
     await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
     const t1 = Number(await page.locator('#arTime').textContent());
-    // The site-wide pause, as the Explore menu sets it: the class on <html> and the sitemotion event
-    await page.evaluate(() => { document.documentElement.classList.add('motion-paused'); document.dispatchEvent(new CustomEvent('sitemotion', { detail: { paused: true } })); });
     await page.waitForTimeout(150);
-    const running = await page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running' && !((a.effect as KeyframeEffect | null)?.target as Element | null)?.closest('.ar-bar')).length);
-    expect(running).toBe(0);
+    expect(await running(), 'no motion in the round').toBe(0);
     await page.waitForTimeout(1600);
     const t2 = Number(await page.locator('#arTime').textContent());
     expect(t2).toBeLessThan(t1);

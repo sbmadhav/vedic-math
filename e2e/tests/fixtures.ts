@@ -84,7 +84,7 @@ export type CloudLog = { signIns: number; signOuts: string[]; apps: string[]; au
 export type Consent = { age: number | 'adult'; parentOk?: number | null };
 
 type Fixtures = {
-  /** Load the real Firebase SDK (anonymous sign-in, live Firestore reads). Default false. */
+  /** Load the real Firebase SDK (live Firestore reads, no sign-in). Default false. */
   liveFirebase: boolean;
   /** Play mode stored for the first player before the page loads, or null for a first visit. */
   seedMode: Mode | null;

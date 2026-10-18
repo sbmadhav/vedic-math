@@ -71,7 +71,9 @@ test('Microphone and a route change: every microphone track stops when the Playe
   const mic = page.locator('.tl-mic');
   await mic.click();
   await expect(mic).toHaveAttribute('aria-pressed', 'true');
-  expect((await tracks()).every(r => r === 'live')).toBe(true);
+  const first = await tracks();
+  expect(first.length, 'the fake microphone gave at least one track').toBeGreaterThan(0);
+  expect(first.every(r => r === 'live')).toBe(true);
   await hide(page, true);
   await expect(mic).toHaveAttribute('aria-pressed', 'false');
   expect((await tracks()).every(r => r === 'ended')).toBe(true);
