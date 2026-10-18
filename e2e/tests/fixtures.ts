@@ -179,6 +179,16 @@ export { expect };
 export const APP = '/vedic-math/';
 
 /** Opens the app at a hash route (for example '#/dojo') and waits for the view to render. */
+/** Serves the app a transformed video list. `transform` is JavaScript source for a function (list) => list, run in
+    the page over the real js/videos.js (every other export passes through), so a scenario can hold its premise
+    (a Skill with no hand-matched video, exactly one, a planted counting video) whatever the catalog grows into.
+    Call before open(); the test's own import('/vedic-math/js/videos.js') in page.evaluate gets the same list. */
+export async function withVideos(page: Page, transform: string) {
+  const REAL = `${APP}js/videos.js?e2e-real`;
+  const body = `export * from '${REAL}';\nimport { VIDEOS as REAL } from '${REAL}';\nexport const VIDEOS = (${transform})(REAL);\n`;
+  await page.route(/\/vedic-math\/js\/videos\.js(\?(?!e2e-real).*)?$/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body }));
+}
+
 export async function open(page: Page, hash = '#/') {
   await page.goto(`${APP}${hash === '#/' ? '' : hash}`);
   await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
