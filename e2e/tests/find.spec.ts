@@ -37,6 +37,26 @@ test('the / key opens Find from the Dojo, but not while typing in a field', asyn
   await expect(page).toHaveURL(/#\/find$/);
 });
 
+test('the / key still opens Find after a Sutra card is flipped (an expanded control in the view is not a menu)', async ({ page }) => {
+  await open(page, '#/sutras');
+  const face = page.locator('.sutra-face').first();
+  await face.click();
+  await expect(face).toHaveAttribute('aria-expanded', 'true');
+  await page.keyboard.press('/');
+  await expect(page).toHaveURL(/#\/find$/);
+  await expect(page.locator('#findIn')).toBeFocused();
+});
+
+test('Enter with nothing typed or nothing matched opens nothing from the browse list', async ({ page }) => {
+  await open(page, '#/find');
+  await page.locator('#findIn').press('Enter');
+  await expect(page).toHaveURL(/#\/find$/);
+  await page.locator('#findIn').fill('zzzz');
+  await page.locator('#findIn').press('Enter');
+  await expect(page).toHaveURL(/#\/find$/);
+  expect((await events(page)).filter(e => e.startsWith('math/find/'))).toEqual([]);
+});
+
 test('results come grouped and ranked: a Skill by name, a Sutra in plain letters, a plain word, a setting, a video', async ({ page }) => {
   await open(page, '#/find');
   const box = page.locator('#findIn');

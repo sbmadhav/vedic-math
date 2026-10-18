@@ -94,6 +94,13 @@ test('normalize and tokenize: case, diacritics, superscripts and stop words', ()
   assert.deepEqual(tokenize('the'), []);
 });
 
+test('a Sutra is found by its Devanagari name too', () => {
+  const idx = buildIndex({ mode: 'challenger' }), s3 = SUTRAS.find(c => c.n === 3);
+  assert.ok(s3.deva && tokenize(s3.deva).length, 'the Devanagari name keeps its letters');
+  assert.deepEqual(kind(rank(idx, s3.deva), 'sutra')[0], s3.name);
+  assert.equal(normalize('Śūnyam \u2014 x'), 'sunyam x', 'Latin diacritics and punctuation still go');
+});
+
 test('rank: titles over synonyms over descriptions, every token must match, prefixes count, kinds in order', () => {
   const idx = buildIndex({ mode: 'challenger', videos: VIDEOS });
   assert.deepEqual(kind(rank(idx, 'urdhva'), 'sutra')[0], 'Ūrdhva-Tiryagbhyām');

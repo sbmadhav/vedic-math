@@ -1433,7 +1433,7 @@ function findView({ signal } = {}) {
       : `<p class="find-none">Nothing called that here. Try a plain word, like ${ex ? 'balloons or songs' : 'squares, race or videos'}, or <a href="#/guide">read the guide</a>.</p>${browse()}`;
   }
   on(input, 'input', draw, signal);
-  on($('#findForm'), 'submit', e => { e.preventDefault(); const first = out.querySelector('.find-hit'); if (first) first.click(); }, signal);
+  on($('#findForm'), 'submit', e => { e.preventDefault(); const first = out.querySelector('.find-group .find-hit'); if (first) first.click(); }, signal); /* a ranked result only, never the browse list */
   on(input, 'keydown', e => {
     if (e.key === 'ArrowDown') { const first = out.querySelector('.find-hit'); if (first) { e.preventDefault(); first.focus(); } }
     else if (e.key === 'Escape' && input.value) { e.preventDefault(); input.value = ''; draw(); }
@@ -1446,7 +1446,7 @@ function findView({ signal } = {}) {
 document.addEventListener('keydown', e => {
   if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
   const t = e.target, typing = t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
-  if (typing || document.querySelector('dialog[open]') || document.querySelector('[aria-expanded="true"]')) return;
+  if (typing || document.querySelector('dialog[open]') || document.querySelector('header [aria-expanded="true"]')) return; /* a header menu (Explore, Music) is open; an expanded control in the view, like a flipped Sutra card, does not count */
   e.preventDefault();
   if ((location.hash || '#/') === '#/find') { const i = $('#findIn'); if (i) i.focus(); } else location.hash = '#/find';
 });

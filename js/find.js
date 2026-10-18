@@ -106,8 +106,9 @@ export const SYNONYMS = {
   'guide-modes': ['explorer', 'challenger', 'pro', 'age', 'change mode']
 };
 
-/* Lower case, no diacritics, letters digits and spaces only: "Ūrdhva-Tiryagbhyām" becomes "urdhva tiryagbhyam" */
-export const normalize = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[²³]/g, m => (m === '²' ? ' squared' : ' cubed')).replace(/[^a-z0-9]+/g, ' ').trim();
+/* Lower case, no Latin diacritics, letters (any script, with their marks), digits and spaces only:
+   "Ūrdhva-Tiryagbhyām" becomes "urdhva tiryagbhyam", and a Devanagari name keeps its letters so it can be typed too */
+export const normalize = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[²³]/g, m => (m === '²' ? ' squared' : ' cubed')).replace(/[^\p{L}\p{M}\p{Nd}]+/gu, ' ').trim();
 const STOP = new Set(['the', 'a', 'an', 'and', 'of', 'to', 'in', 'on', 'for', 'with', 'by', 'or', 'it', 'is', 'at']);
 export const tokenize = s => normalize(s).split(' ').filter(w => w && !STOP.has(w));
 const words = s => normalize(s).split(' ').filter(Boolean);
