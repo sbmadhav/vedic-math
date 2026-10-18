@@ -34,3 +34,18 @@ test('A Find result: typing "squares" and following the first result sends exact
   expect(ev.filter(([p]) => p.startsWith('math/find/')).some(([p, t]) => /square/i.test(p + ' ' + t))).toBe(false);
   expect(ev.some(([p]) => p.startsWith('math/view/find'))).toBe(true);
 });
+
+test('A browse link is not a Find result: following a browse link, with the box empty or after no match, sends no math/find/go', async ({ page }) => {
+  await open(page, '#/find');
+  await expect(page.locator('#findOut .find-hit').first()).toBeVisible();
+  await expect(page.locator('#findOut .find-group')).toHaveCount(0);
+  await page.locator('#findOut .find-hit').first().click();
+  await expect(page).not.toHaveURL(/#\/find$/);
+  expect((await events(page)).filter(([p]) => p.startsWith('math/find/'))).toEqual([]);
+  await open(page, '#/find');
+  await page.locator('#findIn').fill('zzqx');
+  await expect(page.locator('#findCount')).toHaveText('Nothing matched');
+  await page.locator('#findOut .find-hit').first().click();
+  await expect(page).not.toHaveURL(/#\/find$/);
+  expect((await events(page)).filter(([p]) => p.startsWith('math/find/'))).toEqual([]);
+});

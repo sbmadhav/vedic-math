@@ -75,3 +75,11 @@ test('Say it (js/say.js) and the Sutra ambience (js/sutra-ambience.js): no bare 
     assert.match(readFileSync(new URL(`../js/${f}`, import.meta.url), 'utf8'), /import \{[^}]*\bon\b[^}]*\} from '\.\/life\.js'/, f);
   }
 });
+
+test('the Mode picker and the Home More toggle bind through life.on on the view signal, not onclick or ontoggle properties', () => {
+  const app = src('app.js').join('\n');
+  const picker = app.slice(app.indexOf('function modePicker('), app.indexOf('\n}\n', app.indexOf('function modePicker(')));
+  assert.doesNotMatch(picker, /\.on(click|toggle)\s*=/);
+  assert.ok((picker.match(/\bon\(/g) || []).length >= 2 && (picker.match(/\}, signal\)/g) || []).length >= 2, 'Mode cards and Try a trick on the view signal');
+  assert.match(app, /if \(ctx\.signal\) on\(hm, 'toggle', keepMore, ctx\.signal\); else hm\.ontoggle = keepMore;/, 'More ways to play: the property only without a view signal');
+});

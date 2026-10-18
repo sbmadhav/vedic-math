@@ -153,7 +153,7 @@ function titleBar(T, cls = 'mq-sparkbar mq-sparkbar--big') {
 }
 
 /* ---------- Mode picker (first visit, and from Me) ---------- */
-function modePicker() {
+function modePicker({ signal } = {}) {
   document.title = `${BRAND} for Everyone · Madhav`;
   const p = store.player();
   view.innerHTML = `<section class="md-section mq-hero"><div class="md-wrap">
@@ -166,9 +166,9 @@ function modePicker() {
     <p class="mq-note">Playing as <b>${esc(p.name)}</b>. Nicknames are made up for you, so no real names are ever needed. You can change who is playing any time.</p>
     <p class="mq-note gd-pickhelp">Not sure where to start? <a href="#/guide">See how it works</a> or <a href="#/find">find something by name</a>.</p>
   </div></section>`;
-  view.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { fx.sfx('level'); fx.setMode(b.dataset.mode); gm.startDay(); fx.confetti(60); location.hash = afterPick(b.dataset.mode); render(); });
+  view.querySelectorAll('[data-mode]').forEach(b => on(b, 'click', () => { fx.sfx('level'); fx.setMode(b.dataset.mode); gm.startDay(); fx.confetti(60); location.hash = afterPick(b.dataset.mode); render(); }, signal));
   /* Try a trick (openspec first-visit): Challenger as a guess, then the first Star of Bolt's path, the one Home offers */
-  $('#tryBtn').onclick = () => { fx.setMode('challenger', { guess: true }); gm.startDay(); metrics.tryStart(); location.hash = firstStarHref(); };
+  on($('#tryBtn'), 'click', () => { fx.setMode('challenger', { guess: true }); gm.startDay(); metrics.tryStart(); location.hash = firstStarHref(); }, signal);
 }
 /* Where a Mode card goes: the page the visitor asked for before picking (a Find result, a link), when it is a route
    in this app the picked Mode can open (one of its Find entries), else Home. Kept in memory only, never stored. */
@@ -250,7 +250,8 @@ function home(ctx = {}, { tiles = false } = {}) {
     ${newHereHTML()}${cont}${body}
   </div></section>`;
   const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); home(); };
-  const hm = $('#homeMore'); if (hm) hm.ontoggle = () => fx.setHomeMoreOpen(hm.open); /* remembered on this device; a property on an element of this view, as home() also runs with no view signal (an unknown Skill falls back to it) */
+  const hm = $('#homeMore'), keepMore = () => fx.setHomeMoreOpen(hm.open); /* remembered on this device */
+  if (hm) { if (ctx.signal) on(hm, 'toggle', keepMore, ctx.signal); else hm.ontoggle = keepMore; } /* home() also runs with no view signal (an unknown Skill falls back to it): then a property on an element of this view */
   if (m === 'pro') loadBoard($('#homeBoard'), `daily-${cloud.dayId()}-pro`, 5);
   homeTour(ctx.signal);
 }
@@ -1446,7 +1447,7 @@ function findView({ signal } = {}) {
     if (e.key === 'ArrowDown') { const first = out.querySelector('.find-hit'); if (first) { e.preventDefault(); first.focus(); } }
     else if (e.key === 'Escape' && input.value) { e.preventDefault(); input.value = ''; draw(); }
   }, signal);
-  on(out, 'click', e => { if (e.target.closest('.find-hit')) metrics.findGo(); }, signal); /* a fixed event: never the text or the result */
+  on(out, 'click', e => { if (e.target.closest('.find-group .find-hit')) metrics.findGo(); }, signal); /* a ranked result only, never the browse list; a fixed event: never the text or the result */
   draw();
   input.focus({ preventScroll: true });
 }

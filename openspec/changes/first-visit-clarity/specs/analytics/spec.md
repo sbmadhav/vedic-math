@@ -12,3 +12,7 @@ Pressing Try a trick on the landing SHALL send one `math/try/start` event. Follo
 #### Scenario: A Find result
 - **WHEN** a Player types "squares" in Find and follows the first result
 - **THEN** exactly one `math/find/go` is sent, with no path or title containing "squares" or the result's name
+
+#### Scenario: A browse link is not a Find result
+- **WHEN** a Player opens Find, or types a word that matches nothing, and follows a link in the browse list
+- **THEN** no `math/find/go` is sent
