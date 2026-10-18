@@ -6,7 +6,7 @@ A very mild, optional Sutra ambience (a soft bowl strike, an optional hum, an op
 ## Requirements
 
 ### Requirement: Bowl strike on the Sutra pages
-When Sutra ambience is on, the system SHALL play one soft singing-bowl strike, synthesized with Web Audio, when the Sutra page (`#/sutras`) renders and when a Sutra deep dive opens, at most once every 4 seconds. Sound SHALL start only after a user gesture on the page: without one, the strike waits for the first pointer or key press and is skipped if none comes, or if that gesture is on a Say it or Ambience button.
+When Sutra ambience is on, the system SHALL play one soft singing-bowl strike, synthesized with Web Audio, when the Sutra page (`#/sutras`) renders and when a Sutra deep dive opens, at most once every 4 seconds. Turning Sutra ambience on SHALL play one strike at once as feedback for the toggle; that strike is outside the 4 second gap, which applies to page renders and deep dive openings. Sound SHALL start only after a user gesture on the page: without one, the strike waits for the first pointer or key press and is skipped if none comes, or if that gesture is on a Say it or Ambience button.
 
 #### Scenario: Opening a deep dive
 - **WHEN** a Player with Sutra ambience on taps a card's Learn more
