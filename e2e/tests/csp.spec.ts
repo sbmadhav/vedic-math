@@ -85,18 +85,15 @@ test('every play experience page renders with no CSP violation', async ({ page, 
   await expectNoViolations(page, v, 'the play experiences');
 });
 
-test('Math Lens does not offer the camera while the policy blocks its digit reader (cdn.jsdelivr.net)', async ({ page, baseURL }) => {
+test('Math Lens offers the camera under the published policy: its digit reader is served from this site', async ({ page, baseURL }) => {
   const v = await watchViolations(page);
-  let asked = 0;
-  await page.addInitScript(() => { Object.defineProperty(MediaDevices.prototype, 'getUserMedia', { value: async () => { (window as any).__gum = 1; throw new Error('no'); }, configurable: true }); });
   await open(page, '#/games/lens');
   const csp = await policy(page, baseURL);
+  expect(csp).toMatch(/script-src[^;]*'wasm-unsafe-eval'/);
+  expect(csp).not.toContain('cdn.jsdelivr.net');
+  expect(csp).toMatch(/worker-src 'self'(;|$)/);
   const cam = page.locator('[data-way="camera"]');
-  if (/script-src[^;]*cdn\.jsdelivr\.net/.test(csp)) { await expect(cam).toBeEnabled(); return; }
-  await expect(cam).toBeDisabled();
-  await expect(cam).toContainText('Type the digits instead');
-  asked = await page.evaluate(() => (window as any).__gum || 0);
-  expect(asked).toBe(0);
+  await expect(cam).toBeEnabled();
   await page.locator('[data-way="type"]').click();
   await expect(page.locator('#lnDigits')).toBeFocused();
   await expectNoViolations(page, v, '#/games/lens');

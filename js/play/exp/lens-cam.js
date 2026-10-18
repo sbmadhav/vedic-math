@@ -1,16 +1,22 @@
 /* Math Lens camera and digit reader. The camera is opt-in; one frame is frozen on a canvas on this device,
    cleaned up (grayscale, contrast, threshold) and read for digits right here. The picture is never stored
-   or sent anywhere. The reader (Tesseract.js) loads on first use from cdn.jsdelivr.net at a pinned
-   version: only its program and model files download; your image stays on the device. */
+   or sent anywhere. The reader (Tesseract.js) loads on first use from this site: only its program and model
+   files download; your image stays on the device. */
 import { say, sfx, track, esc } from '../kit.js';
 import { on, onAbort, child } from '../life.js';
 
-const TV = '5.1.1';
-const TESS = {
-  lib: `https://cdn.jsdelivr.net/npm/tesseract.js@${TV}/dist/tesseract.esm.min.js`,
-  workerPath: `https://cdn.jsdelivr.net/npm/tesseract.js@${TV}/dist/worker.min.js`,
-  corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',
-  langPath: 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng@1.0.0/4.0.0_best_int'
+/* Tesseract.js 5.1.1 (Apache-2.0, vendor/tesseract/LICENSE), served from this site so no third party sees the
+   visit: the library, its worker, the two LSTM-only cores (the worker picks the SIMD one where it can) and the
+   English best_int model, byte for byte from npm tesseract.js@5.1.1, tesseract.js-core@5.1.1 and
+   @tesseract.js-data/eng@1.0.0 (test/play/lens-reader.test.mjs pins their hashes). The worker starts from its URL,
+   never a blob: (the policy's worker-src is 'self'), and compiles WebAssembly, which is what the 'wasm-unsafe-eval'
+   in build.py's script-src is for. */
+const VENDOR = '/vedic-math/vendor/tesseract/';
+export const TESS = {
+  lib: VENDOR + 'tesseract.esm.min.js',
+  workerPath: VENDOR + 'worker.min.js',
+  corePath: VENDOR,
+  langPath: VENDOR
 };
 const PRIVACY = '<p class="ln-privacy"><span class="ln-dot" aria-hidden="true"></span><b>Nothing leaves your phone.</b> The picture is looked at here, on this device, and then forgotten. It is never saved or uploaded.</p>';
 
@@ -39,23 +45,38 @@ export function clean(img) {
   return { threshold: th, flipped: flip };
 }
 
-/* The reader loads from cdn.jsdelivr.net. The published page's Content-Security-Policy (build.py) does not list that
-   host, so there the camera could be turned on but nothing could ever be read: the camera is then not offered at all
-   (no permission prompt for nothing). Allowing it is an owner decision recorded in the play-experiences change. */
+/* The published page's Content-Security-Policy (build.py) lets the reader run only with 'wasm-unsafe-eval' in
+   script-src. Where a policy lacks it, the camera could be turned on but nothing could ever be read: the camera is
+   then not offered at all (no permission prompt for nothing). No policy (the unbuilt source) allows it. */
 export function readerAllowed() {
   const m = typeof document !== 'undefined' && document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-  return !m || /(^|[\s;])script-src[^;]*https:\/\/cdn\.jsdelivr\.net/.test(m.getAttribute('content') || '');
+  return !m || /(^|[\s;])script-src[^;]*'wasm-unsafe-eval'/.test(m.getAttribute('content') || '');
 }
 
-let reader = null; /* one reader per page load; terminated when the view closes */
-async function getReader(onProgress) {
-  if (reader) return reader;
+/* One reader per page load, kept as the promise of its worker: a second read while the first download runs waits
+   for the same worker instead of starting another. drop() forgets it and terminates its worker, even one that
+   arrives after the view closed; a failed start is forgotten so the next read tries again. */
+export function readerSlot(load) {
+  let p = null;
+  return {
+    get started() { return !!p; },
+    get() {
+      if (!p) { const q = p = Promise.resolve().then(load); q.catch(() => { if (p === q) p = null; }); }
+      return p;
+    },
+    drop() { const q = p; p = null; if (q) q.then(w => w.terminate().catch(() => {}), () => {}); }
+  };
+}
+let progressTo = null;
+const reader = readerSlot(async () => {
   const mod = await import(TESS.lib);
   const T = mod.default || mod;
-  const w = await T.createWorker('eng', 1, { workerPath: TESS.workerPath, corePath: TESS.corePath, langPath: TESS.langPath, logger: m => onProgress && onProgress(m) });
+  const w = await T.createWorker('eng', 1, { workerPath: TESS.workerPath, corePath: TESS.corePath, langPath: TESS.langPath, workerBlobURL: false, logger: m => progressTo && progressTo(m) });
   await w.setParameters({ tessedit_char_whitelist: '0123456789:.$' });
-  reader = w; return w;
-}
+  return w;
+});
+const getReader = onProgress => { progressTo = onProgress; return reader.get(); };
+const dropReader = () => { progressTo = null; reader.drop(); };
 
 /* Renders the camera flow into host. Calls onDigits(text, kind) with what it read (text may be empty). */
 export function camera(host, { signal, kindChips, onDigits, onType }) {
@@ -63,7 +84,7 @@ export function camera(host, { signal, kindChips, onDigits, onType }) {
   let stream = null, kind = 'plate', box = null;
   const stopStream = () => { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } };
   onAbort(sig, stopStream);
-  onAbort(signal, () => { if (reader) { const r = reader; reader = null; r.terminate().catch(() => {}); } });
+  onAbort(signal, dropReader);
   /* The camera is on only while the Player is looking at it: hiding the tab (or the phone locking) turns it off,
      and the Player turns it on again with one tap. Nothing is kept from the live view. */
   on(document, 'visibilitychange', () => {
@@ -124,7 +145,7 @@ export function camera(host, { signal, kindChips, onDigits, onType }) {
       </div>
       <p class="ln-tip">Drag a box around the digits (or leave it as it is).</p>
       <p class="ln-q">What is it?</p>${kindChips(kind, 'ckind')}
-      <p class="ln-dl px-note">${reader ? '' : 'The first read downloads a digit-reading model once (about 6 MB) from cdn.jsdelivr.net. Only the model comes down. Your picture is never sent.'}</p>
+      <p class="ln-dl px-note">${reader.started ? '' : 'The first read downloads the digit reader once (about 7 MB) from this site. Only the reader comes down. Your picture is never sent.'}</p>
       <div class="ln-prog" hidden><div class="ln-bar"><i></i></div><span class="ln-progt" aria-live="off">Getting ready</span></div>
       <div class="px-row ln-camrow"><button type="button" class="md-btn md-btn--primary ln-read">Read the digits</button><button type="button" class="md-btn ln-again">Retake</button><button type="button" class="md-btn ln-typeinstead">Type instead</button></div>`;
     const still = host.querySelector('.ln-still'); cv.className = 'ln-canvas'; cv.setAttribute('aria-hidden', 'true'); still.prepend(cv);
@@ -158,7 +179,7 @@ export function camera(host, { signal, kindChips, onDigits, onType }) {
     const progress = m => { if (sig.aborted) return; const p = Math.round((m.progress || 0) * 100); bar.style.width = p + '%'; pt.textContent = /recogniz/.test(m.status) ? `Reading ${p}%` : /load|initializ/.test(m.status) ? `Getting the reader ready ${p}%` : 'Working'; };
     let text = '', failed = false;
     try {
-      pt.textContent = reader ? 'Reading' : 'Downloading the reader (one time)';
+      pt.textContent = reader.started ? 'Reading' : 'Downloading the reader (one time)';
       say(pt.textContent);
       const w = await getReader(progress);
       if (sig.aborted) return;

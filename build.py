@@ -91,7 +91,10 @@ def publishable(out):
 # ---------- Content-Security-Policy ----------
 # Every origin the page itself loads from (openspec/specs/content-security). Workers started from a
 # URL get their own policy from their response, not this one, so the natural voice worker's
-# jsDelivr library and Hugging Face model downloads need nothing here.
+# jsDelivr library and Hugging Face model downloads need nothing here. 'wasm-unsafe-eval' is for the
+# Math Lens digit reader (vendor/tesseract/, served from this site), which compiles a WebAssembly
+# core in the worker it starts, so it runs whatever policy a browser gives that worker (owner
+# decision P1 in openspec/changes/play-experiences). It allows no eval() of strings.
 GOATCOUNTER = "https://sbmadhav.goatcounter.com"   # beacons from /assets/count.js (sendBeacon, <img> fallback)
 YOUTUBE = "https://www.youtube-nocookie.com"       # Watch shelf and Star round player (js/watch.js)
 YT_THUMBS = "https://i.ytimg.com"                  # Watch shelf thumbnails
@@ -136,7 +139,7 @@ def csp(html):
     join = lambda *parts: " ".join(x for part in parts for x in part)
     return "; ".join([
         "default-src 'self'",
-        "script-src " + join(["'self'"], dict.fromkeys(hashes), fb.get("script", [])),
+        "script-src " + join(["'self'", "'wasm-unsafe-eval'"], dict.fromkeys(hashes), fb.get("script", [])),
         # A critical <style> block, and style="" in markup the views build
         "style-src 'self' 'unsafe-inline'",
         "img-src " + join(["'self'", "data:", YT_THUMBS, GOATCOUNTER]),

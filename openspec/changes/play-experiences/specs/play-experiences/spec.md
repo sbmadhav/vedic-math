@@ -71,6 +71,13 @@ Experiences SHALL NOT send anything to the leaderboards. Share links SHALL carry
 - **WHEN** a Player types a plate with other words in Math Lens and shares it
 - **THEN** the link and the message hold only its digits
 
+### Requirement: The Math Lens reader comes from this site
+Math Lens SHALL load its digit reader (program, worker, core and model) only from `/vedic-math/`, never from another origin, and the published page's policy SHALL allow it with `'wasm-unsafe-eval'` and no other new source. Where the page's policy would block the reader, the camera SHALL NOT be offered.
+
+#### Scenario: Reading a captured picture on the published site
+- **WHEN** a Player captures a picture in Math Lens and taps Read the digits
+- **THEN** every file the reader downloads comes from `/vedic-math/vendor/tesseract/`, and no Content-Security-Policy violation occurs
+
 ### Requirement: Camera and microphone only while in use
 Math Lens (camera) and Tala Lab (microphone) SHALL ask for the device only after the Player taps to turn it on, next to a line saying what it is used for, and SHALL use it on the device only, never recording, storing or sending a picture or a sound. Every track SHALL stop when the Player leaves the page, when the page is hidden, and on any error.
 

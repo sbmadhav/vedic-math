@@ -44,4 +44,4 @@ Out of scope:
 - `build.py`: stamps and precaches `css/play/*.css` (`#vm-css` map) so the experiences work offline.
 - `index.html`: nav highlighting covers section subpages. `math.css`: shelf cards.
 - Tests: `test/play/*.test.mjs` (one per experience, plus catalog and shell rules); Playwright `e2e/tests/play.spec.ts`; `arena.spec.ts` Duel tests removed; `routes`, `offline`, `a11y` updated.
-- Nothing new is sent to Firebase. Math Lens uses the camera only on the device and downloads its digit reader from a CDN on first use; `parentNote()` needs no change.
+- Nothing new is sent to Firebase. Math Lens uses the camera only on the device and downloads its digit reader from this site (`/vedic-math/vendor/tesseract/`) on first use; `parentNote()` needs no change.

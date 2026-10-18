@@ -3,8 +3,9 @@ import { test, expect, open } from './fixtures';
 /* Math Lens camera (openspec play-experiences, "Camera and microphone only while in use"): the camera is asked
    for only after a tap next to a line saying what it is for, and every track stops on a hidden tab and on a route
    change. The camera is a fake: a MediaStream from a canvas, so no real device is used and nothing is recorded.
-   The digit reader is never downloaded here: cdn.jsdelivr.net is refused, which is also what the published
-   Content-Security-Policy does today, and the page must say so instead of blaming the picture. */
+   The digit reader (Tesseract.js) is served from this site, /vedic-math/vendor/tesseract/ (owner decision P1). The
+   camera tests refuse it so nothing large downloads; one test lets it load and read a frame, and checks that every
+   reader file came from that folder and the page's policy blocked nothing. */
 
 async function fakeCamera(page: import('@playwright/test').Page) {
   await page.addInitScript(() => {
@@ -34,16 +35,8 @@ async function hide(page: import('@playwright/test').Page, hidden: boolean) {
 
 test.beforeEach(async ({ page }) => {
   await fakeCamera(page);
-  await page.route(/^https:\/\/cdn\.jsdelivr\.net\//, r => r.abort());
-  // A published build's policy does not list the reader's host, so Math Lens does not offer the camera there (see
-  // csp.spec.ts). These tests are about the camera itself, so the page they load has its policy <meta> removed;
-  // the reader stays unreachable because its host is refused above.
-  await page.route(/\/vedic-math\/(index\.html)?(\?[^#]*)?$/, async r => {
-    if (r.request().resourceType() !== 'document') return r.fallback();
-    const res = await r.fetch();
-    const body = (await res.text()).replace(/<meta http-equiv="Content-Security-Policy"[^>]*>\n?/, '');
-    await r.fulfill({ response: res, body });
-  });
+  // The reader is refused unless a test lets it load (see the last tests)
+  await page.route(/\/vedic-math\/vendor\/tesseract\//, r => r.abort());
 });
 
 test('the camera is asked for only after Turn on the camera, next to what it is for', async ({ page, issues }) => {
@@ -82,7 +75,7 @@ test('leaving the page stops the camera', async ({ page }) => {
   await expect.poll(() => states(page)).toEqual(['ended']);
 });
 
-test('Capture stops the camera; a reader that cannot load says so and offers typing', async ({ page }) => {
+test('Capture stops the camera; a reader that cannot load (refused here) says so and offers typing', async ({ page }) => {
   await open(page, '#/games/lens');
   await page.locator('[data-way="camera"]').click();
   await page.locator('.ln-on').click();
@@ -108,4 +101,31 @@ test('a typed plate with other words is shared as its digits only', async ({ pag
   const tail = decodeURIComponent(shared[0].url.split('/').pop()!);
   expect(tail).toBe('054721');
   expect(shared[0].text).not.toMatch(/call|<b>|KA/i);
+});
+
+test('Read the digits loads the reader from this site only and reads the frozen frame', async ({ page, baseURL }) => {
+  test.setTimeout(120_000);
+  await page.unroute(/\/vedic-math\/vendor\/tesseract\//);
+  const asked: string[] = [];
+  page.on('request', r => { if (/tesseract|traineddata/i.test(r.url())) asked.push(r.url()); });
+  await page.addInitScript(() => {
+    const w = window as any; w.__csp = [];
+    document.addEventListener('securitypolicyviolation', (e: SecurityPolicyViolationEvent) => { w.__csp.push(`${e.effectiveDirective} ${e.blockedURI}`); });
+  });
+  await open(page, '#/games/lens');
+  await expect(page.locator('[data-way="camera"]')).toBeEnabled();
+  await page.locator('[data-way="camera"]').click();
+  await page.locator('.ln-on').click();
+  await expect(page.locator('.ln-snap')).toBeEnabled();
+  await expect.poll(() => page.locator('video.ln-video').evaluate((v: HTMLVideoElement) => v.videoWidth)).toBeGreaterThan(0);
+  await page.locator('.ln-snap').click();
+  await expect(page.locator('.ln-dl')).toContainText('from this site');
+  await page.locator('.ln-read').click();
+  await expect(page.locator('#lnDigits')).toBeFocused({ timeout: 90_000 });
+  await expect(page.locator('#view')).not.toContainText('could not start');
+  await expect(page.locator('#lnDigits')).toHaveValue(/4721/);
+  const origin = new URL(baseURL!).origin;
+  expect(asked.length).toBeGreaterThan(0);
+  for (const u of asked) expect(u.startsWith(`${origin}/vedic-math/vendor/tesseract/`), u).toBe(true);
+  expect(await page.evaluate(() => (window as any).__csp)).toEqual([]);
 });
