@@ -128,7 +128,13 @@ test.describe('Teach the Apprentice', () => {
     await expect(page.locator('.ap-step.is-caught .ap-vh')).toHaveText(', the wrong step');
     const tips = page.locator('.ap-tip');
     const m = await tips.count();
-    for (let i = 0; i < m && !(await page.locator('.ap-next').isVisible()); i++) if (await tips.nth(i).isEnabled()) await tips.nth(i).click();
+    for (let i = 0; i < m && !(await page.locator('.ap-next').isVisible()); i++) {
+      const tip = tips.nth(i);
+      await tip.click();
+      /* A wrong tip is marked at once; the right one disables the tips and, a beat later, replaces them with Next problem.
+         Wait for either before looking at the next tip, or the tips can vanish under the loop. */
+      await expect(page.locator('.ap-next').or(tip.and(page.locator('.is-wrong'))).first()).toBeVisible();
+    }
     await expect(page.locator('.ap-next')).toBeVisible();
     await expect(page.locator('.ap-step.is-crossed .ap-vh').first()).toHaveText(', crossed out');
     await expect(page.locator('.ap-step.is-fixed .ap-vh').first()).toHaveText(', redone');
