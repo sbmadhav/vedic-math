@@ -74,3 +74,10 @@ No route view or event SHALL contain a Player id, Nickname, avatar, Score, Age a
 #### Scenario: Global Privacy Control
 - **WHEN** the browser sends Global Privacy Control
 - **THEN** no analytics request is made
+
+### Requirement: Listening to a verse is counted
+Each Listen tap that starts speech SHALL send one anonymous event `math/sloka/listen`, with no verse id, voice or other value.
+
+#### Scenario: Listen
+- **WHEN** a Player taps Listen on any verse
+- **THEN** exactly `math/sloka/listen` is sent once
