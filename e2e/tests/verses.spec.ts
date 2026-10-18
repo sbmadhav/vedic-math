@@ -82,6 +82,22 @@ test('when the voice list arrives late (Chrome), Listen waits for it and still u
   expect(said[0].text).toContain('चतुरधिकं');
 });
 
+test('a Listen still waiting for voices does not start behind a sutra deep dive', async ({ page }) => {
+  await fakeSpeech(page, true, true);
+  await open(page, '#/sutras');
+  await page.evaluate(() => { (window as any).__said.length = 0; });
+  const btn = page.locator('#verse-aryabhata-pi .verse-listen');
+  await btn.click();
+  await expect(btn).toHaveAttribute('aria-pressed', 'true');
+  await page.evaluate(() => { location.hash = '#/sutras/s10'; });
+  await expect(page.locator('.sutra-modal[open]')).toBeVisible();
+  await expect(btn).toHaveAttribute('aria-pressed', 'false');
+  await page.evaluate(() => (window as any).__releaseVoices());
+  // loadVoices settles on voiceschanged; give its then() a moment, then nothing may have been spoken
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => (window as any).__said.length)).toBe(0);
+});
+
 test('a stopped verse that ends late does not reset the button of the verse playing now', async ({ page }) => {
   await fakeSpeech(page, true);
   await open(page, '#/sutras');

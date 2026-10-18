@@ -108,6 +108,7 @@ const knownId = (kind, id) => kind === 'grade' ? !!gradeOf(id) : kind === 'skill
   : kind === 'sutra' ? ALL_SUTRAS.some(c => c.id === id) : kind === 'game' ? GAMES.some(g => g.id === id) : false;
 function render() {
   try { speechSynthesis.cancel(); } catch (e) {}
+  stopVerses(); /* a deep dive opens over the Sutras page without remounting it: a Listen still waiting for voices must not start behind it */
   const h = location.hash || '#/';
   render.from = render.at; render.at = h; /* where a Star's Back button returns to */
   // Sutra deep dives open over the sutras page without re-rendering it
@@ -712,13 +713,18 @@ function verseHTML(v) {
 function versesHTML() {
   return `<section class="verses" aria-labelledby="versesH">
     <h2 class="mq-strand" id="versesH">Mathematics in Sanskrit verse</h2>
-    <div class="md-card history"><p>The 16 sutras above are short phrases, not verses, and no older text contains them: the 1965 book's own editor says they point to the Swami's own discovery. But India has a long tradition of real mathematics written as verse (<span lang="sa-Latn">śloka</span>), so that rules could be learned by heart and chanted. Here are ${SLOKAS.length} of them, from the Vedic texts to the Kerala school. Each card lists the editions and studies it was checked against.</p>
+    <div class="md-card history"><p>The 16 sutras above are short phrases, not verses, and no older text contains them: the 1965 book's own editor says they point to the Swami's own discovery. But India has a long tradition of real mathematics written as verse (<span lang="sa-Latn">śloka</span>), so that rules could be learned by heart and chanted. Here are ${SLOKAS.length} Sanskrit passages, from the Vedic texts to the Kerala school: most are verses, a few are prose rules (sutras) and mantras. Each card lists the editions and studies it was checked against.</p>
       <p class="mq-small">Listen uses your device's Hindi voice when it has one, otherwise an English voice reading the respelling, so treat it as a guide to the sounds, not a recitation.</p></div>
     ${VERSE_GROUPS.map(g => `<section class="verse-group" aria-labelledby="vg-${g.id}"><h3 class="mq-h3" id="vg-${g.id}">${g.title}</h3><p class="mq-small">${g.blurb}</p><div class="verse-grid">${slokasIn(g.id).map(verseHTML).join('')}</div></section>`).join('')}
   </section>`;
 }
 /* Listen: a Hindi or Sanskrit system voice reads the Devanagari; otherwise an English voice reads the respelling */
 let verseTurn = 0; /* the latest Listen tap; an older tap still waiting for the voice list gives way */
+/* Drop any Listen in progress or waiting for voices, and show every Listen button unpressed */
+function stopVerses() {
+  verseTurn++;
+  document.querySelectorAll('.verse-listen[aria-pressed="true"]').forEach(b => { b.setAttribute('aria-pressed', 'false'); b.querySelector('span').textContent = 'Listen'; });
+}
 function sayVerse(v, btn, signal) {
   fx.stopSpeaking();
   const synth = window.speechSynthesis;
