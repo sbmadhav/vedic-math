@@ -1132,12 +1132,14 @@ function gameView(id, lvl = 0, { signal } = {}) {
 
 /* ---------- Watch shelf (openspec watch-shelf) ---------- */
 /* The list loads when the shelf opens. Filters: the Player's Mode first, then Skill area, Tricks, length and kind
-   (Links too for Pro). Videos and Shorts play in the page; only Pro sees sites, which open in a new tab. */
+   (Links too for Pro). It opens on every Mode the Player may see ('all', shown as Both) and on Videos; Videos,
+   Shorts and Links are shown one kind at a time, never mixed. Videos and Shorts play in the page; only Pro sees
+   sites, which open in a new tab, under Links. */
 const LENGTH_LABEL = { short: 'Under 2 min', mid: '2 to 5 min', long: '5 to 8 min', longer: '8 to 12 min' };
 function watchView({ signal } = {}) {
   document.title = `Watch and learn: ${BRAND} · Madhav`;
   const m = fx.mode() || 'challenger', pro = linksOut();
-  const f = { mode: m, level: m, strand: null, tricks: false, length: null, kind: null };
+  const f = { mode: m, level: W.MODE_SEES[m].length > 1 ? 'all' : m, strand: null, tricks: false, length: null, kind: 'video' };
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs([null, 'Watch'])}
     <span class="md-tag md-tag--teal">Watch and learn</span>
@@ -1157,12 +1159,12 @@ function watchView({ signal } = {}) {
     const linkCard = l => outLink(l.url, `<span class="watch-th watch-th--${l.kind === 'game' ? 'game' : 'website'}">${icon('link')}<span class="watch-type">${l.kind === 'game' ? 'Game' : 'Site'}</span><span class="watch-ext">Opens in a new tab</span></span><b>${esc(l.title)}</b><small>${esc(l.why)}</small>`, 'watch-card');
     const draw = () => {
       const list = f.kind === 'link' ? [] : W.filterShelf(VIDEOS, f, byId);
-      const links = pro && (f.kind === null || f.kind === 'link') && !f.tricks && !f.length && !f.strand ? LINKS : [];
+      const links = pro && f.kind === 'link' ? LINKS : [];
       body.innerHTML = `${W.MODE_SEES[m].length > 1 ? chips('level', [...W.MODE_SEES[m].map(x => [x, fx.MODES[x].name]), ['all', 'Both']], 'Mode') : ''}
         ${chips('strand', [['null', 'Any area'], ...strands.map(id => [id, STRANDS[id].pro])], 'Skill area')}
         ${chips('tricks', [['false', 'Any'], ['true', 'Tricks only']], 'Tricks')}
         ${chips('length', [['null', 'Any length'], ...Object.entries(LENGTH_LABEL)], 'Length')}
-        ${chips('kind', [['null', 'Everything'], ['video', 'Videos'], ['short', 'Shorts'], ...(pro ? [['link', 'Links']] : [])], 'Videos or Shorts')}
+        ${chips('kind', [['video', 'Videos'], ['short', 'Shorts'], ...(pro ? [['link', 'Links']] : [])], 'Videos or Shorts')}
         ${navigator.onLine === false ? '<p class="mq-note watch-offline">Videos need a connection. Connect to play them.</p>' : ''}
         ${list.length ? `<div class="watch-grid">${list.map(card).join('')}</div>` : f.kind === 'link' ? '' : '<p class="mq-small">No videos match these filters yet.</p>'}
         ${links.length ? `<section class="watch-links" aria-labelledby="watchLinksH"><h2 class="mq-h3" id="watchLinksH">Sites and games</h2><p class="mq-note">Opens in a new tab.</p><div class="watch-grid">${links.map(linkCard).join('')}</div></section>` : ''}`;

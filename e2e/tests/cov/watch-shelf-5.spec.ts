@@ -59,6 +59,8 @@ test('when a Short finishes playing, nothing else starts on its own', async ({ p
   await open(page, '#/watch');
   const cards = page.locator('#view button.watch-card');
   await expect(cards.first()).toBeVisible();
+  // the shelf opens on Videos; Shorts are shown on their own
+  await expect(page.locator('#view button.watch-card--short')).toHaveCount(0);
   await page.getByRole('group', { name: 'Videos or Shorts', exact: true }).getByRole('button', { name: 'Shorts', exact: true }).click();
   const short = page.locator('#view button.watch-card.watch-card--short').first();
   await expect(short).toBeVisible();

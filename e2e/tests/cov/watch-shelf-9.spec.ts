@@ -17,8 +17,12 @@ const chip = (page: Page, group: string, name: string) => page.getByRole('group'
 async function openEverything(page: Page, mode: Mode) {
   await open(page, '#/watch');
   await expect(cards(page).first()).toBeVisible();
-  if (mode !== 'explorer') await chip(page, 'Mode', 'Both').click();
-  if (mode === 'pro') await expect(page.locator('#view .watch-links')).toBeVisible();
+  // The shelf opens on Both; Pro's sites and games are under Links
+  if (mode !== 'explorer') await expect(chip(page, 'Mode', 'Both')).toHaveAttribute('aria-pressed', 'true');
+  if (mode === 'pro') {
+    await chip(page, 'Videos or Shorts', 'Links').click();
+    await expect(page.locator('#view .watch-links')).toBeVisible();
+  }
 }
 
 const shelfData = (page: Page) => page.evaluate(async () => {

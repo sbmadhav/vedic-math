@@ -29,7 +29,10 @@ test.describe('Pro shelf', () => {
     expect(links.some(l => l.kind === 'site')).toBe(true);
     expect(links.some(l => l.kind === 'game')).toBe(true);
     const section = page.locator('#view .watch-links');
+    // Sites and games are under Links, shown on their own
+    await page.getByRole('group', { name: 'Videos or Shorts', exact: true }).getByRole('button', { name: 'Links', exact: true }).click();
     await expect(section).toBeVisible();
+    await expect(cards(page)).toHaveCount(0);
     const out = section.locator('a.watch-card');
     await expect(out).toHaveCount(links.length);
     for (const l of links) {
@@ -41,7 +44,9 @@ test.describe('Pro shelf', () => {
       await expect(a.locator('.watch-ext')).toHaveText('Opens in a new tab');
       await expect(a.locator('.watch-type')).toHaveText(l.kind === 'game' ? 'Game' : 'Site');
     }
-    // The shelf still lists videos alongside the links
+    // The shelf still lists videos, under Videos
+    await page.getByRole('group', { name: 'Videos or Shorts', exact: true }).getByRole('button', { name: 'Videos', exact: true }).click();
+    await expect(section).toHaveCount(0);
     expect(await cards(page).count()).toBeGreaterThan(0);
   });
 });
@@ -51,7 +56,12 @@ test.describe('Explorer shelf', () => {
   test('every video shown is marked for Explorer in the data file, and every Explorer video is shown', async ({ page }) => {
     await openShelf(page);
     const { videos } = await data(page);
-    const shown = await cards(page).evaluateAll(els => els.map(e => (e as HTMLElement).dataset.watch || ''));
+    // Videos and Shorts are shown apart: gather both
+    const ids = () => cards(page).evaluateAll(els => els.map(e => (e as HTMLElement).dataset.watch || ''));
+    const shown = await ids();
+    await page.getByRole('group', { name: 'Videos or Shorts', exact: true }).getByRole('button', { name: 'Shorts', exact: true }).click();
+    await expect(page.locator('#view button.watch-card--short').first()).toBeVisible();
+    shown.push(...await ids());
     expect(shown.length).toBeGreaterThan(0);
     const byYt = new Map(videos.map(v => [v.yt, v.modes]));
     for (const yt of shown) {

@@ -22,15 +22,40 @@ const modesOf = (page: Page) => cards(page).evaluateAll(els => els.map(e => (e a
 for (const [mode, sees] of [['explorer', ['explorer']], ['challenger', ['challenger', 'explorer']], ['pro', ['pro', 'challenger']]] as [Mode, Mode[]][]) {
   test.describe(mode, () => {
     test.use({ seedMode: mode });
-    test(`the shelf opens on ${mode} videos and shows only what ${mode} may see`, async ({ page }) => {
+    test(`the shelf opens on every Mode ${mode} may see, and shows only that`, async ({ page }) => {
       await openShelf(page);
-      for (const m of await modesOf(page)) expect(m.split(' '), m).toContain(mode);
-      if (sees.length > 1) {
-        await chip(page, 'Mode', 'Both').click();
-        await expect(chip(page, 'Mode', 'Both')).toHaveAttribute('aria-pressed', 'true');
-      } else await expect(page.locator('#view').getByRole('group', { name: 'Mode', exact: true })).toHaveCount(0);
       for (const m of await modesOf(page)) expect(m.split(' ').some(x => sees.includes(x as Mode)), m).toBe(true);
       if (mode === 'pro') for (const m of await modesOf(page)) expect(m, 'no Explorer-only video for Pro').not.toBe('explorer');
+      if (sees.length > 1) {
+        await expect(chip(page, 'Mode', 'Both')).toHaveAttribute('aria-pressed', 'true');
+        const own = chip(page, 'Mode', mode[0].toUpperCase() + mode.slice(1));
+        await expect(own).toHaveAttribute('aria-pressed', 'false');
+        await own.click();
+        await expect(own).toHaveAttribute('aria-pressed', 'true');
+        await expect(chip(page, 'Mode', 'Both')).toHaveAttribute('aria-pressed', 'false');
+        await expect(cards(page).first()).toBeVisible();
+        for (const m of await modesOf(page)) expect(m.split(' '), m).toContain(mode);
+      } else {
+        await expect(page.locator('#view').getByRole('group', { name: 'Mode', exact: true })).toHaveCount(0);
+        for (const m of await modesOf(page)) expect(m.split(' '), m).toContain(mode);
+      }
+    });
+    test(`${mode}: the shelf opens on Videos, and Shorts are shown only on their own`, async ({ page }) => {
+      await openShelf(page);
+      const kinds = page.getByRole('group', { name: 'Videos or Shorts', exact: true }).getByRole('button');
+      await expect(kinds).toHaveText(mode === 'pro' ? ['Videos', 'Shorts', 'Links'] : ['Videos', 'Shorts']);
+      await expect(chip(page, 'Videos or Shorts', 'Videos')).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.locator('#view .watch-card--short')).toHaveCount(0);
+      for (const k of await cards(page).evaluateAll(els => els.map(e => (e as HTMLElement).dataset.kind))) expect(k).toBe('video');
+      await expect(page.locator('#view .watch-links')).toHaveCount(0);
+      await chip(page, 'Videos or Shorts', 'Shorts').click();
+      await expect(chip(page, 'Videos or Shorts', 'Shorts')).toHaveAttribute('aria-pressed', 'true');
+      await expect(chip(page, 'Videos or Shorts', 'Videos')).toHaveAttribute('aria-pressed', 'false');
+      await expect(cards(page).first()).toBeVisible();
+      const n = await cards(page).count();
+      await expect(page.locator('#view button.watch-card--short')).toHaveCount(n);
+      for (const k of await cards(page).evaluateAll(els => els.map(e => (e as HTMLElement).dataset.kind))) expect(k).toBe('short');
+      await expect(page.locator('#view .watch-links')).toHaveCount(0);
     });
   });
 }
@@ -39,7 +64,7 @@ test.describe('explorer', () => {
   test.use({ seedMode: 'explorer' });
   test('Explorer has a full shelf, and a kindergarten Skill shows its own made-for-kids videos', async ({ page }) => {
     await openShelf(page);
-    expect(await cards(page).count()).toBeGreaterThanOrEqual(40);
+    expect(await cards(page).count(), 'Explorer videos (Shorts are their own chip)').toBeGreaterThanOrEqual(40);
     await open(page, '#/skill/k-bonds');
     const box = page.locator('[data-watch-for]');
     await expect(box).toHaveAttribute('data-how', 'hand');
@@ -69,7 +94,7 @@ test('Shorts plus Tricks shows only Short tiles matched to a Trick', async ({ pa
 test('the shelf promises 12 minutes at most, and each length chip keeps only videos of that length', async ({ page }) => {
   await openShelf(page);
   await expect(page.locator('#view .md-lede')).toContainText('none is longer than 12 minutes');
-  await chip(page, 'Mode', 'Both').click();
+  await expect(chip(page, 'Mode', 'Both')).toHaveAttribute('aria-pressed', 'true');
   const group = page.getByRole('group', { name: 'Length', exact: true });
   await expect(group.getByRole('button')).toHaveText(['Any length', 'Under 2 min', '2 to 5 min', '5 to 8 min', '8 to 12 min']);
   const all = await cards(page).evaluateAll(els => els.map(e => Number((e as HTMLElement).dataset.secs)));
@@ -86,7 +111,7 @@ test('the shelf promises 12 minutes at most, and each length chip keeps only vid
 
 test('Challenger gets no link that leaves the site; the player has no Open on YouTube', async ({ page }) => {
   await openShelf(page);
-  await chip(page, 'Mode', 'Both').click();
+  await expect(chip(page, 'Mode', 'Both')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#view .watch-links')).toHaveCount(0);
   await expect(page.locator('#view a[target="_blank"]')).toHaveCount(0);
   await cards(page).first().click();
@@ -102,12 +127,14 @@ test.describe('pro', () => {
   test('Pro sees sites and games marked as opening a new tab, and Open on YouTube in the player', async ({ page }) => {
     await openShelf(page);
     const links = page.locator('#view .watch-links');
-    await expect(links).toContainText('Opens in a new tab');
-    expect(await links.locator('a[target="_blank"]').count()).toBeGreaterThan(5);
+    await expect(links, 'sites and games only under Links').toHaveCount(0);
     await chip(page, 'Videos or Shorts', 'Links').click();
     await expect(cards(page)).toHaveCount(0);
     await expect(links).toBeVisible();
-    await chip(page, 'Videos or Shorts', 'Everything').click();
+    await expect(links).toContainText('Opens in a new tab');
+    expect(await links.locator('a[target="_blank"]').count()).toBeGreaterThan(5);
+    await chip(page, 'Videos or Shorts', 'Videos').click();
+    await expect(links).toHaveCount(0);
     await cards(page).first().click();
     await expect(page.locator('dialog.vm-player .vp-yt')).toHaveAttribute('href', /^https:\/\/www\.youtube\.com\/watch\?v=/);
   });
