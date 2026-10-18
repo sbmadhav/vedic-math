@@ -5,17 +5,6 @@ Define what the Arena deals in each League, so the daily race is identical and f
 
 ## Requirements
 
-### Requirement: Pro Arena is mental arithmetic
-Every Pro League Arena question SHALL come from one of five families: a 2-digit by 2-digit product, a square, a percent of a number, a near-base product, or an exact division. No Pro Arena question SHALL require algebra, exponents beyond squares, or logarithms, and every answer SHALL be a whole number typed on the Arena keypad. The only exception is the switch-over below: Pro daily rounds dated before Monday 2026-10-19.
-
-#### Scenario: A full Pro daily set
-- **WHEN** the Pro daily set for any date from 2026-10-19 on is generated
-- **THEN** every question belongs to one of the five families and has a whole-number answer
-
-#### Scenario: Pro Duel and Practice
-- **WHEN** a Pro Player plays an Arena Practice round or a Pro Duel
-- **THEN** every question belongs to one of the five families
-
 ### Requirement: The switch-over never mixes a Board
 Pro daily rounds dated before Monday 2026-10-19 (the first day of ISO week 2026-W43) SHALL keep the previous Pro question pool and seed, and Pro daily rounds from that date on SHALL use the mental arithmetic families with a versioned seed. The switch SHALL use the same local date that names the Board, so no daily or weekly Pro Board holds Scores from both question sets.
 
@@ -59,3 +48,25 @@ The Explorer and Challenger daily Arena rounds SHALL keep their current question
 #### Scenario: Challenger daily
 - **WHEN** a Challenger Player plays the daily round
 - **THEN** its questions come from the same Challenger pool as before this change
+
+### Requirement: Untimed Arena Practice
+The Arena SHALL offer an untimed Practice round next to the daily challenge and the timed Practice round, in every League: 20 questions with no clock, adapting to the Arena Rating as Practice rounds do, which the Player can finish at any time. It SHALL be Practice: its Score SHALL never leave the device. With Calm on, the Arena's Practice choice SHALL be untimed by default.
+
+#### Scenario: An untimed round
+- **WHEN** a Challenger Player starts an untimed Practice round
+- **THEN** no clock is shown, the round ends after 20 questions or when they press Finish, and nothing is sent to any World board
+
+#### Scenario: Calm default
+- **WHEN** a Player with Calm on opens the Arena
+- **THEN** the untimed Practice round is selected
+
+### Requirement: Pro Arena and Practice are mental arithmetic
+Every Pro League Arena question SHALL come from one of five families: a 2-digit by 2-digit product, a square, a percent of a number, a near-base product, or an exact division. No Pro Arena question SHALL require algebra, exponents beyond squares, or logarithms, and every answer SHALL be a whole number typed on the Arena keypad. The only exception is the switch-over below: Pro daily rounds dated before Monday 2026-10-19.
+
+#### Scenario: A full Pro daily set
+- **WHEN** the Pro daily set for any date from 2026-10-19 on is generated
+- **THEN** every question belongs to one of the five families and has a whole-number answer
+
+#### Scenario: Pro Practice
+- **WHEN** a Pro Player plays an Arena Practice round
+- **THEN** every question belongs to one of the five families

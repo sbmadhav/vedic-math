@@ -1,13 +1,11 @@
 # Spec Delta
 
-Applies after the `content-security-policy` change is archived (this change is built after it).
-
 ## MODIFIED Requirements
 
 ### Requirement: The published page carries a Content-Security-Policy
 Every HTML page the site serves SHALL be sent with a `Content-Security-Policy` response header, built for that page and written by the build into `_headers`. The policy SHALL default to this origin only, SHALL set `object-src 'none'`, `base-uri 'none'`, `form-action 'self'`, `frame-ancestors 'none'`, `upgrade-insecure-requests`, `report-to csp` and `report-uri /_csp`, and SHALL NOT allow `'unsafe-inline'`, `'unsafe-eval'` or any scheme or wildcard source for scripts. Neither the source in git nor the published pages SHALL carry a Content-Security-Policy `<meta>`.
 
-#### Scenario: Built site
+#### Scenario: Built page
 - **WHEN** `python3 build.py --out _site` runs
 - **THEN** `_site/_headers` holds a policy for `/`, `/play/`, `/import/` and each grown-up page, and no published HTML file has a policy `<meta>`
 
