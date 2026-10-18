@@ -1,5 +1,7 @@
 # The Parent step follows the Age answer, not the Mode
 
+Superseded in part by [ADR 0006](0006-under-13-players-use-device-boards-only.md) once the `learnvedicmath` change ships: the Age answer still decides, but Players under 13 use Device boards only and the Parent step is removed.
+
 Players choose their own Mode with no age check, so a 9-year-old can pick Pro. If the Parent step depended on Mode, picking Pro would skip it and post an under-13 Player's Score online under a persistent anonymous ID, which can count as personal information under COPPA. So every Player gives one neutral Age answer before anything is posted, and anyone under 13 needs the Parent step in every Mode. Mode stays a free choice about difficulty and wording.
 
 ## Considered Options
