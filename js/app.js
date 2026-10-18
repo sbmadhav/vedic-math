@@ -5,6 +5,7 @@ import { SKILLS, byId, skillsFor, GRADES, STRANDS, gradeOf, withPlain } from './
 import { TRICKS, BELTS } from './vedic.js';
 import { GAMES, keepFocus } from './games.js';
 import { SUTRAS, SUBSUTRAS, HISTORY } from './sutras.js';
+import { GROUPS as VERSE_GROUPS, SLOKAS, slokasIn, slokasFor } from './slokas.js';
 import { DETAILS } from './sutra-details.js';
 import { mountScene } from './scenes.js';
 import * as W from './watch.js';
@@ -110,6 +111,7 @@ const knownId = (kind, id) => kind === 'grade' ? !!gradeOf(id) : kind === 'skill
   : kind === 'sutra' ? ALL_SUTRAS.some(c => c.id === id) : kind === 'game' ? GAMES.some(g => g.id === id) : false;
 function render() {
   fx.stopSpeaking(); /* every voice: built-in, studio and natural */
+  stopVerses(); /* a deep dive opens over the Sutras page without remounting it: a Listen still waiting for voices must not start behind it */
   const h = location.hash || '#/';
   render.from = render.at; render.at = h; /* where a Star's Back button returns to */
   // Sutra deep dives open over the sutras page without re-rendering it
@@ -679,16 +681,84 @@ function sutrasView({ signal } = {}) {
     <div class="md-card history roots"><h2 class="mq-h3">Older roots: what you see in the background</h2><p>The 1965 sutras stand on a much older tradition of Indian mathematics. The moving background draws real pieces of it.</p><ul>${BG_NOTES.map(([h, b]) => `<li><b>${h}.</b> ${b}</li>`).join('')}</ul></div>
     <h2 class="mq-strand">The 16 sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => !c.sub).map(card).join('')}</div>
     <h2 class="mq-strand">The 13 sub-sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => c.sub).map(card).join('')}</div>
+    ${versesHTML()}
   </div></section>`;
   const flip = (art, open) => { art.classList.toggle('flipped', open); art.querySelector('.sutra-face').setAttribute('aria-expanded', String(open)); fx.sfx('tap'); if (open) { collect(art.dataset.name); art.classList.add('got'); art.querySelector('.sutra-more').focus({ preventScroll: true }); } else art.querySelector('.sutra-face').focus({ preventScroll: true }); };
   view.querySelectorAll('.sutra-card').forEach(art => { art.querySelector('.sutra-face').onclick = () => flip(art, true); art.querySelector('.sutra-flipback').onclick = () => flip(art, false); });
   if (signal) {
+    wireVerses(view, signal);
     wireSay(view, signal); wireAmbience(view, signal);
     const amb = sutraAmb = sutraAmbience({ signal }); /* a deep dive opening strikes again (openSutra) */
     onAbort(signal, () => { if (sutraAmb === amb) sutraAmb = null; });
   }
   // Outside reading on where the sutras come from, critiques included: Pro only
   if (linksOut()) W.loadVideos().then(({ LINKS }) => { const p = $('[data-history-links]'); if (!p) return; p.innerHTML = 'Read more: ' + LINKS.filter(l => l.history).map(l => outLink(l.url, esc(l.title))).join(' · '); p.hidden = false; }).catch(() => {});
+}
+/* ---------- Mathematics in Sanskrit verse (openspec sanskrit-verses, js/slokas.js) ---------- */
+const VERSE_KIND = { verse: 'Verse (śloka)', sutra: 'Sutra (prose rule)', mantra: 'Vedic mantra' };
+function verseHTML(v) {
+  const lines = t => esc(t).split('\n').join('<br>');
+  const refs = v.refs.map(([t, u]) => outLink(u, esc(t)) || `<span>${esc(t)}</span>`).join('</li><li>');
+  return `<article class="verse md-card" id="verse-${v.id}" aria-labelledby="vh-${v.id}">
+    <header class="verse-head"><span class="md-tag md-tag--sun">${VERSE_KIND[v.kind]}${v.meter ? ` · ${esc(v.meter)}` : ''}</span><h4 id="vh-${v.id}">${esc(v.title)}</h4></header>
+    <p class="verse-deva" lang="sa">${lines(v.deva)}</p>
+    <p class="verse-iast" lang="sa-Latn">${lines(v.iast)}</p>
+    <p class="verse-say"><span class="mq-small">Say it:</span> ${esc(v.say).replace(/ \| /g, ' <span aria-hidden="true">|</span> ')}</p>
+    <p class="verse-acts"><button type="button" class="md-btn md-btn--sm verse-listen" data-verse="${v.id}" aria-pressed="false">${icon('play')}<span>Listen</span></button></p>
+    <p class="verse-meaning"><b>Meaning.</b> ${esc(v.meaning)}</p>
+    <p class="verse-plain"><b>The math.</b> ${esc(v.plain)} <span class="verse-math">${esc(v.math)}</span></p>
+    <details class="verse-more"><summary>Word by word, source and notes</summary>
+      <dl class="verse-words">${v.words.map(([sa, en]) => `<dt lang="sa-Latn">${esc(sa)}</dt><dd>${esc(en)}</dd>`).join('')}</dl>
+      <p><b>Source.</b> ${esc(v.source)}</p>
+      <p><b>Good to know.</b> ${esc(v.note)}</p>
+      <p class="mq-small">Checked against:</p><ul class="verse-refs mq-small"><li>${refs}</li></ul>
+    </details></article>`;
+}
+function versesHTML() {
+  return `<section class="verses" aria-labelledby="versesH">
+    <h2 class="mq-strand" id="versesH">Mathematics in Sanskrit verse</h2>
+    <div class="md-card history"><p>The 16 sutras above are short phrases, not verses, and no older text contains them: the 1965 book's own editor says they point to the Swami's own discovery. But India has a long tradition of real mathematics written as verse (<span lang="sa-Latn">śloka</span>), so that rules could be learned by heart and chanted. Here are ${SLOKAS.length} Sanskrit passages, from the Vedic texts to the Kerala school: most are verses, a few are prose rules (sutras) and mantras. Each card lists the editions and studies it was checked against.</p>
+      <p class="mq-small">Listen uses your device's Hindi voice when it has one, otherwise an English voice reading the respelling, so treat it as a guide to the sounds, not a recitation.</p></div>
+    ${VERSE_GROUPS.map(g => `<section class="verse-group" aria-labelledby="vg-${g.id}"><h3 class="mq-h3" id="vg-${g.id}">${g.title}</h3><p class="mq-small">${g.blurb}</p><div class="verse-grid">${slokasIn(g.id).map(verseHTML).join('')}</div></section>`).join('')}
+  </section>`;
+}
+/* Listen: a Hindi or Sanskrit system voice reads the Devanagari; otherwise an English voice reads the respelling */
+let verseTurn = 0; /* the latest Listen tap; an older tap still waiting for the voice list gives way */
+/* Drop any Listen in progress or waiting for voices, and show every Listen button unpressed */
+function stopVerses() {
+  verseTurn++;
+  document.querySelectorAll('.verse-listen[aria-pressed="true"]').forEach(b => { b.setAttribute('aria-pressed', 'false'); b.querySelector('span').textContent = 'Listen'; });
+}
+function sayVerse(v, btn, signal) {
+  fx.stopSpeaking();
+  const synth = window.speechSynthesis;
+  const reset = () => { btn.setAttribute('aria-pressed', 'false'); btn.querySelector('span').textContent = 'Listen'; };
+  if (!synth || typeof window.SpeechSynthesisUtterance !== 'function') { btn.closest('.verse').querySelector('.verse-say').classList.add('verse-say--hl'); return; } /* no speech: point at the respelling */
+  if (btn.getAttribute('aria-pressed') === 'true') { verseTurn++; synth.cancel(); reset(); return; }
+  synth.cancel();
+  view.querySelectorAll('.verse-listen[aria-pressed="true"]').forEach(b => { b.setAttribute('aria-pressed', 'false'); b.querySelector('span').textContent = 'Listen'; });
+  btn.setAttribute('aria-pressed', 'true'); btn.querySelector('span').textContent = 'Stop';
+  const turn = ++verseTurn;
+  /* Speak at once when the voices are listed (Safari wants speech started inside the tap); Chrome often lists them
+     only after a moment, so then wait for them rather than falling back to English too early */
+  const now = synth.getVoices();
+  if (now.length) speakVerse(v, btn, now, reset, turn);
+  else fx.loadVoices().then(list => { if (turn === verseTurn && !(signal && signal.aborted) && btn.getAttribute('aria-pressed') === 'true') speakVerse(v, btn, list, reset, turn); });
+}
+function speakVerse(v, btn, voices, reset, turn) {
+  const synth = window.speechSynthesis;
+  const indic = voices.find(x => /^(sa|hi)([-_]|$)/i.test(x.lang));
+  const text = indic ? v.deva.replace(/[।॥|]+/g, ', ') : v.say.replace(/\|/g, ',').replace(/-/g, '').toLowerCase();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = indic ? indic.lang : 'en-US';
+  if (indic) try { u.voice = indic; } catch (e) {} /* the language alone still picks a Hindi voice */
+  u.rate = 0.75; u.onend = u.onerror = () => { if (turn === verseTurn) reset(); }; /* a canceled utterance's late end or error leaves a newer one alone */
+  synth.speak(u);
+  track('sloka/listen', 'Sanskrit verse: listen');
+}
+function wireVerses(root, signal) {
+  on(root, 'click', e => { const b = e.target.closest('.verse-listen'); if (!b) return; const v = SLOKAS.find(x => x.id === b.dataset.verse); if (v) sayVerse(v, b, signal); }, signal);
+  onAbort(signal, () => { try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {} });
 }
 function collect(name) { if (store.markSeen('sutra:' + name)) store.addSparks(5, 'sutra'); }
 
@@ -710,6 +780,7 @@ function sutraHTML(c) {
       <div class="sd-h"><h3>Why it works</h3>${listenBtn(`sutra:${c.id}:why`, 'why it works')}</div><p>${d.why}</p>
       <div class="sd-h"><h3 id="sdExH">Worked examples</h3>${listenBtn(`sutra:${c.id}:examples`, 'the worked examples')}</div><p class="mq-small sd-ex-tip">${fx.t({ explorer: 'Easy first, then harder. Try each one yourself, then open it to see the steps.', challenger: 'Easy first, then harder. Try each one, then open it to check the steps.', pro: 'Ordered from easy to harder. Try each one, then open it for the steps.' })}</p>
       <ol class="sd-ex" aria-labelledby="sdExH">${d.examples.map(([q, a], k) => `<li><details${k ? '' : ' open'}><summary><span class="sd-exn">Example ${k + 1} of ${d.examples.length}</span><b>${q}</b></summary><p>${a}</p></details></li>`).join('')}</ol>
+      ${slokasFor(c.id).map(v => `<div class="sd-verse"><h3>In Sanskrit verse: ${esc(v.title)}</h3><p class="verse-deva" lang="sa">${esc(v.deva).split('\n').join('<br>')}</p><p class="verse-iast" lang="sa-Latn">${esc(v.iast).split('\n').join('<br>')}</p><p>${esc(v.meaning)}</p><p class="mq-small">${esc(v.note)} More verses are at the end of the Sutras page.</p></div>`).join('')}
       <div class="sd-h"><h3>Where it is used</h3>${listenBtn(`sutra:${c.id}:uses`, 'where it is used')}</div><p class="sd-uses">${d.uses.map(u => `<span>${u}</span>`).join('')}</p>
       ${tricks.length ? `<h3>Try it yourself</h3><p class="sd-try">${tricks.map(t => `<a class="md-btn md-btn--sm md-btn--primary" href="#/skill/v-${t.id}">${icon('bolt')} ${t.title}</a>`).join(' ')}</p>` : ''}
       ${reads.length ? `<h3>Learn more</h3><div class="rel-links">${reads.join('')}</div>` : ''}

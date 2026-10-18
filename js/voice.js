@@ -269,7 +269,8 @@ export function rateVoice(v) {
 /* Kept for callers that only need a number: higher is better, -Infinity for non-English */
 export const scoreVoice = v => { const r = rateVoice(v); return r ? r.pts : -Infinity; };
 let voicesReady = null;
-function loadVoices() {
+/* The system voices, waiting for voiceschanged (at most 900 ms) when the list is still empty (Chrome loads it late) */
+export function loadVoices() {
   if (!hasSynth()) return Promise.resolve([]);
   const now = speechSynthesis.getVoices();
   if (now.length) return Promise.resolve(now);
