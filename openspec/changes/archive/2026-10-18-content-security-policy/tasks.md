@@ -14,4 +14,4 @@
 
 ## 3. Release
 
-- [ ] 3.1 Merge after sbmadhav.github.io serves `/assets/count.js`; after the deploy, the daily E2E run (with `leaderboard.live.spec.ts`) passes. Then archive this change.
+- [x] 3.1 Merge after sbmadhav.github.io serves `/assets/count.js`; after the deploy, the daily E2E run (with `leaderboard.live.spec.ts`) passes. Then archive this change. (Done: sbmadhav.com serves /assets/count.js (HTTP 200), merged in #32 on 2026-10-17, and the daily E2E run of 2026-10-17 (with leaderboard.live.spec.ts) was green. Archived in this PR.)

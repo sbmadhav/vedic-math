@@ -12,4 +12,4 @@
 
 ## 3. Release check
 
-- [ ] 3.1 Node, build, `openspec validate --strict`, Playwright (chromium, webkit, mobile) on a local server and the offline spec on a built `_site` pass; after deploy, the live Watch shelf shows the "8 to 12 min" chip.
+- [x] 3.1 Node, build, `openspec validate --strict`, Playwright (chromium, webkit, mobile) on a local server and the offline spec on a built `_site` pass; after deploy, the live Watch shelf shows the "8 to 12 min" chip. (Done: merged in #30 on 2026-10-16; daily E2E runs of 2026-10-16 and 2026-10-17 green (watch.spec.ts checks the 8 to 12 min chip on the live shelf).)

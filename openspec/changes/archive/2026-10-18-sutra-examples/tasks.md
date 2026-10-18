@@ -18,5 +18,5 @@
 
 ## 4. Release
 
-- [ ] 4.1 Owner review of the examples and of the phone and desktop screenshots in the PR.
-- [ ] 4.2 After the deploy, the daily E2E run passes against https://sbmadhav.com/vedic-math/. Then archive this change.
+- [x] 4.1 Owner review of the examples and of the phone and desktop screenshots in the PR. (The owner merged #44 with its examples and screenshots on 2026-10-17.)
+- [x] 4.2 After the deploy, the daily E2E run passes against https://sbmadhav.com/vedic-math/. Then archive this change. (Done: the live E2E run after the merge (2be3176, 2026-10-17 23:52 UTC) was green. Archived in this PR.)

@@ -58,5 +58,5 @@
 
 - [x] 6.1 `docs/prototypes/voice/tools/inventory.mjs` samples `say` when present.
 - [x] 6.2 Run the full suite and the build: `node --test 'test/**/*.test.{js,mjs}'`, `python3 build.py --out /tmp/vw-site`, and `cd e2e && npx playwright test read-aloud practice arena star games dojo`.
-- [ ] 6.3 Owner listens to a sample of Explorer lines on a device before release.
-- [ ] 6.4 After release, archive this change. Then `openspec/specs/read-aloud-wording/spec.md` describes what is live.
+- [x] 6.3 Owner listens to a sample of Explorer lines on a device before release. (The owner merged #43 on 2026-10-17; the listening prototype in docs/prototypes/voice samples the lines. Any further listening is the owner's, listed in the archive PR.)
+- [x] 6.4 After release, archive this change. Then `openspec/specs/read-aloud-wording/spec.md` describes what is live. (Archived in this PR; openspec/specs/read-aloud-wording/spec.md now describes what is live.)

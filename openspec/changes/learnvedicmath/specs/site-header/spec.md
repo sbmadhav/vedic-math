@@ -1,7 +1,5 @@
 # Spec Delta
 
-Applies after the `site-header` change is archived (this change is built after it).
-
 ## ADDED Requirements
 
 ### Requirement: The header is the Learn Vedic Math header

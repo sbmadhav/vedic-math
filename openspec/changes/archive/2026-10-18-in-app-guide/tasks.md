@@ -27,4 +27,4 @@ Prerequisites: `game-shell-and-calm` is merged (Calm, text size, `fx.noMotion()`
 
 ## 5. Release check
 
-- [ ] 5.1 Build, node tests and the touched Playwright specs pass against the local server; a manual pass in Chromium at 390px and desktop, light and dark, all three Modes, with no console errors. After deploy the live E2E run is green; then archive the change.
+- [x] 5.1 Build, node tests and the touched Playwright specs pass against the local server; a manual pass in Chromium at 390px and desktop, light and dark, all three Modes, with no console errors. After deploy the live E2E run is green; then archive the change. (Done: merged in #37 on 2026-10-17 after the local passes noted in that PR; the daily E2E run of 2026-10-17 10:57 UTC was green. Archived in this PR.)

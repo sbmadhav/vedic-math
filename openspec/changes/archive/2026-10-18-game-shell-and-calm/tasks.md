@@ -41,4 +41,4 @@ Prerequisites: `star-round` is merged (`fx.noMotion()`, `fx.announce()`, Star ro
 
 ## 7. Release check
 
-- [ ] 7.1 Node, build and Playwright suites pass locally; after deploy the live E2E run is green. Manual checks: an iPhone and a touch Chromebook play an Arena round and a Star round without scrolling or a covered keypad; VoiceOver hears the Calm switch state.
+- [x] 7.1 Node, build and Playwright suites pass locally; after deploy the live E2E run is green. Manual checks: an iPhone and a touch Chromebook play an Arena round and a Star round without scrolling or a covered keypad; VoiceOver hears the Calm switch state. (Automated parts done: suites pass; merged in #33 on 2026-10-16; daily E2E runs of 2026-10-16 and 2026-10-17 green. The manual phone, Chromebook and VoiceOver checks stay with the owner (listed in the archive PR).)

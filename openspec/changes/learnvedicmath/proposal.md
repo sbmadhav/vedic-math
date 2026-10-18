@@ -38,7 +38,7 @@ The 14 owner decisions in `_handoff/learnvedicmath-decisions.md` (all approved o
 
 ## Order
 
-This change is built only after the in-flight work is merged on the current site (decision 6): better-voice Part B with explanation audio, PR #47 (Play), PR #49 (sutra pronunciation). The `content-security-policy` and `site-header` changes must be archived first, because this change modifies their specs. Owner setup (accounts, DNS, Firebase project) can start at once and runs in parallel.
+This change is built only after the in-flight work is merged on the current site (decision 6): better-voice Part B with explanation audio, PR #47 (Play), PR #49 (sutra pronunciation). The `content-security-policy` and `site-header` changes must be archived first, because this change modifies their specs (both archived 2026-10-18). Owner setup (accounts, DNS, Firebase project) can start at once and runs in parallel.
 
 ## Out of scope
 

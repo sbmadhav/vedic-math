@@ -16,8 +16,8 @@
 
 ## 3. Release
 
-- [ ] 3.1 Owner review of the before and after screenshots in the PR, and of the shared-file notes (design system picker vs round button, `md-wrap` width).
-- [ ] 3.2 After the deploy, the daily E2E run passes against https://sbmadhav.com/vedic-math/. Then archive this change.
+- [x] 3.1 Owner review of the before and after screenshots in the PR, and of the shared-file notes (design system picker vs round button, `md-wrap` width). (The owner merged #42 with its screenshots on 2026-10-17; the header spec was updated for the v2.1 home header in #57.)
+- [x] 3.2 After the deploy, the daily E2E run passes against https://sbmadhav.com/vedic-math/. Then archive this change. (Done: the live E2E run after the merge (2be3176, 2026-10-17 23:52 UTC) was green. Archived in this PR.)
 
 ## Follow-up (owner, 2026-10-17)
 
