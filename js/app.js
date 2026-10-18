@@ -242,7 +242,7 @@ function home(ctx = {}, { tiles = false } = {}) {
     ${newHereHTML()}${cont}${body}
   </div></section>`;
   const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); home(); };
-  const hm = $('#homeMore'); if (hm) on(hm, 'toggle', () => fx.setHomeMoreOpen(hm.open), ctx.signal); /* remembered on this device */
+  const hm = $('#homeMore'); if (hm) hm.ontoggle = () => fx.setHomeMoreOpen(hm.open); /* remembered on this device; a property on an element of this view, as home() also runs with no view signal (an unknown Skill falls back to it) */
   if (m === 'pro') loadBoard($('#homeBoard'), `daily-${cloud.dayId()}-pro`, 5);
   homeTour(ctx.signal);
 }

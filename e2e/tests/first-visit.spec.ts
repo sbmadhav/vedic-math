@@ -118,6 +118,17 @@ test.describe('Home: three doors first', () => {
     await expect(page.locator('#homeMore')).not.toHaveAttribute('open', /.*/);
   });
 
+  test('an unknown Skill falls back to Home with its doors and no error, and the disclosure is still remembered', async ({ page, issues }) => {
+    await open(page, '#/katas/sq5');
+    await page.goto(`${APP}#/skill/no-such-skill`);
+    await expect(page.locator('.home-doors .door')).toHaveCount(3);
+    await page.locator('#homeMore summary').click();
+    await expect(page.locator('#homeMore')).toHaveAttribute('open', '');
+    await open(page, '#/');
+    await expect(page.locator('#homeMore')).toHaveAttribute('open', '');
+    expect(appErrors(issues)).toEqual([]);
+  });
+
   test('Play this Star from Home: the Star\'s Back goes home; from the Dojo it goes back to the Dojo', async ({ page }) => {
     await open(page);
     await page.locator('.dojo-card a.md-btn--primary').click();
