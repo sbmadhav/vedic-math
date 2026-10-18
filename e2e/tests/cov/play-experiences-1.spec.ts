@@ -20,8 +20,8 @@ test.describe('Explorer', () => {
     await open(page, '#/games');
     await expect(page.locator('.play-shelf .play-card b')).toHaveText(['Tala Lab', 'Mandala Studio', 'Math Lens']);
   });
-  test('A direct link outside the Mode: Pattern Wall, Teach the Apprentice, Estimation Bets and a Dojo experience say they are for older players, offer what an Explorer can open, and store nothing', async ({ page }) => {
-    for (const [hash, title] of [['#/games/wall', 'Pattern Wall'], ['#/games/apprentice', 'Teach the Apprentice'], ['#/games/bets', 'Estimation Bets'], ['#/dojo/spells', 'Sutra Spellbook']] as const) {
+  test('A direct link outside the Mode: Pattern Wall, Teach the Apprentice, Estimation Bets, a Dojo experience and a Sutras experience say they are for older players, offer what an Explorer can open, and store nothing', async ({ page }) => {
+    for (const [hash, title] of [['#/games/wall', 'Pattern Wall'], ['#/games/apprentice', 'Teach the Apprentice'], ['#/games/bets', 'Estimation Bets'], ['#/dojo/spells', 'Sutra Spellbook'], ['#/sutras/lost-scroll', 'The Lost Śulba Scroll']] as const) {
       await open(page, hash);
       await expect(page.locator('#view h1')).toHaveText(`${title} is for older players`);
       const offered = await page.locator('#view .play-card').evaluateAll(as => as.map(a => a.getAttribute('href')));
@@ -40,14 +40,6 @@ test('An old Duel link: #/duel becomes #/arena/party and Party Mode shows', asyn
 });
 
 test('Switching Player: a second Player opens Daily Number and sees their own progress, not the first Player\'s', async ({ page }) => {
-  await page.addInitScript(() => {
-    try {
-      const raw = localStorage.getItem('vm.players'); if (!raw) return;
-      const v = JSON.parse(raw);
-      if (!v.list.some((p: any) => p.id === 'p2')) v.list.push({ id: 'p2', name: 'Calm Otter 7', avatar: 'coral', mode: 'challenger', created: Date.now() });
-      localStorage.setItem('vm.players', JSON.stringify(v));
-    } catch (e) { /* storage blocked */ }
-  });
   await open(page, '#/arena/daily-number');
   await page.locator('[data-slot]').first().click();
   await page.locator('.dn-ops [data-op]').first().click();
@@ -55,7 +47,13 @@ test('Switching Player: a second Player opens Daily Number and sees their own pr
   const p1Keys = await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('vm.play.p1.')));
   expect(p1Keys.length).toBeGreaterThan(0);
   const movedBoard = await page.locator('#view').innerText();
-  await page.evaluate(() => { const v = JSON.parse(localStorage.getItem('vm.players')!); v.active = 'p2'; localStorage.setItem('vm.players', JSON.stringify(v)); });
+  /* The second Player joins after the fixture has made the first, so their order is fixed */
+  await page.evaluate(() => {
+    const v = JSON.parse(localStorage.getItem('vm.players')!);
+    v.list.push({ id: 'p2', name: 'Calm Otter 7', avatar: 'coral', mode: 'challenger', created: Date.now() });
+    v.active = 'p2';
+    localStorage.setItem('vm.players', JSON.stringify(v));
+  });
   await page.reload();
   await expect(page.locator('#view h1').first()).toHaveText('Daily Number');
   expect(await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('vm.play.p2.')))).toEqual([]);
