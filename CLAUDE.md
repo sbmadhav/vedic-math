@@ -55,6 +55,10 @@ They are not `?v=` stamped (this repo cannot hash them). Do not copy them in; ch
 - `manifest.webmanifest` here makes Vedic Math its own installable app (scope `/vedic-math/`); the main site's manifest is unchanged.
 - `sounds/` (the 29 Sutra name clips in `sounds/sutras/` and the Om) is served cache first from `vedic-math-sounds`, a cache every deploy keeps, and is never precached. The clips are made by `tools/sutra-voice/make-sutra-clips.mjs`, which also writes `js/say-clips.js` (each clip's size and `?v=` content hash); remake both together (`test/say.test.mjs` checks them).
 
+## Studio voice
+
+Read aloud plays prerecorded audio from `/vedic-math/voice/` (Google Chirp 3 HD, Aoede), else the device's own voice. The studio audio is never committed (the Sutra name clips in `sounds/` are the one committed audio, and `build.py` rejects audio anywhere else): it is a GitHub Release archive (`voice-<hash>`) named with its SHA-256 by the generated `js/voice-index.js`, and the CI deploy unpacks it into `_site/voice/` (`tools/voice/ci-fetch.mjs`). The recording tools are repo-only in `tools/voice/` (`lines.mjs`, `record.mjs`, `publish.mjs`; steps in the README). A change to any spoken line needs a re-record and publish in the same PR, or `test/voice-coverage.test.mjs` fails for Explorer lines. Keys and tokens come only from the shell (`GOOGLE_TTS_TOKEN=$(gcloud auth print-access-token)`), never a file; keep the spend guard in `tools/voice/voice-lib.mjs` ($300 a month, $50 a run, 300 requests a minute). The game never calls a speech service, and `build.py` fails on a provider host or key in a published file. `sw.js` keeps `/vedic-math/voice/` files cache first in `vedic-math-voice`, a cache every deploy keeps.
+
 ## Leaderboards
 
 Firebase with Firestore security rules. Setup, rules and the rules tests live in `cloud/` (see `cloud/README.md`). The browser client is `js/cloud.js`; the config is `js/cloud-config.js`.

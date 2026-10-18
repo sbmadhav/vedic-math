@@ -24,7 +24,7 @@
 
 ## Inventory
 
-Run `node docs/prototypes/voice/tools/inventory.mjs 1000 1`. It writes `inventory.json`. It samples every source of spoken text, normalizes each line with the real `normalize()`, and splits it with `stitch-plan.mjs` into numbers, word frames and pauses.
+Run `node tools/voice/inventory.mjs 1000 1`. It writes `inventory.json`. It samples every source of spoken text, normalizes each line with the real `normalize()`, and splits it with `js/voice-plan.js` into numbers, word frames and pauses.
 
 The sample covers:
 - 1,000 lines per Skill and generator level (135 Skills x 3 levels, question and first hint);
@@ -131,9 +131,9 @@ The prototype showed that free Kokoro clips are not good enough for the owner, s
 - Playwright Chromium and WebKit both decode it through Web Audio.
 
 **7. Audio as a service, in this repo: served with the app, stored outside git.**
-- **Whole lines.** One file per line, named by the first 16 hex characters of SHA-1 over the voice id and the normalized words: `/vedic-math/voice/l/<hash>.m4a`. That is about 19,900 files and about 210 MB (2.15 s average at 4 KB/s, plus about 2 KB of container overhead per file).
+- **Whole lines.** One file per line, named by a 14 hex character hash (cyrb53, in `js/voice-plan.js`, synchronous and the same in Node and the browser) over the voice id and the normalized words: `/vedic-math/voice/l/<hash>.m4a`. Which lines exist is a sorted list of each hash's first 32 bits, `l/set.<hash>.bin` (about 80 KB), so the app knows before fetching; a rare false match costs one 404 and then the clips. That was estimated at about 19,900 files and 210 MB; the recording made 21,387 files (explanations included) and 394 MB, because Aoede at rate 0.95 averages 4.5 s a line.
 - **Clips.** Five content-hashed packs `/vedic-math/voice/p/<pack>.<hash>.m4a`, about 11 MB (decision 8).
-- **Where the bytes live.** `make-clips.mjs` packs everything into one archive and uploads it to a GitHub Release of this repo (tag `voice-<id>`, made with `gh release create`). The committed, generated `js/voice-index.js` (about 300 KB) names the release and the archive's SHA-256. The CI deploy (`ci.yml`, which already publishes `_site` with actions/deploy-pages because `PAGES_VIA_ACTIONS` is true) downloads the archive, checks the hash and unpacks it into `_site/voice/`. `build.py --out` fails when `voice/` is missing or does not match the index, and `voice/` is excluded from the precache list.
+- **Where the bytes live.** `tools/voice/record.mjs` records into the git-ignored `tools/voice/out/voice/`, and `tools/voice/publish.mjs` packs it into one archive and uploads it to a GitHub Release of this repo (tag `voice-<first 10 hex of its SHA-256>`, made with `gh release create`). The committed, generated `js/voice-index.js` (under 8 KB: voice, base URL, tag, SHA-256, the line set, the clip directory `p/dir.<hash>.json` and the packs) names the release and the archive's SHA-256; the repo-only `tools/voice/manifest.json` lists every recorded line hash and clip for the coverage test. The CI build job runs `tools/voice/ci-fetch.mjs _site` after `build.py`: it downloads the archive, checks the hash, unpacks it into `_site/voice/` and checks every file the index names is there; any mismatch fails the job, so a deploy never ships an index that points at missing audio. With no tag in the index it does nothing and the built-in voice reads. `build.py --out` fails on any committed audio or `voice/` folder in the publishable files (except `sounds/`, the small Sutra name clips committed on purpose by change `sutra-pronunciation`), and never precaches `voice/`.
 - **Why not plain files in git (the owner asked).** Committing 220 MB of binary audio to `main` would make every clone and every CI checkout download all of it, forever, and every re-recording would add its changed files on top: history only grows, and git cannot drop it without rewriting. GitHub also warns at repos over 1 GB and refuses files over 100 MB. The pre-commit hook and `build.py` copy every git file into `_site`, so the build would get slower too. Git LFS does not help: Pages does not serve LFS files.
 - **Why a release, not a second repo.** The first revision put the audio in a separate `vedic-math-voice` Pages site to keep binaries out of this repo's history. A release does the same inside this repo: release assets are stored by GitHub outside git, so clones stay small, an old archive can be deleted at any time, and there is only one repo and one deploy. It also keeps the audio at `/vedic-math/voice/`, inside the app's own path, so the existing service worker scope and offline rules cover it with no new site.
 - **Limits.** The published site must stay under 1 GB (app plus about 220 MB audio is well under); a release asset may be up to 2 GB.
@@ -149,6 +149,7 @@ The prototype showed that free Kokoro clips are not good enough for the owner, s
 
 **8. Clips, for the lines with no whole recording.**
 - Numbers 0 to 99 are one clip each, in a mid-sentence take ("seventy three,") and an end-of-sentence take ("seventy three."). Frames are said alone with their punctuation.
+- Fractions are spoken as words since the read-aloud wording change ("five eighths"), so each fraction is its own frame (`splitParts()` in `js/voice-plan.js`). Without that, every fraction sum was its own frame and the inventory grew to about 7,000 clips; with it there are 1,679 clips, about 36,000 characters.
 - Clips are packed into sprites with 0.25 s of silence between them. Each pack is decoded once with `decodeAudioData`, and its clips are scheduled on one `AudioContext` with 40 ms gaps, 120 ms after a comma, 260 ms after a sentence end, and 6 ms fades.
 - Each clip's real start and end are found by searching for sound around its stored start, because AAC decoders add a start offset (`clipBounds()` in the prototype).
 
@@ -165,7 +166,7 @@ The prototype showed that free Kokoro clips are not good enough for the owner, s
 - `js/voice-index.js` is imported only when read aloud first plays. It is generated, and holds the voice id, the base URL, the pack names, the clip index and the covered Skills.
 - When a line comes from a covered Skill or is a fixed line, `speak()` fetches its file. Otherwise it plans clips.
 - The core pack loads on idle once read aloud is on.
-- Files and packs are cache first in `sw.js`, because their names change with their bytes. On install, the worker copies `/vedic-math/voice/` entries from the previous cache, so a deploy never drops audio a Player already has.
+- Files and packs are cache first in `sw.js`, because their names change with their bytes. They live in their own cache, `vedic-math-voice`, which version cleanup never deletes (trimmed to 4,000 whole lines, oldest first; the line set, clip directory and packs are never trimmed, so offline lookups keep working), so a deploy never drops audio a Player already has.
 - Offline, a line the device never fetched falls back to clips (core pack saved) or the built-in voice.
 - Nothing is precached at install: only Players who use read aloud download audio. An Explorer Player downloads about 1.2 MB once, plus about 10 KB per new line.
 
@@ -217,5 +218,5 @@ A small server function (Cloud Functions or a Cloudflare Worker) would call the 
 
 ## Open decisions for the owner
 
-1. Decided: Google Chirp 3 HD. Still open: which Chirp 3 HD voice (for example Aoede, Leda, Kore), picked by ear on the listening page once a working key is set.
-2. Google Cloud credentials that the Text-to-Speech API accepts. The key given on 2026-10-16 (`AQ.` prefix) is refused with "API keys are not supported by this API": Text-to-Speech needs either a classic API key (starts with `AIza`, created under APIs and Services, Credentials, restricted to the Cloud Text-to-Speech API) or a service account. Rotate the pasted key, because it is in a chat transcript.
+1. Decided: Google Chirp 3 HD, voice Aoede (`en-US-Chirp3-HD-Aoede`, speaking rate 0.95), picked by ear with `tools/voice/setup-google.sh`.
+2. Decided: the owner signs in with `gcloud` and the recording uses `GOOGLE_TTS_TOKEN=$(gcloud auth print-access-token)` with `GOOGLE_CLOUD_PROJECT=sbmadhav-vedic-math`; no key is created. Earlier note: The key given on 2026-10-16 (`AQ.` prefix) is refused with "API keys are not supported by this API": Text-to-Speech needs either a classic API key (starts with `AIza`, created under APIs and Services, Credentials, restricted to the Cloud Text-to-Speech API) or a service account. Rotate the pasted key, because it is in a chat transcript.

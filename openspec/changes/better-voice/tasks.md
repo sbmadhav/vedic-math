@@ -3,8 +3,8 @@
 Prerequisites (owner):
 - Approve this change.
 - Approved by the owner on 2026-10-16 with Google Chirp 3 HD and the audio in this repo's releases, not a new repo.
-- A Google credential the Text-to-Speech API accepts (a classic `AIza` key restricted to Cloud Text-to-Speech, or a service account), set only as `GOOGLE_TTS_KEY` in the shell that records.
-- The Chirp 3 HD voice name, picked by ear on `docs/prototypes/voice/`.
+- A Google credential the Text-to-Speech API accepts, only in the shell that records. Done: the owner's gcloud sign-in (`GOOGLE_TTS_TOKEN=$(gcloud auth print-access-token)`, project `sbmadhav-vedic-math`); no key exists.
+- The Chirp 3 HD voice name, picked by ear on `docs/prototypes/voice/`. Done: Aoede.
 
 Part A (tasks 1) can ship on its own before part B.
 
@@ -27,36 +27,43 @@ Part A (tasks 1) can ship on its own before part B.
 
 ## 2. Recording tools (B, repo-only)
 
-- [ ] 2.1 Move `docs/prototypes/voice/tools/` to `tools/voice/` and add `tools/` to `exclude` in `_config.yml`. `inventory.mjs` writes `tools/voice/lines.json`:
+- [x] 2.1 Move `docs/prototypes/voice/tools/` to `tools/voice/` and add `tools/` to `exclude` in `_config.yml`. `inventory.mjs` writes `tools/voice/lines.json`:
   - the whole lines: every line of the covered Skills, enumerated until 200,000 draws add nothing new, plus the fixed lines;
   - the clips: numbers in both takes and every frame, from sampling until 50,000 lines in a row add no new frame.
   - Verify: `python3 build.py --out /tmp/x` publishes nothing under `tools/`, and `test/build.test.mjs` asserts `tools/` is excluded.
   - Verify: `lines.json` has about 19,700 whole lines from the K to 2 Skills (excluding `2-add1000` and `1-compare`) and about 1,550 clips.
-- [ ] 2.2 `normalize()` fixes found by the inventory: ordinal denominators ("12ths" to "twelfths", "4ths" to "fourths") and the bond prompt (read "make 10?", not "make 10 what?").
+  - Note: the list is made by the new `tools/voice/lines.mjs` (written to the git-ignored `tools/voice/out/lines.json`); `inventory.mjs` stays the measuring tool. With the wording from the read-aloud wording change it lists 20,150 question, hint and fixed lines (718,000 characters) and 2,291 clips (47,000 characters, sampling 500 per Skill and level plus every Kata, Arena set and tower). Fractions are now said in words, which first made about 7,000 clips; each fraction is now its own frame (`splitParts()` in `js/voice-plan.js`), which brought it back down. The explanation lines (owner request of 2026-10-17, change `explanation-audio`) are listed too: 1,237 whole lines, 90,000 characters, from `js/explain-lines.js`, and the worked steps' frames go into the clip packs.
+- [x] 2.2 `normalize()` fixes found by the inventory: ordinal denominators ("12ths" to "twelfths", "4ths" to "fourths") and the bond prompt (read "make 10?", not "make 10 what?").
   - Verify: `test/voice.test.mjs` cases for `Keep the 12ths.` and `3 and how many more make <b>10</b>?`, plus today's fraction, power, negative and money cases, so nothing else moves.
-- [ ] 2.3 `make-clips.mjs` records `lines.json` with the chosen voice through `voice-lib.mjs`. Keys come only from the environment; there is a disk cache keyed by provider, voice, speed and text; only changed lines are re-recorded. It writes:
+  - Note: shipped with the read-aloud wording change (#43); `test/voice-normalize.test.mjs` holds the cases.
+- [x] 2.3 `make-clips.mjs` records `lines.json` with the chosen voice through `voice-lib.mjs`. Keys come only from the environment; there is a disk cache keyed by provider, voice, speed and text; only changed lines are re-recorded. It writes:
   - whole lines `l/<hash>.m4a`;
   - five clip packs `p/<pack>.<hash>.m4a` (AAC, mono, 24 kHz, 32 kbps);
   - the generated module `js/voice-index.js` in this repo (voice id, base URL, pack names, sizes and clip offsets, covered Skills and fixed lines).
   - Verify: a second run makes no request and changes no file.
   - Verify: the total recorded characters and the provider's bill are in the PR, within 10% of design decision 4.
-- [ ] 2.4 `publish.mjs` packs the audio into `voice-<id>.tar` and uploads it with `gh release create voice-<id>` (or `gh release upload` to replace), and writes the archive's SHA-256 and tag into `js/voice-index.js`. `.github/workflows/ci.yml` downloads it with `gh release download`, checks the hash and unpacks it into `_site/voice/` before the deploy; `build.py --out` fails if `voice/` is missing or does not match the index, and never precaches it.
+  - Done 2026-10-17: 21,387 whole lines (20,150 question, hint and fixed lines plus 1,237 explanation lines) and 2,291 clips in five packs. The ledger counts 856,620 characters this month (about $25.70 at list price, inside the 1 million free characters a month, so the bill should be $0); design decision 4 estimated 770,000 for the questions alone, and the explanations add 90,000. A second run made no request and changed no file (packs are named by their samples, since AAC encoding is not byte-stable). The audio came out larger than estimated: 394 MB of whole lines (4.5 s average, not 2.15 s) and 20 MB of packs, a 431 MB archive; the published site stays under the 1 GB Pages limit.
+  - Note: the recorder is `tools/voice/record.mjs` (`make-clips.mjs` stays the listening page's tool), with Aoede (`en-US-Chirp3-HD-Aoede`, rate 0.95) and a gcloud token. A whole line already on disk is never asked for again; clips are cached in `.cache/`. The index stays small (under 8 KB): which lines exist is a sorted 32-bit key list `l/set.<hash>.bin`, clip ids map to packs in `p/dir.<hash>.json`, and each pack has its offsets in `p/<pack>.<hash>.json`. Every recorded hash and clip is in the repo-only `tools/voice/manifest.json` for the coverage test. A line the provider refuses is left out of the index (said from clips) and named in the log. Lines no longer said move to `out/stale/`.
+- [x] 2.4 `publish.mjs` packs the audio into `voice-<id>.tar` and uploads it with `gh release create voice-<id>` (or `gh release upload` to replace), and writes the archive's SHA-256 and tag into `js/voice-index.js`. `.github/workflows/ci.yml` downloads it with `gh release download`, checks the hash and unpacks it into `_site/voice/` before the deploy; `build.py --out` fails if `voice/` is missing or does not match the index, and never precaches it.
   - Verify: `test/build.test.mjs` cases for a missing archive and a wrong hash; `git log --all -- '*.m4a'` shows no audio added outside `docs/prototypes/`.
   - Verify: after deploy, `curl -I https://sbmadhav.com/vedic-math/voice/p/core.<hash>.m4a` returns 200 with `content-type: audio/mp4`.
-
-- [ ] 2.5 Spend guard (prototyped in `voice-lib.mjs`): the ledger, `BUDGET_USD` (default 300), `RUN_USD` (default 50) and `RATE_PER_MIN` (default 300); keys only from the environment.
+  - Note: the check lives in `tools/voice/ci-fetch.mjs`, run by `ci.yml` after `build.py`: it fails on a wrong hash or a file the index names that the archive lacks (`test/voice-tools.test.mjs`, three cases on a local archive). `build.py` fails on committed audio or a `voice/` folder (`test/build.test.mjs`). The release is created as a prerelease (never "latest"). macOS tar metadata is left out of the archive. The `curl` check is for after the deploy. The only committed audio outside `docs/prototypes/` is two tiny tone files in `e2e/fixtures/voice/` for the tests (repo-only, never published).
+- [x] 2.5 Spend guard (prototyped in `voice-lib.mjs`): the ledger, `BUDGET_USD` (default 300), `RUN_USD` (default 50) and `RATE_PER_MIN` (default 300); keys only from the environment.
   - Verify: new `test/voice-tools.test.mjs` runs `charge()` with a stub provider: a request past the monthly or run cap throws before the stub is called; cached lines are not charged; the ledger keys by month.
+  - Note: `makeGuard()` takes its ledger, caps and clock as options for the tests; one guard per process (`sharedGuard()`), so `RUN_USD` covers whole lines and clips together.
 - [ ] 2.6 Owner steps on Google Cloud, before the full recording: restrict the key to Cloud Text-to-Speech; a $300 monthly budget with alerts at 50%, 90% and 100%; a Text-to-Speech quota cap (300 requests a minute, 50,000 a day).
   - Verify: the owner confirms in the PR; the full recording run's ledger total is in the PR.
+  - Note: no key was made; the recording used the owner's gcloud sign-in. The budget and quota could not be read from here (the Billing Budget API is not enabled on the project), so the owner confirms them in the PR. Observed throughput was about 200 requests a minute.
 
 ## 3. Studio voice (B, app)
 
-- [ ] 3.1 `js/voice.js`:
+- [x] 3.1 `js/voice.js`:
   - `lineHash(voice, words)` gives the file name, and `planLine(words)` (from `stitch-plan.mjs`, moved into `js/`) gives clip ids.
   - `speakStudio()` fetches and decodes a whole line, or schedules clips from a decoded pack, all on one `AudioContext`.
   - `speak()` follows the voice order in the spec, with the 600 ms rule.
   - Verify: `test/voice.test.mjs`: `lineHash` matches the hash `make-clips.mjs` used (shared fixture). Plans are checked for "7 plus 5 equals what?", "Count up from 9 to 16. First get to 10." (16 uses the end take), "4368 divided by 16 equals what?", a negative and a decimal. A line with an unknown frame returns `null`.
-- [ ] 3.2 Loading:
+  - Note: `js/voice-plan.js` holds `lineHash` (cyrb53, 14 hex, the same in Node and the browser), `planLine` and the clip texts; `test/voice-plan.test.mjs` pins one hash and the plans, fractions included. A line with an unknown frame makes `speakStudio()` hand the line to the built-in voice (`studio:missing` in the log).
+- [x] 3.2 Loading:
   - `js/voice-index.js` is imported only when read aloud first plays.
   - The core pack loads on `requestIdleCallback` (or after 2 s) once read aloud is on.
   - Whole lines are fetched when needed; other packs load on first need.
@@ -70,31 +77,38 @@ Part A (tasks 1) can ship on its own before part B.
     - "no provider calls": across an Explorer round, no request goes to `googleapis.com` or another speech provider.
   - Verify: `test/lifecycle-scan.test.mjs` passes.
   - E2E tests fetch the real audio site read-only. That is a static GET and is allowed (no Firestore, no counting).
-- [ ] 3.3 `stop()` stops scheduled sources and bumps the token, so a file that finishes loading late never plays a stale line. On iOS, set `navigator.audioSession.type = 'playback'` where it exists.
+  - Note: the e2e tests serve a fake index and two tiny tone files (`e2e/fixtures/voice/`) through `page.route`, so they pass before and after a recording. The index is also imported by Me settings (to show the Studio voice row only when audio exists). Voice code keeps no view timers: the 600 ms race and the idle warm-up are module-level and end on their own.
+- [x] 3.3 `stop()` stops scheduled sources and bumps the token, so a file that finishes loading late never plays a stale line. On iOS, set `navigator.audioSession.type = 'playback'` where it exists.
   - Verify: `voice.spec.ts` "leaving stops studio audio": start a line, go to `#/learn`, and `__voiceLog` shows nothing started after the route change.
   - Verify: `e2e/tests/games.spec.ts` balloon stop and start still passes.
   - Verify: the owner checks on a real iPhone with the ringer off that lines play, and the result is noted in the PR.
-- [ ] 3.4 Me settings: "Voice" offers Studio voice (default), This device's voice and Natural voice (download). The built-in picker stays for "This device's voice".
+  - Note: the route change calls `fx.stopSpeaking()` (every voice). The iPhone check is the owner's, in the PR.
+- [x] 3.4 Me settings: "Voice" offers Studio voice (default), This device's voice and Natural voice (download). The built-in picker stays for "This device's voice".
   - Verify: `voice.spec.ts`: picking "This device's voice" makes the next line `builtin`, and "Test voice" plays the studio sample.
+  - Note: a "Studio voice" checkbox (on by default, shown only when recordings exist) above the built-in picker and the natural voice switch; unchecked, lines go to the device's voice. `voice.spec.ts` "choosing the device voice in Me reads the next line with it". "Test voice" goes through the same order, so it plays the studio sample when recorded.
 
 ## 4. Offline and coverage
 
-- [ ] 4.1 `sw.js`: `/vedic-math/voice/` requests are cache first. On install, those entries are copied from the previous `vedic-math-*` cache. `build.py` leaves `voice/` out of `PRECACHE` (task 2.4).
+- [x] 4.1 `sw.js`: `/vedic-math/voice/` requests are cache first. On install, those entries are copied from the previous `vedic-math-*` cache. `build.py` leaves `voice/` out of `PRECACHE` (task 2.4).
   - Verify: `e2e/tests/offline.spec.ts` (built `_site`, chromium), new test: an Explorer Player hears two lines online, goes offline and reloads. A heard line logs `studio:line`, and a new line logs `studio:clips` or `builtin`.
-- [ ] 4.1b `test/build.test.mjs`: the built `_site` contains no `texttospeech.googleapis.com` (or other provider host) and nothing shaped like a Google key or token.
+  - Note: instead of copying, voice files live in their own cache, `vedic-math-voice`, which version cleanup skips (trimmed to 4,000 whole lines; the line set, clip directory and packs are never trimmed, `test/sw-voice.test.mjs`). The offline test reads the real index of the build and skips when the build has no recordings.
+- [x] 4.1b `test/build.test.mjs`: the built `_site` contains no `texttospeech.googleapis.com` (or other provider host) and nothing shaped like a Google key or token.
   - Verify: adding a fake `AIza...` string to a published file makes it fail.
-- [ ] 4.2 New `test/voice-coverage.test.mjs`:
+  - Note: also `ya29.` tokens, `AQ.` keys, `sk-` keys and the ElevenLabs, OpenAI, Azure and Polly hosts; the Firebase web config's public `apiKey` is the one allowed.
+- [x] 4.2 New `test/voice-coverage.test.mjs`:
   - samples every generator (seeded: 300 per Skill and level, all Katas, Arena sets for each League, towers, games, fixed lines);
   - fails on any Explorer-surface line without a whole hash in `js/voice-index.js` or clips (naming the line);
   - fails when overall coverage drops below 99%.
   - Verify: it passes on the recorded index, and changing one Explorer praise line without re-recording makes it fail with that line in the message.
+  - Note: the hashes are in the repo-only `tools/voice/manifest.json`, not the published index. On the recorded index (`voice-53224c8ddd`) it passes, with 99.98% of 92,294 sampled lines covered; changing the Explorer praise "Super star!" to "Super duper star!" made it fail naming that line.
 
 ## 5. Words and docs
 
-- [ ] 5.1 `GLOSSARY.md`: Read aloud, Built-in voice, Studio voice, Natural voice (added with this proposal). `README.md` and `CLAUDE.md`: how to re-record and publish after a wording change, and that the audio archive lives in this repo's releases. `cloud/README.md` Privacy: one line saying read aloud plays files from this site and sends no text.
+- [x] 5.1 `GLOSSARY.md`: Read aloud, Built-in voice, Studio voice, Natural voice (added with this proposal). `README.md` and `CLAUDE.md`: how to re-record and publish after a wording change, and that the audio archive lives in this repo's releases. `cloud/README.md` Privacy: one line saying read aloud plays files from this site and sends no text.
   - Verify: `test/copy.test.mjs` (no em dashes) passes over the new copy.
 - [ ] 5.2 Delete `docs/prototypes/voice/` audio once the studio voice ships.
   - Verify: the PR that ships 3.x lists it.
+  - Note: left for after the deploy and the owner's listening check, so the listening page still works for comparison.
 
 ## 6. Release check
 

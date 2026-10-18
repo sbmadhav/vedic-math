@@ -31,6 +31,7 @@ import { openShell } from './shell.js';
 import { GROUPS, sectionsFor, tryFor, say, resolveTour, tourDue, tourState, setTourState } from './guide.js';
 import { artFor } from './guide-art.js';
 import { startTour } from './tour.js';
+import { guideCounts } from './explain-lines.js';
 import { sayButton, respellHTML, devaHTML, wireSay } from './say.js';
 import { sutraAmbience, ambienceButton, wireAmbience, settingsHTML as ambienceSettingsHTML, wireSettings as wireAmbienceSettings } from './sutra-ambience.js';
 
@@ -107,7 +108,7 @@ function mount(fn) {
 const knownId = (kind, id) => kind === 'grade' ? !!gradeOf(id) : kind === 'skill' ? !!byId[id] : kind === 'trick' ? TRICKS.some(t => t.id === id)
   : kind === 'sutra' ? ALL_SUTRAS.some(c => c.id === id) : kind === 'game' ? GAMES.some(g => g.id === id) : false;
 function render() {
-  try { speechSynthesis.cancel(); } catch (e) {}
+  fx.stopSpeaking(); /* every voice: built-in, studio and natural */
   stopVerses(); /* a deep dive opens over the Sutras page without remounting it: a Listen still waiting for voices must not start behind it */
   const h = location.hash || '#/';
   render.from = render.at; render.at = h; /* where a Star's Back button returns to */
@@ -1292,9 +1293,6 @@ function wireWorldBoards(root) {
 
 /* ---------- Guide and first-visit tour (openspec in-app-guide) ---------- */
 /* The guide's data is js/guide.js, its pictures js/guide-art.js, the tour js/tour.js. Counts come from the catalogs. */
-const guideCounts = () => ({ skills: SKILLS.length - TRICKS.length, tricks: TRICKS.length, belts: BELTS.length, katasPer: LV.KATAS_PER_TRICK, kataCount: LV.KATA_COUNT,
-  sutras: SUTRAS.length, subsutras: SUBSUTRAS.length, games: GAMES.length, levelsPerGame: LEVELS_PER_GAME, chapters: LV.TOPICS.length, perChapter: LV.PER_CHAPTER,
-  challenges: LV.CHALLENGE_COUNT, badges: gm.BADGES.length, videoMinutes: W.MAX_LENGTH / 60, starsPerBelt: gm.STARS_PER_BELT });
 /* Take the tour (guide, Home note): the next Home render plays it whatever vm.tour says */
 let tourAsked = false;
 function askTour() { tourAsked = true; if ((location.hash || '#/') === '#/' || location.hash === '#') render(); else location.hash = '#/'; }
@@ -1486,6 +1484,7 @@ function icon(n) {
 const rm = $('#resetMode'); if (rm) rm.onclick = () => { store.updatePlayer({ mode: null }); fx.applyMode(); location.hash = '#/'; render(); window.scrollTo({ top: 0 }); };
 fx.applyMode();
 fx.applyPrefs(); /* body.calm and body.text-plus from this device's Calm and text size */
+fx.warmVoice(); /* the studio voice's core pack, while idle, when read aloud is on */
 gm.init();
 metrics.returnCheck(); /* before the first route view: remembers this device's first visit */
 render();

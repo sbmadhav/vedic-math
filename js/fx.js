@@ -30,7 +30,9 @@ const setPref = (k, v) => { try { localStorage.setItem('vm.' + k, v ? '1' : '0')
 export const soundOn = () => pref('sound', true);
 export const setSound = v => setPref('sound', v);
 export const voiceOn = () => pref('voice', mode() === 'explorer');
-export const setVoice = v => setPref('voice', v);
+export const setVoice = v => { setPref('voice', v); if (v) voice.warmStudio(); };
+/* Once at start: when read aloud is on, the studio voice's core pack loads while the page is idle */
+export const warmVoice = () => { if (voiceOn()) voice.warmStudio(); };
 /* Reduced motion: the device setting, or Pause motion in the site's Explore menu (html.motion-paused, WCAG 2.2.2) */
 export const motionOff = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.classList.contains('motion-paused');
 

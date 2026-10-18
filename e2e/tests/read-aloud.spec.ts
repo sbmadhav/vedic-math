@@ -3,11 +3,13 @@ import { test, expect, open, cloudLog, type Page } from './fixtures';
 /* What the read-aloud voice says (openspec voice-wording): a question's optional say is what is heard, the screen
    text stays as it was, and the hint read after a second wrong try is the hint on screen. speechSynthesis.speak is
    replaced by a recorder, so nothing is spoken and every utterance can be read back. The whole engine is a fake (as in
-   voice.spec.ts): in WebKit, replacing only speechSynthesis.speak on the real engine records nothing. */
+   voice.spec.ts): in WebKit, replacing only speechSynthesis.speak on the real engine records nothing. The studio voice
+   (recorded files) is turned off, so every line goes to the device's voice and its words can be read back. */
 async function recordSpeech(page: Page) {
   await page.addInitScript(() => {
     const w = window as any;
     w.__said = [];
+    try { localStorage.setItem('vm.studioVoice', '0'); } catch (e) {}
     const voice = { name: 'Samantha', lang: 'en-US', voiceURI: 'Samantha', localService: true, default: true };
     const fake = {
       getVoices: () => [voice], pending: false, speaking: false, paused: false,

@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dir = mkdtempSync(join(tmpdir(), 'vedic-math-build-'));
-for (const f of ['build.py', '_config.yml', '.gitignore', 'index.html', 'math.css', 'sw.js', 'manifest.webmanifest', 'js', 'CLAUDE.md', 'README.md', 'cloud/firestore.rules', 'test/index.js', '.github', 'sounds', 'tools/sutra-voice/names.mjs'])
+for (const f of ['build.py', '_config.yml', '.gitignore', 'index.html', 'math.css', 'sw.js', 'manifest.webmanifest', 'js', 'CLAUDE.md', 'README.md', 'cloud/firestore.rules', 'test/index.js', '.github', 'tools/voice/ci-fetch.mjs', 'sounds', 'tools/sutra-voice/names.mjs'])
   cpSync(join(repo, f), join(dir, f), { recursive: true });
 writeFileSync(join(dir, '_notes.txt'), 'starts with _');
 /* Run git and the build in the temp copy only. A pre-commit hook exports GIT_DIR, GIT_INDEX_FILE and friends;
@@ -48,7 +48,7 @@ test('the output is stamped, has .nojekyll and holds only publishable files', ()
   assert.match(sw().version, /^[0-9a-f]{10}$/);
   assert.match(read('index.html'), /<script type="module" src="\/vedic-math\/js\/app\.js\?v=[0-9a-f]{10}"><\/script>/);
   assert.match(read('index.html'), /href="\/vedic-math\/math\.css\?v=[0-9a-f]{10}"/);
-  for (const f of ['CLAUDE.md', 'README.md', 'build.py', '_config.yml', 'cloud', 'test', '.github', '.gitignore', '_notes.txt', 'out'])
+  for (const f of ['CLAUDE.md', 'README.md', 'build.py', '_config.yml', 'cloud', 'test', 'tools', '.github', '.gitignore', '_notes.txt', 'out'])
     assert.ok(!existsSync(join(out, f)), `${f} must not be published`);
   for (const f of ['index.html', 'sw.js', 'math.css', 'manifest.webmanifest', 'js/app.js', 'js/skills/index.js']) assert.ok(existsSync(join(out, f)), `${f} is published`);
   // Modules are copied byte for byte
@@ -166,6 +166,42 @@ test('the build fails on a CSP in the source, an inline event handler or a javas
     assert.notEqual(r.status, 0);
     assert.match(r.stderr, /CSP|Content-Security-Policy/);
   }
+});
+
+/* Studio voice (openspec better-voice): recordings never come from git, and the site never names a speech provider
+   or carries a key. The Firebase web config's apiKey is public and is the one key allowed. */
+test('the build fails on committed audio or a voice/ folder', () => {
+  for (const f of ['voice/l/0123456789abcd.m4a', 'js/clip.mp3', 'sounds-extra/clip.m4a']) {
+    const p = join(dir, f);
+    cpSync(join(repo, 'js/voice-plan.js'), p, { recursive: true }); // any bytes will do
+    execFileSync('git', ['add', '-f', f], { cwd: dir, env }); // committed by force, past .gitignore
+    const r = tryBuild();
+    execFileSync('git', ['rm', '-q', '--cached', f], { cwd: dir, env });
+    rmSync(p); rmSync(join(dir, 'voice'), { recursive: true, force: true });
+    assert.notEqual(r.status, 0, f);
+    assert.match(r.stderr, /audio is never committed/);
+  }
+});
+
+test('the build fails when a published file names a speech provider or holds a key or token', () => {
+  const key = 'AIza' + 'Sy'.padEnd(35, 'x'), token = 'ya29' + '.'.padEnd(30, 'a');
+  for (const line of ["fetch('https://texttospeech.googleapis.com/v1/text:synthesize')", `const k = '${key}';`, `const t = '${token}';`, "const u = 'https://api.elevenlabs.io/v1';"]) {
+    const f = join(dir, 'js/voice-plan.js'), orig = readFileSync(f, 'utf8');
+    writeFileSync(f, orig + '\n// ' + line + '\n');
+    const r = tryBuild();
+    writeFileSync(f, orig);
+    assert.notEqual(r.status, 0, line);
+    assert.match(r.stderr, /speech provider|API key or token/, line);
+  }
+  /* Any published text file is scanned, an SVG too */
+  const svg = join(dir, 'leak.svg');
+  writeFileSync(svg, `<svg xmlns="http://www.w3.org/2000/svg"><!-- ${key} --></svg>`);
+  execFileSync('git', ['add', '-f', 'leak.svg'], { cwd: dir, env });
+  const r = tryBuild();
+  execFileSync('git', ['rm', '-q', '--cached', 'leak.svg'], { cwd: dir, env }); rmSync(svg);
+  assert.notEqual(r.status, 0, 'a key in an SVG');
+  assert.match(r.stderr, /leak\.svg: holds something shaped like an API key or token/);
+  build(); // and the real source passes, Firebase apiKey included
 });
 
 /* Sounds (openspec sutra-pronunciation): the name clips and the Om are published, never in the install precache
