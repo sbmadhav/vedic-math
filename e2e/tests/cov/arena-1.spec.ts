@@ -1,11 +1,12 @@
 import { test, expect, APP, open, cloudLog, appErrors, type Page, typeAnswer } from '../fixtures';
 
-/* openspec/specs/arena/spec.md, "Pro Arena is mental arithmetic":
+/* openspec/specs/arena/spec.md, "Pro Arena is mental arithmetic" (after play-experiences: "Pro Arena and Practice are mental arithmetic"):
    - A full Pro daily set: every question of a Pro daily set dated 2026-10-19 or later belongs to one of the five
      families (2-digit by 2-digit product, square, percent of a number, near-base product, exact division) and has
      a whole-number answer.
-   - Pro Duel and Practice: every question of an Arena Practice round or a Pro Duel belongs to one of the five families.
-   Nothing here posts a score: daily rounds are left before they end, Practice never posts, Duels are local. */
+   - Pro Practice: every question of an Arena Practice round belongs to one of the five families. (The Duel was
+     retired for Party Mode, openspec play-experiences, which deals its own questions per Mode.)
+   Nothing here posts a score: daily rounds are left before they end, and Practice never posts. */
 
 const FAMILIES = ['mul2x2', 'square', 'percent', 'nearBase', 'divide'];
 
@@ -146,43 +147,6 @@ test.describe('Pro Arena is mental arithmetic', () => {
     await page.clock.fastForward(61_000);
     await page.clock.runFor(100);
     await expect(page.locator('.ar-result')).toContainText('15 right · 5 missed');
-    expect((await cloudLog(page)).writes).toEqual([]);
-    expect(appErrors(issues), 'console errors').toEqual([]);
-  });
-
-  test('Pro Duel: every question dealt is in a family, through a whole Duel', async ({ page, issues }) => {
-    await heldAt(page, '2026-10-21T10:00:00');
-    await open(page, '#/duel');
-    // The Duel's set generator (unseeded, 120 items) many times over
-    const sets = await page.evaluate(async () => {
-      const A = await import('/vedic-math/js/arena.js' as string);
-      const div = document.createElement('div');
-      return Array.from({ length: 10 }, () => A.makeSet('pro', null, 120).map((q: any) => { div.innerHTML = q.q; return { q: div.innerHTML, answer: q.answer, family: q.family }; }));
-    }) as { q: string; answer: number; family: string }[][];
-    sets.forEach((set, s) => { expect(set).toHaveLength(120); set.forEach((q, i) => assertMental(q.q, `duel set ${s} #${i + 1}`, q)); });
-    // A played Pro Duel: misses on both sides reveal and move on, then Player 1 wins with right answers
-    await page.locator('[data-l="pro"]').click();
-    await expect(page.locator('[data-l="pro"]')).toHaveAttribute('aria-pressed', 'true');
-    await page.locator('#dGo').click();
-    await expect(page.locator('.duel-side')).toHaveCount(2);
-    for (let k = 0; k < 3; k++) {
-      const html = await page.locator('#dQ0').innerHTML();
-      expect(await page.locator('#dQ1').innerHTML()).toBe(html);
-      const a = assertMental(html, `duel both-miss #${k + 1}`);
-      await page.locator(`.duel-p1 .ar-choice:not([data-v="${a}"])`).first().click();
-      await page.locator(`.duel-p2 .ar-choice:not([data-v="${a}"])`).first().click();
-      await expect(page.locator('#dA0')).toHaveText(`Answer: ${a}`);
-      await page.clock.runFor(1300);
-      await expect(page.locator('#dA0')).toHaveText('');
-    }
-    for (let k = 0; k < 10; k++) {
-      const html = await page.locator('#dQ0').innerHTML();
-      expect(await page.locator('#dQ1').innerHTML()).toBe(html);
-      const a = assertMental(html, `duel point #${k + 1}`);
-      await page.locator(`.duel-p1 .ar-choice[data-v="${a}"]`).click();
-      if (k < 9) await expect(page.locator('#dS0')).toHaveText(String(k + 1));
-    }
-    await expect(page.locator('#dS0')).toHaveText('10');
     expect((await cloudLog(page)).writes).toEqual([]);
     expect(appErrors(issues), 'console errors').toEqual([]);
   });

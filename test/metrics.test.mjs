@@ -26,8 +26,9 @@ const SAMPLES = {
   '#/duel': 'duel', '#/games': 'games', '#/game/times-sprint': 'game/times-sprint', '#/game/times-sprint/12': 'game/times-sprint/level',
   '#/watch': 'watch', '#/me': 'me', '#/progress': 'progress', '#/places': 'places', '#/tiles': 'tiles',
   '#/guide': 'guide', '#/guide/arena': 'guide/section',
+  '#/arena/ghosts/r/abc': 'play/ghosts', '#/dojo/spells': 'play/spells', '#/sutras/lost-scroll': 'play/lost-scroll',
 };
-const known = (kind, id) => ({ grade: ['5', 'K', '3'], skill: ['v-sq5'], trick: ['sq5'], sutra: ['s1'], game: ['times-sprint'] }[kind] || []).includes(id);
+const known = (kind, id) => ({ grade: ['5', 'K', '3'], skill: ['v-sq5'], trick: ['sq5'], sutra: ['s1'], game: ['times-sprint'], play: ['ghosts', 'spells', 'lost-scroll'] }[kind] || []).includes(id);
 
 test('route views: every route collapses to its template, numbers become fixed words', () => {
   for (const [h, want] of Object.entries(SAMPLES)) assert.equal(M.routePath(h, known), want, h);

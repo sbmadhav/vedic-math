@@ -128,7 +128,7 @@ export function sections(n) {
       how: [
         'Turn it on in Me, under Settings: Try the new Sky.',
         'Bolt waits at the suggested Star, with a dotted path to the next two. Tap any Star to play it.',
-        'The places on the edge (Arena, Duel, Games, Watch and the Skill map) take you there.',
+        'The places on the edge (Arena, Party, Games, Watch and the Skill map) take you there.',
         'All places shows the same Stars and places as a plain list, which suits a keyboard or a screen reader.'
       ],
       tip: 'Prefer the old Home? Switch the Sky off on Me, or open The tile home from All places.',
@@ -193,16 +193,27 @@ export function sections(n) {
       tip: w('A Boss round is hard and gives you only two lives.', 'Boss rounds mix hard questions and give you only two lives. Warm up on a Sprint first.'),
       try: { href: '#/tower', label: 'Open the tower' } },
 
-    { id: 'duel', group: 'play', art: 'duel', covers: ['#/duel'],
-      title: w('Duel a friend', 'Duel'),
-      what: w('Two players on one screen. First to 10 right answers wins!', 'Two players, one screen, racing the same question. First to 10 right answers wins.'),
+    { id: 'party', group: 'play', art: 'duel', covers: ['#/arena/party'], /* #/duel redirects here */
+      title: w('Party time', 'Party Mode'),
+      what: w('Two to four players on one screen. Everyone gets questions just right for them!', 'Two to four players on one screen, each answering at their own play mode, over six kinds of rounds that end on a podium. It took the place of the Duel.'),
       how: [
-        w('Pick a level, then tap Start the duel.', 'Pick a level for the questions, then press Start the duel.'),
-        w('A wrong answer freezes you for a second. Go fast but be careful!', 'A wrong answer freezes that player for a second, so speed and care both count.'),
-        w('On a tablet flat on the table, tick Face to face.', 'With a tablet flat between you, tick Face to face to flip the top player.')
+        w('In the Arena, tap Party Mode. Pick a name and a color for each player.', 'In the Arena, open Party Mode. Each player picks a name from the lists, a color and a level.'),
+        w('Each player has a buzz key. Buzz, then answer!', 'Each player has a buzz key (Q, P, Z or M) or a corner of the screen. Buzz, then answer on the big choices.'),
+        w('Wrong answers let others steal the point.', 'A wrong answer locks you out and lets the others steal. The last round is double or nothing.')
       ],
-      tip: w('Grown-ups can play too. Pick a harder level for them!', 'Give the older player a harder level for a fair match.'),
-      try: { href: '#/duel', label: 'Start a duel' } },
+      tip: w('Grown-ups and little ones can play together. The game keeps it fair!', 'Leave the handicap on when a grown-up plays a young player: each scores by their own level.'),
+      try: { href: '#/arena/party', label: 'Start a party' } },
+
+    { id: 'playmore', group: 'play', art: 'dial', covers: ['#/dojo/spells', '#/dojo/locks', '#/arena/ghosts', '#/arena/daily-number', '#/games/tala', '#/games/art', '#/games/wall', '#/games/apprentice', '#/games/bets', '#/games/lens', '#/sutras/lost-scroll'],
+      title: w('More ways to play', 'Play experiences'),
+      what: w('Music, art, races and number puzzles. Find them on the Games and Arena pages.', 'Twelve ways to play where math is what you do: cast tricks as spells, crack locks, clap rhythms, paint mandalas, solve the Daily Number, race your ghost and more. Each lives on its section\'s page.'),
+      how: [
+        w('Open Games or the Arena and look for the cards under the title.', 'Open the Dojo, Arena, Games or Sutras page and pick a card from its shelf.'),
+        w('Each one shows you what to do. Try, play and make things!', 'Each one starts by showing, not telling. Share a Daily Number grid, a ghost or a mandala with a link.'),
+        w('Playing them earns Sparks too.', 'Finishing a puzzle, lock, round or chapter earns Sparks, up to 150 a day.')
+      ],
+      tip: w('Tala Lab and Mandala Studio play music. Turn the sound on!', 'Tala Lab and Mandala Studio sound best with headphones. Math Lens can use the camera, but typing the digits works too.'),
+      try: { href: '#/games/tala', label: 'Open Tala Lab' } },
 
     { id: 'boards', group: 'play', art: 'board', covers: [],
       title: 'Leaderboards',

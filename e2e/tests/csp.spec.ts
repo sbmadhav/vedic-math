@@ -70,6 +70,35 @@ test('main routes render with no CSP violation', async ({ page, baseURL }) => {
   await expectNoViolations(page, v, 'the main routes');
 });
 
+test('every play experience page renders with no CSP violation', async ({ page, baseURL }) => {
+  test.setTimeout(90_000);
+  const v = await watchViolations(page);
+  await open(page, '#/games');
+  await policy(page, baseURL);
+  // The twelve pages (js/play/catalog.js); each loads its module and stylesheet on demand
+  for (const hash of ['#/dojo/spells', '#/dojo/locks', '#/arena/party', '#/arena/ghosts', '#/arena/daily-number', '#/games/tala', '#/games/art',
+    '#/games/wall', '#/games/apprentice', '#/games/bets', '#/games/lens', '#/sutras/lost-scroll']) {
+    await page.goto(`${APP}${hash}`);
+    await expect(page.locator('#view h1').first()).toBeVisible();
+    await expect(page.locator('link[data-play="base"]')).toHaveCount(1);
+  }
+  await expectNoViolations(page, v, 'the play experiences');
+});
+
+test('Math Lens offers the camera under the published policy: its digit reader is served from this site', async ({ page, baseURL }) => {
+  const v = await watchViolations(page);
+  await open(page, '#/games/lens');
+  const csp = await policy(page, baseURL);
+  expect(csp).toMatch(/script-src[^;]*'wasm-unsafe-eval'/);
+  expect(csp).not.toContain('cdn.jsdelivr.net');
+  expect(csp).toMatch(/worker-src 'self'(;|$)/);
+  const cam = page.locator('[data-way="camera"]');
+  await expect(cam).toBeEnabled();
+  await page.locator('[data-way="type"]').click();
+  await expect(page.locator('#lnDigits')).toBeFocused();
+  await expectNoViolations(page, v, '#/games/lens');
+});
+
 test('Arena World boards load the Firebase SDK from gstatic with no CSP violation', async ({ page, baseURL }) => {
   const v = await watchViolations(page);
   await open(page, '#/arena');

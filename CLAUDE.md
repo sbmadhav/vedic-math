@@ -55,6 +55,13 @@ They are not `?v=` stamped (this repo cannot hash them). Do not copy them in; ch
 - `manifest.webmanifest` here makes Vedic Math its own installable app (scope `/vedic-math/`); the main site's manifest is unchanged.
 - `sounds/` (the 29 Sutra name clips in `sounds/sutras/` and the Om) is served cache first from `vedic-math-sounds`, a cache every deploy keeps, and is never precached. The clips are made by `tools/sutra-voice/make-sutra-clips.mjs`, which also writes `js/say-clips.js` (each clip's size and `?v=` content hash); remake both together (`test/say.test.mjs` checks them).
 
+## Play experiences (`js/play/`)
+
+- Twelve experiences (Sutra Spellbook, Discovery Locks, Party Mode, Ghost Races, Daily Number, Tala Lab, Mandala Studio, Pattern Wall, Teach the Apprentice, Estimation Bets, Math Lens, The Lost Śulba Scroll), each a page inside a section at `#/<section>/<name>`, listed in `js/play/catalog.js`. There is no separate play area or nav item; section pages show them on a shelf (`playShelf()` in `js/app.js`). Party Mode replaced the Duel (`#/duel` redirects).
+- An experience is `js/play/exp/<id>.js` exporting `mount({ root, signal, params, exp })`, pure logic in `js/play/exp/<id>-*.js` (no DOM at import, tested in `test/play/<id>.test.mjs`), and `css/play/<id>.css` plus the shared `css/play/base.css`, loaded with the page (`build.py` stamps and precaches them through the `#vm-css` map). Class prefix `px-` (the video player owns `vp-`).
+- Experiences use `js/play/kit.js`, never app modules: it reads the Mode, `vm.sound` and Calm from storage, keeps state per Player (`vm.play.<player id>.<key>`), and `track(action)` sends only `math/play/<experience>/<action>` and fires `vmplay`, which `onPlay()` in `js/app.js` turns into Sparks (at most 150 a day) and badge counts. Listeners, timers and frame loops go through `js/play/life.js` (the app's `js/life.js`).
+- Experiences post nothing to the leaderboards. Share links carry only parameters, times and word-list names. Math Lens keeps camera frames on the device and loads its digit reader (Tesseract.js, pinned) from jsDelivr on first use; the published CSP does not allow that host, so the camera is offered only where the page's policy lets the reader load (`readerAllowed()` in `js/play/exp/lens-cam.js`). Camera and microphone stop on a route change, a hidden tab and errors.
+
 ## Leaderboards
 
 Firebase with Firestore security rules. Setup, rules and the rules tests live in `cloud/` (see `cloud/README.md`). The browser client is `js/cloud.js`; the config is `js/cloud-config.js`.
