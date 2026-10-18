@@ -703,7 +703,7 @@ function sutrasView({ signal } = {}) {
 const VERSE_KIND = { verse: 'Verse (śloka)', sutra: 'Sutra (prose rule)', mantra: 'Vedic mantra' };
 function verseHTML(v) {
   const lines = t => esc(t).split('\n').join('<br>');
-  const refs = v.refs.map(([t, u]) => outLink(u, esc(t)) || `<span>${esc(t)}</span>`).join('</li><li>');
+  const refs = v.refs.filter(r => r[2] !== 'pro' || linksOut()).map(([t, u]) => outLink(u, esc(t)) || `<span>${esc(t)}</span>`).join('</li><li>'); /* a ref marked pro questions the Sutras' origin: Pro only, like the other critiques (watch-shelf spec) */
   return `<article class="verse md-card" id="verse-${v.id}" aria-labelledby="vh-${v.id}">
     <header class="verse-head"><span class="md-tag md-tag--sun">${VERSE_KIND[v.kind]}${v.meter ? ` · ${esc(v.meter)}` : ''}</span><h4 id="vh-${v.id}">${esc(v.title)}</h4></header>
     <p class="verse-deva" lang="sa">${lines(v.deva)}</p>
