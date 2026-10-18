@@ -35,6 +35,7 @@ _Avoid_: age band (in copy), age group, reading level, kid mode
 **Parent step**:
 A grown-up's one-time permission, on this device, for a Player under 13 to post to World boards. Without it, nothing the Player does leaves the device.
 _Avoid_: opt-in, consent screen, parental gate
+On learnvedicmath.com the Parent step is retired: Players under 13 use Device boards only (`docs/adr/0006`, proposed in the `learnvedicmath` change).
 
 ## Learning
 
@@ -49,6 +50,10 @@ _Avoid_: shortcut, hack, strategy
 **Sutra**:
 One of the short named rules from Bharati Krishna Tirtha's 1965 book. Tricks are grouped under the Sutra they come from.
 _Avoid_: formula, verse, Vedic sutra (never "from the Vedas")
+
+**Verse** (śloka):
+A genuine Sanskrit verse, prose rule (sūtra) or Vedic mantra about mathematics from an older text, shown in Mathematics in Sanskrit verse at the end of the Sutras page (`js/slokas.js`). Verses are not the source of the Sutras; the only verse in the 1965 book (gopī bhāgya, π/10) is the Swami's own.
+_Avoid_: calling a Sutra a verse; "ancient" without a date
 
 **Deep dive**:
 The dialog that opens from a Sutra card's Learn more (route `#/sutras/<id>`): the plain explanation, an animated diagram, why it works, Worked examples, where it is used and further reading. Its close button and the footer to the previous and next Sutra stay pinned while it scrolls.
@@ -241,3 +246,23 @@ _Avoid_: sitemap, menu, index
 **Comeback**:
 Getting the rematch right after a mistake in a Star. It pays more Sparks than a first-time right answer, at most once per kind of question in a round.
 _Avoid_: retry, second chance, redemption
+
+## The move to learnvedicmath.com
+
+Proposed in the `learnvedicmath` change (`openspec/changes/learnvedicmath/`, ADRs 0004 to 0006).
+
+**Landing page**:
+The static page at `https://learnvedicmath.com/` that says what Vedic Math is and leads to the game at `/play/`. A device that already has Players goes straight past it into the game.
+_Avoid_: home (Home is the game's first view), splash, homepage
+
+**Hand-off**:
+Moving one device's Players, progress and settings from sbmadhav.com/vedic-math/ to learnvedicmath.com, once, on the device, after the Player says yes. World board identities and the Parent step never move.
+_Avoid_: migration (that is a schema upgrade), sync, transfer, import (the import page is where a Hand-off lands)
+
+**Moved page**:
+The page that replaces sbmadhav.com/vedic-math/ during Phase B of the move. It retires the old service worker and starts the Hand-off.
+_Avoid_: redirect page, splash
+
+**Export page**:
+The permanent page at sbmadhav.com/vm-export/ that hands a device's old progress to learnvedicmath.com in a popup, for Players who come back after the redirect is permanent.
+_Avoid_: backup page, old site

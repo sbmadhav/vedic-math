@@ -152,7 +152,8 @@ export function sections(n) {
         w('Sutras is not in the Explorer menu, so use the button below.', 'Open Sutras from the menu bar.'),
         w('Tap a card to flip it. That collects it!', 'Tap a card to flip it and collect it (5 Sparks the first time).'),
         w('Learn more shows a moving picture that explains it.', 'Learn more opens a deep dive: an animated diagram, why it works, worked examples, where it is used and Try it yourself buttons.'),
-        w('Close it with the X button.', 'Move to the next sutra with the buttons at the bottom. Close with the X button or Escape.')
+        w('Close it with the X button.', 'Move to the next sutra with the buttons at the bottom. Close with the X button or Escape.'),
+        w('At the bottom are real old math poems in Sanskrit. Tap Listen to hear one.', 'At the end of the page, Mathematics in Sanskrit verse has real verses from older texts (Āryabhaṭa, Brahmagupta, the Līlāvatī and more), each with its meaning, the math, a word-by-word reading and a Listen button.')
       ],
       tip: w('Learning a trick well collects its card too.', 'Mastering a trick collects its sutra card for you. The top of the page tells where Vedic math comes from and what the moving background shows.'),
       try: { href: '#/sutras', label: 'See the sutra cards', more: { href: '#/sutras/s1', label: 'Open a deep dive' } } },

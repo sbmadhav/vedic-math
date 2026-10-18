@@ -115,6 +115,7 @@ export function speak(text, force = false) {
 /* A question's spoken words: its optional say (for a question whose screen text leans on a picture), else its q */
 export const speakQuestion = (p, force = false) => speak(p.say || p.q, force);
 export const stopSpeaking = () => voice.stop();
+export const loadVoices = () => voice.loadVoices();
 export { settingsHTML as voiceSettingsHTML, wireSettings as wireVoiceSettings } from './voice.js';
 
 /* ---------- Confetti ---------- */
