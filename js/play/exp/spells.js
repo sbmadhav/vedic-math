@@ -421,9 +421,12 @@ export function mount({ root, signal, params }) {
       later(() => {
         m.el.remove();
         const i = monsters.indexOf(m); if (i >= 0) monsters.splice(i, 1);
-        offerScroll(); spawn(); spawn();
+        offerScroll();
+        /* The nearest survivor becomes the target before new monsters arrive: spawn() aims at a newcomer only when
+           nothing is targeted, which would leave the survivor walking to the ward unattended */
         const left = monsters.filter(x => x.state !== 'gone');
         if (!target && left.length) aim(left.reduce((a, b) => (b.p > a.p ? b : a)));
+        spawn(); spawn();
       }, reducedMotion() ? 500 : 1500, signal);
     };
     const offerScroll = () => {

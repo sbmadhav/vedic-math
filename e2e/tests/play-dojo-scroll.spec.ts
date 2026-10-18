@@ -73,6 +73,33 @@ test('Spellbook: a new target starts with no spell chosen, so the last spell is 
   expect(issues.console).toEqual([]);
 });
 
+test('Spellbook: after a monster is beaten, the one still walking becomes the target, not a newcomer', async ({ page, issues }) => {
+  await page.addInitScript(() => { try { localStorage.setItem('vm.play.p1.spells', JSON.stringify({ learned: ['crosswise'], pace: 'calm' })); } catch (e) { /* storage blocked */ } });
+  await open(page, '#/dojo/spells');
+  await expect(page.locator('.sp-m')).toHaveCount(2);
+  const first = await page.locator('.sp-m.is-target').getAttribute('data-m');
+  const survivor = await page.locator('.sp-m:not(.is-target)').getAttribute('data-m');
+  /* Cast with the hints: each shows the next stroke as ghost lines between two digits; join them from the keyboard */
+  for (let guard = 0; guard < 40 && !(await page.locator('.sp-win').count()); guard++) {
+    await page.locator('.sp-hint').click();
+    const pair = await page.evaluate(() => {
+      const svg = document.querySelector('.sp-ink') as SVGSVGElement, [, , vw, vh] = svg.getAttribute('viewBox')!.split(' ').map(Number);
+      const g = document.querySelector('.sp-guide line.sp-ghost'); if (!g) return null;
+      const at = (x: number, y: number) => [...document.querySelectorAll<HTMLElement>('.sp-board .sp-node:not(.is-hidden)')]
+        .find(n => Math.abs(parseFloat(n.style.left) - (x / vw) * 100) < 0.01 && Math.abs(parseFloat(n.style.top) - (y / vh) * 100) < 0.01)?.dataset.id;
+      const a = at(+g.getAttribute('x1')!, +g.getAttribute('y1')!), b = at(+g.getAttribute('x2')!, +g.getAttribute('y2')!);
+      return a && b ? [a, b] : null;
+    });
+    if (!pair) break;
+    for (const id of pair) { await page.locator(`.sp-board .sp-node[data-id="${id}"]`).focus(); await page.keyboard.press('Enter'); }
+  }
+  await expect(page.locator('.sp-win')).toBeVisible();
+  await expect(page.locator(`.sp-m[data-m="${first}"]`)).toHaveCount(0);
+  await expect(page.locator('.sp-m')).toHaveCount(2);
+  await expect(page.locator('.sp-m.is-target')).toHaveAttribute('data-m', survivor!);
+  expect(issues.console).toEqual([]);
+});
+
 /* Feed the Twin Wall three numbers, then predict two answers; returns when the level is cleared */
 async function clearFeedLevel(page: import('@playwright/test').Page) {
   for (let i = 0; i < 3; i++) {
