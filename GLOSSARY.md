@@ -13,7 +13,7 @@ A made-up name built from fixed word lists (adjective, noun, number). Never type
 _Avoid_: username, display name, handle
 
 **Mode**:
-The play level a Player chooses: Explorer (about 4 to 7), Challenger (about 8 to 12) or Pro (13 to adult). It sets the wording, the grade range and the controls. It says nothing about the Player's real age.
+The play level a Player chooses: Explorer (about 4 to 7), Challenger (about 8 to 12) or Pro (13 to adult). It sets the wording, the grade range and the controls. It says nothing about the Player's real age. Once a Player has a Placement level, that level, not the Mode, sets where Practice starts; and a Reading band adjusts wording and answers within the Mode. (Both proposed in the `placement` and `age-bands` changes.)
 _Avoid_: difficulty, age group, kid mode (Explorer is not the site-wide kid mode)
 
 **League**:
@@ -24,9 +24,18 @@ _Avoid_: division, bracket, tier
 A Player's reply to one neutral question about their age. It is the only thing that decides whether the Parent step is needed.
 _Avoid_: age gate, age check, birthday
 
+**Grade answer**:
+A Player's reply to "What grade are you in?" (Pre-K to 12 or Grown-up), or their age if they chose to give it instead. Kept only on the device and never sent. It decides the Reading band and nothing else. (Proposed in the `age-bands` change.)
+_Avoid_: grade level, age gate, school grade (in code), grade (alone: that is a Skill map page)
+
+**Reading band**:
+How much reading help a Player gets, from their Grade answer: Early (about 4 to 6), Growing (about 7 to 9) or Fluent (10 and up). It changes read aloud, wording, answer buttons, the number of choices, Practice timers and Bolt's tone, in every Mode, and never math difficulty. A Player with no Grade answer has no band. Never shown to the Player. (Proposed in the `age-bands` change.)
+_Avoid_: age band (in copy), age group, reading level, kid mode
+
 **Parent step**:
 A grown-up's one-time permission, on this device, for a Player under 13 to post to World boards. Without it, nothing the Player does leaves the device.
 _Avoid_: opt-in, consent screen, parental gate
+On learnvedicmath.com the Parent step is retired: Players under 13 use Device boards only (`docs/adr/0006`, proposed in the `learnvedicmath` change).
 
 ## Learning
 
@@ -55,11 +64,11 @@ One solved problem in a Deep dive: a question and the short steps the Sutra uses
 _Avoid_: sample, demo, Kata (a Kata is a practice problem the Player answers)
 
 **Say it**:
-The button beside a Sutra name that plays its Name clip. It only ever plays after a tap, whether read aloud is on or off. (Proposed in the `sutra-pronunciation` change.)
+The speaker button beside a Sutra name that plays its Name clip (its accessible name is "Hear how to say <name>"; in the deep dive and on Trick pages it shows the words "Hear how to say"). It only ever plays after a tap, whether read aloud is on or off, and a second tap stops it.
 _Avoid_: pronounce button, audio button
 
 **Name clip**:
-A short prerecorded clip of one Sutra name, made once with a free voice model from the name's checked spelling. There are 29, one per Sutra and sub-sutra.
+A short prerecorded clip of one Sutra name, made once with a free voice model (Kokoro, the Alpha kid blend) from the name's checked spelling. There are 29, one per Sutra and sub-sutra, in `sounds/sutras/`.
 _Avoid_: recording (it is not a human voice), sample
 
 **Respelling**:
@@ -67,7 +76,7 @@ A Sutra name written so an English reader can say it: syllables joined by hyphen
 _Avoid_: phonetic spelling, transliteration (that is the IAST)
 
 **Sutra ambience**:
-Very quiet sound on the Sutra pages: a soft bowl strike when a page opens, an optional low hum, or an opt-in chanted Om instead. Never over Calm music and silent when Sound effects is off. (Proposed in the `sutra-pronunciation` change.)
+Very quiet sound on the Sutra pages: a soft bowl strike when a page opens (on by default), an optional low hum, or an opt-in chanted Om instead. Never over Calm music (if the music is already playing, it is the ambience), silent with Sound effects off, Calm or Pause motion, and it stops when the Player leaves the Sutra pages or the tab.
 _Avoid_: background music, chanting (unless the Om is meant)
 
 **Kata**:
@@ -91,12 +100,20 @@ The bronze, silver or gold result for one game Level.
 _Avoid_: stars (a Star is a Star Quest step), trophy, grade
 
 **Hook**:
-The opening of a new Player's first Star: a dare to beat the calculator, a short reveal of the Trick, then quick wins.
+The opening of a new Player's first Star (the one Placement points to): a dare to beat the calculator, a short reveal of the Trick, then quick wins.
 _Avoid_: first run, onboarding, tutorial
 
 **Placement**:
-A short check after the Hook that sets a new Player's starting Ratings and Belt, and the first Star Bolt suggests.
-_Avoid_: test, quiz, assessment
+The optional, untimed climb offered right after the Mode pick: one question per Step from school Skills, starting at the Mode's first grade, climbing on each right answer and ending at the second miss on a Step or after 12 questions. It finds the Placement level. Skippable and retakable from Me. (Proposed in the `placement` change.)
+_Avoid_: test, quiz, assessment, intro challenge (in code)
+
+**Placement level**:
+The school grade, K to 12, that a Placement found: the highest Step answered right. It sets where Practice starts (Ratings with no saved value), the suggested Skills and the first Star; never the League or a Ranked round. The Player sees Steps climbed; grown-ups see "about grade N". Kept on the device. (Proposed in the `placement` change.)
+_Avoid_: Level (that is a game stage), grade level, rank, placement score
+
+**Step**:
+One grade on the Placement climb. "You climbed 7 steps" counts the right answers.
+_Avoid_: level, stage, question
 
 **Bolt**:
 The robot co-pilot who shows each Trick and reacts to the Player's answers. A teacher, never a pet: nothing to feed, dress or keep happy.
@@ -119,8 +136,12 @@ A website or game on the Watch shelf that opens in a new tab. Pro only, like eve
 _Avoid_: resource, external site
 
 **Read aloud**:
-The setting that speaks questions, hints and praise. On by default for Explorer, off for Challenger and Pro. Speech only ever follows a tap.
+The setting that speaks questions, hints and praise. On by default for Explorer, off for Challenger and Pro. Speech only ever follows a tap. (Proposed in the `age-bands` change: a choice per Player, on by default for the Early Reading band in every Mode.)
 _Avoid_: TTS, narration, voice mode
+
+**Copy table**:
+The one list of app wording that varies by Mode or Reading band (`js/copy.js`): each line with its Mode variants or a default, and Early and Growing variants. (Proposed in the `age-bands` change.)
+_Avoid_: strings file, translations, i18n
 
 **Built-in voice**:
 The speech voice that comes with the Player's browser or device. The fallback for anything the Studio voice cannot say.
@@ -221,3 +242,23 @@ _Avoid_: sitemap, menu, index
 **Comeback**:
 Getting the rematch right after a mistake in a Star. It pays more Sparks than a first-time right answer, at most once per kind of question in a round.
 _Avoid_: retry, second chance, redemption
+
+## The move to learnvedicmath.com
+
+Proposed in the `learnvedicmath` change (`openspec/changes/learnvedicmath/`, ADRs 0004 to 0006).
+
+**Landing page**:
+The static page at `https://learnvedicmath.com/` that says what Vedic Math is and leads to the game at `/play/`. A device that already has Players goes straight past it into the game.
+_Avoid_: home (Home is the game's first view), splash, homepage
+
+**Hand-off**:
+Moving one device's Players, progress and settings from sbmadhav.com/vedic-math/ to learnvedicmath.com, once, on the device, after the Player says yes. World board identities and the Parent step never move.
+_Avoid_: migration (that is a schema upgrade), sync, transfer, import (the import page is where a Hand-off lands)
+
+**Moved page**:
+The page that replaces sbmadhav.com/vedic-math/ during Phase B of the move. It retires the old service worker and starts the Hand-off.
+_Avoid_: redirect page, splash
+
+**Export page**:
+The permanent page at sbmadhav.com/vm-export/ that hands a device's old progress to learnvedicmath.com in a popup, for Players who come back after the redirect is permanent.
+_Avoid_: backup page, old site

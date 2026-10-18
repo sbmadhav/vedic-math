@@ -43,6 +43,13 @@ test('the Sutras page ends with the verses, grouped by era, each with Devanagari
   expect(issues.console).toEqual([]);
 });
 
+test('at 320 px wide the verses wrap their long words and the Sutras page does not scroll sideways', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await open(page, '#/sutras');
+  await expect(page.locator('.verse').first()).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+});
+
 test('Listen reads the Devanagari with a Hindi voice, and a second tap stops', async ({ page }) => {
   await fakeSpeech(page, true);
   await open(page, '#/sutras');

@@ -1,5 +1,7 @@
 # Tasks
 
+> **Superseded by `placement` (owner Q14, 2026-10-17).** The Hook now opens the first Star that Placement points to. Its requirements live in `openspec/changes/placement/specs/hook/spec.md` and its tasks in `placement`'s tasks.md section 4. Do not apply or archive this change; `placement` task 7.2 deletes this folder.
+
 Prerequisites: `star-round` is merged (replay renderer, `runStar`, `fx.noMotion()`, `fx.announce()`); `sky-home` is merged (the suggested first Star).
 
 ## 1. Dares and the honest race

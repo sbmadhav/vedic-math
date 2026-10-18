@@ -1,0 +1,15 @@
+{
+  "name": "sutra-voice-tools",
+  "private": true,
+  "type": "module",
+  "description": "Repo-only tools for sutra-pronunciation: the Kokoro name clip of every Sutra, made locally, and a Whisper check.",
+  "scripts": {
+    "show": "node show.mjs",
+    "clips": "node make-sutra-clips.mjs",
+    "check": "node check.mjs"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "3.8.1",
+    "kokoro-js": "1.2.1"
+  }
+}
