@@ -70,7 +70,7 @@ All bodies are JSON, at most 1 KB; every response is `Cache-Control: no-store`; 
 | `GET /api/duel/status` | | `200 { open: true, v: 1 }` or `503 { open: false }` (the off switch, D18). |
 
 - The ticket travels in the WebSocket subprotocol header instead of the URL, so it never sits in a URL that a log or a browser history could keep.
-- A **ticket** is `base64url(payload).base64url(HMAC-SHA256(payload, DUEL_TICKET_KEY))`, payload `{ k: 'room' | 'queue', id, seat, exp, n }`: 60 seconds of life, single use (the object records `n` until `exp`).
+- A **ticket** is `base64url(payload).base64url(HMAC-SHA256(payload, DUEL_TICKET_KEY))`, payload `{ k: 'room' | 'queue', v, id, seat, exp, n }`: 60 seconds of life, single use (the object records `n` until `exp`). `v` is the protocol version the HTTP call was made with; the WebSocket upgrade refuses a ticket whose `v` is not the server's current one (D4, Version).
 
 ### D4. Protocol (version 1)
 
