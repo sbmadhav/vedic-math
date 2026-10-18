@@ -129,6 +129,7 @@ test.describe('pro', () => {
     await expect(more).toBeVisible();
     await expect(more.getByRole('link', { name: 'Vedic Mathematics (Wikipedia)' })).toHaveAttribute('target', '_blank');
     await expect(more).toContainText('arXiv');
+    await expect(page.locator('#verse-tirtha-gopi-pi .verse-refs')).toContainText("sūtras' origin");
   });
 });
 
@@ -185,7 +186,9 @@ test('the Sutras page and a deep dive have no outside link and no critique for C
   await page.waitForFunction(() => import('/vedic-math/js/videos.js' as string));
   await expect(page.locator('[data-history-links]')).toBeHidden();
   await expect(page.locator('#view a[target="_blank"]')).toHaveCount(0);
-  await expect(page.locator('#view')).not.toContainText('arXiv');
+  // The history card lists no critique; the verse cards' sources leave out the one that questions the Sutras' origin
+  await expect(page.locator('#view .history').first()).not.toContainText('arXiv');
+  await expect(page.locator('#view')).not.toContainText("sūtras' origin");
   await page.goto(`${APP}#/sutras/s1`);
   const dd = page.locator('dialog.sutra-modal');
   await expect(dd).toBeVisible();

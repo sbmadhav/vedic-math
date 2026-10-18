@@ -55,3 +55,10 @@ test('sutra deep dives find their verse: Yavadunam (s10) links to the Lilavati s
   assert.deepEqual(slokasFor('s10').map(v => v.id), ['lilavati-squares']);
   assert.deepEqual(slokasFor('s1'), []);
 });
+
+test('a source that questions the Sutras\' origin is marked pro, so only Pro sees it (watch-shelf: critiques are for Pro only)', () => {
+  for (const v of SLOKAS) for (const r of v.refs) {
+    assert.ok(r.length === 2 || (r.length === 3 && r[2] === 'pro'), `${v.id}: a ref's third field may only be 'pro'`);
+    if (/origin/i.test(r[0]) && /s[uū]tras/i.test(r[0])) assert.equal(r[2], 'pro', `${v.id}: ${r[0]} must be pro`);
+  }
+});
