@@ -32,7 +32,9 @@ test.describe('Explorer', () => {
     await expect(cards(page).first()).toBeVisible();
     const yts = await cards(page).evaluateAll(els => els.map(e => (e as HTMLElement).dataset.watch!));
     const kinds: Record<string, { kids: boolean; duration: number }> = await page.evaluate(async () => { const m: any = await import('/vedic-math/js/videos.js' as string); return Object.fromEntries(m.VIDEOS.map((v: any) => [v.yt, { kids: !!v.madeForKids, duration: v.duration }])); });
-    const seq = yts.map(y => kinds[y]).filter(Boolean);
+    const unknown = yts.filter(y => !kinds[y]);
+    expect(unknown, 'every card resolves to a VIDEOS entry').toEqual([]);
+    const seq = yts.map(y => kinds[y]);
     expect(seq.length).toBeGreaterThan(0);
     for (const v of seq) expect(v.duration).toBeLessThan(720);
     // Made for kids first, then shortest first within each group

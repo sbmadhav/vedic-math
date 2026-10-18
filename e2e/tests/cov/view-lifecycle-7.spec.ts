@@ -10,11 +10,12 @@ test('Party Mode setup after a change: one tap on Add a player adds exactly one 
   const seats = page.locator('.pt-seat');
   const n0 = await seats.count();
   expect(n0).toBeGreaterThanOrEqual(2);
-  const level = page.locator('.pt-seat select, .pt-seat [data-level]').first();
-  if (await level.evaluate(e => e.tagName === 'SELECT')) {
-    const opts = await level.locator('option').evaluateAll(os => os.map(o => (o as HTMLOptionElement).value));
-    await level.selectOption(opts[opts.length - 1]);
-  } else await level.click();
+  // Change the first player's level: a [data-lvl] option other than the current one
+  const other = page.locator('.pt-seat').first().locator('[data-lvl][aria-checked="false"]').first();
+  const lvl = await other.getAttribute('data-lvl');
+  expect(lvl).toBeTruthy();
+  await other.click();
+  await expect(page.locator('.pt-seat').first().locator(`[data-lvl="${lvl}"]`)).toHaveAttribute('aria-checked', 'true');
   await page.getByRole('button', { name: /add a player/i }).click();
   await expect(seats).toHaveCount(n0 + 1);
   await page.waitForTimeout(300);

@@ -23,7 +23,9 @@ async function none(page: Page, v: Awaited<ReturnType<typeof watchViolations>>, 
 }
 async function policy(page: Page, baseURL?: string) {
   const meta = page.locator('meta[http-equiv="Content-Security-Policy"]');
-  if (!/^https:/.test(baseURL || '') && await meta.count() === 0) test.skip(true, 'No CSP in the unbuilt source: serve a build');
+  // The build adds an import map: skip only the unbuilt source, so a build that lost its policy fails here
+  const built = await page.locator('script[type="importmap"]').count() > 0;
+  if (!/^https:/.test(baseURL || '') && !built) test.skip(true, 'Unbuilt source (no import map): serve a build');
   await expect(meta).toHaveCount(1);
   return (await meta.getAttribute('content'))!;
 }
@@ -38,11 +40,13 @@ test('Every main route: home, Learn, a Grade, a Skill, the Dojo, the Arena, Game
   const v = await watchViolations(page);
   await open(page);
   await policy(page, baseURL);
+  await none(page, v, 'home');
   for (const hash of ['#/learn', '#/grade/3', '#/skill/3-mult', '#/dojo', '#/arena', '#/games', '#/game/times-sprint', '#/sutras', '#/watch', '#/me', '#/star/sq5/1']) {
     await page.goto(`${APP}${hash}`);
     await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
+    // Each goto is a new document with a fresh recorder: check this route before leaving it
+    await none(page, v, hash);
   }
-  await none(page, v, 'the main routes');
 });
 
 test('A video plays in the page: the thumbnails show, the YouTube player frame loads, and no violation fires', async ({ page, baseURL }) => {
@@ -68,8 +72,10 @@ test('The natural voice worker: started from its import map URL it runs with no 
     try {
       const w = new Worker(url, { type: 'module' });
       w.onerror = e => resolve('error: ' + (e.message || 'worker failed'));
-      w.postMessage({ type: 'clear' });
-      setTimeout(() => { w.terminate(); resolve('ok'); }, 1500);
+      // An unloaded worker answers a gen with genError 'not loaded': that reply proves it started
+      w.onmessage = e => { if (e.data?.type === 'genError' && e.data.id === 'csp-probe') { w.terminate(); resolve('ok'); } };
+      w.postMessage({ type: 'gen', id: 'csp-probe', text: '' });
+      setTimeout(() => { w.terminate(); resolve('no reply from the worker'); }, 10_000);
     } catch (e) { resolve('threw: ' + e); }
   }));
   expect(started).toBe('ok');

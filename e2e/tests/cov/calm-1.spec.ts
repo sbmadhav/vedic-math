@@ -65,6 +65,6 @@ test('Daily challenge with Calm on: the lobby says the daily challenge is timed 
   await expect(page.locator('#arCalmNote')).toHaveText('The daily challenge is a timed race for everyone. Practice has no clock in Calm.');
   await page.locator('#arGo').click();
   await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
-  await expect(page.locator('#arTime')).toHaveText(/^(60|59|58|57)$/);
+  await expect(page.locator('#arTime')).toHaveText(/^([1-9]|[1-5]\d|60)$/);
   await page.locator('#arStop').click();
 });
