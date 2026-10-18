@@ -63,7 +63,7 @@ test('nav links move between views, and Back / Forward follow', async ({ page })
   await expect(page.locator('h1.home-h')).toBeVisible();
 });
 
-test('deeper routes: grade, skill, katas, tower, chapter, challenge, game, duel', async ({ page }) => {
+test('deeper routes: grade, skill, katas, tower, chapter, challenge, game, party', async ({ page }) => {
   await open(page, '#/grade/3');
   await expect(page.locator('.mq-skill').first()).toBeVisible();
   await open(page, '#/skill/v-sq5');
@@ -87,8 +87,8 @@ test('deeper routes: grade, skill, katas, tower, chapter, challenge, game, duel'
   await expect(page.locator('#view')).not.toContainText('★');
   await open(page, '#/game/times-sprint');
   await expect(page.locator('#gStart')).toBeVisible();
-  await open(page, '#/duel');
-  await expect(page.locator('#dGo')).toBeVisible();
+  await open(page, '#/arena/party');
+  await expect(page.locator('.pt-start')).toBeVisible();
   await open(page, '#/mix/3');
   await expect(page.locator('#practice .pr-q')).toBeVisible();
 });

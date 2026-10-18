@@ -173,9 +173,13 @@ _Avoid_: training, free play, unranked
 An Endless run: questions until three lives are lost, scored by how far the Player gets. A kind of Practice.
 _Avoid_: first run, streak
 
-**Duel**:
-Two Players on one screen racing the same question at the same time. The first right answer wins the point, and the first to 10 points wins.
-_Avoid_: versus, battle, multiplayer
+**Party Mode**:
+Two to four Players on one screen, each answering questions at their own Mode, over a set of rounds that ends on a podium. It replaced the Duel; `#/duel` opens it.
+_Avoid_: Duel (retired), versus, battle, multiplayer
+
+**Play experience**:
+One of the twelve pages where math is the way you play (Sutra Spellbook, Tala Lab, Daily Number and the rest), each inside a section: Dojo, Arena, Games or Sutras. A section lists its play experiences on its **Shelf**. Defined in `js/play/catalog.js`.
+_Avoid_: mini-game, playground, Vedic Play
 
 **Title**:
 A name a Player earns from their total Sparks, from Number Rookie to Vedic Legend. It has no number.
@@ -224,7 +228,7 @@ An optional harder question offered during a Star. Right pays double; a miss cos
 _Avoid_: challenge, boss, bonus question
 
 **Landmark**:
-A place on the edge of the Sky that leads somewhere else in the app, such as the Arena, Duel, Games, Watch or the Skill map.
+A place on the edge of the Sky that leads somewhere else in the app, such as the Arena, Party Mode, Games, Watch or the Skill map.
 _Avoid_: tab, menu item, building
 
 **Guide**:
