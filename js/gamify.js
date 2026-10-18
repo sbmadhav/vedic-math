@@ -38,11 +38,13 @@ function keepBelts() { const { lit } = store.starStates(), kept = store.keptBelt
    and after a backup is restored. Stars it lights send no event and earn no Sparks. */
 export function migrate() { if (store.upgrade(migrateSky)) { keepBelts(); checkBadges(); } }
 
-/* Badges: id, name, how to earn, test */
+/* Badges: id, name, how to earn, test. `modes` names the Modes that are offered the way to earn it (Belts and
+   Sutra cards are not offered in Explorer); badgesFor lists such a badge to other Modes only once it is earned. */
 const masteredCount = () => SKILLS.filter(s => store.mastered(s.id)).length;
 /* A Sutra card is collected by mastering one of its tricks or by reading its card */
 export const collectedCard = c => c.tricks.some(t => store.mastered('v-' + t)) || store.seen('sutra:' + c.name);
 export const collectedCount = () => [...SUTRAS, ...SUBSUTRAS].filter(collectedCard).length;
+const BIG = ['challenger', 'pro'];
 export const BADGES = [
   { id: 'first', name: 'First step', how: 'Answer your first question.', test: () => store.count('answers') >= 1 },
   { id: 'right25', name: 'Quarter century', how: 'Get 25 answers right.', test: () => store.count('right') >= 25 },
@@ -55,21 +57,23 @@ export const BADGES = [
   { id: 'master50', name: 'Math marathon', how: 'Master 50 skills.', test: () => masteredCount() >= 50 },
   { id: 'trick1', name: 'Trick seeker', how: 'Watch a speed trick step by step.', test: () => store.count('tricksWatched') >= 1 },
   { id: 'trick10', name: 'Trick collector', how: 'Watch 10 different speed tricks.', test: () => TRICKS.filter(t => store.seen('trick:' + t.id)).length >= 10 },
-  { id: 'belt-white', name: 'White belt', how: 'Light all 9 white belt Stars.', test: () => beltProgress()[0].earned },
-  { id: 'belt-green', name: 'Green belt', how: 'Earn the green belt: light all 9 of its Stars.', test: () => beltProgress()[3].earned },
-  { id: 'belt-black', name: 'Black belt', how: 'Earn the black belt: light all 9 of its Stars.', test: () => beltProgress()[6].earned },
+  { id: 'belt-white', name: 'White belt', how: 'Light all 9 white belt Stars.', test: () => beltProgress()[0].earned, modes: BIG },
+  { id: 'belt-green', name: 'Green belt', how: 'Earn the green belt: light all 9 of its Stars.', test: () => beltProgress()[3].earned, modes: BIG },
+  { id: 'belt-black', name: 'Black belt', how: 'Earn the black belt: light all 9 of its Stars.', test: () => beltProgress()[6].earned, modes: BIG },
   { id: 'arena1', name: 'Arena debut', how: 'Finish an Arena round.', test: () => store.count('arena') >= 1 },
   { id: 'arena200', name: 'Arena star', how: 'Score 200 or more in one Arena round.', test: () => store.count('arenaBest') >= 200 },
   { id: 'daily3', name: 'Daily habit', how: 'Finish the daily challenge on 3 days.', test: () => store.count('dailyDays') >= 3 },
   { id: 'duel', name: 'Party host', how: 'Finish a Party Mode game with family or friends.', test: () => store.count('duelsDone') >= 1 },
   { id: 'games', name: 'Game explorer', how: 'Play every game once.', test: () => GAMES.every(g => store.seen('game:' + g.id)) },
   { id: 'days7', name: 'Week warrior', how: 'Practice 7 days in a row.', test: () => store.streakDays() >= 7 },
-  { id: 'sutras', name: 'Sutra scholar', how: 'Collect 10 Sutra cards.', test: () => collectedCount() >= 10 },
+  { id: 'sutras', name: 'Sutra scholar', how: 'Collect 10 Sutra cards.', test: () => collectedCount() >= 10, modes: BIG },
   { id: 'watch', name: 'Video learner', how: 'Watch a video in the player for a whole minute.', test: () => store.count('watchedMinute') >= 1 },
   /* Title badges keep their old ids (level5, level10), so badges earned before Sparks stay earned */
   { id: 'level5', name: 'Sum Sprinter', how: 'Reach the Sum Sprinter Title (1000 Sparks).', test: () => store.sparks() >= 1000 },
   { id: 'level10', name: 'Fraction Fighter', how: 'Reach the Fraction Fighter Title (3600 Sparks).', test: () => store.sparks() >= 3600 }
 ];
+/* The badges a Me page lists for a Mode: every badge the Mode can earn, plus any other already earned (got: store.badges()) */
+export const badgesFor = (mode, got = {}) => BADGES.filter(b => !b.modes || b.modes.includes(mode || 'challenger') || !!got[b.id]);
 
 /* Daily quests: three a day from each Mode's pool, picked by a seeded draw on the local date, so every
    Player in a Mode sees the same three that day. Progress counts from a baseline taken on the day's

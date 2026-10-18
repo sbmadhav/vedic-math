@@ -257,3 +257,21 @@ test('belt badge texts say to light Stars, never to master the tricks', () => {
   assert.match(how('belt-black'), /Earn the black belt/);
   for (const b of gm.BADGES) assert.doesNotMatch(b.how, /Master the 3/i, b.id);
 });
+
+/* Explorer is not offered Stars or Sutra cards (star-round spec), so the Me page lists the badges that need them
+   only once earned (openspec explorer-belts) */
+test('badgesFor: Explorer is not listed the belt and Sutra scholar badges until earned; Challenger and Pro see every badge', () => {
+  const gated = ['belt-white', 'belt-green', 'belt-black', 'sutras'];
+  const ids = l => l.map(b => b.id);
+  for (const id of gated) assert.deepEqual(gm.BADGES.find(b => b.id === id).modes, ['challenger', 'pro'], id);
+  for (const b of gm.BADGES) if (!gated.includes(b.id)) assert.equal(b.modes, undefined, `${b.id} is open to every Mode`);
+  const explorer = ids(gm.badgesFor('explorer', {}));
+  for (const id of gated) assert.ok(!explorer.includes(id), `${id} not listed to Explorer`);
+  assert.equal(explorer.length, gm.BADGES.length - gated.length);
+  assert.deepEqual(ids(gm.badgesFor('challenger', {})), ids(gm.BADGES));
+  assert.deepEqual(ids(gm.badgesFor('pro', {})), ids(gm.BADGES));
+  assert.deepEqual(ids(gm.badgesFor(null, {})), ids(gm.BADGES), 'no Mode yet reads as Challenger');
+  // Earned in Challenger, then switched to Explorer: the belt stays listed
+  const kept = ids(gm.badgesFor('explorer', { 'belt-white': Date.now() }));
+  assert.ok(kept.includes('belt-white') && !kept.includes('belt-green'));
+});

@@ -1,4 +1,4 @@
-import { test, expect, open, type Page } from '../fixtures';
+import { test, expect, open, withVideos, type Page } from '../fixtures';
 
 /* copy-accuracy spec:
    - "Lesson pictures match the number" / Small hundredths: a question about 0.04 shades 4 squares, not none.
@@ -49,12 +49,11 @@ test.describe('Lesson pictures match the number: small hundredths', () => {
 });
 
 /* A counting video for young children whose title shares only a word FRAGMENT with the percent lesson
-   ("Count" inside "Discounts"). Added to the real list so the keyword fallback would pick it if it matched
-   fragments. It is visible to every Mode and has no hand matches. */
+   ("Count" inside "Discounts"). Served with the real list (withVideos) so the keyword fallback would pick it if it
+   matched fragments. It is visible to every Mode and has no hand matches. */
 const NUMBERBLOCKS = `{ id: 'e2e-numberblocks', title: 'Numberblocks: Let us Count', channel: 'Numberblocks', yt: 'e2eNumBlks1', duration: 60, kind: 'video',
     modes: ['explorer', 'challenger', 'pro'], skills: [], tricks: [], madeForKids: true, captions: true, checked: '2026-01-01',
-    why: 'Count along with the Numberblocks from one to ten.' },
-];`;
+    why: 'Count along with the Numberblocks from one to ten.' }`;
 
 async function settleWatch(page: Page) {
   // fillWatch fills the box once js/videos.js has loaded; let that promise chain run before checking for absence
@@ -69,12 +68,9 @@ for (const mode of ['explorer', 'challenger', 'pro'] as const) {
     test.use({ seedMode: mode });
 
     test('"Discounts, tax and percent change" links no counting video for young children', async ({ page }) => {
-      await page.route(/\/vedic-math\/js\/videos\.js(\?.*)?$/, async route => {
-        const res = await route.fetch();
-        const src = await res.text();
-        const body = src.replace(/\n\];\s*\n\s*export const LINKS/, `\n  ${NUMBERBLOCKS}\n\nexport const LINKS`);
-        await route.fulfill({ response: res, body });
-      });
+      // Served with no hand match for the lesson (the catalog has some now), so the keyword fallback is what runs,
+      // plus a planted Numberblocks counting video that a fragment match on "Discounts" would pick up
+      await withVideos(page, `list => [...list.map(v => ({ ...v, skills: v.skills.filter(s => s !== '7-pctchange') })), ${NUMBERBLOCKS}]`);
       await open(page, '#/skill/7-pctchange');
       await expect(page.locator('#view h1')).toHaveText(/Discounts, tax and percent change/);
       await expect(page.locator('[data-watch-for]')).toHaveCount(1);
@@ -91,7 +87,8 @@ for (const mode of ['explorer', 'challenger', 'pro'] as const) {
       expect(counting).toContain('e2eNumBlks1');
       const watch = page.locator('[data-watch-for]');
       await expect(watch).not.toContainText(/Numberblocks/i);
-      await expect(watch.locator('[data-watch]', { hasText: /count/i })).toHaveCount(0);
+      await expect(watch).not.toHaveAttribute('data-how', 'hand');
+      await expect(watch.locator('[data-watch]', { hasText: /\bcount(?:s|ed|ing)?\b/i })).toHaveCount(0);
       for (const yt of counting) await expect(page.locator(`[data-watch="${yt}"]`)).toHaveCount(0);
     });
   });
