@@ -79,8 +79,10 @@ test('Spellbook: after a monster is beaten, the one still walking becomes the ta
   await expect(page.locator('.sp-m')).toHaveCount(2);
   const first = await page.locator('.sp-m.is-target').getAttribute('data-m');
   const survivor = await page.locator('.sp-m:not(.is-target)').getAttribute('data-m');
-  /* Cast with the hints: each shows the next stroke as ghost lines between two digits; join them from the keyboard */
-  for (let guard = 0; guard < 40 && !(await page.locator('.sp-win').count()); guard++) {
+  /* Cast with the hints: each shows the next stroke as ghost lines between two digits; join them from the keyboard.
+     The board gets is-cast the moment the last stroke completes the spell (the win note follows a beat later), so
+     that is the stop: looking for the win note here instead raced it and, missing it, cast the next monster too. */
+  for (let guard = 0; guard < 40 && !(await page.locator('.sp-board.is-cast').count()); guard++) {
     await page.locator('.sp-hint').click();
     const pair = await page.evaluate(() => {
       const svg = document.querySelector('.sp-ink') as SVGSVGElement, [, , vw, vh] = svg.getAttribute('viewBox')!.split(' ').map(Number);
