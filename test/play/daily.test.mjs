@@ -145,3 +145,18 @@ test('saved progress that no longer replays starts that tier over', () => {
   const ok = { tiers: P.tiers.map(() => ({ moves: [], done: false })) };
   assert.equal(D.cleanRecord(ok, P).fixed, false);
 });
+
+test('a finished tier is kept only when its result is on the board its moves leave', () => {
+  const P = D.dailyPuzzles('2026-10-17', 'challenger'), nums = P.tiers[0].nums, sum = nums[0] + nums[1];
+  const off = Math.max(...nums, sum) + 1000;
+  const rec = { tiers: [
+    { moves: [[0, '+', 1]], done: true, stars: 1, v: sum },
+    { moves: [], done: true, stars: 3, v: off },
+    { moves: [], done: true, stars: 0, v: P.tiers[2].nums[3] }
+  ] };
+  const { rec: c, fixed } = D.cleanRecord(rec, P);
+  assert.ok(fixed);
+  assert.deepEqual(c.tiers[0], rec.tiers[0], 'a result its moves made');
+  assert.deepEqual(c.tiers[1], { moves: [], done: false }, 'a result no move made starts over');
+  assert.deepEqual(c.tiers[2], rec.tiers[2], 'stopping on a starting number is a real finish');
+});

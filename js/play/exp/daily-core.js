@@ -236,9 +236,11 @@ export function cleanRecord(rec, puzzle) {
   if (!rec || typeof rec !== 'object' || !Array.isArray(rec.tiers) || rec.tiers.length !== tiers.length) return { rec: { tiers: tiers.map(fresh), practice: !!(rec && rec.practice) }, fixed: !!rec };
   let fixed = false;
   const out = rec.tiers.map((st, i) => {
-    let ok = st && typeof st === 'object' && Array.isArray(st.moves) && st.moves.every(m => Array.isArray(m) && m.length === 3);
-    if (ok) { try { replay(tiers[i].nums, st.moves); } catch (e) { ok = false; } }
-    if (ok && st.done) ok = Number.isInteger(st.stars) && st.stars >= 0 && st.stars <= 3 && Number.isFinite(st.v);
+    let ok = st && typeof st === 'object' && Array.isArray(st.moves) && st.moves.every(m => Array.isArray(m) && m.length === 3), slots = [];
+    if (ok) { try { slots = replay(tiers[i].nums, st.moves); } catch (e) { ok = false; } }
+    /* A finished tier's result must be a number its own moves leave on the board. Its stars are not recomputed:
+       they were given for the Mode it was played in, which may have changed since. */
+    if (ok && st.done) ok = Number.isInteger(st.stars) && st.stars >= 0 && st.stars <= 3 && Number.isFinite(st.v) && slots.includes(st.v);
     if (ok) return st;
     fixed = true; return fresh();
   });
