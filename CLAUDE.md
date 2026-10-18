@@ -2,73 +2,37 @@
 
 Served at https://sbmadhav.com/vedic-math/ as part of sbmadhav.com: GitHub project Pages for this repo under the custom domain of the `sbmadhav.github.io` repo. There is no CNAME here; the domain comes from the user site.
 
+This file holds the rules. The details behind each rule live in `docs/agent/` and are read on demand (the index is at the end). Keep this file short; add facts there, not here.
+
 ## Shared files come from the main site
 
-This repo does not contain the design system, fonts or site chrome. `index.html` loads them by absolute URL from the rest of sbmadhav.com (the `sbmadhav.github.io` repo, and the design system from wherever `/design-system/` is served), the same way `/state-of-voice-agents/` does:
-
-- `/design-system/tokens.css` and `/design-system/components.css`
-- `/assets/explore.js` (site-wide Explore menu) and `/assets/analytics.js` (GoatCounter)
-- `/assets/fonts/*.woff2` and `/assets/icons/*.png` (the touch icon, and the icons this repo's own `manifest.webmanifest` lists)
-
-They are not `?v=` stamped (this repo cannot hash them). Do not copy them in; change them where they live.
+`index.html` loads the design system, fonts and site chrome by absolute URL from the rest of sbmadhav.com: `/design-system/tokens.css` and `components.css`, `/assets/explore.js`, `/assets/analytics.js`, `/assets/fonts/*.woff2` and `/assets/icons/*.png`. They are not `?v=` stamped. Do not copy them in; change them where they live (the `sbmadhav.github.io` and `design-system` repos).
 
 ## Rules
 
-- Follow the design system: its guidelines are published at https://sbmadhav.com/design-system/ (source: `design-system/README.md`, in the `sbmadhav.github.io` repo or its own `design-system` repo once split out).
-- Use tokens (`var(--coral)`, `var(--space-6)`, `var(--radius-lg)`), never raw hex. Text on accent fills uses `var(--on-accent)`, not white.
+- Follow the design system (https://sbmadhav.com/design-system/). Tokens only (`var(--coral)`, `var(--space-6)`, `var(--radius-lg)`), never raw hex. Text on accent fills uses `var(--on-accent)`, not white.
 - Support both color schemes (Daybreak light, Deep Space dark; system default with a saved override).
 - No kid mode switch in the header. The play modes (Explorer, Challenger, Pro) set the wording, and the page never writes the site-wide `kidmode` setting.
 - Keep the Explore button (`<button id="exploreBtn" class="xp-btn">`) in the header and `<script src="/assets/explore.js" defer>` plus `<script src="/assets/analytics.js" defer>` before `</body>`. Record notable actions with `window.siteTrack('area/action', 'Readable title')`; never send personal data.
 - Never use em dashes in copy.
-- Views and rounds tie every listener, timer and animation-frame loop to an `AbortSignal` with `js/life.js` (`on`, `later`, `every`, `loop`, `child`). The router gives each view `{ signal }` and aborts it on the next route; rounds and questions use `child(signal)`. `test/lifecycle-scan.test.mjs` fails on a bare `addEventListener`, `setTimeout` or `requestAnimationFrame` in view or round code.
+- Every listener, timer and animation-frame loop in a view or round goes through `js/life.js` (`on`, `later`, `every`, `loop`, `child`) with the view's `signal`; `test/lifecycle-scan.test.mjs` fails on bare ones.
 - Every page URL starts with `/vedic-math/`. Module imports are relative or absolute paths inside `/vedic-math/js/` (`build.py` fails on anything else).
+- Never commit cache stamps: `index.html` loads plain `/vedic-math/js/app.js` and `math.css` with no import map, and `sw.js` keeps `const VERSION = 'dev';` and `const PRECACHE = [];`. The build stamps the published copy.
+- Every change that affects behavior updates or adds the matching Playwright test in `e2e/` in the same commit, and `e2e/tests/cov/` holds one spec per live OpenSpec scenario.
+- Never write to production Firestore from a test, and never submit an Arena or game score against the live backend.
+- Every non-trivial behavior change starts as an OpenSpec change in `openspec/changes/<name>/`, is implemented after the owner approves it, and is archived after release. Run `openspec validate --strict` before committing a change.
+- Use the words defined in `GLOSSARY.md` in code comments, docs and plans; read `docs/adr/` before changing who can post, what is sent, or when an identity is created.
+- Repo-only files (`cloud/`, `test/`, `docs/`, `tools/`, `e2e/`, this file, the README, `build.py`) are listed in `exclude` in `_config.yml`; add new ones there.
 
-## Build, checks and hook
+## Checks before a push
 
-- Never commit cache stamps. In git, `index.html` has no import map and loads plain `/vedic-math/js/app.js` and `/vedic-math/math.css`, and `sw.js` keeps `const VERSION = 'dev';` and `const PRECACHE = [];` between the precache markers. The CI deploy runs `python3 build.py --out _site`, which copies the publishable files and stamps the copies (the import map pinning every module to `?v=<hash>`, the entry script and `math.css`, the worker's `VERSION` and precache list), so there is nothing to run after editing. The build fails if the source carries stamps.
-- The published files are every file git knows about minus `exclude` in `_config.yml` and any path with a part starting with `.` or `_`; the build also writes `.nojekyll`.
-- Tests: `node --test 'test/**/*.test.{js,mjs}'`.
-- Pre-commit hook in `.githooks/pre-commit` builds into a throwaway directory (catches build errors and committed stamps) and runs the tests. Enable once per clone: `git config core.hooksPath .githooks`.
-- `.github/workflows/ci.yml` runs the tests and the build on pushes and pull requests to `main`, and checks that `_site/` is stamped and holds no repo-only files. Its `deploy` job publishes that `_site/` with actions/deploy-pages only when the repository variable `PAGES_VIA_ACTIONS` is `true` and Settings > Pages > Source is "GitHub Actions". Without both, Pages deploys `main` with Jekyll, which publishes the unstamped source: it works, but nothing is pinned and the `'dev'` worker means no offline.
+`python3 build.py --out /tmp/vm-site` and `node --test 'test/**/*.test.{js,mjs}'`; then `cd e2e && npx playwright test` (details in `docs/agent/e2e.md`). Enable the pre-commit hook once per clone: `git config core.hooksPath .githooks`.
 
-## End-to-end tests (`e2e/`)
+## Where the details are
 
-- Every change that affects behavior updates or adds the matching Playwright test in `e2e/` in the same commit. Run `cd e2e && npx playwright test` before pushing (`BASE_URL=http://localhost:8124` for a local server: `node e2e/local-server.mjs 8124` serves this checkout at `/vedic-math/` and proxies the rest of the site from https://sbmadhav.com).
-- The suite targets the LIVE https://sbmadhav.com/vedic-math/ by default (projects chromium, webkit, mobile). First run: `cd e2e && npm ci && npx playwright install chromium webkit`.
-- Never write to production Firestore from a test. `e2e/tests/fixtures.ts` replaces the Firebase SDK with a fake that records attempted writes (`cloudLog(page)`), and aborts and fails the test on any write-shaped request to `firestore.googleapis.com`. Only `leaderboard.live.spec.ts` loads the real SDK (one anonymous sign-in, reads only, chromium, no retries). Never submit an Arena or game score against the live backend.
-- The service worker is blocked (`serviceWorkers: 'block'` in `e2e/playwright.config.ts`) everywhere except `e2e/tests/offline.spec.ts`. Two reasons: Playwright WebKit does not route requests from a worker-controlled page, so the fake SDK and the local GoatCounter answer are bypassed there (real anonymous sign-ins, counted visits); and a worker installing in every fresh test context roughly doubles the requests and gets the IP rate limited by GitHub Pages (HTTP 429, every test then times out). Keep offline specs off WebKit and keep their tripwire for live Google backends.
-- Known axe violations go in `KNOWN` in `e2e/tests/a11y.spec.ts` (each becomes a `test.fixme` with a note); remove the entry when fixed.
-- `e2e/tests/cov/` holds one spec per live OpenSpec scenario. In CI they run on chromium only, and the run after a push leaves them out (`E2E_SKIP_COV=1`), so the live run stays under GitHub Pages' rate limit and the job timeout. Locally every project runs them.
-- The live pages carry a Content-Security-Policy without `'unsafe-eval'`: never build a function from a string inside `page.evaluate` (`new Function`, `eval`); pass a named option and keep the code in the page function.
-- `.github/workflows/e2e.yml` runs the suite daily, on demand (optional `base_url`) and on pushes to `main` (after waiting for the Pages deploy).
-- Repo-only files are listed in `exclude` in `_config.yml` (`cloud/`, `test/`, `docs/`, `tools/`, `e2e/`, this file, the README, `build.py`). Add new ones there.
-
-## Offline
-
-`sw.js` is this app's service worker, registered by `js/app.js` with scope `/vedic-math/` (on https and localhost). That scope is more specific than the root worker of sbmadhav.com (scope `/`, which leaves `/vedic-math/` to the network), so it controls these pages, including their requests to `/assets/` and `/design-system/`.
-
-- `build.py --out` writes its `VERSION` and `PRECACHE` list into the published copy (between the `build.py: precache` markers): the shell, `math.css`, every module at its import-map URL and the manifest, each with a hash the worker checks on install, plus the shared files `index.html` and the manifest reference. In git that block stays `'dev'` and empty; never stamp it by hand. A `'dev'` worker has no fetch handler (network only) and deletes `vedic-math-*` caches, so serving the source locally never goes stale. To test the real worker, build `_site` and serve it (`node e2e/local-server.mjs 8124 _site`).
-- Page loads are network first with the saved shell as the offline fallback; `?v=` files are cache first; shared files are stale while revalidate. Other origins (Firebase, Google, analytics) and non-GET requests are never cached. Leaderboards fall back to this device when offline.
-- Caches are `vedic-math-<VERSION>`; the worker keeps the current and previous one and never touches `madhav-*` (the root worker's). Never rename the prefix to `madhav-`.
-- New same-origin files the page loads must be in `index.html` or the manifest (build.py lists them), and a module worker must be started with `import.meta.resolve(...)` so it gets its `?v=` stamp.
-- To retire it, set `KILL = true` in `sw.js` and deploy (see the comment there).
-- `manifest.webmanifest` here makes Vedic Math its own installable app (scope `/vedic-math/`); the main site's manifest is unchanged.
-- `sounds/` (the 29 Sutra name clips in `sounds/sutras/` and the Om) is served cache first from `vedic-math-sounds`, a cache every deploy keeps, and is never precached. The clips are made by `tools/sutra-voice/make-sutra-clips.mjs`, which also writes `js/say-clips.js` (each clip's size and `?v=` content hash); remake both together (`test/say.test.mjs` checks them).
-
-## Play experiences (`js/play/`)
-
-- Twelve experiences (Sutra Spellbook, Discovery Locks, Party Mode, Ghost Races, Daily Number, Tala Lab, Mandala Studio, Pattern Wall, Teach the Apprentice, Estimation Bets, Math Lens, The Lost Śulba Scroll), each a page inside a section at `#/<section>/<name>`, listed in `js/play/catalog.js`. There is no separate play area or nav item; section pages show them on a shelf (`playShelf()` in `js/app.js`). Party Mode replaced the Duel (`#/duel` redirects).
-- An experience is `js/play/exp/<id>.js` exporting `mount({ root, signal, params, exp })`, pure logic in `js/play/exp/<id>-*.js` (no DOM at import, tested in `test/play/<id>.test.mjs`), and `css/play/<id>.css` plus the shared `css/play/base.css`, loaded with the page (`build.py` stamps and precaches them through the `#vm-css` map). Class prefix `px-` (the video player owns `vp-`).
-- Experiences use `js/play/kit.js`, never app modules: it reads the Mode, `vm.sound` and Calm from storage, keeps state per Player (`vm.play.<player id>.<key>`), and `track(action)` sends only `math/play/<experience>/<action>` and fires `vmplay`, which `onPlay()` in `js/app.js` turns into Sparks (at most 150 a day) and badge counts. Listeners, timers and frame loops go through `js/play/life.js` (the app's `js/life.js`).
-- Experiences post nothing to the leaderboards. Share links carry only parameters, times and word-list names. Math Lens keeps camera frames on the device and loads its digit reader (Tesseract.js, pinned) from jsDelivr on first use; the published CSP does not allow that host, so the camera is offered only where the page's policy lets the reader load (`readerAllowed()` in `js/play/exp/lens-cam.js`). Camera and microphone stop on a route change, a hidden tab and errors.
-
-## Leaderboards
-
-Firebase with Firestore security rules. Setup, rules and the rules tests live in `cloud/` (see `cloud/README.md`). The browser client is `js/cloud.js`; the config is `js/cloud-config.js`.
-
-## Language and decisions
-
-- Domain terms are defined in `GLOSSARY.md` (Player, Mode, League, Rating, Ranked round, Practice, Score, Sparks, Title, Medal, Board and more). Use those words in code comments, docs and plans, and update the glossary when a term changes.
-- Decisions that are hard to reverse are recorded in `docs/adr/`. Read them before changing who can post, what is sent, or when an identity is created.
-- `docs/PLAN.md` is the product plan.
-- Changes are planned with OpenSpec (`openspec/`, CLI `openspec`, Claude commands `/opsx:propose`, `/opsx:apply`, `/opsx:archive`). Every non-trivial behavior change starts as a change in `openspec/changes/<name>/` (proposal, spec deltas, design, tasks), is implemented with `/opsx:apply` once the owner approves it, and is archived after release so `openspec/specs/` describes what is live. Run `openspec validate --strict` before committing a change.
+- `docs/agent/build-and-checks.md`: what `build.py` stamps, the published file set, the hook, CI and the Pages deploy.
+- `docs/agent/e2e.md`: the live suite, the local server, the Firebase fake, the service worker rule, coverage specs, the CSP rule for tests, the workflow.
+- `docs/agent/offline.md`: the service worker, caches, precache list, sounds, how to retire it.
+- `docs/agent/play-experiences.md`: the twelve experiences under `js/play/`, their module shape, kit, analytics and Math Lens.
+- `docs/agent/leaderboards.md`: Firebase, rules and the browser client.
+- `docs/agent/language-and-decisions.md`: the glossary, ADRs, `docs/PLAN.md` and the OpenSpec workflow.
