@@ -494,10 +494,12 @@ async function speakStudio(words, my) {
   for (const p of plan) if (p.clip) { const name = sb.dir[p.clip]; if (!name) { vlog('studio:missing'); return false; } need.add(name); }
   const missing = [...need].filter(n => !packReady.has(n));
   if (missing.length) { missing.forEach(n => loadPack(sb, n).catch(() => {})); return false; } // this line: built-in; later lines: clips
+  /* Every clip must be in its pack before any is scheduled, so a gap never leaves half a line in the studio voice */
+  for (const p of plan) if (p.clip && !packReady.get(sb.dir[p.clip]).map.clips[p.clip]) { vlog('studio:missing'); return false; }
   let at = audioCtx().currentTime + 0.05;
   for (const p of plan) {
     if (p.pause) { at += PAUSE[p.pause]; continue; }
-    const pack = packReady.get(sb.dir[p.clip]); if (!pack.map.clips[p.clip]) return false;
+    const pack = packReady.get(sb.dir[p.clip]);
     const [off, len] = clipBounds(pack, p.clip);
     startSource(pack.buf, at, off, len); at += len + GAP;
   }

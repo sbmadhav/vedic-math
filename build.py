@@ -108,9 +108,12 @@ def check_voice(files):
             fail(f"{f}: audio is never committed; record it with tools/voice/ and publish it as a release archive (tools/voice/publish.mjs)")
 
 
+TEXT_EXT = (".js", ".mjs", ".html", ".css", ".json", ".webmanifest", ".txt", ".md", ".svg", ".xml", ".map", ".csv", ".yml", ".yaml")
+
+
 def check_no_provider(out):
     for p in sorted(out.rglob("*")):
-        if not p.is_file() or p.suffix not in (".js", ".html", ".css", ".json", ".webmanifest", ".txt", ".md"):
+        if not p.is_file() or p.suffix not in TEXT_EXT:
             continue
         text, rel = p.read_text(errors="ignore"), p.relative_to(out).as_posix()
         if rel == "js/cloud-config.js":

@@ -24,7 +24,7 @@
      while revalidate. This repo cannot hash them, so a change reaches visitors one visit late.
    - Studio voice audio (/vedic-math/voice/): cache first in its own cache, vedic-math-voice, which every
      deploy keeps (the file names hold their content's hash, so a name never changes meaning). Trimmed to
-     VOICE_MAX entries, oldest first. Nothing is precached: only Players who use read aloud download audio.
+     VOICE_MAX whole lines, oldest first. Nothing is precached: only Players who use read aloud download audio.
    - Sounds (/vedic-math/sounds/: the Sutra name clips and the Om, openspec sutra-pronunciation): cache first in
      their own cache, vedic-math-sounds, which every deploy keeps, so a name heard once plays offline after the next
      deploy too. Every sound URL the app builds carries ?v=<content hash> (js/say-clips.js), so a changed file is a new
@@ -54,7 +54,8 @@ const NAV_TIMEOUT = 3500; // ms before a page load falls back to the saved shell
 const PRECACHED = new Set(PRECACHE.map(([u]) => new URL(u, location.origin).href));
 const VOICE = BASE + 'voice/';
 const VOICE_CACHE = PREFIX + 'voice'; // kept across deploys (not a version cache)
-const VOICE_MAX = 4000; // whole lines are about 10 KB each
+const VOICE_MAX = 4000; // whole lines kept (about 10 KB each); the index and pack files are not counted
+const VOICE_LINE = /\/voice\/l\/[0-9a-f]{14}\.m4a$/; // a whole line's file
 const SOUNDS = BASE + 'sounds/';
 const SOUNDS_CACHE = PREFIX + 'sounds'; // kept across deploys (not a version cache)
 const SOUNDS_MAX = 120; // 29 name clips and the Om, with room for remade ones
@@ -179,8 +180,11 @@ async function voiceFile(req) {
   if (cacheable(res)) {
     try {
       await cache.put(req, res.clone());
-      const keys = await cache.keys();
-      for (let i = 0; i < keys.length - VOICE_MAX; i++) await cache.delete(keys[i]);
+      /* Only whole lines count and are dropped: the line set, clip directory and packs are few, saved first and
+         never re-saved, so an oldest-first trim over everything would drop them first and leave offline read aloud
+         with nothing to look lines up in */
+      const lines = (await cache.keys()).filter(k => VOICE_LINE.test(new URL(k.url).pathname));
+      for (let i = 0; i < lines.length - VOICE_MAX; i++) await cache.delete(lines[i]);
     } catch (e) { /* quota: play it without saving */ }
   }
   return res;

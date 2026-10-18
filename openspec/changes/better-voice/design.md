@@ -166,7 +166,7 @@ The prototype showed that free Kokoro clips are not good enough for the owner, s
 - `js/voice-index.js` is imported only when read aloud first plays. It is generated, and holds the voice id, the base URL, the pack names, the clip index and the covered Skills.
 - When a line comes from a covered Skill or is a fixed line, `speak()` fetches its file. Otherwise it plans clips.
 - The core pack loads on idle once read aloud is on.
-- Files and packs are cache first in `sw.js`, because their names change with their bytes. They live in their own cache, `vedic-math-voice`, which version cleanup never deletes (trimmed to 4,000 entries, oldest first), so a deploy never drops audio a Player already has.
+- Files and packs are cache first in `sw.js`, because their names change with their bytes. They live in their own cache, `vedic-math-voice`, which version cleanup never deletes (trimmed to 4,000 whole lines, oldest first; the line set, clip directory and packs are never trimmed, so offline lookups keep working), so a deploy never drops audio a Player already has.
 - Offline, a line the device never fetched falls back to clips (core pack saved) or the built-in voice.
 - Nothing is precached at install: only Players who use read aloud download audio. An Explorer Player downloads about 1.2 MB once, plus about 10 KB per new line.
 

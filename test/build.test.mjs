@@ -193,6 +193,14 @@ test('the build fails when a published file names a speech provider or holds a k
     assert.notEqual(r.status, 0, line);
     assert.match(r.stderr, /speech provider|API key or token/, line);
   }
+  /* Any published text file is scanned, an SVG too */
+  const svg = join(dir, 'leak.svg');
+  writeFileSync(svg, `<svg xmlns="http://www.w3.org/2000/svg"><!-- ${key} --></svg>`);
+  execFileSync('git', ['add', '-f', 'leak.svg'], { cwd: dir, env });
+  const r = tryBuild();
+  execFileSync('git', ['rm', '-q', '--cached', 'leak.svg'], { cwd: dir, env }); rmSync(svg);
+  assert.notEqual(r.status, 0, 'a key in an SVG');
+  assert.match(r.stderr, /leak\.svg: holds something shaped like an API key or token/);
   build(); // and the real source passes, Firebase apiKey included
 });
 
