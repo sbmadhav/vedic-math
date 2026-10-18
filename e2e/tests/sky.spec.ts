@@ -197,9 +197,9 @@ test.describe('Belt copy with the Sky off', () => {
   });
   test.describe('Pro', () => {
     test.use({ seedMode: 'pro' });
-    test('the Pro Vedic Dojo tile counts lit Stars', async ({ page }) => {
+    test('the Pro Dojo door counts lit Stars', async ({ page }) => {
       await open(page);
-      await expect(page.locator('.play-tile[href="#/dojo"]')).toContainText('0 of 7 belts · 4 of 63 Stars lit');
+      await expect(page.locator('.door[href="#/dojo"]')).toContainText('0 of 7 belts · 4 of 63 Stars lit');
     });
   });
 });

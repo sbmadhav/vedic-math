@@ -29,7 +29,7 @@ export function sections(n) {
       title: w('Find your way', 'Getting around'),
       what: w('The menu at the top takes you to every part of the app.', 'The menu bar at the top takes you to every part of the app. Your Me page is the round avatar at its right end.'),
       how: [
-        w('Tap Home, Learn, Arena, Games, Watch or Guide in the menu.', 'Pick Home, Learn, Dojo, Arena, Games, Sutras, Watch or Guide in the menu bar.'),
+        w('Tap Home, Learn, Arena, Games, Watch, Guide or Find in the menu.', 'Pick Home, Learn, Dojo, Arena, Games, Sutras, Watch, Guide or Find in the menu bar. Hover a name to see what is there.'),
         w('On a phone, slide the menu sideways to see the rest.', 'On a phone, swipe the menu bar sideways to reach the music button and your Me page.'),
         w('Daybreak makes the page light. Deep Space makes it dark.', 'Daybreak (light) and Deep Space (dark) at the top change the colors; System follows your device.'),
         w('The links above a page title take you back a step.', 'The trail of links above each page title (Vedic Math / Games / ...) takes you back a step.'),
@@ -60,6 +60,18 @@ export function sections(n) {
       ],
       tip: w('Come back every day. Seven days in a row earns a badge!', 'A few minutes every day beats one long session. Practicing seven days in a row earns the Week warrior badge.'),
       try: { href: '#/', label: 'Go to Home' } },
+
+    { id: 'find', group: 'start', art: 'find', covers: ['#/find'],
+      title: w('Find anything', 'Find'),
+      what: w('Type a word and Find shows the games, skills and videos with that word.', 'One box that searches every skill, trick, sutra, game, way to play, video and guide section by name or by a plain word.'),
+      how: [
+        w('Tap Find in the menu, or the magnifying glass.', 'Pick Find in the menu bar, or press the / key on any page.'),
+        w('Type a word like balloons or ten.', 'Type a name or a plain word: squares, take away, fractions, leaderboard, nickname, privacy.'),
+        w('Tap what you want. Videos play right there.', 'Results come in groups; Enter opens the first one, and a video plays in place.'),
+        w('Type nothing to see every place you can go.', 'With nothing typed, Find lists every section with one line saying what is there.')
+      ],
+      tip: w('Nothing you type is kept or sent anywhere.', 'Nothing you type is stored, sent or put in the address.'),
+      try: { href: '#/find', label: w('Open Find', 'Open Find') } },
 
     { id: 'me', group: 'start', art: 'me', covers: ['#/me', '#/progress'],
       title: w('Me and badges', 'Me page and badges'),

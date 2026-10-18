@@ -15,7 +15,8 @@ const PAGE_LISTENERS = [
   /document\.addEventListener\('click', e => \{$/, // the Watch link handler (opens the video player)
   /sutraDlg\.addEventListener\(/, /playerDlg\.addEventListener\(/, /ageDlg\.addEventListener\(/, // dialogs created once
   /addEventListener\('load', registerSW, \{ once: true \}\)/, // service worker registration
-  /document\.addEventListener\('vmplay', onPlay\)/ // play rewards (Sparks and badge counts), added once
+  /document\.addEventListener\('vmplay', onPlay\)/, // play rewards (Sparks and badge counts), added once
+  /document\.addEventListener\('keydown', e => \{$/ // the / key that opens Find from any page (openspec find), added once
 ];
 const PAGE_TIMERS = [
   /sparksTimer = setTimeout\(/, /clearTimeout\(sparksTimer\)/, // weekly Sparks post, at most once a minute
