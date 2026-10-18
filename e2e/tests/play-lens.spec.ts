@@ -13,12 +13,13 @@ async function fakeCamera(page: import('@playwright/test').Page) {
     const fake = async () => {
       w.__gum++;
       const c = document.createElement('canvas'); c.width = 320; c.height = 180;
+      // The stream first, then the paint: the canvas-capture spec promises a frame only for a paint made after the
+      // track exists. And no frame rate: with one (captureStream(5)) WebKit sends a frame only when the canvas is
+      // repainted, so a still canvas never gave the <video> a frame and videoWidth stayed 0 (Chromium sent one anyway)
+      const s = (c as any).captureStream() as MediaStream;
       const g = c.getContext('2d')!; g.fillStyle = 'rgb(250, 250, 250)'; g.fillRect(0, 0, 320, 180);
       // Bold monospace digits: WebKit's default sans-serif "1" (a flag and a base) read as "7" in the OCR
       g.fillStyle = 'rgb(10, 10, 10)'; g.font = 'bold 84px "DejaVu Sans Mono", monospace'; g.fillText('4721', 40, 124);
-      // No frame rate: with one (captureStream(5)) WebKit sends a frame only when the canvas is repainted, so a still
-      // canvas never gives the <video> a frame and videoWidth stays 0; with none, the current bitmap is sent at once
-      const s = (c as any).captureStream() as MediaStream;
       s.getTracks().forEach(t => w.__tracks.push(t));
       return s;
     };
