@@ -15,6 +15,7 @@ The audit script and its numbers are in `design.md`. Each task names its verific
 - [x] 2.3 Guide: a Find section in `js/guide.js` covering `#/find`, Find named in "Getting around". Verify: `test/guide.test.mjs` (every route covered); `e2e/tests/guide.spec.ts` lists the new section.
 - [x] 2.4 Analytics: `metrics.findGo()` on a followed result; `'#/find': 'find'` in `test/metrics.test.mjs` SAMPLES. Verify: `e2e/tests/cov/analytics-*.spec.ts` "A Find result" (exactly one `math/find/go`, no request carries the text); `test/metrics.test.mjs` call-site scan.
 - [x] 2.5 Accessibility: axe on `#/find` with results in both schemes. Verify: `e2e/tests/find.spec.ts` axe test; `e2e/tests/cov/find-*.spec.ts` "Accessible".
+- [x] 2.6 A result followed before a Mode: the router remembers the route in memory while the mode picker shows; a Mode card opens it when it is among that Mode's Find entries, else Home. Verify: `e2e/tests/find.spec.ts` "no Mode yet" (a Skill result then Challenger lands on the Skill; Times sprint then Explorer goes Home).
 
 ## 3. Try a trick (`js/app.js`, `js/fx.js`, `js/store.js`)
 

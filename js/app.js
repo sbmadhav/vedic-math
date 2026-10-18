@@ -126,6 +126,7 @@ function render() {
   if (h === '#/sutras' && sutraDlg && sutraDlg.open) { closeSutra(); metrics.view(h, knownId); return; }
   if (sutraDlg && sutraDlg.open) closeSutra(true);
   const hit = routes.find(([re]) => re.test(h)), picker = !fx.mode() && !/^#\/(watch|sutras|find|guide(\/[\w-]+)?)$/.test(h); /* the guide and Find open without a mode too */
+  modePicker.pending = picker && hit && h !== '#/' ? h : null; /* the page asked for before a Mode, opened once one is picked (afterPick) */
   mount(ctx => (picker ? modePicker(ctx) : hit ? hit[1](h.match(hit[0]), ctx) : home(ctx)));
   const asSky = !picker && /^#?\/?$/.test(h) && SKY.skyOn(store.player()); /* home showed the Sky: the route view is sky */
   if ((location.hash || '#/') === h) metrics.view(h, knownId, picker, asSky); /* one anonymous route view (analytics spec); a view that redirected is counted when its target renders */
@@ -165,9 +166,16 @@ function modePicker() {
     <p class="mq-note">Playing as <b>${esc(p.name)}</b>. Nicknames are made up for you, so no real names are ever needed. You can change who is playing any time.</p>
     <p class="mq-note gd-pickhelp">Not sure where to start? <a href="#/guide">See how it works</a> or <a href="#/find">find something by name</a>.</p>
   </div></section>`;
-  view.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { fx.sfx('level'); fx.setMode(b.dataset.mode); gm.startDay(); fx.confetti(60); location.hash = '#/'; render(); });
+  view.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { fx.sfx('level'); fx.setMode(b.dataset.mode); gm.startDay(); fx.confetti(60); location.hash = afterPick(b.dataset.mode); render(); });
   /* Try a trick (openspec first-visit): Challenger as a guess, then the first Star of Bolt's path, the one Home offers */
   $('#tryBtn').onclick = () => { fx.setMode('challenger', { guess: true }); gm.startDay(); metrics.tryStart(); location.hash = firstStarHref(); };
+}
+/* Where a Mode card goes: the page the visitor asked for before picking (a Find result, a link), when it is a route
+   in this app the picked Mode can open (one of its Find entries), else Home. Kept in memory only, never stored. */
+function afterPick(mode) {
+  const to = modePicker.pending; modePicker.pending = null;
+  if (!to || !/^#\/[\w\/-]+$/.test(to) || !routes.some(([re]) => re.test(to))) return '#/';
+  return buildIndex({ mode, counts: guideCounts() }).some(e => e.href === to) ? to : '#/';
 }
 /* The Star Home's Play this Star offers: the next one on Bolt's suggested path (js/sky.js), or the first Trick's Star 1 */
 function firstStarHref() {

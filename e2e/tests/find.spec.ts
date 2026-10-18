@@ -142,6 +142,28 @@ test.describe('no Mode yet', () => {
     await expect(page.locator('.mode-pick')).toHaveCount(0);
     await expect(hits(page).locator('b')).toContainText(['Dojo', 'Sutras']);
   });
+  test('a result followed before a Mode opens the mode picker, then that result once a Mode is picked', async ({ page }) => {
+    await open(page, '#/find');
+    await page.locator('#findIn').fill('fractions');
+    const hit = page.locator('#findOut .find-group', { has: page.locator('h2', { hasText: 'Skills' }) }).locator('a.find-hit').first();
+    const href = await hit.getAttribute('href');
+    expect(href).toMatch(/^#\/skill\/[\w-]+$/);
+    await hit.click();
+    await expect(page.locator('.mode-pick')).toBeVisible();
+    await page.locator('[data-mode="challenger"]').click();
+    await expect(page).toHaveURL(new RegExp(`${href!.replace(/[/]/g, '\\/')}$`));
+    await expect(page.locator('.mode-pick')).toHaveCount(0);
+    await expect(page.locator('.mq-nav a[href="#/learn"]')).toBeVisible();
+  });
+  test('a result the picked Mode cannot open goes Home instead', async ({ page }) => {
+    await open(page, '#/find');
+    await page.locator('#findIn').fill('sprint');
+    await page.locator('#findOut .find-group', { has: page.locator('h2', { hasText: 'Games' }) }).locator('a.find-hit').first().click();
+    await expect(page.locator('.mode-pick')).toBeVisible();
+    await page.locator('[data-mode="explorer"]').click();
+    await expect(page).toHaveURL(/#\/$/);
+    await expect(page.locator('#view h1')).toHaveText('What do you want to play?');
+  });
 });
 
 for (const scheme of ['light', 'dark'] as const) {

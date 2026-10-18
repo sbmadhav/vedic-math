@@ -20,6 +20,17 @@ The system SHALL offer a Find page at `#/find` with a search box focused on open
 - **WHEN** a new visitor follows the landing's Find link
 - **THEN** the Find page opens, not the mode picker
 
+### Requirement: A result followed before a Mode
+A result followed before a Mode is picked SHALL open the mode picker, and picking a Mode there SHALL open that result when the picked Mode can open it (it is among that Mode's Find entries), and Home otherwise. The result SHALL be remembered only in the page's memory, never stored.
+
+#### Scenario: A result before a Mode
+- **WHEN** a new visitor opens Find, follows a Skill result and picks Challenger on the mode picker that shows
+- **THEN** that Skill's page opens, not Home
+
+#### Scenario: A result the picked Mode cannot open
+- **WHEN** a new visitor follows the Times sprint game result from Find and picks Explorer
+- **THEN** Explorer Home opens
+
 ### Requirement: The index holds every named thing
 The index SHALL hold every section, grade, Skill, Trick, Sutra and sub-sutra, game, play experience, guide section and video in the catalogs, each with its kind, its title in the Mode's wording, a one-line description and the page it opens. It SHALL be built in the page from the catalogs, with no index file and no request to any server.
 
