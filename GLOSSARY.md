@@ -123,6 +123,22 @@ _Avoid_: mascot, buddy, pet, avatar
 A Trick learned and then used correctly in a timed round. The thing the product exists to produce.
 _Avoid_: aha, win
 
+**Try a trick**:
+The one primary button on the landing (the mode picker). It sets Challenger as a Mode guess and opens the first Star of Bolt's path, so a curious visitor answers a question in two taps with no choice to make. (`first-visit-clarity` change.)
+_Avoid_: demo, trial mode, guest mode
+
+**Mode guess**:
+A Mode set by Try a trick rather than picked (`modeGuess` on the Player record). Home names it ("our guess for a first try") beside Change, and any pick on the landing's cards or on Me clears it. Kept on the device only.
+_Avoid_: default mode, auto mode
+
+**Door**:
+One of the three cards at the top of Challenger and Pro Home (Challenger: the next Star, the Arena, the Skill map; Pro: the Arena, the Dojo, the Skill map), each with one plain line that says what its word means. The other tiles wait under **More ways to play**.
+_Avoid_: tile (that is what is under More ways to play), hero, CTA
+
+**Find**:
+The page at `#/find` (menu bar, after Guide; the `/` key) with one box over every named thing: sections, grades, Skills, Tricks, Sutras, games, play experiences, guide sections and videos, by name or a plain word. Built in the page from the catalogs (`js/find.js`); nothing typed is stored or sent. Its browse list gives each section's one-line description, the same line the menu shows as a tooltip.
+_Avoid_: search engine, site search, lookup
+
 **Watch shelf**:
 The checked list of videos, Shorts and (for Pro) Links in `js/videos.js`, shown on the Watch page and in each Skill or Trick's "Watch it explained". Every video plays in the page.
 _Avoid_: resources, library, feed

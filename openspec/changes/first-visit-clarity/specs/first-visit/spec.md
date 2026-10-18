@@ -43,7 +43,7 @@ A Star opened from Home or from the landing SHALL offer "Back home" as its way o
 - **THEN** the Dojo opens, as before
 
 ### Requirement: Three doors first on Home
-Challenger and Pro Home SHALL show, after the Keep going card when there is one, three doors in this order: the next Star (with its belt, the Star's Trick and number, Play this Star and Open the Dojo), the Arena, and the Skill map. Each door SHALL carry one plain line that introduces its term on first use (Star, belt, Dojo, Arena, league, leaderboard, Skill). Play this Star SHALL be the only primary button above the doors' end.
+Challenger and Pro Home SHALL show three doors after the Keep going card (when there is one). Challenger: the next Star (belt, the Star's Trick and number, Play this Star, Open the Dojo), the Arena, the Skill map. Pro: the Arena (Play today's round), the Dojo (belts and Stars lit), the Skill map. Each door SHALL carry one plain line introducing its term on first use, and only the first door SHALL have a primary button.
 
 #### Scenario: A new Challenger
 - **WHEN** a new Challenger Player opens Home on a 390 px wide screen
@@ -51,10 +51,10 @@ Challenger and Pro Home SHALL show, after the Keep going card when there is one,
 
 #### Scenario: Pro
 - **WHEN** a new Pro Player opens Home
-- **THEN** the three doors come before the leaderboard card, and Play today's round is the Arena door's button
+- **THEN** the Arena door with Play today's round, the Dojo door and the Skill map door come before the leaderboard card
 
 ### Requirement: More ways to play is folded
-After the quests card, Challenger and Pro Home SHALL fold the remaining tiles (Party Mode, Games, Sutra cards, Watch and learn; for Pro also the Dojo and the Sutra deep dives) under a disclosure named "More ways to play", closed by default and remembered open or closed on this device. Every tile that was on Home before this change SHALL still be on Home, in the doors or under the disclosure.
+After the quests card, Challenger and Pro Home SHALL fold the remaining tiles (Party Mode, Games, Sutra cards or the Sutra deep dives, Watch) under a disclosure named "More ways to play", closed by default and remembered open or closed on this device. Every tile that was on Home before this change SHALL still be on Home, in the doors or under the disclosure.
 
 #### Scenario: Closed by default
 - **WHEN** a new Challenger Player opens Home

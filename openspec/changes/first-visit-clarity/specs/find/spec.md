@@ -46,16 +46,27 @@ Each entry MAY carry plain-word synonyms, and the sections SHALL: "take away" an
 - **WHEN** a Player types "settings"
 - **THEN** Me is the first result
 
-### Requirement: Results are grouped, ranked and filtered to the Mode
-Results SHALL be grouped by kind in the order sections, Tricks, Skills, Sutras, games, play experiences, guide, grades, videos, at most eight per kind. Within a kind, a match on the title SHALL rank above a match on a synonym, which SHALL rank above a match in the description. Entries not for the Player's Mode (Tricks, Sutras and Dojo or Sutras experiences in Explorer; experiences, games and videos not listed for the Mode; guide sections the Mode does not have) SHALL NOT be listed.
-
-#### Scenario: Explorer sees no Tricks
-- **WHEN** an Explorer types "squares"
-- **THEN** no Trick or Sutra is listed, and the Skills and games that match are
+### Requirement: Results are grouped and ranked
+Results SHALL be grouped by kind in the order sections, Tricks, Skills, Sutras, games, play experiences, guide, grades, videos, at most eight per kind. Within a kind, a match on the title SHALL rank above a match on a synonym, which SHALL rank above a match in the description.
 
 #### Scenario: Title first
 - **WHEN** a Pro types "arena"
 - **THEN** the Arena section is the first result, above guide sections that mention it
+
+#### Scenario: Eight per kind
+- **WHEN** a Challenger types "number"
+- **THEN** no kind lists more than eight results
+
+### Requirement: Results are filtered to the Mode
+Entries the Player's Mode cannot open SHALL NOT be listed: the Dojo and Sutras sections in Explorer (its menu hides them), experiences, games and videos not listed for the Mode, and guide sections the Mode does not have. Tricks and Sutras SHALL stay listed for Explorer with their Explorer titles, as the Explorer guide explains them and their pages open for it.
+
+#### Scenario: Explorer sees only its own experiences and games
+- **WHEN** an Explorer types "spell" and then "sprint"
+- **THEN** Sutra Spellbook (a Dojo experience) and Times sprint (a Challenger and Pro game) are not listed
+
+#### Scenario: Explorer titles
+- **WHEN** an Explorer types "fives"
+- **THEN** the Trick is listed as "Fives squared in one breath"
 
 ### Requirement: The browse list
 With nothing typed, the Find page SHALL show the browse list: every section the Mode has, each with its one-line plain description, in menu order. When nothing matches, the page SHALL say so and offer the browse list and the guide.
