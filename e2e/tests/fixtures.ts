@@ -61,7 +61,8 @@ export function isFirestoreWrite(method: string, url: string) {
    They implement exactly the calls js/cloud.js makes. Each Firebase app (one per Player who posts) has its
    own fake Auth session, kept in localStorage under e2e.fakeAuth like the real SDK keeps one per app name,
    so it survives a reload. Sign-in gives the default app (the first Player) the uid 'e2e-fake-uid' and a
-   named app 'e2e-fake-<app name>'. Reads return the rows in window.__e2eRows (empty by default), and
+   named app 'e2e-fake-<app name>'. Reads return the rows in window.__e2eRows (empty by default), after the
+   promise in window.__e2eHold if a test set one, and
    writes are only recorded in window.__e2eCloud.writes. */
 const FAKE_HEAD = `const C = (globalThis.__e2eCloud ||= { signIns: 0, signOuts: [], apps: [], authLoaded: false, reads: [], writes: [] });
 const SAVED = () => { try { return JSON.parse(localStorage.getItem('e2e.fakeAuth')) || {}; } catch (e) { return {}; } };
@@ -89,7 +90,7 @@ export const orderBy = (f, d) => ({ orderBy: [f, d] });
 export const limit = n => ({ limit: n });
 export const query = (c, ...q) => ({ path: c.path, q });
 export async function getDoc(ref) { C.reads.push(ref.path); return { exists: () => false, data: () => undefined }; }
-export async function getDocs(q) { C.reads.push(q.path); return { docs: (globalThis.__e2eRows || []).map(([id, name, score]) => ({ id, data: () => ({ name, avatar: 'teal', score }) })) }; }
+export async function getDocs(q) { C.reads.push(q.path); if (globalThis.__e2eHold) await globalThis.__e2eHold; return { docs: (globalThis.__e2eRows || []).map(([id, name, score]) => ({ id, data: () => ({ name, avatar: 'teal', score }) })) }; }
 export async function setDoc(ref, data) { C.writes.push({ path: ref.path, app: ref.app, data: JSON.parse(JSON.stringify(data)) }); }
 export const serverTimestamp = () => ({ serverTimestamp: true });
 export const Timestamp = { fromMillis: ms => ({ millis: ms }) };`,

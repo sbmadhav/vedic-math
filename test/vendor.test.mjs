@@ -7,7 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -31,10 +31,13 @@ test('every vendored package with SHA256SUMS matches it', () => {
   for (const f of sums) assert.deepEqual(checkSums(join(f, '..')), [], f);
 });
 
-test('the design system 2.1.0 copy lists every file it holds', () => {
-  const dir = join(root, 'vendor/design-system/2.1.0');
-  const listed = readFileSync(join(dir, 'SHA256SUMS'), 'utf8').split('\n').filter(Boolean).map(l => l.split(/\s+/)[1]).sort();
-  assert.deepEqual(listed, readdirSync(dir).filter(f => f !== 'SHA256SUMS').sort());
+test('every vendored package lists every file it holds', () => {
+  for (const f of sums) {
+    const dir = join(f, '..');
+    const listed = readFileSync(f, 'utf8').split('\n').filter(Boolean).map(l => l.split(/\s+\*?/)[1]).sort();
+    assert.deepEqual(listed, walk(dir).filter(p => p !== f).map(p => relative(dir, p)).sort(), f);
+  }
+  const listed = readFileSync(join(root, 'vendor/design-system/2.1.0/SHA256SUMS'), 'utf8').split('\n').filter(Boolean).map(l => l.split(/\s+\*?/)[1]);
   for (const f of ['tokens.css', 'components.css', 'header.js', 'header.html', 'compose.py', 'LICENSE']) assert.ok(listed.includes(f), f);
 });
 
@@ -45,6 +48,7 @@ test('the Firebase SDK is vendored with no import of another origin', () => {
     const text = readFileSync(f, 'utf8');
     assert.doesNotMatch(text, /gstatic\.com\/firebasejs/, f);
     for (const m of text.matchAll(/(?:from|import)\s*["']([^"']+)["']/g)) assert.ok(m[1].startsWith('./'), `${f}: imports ${m[1]}`);
+    for (const m of text.matchAll(/\bimport\s*\(\s*["'`]([^"'`]+)["'`]\s*\)/g)) assert.ok(m[1].startsWith('./'), `${f}: imports ${m[1]}`);
   }
   // Once js/cloud.js loads the SDK from this site (the move to learnvedicmath.com), it names this version
   const [, v, cdn] = readFileSync(join(root, 'js/cloud.js'), 'utf8').match(/const V = '([\d.]+)', CDN = `([^`]+)`/);

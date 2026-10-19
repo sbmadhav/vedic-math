@@ -1,5 +1,5 @@
 /* Learn Vedic Math theme: loaded after the pinned design system (/ds/2.1.0/tokens.css) and only gives new values
-   to token names that file already defines (test/theme.test.mjs checks it). App CSS keeps using tokens only.
+   to token names that file already defines (test/vendor.test.mjs checks it). App CSS keeps using tokens only.
 
    It is Harbor (design system 2.1.0) with one change: the five category colours used for Belts, avatars, balloons
    and tiles are distinct. In 2.1.0 --sky equals --teal and --plum equals --coral (design audit item 1), so a Blue

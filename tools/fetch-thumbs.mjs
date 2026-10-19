@@ -21,13 +21,21 @@ let made = 0;
 for (const id of ids) {
   const out = join(dir, `yt-${id}.webp`);
   if (existsSync(out) && !all) continue;
-  const r = await fetch(`https://i.ytimg.com/vi/${id}/mqdefault.jpg`);
-  if (!r.ok) { console.error(`${id}: HTTP ${r.status}`); process.exitCode = 1; continue; }
-  const jpg = join(tmpdir(), `thumb-${id}.jpg`);
-  writeFileSync(jpg, Buffer.from(await r.arrayBuffer()));
-  execFileSync('cwebp', ['-quiet', '-q', '72', '-resize', '320', '180', '-metadata', 'none', jpg, '-o', out]);
-  rmSync(jpg);
-  made++;
+  /* One failure (network, a missing video, cwebp) is reported and the rest still run */
+  let jpg;
+  try {
+    const r = await fetch(`https://i.ytimg.com/vi/${id}/mqdefault.jpg`);
+    if (!r.ok) { console.error(`${id}: HTTP ${r.status}`); process.exitCode = 1; continue; }
+    jpg = join(tmpdir(), `thumb-${id}.jpg`);
+    writeFileSync(jpg, Buffer.from(await r.arrayBuffer()));
+    execFileSync('cwebp', ['-quiet', '-q', '72', '-resize', '320', '180', '-metadata', 'none', jpg, '-o', out]);
+    made++;
+  } catch (e) {
+    console.error(`${id}: ${e instanceof Error ? e.message : e}`);
+    process.exitCode = 1;
+  } finally {
+    if (jpg) rmSync(jpg, { force: true });
+  }
 }
 const stale = readdirSync(dir).filter(f => f.endsWith('.webp') && !ids.includes(f.slice(3, -5)));
 for (const f of stale) rmSync(join(dir, f));

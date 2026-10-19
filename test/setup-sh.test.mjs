@@ -24,6 +24,10 @@ test('--dry-run prints the commands for the given project and domains, and chang
   assert.match(out, /\+ firebase deploy --only firestore:rules,firestore:indexes --project learnvedicmath-prod/);
   assert.match(out, /"authorizedDomains":\["localhost", "learnvedicmath\.com", "www\.learnvedicmath\.com"\]/);
   assert.match(out, /--domains=learnvedicmath\.com,www\.learnvedicmath\.com/);
+  // It checks nothing, so first-time steps show too: the project, its billing link and the web app
+  assert.match(out, /\+ gcloud projects create learnvedicmath-prod/);
+  assert.match(out, /\+ gcloud billing projects link learnvedicmath-prod/);
+  assert.match(out, /\+ firebase apps:create WEB/);
   assert.doesNotMatch(out, /sbmadhav/);
   assert.equal(readFileSync(config, 'utf8'), before, 'a dry run writes nothing');
 });
@@ -33,4 +37,11 @@ test('the domains default to learnvedicmath.com and www, and a bad domain is ref
   const bad = run('--dry-run', 'learnvedicmath', 'not a domain');
   assert.notEqual(bad.status, 0);
   assert.match(bad.stderr, /Not a domain/);
+});
+
+test('a reused App Check key gets the domains of this run, and the next steps name them', () => {
+  const src = readFileSync(script, 'utf8');
+  assert.match(src, /gcloud recaptcha keys update "\$\{KEY_NAME##\*\/\}" --web --domains="\$DOMAINS_CSV"/);
+  assert.match(src, /REFERRERS="\$\(printf 'https:\/\/%s\/\*, ' "\$\{DOMAINS_WANT\[@\]\}"\)"/);
+  assert.doesNotMatch(src.slice(src.indexOf('Next steps')), /https:\/\/learnvedicmath\.com\/\*/);
 });

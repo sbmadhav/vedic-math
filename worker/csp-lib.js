@@ -26,7 +26,11 @@ export function blockedOrigin(raw) {
 
 /* The page path only: no query, no fragment, and capped (a crafted report cannot write long lines) */
 export function pagePath(raw) {
-  try { return new URL(String(raw)).pathname.slice(0, 80); } catch (e) { return 'other'; }
+  try {
+    const u = new URL(String(raw));
+    /* data:, blob: and other schemes carry their content where a path would be: never logged */
+    return /^https?:$/.test(u.protocol) ? u.pathname.slice(0, 80) : 'other';
+  } catch (e) { return 'other'; }
 }
 
 export function browserFamily(ua) {
@@ -44,7 +48,8 @@ const word = s => String(s || '').toLowerCase().replace(/[^a-z-]/g, '').slice(0,
 export function summarize(report, ua) {
   const b = report && typeof report === 'object' ? (report['csp-report'] || report.body || report) : {};
   return {
-    directive: word(b.effectiveDirective || b['effective-directive'] || b['violated-directive'] || b.violatedDirective).split(' ')[0],
+    /* The legacy violated-directive also carries the policy's sources ("script-src 'self' https://..."): its first word only */
+    directive: word(String(b.effectiveDirective || b['effective-directive'] || b['violated-directive'] || b.violatedDirective || '').trim().split(/\s+/)[0]),
     blocked: blockedOrigin(b.blockedURL ?? b['blocked-uri'] ?? b.blockedURI),
     page: pagePath(b.documentURL || b['document-uri'] || report.url),
     disposition: word(b.disposition) === 'report' ? 'report' : 'enforce',

@@ -17,9 +17,22 @@ export const RULES = {
   CLOUDFLARE_PREVIEW_TOKEN: { file: 'preview.yml', job: 'preview', environment: 'preview', pullRequestOnly: true },
 };
 
+/* A line without its comment: a # at the start or after a space, outside quotes (so `echo "a #b ${{ secrets.X }}"` keeps
+   its secret reference) */
+export function stripComment(line) {
+  let q = null;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (q) { if (c === q) q = null; }
+    else if (c === '"' || c === "'") q = c;
+    else if (c === '#' && (i === 0 || /\s/.test(line[i - 1]))) return line.slice(0, i);
+  }
+  return line;
+}
+
 /* { jobId: text of that job } for one workflow, plus the text before `jobs:`, with comments left out */
 export function jobs(text) {
-  const lines = text.split('\n').map(l => l.replace(/(^|\s)#.*$/, ''));
+  const lines = text.split('\n').map(stripComment);
   const start = lines.findIndex(l => /^jobs:\s*$/.test(l));
   const out = { _head: lines.slice(0, start < 0 ? lines.length : start).join('\n') };
   let cur = null;
