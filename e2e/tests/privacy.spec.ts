@@ -244,6 +244,7 @@ test('on a day with the Arena quest, the round\'s quest Sparks follow the Arena 
   const w = await writes(page);
   expect(w).toHaveLength(3);
   expect(w.map(x => x.path).sort()).toEqual([`boards/daily-${day}-challenger/scores/${UID}`, `boards/week-${wk}-challenger/scores/${UID}`, `boards/xp-week-${wk}-challenger/scores/${UID}`]);
+  expect(w[2].path).toBe(`boards/xp-week-${wk}-challenger/scores/${UID}`); // after both Arena posts
   for (const x of w) {
     expect(Object.keys(x.data).sort()).toEqual(ENTRY_KEYS);
     expect(x.data).toMatchObject({ name: 'Swift Tiger 42', avatar: 'teal' });
