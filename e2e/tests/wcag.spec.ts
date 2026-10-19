@@ -126,7 +126,8 @@ test.describe('reflow at 320px and text spacing (1.4.10, 1.4.12)', () => {
       await open(page, hash);
       await page.waitForTimeout(500);
       expect(await sideways(page)).toBe(0);
-      await page.addStyleTag({ content: SPACING });
+      // A constructed stylesheet, not a <style> tag: WebKit fails addStyleTag under the stricter Report-Only policy
+      await page.evaluate(css => { const sheet = new CSSStyleSheet(); sheet.replaceSync(css); document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet]; }, SPACING);
       expect(await sideways(page)).toBe(0);
       if (hash === '#/sutras') {
         const clipped = await page.locator('.sutra-card').evaluateAll(cs => cs.filter(c => c.scrollHeight > c.clientHeight + 2 || c.scrollWidth > c.clientWidth + 2).length);
