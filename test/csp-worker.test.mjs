@@ -47,6 +47,11 @@ test('keywords and schemes are kept as words, never as URLs', () => {
   assert.equal(blockedOrigin('https://a.example:8443/p?q#f'), 'https://a.example:8443');
   assert.equal(blockedOrigin('not a url'), 'other');
   assert.equal(summarize({ body: { effectiveDirective: 'img-src<script>', documentURL: 'javascript:alert(1)' } }, '').directive, 'img-srcscript');
+  /* A page URL that is not http(s) carries its content where a path would be: never logged */
+  assert.equal(summarize({ body: { effectiveDirective: 'img-src', documentURL: 'data:text/plain,alice@example.com' } }, '').page, 'other');
+  assert.equal(summarize({ body: { effectiveDirective: 'img-src', documentURL: 'javascript:alert(1)' } }, '').page, 'other');
+  /* The legacy violated-directive with the policy's sources keeps only the directive */
+  assert.equal(summarize({ 'csp-report': { 'violated-directive': "script-src 'self' https://cdn.example", 'document-uri': 'https://learnvedicmath.com/' } }, '').directive, 'script-src');
 });
 
 test('anything else is refused and logs nothing: a GET, a wrong type, too big, not JSON', async () => {
