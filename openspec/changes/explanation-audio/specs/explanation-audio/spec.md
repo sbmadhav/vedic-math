@@ -1,0 +1,64 @@
+# Spec Delta
+
+## ADDED Requirements
+
+### Requirement: Every explanation can be heard
+Each explanation block SHALL have a Listen button that reads it aloud: a Skill page's idea and How it works, the worked example and the solution steps, the Trick tool's shown steps, each Sutra card's back, each Sutra deep dive section (In plain words, Why it works, Worked examples, Where it is used) and the diagram step on screen, the History card, each Guide section, each tour step and each game's description. The button SHALL read the same text the page shows, in the Player's Mode words.
+
+#### Scenario: A Skill page
+- **WHEN** a Player presses Listen on a Skill page
+- **THEN** the idea and each How it works line are read in order
+
+#### Scenario: A Guide section in Explorer words
+- **WHEN** an Explorer Player presses Listen on a Guide section
+- **THEN** the Explorer wording of that section is read
+
+### Requirement: Listen uses the studio voice
+A Listen button SHALL read each line with the read-aloud voice order: the natural voice when the Player turned it on, else the whole studio recording, else studio clips, else this device's voice. Every explanation line with fixed words SHALL be in the studio recording list, so it plays whole once recorded.
+
+#### Scenario: A recorded line
+- **WHEN** a Player presses Listen and the line has a studio recording
+- **THEN** the recording plays and the device's voice says nothing
+
+#### Scenario: No recording
+- **WHEN** a line has no studio recording and no clips
+- **THEN** this device's voice reads it
+
+#### Scenario: A new explanation without a recording entry
+- **WHEN** a change adds an explanation a Listen button reads but the recording list does not hold
+- **THEN** the node test suite fails and names it
+
+### Requirement: One explanation at a time
+Only one Listen button SHALL play at a time. Pressing a second button SHALL stop the first and start the second. Pressing a playing button SHALL stop it. A playing button SHALL show it with `aria-pressed="true"`, and SHALL return to `aria-pressed="false"` when its lines end or are stopped.
+
+#### Scenario: Two buttons
+- **WHEN** a Player presses Listen on one Guide section and then on another
+- **THEN** the first stops, the second plays, and only the second is pressed
+
+### Requirement: Listen stops when the Player moves on
+Leaving the page, closing or swapping the Sutra deep dive, moving to another tour step, or any new read-aloud line SHALL stop a playing Listen button, and no later line of it SHALL start.
+
+#### Scenario: Leaving the page
+- **WHEN** a Listen button is playing and the Player goes to another page
+- **THEN** nothing more of it is said
+
+### Requirement: Listen follows a tap
+A Listen button SHALL play only after the Player presses it, and SHALL play with read aloud off.
+
+#### Scenario: Read aloud off
+- **WHEN** a Challenger Player with read aloud off presses Listen
+- **THEN** the explanation is read
+
+### Requirement: The Listen button is accessible
+The Listen button SHALL be a native button named "Listen: " followed by what it reads, operable with Enter and Space, at least 44 by 44 CSS pixels, using design tokens only, with no serious or critical axe violations in either color scheme, pressed or not.
+
+#### Scenario: Keyboard
+- **WHEN** a keyboard user focuses a Listen button and presses Enter, then Space
+- **THEN** it starts, then stops
+
+### Requirement: One anonymous event per Listen
+Each press that starts a Listen button SHALL send one event, `math/listen/explanation`, and nothing about which explanation, Player or page. A press that stops it SHALL send nothing.
+
+#### Scenario: Two presses
+- **WHEN** a Player starts one Listen button and starts another
+- **THEN** two `math/listen/explanation` events are sent and nothing else names an explanation

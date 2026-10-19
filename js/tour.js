@@ -5,6 +5,7 @@
    view's signal (js/life.js), and leaving the view ends the tour as a skip. Nothing moves under fx.noMotion(). */
 import { on, child, onAbort } from './life.js';
 import * as fx from './fx.js';
+import { listenBtn, toggle, stopListen } from './listen.js';
 
 const GUTTER = 16, PAD = 6, GAP = 12;
 let current = null;
@@ -19,7 +20,7 @@ export function startTour(steps, { signal, onEnd = () => {} } = {}) {
   dlg.className = 'vm-tour' + (fx.noMotion() ? ' still' : '');
   dlg.setAttribute('aria-labelledby', 'tourT'); dlg.setAttribute('aria-describedby', 'tourN tourB');
   dlg.innerHTML = `<div class="tour-ring" aria-hidden="true"></div>
-    <div class="tour-card md-card"><p class="tour-n" id="tourN"></p><h2 class="tour-t" id="tourT" tabindex="-1"></h2><p class="tour-b" id="tourB"></p>
+    <div class="tour-card md-card"><p class="tour-n" id="tourN"></p><h2 class="tour-t" id="tourT" tabindex="-1"></h2><p class="tour-b" id="tourB"></p><p class="listen-row">${listenBtn('tour', 'this step')}</p>
       <div class="tour-acts"><button type="button" class="linkbtn tour-skip" data-act="skip">Skip tour</button><span class="tour-sp"></span><button type="button" class="md-btn md-btn--sm" data-act="back">Back</button><button type="button" class="md-btn md-btn--sm md-btn--primary" data-act="next">Next</button></div></div>`;
   document.body.append(dlg);
   const ring = dlg.querySelector('.tour-ring'), card = dlg.querySelector('.tour-card'), back = dlg.querySelector('[data-act="back"]'), next = dlg.querySelector('[data-act="next"]');
@@ -28,6 +29,7 @@ export function startTour(steps, { signal, onEnd = () => {} } = {}) {
 
   const end = outcome => {
     if (ended) return; ended = true;
+    stopListen();
     if (current === api) current = null;
     life.abort();
     try { if (dlg.open) dlg.close(); } catch (e) {}
@@ -60,6 +62,7 @@ export function startTour(steps, { signal, onEnd = () => {} } = {}) {
   };
 
   const show = k => {
+    stopListen(); /* a step's Listen reads only its own text */
     i = k; const s = steps[i];
     target = document.querySelector(s.sel);
     if (target) { try { target.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' }); } catch (e) {} }
@@ -75,6 +78,7 @@ export function startTour(steps, { signal, onEnd = () => {} } = {}) {
 
   on(dlg, 'cancel', e => { e.preventDefault(); end('skip'); }, ls);
   on(dlg, 'click', e => {
+    const l = e.target.closest('.listen-btn'); if (l) { toggle(l, [steps[i].body]); return; }
     const b = e.target.closest('[data-act]'); if (!b) return;
     const act = b.dataset.act;
     if (act === 'skip') end('skip');

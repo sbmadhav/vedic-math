@@ -101,6 +101,10 @@ export function starEvent(kind, trick) {
   send(`star/${kind}/${trick}`, 'Vedic Math: star quest');
 }
 
+/* ---------- Listen buttons (openspec explanation-audio) ---------- */
+/* A Listen button was pressed to play an explanation. One fixed event: which explanation is never sent */
+export function listened() { send('listen/explanation', 'Listen to an explanation'); }
+
 /* ---------- The first-visit tour (openspec in-app-guide) ---------- */
 /* The tour opened, or ended with Done on its last step (finish) or with Skip tour, Escape or leaving Home (skip) */
 export function tourEvent(kind) {
