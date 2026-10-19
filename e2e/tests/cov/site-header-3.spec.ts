@@ -67,4 +67,10 @@ test.describe('no Mode yet', () => {
     await expect(page).toHaveURL(/#\/learn$/);
     await expect(page.locator('#view h1')).toHaveText('Pick a level');
   });
+  test('Find without a Mode: #/find shows the Find page, not the mode picker', async ({ page }) => {
+    await open(page, '#/find');
+    await expect(page.locator('#findIn')).toBeVisible();
+    await expect(page.locator('.mode-pick')).toHaveCount(0);
+    await expect(page.locator('.mq-nav')).toBeHidden();
+  });
 });

@@ -37,10 +37,20 @@ test('Same parts in the same order: brand, the nav tabs, Explore, color scheme, 
   await open(page);
   expect(await kinds(page)).toEqual(['brand', 'nav', 'explore', 'theme', 'music', 'player']);
   const tabs = await page.locator('header .mq-nav a:visible').allInnerTexts();
-  expect(tabs.map(t => t.trim())).toEqual(['Home', 'Learn', 'Dojo', 'Arena', 'Games', 'Sutras', 'Watch', 'Guide']);
+  expect(tabs.map(t => t.trim())).toEqual(['Home', 'Learn', 'Dojo', 'Arena', 'Games', 'Sutras', 'Watch', 'Guide', 'Find']);
   const tops = await page.evaluate(() => ['.home', '.mq-nav', '#exploreBtn', '#themeBtn', '#vmMBtn', '#mqChip a']
     .map(s => { const r = document.querySelector(s)!.getBoundingClientRect(); return Math.round(r.top + r.height / 2); }));
   for (const t of tops) expect(Math.abs(t - tops[0])).toBeLessThanOrEqual(2);
+});
+
+test('One line per menu item: the Dojo link\'s tooltip is the line Find\'s browse list shows for the Dojo', async ({ page }) => {
+  await open(page);
+  const tip = await page.locator('.mq-nav a[href="#/dojo"]').getAttribute('title');
+  expect(tip).toMatch(/speed tricks/i);
+  await open(page, '#/find');
+  await expect(page.locator('.find-hit[href="#/dojo"] small')).toHaveText(tip!);
+  // Every menu link carries one
+  for (const a of await page.locator('.mq-nav a').all()) expect((await a.getAttribute('title'))!.length).toBeGreaterThan(20);
 });
 
 test.describe('Pro wording, as on the home page', () => {

@@ -7,7 +7,7 @@ import { test, expect, APP, open, chromiumOnly } from './fixtures';
    (only that rule on that element) and recorded as its own test.fixme below, so it stays visible.
    When one is fixed, delete its KNOWN entry: the route checks then cover it again. */
 
-const ROUTES = ['#/', '#/learn', '#/dojo', '#/arena', '#/games', '#/sutras', '#/sutras/s3', '#/watch', '#/me', '#/skill/v-sq5', '#/game/times-sprint', '#/places', '#/guide'];  // #/sutras/s3: the deep dive with Say it and Ambience (sutra-pronunciation 3.3)
+const ROUTES = ['#/', '#/learn', '#/dojo', '#/arena', '#/games', '#/sutras', '#/sutras/s3', '#/watch', '#/me', '#/skill/v-sq5', '#/game/times-sprint', '#/places', '#/guide', '#/find'];  // #/sutras/s3: the deep dive with Say it and Ambience (sutra-pronunciation 3.3)
 
 /* Known violations on the live site: { route, rule, target, note }. Empty: the Sparks bar is a progressbar and
    #prRun lost its label (both fixed in js/app.js). Add an entry when a new one is found and reported. */
