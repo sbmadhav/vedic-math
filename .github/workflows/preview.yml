@@ -75,7 +75,8 @@ jobs:
       - name: The preview is not indexed
         env:
           URL: ${{ steps.upload.outputs.url }}
-        run: curl -fsSI "$URL/" | grep -i '^x-robots-tag: noindex, nofollow' || { echo "::error::the preview does not send X-Robots-Tag: noindex, nofollow"; exit 1; }
+        run: |
+          curl -fsSI "$URL/" | grep -i '^x-robots-tag: noindex, nofollow' || { echo "::error::the preview does not send X-Robots-Tag: noindex, nofollow"; exit 1; }
 
       - name: Install Playwright
         working-directory: e2e
