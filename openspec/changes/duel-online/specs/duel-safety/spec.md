@@ -32,14 +32,14 @@ Each Player SHALL appear in a Duel only as their generated Nickname and one of t
 - **THEN** the server refuses it and no room is made
 
 ### Requirement: Report and Block
-Every match screen and end screen SHALL offer Report, with four fixed reasons and no text box, and Block. Either SHALL end the Duel for the Player who used it. A report SHALL keep no Nickname, IP address, code or text. In Random Duels, two Players where one blocked the other SHALL NOT be paired again for a week.
+Every match screen and end screen SHALL offer Report, with four fixed reasons and no text box, and Block. Either SHALL end the Duel for the Player who used it. A report SHALL keep no Nickname, IP address, code or text. In Random Duels, two Duel keys where one blocked the other SHALL NOT be paired again for a week. A Block follows the Duel key, not the person, and no copy about Block SHALL promise more than that.
 
 #### Scenario: Reporting mean Reactions
 - **WHEN** a Player reports Mean Reactions during a Duel
 - **THEN** the Duel ends for them, the other Player is told they left, and the report stores only the reason, the League, the kind of Duel and a summary of the match
 
 #### Scenario: Blocked in a Random Duel
-- **WHEN** a Player aged 14 blocks their opponent and both join the queue again the same day
+- **WHEN** a Player aged 14 blocks their opponent and both join the queue again the same day with the same Duel keys
 - **THEN** they are not paired with each other
 
 ### Requirement: Under-13 Players get no lasting identifier
