@@ -282,3 +282,20 @@ _Avoid_: redirect page, splash
 **Export page**:
 The permanent page at sbmadhav.com/vm-export/ that hands a device's old progress to learnvedicmath.com in a popup, for Players who come back after the redirect is permanent.
 _Avoid_: backup page, old site
+
+## The React migration
+
+Proposed in the `react-typescript` change (`openspec/changes/react-typescript/`, ADRs 0012 and 0013).
+
+**Legacy view**:
+A screen still drawn by the old template-string code, mounted by the router through the adapter that gives it its root element and signal. Every Legacy view becomes a React view during the migration.
+_Avoid_: old page, vanilla view
+
+**Locked view**:
+A view that a migration pull request is moving. Feature pull requests that touch it wait until that pull request is merged; content changes never wait.
+_Avoid_: frozen view, blocked view
+
+**3D scene**:
+A decoration drawn with three.js behind the interface, such as the Sky in 3D. It carries no information, takes no input, and falls back to a still frame or the 2D drawing.
+_Avoid_: 3D mode, WebGL view
+
