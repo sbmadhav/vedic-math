@@ -323,6 +323,14 @@ Labelled L1 to L8 to match the owner's list.
 - **L7. PR #50 (Sanskrit verses)** is open and not in decision 6's list. Answered 2026-10-17: the default, it merges on the current site before the move if it is ready; otherwise it is rebased onto the new layout.
 - **L8. Where the Studio voice files live**: answered 2026-10-17: the default, R2 on `voice.learnvedicmath.com` (D17 option a). Alternatives: Workers Paid (b), packing (c), or R2 behind the same domain through the Worker.
 
+### Owner answers while building (2026-10-19)
+
+- **Split**: #82 lands as five pull requests (CodeRabbit reviews at most 300 files): 1. thumbnails, 2. vendored design system, theme, fonts, icons and third-party code, 3. the inert Worker, deploy and workflow tools, 4. the Boards change, 5. the switch to learnvedicmath.com (#82, open until owner tasks 1.x).
+- **The Boards change goes live early**: under-13 Players use Device boards only, the Parent step is removed, World boards are behind a tap and the retention rules are in place on sbmadhav.com ahead of the move (PR 4). Its parent note keeps the old keeping and removal lines until the move, because the 30-day deletion and privacy@learnvedicmath.com only become true with the new project and mailbox.
+- **CSP reporting**: the Report-Only policy reports through `report-to` only, and `Reporting-Endpoints` is relative (`csp="/_csp"`).
+- **Icons**: the icons drawn from Bolt are approved (L5).
+- **Firebase SDK 13.0.0** may be vendored before the new Firebase project exists.
+
 Not a decision, an interpretation: **GoatCounter** "self-hosted" is read as a new hosted site code with the script served from this site, not running a GoatCounter server.
 
 ## Changes made while building

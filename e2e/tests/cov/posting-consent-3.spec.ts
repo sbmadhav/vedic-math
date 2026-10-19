@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog, type Mode, typeAnswer } from '../fixtures';
+import { test, expect, open, cloudLog, type Mode, typeAnswer, FIREBASE_SDK } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* posting-consent spec (change learnvedicmath), Requirement "Players under 13 use Device boards only":
@@ -41,7 +41,7 @@ async function arenaRound(page: Page, mode: Mode) {
   await expect(page.locator('.ar-result')).toBeVisible();
 }
 
-const sdkRequests = (page: Page) => { const seen: string[] = []; page.on('request', r => { if (/\/vendor\/firebase\/|recaptcha/.test(r.url())) seen.push(r.url()); }); return seen; };
+const sdkRequests = (page: Page) => { const seen: string[] = []; page.on('request', r => { if (FIREBASE_SDK.test(r.url()) || /recaptcha/.test(r.url())) seen.push(r.url()); }); return seen; };
 
 test.describe('Under-13 Player in Pro mode', () => {
   test.use({ seedMode: 'pro', seedConsent: { age: 11 }, seedProgress: { v: 3, sparks: 40, weekSparks: { [isoWeek()]: 40 } } });

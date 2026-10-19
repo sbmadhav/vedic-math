@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, type Mode, typeAnswer } from './fixtures';
+import { test, expect, APP, open, cloudLog, type Mode, typeAnswer, FIREBASE_SDK } from './fixtures';
 import type { Page } from '@playwright/test';
 
 /* Posting consent (openspec posting-consent spec, change learnvedicmath; docs/adr/0001, 0006): the Age answer is
@@ -24,7 +24,7 @@ const SHEET_DEVICE_ONLY: Record<Mode, string> = {
   pro: "The score ranks on the This device board. This player's scores stay on this device's board.",
 };
 /* Every request for the Firebase SDK (served from this site) */
-const sdkRequests = (page: Page) => { const seen: string[] = []; page.on('request', r => { if (/\/vendor\/firebase\/|recaptcha/.test(r.url())) seen.push(r.url()); }); return seen; };
+const sdkRequests = (page: Page) => { const seen: string[] = []; page.on('request', r => { if (FIREBASE_SDK.test(r.url()) || /recaptcha/.test(r.url())) seen.push(r.url()); }); return seen; };
 /* The Arena round timer runs on requestAnimationFrame and performance.now, which WebKit's faked clock advances
    unevenly (a 60 second round can need far more than 60 faked seconds). The sheet still runs on WebKit below
    (keyboard, reduced motion, 13 and over); the round-driven flows run on chromium and mobile. */

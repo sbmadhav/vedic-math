@@ -11,19 +11,23 @@ const real = Object.fromEntries(readdirSync(dir).filter(f => f.endsWith('.yml'))
 
 test('the workflows in this repo pass', () => {
   assert.deepEqual(check(real), []);
-  assert.match(real['ci.yml'], /deploy:\n\s+needs: \[check, voice-upload\]/, 'the deploy waits for the voice upload (design D17)');
+  // Once ci.yml deploys to Cloudflare, the deploy waits for the voice upload (design D17)
+  if (/\n {2}voice-upload:/.test(real['ci.yml'])) assert.match(real['ci.yml'], /deploy:\n\s+needs: \[check, voice-upload\]/);
   assert.match(real['preview.yml'], /^on:\n {2}pull_request:/m);
   assert.doesNotMatch(real['preview.yml'].replace(/#.*$/gm, ''), /pull_request_target/);
 });
 
+/* A deploy job as ci.yml has it on main once the site deploys to Cloudflare */
+const CI = `on:\n  push:\n    branches: [main]\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    environment:\n      name: production\n    steps:\n      - run: npx wrangler deploy\n        env:\n          CLOUDFLARE_API_TOKEN: \${{ secrets.CLOUDFLARE_API_TOKEN }}\n`;
 const job = (name, env, secret) => `  ${name}:\n    runs-on: ubuntu-latest\n${env ? `    environment: ${env}\n` : ''}    steps:\n      - run: echo\n        env:\n          T: \${{ secrets.${secret} }}\n`;
 
 test('a test workflow naming either token elsewhere fails the check', () => {
-  const base = { ...real };
+  const base = { ...real, 'ci.yml': CI };
+  assert.deepEqual(check(base), [], 'the Cloudflare deploy job alone passes');
   for (const [file, text, re] of [
     ['other.yml', `on:\n  push:\njobs:\n${job('build', 'production', 'CLOUDFLARE_API_TOKEN')}`, /other\.yml: job build names CLOUDFLARE_API_TOKEN/],
-    ['ci.yml', real['ci.yml'] + job('extra', 'production', 'CLOUDFLARE_API_TOKEN'), /ci\.yml: job extra names CLOUDFLARE_API_TOKEN/],
-    ['ci.yml', real['ci.yml'].replace(/(\n {2}deploy:\n(?:.*\n)*?) {4}environment:\n {6}name: production\n/, '$1'), /deploy names CLOUDFLARE_API_TOKEN without environment production/],
+    ['ci.yml', CI + job('extra', 'production', 'CLOUDFLARE_API_TOKEN'), /ci\.yml: job extra names CLOUDFLARE_API_TOKEN/],
+    ['ci.yml', CI.replace('    environment:\n      name: production\n', ''), /deploy names CLOUDFLARE_API_TOKEN without environment production/],
     ['e2e.yml', real['e2e.yml'] + job('leak', 'preview', 'CLOUDFLARE_PREVIEW_TOKEN'), /e2e\.yml: job leak names CLOUDFLARE_PREVIEW_TOKEN/],
     ['preview.yml', real['preview.yml'].replace('on:\n  pull_request:', 'on:\n  pull_request_target:'), /does not run on pull_request alone/],
     ['preview.yml', real['preview.yml'].replace('on:\n  pull_request:', 'on:\n  push:\n  pull_request:'), /does not run on pull_request alone/],

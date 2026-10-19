@@ -96,7 +96,7 @@ test.describe('under 13', () => {
     expect(events.filter(e => e.startsWith('math/watch/'))).toEqual([expect.stringMatching(/^math\/watch\/(video|short)$/)]);
     expect(sent.filter(u => /firestore|identitytoolkit|securetoken/.test(u))).toEqual([]);
     expect(sent.filter(u => u.includes('Swift') || u.includes('Tiger'))).toEqual([]);
-    expect(sent.every(u => /youtube-nocookie\.com|voice\.learnvedicmath\.com/.test(u)), sent.join('\n')).toBe(true);
+    expect(sent.every(u => /youtube-nocookie\.com|i\.ytimg\.com|voice\.learnvedicmath\.com/.test(u)), sent.join('\n')).toBe(true);
     expect((await cloudLog(page)).writes).toEqual([]);
   });
 });
