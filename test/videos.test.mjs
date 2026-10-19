@@ -85,3 +85,14 @@ test('no title or why line says "from the Vedas" or uses an em dash', () => {
 test('the migration left no playlist or channel', () => {
   for (const l of LINKS) assert.doesNotMatch(l.url, /[?&]list=|\/@|\/channel\//, l.id);
 });
+
+/* Thumbnails served from this site (openspec change learnvedicmath, third-party-requests "Self-hosted thumbnails"):
+   every entry has thumbs/yt-<YouTube id>.webp (tools/fetch-thumbs.mjs), and none is left over from a removed entry.
+   The Watch shelf switches to them with the move to learnvedicmath.com (js/watch.js thumbSrc). */
+test('every video has a thumbnail in thumbs/, and every thumbnail belongs to a video', async () => {
+  const { readdirSync, existsSync } = await import('node:fs');
+  const dir = new URL('../thumbs/', import.meta.url);
+  const ids = VIDEOS.filter(v => v.yt).map(v => v.yt);
+  for (const v of VIDEOS.filter(x => x.yt)) assert.ok(existsSync(new URL(`yt-${v.yt}.webp`, dir)), `${v.id} has no thumbnail: run node tools/fetch-thumbs.mjs`);
+  assert.deepEqual(readdirSync(dir).filter(f => !ids.includes(f.replace(/^yt-/, '').replace(/\.webp$/, ''))), [], 'thumbnails with no video');
+});
