@@ -7,7 +7,7 @@ Second change after the learnvedicmath.com move (owner M6), after `render-perfor
 - [ ] 0.0 **[OWNER]** Approve this change for implementation (merging the plan is not approval), and decide its order against `react-typescript`.
 - [ ] 0.1 Confirm `learnvedicmath`, `render-performance` and PR #47 (`play-experiences`) are archived; merge `main` in; update paths in `design.md` (the move's `worker/csp.js`, `js/views/`).
 - [ ] 0.2 Verify: `openspec validate duel-online --strict` reports no "Archive would refuse" notice. If `play-experiences`' "Party Mode replaces the Duel" text changed, copy the new text into the delta first.
-- [ ] 0.3 **[OWNER]** Answer the open questions in `design.md` (Duel key, host's League, Turnstile, Free then Paid, Duel Sparks, lawyer before launch, `#/duel` and the Landmark, report review). Fold a different answer in with `/opsx:update`.
+- [ ] 0.3 **[OWNER]** Answer the open questions in `design.md` (Duel key, host's League, Turnstile, Free then Paid, Duel Sparks, lawyer before launch, `#/duel` and the Landmark, report review, the word Duel, the code-guessing target and control). Fold a different answer in with `/opsx:update`.
 - [ ] 0.4 **[OWNER]** Lawyer review of D14 together with the move's privacy policy: the internal-operations basis for under-13 Friend Duels, Turnstile as a third party, the notice and retention text, the 13+ gate for Random Duels. Launch (tasks 10.3 and 10.4) waits for the answer.
 
 ## 1. Owner setup

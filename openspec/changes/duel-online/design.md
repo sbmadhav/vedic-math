@@ -164,7 +164,7 @@ While a match runs, the room keeps its timers with `setTimeout` (it is busy anyw
 
 1. The host taps "Duel a friend" (League = the host's Mode). Turnstile runs (D12). The app gets a code and shows it big ("B K T R M Z"), with Copy, Share (Web Share API where available) and the link `https://learnvedicmath.com/play/#/arena/duel/BKTRMZ`. The code is in the fragment, so it never reaches a server log or a `Referer`.
 2. The friend opens the link (the code is filled in) or taps "I have a code" and types it. The join screen shows the host's Nickname and color and the League ("This Duel is at Challenger level"), and asks "Duel Swift Tiger 12?" before joining. A Player who does not know that Nickname is told, in their Mode's words, to go back.
-3. Codes use 20 consonants (`B C D F G H J K L M N P Q R S T V W X Z`): 64 million codes, no vowels so no real words, no 0/O or 1/I confusion. A code is live for 10 minutes or until a friend joins; the room refuses a third seat.
+3. Codes use 20 consonants (`B C D F G H J K L M N P Q R S T V W X Z`): 64 million codes, no vowels so no real words, no 0/O or 1/I confusion. Each letter is drawn uniformly with `crypto.getRandomValues` (rejection sampling, no modulo bias), and a code already live is drawn again. A code is live for 10 minutes or until a friend joins; the room refuses a third seat.
 4. Nothing about either Player is kept more than 10 minutes after the match: the room's storage (Nicknames, colors, question log) is deleted by then (D5, D14). There is no friend list: next time, a new code.
 5. Under-13 Players use exactly this flow. The server never knows anyone's age; the app decides who may use Random Duels.
 
@@ -191,7 +191,7 @@ While a match runs, the room keeps its timers with `setTimeout` (it is busy anyw
 | Where | Limit | Over the limit |
 |---|---|---|
 | `POST /rooms` per hashed IP | 10 a minute | `429` |
-| `POST /rooms/:code/join` per hashed IP | 20 a minute (a 64-million code space makes guessing hopeless at this rate) | `429` |
+| `POST /rooms/:code/join` per hashed IP | 20 a minute (one IP is slow: about 200 tries in a code's 10 minutes; spread over many IPs it is not enough on its own, see open question 10) | `429` |
 | `POST /rooms/:code/resume` per hashed IP | 30 a minute | `429` |
 | `POST /queue` per hashed IP | 10 a minute | `429` |
 | WebSocket frames per seat | 10 a second, burst 20 | close 1008 |
@@ -358,3 +358,4 @@ Build behind the off switch (`DUEL_OPEN = "0"` in production) and an app flag th
 7. `#/duel` and the Sky Landmark open the Online Duel; Party Mode stays on the Arena shelf: default yes.
 8. Report review: a weekly digest through an Access-protected admin read: default yes.
 9. The word Duel: `main` retired it with the same-screen game (`GLOSSARY.md`: Party Mode, "Avoid: Duel (retired)"), and there is no `duel` spec any more. This change brings the word back for the online game. Open for the owner: keep Duel for the online game, or pick a new name. No default is assumed here; the glossary marks both entries as pending.
+10. Guessing Duel codes from many IP addresses. The per-IP limit bounds one address, not a spread attack: with L live codes, each guess succeeds with chance L / 64 million, so 100 addresses that each pass Turnstile and try 20 a minute for 10 minutes (20,000 guesses) against 1,000 live codes have about a 27% chance of at least one hit. A hit shows the host's Nickname and color and lets the guesser take the free seat; the host still sees who joined and can Block. Not decided here: the admission target (for example, under 1% chance of any hit across all live codes in a code's lifetime) and the control that meets it (a service-wide limit on failed joins, kept in a Durable Object, that makes every join pass a fresh Turnstile when it is exceeded; a longer code; or the host confirming the guest before the room admits them). Launch waits for the owner's answer.
