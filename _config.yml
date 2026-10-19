@@ -18,6 +18,10 @@ exclude:
   - LICENSE
   - LICENSE-CONTENT.md
   - build.py
+  # The learnvedicmath.com Worker and its deploy tool (openspec change learnvedicmath)
+  - wrangler.jsonc
+  - worker/
+  - deploy/
   - cloud/
   - test/
   - docs/

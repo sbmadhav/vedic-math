@@ -12,3 +12,7 @@ tools/voice/voice-*.tar
 tools/voice/voice.tar
 /voice/
 tools/voice/out-test/
+
+# The deploy tool's install and wrangler's local state
+deploy/node_modules/
+.wrangler/
