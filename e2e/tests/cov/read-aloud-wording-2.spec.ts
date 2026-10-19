@@ -1,8 +1,11 @@
-import { test, expect, open, type Page } from '../fixtures';
+import { test, expect, open, VOICE_HOST, type Page } from '../fixtures';
 
 /* read-aloud-wording spec, Requirements "A question can say what its picture shows" and "The hint read is the hint
-   shown": one test per scenario. speechSynthesis is a recorder, so nothing is spoken. */
+   shown": one test per scenario. speechSynthesis is a recorder, so nothing is spoken. The Studio voice host is cut off,
+   so every line goes through the recorder (with the recordings reachable, a recorded line plays as audio instead and
+   the recorder hears nothing). */
 async function recordSpeech(page: Page) {
+  await page.route(`${VOICE_HOST}/**`, r => r.abort('blockedbyclient'));
   await page.addInitScript(() => {
     const w = window as any;
     w.__said = [];
@@ -18,7 +21,7 @@ async function recordSpeech(page: Page) {
   });
 }
 const said = (page: Page) => page.evaluate(() => ((window as any).__said as string[]).join(' '));
-const words = (page: Page, html: string) => page.evaluate(async h => (await import('/vedic-math/js/voice.js' as string)).normalize(h) as string, html);
+const words = (page: Page, html: string) => page.evaluate(async h => (await import('/js/voice.js' as string)).normalize(h) as string, html);
 
 test.describe('Explorer', () => {
   test.use({ seedMode: 'explorer' });

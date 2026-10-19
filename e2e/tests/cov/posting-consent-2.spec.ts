@@ -80,7 +80,7 @@ test.describe('Age answer is never sent', () => {
     await open(page, '#/me');
     // This week's Sparks (50), so the weekly Sparks Board post goes out once posting is allowed
     await page.evaluate(async () => {
-      const store = await import('/vedic-math/js/store.js' as string);
+      const store = await import('/js/store.js' as string);
       localStorage.setItem('mathquest.v1.p1', JSON.stringify({ v: 3, sparks: 50, weekSparks: { [store.isoWeek()]: 50 } }));
     });
     await page.reload();
@@ -106,7 +106,7 @@ test.describe('Age answer is never sent', () => {
     async function arenaRound() {
       await open(page, '#/arena');
       const answer = await page.evaluate(async m => {
-        const cloud = await import('/vedic-math/js/cloud.js' as string), arena = await import('/vedic-math/js/arena.js' as string);
+        const cloud = await import('/js/cloud.js' as string), arena = await import('/js/arena.js' as string);
         return String(arena.dailySet(m, cloud.dayId())[0].answer);
       }, mode);
       await page.locator('#arGo').click();

@@ -1,6 +1,6 @@
 import { test, expect, APP, open, ANALYTICS, chromiumOnly, typeAnswer } from './fixtures';
 
-/* Anonymous usage events (openspec analytics spec). The shared /assets/analytics.js is replaced by a stub
+/* Anonymous usage events (openspec analytics spec). This site's /js/analytics.js is replaced by a stub
    that only records window.siteTrack calls in window.__events, so no GoatCounter request is ever made and
    test runs never count as visits. */
 const STUB = `window.__events = window.__events || []; window.siteTrack = (path, title) => { window.__events.push(path); };`;
@@ -8,7 +8,7 @@ type Page = import('@playwright/test').Page;
 const events = (page: Page): Promise<string[]> => page.evaluate(() => (globalThis as any).__events || []);
 
 test.beforeEach(async ({ page }) => {
-  await page.route(/\/assets\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
+  await page.route(/\/js\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
 });
 
 test('each rendered route sends one route view, numbers collapsed; no GoatCounter request', async ({ page, context }) => {

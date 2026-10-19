@@ -36,7 +36,7 @@
 .sp-m-eyes { animation: sp-blink 4.6s infinite; transform-origin: 50% 50px; }
 .sp-m-mouth, .sp-m-feet { fill: none; stroke: var(--on-accent); stroke-width: 3; stroke-linecap: round; }
 .sp-m-sign { order: 1; font: 700 1.05rem/1 var(--font-display); background: var(--card); border: 2px solid var(--edge); border-radius: var(--radius-sm); padding: 6px 10px; box-shadow: var(--shadow-ledge); white-space: nowrap; margin-bottom: 4px; }
-.sp-m-hp { order: 3; font: 700 .7rem/1 var(--font-mono); color: var(--ink-muted); margin-top: 2px; letter-spacing: .04em; }
+.sp-m-hp { order: 3; font: 500 .7rem/1 var(--font-mono); color: var(--ink-muted); margin-top: 2px; letter-spacing: .04em; }
 .sp-m.is-target .sp-m-sign { border-color: var(--coral); box-shadow: 0 3px 0 var(--coral); }
 .sp-m.is-target .sp-m-svg { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--c) 70%, transparent)); }
 .sp-m:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: var(--radius-md); }
@@ -74,7 +74,7 @@
 .sp-cell.is-empty { color: var(--ink-muted); opacity: .45; background: var(--bg-alt); }
 .sp-cell.is-raw { color: var(--ink-muted); outline: 2px dashed var(--line); }
 .sp-cell.is-set { background: color-mix(in srgb, var(--teal) 22%, transparent); animation: sp-pop .4s ease; }
-.sp-carry { position: absolute; left: -10px; top: -12px; font: 700 .7rem/1 var(--font-mono); font-style: normal; color: var(--on-accent); background: var(--sun); border-radius: var(--radius-pill); padding: 3px 5px; animation: sp-carry .6s ease both; }
+.sp-carry { position: absolute; left: -10px; top: -12px; font: 500 .7rem/1 var(--font-mono); font-style: normal; color: var(--on-accent); background: var(--sun); border-radius: var(--radius-pill); padding: 3px 5px; animation: sp-carry .6s ease both; }
 
 .sp-board { position: relative; width: 100%; max-width: 520px; margin: 0 auto; aspect-ratio: 320 / 240; touch-action: none; user-select: none; -webkit-user-select: none; border-radius: var(--radius-lg);
   background: radial-gradient(70% 70% at 50% 50%, color-mix(in srgb, var(--coral) 10%, transparent), transparent 70%), var(--bg-alt); border: 2px solid var(--line); cursor: crosshair; }

@@ -1,63 +1,58 @@
-/* Vedic Math service worker: lets the app work offline. Registered by js/app.js with scope
-   /vedic-math/, which is more specific than the root worker of sbmadhav.com (scope /), so it
-   controls Vedic Math pages. A controlled page's requests to /assets/ and /design-system/ come
-   through here too, so the shared files are cached as well.
+/* Learn Vedic Math service worker: lets the game work offline. Published at /sw.js and registered by js/app.js with
+   scope /play/, so it controls the game only; the landing and grown-up pages are never controlled.
 
-   VERSION stays 'dev' in git, with an empty PRECACHE. The deploy (python3 build.py --out _site, run
-   by CI) writes the real VERSION and PRECACHE into the published copy, between the markers below.
-   VERSION is a hash of every file this repo precaches plus the rest of this file, so any change to
-   the app installs a fresh cache. A 'dev' worker caches nothing and leaves every request to the
-   network (and deletes this app's caches), so the unbuilt source, served locally or published by
-   mistake without the build, never serves stale files.
+   VERSION stays 'dev' in git, with an empty PRECACHE. The deploy (python3 build.py, run by CI) writes the real VERSION
+   and PRECACHE into the published copy, between the markers below. VERSION is a hash of every file it precaches plus
+   the rest of this file, so any change to the game installs a fresh cache. A 'dev' worker caches nothing and leaves
+   every request to the network (and deletes this site's caches), so a --dev build or the unbuilt source never serves
+   stale files.
 
-   One version at a time: index.html carries the import map, so the shell and its modules must come
-   from the same deploy. Install fetches every file of this repo in PRECACHE and checks it against
-   the hash build.py recorded; if the network serves anything else (a half-propagated deploy), the
-   install fails and the browser tries again on the next visit, keeping the previous version.
+   One version at a time: /play/ carries the import map, so the shell and its modules must come from the same deploy.
+   Install fetches every file in PRECACHE and checks it against the hash build.py recorded (every entry has one; this
+   site serves all of them); if the network serves anything else (a half-propagated deploy), the install fails and the
+   browser tries again on the next visit, keeping the previous version.
 
    Caching, by request:
-   - Page loads (navigations): network first so updates show up at once; the precached shell when
-     offline or slow. Routes are hash routes, so one shell serves them all.
-   - /vedic-math/ files with ?v=<hash>: cache first (they never change at a given URL).
-   - Other /vedic-math/ files: network first, cache fallback.
-   - Shared files from the rest of sbmadhav.com (/design-system/, /assets/, fonts, icons): stale
-     while revalidate. This repo cannot hash them, so a change reaches visitors one visit late.
-   - Studio voice audio (/vedic-math/voice/): cache first in its own cache, vedic-math-voice, which every
-     deploy keeps (the file names hold their content's hash, so a name never changes meaning). Trimmed to
-     VOICE_MAX whole lines, oldest first; a new line set, clip directory or pack replaces its older copy. Nothing is precached: only Players who use read aloud download audio.
-   - Sounds (/vedic-math/sounds/: the Sutra name clips and the Om, openspec sutra-pronunciation): cache first in
-     their own cache, vedic-math-sounds, which every deploy keeps, so a name heard once plays offline after the next
-     deploy too. Every sound URL the app builds carries ?v=<content hash> (js/say-clips.js), so a changed file is a new
-     URL and the old entry is never served for it; a sounds/ request without ?v= goes network first (cache only when
-     offline), so it cannot go stale either. Never in the install precache: only Players who tap Say it (or turn on
-     the Om) download them. Trimmed to SOUNDS_MAX, one trim at a time.
-   - Never touched: other origins (Firebase, Google, reCAPTCHA, analytics), anything not a GET.
+   - Page loads (navigations) in /play/: network first so updates show up at once; the precached shell when offline
+     or slow. Routes are hash routes, so one shell serves them all.
+   - Same-origin files with ?v=<hash>: cache first (they never change at a given URL).
+   - Other same-origin files (fonts, icons, the manifest, vendored code): network first, cache fallback.
+   - Studio voice audio (https://voice.learnvedicmath.com/, or /voice/ when the voice is static assets): cache first in
+     its own cache, lvm-voice, which every deploy keeps (file names hold their content's hash, so a name never changes
+     meaning). Trimmed to VOICE_MAX whole lines, oldest first; a new line set, clip directory or pack replaces its older
+     copy. Nothing is precached: only Players who use read aloud download audio.
+   - Sounds (/sounds/: the Sutra name clips and the Om, openspec sutra-pronunciation): cache first in their own cache,
+     lvm-sounds, which every deploy keeps, so a name heard once plays offline after the next deploy too. Every sound
+     URL the app builds carries ?v=<content hash> (js/say-clips.js), so a changed file is a new URL; a sounds/ request
+     without ?v= goes network first (cache only when offline). Never precached. Trimmed to SOUNDS_MAX, one trim at a time.
+   - Never touched: other origins (Firebase, Google, YouTube, analytics), anything not a GET.
 
-   Caches are named vedic-math-<VERSION>. The root worker only deletes madhav-*, and this one only
-   deletes its own older vedic-math-* caches (keeping the previous one for tabs still open on it).
+   Caches are named lvm-<VERSION>; this worker only deletes its own older lvm-<VERSION> caches (keeping the previous
+   one for tabs still open on it), never lvm-voice or lvm-sounds.
 
-   KILL SWITCH (retire the worker): set KILL = true below and deploy (push to main). Browsers re-check
-   sw.js on the next visit; the new worker deletes every vedic-math-* cache and unregisters itself,
-   and open tabs keep working from the network. Leave it deployed for a few weeks, then remove the
-   register call in js/app.js and delete this file. */
+   KILL SWITCH (retire the worker): set KILL = true below and deploy. Browsers re-check /sw.js on the next visit; the
+   new worker deletes every lvm-* cache and unregisters itself, and open tabs keep working from the network. Leave it
+   deployed for a few weeks, then remove the register call in js/app.js and delete this file. build.py --target moved
+   publishes this file with KILL = true and the old prefix vedic-math- to retire the old sbmadhav.com worker. */
 const KILL = false;
 /* build.py: precache (generated, do not edit) */
 const VERSION = 'dev';
 const PRECACHE = [];
 /* /build.py: precache */
-const PREFIX = 'vedic-math-';
+const PREFIX = 'lvm-';
 const CACHE = PREFIX + VERSION;
-const BASE = '/vedic-math/';
-const SHELL = BASE;
+const SCOPE = '/play/';
+const SHELL = SCOPE;
 const RUNTIME_MAX = 60; // entries kept beyond the precache list; the oldest go first
 const NAV_TIMEOUT = 3500; // ms before a page load falls back to the saved shell
 const PRECACHED = new Set(PRECACHE.map(([u]) => new URL(u, location.origin).href));
-const VOICE = BASE + 'voice/';
+const VOICE_ORIGIN = 'https://voice.learnvedicmath.com'; // the R2 voice host (design D17); /voice/ when the voice is static assets
+const VOICE = '/voice/';
 const VOICE_CACHE = PREFIX + 'voice'; // kept across deploys (not a version cache)
 const VOICE_MAX = 4000; // whole lines kept (about 10 KB each); the index and pack files are not counted
-const VOICE_LINE = /\/voice\/l\/[0-9a-f]{14}\.m4a$/; // a whole line's file
-const VOICE_HASHED = /\/voice\/(l\/set|p\/[\w-]+)\.[0-9a-f]+\.(bin|json|m4a)$/; // the line set, clip directory, a pack or its map: one copy per name
-const SOUNDS = BASE + 'sounds/';
+const VOICE_LINE = /^(\/voice)?\/l\/[0-9a-f]{14}\.m4a$/; // a whole line's file
+const VOICE_HASHED = /^(?:\/voice)?\/(l\/set|p\/[\w-]+)\.[0-9a-f]+\.(bin|json|m4a)$/; // the line set, clip directory, a pack or its map: one copy per name
+const SOUNDS = '/sounds/';
 const SOUNDS_CACHE = PREFIX + 'sounds'; // kept across deploys (not a version cache)
 const SOUNDS_MAX = 120; // 29 name clips and the Om, with room for remade ones
 
@@ -110,31 +105,25 @@ if (VERSION === 'dev') {
     const req = event.request;
     if (req.method !== 'GET') return;
     const url = new URL(req.url);
+    if (url.origin === VOICE_ORIGIN) return event.respondWith(voiceFile(req));
     if (url.origin !== location.origin) return;
 
-    if (req.mode === 'navigate') return event.respondWith(page(req));
+    if (req.mode === 'navigate') return url.pathname.startsWith(SCOPE) ? event.respondWith(page(req)) : undefined;
     if (url.pathname.startsWith(VOICE)) return event.respondWith(voiceFile(req));
     if (url.pathname.startsWith(SOUNDS)) return event.respondWith(soundFile(req));
-    const own = url.pathname.startsWith(BASE);
-    if (own && url.searchParams.has('v')) return event.respondWith(versioned(req));
-    if (own) return event.respondWith(networkFirst(req));
-    event.respondWith(staleWhileRevalidate(req, event));
+    if (url.searchParams.has('v')) return event.respondWith(versioned(req));
+    event.respondWith(networkFirst(req));
   });
 }
 
-/* Fetch one precache entry. Files from this repo carry a hash and must match it; shared files from the
-   rest of the site are best effort (a missing font should not stop the app working offline). */
+/* Fetch one precache entry and check it against the hash build.py recorded. Every file belongs to this site, so a
+   missing or different one fails the install (the previous version keeps serving). */
 async function precache(cache, url, hash) {
-  const own = hash !== null;
-  try {
-    /* The shell skips the HTTP cache (it must be this deploy's); ?v= files may come from it; shared files are revalidated */
-    const res = await fetch(new Request(url, { cache: !own ? 'no-cache' : url.includes('?v=') ? 'default' : 'reload' }));
-    if (!cacheable(res)) throw new Error(`${url}: HTTP ${res.status}`);
-    if (own && await digest(res.clone()) !== hash) throw new Error(`${url}: does not match version ${VERSION}`);
-    await cache.put(url, res);
-  } catch (e) {
-    if (own) throw e;
-  }
+  /* The shell and plain URLs skip the HTTP cache (they must be this deploy's); ?v= files may come from it */
+  const res = await fetch(new Request(url, { cache: url.includes('?v=') ? 'default' : 'reload' }));
+  if (!cacheable(res)) throw new Error(`${url}: HTTP ${res.status}`);
+  if (await digest(res.clone()) !== hash) throw new Error(`${url}: does not match version ${VERSION}`);
+  await cache.put(url, res);
 }
 
 async function digest(res) {
@@ -229,16 +218,8 @@ async function networkFirst(req) {
   }
 }
 
-async function staleWhileRevalidate(req, event) {
-  const cache = await caches.open(CACHE);
-  const hit = await cache.match(req);
-  const refresh = fetch(req).then(res => { if (cacheable(res)) put(cache, req, res.clone()); return res; }).catch(() => null);
-  if (hit) { event.waitUntil(refresh); return hit; }
-  return (await refresh) || Response.error();
-}
-
-/* Only successful same-origin responses go in the cache (no errors, redirects or opaque responses) */
-function cacheable(res) { return !!res && res.ok && res.type === 'basic'; }
+/* Only successful responses go in the cache: same-origin, or CORS from the voice host (no errors, redirects or opaque responses) */
+function cacheable(res) { return !!res && res.ok && (res.type === 'basic' || res.type === 'cors'); }
 
 /* Store a response, then trim runtime entries (anything not in the precache list) to RUNTIME_MAX, oldest first */
 async function put(cache, req, res) {
@@ -252,8 +233,8 @@ async function put(cache, req, res) {
 /* Only if the saved shell is gone (storage cleared while the worker stayed) */
 function offlinePage() {
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark"><title>Offline · Vedic Math</title>
+<meta name="color-scheme" content="light dark"><title>Offline · Learn Vedic Math</title>
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;padding:24px;box-sizing:border-box;text-align:center}</style></head>
-<body><main><h1>You are offline</h1><p>Vedic Math has not been saved on this device yet. Open it once with a connection and it will work offline after that.</p></main></body></html>`;
+<body><main><h1>You are offline</h1><p>Learn Vedic Math has not been saved on this device yet. Open it once with a connection and it will work offline after that.</p></main></body></html>`;
   return new Response(html, { status: 503, statusText: 'Offline', headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
 }

@@ -1,6 +1,7 @@
-import { test, expect, APP, open, openExplore } from './fixtures';
+import { test, expect, APP, open, chromiumOnly } from './fixtures';
 
-/* First load, page metadata, and the shared files that come from the rest of sbmadhav.com. */
+/* First load, page metadata, and the site's own files: the pinned design system, the theme, fonts, icons and manifest,
+   all served by learnvedicmath.com (openspec change learnvedicmath, site-assets spec). */
 
 test.describe('first visit', () => {
   test.use({ seedMode: null });
@@ -15,14 +16,16 @@ test.describe('first visit', () => {
 
   test('title, description, language and app metadata are present', async ({ page }) => {
     await page.goto(APP);
-    await expect(page).toHaveTitle('Vedic Math for Everyone · Madhav');
+    await expect(page).toHaveTitle(/Learn Vedic Math$/);
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /Vedic Math for Everyone/);
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /Learn Vedic Math/);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://learnvedicmath.com/play/');
     await expect(page.locator('meta[name="viewport"]')).toHaveAttribute('content', /width=device-width/);
     await expect(page.locator('meta[name="theme-color"]')).toHaveCount(1);
-    // Vedic Math is its own installable app (scope /vedic-math/), not the main site's manifest
-    await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', '/vedic-math/manifest.webmanifest');
-    await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href', '/assets/icons/apple-touch-icon.png');
+    // The game is its own installable app (scope /play/)
+    await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', '/manifest.webmanifest');
+    await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href', '/icons/apple-touch-icon.png');
+    await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/icons/favicon.svg');
     await expect(page.locator('a.skip[href="#view"]')).toHaveCount(1);
     // The Vedic Math tabs are in the page but hidden until a Mode is picked (header.spec.ts 'tabs wait for a Mode')
     await expect(page.locator('nav.mq-nav')).toHaveCount(1);
@@ -38,24 +41,34 @@ test('a returning player loads home with no console errors or failed requests', 
   expect(issues.failed, 'failed requests').toEqual([]);
 });
 
-test.describe('shared files from the main site', () => {
-  test('design system CSS loads and applies', async ({ page }) => {
+test.describe('the site\'s own files', () => {
+  test('the pinned design system and the theme load from this site and apply', async ({ page }) => {
     const css: Record<string, number> = {};
-    page.on('response', r => { const p = new URL(r.url()).pathname; if (p.startsWith('/design-system/')) css[p] = r.status(); });
+    page.on('response', r => { const u = new URL(r.url()); if (/\.css$/.test(u.pathname)) css[u.pathname] = r.status(); });
     await open(page);
-    expect(css['/design-system/tokens.css']).toBe(200);
-    expect(css['/design-system/components.css']).toBe(200);
-    // Tokens are defined, and components.css styles the shared button class
+    for (const f of ['/ds/2.1.0/tokens.css', '/ds/2.1.0/components.css', '/theme/learnvedicmath.css', '/theme/fonts.css', '/math.css']) expect(css[f], f).toBe(200);
     const tokens = await page.evaluate(() => {
       const s = getComputedStyle(document.documentElement);
       return ['--coral', '--teal', '--sun', '--sky', '--plum', '--bg', '--ink', '--on-accent'].map(v => [v, s.getPropertyValue(v).trim()]);
     });
-    for (const [name, value] of tokens) expect(value, `${name} is defined by tokens.css`).not.toBe('');
+    for (const [name, value] of tokens) expect(value, `${name} is defined`).not.toBe('');
     const radius = await page.locator('.md-btn').first().evaluate(e => getComputedStyle(e).borderRadius);
     expect(radius).not.toBe('0px');
   });
 
-  test('self-hosted fonts load from /assets/fonts/', async ({ page, request }) => {
+  /* The five category colours (Belts, avatars, tiles) are distinct in both schemes (site-assets spec) */
+  for (const scheme of ['light', 'dark'] as const) {
+    test(`the five category colours are distinct (${scheme})`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await open(page);
+      const values = await page.evaluate(() => ['--coral', '--teal', '--sun', '--sky', '--plum'].map(v => getComputedStyle(document.documentElement).getPropertyValue(v).trim().toLowerCase()));
+      expect(new Set(values).size, values.join(' ')).toBe(5);
+    });
+  }
+
+  test('every font comes from /fonts/ on this site, declared once, and mono text asks for its one weight', async ({ page, baseURL }) => {
+    const fonts: string[] = [];
+    page.on('request', r => { if (r.resourceType() === 'font') fonts.push(r.url()); });
     await open(page);
     const faces = await page.evaluate(async () => {
       await document.fonts.ready;
@@ -64,49 +77,53 @@ test.describe('shared files from the main site', () => {
     });
     for (const fam of ['Fredoka 600', 'Fredoka 700', 'Nunito Sans', 'Space Grotesk', 'JetBrains Mono'])
       expect(faces.find(f => f.startsWith(fam)), `${fam}: ${faces.join(', ')}`).toMatch(/loaded$/);
-    const urls = await page.evaluate(() => [...document.querySelectorAll('style')].flatMap(s => [...s.textContent!.matchAll(/url\((\/assets\/fonts\/[^)]+\.woff2)\)/g)].map(m => m[1])));
-    expect(urls.length).toBe(5);
-    for (const u of urls) {
-      const r = await request.get(u);
-      expect(r.status(), u).toBe(200);
-    }
+    expect(faces.filter(f => f.startsWith('JetBrains Mono')).length, 'one @font-face per font').toBe(1);
+    expect(fonts.length).toBeGreaterThan(0);
+    for (const u of fonts) expect(u.startsWith(`${new URL(baseURL!).origin}/fonts/`), u).toBe(true);
+    // No faux bold: nothing styled with the mono font asks for a heavier weight than the 500 it ships
+    const heavy = await page.evaluate(() => [...document.querySelectorAll('body *')].filter(e => /JetBrains Mono/.test(getComputedStyle(e).fontFamily.split(',')[0]) && +getComputedStyle(e).fontWeight > 500).map(e => e.className || e.tagName).slice(0, 5));
+    expect(heavy).toEqual([]);
   });
 
-  test('the app manifest is scoped to /vedic-math/, and its icons and the touch icon are served', async ({ request }) => {
-    const m = await request.get('/vedic-math/manifest.webmanifest');
+  test('the app manifest is Learn Vedic Math, scoped to /play/, with its own icons', async ({ request }) => {
+    const m = await request.get('/manifest.webmanifest');
     expect(m.status()).toBe(200);
     const json = await m.json();
-    expect(json.name).toBe('Vedic Math for Everyone');
+    expect(json.name).toBe('Learn Vedic Math');
     expect(json.short_name).toBe('Vedic Math');
-    expect(json.id).toBe('/vedic-math/');
-    expect(json.scope).toBe('/vedic-math/');
-    expect(json.start_url).toMatch(/^\/vedic-math\//);
+    expect(json.id).toBe('/play/');
+    expect(json.scope).toBe('/play/');
+    expect(json.start_url).toBe('/play/?source=pwa');
     expect(json.display).toBe('standalone');
-    expect(json.icons.length).toBeGreaterThanOrEqual(2);
+    expect(json.icons.some((i: { sizes: string }) => i.sizes === '192x192')).toBe(true);
+    expect(json.icons.some((i: { sizes: string; purpose?: string }) => i.sizes === '512x512' && !i.purpose)).toBe(true);
     expect(json.icons.some((i: { purpose?: string }) => i.purpose === 'maskable')).toBe(true);
-    // The icons are shared files from the main site
     for (const i of json.icons) {
-      expect(i.src, 'icons come from the main site').toMatch(/^\/assets\/icons\//);
-      const r = await request.get(new URL(i.src, 'https://x/vedic-math/').pathname);
+      expect(i.src, 'icons come from this site').toMatch(/^\/icons\//);
+      const r = await request.get(i.src);
       expect(r.status(), i.src).toBe(200);
-      expect(r.headers()['content-type'], i.src).toContain('image/png');
+      expect(r.headers()['content-type'], i.src).toMatch(/image\/(png|svg\+xml)/);
     }
-    expect((await request.get('/assets/icons/apple-touch-icon.png')).status()).toBe(200);
+    expect((await request.get('/icons/apple-touch-icon.png')).status()).toBe(200);
   });
 
-  test('Explore menu opens, marks Vedic Math as "You are here", and links its repo', async ({ page }) => {
+  test('Chromium finds the game installable from /play/', async ({ page }, testInfo) => {
+    chromiumOnly(testInfo, 'the installability check is a Chromium DevTools call');
+    await page.goto(APP);
+    await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
+    const cdp = await page.context().newCDPSession(page);
+    await expect.poll(async () => (await cdp.send('Page.getInstallabilityErrors')).installabilityErrors.map(e => e.errorId), { timeout: 10_000 }).toEqual([]);
+    const m = await cdp.send('Page.getAppManifest');
+    expect(m.url).toMatch(/\/manifest\.webmanifest$/);
+  });
+
+  test('nothing loads from sbmadhav.com and there is no Explore menu', async ({ page }) => {
+    const hosts = new Set<string>();
+    page.on('request', r => hosts.add(new URL(r.url()).host));
     await open(page);
-    const dlg = await openExplore(page);
-    const here = dlg.locator('a.xp-page[aria-current="page"]');
-    await expect(here).toHaveCount(1);
-    await expect(here).toHaveAttribute('href', '/vedic-math/');
-    await expect(here).toContainText(/Vedic Math/);
-    const badge = await here.evaluate(e => getComputedStyle(e, '::after').content);
-    expect(badge).toContain('You are here');
-    const repo = here.locator('xpath=..').locator('a.xp-repo');
-    await expect(repo).toHaveAttribute('href', 'https://github.com/sbmadhav/vedic-math');
-    await page.keyboard.press('Escape');
-    await expect(dlg).toBeHidden();
+    await page.waitForLoadState('networkidle');
+    expect([...hosts].filter(h => /sbmadhav/.test(h))).toEqual([]);
+    await expect(page.locator('#exploreBtn, dialog.xpm')).toHaveCount(0);
   });
 });
 

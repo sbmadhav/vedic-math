@@ -117,13 +117,14 @@ test.describe('first visit', () => {
   });
 });
 
-test('the Explore menu has no serious or critical axe violations', async ({ page }, testInfo) => {
+test('the landing and grown-up pages have no serious or critical axe violations', async ({ page }, testInfo) => {
   chromiumOnly(testInfo);
-  await open(page);
-  await page.locator('#exploreBtn').click();
-  await expect(page.locator('dialog.xpm')).toBeVisible();
-  const res = await new AxeBuilder({ page }).include('dialog.xpm').analyze();
-  expect(res.violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => `${v.id}: ${v.nodes.map(n => n.target.join(' ')).join(' | ')}`)).toEqual([]);
+  for (const url of ['/?home', '/parents/', '/teachers/', '/privacy/', '/terms/', '/licenses/']) {
+    await page.goto(url);
+    await expect(page.locator('main h1')).toBeVisible();
+    const res = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+    expect(res.violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => `${url} ${v.id}: ${v.nodes.map(n => n.target.join(' ')).join(' | ')}`)).toEqual([]);
+  }
 });
 
 /* The site header (site-header spec): wide and on a 320px phone, in both schemes, with the music panel open */

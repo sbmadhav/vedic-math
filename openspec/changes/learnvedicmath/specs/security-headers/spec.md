@@ -31,8 +31,15 @@ Every page SHALL send `Cross-Origin-Opener-Policy: same-origin`, except `/import
 - **WHEN** `/import/` opens the export popup and the popup posts its message
 - **THEN** the import page receives it
 
-### Requirement: Policy violations are reported and kept small
-Every HTML response SHALL send `Reporting-Endpoints: csp="https://learnvedicmath.com/_csp"`, and its policies SHALL name `report-to csp` and `report-uri /_csp`. The `/_csp` endpoint SHALL accept only POSTs of CSP reports up to 8 KB and answer 204, SHALL log only the directive, the blocked origin (or `inline` or `eval`), the page path without query or fragment, the disposition and the browser family, and SHALL NOT log the IP address, full URLs, the referrer or the script sample.
+### Requirement: Policy violations are reported
+Every HTML response SHALL send `Reporting-Endpoints: csp="/_csp"`; its enforced policy SHALL name `report-to csp` and `report-uri /_csp`, and its Report-Only policy `report-to csp` only.
+
+#### Scenario: A preview reports to itself
+- **WHEN** a page of a branch preview on `workers.dev` blocks a script
+- **THEN** the report goes to that preview's `/_csp`, not to learnvedicmath.com
+
+### Requirement: The report endpoint keeps nothing personal
+The `/_csp` endpoint SHALL accept only POSTs of CSP reports up to 8 KB and answer 204, SHALL log only the directive, the blocked origin (or `inline` or `eval`), the page path without query or fragment, the disposition and the browser family, and SHALL NOT log the IP address, full URLs, the referrer or the script sample.
 
 #### Scenario: A blocked script
 - **WHEN** a script from a host the policy does not allow is blocked on `/play/`
@@ -43,7 +50,7 @@ Every HTML response SHALL send `Reporting-Endpoints: csp="https://learnvedicmath
 - **THEN** it is refused and nothing is logged
 
 ### Requirement: A stricter policy is tried before it is enforced
-Every HTML page SHALL also send a `Content-Security-Policy-Report-Only` policy with `style-src 'self'` and `require-trusted-types-for 'script'`, reporting to the same endpoint, so its reports can be reviewed before it is enforced in a later change.
+Every HTML page SHALL also send a `Content-Security-Policy-Report-Only` policy with `style-src 'self'` and `require-trusted-types-for 'script'`, reporting to the same endpoint through `report-to`, so its reports can be reviewed before it is enforced in a later change.
 
 #### Scenario: Report-only violation
 - **WHEN** a view sets a `style=""` attribute

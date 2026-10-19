@@ -26,7 +26,7 @@ async function openEverything(page: Page, mode: Mode) {
 }
 
 const shelfData = (page: Page) => page.evaluate(async () => {
-  const { VIDEOS, LINKS } = await import('/vedic-math/js/videos.js' as string);
+  const { VIDEOS, LINKS } = await import('/js/videos.js' as string);
   return { VIDEOS, LINKS } as { VIDEOS: any[]; LINKS: any[] };
 });
 

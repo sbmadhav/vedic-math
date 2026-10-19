@@ -49,7 +49,7 @@ test('the eleven Titles start at their Sparks thresholds', async ({ page }) => {
 test('the Title table in the app is exactly the eleven Titles', async ({ page }) => {
   await open(page, '#/');
   const got = await page.evaluate(async () => {
-    const gm = await import('/vedic-math/js/gamify.js' as string);
+    const gm = await import('/js/gamify.js' as string);
     return { table: gm.TITLES as [number, string][], at: (gm.TITLES as [number, string][]).map(([n]) => gm.titleInfo(n).title) };
   });
   expect(got.table).toEqual(TITLES);
@@ -73,7 +73,7 @@ test.describe('a Player who was "Level 6 · Sum Sprinter" loads the app after th
       expect(await chip.textContent()).not.toMatch(/\d/);
       // No "Level 6" anywhere on the Me page or the home page
       await expect(page.locator('body')).not.toContainText(/Level\s*6/i);
-      await page.goto('/vedic-math/');
+      await page.goto('/play/');
       await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
       await expect(page.locator('#mqChip a.mq-chip')).toHaveAttribute('aria-label', 'Swift Tiger 42, Sum Sprinter');
       await expect(page.locator('body')).not.toContainText(/Level\s*6\b/i);

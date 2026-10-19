@@ -82,7 +82,7 @@ test.describe('under 13 without the Parent step', () => {
   test('an under-13 Player without the Parent step can open and play a video; nothing is sent but the embed', async ({ page }, testInfo) => {
     chromiumOnly(testInfo);
     const events: string[] = [];
-    await page.route(/\/assets\/analytics\.js(\?.*)?$/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body: 'window.siteTrack = (p) => { (window.__ev ||= []).push(p); };' }));
+    await page.route(/\/js\/analytics\.js(\?.*)?$/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body: 'window.siteTrack = (p) => { (window.__ev ||= []).push(p); };' }));
     await page.route(/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>video</title>' }));
     await page.route(/^https:\/\/i\.ytimg\.com\//, r => r.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg"/>' }));
     const sent: string[] = [];
@@ -132,7 +132,7 @@ test.describe('pro', () => {
 
 test('the footer says progress stays in this browser', async ({ page }) => {
   await open(page);
-  await expect(page.locator('footer.mq-foot')).toContainText('Progress stays in this browser, and leaderboards only see a made-up nickname.');
+  await expect(page.locator('footer.mq-foot')).toContainText('Progress stays in this browser, and World boards only see a made-up Nickname.');
   // Honest framing: the sutras come from the 1965 book, not "traditional Vedic mathematics"
   await expect(page.locator('footer.mq-foot')).toContainText("Speed tricks use sutras from Bharati Krishna Tirtha's 1965 book; lessons, problems and visuals are original.");
   await expect(page.locator('footer.mq-foot')).not.toContainText(/traditional|Vedas/i);
@@ -145,7 +145,7 @@ test('the footer says progress stays in this browser', async ({ page }) => {
 const NO_ARENA_QUEST = new Date(2026, 9, 18, 12); // Challenger's quests: Get 10 right, Watch a speed trick, Finish an Endless run
 const ARENA_QUEST = new Date(2026, 9, 19, 12); // Challenger's quests: Get 10 right, Finish an Endless run, Finish an Arena round
 const questIds = (page: import('@playwright/test').Page) => page.evaluate(async () =>
-  (await import('/vedic-math/js/gamify.js' as string)).pickQuests(undefined, 'challenger').map((q: { id: string }) => q.id) as string[]);
+  (await import('/js/gamify.js' as string)).pickQuests(undefined, 'challenger').map((q: { id: string }) => q.id) as string[]);
 
 test.describe('a Player who may post (a grown-up)', () => {
 test.use({ seedConsent: { age: 'adult' } });
@@ -154,7 +154,7 @@ test('an Arena score entry holds only the nickname, avatar color, score and two 
   // Calls the app's own cloud.submit (what the Arena daily round uses) against the fake SDK
   await open(page, '#/arena');
   const writes = await page.evaluate(async () => {
-    const cloud = await import('/vedic-math/js/cloud.js' as string);
+    const cloud = await import('/js/cloud.js' as string);
     const day = `daily-${cloud.dayId()}-challenger`;
     await cloud.submit(day, { id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode: 'challenger', created: 1, score: 121 });
     return (globalThis as any).__e2eCloud.writes;
@@ -172,7 +172,7 @@ test('an Arena score entry holds only the nickname, avatar color, score and two 
 const UID = 'e2e-fake-uid';
 const ENTRY_KEYS = ['avatar', 'exp', 'name', 'score', 'ts'];
 const ids = (page: import('@playwright/test').Page) => page.evaluate(async () => {
-  const cloud = await import('/vedic-math/js/cloud.js' as string);
+  const cloud = await import('/js/cloud.js' as string);
   return { day: cloud.dayId() as string, wk: cloud.weekId() as string };
 });
 const writes = async (page: import('@playwright/test').Page) => (await cloudLog(page)).writes;
@@ -202,7 +202,7 @@ test('an Arena Daily challenge sends its score to today\'s and this week\'s Aren
   const { day, wk } = await ids(page);
   expect(await questIds(page)).not.toContain('arena-1');
   // The daily round is seeded, so the first question's answer comes from the app's own module
-  const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
+  const answer = await page.evaluate(async d => (await import('/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
   await page.locator('#arGo').click();
   await page.clock.runFor(2_500); // 3, 2, 1
   await typeAnswer(page, String(answer));
@@ -229,7 +229,7 @@ test('on a day with the Arena quest, the round\'s quest Sparks follow the Arena 
   await open(page, '#/arena');
   const { day, wk } = await ids(page);
   expect(await questIds(page)).toContain('arena-1');
-  const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
+  const answer = await page.evaluate(async d => (await import('/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
   await page.locator('#arGo').click();
   await page.clock.runFor(2_500); // 3, 2, 1
   await typeAnswer(page, String(answer));
@@ -334,7 +334,7 @@ test.describe('a Player who may not post', () => {
    'e2e-fake-vm-<id>' for any other. */
 const PB = 'pbtest1', UID_A = 'e2e-fake-uid', UID_B = `e2e-fake-vm-${PB}`;
 const boardIds = (page: import('@playwright/test').Page) => page.evaluate(async () => {
-  const cloud = await import('/vedic-math/js/cloud.js' as string);
+  const cloud = await import('/js/cloud.js' as string);
   return { day: cloud.dayId() as string, wk: cloud.weekId() as string };
 });
 const sent = async (page: import('@playwright/test').Page) => (await cloudLog(page)).writes;
@@ -350,7 +350,7 @@ async function seedSecondPlayer(page: import('@playwright/test').Page, extra: Re
   }, [{ ...B, ...extra }, more] as const);
 }
 const switchTo = (page: import('@playwright/test').Page, id: string) => page.evaluate(async id => {
-  (await import('/vedic-math/js/store.js' as string)).switchPlayer(id);
+  (await import('/js/store.js' as string)).switchPlayer(id);
 }, id);
 
 test.describe('two Players on one device', () => {
@@ -364,7 +364,7 @@ test.describe('two Players on one device', () => {
     await open(page, '#/arena');
     const { day, wk } = await boardIds(page);
     expect(await questIds(page)).not.toContain('arena-1');
-    const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
+    const answer = await page.evaluate(async d => (await import('/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
     const play = async () => {
       await page.locator('#arGo').click();
       await page.clock.runFor(2_500);
@@ -430,7 +430,7 @@ test.describe('two Players on one device', () => {
 });
 
 /* The app's own files (js/sky.js, js/sky-view.js) are named after the Sky; a GET for one carries nothing */
-const sameOriginFile = (r: import('@playwright/test').Request) => r.method() === 'GET' && new URL(r.url()).pathname.startsWith('/vedic-math/') && /\.(js|css|json|webmanifest|png|svg|woff2)$/.test(new URL(r.url()).pathname);
+const sameOriginFile = (r: import('@playwright/test').Request) => r.method() === 'GET' && new URL(r.url()).origin === new URL(r.frame().page().url()).origin && /\.(js|css|json|webmanifest|png|svg|webp|woff2)$/.test(new URL(r.url()).pathname);
 
 /* Stars post nothing (star-round spec, Stars are Practice): only the weekly Sparks total may go */
 test.describe('Stars', () => {
@@ -501,7 +501,7 @@ test.describe('Ratings', () => {
     await open(page, '#/arena');
     const { day } = await boardIds(page);
     // A finished daily round: it posts, and its entries hold no Rating
-    const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('pro', d)[0].answer, day);
+    const answer = await page.evaluate(async d => (await import('/js/arena.js' as string)).dailySet('pro', d)[0].answer, day);
     await page.locator('#arGo').click();
     await page.clock.runFor(2_500);
     await typeAnswer(page, String(answer));
@@ -524,7 +524,7 @@ test.describe('Ratings', () => {
     for (let k = 0; k < 10; k++) { await box.locator('#prShow').click(); await box.locator('#prCheck').click(); }
     await page.goto(`${APP}#/learn`);
     await page.clock.runFor(70_000); // past the weekly Sparks post's wait
-    const ratings = await page.evaluate(async () => (await import('/vedic-math/js/store.js' as string)).load().ratings);
+    const ratings = await page.evaluate(async () => (await import('/js/store.js' as string)).load().ratings);
     expect(Object.keys(ratings)).toEqual(expect.arrayContaining(['arena:pro', 'skill:3-mult']));
     for (const r of out) { expect(r).not.toMatch(/rating/i); expect(r).not.toContain('arena:'); }
     for (const w of await sent(page)) { expect(JSON.stringify(w)).not.toMatch(/rating|arena:/i); expect(Object.keys(w.data).sort()).toEqual(['avatar', 'exp', 'name', 'score', 'ts']); }

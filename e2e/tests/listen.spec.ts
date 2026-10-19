@@ -14,7 +14,7 @@ const VOICE = 'en-US-Chirp3-HD-Aoede';
 const STUB = `window.__events = window.__events || []; window.siteTrack = (path, title) => { window.__events.push(path); };`;
 
 async function setup(page: Page, { endAfter = 0 } = {}) {
-  await page.route(/\/assets\/analytics\.js(\?.*)?$/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
+  await page.route(/\/js\/analytics\.js(\?.*)?$/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
   await page.addInitScript(ms => {
     const w = window as any;
     w.__voiceLog = []; w.__spoken = [];
@@ -30,11 +30,11 @@ async function setup(page: Page, { endAfter = 0 } = {}) {
   }, endAfter);
   /* The recorded lines: hashes filled in by recordLines() once the page can compute them */
   const recorded = new Set<string>();
-  const index = { voice: VOICE, speed: 0.95, base: '/vedic-math/voice/', tag: 'voice-0123456789', sha256: '0'.repeat(64), lineSet: 'l/set.test.bin', dir: 'p/dir.test.json',
+  const index = { voice: VOICE, speed: 0.95, base: 'https://voice.learnvedicmath.com/', tag: 'voice-0123456789', sha256: '0'.repeat(64), lineSet: 'l/set.test.bin', dir: 'p/dir.test.json',
     packs: [{ name: 'core', audio: 'p/core.test.m4a', map: 'p/core.test.json', bytes: PACK_M4A.length, clips: 0 }], coveredSkills: [], counts: { lines: 0, clips: 0 } };
-  await page.route('**/vedic-math/js/voice-index.js*', r => r.fulfill({ contentType: 'text/javascript', body: `export const STUDIO = ${JSON.stringify(index)};` }));
-  await page.route('**/vedic-math/voice/**', r => {
-    const u = new URL(r.request().url()).pathname.replace('/vedic-math/voice/', '');
+  await page.route('**/js/voice-index.js*', r => r.fulfill({ contentType: 'text/javascript', body: `export const STUDIO = ${JSON.stringify(index)};` }));
+  await page.route('https://voice.learnvedicmath.com/**', r => {
+    const u = new URL(r.request().url()).pathname.replace('/', '');
     if (u === 'l/set.test.bin') {
       const keys = Uint32Array.from([...recorded].map(h => parseInt(h.slice(0, 8), 16) >>> 0)).sort();
       return r.fulfill({ contentType: 'application/octet-stream', body: Buffer.from(keys.buffer) });
@@ -50,9 +50,9 @@ async function setup(page: Page, { endAfter = 0 } = {}) {
     /* Marks the lines of a Listen key as recorded (hash computed in the page, as js/voice.js does) */
     async recordKey(key: string) {
       const hs: string[] = await page.evaluate(async ([k, v]) => {
-        const { lineHash } = await import('/vedic-math/js/voice-plan.js' as string);
-        const { normalize } = await import('/vedic-math/js/voice.js' as string);
-        const { linesForKey } = await import('/vedic-math/js/explain-lines.js' as string);
+        const { lineHash } = await import('/js/voice-plan.js' as string);
+        const { normalize } = await import('/js/voice.js' as string);
+        const { linesForKey } = await import('/js/explain-lines.js' as string);
         return linesForKey(k).map((t: string) => lineHash(v, normalize(t)));
       }, [key, VOICE]);
       hs.forEach(h => recorded.add(h));
@@ -85,8 +85,8 @@ test.describe('Listen', () => {
     await setup(page);
     await open(page, '#/skill/3-mult');
     const want = await page.evaluate(async () => {
-      const { normalize } = await import('/vedic-math/js/voice.js' as string);
-      const { linesForKey } = await import('/vedic-math/js/explain-lines.js' as string);
+      const { normalize } = await import('/js/voice.js' as string);
+      const { linesForKey } = await import('/js/explain-lines.js' as string);
       return linesForKey('skill:3-mult').map((t: string) => normalize(t));
     });
     await page.getByRole('button', { name: 'Listen: the idea and how it works' }).click();

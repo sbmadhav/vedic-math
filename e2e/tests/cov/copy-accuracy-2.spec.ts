@@ -7,7 +7,7 @@ import { test, expect, open, type Page } from '../fixtures';
 /* Makes the next question of Skill `id` draw `draws` from Math.random (in order), then moves to that question. */
 async function nextWithDraws(page: Page, id: string, draws: number[]) {
   await page.evaluate(async ({ id, draws }) => {
-    const mods = ['/vedic-math/js/skills/middle.js'];
+    const mods = ['/js/skills/middle.js'];
     for (const m of mods) {
       const list = (await import(m)).default as any[];
       const s = list.find(x => x.id === id);

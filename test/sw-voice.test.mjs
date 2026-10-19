@@ -1,4 +1,4 @@
-/* sw.js voiceFile (openspec better-voice, review follow-up): studio voice files are cache first in vedic-math-voice,
+/* sw.js voiceFile (openspec better-voice, review follow-up): studio voice files are cache first in lvm-voice,
    and the trim counts and drops whole lines only, so the line set, clip directory and packs (saved first, never
    re-saved) survive any number of lines heard and read aloud keeps working offline. sw.js runs in a vm with fake
    caches and fetch. */
@@ -20,7 +20,7 @@ function load({ max } = {}) {
     self: { addEventListener() {}, skipWaiting() {}, clients: { claim() {} } },
     caches: { open: async () => cache, keys: async () => [], delete: async () => true },
     fetch: async req => { net.calls.push(req.url); if (!net.up) throw new TypeError('offline'); return { ok: true, type: 'basic', body: 'net:' + req.url, clone() { return this; } }; },
-    location: { origin: 'https://sbmadhav.com' }, URL, setTimeout, Promise, console,
+    location: { origin: 'https://learnvedicmath.com' }, URL, setTimeout, Promise, console,
   };
   let src = readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
   if (max) src = src.replace(/const VOICE_MAX = \d+;/, `const VOICE_MAX = ${max};`);
@@ -28,7 +28,7 @@ function load({ max } = {}) {
   vm.runInContext(src + '\n;globalThis.__voiceFile = voiceFile;', ctx);
   return { voiceFile: url => ctx.__voiceFile({ url }), store, net };
 }
-const V = 'https://sbmadhav.com/vedic-math/voice/';
+const V = 'https://voice.learnvedicmath.com/'; // the R2 voice host (design D17)
 const line = i => `${V}l/${i.toString(16).padStart(14, '0')}.m4a`;
 
 test('a studio voice file is cache first: heard once, it plays offline', async () => {

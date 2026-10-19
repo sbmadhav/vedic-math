@@ -1,5 +1,11 @@
 name: CI
 
+# Tests, the stamped build and its checks on every push and pull request; on main, the Studio voice files go to the
+# voice host and then the checked build is deployed to Cloudflare Workers (https://learnvedicmath.com/;
+# openspec change learnvedicmath, design D12). Pull requests from branches of this repo also get a preview
+# (preview.yml). The old GitHub Pages deploy of sbmadhav.com/vedic-math/ is gone from here: Phase B publishes the
+# moved page once, with moved.yml.
+
 on:
   push:
     branches: [main]
@@ -15,6 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
@@ -27,43 +35,60 @@ jobs:
       - name: Unit tests
         run: node --test 'test/**/*.test.{js,mjs}'
 
-      # Also fails if the source carries stamps (an import map, ?v= on app.js or math.css, a
-      # sw.js VERSION other than 'dev', or a Content-Security-Policy <meta>)
-      - name: Build _site with cache stamps
+      - name: Deploy credentials are named only by their own jobs
+        run: node tools/check-workflow-secrets.mjs
+
+      # Fails on stamps in the source, a policy <meta>, a header that differs from theme/header.html (compose.py),
+      # a vendored file that does not match its SHA256SUMS, a /vedic-math/ or sbmadhav.com reference, an unlisted
+      # third-party host, a _headers file Cloudflare would refuse, or more or bigger files than Cloudflare serves
+      - name: Build _site with cache stamps and headers
         run: python3 build.py --out _site
 
-      - name: The build is stamped and has no repo-only files
+      - name: Every page header is the composed theme/header.html
+        run: python3 vendor/design-system/2.1.0/compose.py --check theme/header.html play/index.html $(find site -name '*.html')
+
+      - name: The build is stamped, has its headers and no repo-only files
         run: |
           set -e
           err() { echo "::error::$1"; exit 1; }
-          grep -q '<script type="importmap">' _site/index.html || err "_site/index.html has no import map"
-          grep -Eq '"/vedic-math/js/app\.js": "/vedic-math/js/app\.js\?v=[0-9a-f]{10}"' _site/index.html || err "_site/index.html does not pin app.js in the import map"
-          grep -Eq '<script type="module" src="/vedic-math/js/app\.js\?v=[0-9a-f]{10}"></script>' _site/index.html || err "_site/index.html loads app.js without a ?v= stamp"
-          grep -Eq 'href="/vedic-math/math\.css\?v=[0-9a-f]{10}"' _site/index.html || err "_site/index.html loads math.css without a ?v= stamp"
-          grep -q '<meta http-equiv="Content-Security-Policy" content="default-src' _site/index.html || err "_site/index.html has no Content-Security-Policy <meta>"
+          grep -q '<script type="importmap">' _site/play/index.html || err "_site/play/index.html has no import map"
+          grep -Eq '"/js/app\.js": "/js/app\.js\?v=[0-9a-f]{10}"' _site/play/index.html || err "_site/play/index.html does not pin app.js in the import map"
+          grep -Eq '<script type="module" src="/js/app\.js\?v=[0-9a-f]{10}"></script>' _site/play/index.html || err "_site/play/index.html loads app.js without a ?v= stamp"
+          grep -Eq 'href="/math\.css\?v=[0-9a-f]{10}"' _site/play/index.html || err "_site/play/index.html loads math.css without a ?v= stamp"
+          ! grep -rlq 'http-equiv="Content-Security-Policy"' _site --include='*.html' || err "a published page carries a policy <meta>; the policy belongs in _headers"
+          grep -q '^/play/$' _site/_headers || err "_site/_headers has no rule for /play/"
+          grep -q "Content-Security-Policy: default-src 'self'" _site/_headers || err "_site/_headers has no Content-Security-Policy"
           grep -Eq "^const VERSION = '[0-9a-f]{10}';" _site/sw.js || err "_site/sw.js VERSION is not a stamped hash"
-          grep -q '"/vedic-math/", "' _site/sw.js || err "_site/sw.js does not precache the shell"
+          grep -q '"/play/", "' _site/sw.js || err "_site/sw.js does not precache the game shell"
           grep -q "^const VERSION = 'dev';" sw.js || err "sw.js in git must keep VERSION = 'dev'"
-          test -f _site/.nojekyll || err "_site/.nojekyll is missing"
-          for f in CLAUDE.md README.md GLOSSARY.md CONTRIBUTING.md SECURITY.md LICENSE LICENSE-CONTENT.md build.py _config.yml cloud test e2e docs tools .github .githooks; do
+          for f in index.html _redirects robots.txt sitemap.xml .well-known/security.txt 404.html; do test -f "_site/$f" || err "_site/$f is missing"; done
+          for f in CLAUDE.md README.md GLOSSARY.md CONTRIBUTING.md SECURITY.md LICENSE LICENSE-CONTENT.md THIRD-PARTY-NOTICES.md build.py _config.yml wrangler.jsonc cloud test e2e docs tools site moved worker deploy .github .githooks; do
             test ! -e "_site/$f" || err "_site/$f is a repo-only file and must not be published"
           done
           find _site -type f | sort
 
-      # Studio voice: the recordings are not in git. When js/voice-index.js names an archive, download it from this
-      # repo's GitHub Release, check its SHA-256 and unpack it into _site/voice/; a missing or wrong archive fails the
-      # job. With no archive named yet, this step only says so and read aloud uses the built-in voice.
-      - name: Add the studio voice recordings
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: node tools/voice/ci-fetch.mjs _site
-
-      # The exact files checked above (plus the verified voice archive) are the ones deployed
-      - name: Upload _site for the deploy job
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: deploy/package-lock.json
+
+      # wrangler reads wrangler.jsonc and _site the way the deploy will, without credentials and without deploying
+      - name: Cloudflare accepts the configuration (dry run)
+        working-directory: deploy
+        run: |
+          npm ci --ignore-scripts
+          npx wrangler deploy --config ../wrangler.jsonc --dry-run --outdir ../.wrangler/dry-run
+
+      # The exact files checked above are the ones deployed
+      - name: Upload _site for the deploy job
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: site
           path: _site
+          include-hidden-files: true
+          retention-days: 3
 
   # cloud/firestore.rules against the Firestore emulator (cloud/test). Never touches production.
   rules:
@@ -92,24 +117,68 @@ jobs:
       - name: Firestore rules tests
         run: npm test
 
-  # Publishes _site (stamped) to GitHub Pages at https://sbmadhav.com/vedic-math/. Needs
-  # Settings > Pages > Source set to "GitHub Actions" AND the repository variable PAGES_VIA_ACTIONS
-  # set to true; until both are done, Pages deploys the main branch with Jekyll, which publishes
-  # the UNSTAMPED source (it works, but with no import map pins and a 'dev' worker that caches
-  # nothing, so no offline). See "Deploy" in README.md.
-  deploy:
+  # Studio voice (design D17): on every push to main, copy any new files of the release named by js/voice-index.js to
+  # the R2 bucket behind https://voice.learnvedicmath.com/ (checked against the archive's SHA-256 and their own hashed
+  # names, never overwriting or deleting), then confirm every file the committed index names is there. The deploy
+  # needs this job, so a site that names new voice files is never published before they exist. Runs only once the
+  # owner has set up R2 (repository variable R2_ACCOUNT_ID, owner task 7.8); until then nothing is deployed either.
+  voice-upload:
     needs: check
-    if: vars.PAGES_VIA_ACTIONS == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.R2_ACCOUNT_ID != ''
     runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
+    environment: production
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "22"
+
+      - name: Upload new voice files and check the bucket
+        env:
+          GH_TOKEN: ${{ github.token }}
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: learnvedicmath-voice
+        run: node tools/voice/r2-upload.mjs
+
+  # Publishes the checked _site to Cloudflare Workers with wrangler (pinned in deploy/package.json). The token lives in
+  # the production environment, whose deployment branches are main only (owner guide section 8), so no other branch
+  # and no pull request can read it; it is passed only as an environment variable.
+  deploy:
+    needs: [check, voice-upload]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CLOUDFLARE_ACCOUNT_ID != ''
+    runs-on: ubuntu-latest
     environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      name: production
+      url: https://learnvedicmath.com/
     concurrency:
-      group: pages
+      group: deploy-production
       cancel-in-progress: false
     steps:
-      - id: deployment
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: site
+          path: _site
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: deploy/package-lock.json
+
+      - name: Deploy to Cloudflare Workers
+        working-directory: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npm ci --ignore-scripts
+          npx wrangler deploy --config ../wrangler.jsonc

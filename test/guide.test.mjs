@@ -122,7 +122,7 @@ test('the pictures use tokens only and are hidden from assistive technology', ()
 test('the tour has at most six steps, and its last step points at the Guide link', () => {
   assert.ok(TOUR_STEPS.length >= 3 && TOUR_STEPS.length <= 6);
   assert.equal(TOUR_STEPS.at(-1).options[0].sel, '.mq-nav a[href="#/guide"]');
-  const index = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const index = readFileSync(new URL('../play/index.html', import.meta.url), 'utf8');
   assert.match(index, /<a href="#\/guide" data-match="\^#\/guide">Guide<\/a>/, 'the menu bar has the Guide link');
   assert.match(index, /<a class="mq-guide" href="#\/guide">How to use this app<\/a>/, 'the footer links the guide');
   for (const s of TOUR_STEPS) for (const o of s.options) for (const m of MODES) { assert.ok(say(o.title, m) && say(o.body, m), `${s.id} in ${m}`); }
@@ -166,4 +166,12 @@ test('tour state lives in vm.tour on this device, and survives storage that thro
   assert.equal(tourState(bad), null);
   assert.doesNotThrow(() => setTourState('done', bad));
   assert.equal(tourState(null), null);
+});
+
+/* learnvedicmath.com has no Explore menu and no link to sbmadhav.com (openspec change learnvedicmath, task 3.5) */
+test('the guide never mentions the Explore menu, the Star map button or sbmadhav.com', async () => {
+  const src = readFileSync(new URL('../js/guide.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(src, /sbmadhav\.com/);
+  assert.doesNotMatch(src, /\bExplore\b(?! mode)/);
+  assert.doesNotMatch(src, /Star map/);
 });

@@ -99,7 +99,7 @@ Crawlers and first-time visitors (no storage) see the landing page. The script r
   Cross-Origin-Resource-Policy: same-origin
   X-Frame-Options: DENY
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), interest-cohort=(), browsing-topics=(), fullscreen=(self "https://www.youtube-nocookie.com"), autoplay=(self "https://www.youtube-nocookie.com"), encrypted-media=(self "https://www.youtube-nocookie.com"), picture-in-picture=(self "https://www.youtube-nocookie.com")
-  Reporting-Endpoints: csp="https://learnvedicmath.com/_csp"
+  Reporting-Endpoints: csp="/_csp"
 /play/
   Content-Security-Policy: <built for play/index.html>
   Content-Security-Policy-Report-Only: <the stricter variant, see below>
@@ -324,3 +324,21 @@ Labelled L1 to L8 to match the owner's list.
 - **L8. Where the Studio voice files live**: answered 2026-10-17: the default, R2 on `voice.learnvedicmath.com` (D17 option a). Alternatives: Workers Paid (b), packing (c), or R2 behind the same domain through the Worker.
 
 Not a decision, an interpretation: **GoatCounter** "self-hosted" is read as a new hosted site code with the script served from this site, not running a GoatCounter server.
+
+## Changes made while building
+
+Recorded by the builder (branch `learnvedicmath-build`). Each keeps the decision's intent; the owner may revert any of them.
+
+- **Policies and COOP sit on page paths only, never on `/*`** (D4). Cloudflare joins the values of every `_headers` rule that matches a path with a comma, so a policy on `/*` plus a page policy would be two policies, both enforced, and `same-origin, same-origin-allow-popups` is not a valid COOP. `/*` carries the common headers; each page path carries its own COOP, policy and Report-Only policy. The not-found page (served at any path) and non-HTML files get the common headers only. `/sw.js` needs no rule.
+- **The published `/ds/2.1.0/tokens.css` drops its five `@font-face` lines** (D6). The vendored copy names the old site's `/assets/fonts/`; `theme/fonts.css` declares the fonts once from `/fonts/`. The vendored file stays byte for byte (its `SHA256SUMS` hold); only the published copy differs, and the precache hash is the published copy's.
+- **`/privacy/security/` is a short public page, not `docs/legal/security-program.md`** (D2). The written program names where secrets live and the internal calendar; it stays internal. The page says how the site is protected and how to report a problem, and `security.txt`'s `Policy` points to it.
+- **Grown-up pages render the `docs/legal/` drafts at build time** (`<!-- include-md: PATH -->`), without the title, the drafting note and the "For the reviewing lawyer" section, under a "Draft under review" note that stays until task 13.1 and 14.5. The headings and the last-updated line therefore always match the reviewed Markdown. The privacy draft's "sbmadhav.com/vedic-math/" became "sbmadhav.com" (no `/vedic-math/` path may be published).
+- **The moved page's packer lives in `moved/handoff-pack.js`, not `js/`** (D9). Everything in `js/` is published on learnvedicmath.com, where no `/vedic-math/` path may appear, and the packer must name the old scope. `build.py --target moved` publishes it at `/vedic-math/js/handoff-pack.js`.
+- **Thumbnails are `thumbs/yt-<id>.webp`** (D10). Some YouTube ids start with `_` or `-`, and the build (like Jekyll before it) leaves out any path part starting with `.` or `_`.
+- **`e2e/local-server.mjs` serves a build the way Cloudflare does** (`_headers`, `_redirects`, auto-trailing-slash, the 404 page; D8 said it would stay only for the moved page). It needs no install, so the suite runs against `_site` or `_dev` locally and in the hook-free loop; `wrangler dev` (checked: it accepts `run_worker_first` as a path array and applies the same headers and redirects) remains the reference. On plain http it leaves `upgrade-insecure-requests` out of the policy.
+- **The report endpoint's logic is in `worker/csp-lib.js`**; `worker/csp.js` is only the entry (a Worker's entry module may export only handlers; wrangler refused the constant `MAX_BYTES`).
+- **Pause motion is saved under `motion-paused` = `'1'`** and removed when off; every page's first inline script applies it with the scheme.
+- **Page titles end with "· Learn Vedic Math"**, not "· Madhav" (L6: no credit line anywhere).
+- **CI jobs that need the owner's accounts are inert until the owner's variables exist**: `voice-upload` needs `vars.R2_ACCOUNT_ID`, `deploy` needs `vars.CLOUDFLARE_ACCOUNT_ID` (and `voice-upload`), `preview.yml` and the live `e2e.yml` jobs need `vars.CLOUDFLARE_ACCOUNT_ID`. Merging early therefore deploys nothing and changes nothing on sbmadhav.com (its Pages keep the last deployed artifact). `e2e.yml` also carries the Phase B moved-page check and the Phase C 301 check, switched on by the repository variable `MOVE_PHASE` (`B` or `C`), and `moved.yml` publishes the moved page by hand.
+- **`Reporting-Endpoints: csp="/_csp"` is relative, and the Report-Only policy reports through `report-to` only** (D4, security-headers spec). An absolute production URL made previews and local runs report to production (a test run in WebKit sent thousands of reports to learnvedicmath.com). `require-trusted-types-for 'script'` flags every `innerHTML` of a view; through `report-uri` each one is a request to `/_csp` (a Worker invocation), while `report-to` is batched by the Reporting API. The enforced policy keeps `report-uri` for Safari and Firefox. The e2e fixtures answer `/_csp` locally, and the `issues` fixture ignores WebKit's `[Report Only]` console lines (they block nothing).
+- **`E2E_VOICE_ORIGIN`**: until the voice host is live, the e2e fixtures can answer `voice.learnvedicmath.com` from another copy of the same files (for example the old site's `/vedic-math/voice/`).

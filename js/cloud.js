@@ -8,7 +8,8 @@
 import { FIREBASE, appCheckSiteKey, appCheckProvider } from './cloud-config.js';
 import * as store from './store.js';
 
-const V = '10.12.2', CDN = `https://www.gstatic.com/firebasejs/${V}`;
+/* The Firebase SDK is served from this site (vendor/firebase/<V>/, made by tools/vendor-firebase.mjs), never from Google's CDN */
+const V = '13.0.0', CDN = `/vendor/firebase/${V}`;
 /* Score caps and the entry lifetime, mirrored from cloud/firestore.rules (the rules are the authority):
    Arena boards per league, Ranked game boards (g_...) and weekly Sparks boards (xp-week-...) one cap each. */
 export const MAX_SCORE = { explorer: 2000, challenger: 1600, pro: 1200 };

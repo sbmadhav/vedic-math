@@ -27,7 +27,7 @@ async function next(page: Page) {
 /* Records every Sparks change the store emits (same module instance the app uses) */
 async function watchSparks(page: Page) {
   await page.evaluate(async () => {
-    const store = await import('/vedic-math/js/store.js' as string);
+    const store = await import('/js/store.js' as string);
     const w = window as any; w.__sparks = [];
     store.on((type: string, d: any) => { if (type === 'sparks') w.__sparks.push({ n: d.n, why: d.why }); });
   });

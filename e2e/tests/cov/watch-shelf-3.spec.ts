@@ -17,7 +17,7 @@ async function openShelf(page: Page) {
 }
 type Data = { videos: { yt: string; modes: string[] }[]; links: { title: string; url: string; kind: string }[] };
 const data = (page: Page): Promise<Data> => page.evaluate(async () => {
-  const { VIDEOS, LINKS } = await import('/vedic-math/js/videos.js' as string);
+  const { VIDEOS, LINKS } = await import('/js/videos.js' as string);
   return { videos: VIDEOS.map((v: any) => ({ yt: v.yt, modes: v.modes })), links: LINKS.map((l: any) => ({ title: l.title, url: l.url, kind: l.kind })) };
 });
 

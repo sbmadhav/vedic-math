@@ -8,7 +8,9 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const walk = dir => readdirSync(dir).flatMap(f => { const p = join(dir, f); return statSync(p).isDirectory() ? walk(p) : [p]; });
-const FILES = [join(root, 'index.html'), join(root, 'manifest.webmanifest'), ...walk(join(root, 'js')).filter(f => f.endsWith('.js'))];
+/* The game page, the landing and grown-up pages (site/), the header partial, the manifest and every script */
+const FILES = [join(root, 'play', 'index.html'), ...walk(join(root, 'site')).filter(f => f.endsWith('.html')), join(root, 'theme', 'header.html'),
+  join(root, 'manifest.webmanifest'), ...walk(join(root, 'js')).filter(f => f.endsWith('.js'))];
 
 const BANNED = [/vedic sutras?\b/i, /traditional vedic mathematics/i, /from the vedas/i];
 /* A sentence may name the Vedas to say the sutras are not in them (the history text) */
@@ -36,7 +38,7 @@ test('no em dashes', () => {
 });
 
 test('the footer credits the 1965 book', () => {
-  const html = readFileSync(join(root, 'index.html'), 'utf8');
+  const html = readFileSync(join(root, 'play', 'index.html'), 'utf8');
   assert.match(html, /Speed tricks use sutras from Bharati Krishna Tirtha's 1965 book; lessons, problems and visuals are original\./);
 });
 
@@ -70,3 +72,24 @@ test('the Om note is shipped verbatim and nothing calls the Om or the ambience V
     .map(([, i]) => `${relative(root, f)}:${i + 1}`));
   assert.deepEqual(hits, []);
 });
+
+/* The pages for grown-ups (openspec change learnvedicmath, landing-pages; task 4.2): the parents and privacy pages name
+   the contact, the legal pages are the reviewed docs/legal/ drafts rendered at build time (so their headings and
+   last-updated line always match), and the published Markdown keeps the copy rules too */
+test('grown-up pages: the contact on parents and privacy, the legal text included from docs/legal/, no em dashes', () => {
+  const page = p => readFileSync(join(root, 'site', p, 'index.html'), 'utf8');
+  assert.match(page('parents'), /privacy@learnvedicmath\.com/);
+  assert.match(page('parents'), /href="\/privacy\/"/);
+  for (const [p, md] of [['privacy', 'privacy-policy'], ['privacy/retention', 'data-retention'], ['terms', 'terms']]) {
+    assert.match(page(p), new RegExp(`<!-- include-md: docs/legal/${md}\\.md -->`), p);
+    assert.match(page(p), /Draft under review/, `${p} says it is a draft until the lawyer review (tasks 13.1, 14.5)`);
+  }
+  const policy = readFileSync(join(root, 'docs/legal/privacy-policy.md'), 'utf8');
+  assert.match(policy, /privacy@learnvedicmath\.com/);
+  assert.match(policy, /^Last updated: /m);
+  for (const f of ['privacy-policy', 'data-retention', 'terms'].map(n => join(root, 'docs/legal', n + '.md')).concat(join(root, 'THIRD-PARTY-NOTICES.md')))
+    assert.doesNotMatch(readFileSync(f, 'utf8'), /—/, f);
+  assert.match(page('teachers'), /separate written agreement/);
+  assert.doesNotMatch(readFileSync(join(root, 'site/index.html'), 'utf8'), /from the Vedas/i);
+});
+

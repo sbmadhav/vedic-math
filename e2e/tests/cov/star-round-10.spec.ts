@@ -20,9 +20,9 @@ test.describe('Quest progress', () => {
     const ctx = await browser.newContext({ baseURL: testInfo.project.use.baseURL, serviceWorkers: 'block' });
     await blockAnalytics(ctx);
     const probe = await ctx.newPage();
-    await probe.goto('/vedic-math/js/gamify.js').catch(() => {});
+    await probe.goto('/js/gamify.js').catch(() => {});
     const day = await probe.evaluate(async () => {
-      const gm = await import('/vedic-math/js/gamify.js' as string);
+      const gm = await import('/js/gamify.js' as string);
       for (let i = 0; i < 90; i++) {
         const d = new Date(2026, 2, 1 + i);
         const s = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

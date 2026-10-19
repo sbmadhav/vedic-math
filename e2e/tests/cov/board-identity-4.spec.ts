@@ -62,12 +62,12 @@ async function seedPlayerB(page: Page) {
 
 /** Today's Arena Board for the Challenger League. */
 const dayBoard = (page: Page) => page.evaluate(async () =>
-  `daily-${(await import('/vedic-math/js/cloud.js' as string)).dayId()}-challenger`);
+  `daily-${(await import('/js/cloud.js' as string)).dayId()}-challenger`);
 
 /** Switches the device to a Player and posts a Score as them, the way app.js sendScore does. */
 const postAs = (page: Page, id: string, board: string, score: number) => page.evaluate(async ([id, board, score]) => {
-  const store = await import('/vedic-math/js/store.js' as string);
-  const cloud = await import('/vedic-math/js/cloud.js' as string);
+  const store = await import('/js/store.js' as string);
+  const cloud = await import('/js/cloud.js' as string);
   store.switchPlayer(id);
   const p = store.playerById(id);
   return cloud.submit(board, { name: p.name, avatar: p.avatar, score }, p);

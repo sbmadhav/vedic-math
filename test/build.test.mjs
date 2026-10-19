@@ -1,91 +1,140 @@
-/* build.py --out: the stamped copy CI publishes. The precache list must hold every module at the exact
-   URL the import map uses, VERSION must change whenever a module does, repo-only files stay out, and
-   the source must stay unstamped. Runs build.py on a throwaway git repo holding a copy of this one,
-   so the working tree is never touched. */
+/* build.py: the stamped site CI deploys to Cloudflare (openspec change learnvedicmath: hosting, security-headers,
+   content-security, offline-app, site-assets, third-party-requests). The precache list must hold every module at the
+   exact URL the import map uses, VERSION must change whenever a module does, repo-only files stay out, the source
+   stays unstamped, and the headers carry a policy per page. Runs build.py on a throwaway git repo holding a copy of
+   this one, so the working tree is never touched. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { cpSync, mkdtempSync, readFileSync, writeFileSync, appendFileSync, rmSync, existsSync } from 'node:fs';
+import { cpSync, mkdtempSync, readFileSync, writeFileSync, appendFileSync, rmSync, existsSync, readdirSync, statSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
-import { join, dirname } from 'node:path';
+import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
-const dir = mkdtempSync(join(tmpdir(), 'vedic-math-build-'));
-for (const f of ['build.py', '_config.yml', '.gitignore', 'index.html', 'math.css', 'sw.js', 'manifest.webmanifest', 'js', 'CLAUDE.md', 'README.md', 'cloud/firestore.rules', 'test/index.js', '.github', 'tools/voice/ci-fetch.mjs', 'sounds', 'tools/sutra-voice/names.mjs'])
-  cpSync(join(repo, f), join(dir, f), { recursive: true });
+const dir = mkdtempSync(join(tmpdir(), 'lvm-build-'));
+for (const f of ['build.py', '_config.yml', '.gitignore', 'play', 'site', 'theme', 'vendor', 'fonts', 'icons', 'thumbs', 'math.css', 'css', 'sw.js',
+  'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'CLAUDE.md', 'README.md', 'wrangler.jsonc', 'worker',
+  'cloud/firestore.rules', 'test/index.js', '.github', 'tools/voice/ci-fetch.mjs', 'tools/sutra-voice/names.mjs'])
+  if (existsSync(join(repo, f))) cpSync(join(repo, f), join(dir, f), { recursive: true });
 writeFileSync(join(dir, '_notes.txt'), 'starts with _');
 /* Run git and the build in the temp copy only. A pre-commit hook exports GIT_DIR, GIT_INDEX_FILE and friends;
    inherited, they would point `git init` at the real repository (which marks it core.bare = true) and make
    build.py list the real repository's files. */
-const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_')));
+const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_') && k !== 'BUILD_TODAY'));
 execFileSync('git', ['init', '-q'], { cwd: dir, env });
 const out = join(dir, 'out');
 test.after(() => rmSync(dir, { recursive: true, force: true }));
 
-const build = () => execFileSync('python3', ['build.py', '--out', out], { cwd: dir, env, encoding: 'utf8' });
-const tryBuild = () => spawnSync('python3', ['build.py', '--out', out], { cwd: dir, env, encoding: 'utf8' });
+const build = (...args) => execFileSync('python3', ['build.py', '--out', out, ...args], { cwd: dir, env, encoding: 'utf8' });
+const tryBuild = (args = [], extra = {}) => spawnSync('python3', ['build.py', '--out', out, ...args], { cwd: dir, env: { ...env, ...extra }, encoding: 'utf8' });
 const read = f => readFileSync(join(out, f), 'utf8');
 const sw = () => {
   const src = read('sw.js');
   return { version: src.match(/const VERSION = '(\w+)';/)[1], precache: JSON.parse(src.match(/const PRECACHE = (\[[\s\S]*?\]);/)[1]) };
 };
-const importMap = () => JSON.parse(read('index.html').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
+const importMap = () => JSON.parse(read('play/index.html').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
 const sha = f => createHash('sha256').update(readFileSync(join(out, f))).digest('hex').slice(0, 10);
+const walk = d => readdirSync(d).flatMap(f => { const p = join(d, f); return statSync(p).isDirectory() ? walk(p) : [p]; });
+/* Edit a file in the temp copy for one build, then put it back */
+function withEdit(f, edit, fn) {
+  const p = join(dir, f), orig = readFileSync(p, 'utf8'), changed = edit(orig);
+  assert.notEqual(changed, orig, `the edit to ${f} changed nothing`);
+  writeFileSync(p, changed);
+  try { return fn(); } finally { writeFileSync(p, orig); }
+}
+/* Add a file to the temp copy's git index for one build */
+function withFile(f, body, fn) {
+  const p = join(dir, f);
+  mkdirSync(dirname(p), { recursive: true });
+  writeFileSync(p, body);
+  execFileSync('git', ['add', '-f', f], { cwd: dir, env });
+  try { return fn(); } finally { execFileSync('git', ['rm', '-q', '--cached', f], { cwd: dir, env }); rmSync(p); }
+}
+const fails = (r, re) => { assert.notEqual(r.status, 0, 'the build must fail'); assert.match(r.stderr, re); };
 
 test('the source in git is unstamped: no import map, plain URLs, a dev worker', () => {
-  const html = readFileSync(join(repo, 'index.html'), 'utf8'), src = readFileSync(join(repo, 'sw.js'), 'utf8');
+  const html = readFileSync(join(repo, 'play/index.html'), 'utf8'), src = readFileSync(join(repo, 'sw.js'), 'utf8');
   assert.ok(!html.includes('type="importmap"'));
   assert.ok(!/\?v=/.test(html));
-  assert.match(html, /<script type="module" src="\/vedic-math\/js\/app\.js"><\/script>/);
+  assert.match(html, /<script type="module" src="\/js\/app\.js"><\/script>/);
   assert.match(src, /\nconst VERSION = 'dev';\nconst PRECACHE = \[\];\n/);
+  assert.ok(!existsSync(join(repo, 'index.html')), 'the game moved to play/index.html');
 });
 
-test('the output is stamped, has .nojekyll and holds only publishable files', () => {
+test('the output has the pages at the root, is stamped, and holds only publishable files', () => {
   build();
-  assert.ok(existsSync(join(out, '.nojekyll')));
+  for (const f of ['play/index.html', 'index.html', 'js/app.js', 'parents/index.html', 'teachers/index.html', 'privacy/index.html', 'terms/index.html',
+    'licenses/index.html', '404.html', 'sw.js', 'math.css', 'manifest.webmanifest', 'js/skills/index.js', 'ds/2.1.0/tokens.css', 'ds/2.1.0/components.css',
+    'ds/2.1.0/header.js', 'theme/learnvedicmath.css', 'theme/fonts.css', 'fonts/nunito-sans-latin-wght-normal.woff2', 'icons/icon-192.png',
+    '_headers', '_redirects', 'robots.txt', 'sitemap.xml', '.well-known/security.txt', '.assetsignore'])
+    assert.ok(existsSync(join(out, f)), `${f} is published`);
   assert.match(sw().version, /^[0-9a-f]{10}$/);
-  assert.match(read('index.html'), /<script type="module" src="\/vedic-math\/js\/app\.js\?v=[0-9a-f]{10}"><\/script>/);
-  assert.match(read('index.html'), /href="\/vedic-math\/math\.css\?v=[0-9a-f]{10}"/);
-  for (const f of ['CLAUDE.md', 'README.md', 'build.py', '_config.yml', 'cloud', 'test', 'tools', '.github', '.gitignore', '_notes.txt', 'out'])
+  assert.match(read('play/index.html'), /<script type="module" src="\/js\/app\.js\?v=[0-9a-f]{10}"><\/script>/);
+  assert.match(read('play/index.html'), /href="\/math\.css\?v=[0-9a-f]{10}"/);
+  assert.match(read('index.html'), /href="\/theme\/site\.css\?v=[0-9a-f]{10}"/);
+  for (const f of ['CLAUDE.md', 'README.md', 'build.py', '_config.yml', 'cloud', 'test', 'tools', '.github', '.gitignore', '_notes.txt', 'out', 'site',
+    'moved', 'worker', 'wrangler.jsonc', 'THIRD-PARTY-NOTICES.md', 'theme/header.html', 'vendor/design-system', 'docs', 'vendor/goatcounter/SHA256SUMS'])
     assert.ok(!existsSync(join(out, f)), `${f} must not be published`);
-  for (const f of ['index.html', 'sw.js', 'math.css', 'manifest.webmanifest', 'js/app.js', 'js/skills/index.js']) assert.ok(existsSync(join(out, f)), `${f} is published`);
-  // Modules are copied byte for byte
-  assert.equal(read('js/app.js'), readFileSync(join(dir, 'js/app.js'), 'utf8'));
+  assert.equal(read('js/app.js'), readFileSync(join(dir, 'js/app.js'), 'utf8'), 'modules are copied byte for byte');
+  for (const p of walk(out)) {
+    const rel = relative(out, p);
+    if (rel === '_redirects' || /\.(png|woff2|webp|m4a|gz|wasm)$/.test(rel)) continue;
+    assert.ok(!readFileSync(p, 'utf8').includes('/vedic-math/'), `${rel} names /vedic-math/`);
+  }
+  assert.match(read('_redirects'), /^\/vedic-math \/play\/ 301$/m);
+  assert.match(read('_redirects'), /^\/vedic-math\/\* \/play\/ 301$/m);
 });
 
-test('the precache list holds every import-map module, the shell and the stamped CSS, each with its file hash', () => {
+test('the published design system drops its @font-face lines: the fonts are declared once, from /fonts/', () => {
+  build();
+  assert.doesNotMatch(read('ds/2.1.0/tokens.css'), /@font-face|\/assets\/fonts/);
+  assert.match(read('theme/fonts.css'), /url\(\/fonts\/nunito-sans-latin-wght-normal\.woff2\)/);
+  assert.equal(read('ds/2.1.0/components.css'), readFileSync(join(dir, 'vendor/design-system/2.1.0/components.css'), 'utf8'));
+  for (const page of ['play/index.html', 'index.html', 'parents/index.html']) {
+    assert.doesNotMatch(read(page), /@font-face/, `${page} declares no fonts of its own`);
+    assert.match(read(page), /<link rel="preload" href="\/fonts\/nunito-sans-latin-wght-normal\.woff2" as="font"/);
+    assert.match(read(page), /<link rel="preload" href="\/fonts\/fredoka-latin-600-normal\.woff2" as="font"/);
+  }
+});
+
+test('the precache list holds every import-map module, the shell, the styles, fonts, icons and manifest, each with its hash', () => {
   build();
   const { precache } = sw();
   const urls = new Map(precache);
   for (const url of Object.values(importMap())) assert.ok(urls.has(url), `${url} is not precached`);
-  assert.equal(urls.get('/vedic-math/'), sha('index.html'));
-  const css = read('index.html').match(/href="(\/vedic-math\/math\.css\?v=\w+)"/)[1];
+  assert.equal(urls.get('/play/'), sha('play/index.html'));
+  const css = read('play/index.html').match(/href="(\/math\.css\?v=\w+)"/)[1];
   assert.equal(urls.get(css), sha('math.css'));
-  assert.equal(urls.get(importMap()['/vedic-math/js/app.js']), sha('js/app.js'));
-  for (const u of ['/design-system/tokens.css', '/design-system/components.css', '/assets/explore.js', '/assets/fonts/nunito-sans-latin-wght-normal.woff2'])
-    assert.equal(urls.get(u), null, `${u} should be precached without a hash`);
-  for (const [u] of precache) assert.ok(u.startsWith('/'), `${u} is not an absolute path`);
+  assert.equal(urls.get(importMap()['/js/app.js']), sha('js/app.js'));
+  const tokens = read('play/index.html').match(/href="(\/ds\/2\.1\.0\/tokens\.css\?v=\w+)"/)[1];
+  assert.equal(urls.get(tokens), sha('ds/2.1.0/tokens.css'), 'the published tokens.css, as served');
+  for (const u of ['/fonts/nunito-sans-latin-wght-normal.woff2', '/fonts/jetbrains-mono-latin-500-normal.woff2', '/icons/icon-192.png', '/icons/maskable-512.png', '/manifest.webmanifest'])
+    assert.equal(urls.get(u), sha(u.slice(1)), `${u} is precached with its hash`);
+  for (const [u, hash] of precache) {
+    assert.ok(u.startsWith('/'), `${u} is not an absolute path`);
+    assert.match(String(hash), /^[0-9a-f]{10}$/, `${u} has no hash`);
+    assert.ok(!u.startsWith('/vendor/') && !u.startsWith('/thumbs/'), `${u} is fetched on first use, never precached`);
+  }
 });
 
 test('a second build gives the same output, and the build never edits the source', () => {
-  const before = ['index.html', 'sw.js'].map(f => readFileSync(join(dir, f), 'utf8'));
+  const before = ['play/index.html', 'sw.js'].map(f => readFileSync(join(dir, f), 'utf8'));
   build();
-  const first = [read('index.html'), read('sw.js')];
+  const first = [read('play/index.html'), read('sw.js'), read('_headers')];
   build();
-  assert.deepEqual([read('index.html'), read('sw.js')], first);
-  assert.deepEqual(['index.html', 'sw.js'].map(f => readFileSync(join(dir, f), 'utf8')), before);
+  assert.deepEqual([read('play/index.html'), read('sw.js'), read('_headers')], first);
+  assert.deepEqual(['play/index.html', 'sw.js'].map(f => readFileSync(join(dir, f), 'utf8')), before);
 });
 
 test('changing a module changes its import-map stamp, its precache entry and VERSION', () => {
   build();
-  const v1 = sw().version, url1 = importMap()['/vedic-math/js/lib.js'];
+  const v1 = sw().version, url1 = importMap()['/js/lib.js'];
   const orig = readFileSync(join(dir, 'js/lib.js'), 'utf8');
   appendFileSync(join(dir, 'js/lib.js'), '\n// changed\n');
-  build();
-  writeFileSync(join(dir, 'js/lib.js'), orig);
-  const { version: v2, precache } = sw(), url2 = importMap()['/vedic-math/js/lib.js'];
+  try { build(); } finally { writeFileSync(join(dir, 'js/lib.js'), orig); }
+  const { version: v2, precache } = sw(), url2 = importMap()['/js/lib.js'];
   assert.notEqual(v2, v1);
   assert.notEqual(url2, url1);
   const urls = precache.map(([u]) => u);
@@ -94,127 +143,219 @@ test('changing a module changes its import-map stamp, its precache entry and VER
 
 test('changing the worker logic changes VERSION', () => {
   build();
-  const v1 = sw().version, orig = readFileSync(join(dir, 'sw.js'), 'utf8');
-  writeFileSync(join(dir, 'sw.js'), orig + '\n// changed\n');
-  build();
-  writeFileSync(join(dir, 'sw.js'), orig);
+  const v1 = sw().version;
+  withEdit('sw.js', s => s + '\n// changed\n', () => build());
   assert.notEqual(sw().version, v1);
 });
 
 test('the build fails if stamps are committed to the source', () => {
   for (const [f, edit] of [
     ['sw.js', s => s.replace("const VERSION = 'dev';", "const VERSION = 'abc1234567';")],
-    ['index.html', s => s.replace('src="/vedic-math/js/app.js"', 'src="/vedic-math/js/app.js?v=abc1234567"')],
-    ['index.html', s => s.replace('<script type="module"', '<script type="importmap">{"imports":{}}</script>\n<script type="module"')],
-  ]) {
-    const orig = readFileSync(join(dir, f), 'utf8');
-    writeFileSync(join(dir, f), edit(orig));
-    const r = tryBuild();
-    writeFileSync(join(dir, f), orig);
-    assert.notEqual(r.status, 0, `a stamped ${f} must fail the build`);
-    assert.match(r.stderr, /source must/);
-  }
+    ['play/index.html', s => s.replace('src="/js/app.js"', 'src="/js/app.js?v=abc1234567"')],
+    ['play/index.html', s => s.replace('<script type="module"', '<script type="importmap">{"imports":{}}</script>\n<script type="module"')],
+    ['site/index.html', s => s.replace('href="/theme/site.css"', 'href="/theme/site.css?v=abc1234567"')],
+  ]) withEdit(f, edit, () => fails(tryBuild(), /source must/));
 });
 
-/* Content-Security-Policy (openspec/specs/content-security): written into the built index.html only. */
-const policy = () => {
-  const m = read('index.html').match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)">/);
-  assert.ok(m, 'the built index.html has a CSP <meta>');
-  return Object.fromEntries(m[1].split(/;\s*/).map(d => { const [k, ...v] = d.split(/\s+/); return [k, v]; }));
-};
+test('--dev builds the same layout with no stamps and the dev worker', () => {
+  build('--dev');
+  assert.ok(existsSync(join(out, 'play/index.html')) && existsSync(join(out, 'index.html')) && existsSync(join(out, '_headers')));
+  assert.doesNotMatch(read('play/index.html'), /\?v=|type="importmap"/);
+  assert.match(read('sw.js'), /\nconst VERSION = 'dev';\nconst PRECACHE = \[\];\n/);
+  assert.doesNotMatch(read('_headers'), /X-Robots-Tag/);
+});
 
-test('the build writes a CSP that allows each inline script, the import map included, by its hash', () => {
+test('--preview sends X-Robots-Tag: noindex, nofollow on every response; production does not', () => {
+  build('--preview');
+  assert.match(read('_headers'), /^\/\*\n(?: {2}.*\n)*? {2}X-Robots-Tag: noindex, nofollow\n/m);
   build();
-  const html = read('index.html'), csp = policy();
-  assert.ok(html.indexOf('http-equiv="Content-Security-Policy"') < html.indexOf('<script'), 'the policy comes before the first script');
-  assert.ok(html.indexOf('<meta charset="utf-8">') < html.indexOf('http-equiv="Content-Security-Policy"'));
-  assert.match(html, /<meta name="referrer" content="strict-origin-when-cross-origin">/);
-  /* Scripts that run; data blocks (the play stylesheet map, #vm-css) never run and need no hash */
-  const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g)].filter(m => !/type="application\/json"/.test(m[1])).map(m => m[2]);
-  assert.equal(inline.length, 3, 'the color scheme script, the import map and the color mode buttons');
-  for (const body of inline) assert.ok(csp['script-src'].includes(`'sha256-${createHash('sha256').update(body).digest('base64')}'`), `no hash for ${body.slice(0, 40)}`);
-  for (const bad of ["'unsafe-inline'", "'unsafe-eval'", '*', 'https:', 'data:', 'blob:', 'https://cdn.jsdelivr.net']) assert.ok(!csp['script-src'].includes(bad), `script-src must not allow ${bad}`);
-  assert.ok(csp['script-src'].includes("'wasm-unsafe-eval'"), 'the Math Lens reader compiles WebAssembly (vendor/tesseract/)');
-  assert.deepEqual(csp['worker-src'], ["'self'"], 'the reader worker starts from its own URL, never blob:');
-  assert.deepEqual(csp['object-src'], ["'none'"]);
-  assert.deepEqual(csp['default-src'], ["'self'"]);
-  assert.ok(csp['frame-src'].includes('https://www.youtube-nocookie.com'));
-  assert.ok(csp['img-src'].includes('https://i.ytimg.com'));
-  assert.ok(csp['connect-src'].includes('https://firestore.googleapis.com'));
-  assert.ok(csp['script-src'].includes('https://www.gstatic.com/firebasejs/'));
-  assert.ok(!JSON.stringify(csp).includes('gc.zgo.at'), 'GoatCounter count.js is served from this site');
-  assert.ok(!/http-equiv="Content-Security-Policy"/.test(readFileSync(join(repo, 'index.html'), 'utf8')), 'the source has no policy');
+  assert.doesNotMatch(read('_headers'), /X-Robots-Tag/);
 });
 
-test('with leaderboards off the CSP lists no Firebase or Google host', () => {
-  const cfg = join(dir, 'js/cloud-config.js'), orig = readFileSync(cfg, 'utf8');
-  writeFileSync(cfg, orig.replace(/export const FIREBASE = \{[\s\S]*?\};/, 'export const FIREBASE = null;'));
-  try { build(); } finally { writeFileSync(cfg, orig); }
-  const text = JSON.stringify(policy());
-  assert.ok(!/google|gstatic|firebase/.test(text), text);
+test('robots.txt allows crawling and names the sitemap, which lists the landing, game and grown-up pages', () => {
+  build();
+  assert.equal(read('robots.txt'), 'User-agent: *\nAllow: /\n\nSitemap: https://learnvedicmath.com/sitemap.xml\n');
+  const urls = [...read('sitemap.xml').matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
+  for (const p of ['/', '/play/', '/parents/', '/teachers/', '/privacy/', '/terms/']) assert.ok(urls.includes('https://learnvedicmath.com' + p), p);
+  assert.ok(!urls.some(u => /404|import/.test(u)));
+  for (const [page, url] of [['index.html', '/'], ['play/index.html', '/play/'], ['parents/index.html', '/parents/'], ['privacy/index.html', '/privacy/']])
+    assert.match(read(page), new RegExp(`<link rel="canonical" href="https://learnvedicmath\\.com${url.replace(/\//g, '\\/')}">`), page);
 });
 
-test('the build fails on a CSP in the source, an inline event handler or a javascript: URL', () => {
-  for (const edit of [
-    s => s.replace('<meta charset="utf-8">', `<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="default-src 'self'">`),
-    s => s.replace('<button type="button" class="linkbtn mq-reset" id="resetMode">', '<button type="button" class="linkbtn mq-reset" id="resetMode" onclick="go()">'),
-    s => s.replace('href="#/learn"', 'href="javascript:void(0)"'),
-  ]) {
-    const orig = readFileSync(join(dir, 'index.html'), 'utf8');
-    const changed = edit(orig);
-    assert.notEqual(changed, orig);
-    writeFileSync(join(dir, 'index.html'), changed);
-    const r = tryBuild();
-    writeFileSync(join(dir, 'index.html'), orig);
-    assert.notEqual(r.status, 0);
-    assert.match(r.stderr, /CSP|Content-Security-Policy/);
+test('the not-found page links to the landing page and the game', () => {
+  build();
+  const html = read('404.html');
+  assert.match(html, /href="\/play\/"/);
+  assert.match(html, /href="\/\?home"/);
+});
+
+/* ---------- headers and policies (security-headers, content-security) ---------- */
+const headerRules = () => {
+  const rules = {};
+  let cur = null;
+  for (const line of read('_headers').split('\n')) {
+    if (!line.trim() || line.startsWith('#')) continue;
+    if (!line.startsWith(' ')) rules[cur = line.trim()] = {};
+    else { const i = line.indexOf(':'); rules[cur][line.slice(0, i).trim()] = line.slice(i + 1).trim(); }
   }
+  return rules;
+};
+const parse = p => Object.fromEntries(p.split(/;\s*/).map(d => { const [k, ...v] = d.split(/\s+/); return [k, v]; }));
+const inlineHashes = html => [...html.matchAll(/<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g)]
+  .filter(m => !/type="application\/json"/.test(m[1])).map(m => `'sha256-${createHash('sha256').update(m[2]).digest('base64')}'`);
+
+test('every response carries the security headers, without HSTS preload', () => {
+  build();
+  const all = headerRules()['/*'];
+  assert.equal(all['Strict-Transport-Security'], 'max-age=63072000; includeSubDomains');
+  assert.equal(all['X-Content-Type-Options'], 'nosniff');
+  assert.equal(all['Referrer-Policy'], 'strict-origin-when-cross-origin');
+  assert.equal(all['Cross-Origin-Resource-Policy'], 'same-origin');
+  assert.equal(all['X-Frame-Options'], 'DENY');
+  assert.equal(all['Reporting-Endpoints'], 'csp="/_csp"', 'relative: a preview reports to its own endpoint');
+  for (const off of ['camera=()', 'microphone=()', 'geolocation=()', 'payment=()', 'usb=()', 'serial=()', 'bluetooth=()', 'browsing-topics=()'])
+    assert.ok(all['Permissions-Policy'].includes(off), off);
+  assert.ok(all['Permissions-Policy'].includes('fullscreen=(self "https://www.youtube-nocookie.com")'));
+  assert.ok(!all['Content-Security-Policy'], 'no policy on /*: Cloudflare would join it with each page policy');
 });
 
-/* Studio voice (openspec better-voice): recordings never come from git, and the site never names a speech provider
-   or carries a key. The Firebase web config's apiKey is public and is the one key allowed. */
+test('each page has its own policy from its inline script hashes; COOP is same-origin except /import/', () => {
+  build();
+  const rules = headerRules();
+  for (const [url, file] of [['/', 'index.html'], ['/play/', 'play/index.html'], ['/parents/', 'parents/index.html'], ['/teachers/', 'teachers/index.html'], ['/privacy/', 'privacy/index.html'], ['/terms/', 'terms/index.html']]) {
+    const r = rules[url];
+    assert.ok(r, `${url} has a rule`);
+    const html = read(file), csp = parse(r['Content-Security-Policy']), ro = parse(r['Content-Security-Policy-Report-Only']);
+    assert.doesNotMatch(html, /http-equiv="Content-Security-Policy"/i, `${file} has no policy <meta>`);
+    for (const h of inlineHashes(html)) assert.ok(csp['script-src'].includes(h), `${url}: no hash for an inline script`);
+    for (const bad of ["'unsafe-inline'", "'unsafe-eval'", '*', 'https:', 'http:', 'data:', 'blob:']) assert.ok(!csp['script-src'].includes(bad), `${url} script-src allows ${bad}`);
+    assert.deepEqual(csp['frame-ancestors'], ["'none'"]);
+    assert.deepEqual(csp['object-src'], ["'none'"]);
+    assert.deepEqual(csp['base-uri'], ["'none'"]);
+    assert.deepEqual(csp['form-action'], ["'self'"]);
+    assert.deepEqual(csp['report-to'], ['csp']);
+    assert.deepEqual(csp['report-uri'], ['/_csp']);
+    assert.ok('upgrade-insecure-requests' in csp);
+    assert.equal(r['Cross-Origin-Opener-Policy'], 'same-origin');
+    assert.deepEqual(ro['style-src'], ["'self'"], 'the Report-Only policy tries style-src without unsafe-inline');
+    assert.deepEqual(ro['require-trusted-types-for'], ["'script'"]);
+    assert.ok(!('report-uri' in ro), 'the Report-Only policy reports through report-to only (batched)');
+    assert.deepEqual(ro['report-to'], ['csp']);
+    const all = JSON.stringify(csp);
+    for (const gone of ['i.ytimg.com', 'gstatic.com/firebasejs', 'gc.zgo.at', 'sbmadhav.com', 'sbmadhav.goatcounter']) assert.ok(!all.includes(gone), `${url} allows ${gone}`);
+    if (url !== '/play/') assert.ok(!/google|gstatic|firebase|youtube/.test(all), `${url} lists a Google or YouTube host`);
+  }
+  const play = parse(rules['/play/']['Content-Security-Policy']);
+  assert.ok(play['script-src'].includes("'wasm-unsafe-eval'"), 'the Math Lens reader compiles WebAssembly (vendor/tesseract/)');
+  assert.deepEqual(play['worker-src'], ["'self'"]);
+  assert.ok(play['frame-src'].includes('https://www.youtube-nocookie.com'));
+  assert.ok(play['media-src'].includes('https://voice.learnvedicmath.com') && play['connect-src'].includes('https://voice.learnvedicmath.com'));
+  assert.ok(play['connect-src'].includes('https://firestore.googleapis.com'));
+  assert.ok(play['connect-src'].includes('https://learnvedicmath.goatcounter.com'));
+  assert.ok(!parse(rules['/']['Content-Security-Policy'])['script-src'].includes("'wasm-unsafe-eval'"));
+  assert.ok(Object.keys(rules).length <= 100);
+  for (const line of read('_headers').split('\n')) assert.ok(line.length <= 2000, `a _headers line of ${line.length} characters`);
+});
+
+test('with leaderboards off no policy lists a Firebase or Google host', () => {
+  withEdit('js/cloud-config.js', s => s.replace(/export const FIREBASE = \{[\s\S]*?\};/, 'export const FIREBASE = null;'), () => build());
+  assert.ok(!/google|gstatic|firebase/.test(read('_headers')));
+});
+
+test('the build fails on a CSP <meta> in a page, an inline event handler or a javascript: URL', () => {
+  for (const [f, edit, re] of [
+    ['play/index.html', s => s.replace('<meta charset="utf-8">', `<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="default-src 'self'">`), /Content-Security-Policy/],
+    ['site/index.html', s => s.replace('<meta charset="utf-8">', `<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="default-src 'self'">`), /Content-Security-Policy/],
+    ['play/index.html', s => s.replace('<button type="button" class="linkbtn mq-reset" id="resetMode">', '<button type="button" class="linkbtn mq-reset" id="resetMode" onclick="go()">'), /inline event handler/],
+    ['play/index.html', s => s.replace('href="#/learn"', 'href="javascript:void(0)"'), /javascript: URL/],
+  ]) withEdit(f, edit, () => fails(tryBuild(), re));
+});
+
+test('the build fails when a _headers line would be too long for Cloudflare', () => {
+  const many = Array.from({ length: 40 }, (_, i) => `<script>var x${i}=${i};</script>`).join('\n');
+  withEdit('site/teachers/index.html', s => s.replace('</head>', many + '\n</head>'), () => fails(tryBuild(), /_headers: a line is \d+ characters/));
+});
+
+/* ---------- the site's own brand and hosts (hosting, landing-pages, third-party-requests) ---------- */
+test('the build fails on a reference to sbmadhav.com, an https:// module import or an unlisted host', () => {
+  withEdit('js/lib.js', s => s + "\nexport const u = 'https://sbmadhav.com/design-system/tokens.css';\n", () => fails(tryBuild(), /refers to .*sbmadhav\.com/));
+  withEdit('js/lib.js', s => s + "\nexport const u = '/assets/explore.js';\n", () => fails(tryBuild(), /old shared site/));
+  withEdit('js/lib.js', s => "import { x } from 'https://cdn.example.com/x.js';\n" + s, () => fails(tryBuild(), /imports https:\/\/cdn\.example\.com\/x\.js/));
+  withEdit('js/lib.js', s => s + "\nexport const u = 'https://tracker.example.net/pixel.gif';\n", () => fails(tryBuild(), /names tracker\.example\.net, which is not in THIRD_PARTIES/));
+  withEdit('js/lib.js', s => s + "\nexport const u = 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js';\n", () => fails(tryBuild(), /gstatic\.com\/firebasejs/));
+  withEdit('js/lib.js', s => s + "\nexport const u = '/vedic-math/js/app.js';\n", () => fails(tryBuild(), /names a \/vedic-math\/ path/));
+  withEdit('js/lib.js', s => s + "\nexport const u = 'https://sbmadhav.com/vm-export/';\n", () => build()); // the export page: the one allowed
+});
+
+test('the build fails on a file over 25 MiB', () => {
+  withFile('big.bin', Buffer.alloc(26 * 1024 * 1024), () => fails(tryBuild(), /big\.bin: \d+ bytes; Cloudflare Workers serves files up to 25 MiB/));
+});
+
+test('the build fails when a page header differs from theme/header.html', () => {
+  withEdit('site/parents/index.html', s => s.replace('aria-label="Learn Vedic Math, home"', 'aria-label="Home"'), () => fails(tryBuild(), /header differs from theme\/header\.html/));
+  withEdit('play/index.html', s => s.replace('<!-- md-header -->\n', ''), () => fails(tryBuild(), /md-header/));
+});
+
+test('the build fails when a vendored file does not match its SHA256SUMS', () => {
+  withEdit('vendor/design-system/2.1.0/components.css', s => s + '\n/* edited by hand */\n', () => fails(tryBuild(), /does not match .*SHA256SUMS; vendor a new version/));
+});
+
+test('the build fails on a vendored or font file without an entry in THIRD-PARTY-NOTICES.md', () => {
+  withFile('vendor/newlib/lib.js', 'export const x = 1;\n', () => fails(tryBuild(), /vendor\/newlib\/lib\.js: no entry in THIRD-PARTY-NOTICES\.md/));
+});
+
+test('the licences page lists every vendored package', () => {
+  build();
+  const html = read('licenses/index.html');
+  for (const p of ['vendor/design-system/2.1.0/', 'vendor/firebase/', 'vendor/goatcounter/', 'vendor/tesseract/', 'fonts/']) assert.ok(html.includes(p), p);
+});
+
+test('security.txt: contact, canonical, policy, and the build fails within 30 days of Expires', () => {
+  build();
+  const txt = read('.well-known/security.txt');
+  assert.match(txt, /^Contact: mailto:security@learnvedicmath\.com$/m);
+  assert.match(txt, /^Preferred-Languages: en$/m);
+  assert.match(txt, /^Canonical: https:\/\/learnvedicmath\.com\/\.well-known\/security\.txt$/m);
+  assert.match(txt, /^Policy: https:\/\/learnvedicmath\.com\/privacy\/security\/$/m);
+  const expires = new Date(txt.match(/^Expires: (\S+)$/m)[1]);
+  const day = n => new Date(expires.getTime() - n * 86400000).toISOString().slice(0, 10);
+  fails(tryBuild([], { BUILD_TODAY: day(20) }), /renew security\.txt/);
+  assert.equal(tryBuild([], { BUILD_TODAY: day(40) }).status, 0);
+});
+
+/* ---------- Studio voice and sounds (openspec better-voice, sutra-pronunciation; design D17) ---------- */
 test('the build fails on committed audio or a voice/ folder', () => {
-  for (const f of ['voice/l/0123456789abcd.m4a', 'js/clip.mp3', 'sounds-extra/clip.m4a']) {
-    const p = join(dir, f);
-    cpSync(join(repo, 'js/voice-plan.js'), p, { recursive: true }); // any bytes will do
-    execFileSync('git', ['add', '-f', f], { cwd: dir, env }); // committed by force, past .gitignore
-    const r = tryBuild();
-    execFileSync('git', ['rm', '-q', '--cached', f], { cwd: dir, env });
-    rmSync(p); rmSync(join(dir, 'voice'), { recursive: true, force: true });
-    assert.notEqual(r.status, 0, f);
-    assert.match(r.stderr, /audio is never committed/);
-  }
+  for (const f of ['voice/l/0123456789abcd.m4a', 'js/clip.mp3', 'sounds-extra/clip.m4a'])
+    withFile(f, 'any bytes', () => fails(tryBuild(), /audio is never committed/));
 });
 
 test('the build fails when a published file names a speech provider or holds a key or token', () => {
   const key = 'AIza' + 'Sy'.padEnd(35, 'x'), token = 'ya29' + '.'.padEnd(30, 'a');
-  for (const line of ["fetch('https://texttospeech.googleapis.com/v1/text:synthesize')", `const k = '${key}';`, `const t = '${token}';`, "const u = 'https://api.elevenlabs.io/v1';"]) {
-    const f = join(dir, 'js/voice-plan.js'), orig = readFileSync(f, 'utf8');
-    writeFileSync(f, orig + '\n// ' + line + '\n');
-    const r = tryBuild();
-    writeFileSync(f, orig);
-    assert.notEqual(r.status, 0, line);
-    assert.match(r.stderr, /speech provider|API key or token/, line);
-  }
-  /* Any published text file is scanned, an SVG too */
-  const svg = join(dir, 'leak.svg');
-  writeFileSync(svg, `<svg xmlns="http://www.w3.org/2000/svg"><!-- ${key} --></svg>`);
-  execFileSync('git', ['add', '-f', 'leak.svg'], { cwd: dir, env });
-  const r = tryBuild();
-  execFileSync('git', ['rm', '-q', '--cached', 'leak.svg'], { cwd: dir, env }); rmSync(svg);
-  assert.notEqual(r.status, 0, 'a key in an SVG');
-  assert.match(r.stderr, /leak\.svg: holds something shaped like an API key or token/);
+  for (const line of ["fetch('https://texttospeech.googleapis.com/v1/text:synthesize')", `const k = '${key}';`, `const t = '${token}';`, "const u = 'https://api.elevenlabs.io/v1';"])
+    withEdit('js/voice-plan.js', s => s + '\n// ' + line + '\n', () => fails(tryBuild(), /speech provider|API key or token/));
+  withFile('leak.svg', `<svg xmlns="http://www.w3.org/2000/svg"><!-- ${key} --></svg>`, () => fails(tryBuild(), /leak\.svg: holds something shaped like an API key or token/));
   build(); // and the real source passes, Firebase apiKey included
 });
 
-/* Sounds (openspec sutra-pronunciation): the name clips and the Om are published, never in the install precache
-   (only Players who tap Say it download one), and the clip tools stay repo-only */
-test('sounds/ is published and left out of the precache; tools/ is not published', () => {
+test('sounds/ is published and left out of the precache; tools/ is not published; no voice file is in the output', () => {
   build();
   for (const f of ['sounds/om.m4a', 'sounds/sutras/s1.m4a', 'sounds/sutras/u13.m4a']) assert.ok(existsSync(join(out, f)), `${f} is published`);
-  assert.ok(!existsSync(join(out, 'tools')), 'tools/ must not be published');
+  assert.ok(!existsSync(join(out, 'tools')) && !existsSync(join(out, 'voice')));
   const urls = sw().precache.map(([u]) => u);
   assert.deepEqual(urls.filter(u => /\/sounds\/|\.m4a/.test(u)), []);
-  assert.ok(urls.some(u => u.startsWith('/vedic-math/js/say-clips.js?v=')), 'the clip index is a module and is precached');
+  assert.ok(urls.some(u => u.startsWith('/js/say-clips.js?v=')), 'the clip index is a module and is precached');
   assert.match(read('sw.js'), /url\.pathname\.startsWith\(SOUNDS\)\) return event\.respondWith\(soundFile\(req\)\)/);
+  assert.ok(walk(out).length < 20000, 'under the Workers Free file limit');
+});
+
+test('every static page has a canonical link and Open Graph tags with the site image', () => {
+  build();
+  for (const [page, url] of [['index.html', '/'], ['play/index.html', '/play/'], ['parents/index.html', '/parents/'], ['teachers/index.html', '/teachers/'],
+    ['privacy/index.html', '/privacy/'], ['terms/index.html', '/terms/'], ['licenses/index.html', '/licenses/']]) {
+    const html = read(page);
+    assert.match(html, new RegExp(`<link rel="canonical" href="https://learnvedicmath\\.com${url.replace(/\//g, '\\/')}">`), page);
+    assert.match(html, new RegExp(`<meta property="og:url" content="https://learnvedicmath\\.com${url.replace(/\//g, '\\/')}">`), page);
+    for (const p of ['og:title', 'og:description', 'og:type', 'og:site_name']) assert.match(html, new RegExp(`<meta property="${p}" content="[^"]+">`), `${page} ${p}`);
+    assert.match(html, /<meta property="og:image" content="https:\/\/learnvedicmath\.com\/icons\/icon-512\.png">/, page);
+  }
 });

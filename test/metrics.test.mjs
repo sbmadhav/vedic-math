@@ -250,7 +250,9 @@ export function dynamicValues(args) {
   parts.push(cur);
   return vals.concat(parts.map(x => x.trim()).filter(x => x && x !== "''"));
 }
-const SKIP = new Set(['metrics.js']); /* its own send() checks every path against the allowed shape */
+/* metrics.js: its own send() checks every path against the allowed shape. analytics.js: the helper itself (siteTrack),
+   whose only own event counts a followed link by its public host and path. */
+const SKIP = new Set(['metrics.js', 'analytics.js']);
 
 test('every analytics call site in js/ builds paths only from allowed values', () => {
   const dir = new URL('../js/', import.meta.url), bad = [];

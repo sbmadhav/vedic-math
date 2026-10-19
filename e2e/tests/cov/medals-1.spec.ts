@@ -74,7 +74,7 @@ test.describe('A worse result later', () => {
 
     // The questions are seeded per challenge, so the page can build the same set the round uses
     const set: { kind: string; answer: number | string }[] = await page.evaluate(async () => {
-      const LV = await import('/vedic-math/js/levels.js' as string);
+      const LV = await import('/js/levels.js' as string);
       return LV.challengeSet(LV.challenge(2)).map((p: any) => ({ kind: p.kind, answer: p.answer }));
     });
 

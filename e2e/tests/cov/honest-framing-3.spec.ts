@@ -15,7 +15,7 @@ test('Copy scan: the shipped scripts carry the Om note, and no string calls the 
   await open(page);
   const scripts = await page.evaluate(async () => {
     const map = JSON.parse(document.querySelector('script[type="importmap"]')?.textContent || '{"imports":{}}').imports as Record<string, string>;
-    const urls = Object.keys(map).length ? Object.values(map) : ['/vedic-math/js/sutra-ambience.js', '/vedic-math/js/app.js'];
+    const urls = Object.keys(map).length ? Object.values(map) : ['/js/sutra-ambience.js', '/js/app.js'];
     const out: Record<string, string> = {};
     for (const u of urls) if (/sutra-ambience|app\.js/.test(u)) out[u] = await (await fetch(u)).text();
     return out;

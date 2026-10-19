@@ -34,7 +34,7 @@ const A = await import('../js/sutra-ambience.js');
 let music = false, musicSubs = new Set(), paused = false, gestured = false, now = 0;
 Object.assign(A.deps, {
   ctx: () => ctx, musicOn: () => music, onMusic: fn => (musicSubs.add(fn), () => musicSubs.delete(fn)),
-  paused: () => paused, gestured: () => gestured, now: () => now, omUrl: () => '/vedic-math/sounds/om.m4a',
+  paused: () => paused, gestured: () => gestured, now: () => now, omUrl: () => '/sounds/om.m4a',
 });
 const oscs = () => made.filter(n => n.kind === 'osc');
 const sources = () => made.filter(n => n.kind === 'source');

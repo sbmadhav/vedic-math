@@ -14,7 +14,7 @@ const ROUNDS_OFF_WEBKIT = "Arena rounds need the faked clock, which WebKit's req
 async function arenaRound(page: Page, mode: Mode) {
   await open(page, '#/arena');
   const answer = await page.evaluate(async m => {
-    const cloud = await import('/vedic-math/js/cloud.js' as string), arena = await import('/vedic-math/js/arena.js' as string);
+    const cloud = await import('/js/cloud.js' as string), arena = await import('/js/arena.js' as string);
     return String(arena.dailySet(m, cloud.dayId())[0].answer);
   }, mode);
   await page.locator('#arGo').click();

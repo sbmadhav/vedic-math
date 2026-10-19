@@ -34,5 +34,5 @@ test('choosing a video on the Watch shelf plays it in the page from youtube-noco
   expect(popups).toEqual([]);
   expect(context.pages()).toHaveLength(1);
   await expect(page.locator('#view button.watch-card').first()).toBeAttached();
-  expect(await page.evaluate(() => location.pathname)).toBe('/vedic-math/');
+  expect(await page.evaluate(() => location.pathname)).toBe('/play/');
 });

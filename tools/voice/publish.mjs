@@ -24,6 +24,6 @@ const file = `${HERE}${tag}.tar`; renameSync(tmp, file);
 const exists = (() => { try { execFileSync('gh', ['release', 'view', tag], { stdio: 'ignore' }); return true; } catch (e) { return false; } })();
 if (exists) execFileSync('gh', ['release', 'upload', tag, file, '--clobber'], { stdio: 'inherit' });
 else execFileSync('gh', ['release', 'create', tag, file, '--prerelease', '--latest=false', '--title', `Studio voice audio (${STUDIO.voice}, ${STUDIO.counts.lines} lines, ${STUDIO.counts.clips} clips)`,
-  '--notes', 'Recordings for the Vedic Math studio voice, unpacked into /vedic-math/voice/ by the CI deploy (tools/voice/ci-fetch.mjs). Not source code: do not edit.'], { stdio: 'inherit' });
+  '--notes', 'Recordings for the Vedic Math studio voice, copied to the voice host (voice.learnvedicmath.com) by the CI voice-upload job (tools/voice/r2-upload.mjs). Not source code: do not edit.'], { stdio: 'inherit' });
 writeIndex({ ...STUDIO, tag, sha256 });
 console.log(`published ${tag} (${(readFileSync(file).length / 1e6).toFixed(1)} MB); js/voice-index.js now names it. Commit js/voice-index.js and tools/voice/manifest.json.`);

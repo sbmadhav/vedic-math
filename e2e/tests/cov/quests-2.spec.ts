@@ -24,12 +24,12 @@ async function card(page: Page) {
 
 /** Answers n questions on a Skill, right or wrong, the way Practice records them */
 const answer = (page: Page, n: number, correct = true) => page.evaluate(async ([n, correct]) => {
-  const store: any = await import('/vedic-math/js/store.js');
+  const store: any = await import('/js/store.js');
   for (let i = 0; i < (n as number); i++) store.record('k-add10', correct, 0);
 }, [n, correct] as const);
 
-const sparks = (page: Page) => page.evaluate(async () => ((await import('/vedic-math/js/store.js')) as any).sparks());
-const questDay = (page: Page) => page.evaluate(async () => ((await import('/vedic-math/js/store.js')) as any).questDay());
+const sparks = (page: Page) => page.evaluate(async () => ((await import('/js/store.js')) as any).sparks());
+const questDay = (page: Page) => page.evaluate(async () => ((await import('/js/store.js')) as any).questDay());
 
 /** Changes Mode on the Me page, then goes Home */
 async function switchMode(page: Page, m: 'explorer' | 'challenger' | 'pro') {
@@ -76,7 +76,7 @@ test.describe('Quests have stable ids: Mode change after completing a quest', ()
     expect((await card(page)).map(q => q.label)).toEqual(['Answer 15 questions', 'Finish an Endless run', 'Finish an Arena round']);
 
     // Finishing an Arena round bumps the arena counter (js/arena.js); done here directly on the store
-    await page.evaluate(async () => ((await import('/vedic-math/js/store.js')) as any).bump('arena'));
+    await page.evaluate(async () => ((await import('/js/store.js')) as any).bump('arena'));
     await expect(page.locator('.fx-toast', { hasText: 'Quest complete' })).toContainText('Finish an Arena round');
     expect(Object.keys((await questDay(page)).done)).toEqual(['arena-1']);
 
@@ -105,7 +105,7 @@ test.describe('Changing Mode starts the new quests at zero: Challenger to Explor
     await expect(page.locator('.fx-toast', { hasText: 'Quest complete' })).toHaveCount(0);
     expect(await sparks(page), 'no quest Sparks from the switch').toBe(before);
 
-    const qs = await page.evaluate(async () => ((await import('/vedic-math/js/gamify.js')) as any).quests());
+    const qs = await page.evaluate(async () => ((await import('/js/gamify.js')) as any).quests());
     const right5 = qs.find((q: any) => q.label === 'Get 5 right');
     expect(right5, 'Get 5 right is one of today\'s Explorer quests').toBeTruthy();
     expect(right5).toMatchObject({ id: 'right-5', prog: 2, goal: 5, done: false });
@@ -115,7 +115,7 @@ test.describe('Changing Mode starts the new quests at zero: Challenger to Explor
     // Three more right answers today complete it, once
     await answer(page, 3);
     await expect(page.locator('.fx-toast', { hasText: 'Quest complete' })).toContainText('Get 5 right');
-    const after = await page.evaluate(async () => ((await import('/vedic-math/js/gamify.js')) as any).quests());
+    const after = await page.evaluate(async () => ((await import('/js/gamify.js')) as any).quests());
     expect(after.find((q: any) => q.id === 'right-5')).toMatchObject({ prog: 5, done: true });
   });
 });

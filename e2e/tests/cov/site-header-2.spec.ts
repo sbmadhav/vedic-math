@@ -9,13 +9,13 @@ test('Switch and remember: on a Daybreak system one click gives Deep Space, the 
   await page.emulateMedia({ colorScheme: 'light' });
   await open(page);
   const light = await bg(page);
-  await expect(page.locator('#themeBtn .sun')).toBeVisible();
+  await expect(page.locator('#themeBtn .md-theme-sun')).toBeVisible();
   await page.locator('#themeBtn').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   expect(await page.evaluate(() => localStorage.getItem('theme'))).toBe('dark');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(page.locator('#themeBtn .moon')).toBeVisible();
+  await expect(page.locator('#themeBtn .md-theme-moon')).toBeVisible();
   expect(await bg(page)).not.toBe(light);
 });
 
@@ -30,16 +30,16 @@ test('Back to the system: a second click returns to Daybreak, saves no scheme an
   expect(await page.evaluate(() => localStorage.getItem('theme') || '')).toBe('');
   expect(await bg(page)).toBe(light);
   await page.emulateMedia({ colorScheme: 'dark' });
-  await expect(page.locator('#themeBtn .moon')).toBeVisible();
+  await expect(page.locator('#themeBtn .md-theme-moon')).toBeVisible();
   expect(await bg(page)).not.toBe(light);
 });
 
-test('A choice made elsewhere on the site: Deep Space saved by the home page opens Vedic Math in Deep Space', async ({ page }) => {
+test('A choice made elsewhere on the site: Deep Space saved on the landing page opens the game in Deep Space', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await page.addInitScript(() => { try { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('theme', 'dark'); sessionStorage.setItem('seeded', '1'); } } catch (e) { /* storage blocked */ } });
   await open(page);
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(page.locator('#themeBtn .moon')).toBeVisible();
+  await expect(page.locator('#themeBtn .md-theme-moon')).toBeVisible();
 });
 
 test('Current route: on Learn, Arena, Games, Watch and Guide exactly that nav link is current and filled', async ({ page }) => {

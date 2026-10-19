@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Before paint: an old game link (#/route) goes on to /play/ with its route, and a device that already has Players
+     goes straight into the game unless the URL has ?home (links from the game carry it). Reads storage, writes nothing. -->
+<script>(function(){var l=location;try{if(/^#\//.test(l.hash)){l.replace('/play/'+l.hash);return;}if(/(^|[?&])home(=|&|$)/.test(l.search.slice(1)))return;var p=JSON.parse(localStorage.getItem('vm.players')||'null');if(p&&p.list&&p.list.length)l.replace('/play/');}catch(e){}})();</script>
+<title>Learn Vedic Math: speed tricks, games and practice for every age</title>
+<meta name="description" content="Learn Vedic Math is a free math game for ages 4 to adult: speed tricks from Bharati Krishna Tirtha's 1965 book, practice from counting to calculus, games, daily Stars and Boards.">
+<link rel="canonical" href="https://learnvedicmath.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Learn Vedic Math">
+<meta property="og:title" content="Learn Vedic Math">
+<meta property="og:description" content="Speed tricks, games and practice for ages 4 to adult. Free, and progress stays on your device.">
+<meta property="og:url" content="https://learnvedicmath.com/">
+<meta property="og:image" content="https://learnvedicmath.com/icons/icon-512.png">
+<script>try{var d=document.documentElement,t=localStorage.getItem('theme');if(t==='light'||t==='dark')d.dataset.theme=t;if(localStorage.getItem('motion-paused')==='1')d.classList.add('motion-paused');}catch(e){}</script>
+<meta name="theme-color" content="#F6F7F9">
+<link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="preload" href="/fonts/nunito-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fredoka-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/ds/2.1.0/tokens.css">
+<link rel="stylesheet" href="/theme/learnvedicmath.css">
+<link rel="stylesheet" href="/theme/fonts.css">
+<link rel="stylesheet" href="/ds/2.1.0/components.css">
+<link rel="stylesheet" href="/theme/site.css">
+</head>
+<body class="md-page md-root lv-landing">
+<a class="md-skip" href="#main">Skip to content</a>
+<!-- md-header -->
+<!-- Learn Vedic Math header, derived from design system 2.1.0 header.html (/ds/2.1.0/): no Explore button, the Learn Vedic Math brand linking to /?home, and every nav wrapping below 1180px. -->
+<header class="md-header md-header--tabs">
+  <div class="md-wrap md-header-in">
+    <a class="md-brand" href="/?home" aria-label="Learn Vedic Math, home"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="8" y="14" width="48" height="40" rx="14" fill="var(--bolt-body)" stroke="var(--bolt-line)" stroke-width="3"/><circle cx="24" cy="34" r="7" fill="var(--bolt-eye)"/><circle cx="40" cy="34" r="7" fill="var(--bolt-eye)"/><circle cx="25" cy="35" r="3" fill="var(--bolt-line)"/><circle cx="41" cy="35" r="3" fill="var(--bolt-line)"/><path d="M32 14V9" stroke="var(--bolt-line)" stroke-width="3"/><circle cx="32" cy="7" r="5" fill="var(--bolt-accent)" stroke="var(--bolt-line)" stroke-width="3"/></svg><span class="md-brand-t"><!-- slot:brand -->Learn Vedic Math<!-- /slot:brand --></span></a>
+    <!-- slot:nav --><nav class="md-nav" aria-label="Learn Vedic Math"><a href="/play/">Play</a><a href="/parents/">For parents</a><a href="/teachers/">For teachers</a></nav><!-- /slot:nav -->
+    <button type="button" class="md-icon-btn md-theme" id="themeBtn" data-track="math" aria-label="Switch color scheme" title="Switch color scheme"><svg class="md-theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="var(--sun)" stroke="currentColor" stroke-width="2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg class="md-theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="var(--plum)" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="17" cy="5" r="1.2" fill="currentColor"/><circle cx="20.5" cy="9" r=".9" fill="currentColor"/></svg></button>
+    <div class="md-header-end"><!-- slot:music --><!-- /slot:music --><!-- slot:end --><!-- /slot:end --></div>
+  </div>
+</header>
+<!-- /md-header -->
+
+<main id="main" tabindex="-1">
+  <section class="md-section lv-hero">
+    <div class="md-wrap lv-hero-in">
+      <div>
+        <p class="lv-kicker">Free, for ages 4 to adult</p>
+        <h1 class="lv-title">Math tricks you can do in your head, and games to practise them</h1>
+        <p class="md-lede">Learn Vedic Math teaches the speed tricks from Bharati Krishna Tirtha's 1965 book <i>Vedic Mathematics</i>, with practice from counting to calculus, games, daily Stars and Boards. Lessons, problems and pictures are our own. Your progress stays on your device.</p>
+        <p><a class="lv-play" href="/play/">Play</a></p>
+      </div>
+      <svg class="lv-bolt" viewBox="0 0 64 64" role="img" aria-label="Bolt, the friendly robot who plays along"><rect x="8" y="14" width="48" height="40" rx="14" fill="var(--bolt-body)" stroke="var(--bolt-line)" stroke-width="3"/><circle cx="24" cy="34" r="7" fill="var(--bolt-eye)"/><circle cx="40" cy="34" r="7" fill="var(--bolt-eye)"/><circle cx="25" cy="35" r="3" fill="var(--bolt-line)"/><circle cx="41" cy="35" r="3" fill="var(--bolt-line)"/><path d="M32 14V9" stroke="var(--bolt-line)" stroke-width="3"/><circle cx="32" cy="7" r="5" fill="var(--bolt-accent)" stroke="var(--bolt-line)" stroke-width="3"/><rect x="22" y="46" width="20" height="4" rx="2" fill="var(--bolt-belly)"/></svg>
+    </div>
+  </section>
+
+  <section class="md-section md-band">
+    <div class="md-wrap">
+      <h2 class="md-heading">Three ways to play</h2>
+      <p class="md-lede">Pick the one that fits. You can change it any time, and every Mode has the same tricks at its own pace.</p>
+      <ul class="lv-modes">
+        <li class="lv-mode lv-mode--sun"><h3>Explorer</h3><p class="lv-ages">About 4 to 7</p><p>Big buttons, pictures, counting and read aloud.</p></li>
+        <li class="lv-mode lv-mode--sky"><h3>Challenger</h3><p class="lv-ages">About 8 to 12</p><p>Speed tricks, Belts and daily challenges.</p></li>
+        <li class="lv-mode lv-mode--plum"><h3>Pro</h3><p class="lv-ages">13 to adult</p><p>Algebra to calculus, sutra deep dives and Boards.</p></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="md-section">
+    <div class="md-wrap lv-cols">
+      <div>
+        <h2 class="md-heading">Where the tricks come from</h2>
+        <p>The sixteen sutras are short rules from Bharati Krishna Tirtha's book, published in 1965. They are not found in the Vedas. We teach them because they are quick and fun, and we name the older Indian mathematicians where their work comes up.</p>
+      </div>
+      <div>
+        <h2 class="md-heading">For grown-ups</h2>
+        <p>Nobody types a name or an email. Players under 13 never post anything online, and nothing reaches Google or YouTube until a Player chooses a video or a World board.</p>
+        <ul class="lv-links">
+          <li><a href="/parents/">For parents</a></li>
+          <li><a href="/teachers/">For teachers</a></li>
+          <li><a href="/privacy/">Privacy policy</a></li>
+          <li><a href="/terms/">Terms of use</a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="lv-foot">
+  <div class="md-wrap">
+    <p><a href="/play/">Play</a> · <a href="/parents/">For parents</a> · <a href="/teachers/">For teachers</a> · <a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · <a href="/licenses/">Licences</a></p>
+  </div>
+</footer>
+<script src="/ds/2.1.0/header.js" defer></script>
+<script src="/js/analytics.js" defer></script>
+</body>
+</html>

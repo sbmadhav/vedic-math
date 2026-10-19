@@ -39,7 +39,7 @@ test.describe('a Player with 2,340 XP (410 this week) opens the app after the up
     expect(d.weekSparks).toEqual({ [WK]: 410 });
 
     // This week's Sparks are 410: earning 5 more (a sutra card) posts 415 to this week's Sparks Board
-    await page.goto('/vedic-math/#/sutras');
+    await page.goto('/play/#/sutras');
     await page.locator('.sutra-card .sutra-face').first().click();
     await page.clock.runFor(3_500);
     await expect.poll(async () => (await sparksWrites(page)).length).toBe(1);

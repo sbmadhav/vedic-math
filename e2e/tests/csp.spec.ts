@@ -1,16 +1,16 @@
 import { test, expect, APP, open, cloudLog } from './fixtures';
 import type { Page } from '@playwright/test';
 
-/* Content-Security-Policy (openspec content-security). build.py writes a <meta http-equiv="Content-Security-Policy">
-   into the published index.html, with the sha256 of every inline script (the import map too). These tests use
-   every main route the way a Player does and fail on any securitypolicyviolation event.
+/* Content-Security-Policy (openspec content-security, change learnvedicmath). build.py writes each page's policy into
+   _headers, with the sha256 of every inline script (the import map too); Cloudflare sends it as a response header.
+   These tests use every main route the way a Player does and fail on any securitypolicyviolation event.
 
-   The policy exists only in the build, so run them against the live site or a local build:
-     python3 build.py --out _site && node e2e/local-server.mjs 8124 _site
+   Run them against production, a preview, `npx wrangler dev` or a local build served with its _headers:
+     python3 build.py && node e2e/local-server.mjs 8124 _site
      BASE_URL=http://localhost:8124 npx playwright test csp
-   Served from the plain checkout (no policy) they skip; on https the policy must be there.
-   The fixtures still apply: the Firebase SDK is the in-page fake (served from its real gstatic URL, so
-   script-src is checked), YouTube is answered with an empty page, and GoatCounter is answered locally. */
+   A server that sends no policy skips them on http; on https the policy must be there.
+   The fixtures still apply: the Firebase SDK is the in-page fake (served at its /vendor/firebase/ URL, so script-src
+   is checked), YouTube is answered with an empty page, and GoatCounter is answered locally. */
 
 type Violation = { directive: string; blocked: string; source: string };
 
@@ -19,12 +19,14 @@ async function watchViolations(page: Page) {
     const w = window as any;
     w.__csp = [];
     document.addEventListener('securitypolicyviolation', (e: SecurityPolicyViolationEvent) => {
+      // The stricter Report-Only policy reports (style="" and Trusted Types); only the enforced policy blocks
+      if (e.disposition === 'report') return;
       w.__csp.push({ directive: e.effectiveDirective || e.violatedDirective, blocked: e.blockedURI, source: `${e.sourceFile}:${e.lineNumber}` });
     });
   });
   const console: string[] = [];
   // A blocked frame or worker is sometimes only reported in the console
-  page.on('console', m => { if (/Content.Security.Policy|Refused to/i.test(m.text())) console.push(m.text()); });
+  page.on('console', m => { if (/Content.Security.Policy|Refused to/i.test(m.text()) && !/report.only/i.test(m.text())) console.push(m.text()); });
   return { console, list: () => page.evaluate(() => ((window as any).__csp || []) as Violation[]) };
 }
 
@@ -33,19 +35,18 @@ async function expectNoViolations(page: Page, v: Awaited<ReturnType<typeof watch
   expect(v.console, `CSP console messages on ${where}`).toEqual([]);
 }
 
-/** The page's policy; skips only an unbuilt local checkout (no import map). */
+/** The policy the page was served with (its response header); skips only a plain http server that sends none. */
 async function policy(page: Page, baseURL?: string) {
-  const meta = page.locator('meta[http-equiv="Content-Security-Policy"]');
-  // The build adds an import map: skip only the unbuilt source, so a build that lost its policy fails here
-  const built = await page.locator('script[type="importmap"]').count() > 0;
-  if (!/^https:/.test(baseURL || '') && !built) test.skip(true, 'Unbuilt source (no import map): serve a build (node e2e/local-server.mjs 8124 _site)');
-  await expect(meta, 'the build adds a CSP <meta>').toHaveCount(1);
-  return (await meta.getAttribute('content'))!;
+  const res = await page.request.get(new URL(page.url()).pathname);
+  const csp = res.headers()['content-security-policy'];
+  if (!csp && !/^https:/.test(baseURL || '')) test.skip(true, 'This server sends no policy: serve a build with its _headers (node e2e/local-server.mjs 8124 _site)');
+  expect(csp, 'the page is sent with a Content-Security-Policy header').toBeTruthy();
+  await expect(page.locator('meta[http-equiv="Content-Security-Policy"]'), 'no policy <meta>: one policy, in the header').toHaveCount(0);
+  return csp!;
 }
 
 async function noYouTube(page: Page) {
   await page.route(/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>video</title>' }));
-  await page.route(/^https:\/\/i\.ytimg\.com\//, r => r.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg"/>' }));
 }
 
 test.beforeEach(async ({ page }) => { await noYouTube(page); });
@@ -57,7 +58,8 @@ test('main routes render with no CSP violation', async ({ page, baseURL }) => {
   const csp = await policy(page, baseURL);
   expect(csp).not.toContain("'unsafe-eval'");
   expect(csp).toContain("object-src 'none'");
-  await expect(page.locator('meta[name="referrer"]')).toHaveAttribute('content', 'strict-origin-when-cross-origin');
+  expect(csp).toContain("frame-ancestors 'none'");
+  expect(csp).toContain('report-to csp');
   // The hashed inline scripts ran: the color scheme button works, and the import map resolved the modules
   await page.emulateMedia({ colorScheme: 'light' });
   await page.locator('#themeBtn').click();
@@ -101,7 +103,7 @@ test('Math Lens offers the camera under the published policy: its digit reader i
   await expectNoViolations(page, v, '#/games/lens');
 });
 
-test('Arena World boards load the Firebase SDK from gstatic with no CSP violation', async ({ page, baseURL }) => {
+test('Arena World boards load the Firebase SDK from this site with no CSP violation', async ({ page, baseURL }) => {
   const v = await watchViolations(page);
   await open(page, '#/arena');
   await policy(page, baseURL);
@@ -124,18 +126,15 @@ test('the Watch shelf shows thumbnails and plays a video in the page with no CSP
   await expectNoViolations(page, v, '#/watch');
 });
 
-test('the Explore menu, the natural voice worker and GoatCounter run with no CSP violation', async ({ page, baseURL }) => {
+test('the natural voice worker and GoatCounter run with no CSP violation', async ({ page, baseURL }) => {
   const v = await watchViolations(page);
   await open(page);
   await policy(page, baseURL);
-  await page.locator('#exploreBtn').click();
-  await expect(page.locator('dialog.xpm')).toBeVisible();
-  await page.keyboard.press('Escape');
   // The voice worker, started the way js/voice.js starts it (from its import map URL), without asking it to
   // download the model
   const started = await page.evaluate(() => new Promise<string>(resolve => {
     const map = JSON.parse(document.querySelector('script[type="importmap"]')?.textContent || '{"imports":{}}').imports;
-    const url = map['/vedic-math/js/voice-worker.js'] || '/vedic-math/js/voice-worker.js';
+    const url = map['/js/voice-worker.js'] || '/js/voice-worker.js';
     try {
       const w = new Worker(url, { type: 'module' });
       w.onerror = e => resolve('error: ' + (e.message || 'worker failed'));
@@ -146,22 +145,22 @@ test('the Explore menu, the natural voice worker and GoatCounter run with no CSP
     } catch (e) { resolve('threw: ' + e); }
   }));
   expect(started).toBe('ok');
-  // GoatCounter as analytics.js uses it (analytics is off on localhost): the main site's count.js, then one
+  // GoatCounter as js/analytics.js uses it (analytics is off on localhost): the vendored count.js, then one
   // request of each kind its beacon uses. The fixtures answer goatcounter.com locally and count.js is the
   // fixtures' no-op, so nothing is counted.
   await page.evaluate(() => new Promise<void>((resolve, reject) => {
     const s = document.createElement('script');
-    s.src = '/assets/count.js';
+    s.src = '/vendor/goatcounter/count.js';
     s.onload = () => resolve();
     s.onerror = () => reject(new Error('count.js did not load'));
     document.head.appendChild(s);
   }));
   await page.evaluate(() => {
-    navigator.sendBeacon('https://sbmadhav.goatcounter.com/count?e2e=csp');
-    new Image().src = 'https://sbmadhav.goatcounter.com/count?e2e=csp-img';
+    navigator.sendBeacon('https://learnvedicmath.goatcounter.com/count?e2e=csp');
+    new Image().src = 'https://learnvedicmath.goatcounter.com/count?e2e=csp-img';
   });
   await page.waitForTimeout(1000);
-  await expectNoViolations(page, v, 'the Explore menu, voice worker and analytics');
+  await expectNoViolations(page, v, 'the voice worker and analytics');
 });
 
 test('the probe catches a violation (negative control)', async ({ page, baseURL }) => {

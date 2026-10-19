@@ -1,22 +1,22 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// End-to-end tests for Vedic Math. They run against the LIVE site https://sbmadhav.com/vedic-math/
-// and its real dependencies by default. Point them elsewhere with BASE_URL, for example a local
-// server of this checkout (it proxies everything outside /vedic-math/ to the live site):
-//   node local-server.mjs 8124 &  BASE_URL=http://localhost:8124 npx playwright test
+// End-to-end tests for Learn Vedic Math. They run against the LIVE site https://learnvedicmath.com/ (the game at
+// /play/) by default. Point them elsewhere with BASE_URL: a branch preview on workers.dev, or a local build of this
+// checkout served the way Cloudflare serves it (_headers and _redirects applied):
+//   python3 build.py --dev && node local-server.mjs 8124 _dev &  BASE_URL=http://localhost:8124 npx playwright test
 // Production Firestore is never written to: see tests/fixtures.ts.
-export const BASE_URL = (process.env.BASE_URL || 'https://sbmadhav.com').replace(/\/$/, '');
+export const BASE_URL = (process.env.BASE_URL || 'https://learnvedicmath.com').replace(/\/$/, '');
 
-// tests/cov holds one spec per live OpenSpec scenario (about 1,000 tests per project). Against the live site
-// that is too many requests for GitHub Pages (HTTP 429) and the 30-minute job, so in CI they run on chromium
-// only, and E2E_SKIP_COV=1 (the run after a push) leaves them out. Locally every project runs them.
+// tests/cov holds one spec per live OpenSpec scenario (about 1,000 tests per project). That is too long for the
+// CI job on three projects, so in CI they run on chromium only, and E2E_SKIP_COV=1 (the run after a push or on a
+// preview) leaves them out. Locally every project runs them.
 const COV = '**/cov/**';
 const skipCov = process.env.E2E_SKIP_COV ? [COV] : [];
 const covChromiumOnly = process.env.CI ? [COV] : skipCov;
 
 export default defineConfig({
   testDir: './tests',
-  // Fails fast with a clear message when the site is unreachable or GitHub Pages is rate limiting us
+  // Fails fast with a clear message when the site is unreachable
   globalSetup: './global-setup.ts',
   timeout: 45_000,
   expect: { timeout: 10_000 },
@@ -33,12 +33,12 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     // Reduced motion: no confetti, the background draws once, card flips are instant
     reducedMotion: 'reduce',
-    // The app registers /vedic-math/sw.js. In a fresh test context it would install and precache about
-    // 40 files (bypassing the HTTP cache) on top of the page's own requests, which roughly doubles the
-    // load on GitHub Pages and gets this IP rate limited (HTTP 429, "Rate limit exceeded"). Worse, a
-    // page controlled by the worker gets its same-origin files from the worker's cache, so a test
-    // would not be testing what the network serves. Every spec runs without it except
-    // tests/offline.spec.ts, which turns it on with test.use({ serviceWorkers: 'allow' }).
+    // The game registers /sw.js (scope /play/). Playwright WebKit does not route requests from a
+    // worker-controlled page, so the fake Firebase SDK and the local analytics answer would be bypassed
+    // there; a page controlled by the worker also gets its files from the worker's cache, so a test would
+    // not be testing what the network serves, and every fresh context would precache about 120 files.
+    // Every spec runs without it except tests/offline.spec.ts, which turns it on with
+    // test.use({ serviceWorkers: 'allow' }).
     serviceWorkers: 'block',
   },
   projects: [

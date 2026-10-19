@@ -88,7 +88,7 @@ test.describe('One identity per Player: a second Player who has never posted', (
     await open(page, '#/me');
     // Player A posts (through the app's only posting path, against the fake SDK)
     const res = await page.evaluate(async () => {
-      const cloud = await import('/vedic-math/js/cloud.js' as string);
+      const cloud = await import('/js/cloud.js' as string);
       return cloud.submit(`daily-${cloud.dayId()}-challenger`, { name: 'Swift Tiger 42', avatar: 'teal', score: 400 });
     });
     expect(res).toEqual({ posted: true });
@@ -146,7 +146,7 @@ test.describe('One identity per Player: weekly XP after switching Player', () =>
 
     // The post happens now, with B active
     await page.clock.runFor(130_000);
-    const wk = await page.evaluate(async () => (await import('/vedic-math/js/cloud.js' as string)).weekId());
+    const wk = await page.evaluate(async () => (await import('/js/cloud.js' as string)).weekId());
     await expect.poll(() => sparksWrites(page)).toHaveLength(1);
     const [w] = await sparksWrites(page);
     // A's total, on A's League board, under A's identity (the default app)
@@ -171,7 +171,7 @@ test.describe('One identity per Player: weekly XP after switching Player', () =>
     expect(await sparksWrites(page)).toEqual([]);
 
     await page.clock.runFor(130_000);
-    const wk = await page.evaluate(async () => (await import('/vedic-math/js/cloud.js' as string)).weekId());
+    const wk = await page.evaluate(async () => (await import('/js/cloud.js' as string)).weekId());
     await expect.poll(() => sparksWrites(page)).toHaveLength(2);
     const writes = await sparksWrites(page);
     const a = writes.find(w => w.data.name === A_NAME), b = writes.find(w => w.data.name === B_NAME);

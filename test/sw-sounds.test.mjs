@@ -20,7 +20,7 @@ function load({ max } = {}) {
     self: { addEventListener() {}, skipWaiting() {}, clients: { claim() {} } },
     caches: { open: async () => cache, keys: async () => [], delete: async () => true },
     fetch: async req => { net.calls.push(req.url); if (!net.up) throw new TypeError('offline'); return { ok: true, type: 'basic', body: net.body + ':' + req.url, clone() { return this; } }; },
-    location: { origin: 'https://sbmadhav.com' }, URL, setTimeout, Promise, console,
+    location: { origin: 'https://learnvedicmath.com' }, URL, setTimeout, Promise, console,
   };
   let src = readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
   if (max) src = src.replace(/const SOUNDS_MAX = \d+;/, `const SOUNDS_MAX = ${max};`);
@@ -28,7 +28,7 @@ function load({ max } = {}) {
   vm.runInContext(src + '\n;globalThis.__soundFile = soundFile;', ctx);
   return { soundFile: url => ctx.__soundFile({ url }), store, net, order };
 }
-const U = 'https://sbmadhav.com/vedic-math/sounds/';
+const U = 'https://learnvedicmath.com/sounds/';
 
 test('a ?v= sound is cache first: the second request never reaches the network, offline too', async () => {
   const { soundFile, net } = load();

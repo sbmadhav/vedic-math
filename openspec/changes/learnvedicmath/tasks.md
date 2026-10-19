@@ -30,48 +30,58 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 
 ## 2. Layout and build
 
-- [ ] 2.1 Move `index.html` to `play/index.html`; module, style, font and icon paths drop the `/vedic-math/` prefix (`/js/`, `/css/`, `/math.css`); `BASE`, the import check and every `/vedic-math/` string in `build.py` follow D2. Verify: `test/build.test.mjs` builds `_site` and finds `play/index.html`, `index.html`, `js/app.js`, and no `/vedic-math/` outside `_redirects`.
+- [x] 2.1 Move `index.html` to `play/index.html`; module, style, font and icon paths drop the `/vedic-math/` prefix (`/js/`, `/css/`, `/math.css`); `BASE`, the import check and every `/vedic-math/` string in `build.py` follow D2. Verify: `test/build.test.mjs` builds `_site` and finds `play/index.html`, `index.html`, `js/app.js`, and no `/vedic-math/` outside `_redirects`.
 - [ ] 2.2 `build.py`: `--dev` (no stamps, `'dev'` worker), `--preview` (adds `X-Robots-Tag`), `--target moved` (D8, old origin). Verify: build tests for each target; `--target moved` output has `index.html`, `404.html`, a KILL `sw.js` with a hashed `VERSION`, and only `/vedic-math/` paths.
-- [ ] 2.3 `build.py` writes `_redirects` (`/vedic-math/* /play/ 301`, `/vedic-math /play/ 301`), `robots.txt`, `sitemap.xml`, `404.html`, and fails on the host limits (hosting spec). Verify: build tests, including an oversized-file case.
-- [ ] 2.4 `build.py` fails on any `sbmadhav.com` reference in a published file except the export-page URL, any `https://` module import, and any third-party host not in `THIRD_PARTIES` (D10). Verify: build tests with one failing case each.
-- [ ] 2.5 `wrangler.jsonc` as in D1, wrangler pinned in a new `deploy/package.json`; `_config.yml` `exclude:` gains `wrangler.jsonc`, `worker/`, `deploy/`, `vendor/**/SHA256SUMS`, `tools/`, `site/` sources (the build renders them). Verify: `npx wrangler deploy --dry-run` from `deploy/` succeeds; CI's repo-only check lists the new paths.
-- [ ] 2.6 Update `CLAUDE.md` (paths, no Explore rule, `/js/analytics.js`, Cloudflare deploy, `wrangler dev`, the moved target, the new cache prefix), `README.md` and `CONTRIBUTING.md`.
+  - Built 2026-10-19: `--dev`, `--preview` and `--target moved` (build tests for the first two); the moved output needs `moved/` from task 10.4, so this is checked with 10.4.
+- [x] 2.3 `build.py` writes `_redirects` (`/vedic-math/* /play/ 301`, `/vedic-math /play/ 301`), `robots.txt`, `sitemap.xml`, `404.html`, and fails on the host limits (hosting spec). Verify: build tests, including an oversized-file case.
+- [x] 2.4 `build.py` fails on any `sbmadhav.com` reference in a published file except the export-page URL, any `https://` module import, and any third-party host not in `THIRD_PARTIES` (D10). Verify: build tests with one failing case each.
+- [x] 2.5 `wrangler.jsonc` as in D1, wrangler pinned in a new `deploy/package.json`; `_config.yml` `exclude:` gains `wrangler.jsonc`, `worker/`, `deploy/`, `vendor/**/SHA256SUMS`, `tools/`, `site/` sources (the build renders them). Verify: `npx wrangler deploy --dry-run` from `deploy/` succeeds; CI's repo-only check lists the new paths.
+  - Dry run passes locally with wrangler 4.151.2 (also in CI). `run_worker_first` accepts the path array; `wrangler dev` applies `_headers`, `_redirects` and auto-trailing-slash (`/play` answers 307 to `/play/`).
+- [x] 2.6 Update `CLAUDE.md` (paths, no Explore rule, `/js/analytics.js`, Cloudflare deploy, `wrangler dev`, the moved target, the new cache prefix), `README.md` and `CONTRIBUTING.md`.
 
 ## 3. Vendored assets and theme
 
-- [ ] 3.1 Vendor design-system v2.1.0 into `vendor/design-system/2.1.0/` with `SHA256SUMS`; the build publishes it at `/ds/2.1.0/`. Verify: a node test checks the sums; editing a file fails it.
-- [ ] 3.2 `theme/learnvedicmath.css`: Harbor values plus the brand accent and five distinct category colours, both schemes, existing token names only. Verify: a node test checks every property is in the pinned `tokens.css`; an e2e test compares the five computed colours in each scheme (site-assets spec).
-- [ ] 3.3 `theme/header.html` from v2.1.0 without Explore, brand "Learn Vedic Math" linking to `/?home`; compose every page with the vendored `compose.py`; CI runs `compose.py --check`. Verify: `e2e/tests/header.spec.ts` updated (no Explore, order, sticky).
-- [ ] 3.4 Fonts to `fonts/` with OFL texts, one `theme/fonts.css`, preload Nunito Sans and Fredoka, remove the inline duplicate `@font-face` block, mono weights to 500 (design-audit items 2 and 3). Verify: e2e checks every font request is same-origin and no faux bold (computed weight 500 on mono).
-- [ ] 3.5 Remove `/assets/explore.js` and the Explore button; add the Pause motion switch on the Me page and in the music panel, applied before paint (accessibility spec). Copy in `js/guide.js` (lines about the Star map and Explore) and `js/app.js` (Me page note) changes for each Mode. Verify: `e2e/tests/cov` accessibility scenario rewritten for the Me page; `test/guide.test.mjs` has no "sbmadhav.com" or "Explore".
-- [ ] 3.6 New icons in `icons/` (192, 512, maskable 512, Apple touch, favicon SVG) from Bolt, after open question 5; `theme-color` from the theme's `--bg` in both schemes.
-- [ ] 3.7 `THIRD-PARTY-NOTICES.md` published at `/licenses/`; the build fails on a vendored or font file without an entry. Verify: build test.
+- [x] 3.1 Vendor design-system v2.1.0 into `vendor/design-system/2.1.0/` with `SHA256SUMS`; the build publishes it at `/ds/2.1.0/`. Verify: a node test checks the sums; editing a file fails it.
+- [x] 3.2 `theme/learnvedicmath.css`: Harbor values plus the brand accent and five distinct category colours, both schemes, existing token names only. Verify: a node test checks every property is in the pinned `tokens.css`; an e2e test compares the five computed colours in each scheme (site-assets spec).
+  - Distinct `--sky` (blue) and `--plum` (purple) with strong variants in both schemes; `test/vendor.test.mjs` and `e2e/tests/load.spec.ts`.
+- [x] 3.3 `theme/header.html` from v2.1.0 without Explore, brand "Learn Vedic Math" linking to `/?home`; compose every page with the vendored `compose.py`; CI runs `compose.py --check`. Verify: `e2e/tests/header.spec.ts` updated (no Explore, order, sticky).
+  - `theme/header.html` is `md-header md-header--tabs` (every nav wraps instead of hiding below 1180px, since there is no Explore menu to list hidden links); the theme button carries `data-track="math"`.
+- [x] 3.4 Fonts to `fonts/` with OFL texts, one `theme/fonts.css`, preload Nunito Sans and Fredoka, remove the inline duplicate `@font-face` block, mono weights to 500 (design-audit items 2 and 3). Verify: e2e checks every font request is same-origin and no faux bold (computed weight 500 on mono).
+- [x] 3.5 Remove `/assets/explore.js` and the Explore button; add the Pause motion switch on the Me page and in the music panel, applied before paint (accessibility spec). Copy in `js/guide.js` (lines about the Star map and Explore) and `js/app.js` (Me page note) changes for each Mode. Verify: `e2e/tests/cov` accessibility scenario rewritten for the Me page; `test/guide.test.mjs` has no "sbmadhav.com" or "Explore".
+  - The switch is `#setMotion` on Me and `#vmMotion` in the music panel (`fx.setMotionPaused`, key `motion-paused`).
+- [x] 3.6 New icons in `icons/` (192, 512, maskable 512, Apple touch, favicon SVG) from Bolt, after open question 5; `theme-color` from the theme's `--bg` in both schemes.
+  - Icons drawn from Bolt on the Daybreak background (`icons/`, favicon SVG); `theme-color` is kept on the current `--bg` by the design system header script.
+- [x] 3.7 `THIRD-PARTY-NOTICES.md` published at `/licenses/`; the build fails on a vendored or font file without an entry. Verify: build test.
 
 ## 4. Landing and grown-up pages
 
-- [ ] 4.1 `site/index.html`: landing page (Bolt, what it is, three Modes, Play, grown-up links), the pre-paint redirect script (D3), no game modules. Verify: `e2e/tests/landing.spec.ts`: first visit shows the page and writes no storage; a device with Players goes to `/play/`; `/?home` stays; `/#/arena` goes to `/play/#/arena`; JavaScript off shows the text.
+- [x] 4.1 `site/index.html`: landing page (Bolt, what it is, three Modes, Play, grown-up links), the pre-paint redirect script (D3), no game modules. Verify: `e2e/tests/landing.spec.ts`: first visit shows the page and writes no storage; a device with Players goes to `/play/`; `/?home` stays; `/#/arena` goes to `/play/#/arena`; JavaScript off shows the text.
 - [ ] 4.2 `site/parents/`, `site/teachers/`, `site/privacy/`, `site/terms/` from the reviewed `docs/legal/` drafts (only after task 13.1). Verify: copy tests (no em dashes, honest framing, the contact address on parents and privacy); a test that the privacy page's last-updated date and headings match `docs/legal/privacy-policy.md`.
-- [ ] 4.3 Footer in the game: "For grown-ups" and "Privacy" links. No "Made by" credit on any page (owner, L6). Verify: e2e per Mode, and a build test that no published page links to `sbmadhav.com` except the export popup.
-- [ ] 4.4 Canonical links, Open Graph tags and image, `sitemap.xml` entries for every static page. Verify: build test.
+  - Built 2026-10-19 from the drafts, rendered at build time (`<!-- include-md: -->`), with a "Draft under review" note; copy tests and e2e pass. Left open until 13.1: then remove the note (14.5).
+- [x] 4.3 Footer in the game: "For grown-ups" and "Privacy" links. No "Made by" credit on any page (owner, L6). Verify: e2e per Mode, and a build test that no published page links to `sbmadhav.com` except the export popup.
+- [x] 4.4 Canonical links, Open Graph tags and image, `sitemap.xml` entries for every static page. Verify: build test.
 
 ## 5. Headers, CSP and reports
 
-- [ ] 5.1 `build.py` writes `_headers` (D4): common headers on `/*`, per-page CSP built from each page's inline script hashes and `THIRD_PARTIES`, the Report-Only stricter policy, COOP `same-origin-allow-popups` on `/import/`; no CSP `<meta>` in published pages; fails on more than 100 rules or a line over 2,000 characters. Verify: `test/build.test.mjs` (policy per page, hashes match, no unsafe script source, the landing policy has no Google host, `frame-ancestors 'none'`, `report-to`).
-- [ ] 5.2 `worker/csp.js` (D5) with node tests for what it logs and refuses (GET, oversized, wrong type). Verify: `node --test` with a fake `env` and `console`; nothing personal in the logged line.
-- [ ] 5.3 `.well-known/security.txt` (expires in 11 months), and the build fails under 30 days. Verify: build test with a fake date.
+- [x] 5.1 `build.py` writes `_headers` (D4): common headers on `/*`, per-page CSP built from each page's inline script hashes and `THIRD_PARTIES`, the Report-Only stricter policy, COOP `same-origin-allow-popups` on `/import/`; no CSP `<meta>` in published pages; fails on more than 100 rules or a line over 2,000 characters. Verify: `test/build.test.mjs` (policy per page, hashes match, no unsafe script source, the landing policy has no Google host, `frame-ancestors 'none'`, `report-to`).
+- [x] 5.2 `worker/csp.js` (D5) with node tests for what it logs and refuses (GET, oversized, wrong type). Verify: `node --test` with a fake `env` and `console`; nothing personal in the logged line.
+- [x] 5.3 `.well-known/security.txt` (expires in 11 months), and the build fails under 30 days. Verify: build test with a fake date.
 - [ ] 5.4 `e2e/tests/csp.spec.ts` against `wrangler dev` and production: every main route, a playing video, a World board for a 15-year-old Player, the voice worker, no violation; the negative control still fires. `e2e/tests/headers.spec.ts`: every header and value on `/`, `/play/`, `/import/`, `/parents/`, a JS file and the 404.
+  - Specs written (`csp.spec.ts` reads the header now; `headers.spec.ts`); green against a local `_site` served with its `_headers` on chromium, webkit and mobile. The production run is task 14.1.
 - [ ] 5.5 **[OWNER]** (sec P1) Cloudflare zone settings: Always Use HTTPS on, minimum TLS 1.2, the `www` Single Redirect rule, and a rate-limiting rule on `/_csp` and `/import/` (owner guide step 11). Workers have no separate origin, so there is no SSL mode to choose.
 
 ## 6. Service worker and manifest
 
-- [ ] 6.1 `sw.js`: cache prefix `lvm-`, scope `/play/`, every precache entry hashed, the shared-file branch removed (D7); `js/app.js` registers `/sw.js` with scope `/play/`. Verify: `test/build.test.mjs` (every entry has a hash); `e2e/tests/offline.spec.ts` against `wrangler dev` on `_site` (chromium and mobile only, as today).
-- [ ] 6.2 `manifest.webmanifest` as in D7. Verify: e2e reads the manifest; Chromium's installability check passes on `/play/`.
+- [x] 6.1 `sw.js`: cache prefix `lvm-`, scope `/play/`, every precache entry hashed, the shared-file branch removed (D7); `js/app.js` registers `/sw.js` with scope `/play/`. Verify: `test/build.test.mjs` (every entry has a hash); `e2e/tests/offline.spec.ts` against `wrangler dev` on `_site` (chromium and mobile only, as today).
+  - Verified against `_site` served by `e2e/local-server.mjs` (chromium and mobile), which applies `_headers` like `wrangler dev`.
+- [x] 6.2 `manifest.webmanifest` as in D7. Verify: e2e reads the manifest; Chromium's installability check passes on `/play/`.
 
 ## 7. Third parties (decision 10)
 
-- [ ] 7.1 `tools/fetch-thumbs.mjs` and `thumbs/<id>.webp` for every `js/videos.js` entry; `thumbSrc()` returns `/thumbs/<id>.webp`. Verify: `test/videos.test.mjs` fails on a missing thumbnail; `e2e/tests/watch.spec.ts` sees no `i.ytimg.com` request.
+- [x] 7.1 `tools/fetch-thumbs.mjs` and `thumbs/<id>.webp` for every `js/videos.js` entry; `thumbSrc()` returns `/thumbs/<id>.webp`. Verify: `test/videos.test.mjs` fails on a missing thumbnail; `e2e/tests/watch.spec.ts` sees no `i.ytimg.com` request.
 - [ ] 7.2 YouTube facade: no iframe until play is pressed (watch-shelf spec), in the Watch shelf, a Skill's Watch section and the Star round's video. Verify: e2e counts frames and YouTube requests before and after the tap.
 - [ ] 7.3 `tools/vendor-firebase.mjs` and `vendor/firebase/<v>/` (current major, imports rewritten, Apache-2.0 licence); `js/cloud.js` loads from there; the build fails if a vendored file names `gstatic.com/firebasejs`. Verify: `test/cloud.test.mjs` loader paths; `e2e/tests/fixtures.ts` `FIREBASE_SDK` matches `/vendor/firebase/`; `leaderboard.live.spec.ts` passes against production with the real vendored SDK (reads only).
+  - Done 2026-10-19: Firebase 13.0.0 vendored, `cloud.js` loads `/vendor/firebase/13.0.0/`, fixtures and loader tests follow. Open until 8.5: `leaderboard.live.spec.ts` against production needs the new project (owner 1.8).
 - [ ] 7.5 Re-record for PR #44's new Worked examples (better-voice's `tools/voice/lines.mjs`, `record.mjs`, `publish.mjs`), then commit `js/voice-index.js` and `tools/voice/manifest.json`. **[OWNER]** runs `record.mjs` with their own gcloud sign-in (no key is created). Verify: `test/voice-coverage.test.mjs` passes with every explanation and Worked example line recorded; the character ledger stays under the free million for the month.
 - [ ] 7.6 Move recording to the new GCP project (Text-to-Speech API on, the same spend guards) before task 19.2 deletes `sbmadhav-vedic-math`; `tools/voice/record.mjs` and the README name the new project. **[OWNER]** enables the API and confirms the budget.
 - [ ] 7.7 Studio voice hosting per design D17 and decision L8 (default (a1), R2 on `voice.learnvedicmath.com`): `tools/voice/r2-upload.mjs` (hash check against the manifest, upload only missing objects, `Cache-Control: public, max-age=31536000, immutable`, never delete), a `voice-upload` job in `ci.yml` that runs on every push to `main`, uploads missing objects and then checks that every object the committed index and manifest name exists in the bucket, with `deploy` set to `needs: [check, voice-upload]` so a failed or skipped upload stops the deploy (deploy-pipeline spec), `js/voice-index.js` gains the base URL, `voice.js` fetches from it, the worker's voice cache is renamed `lvm-voice` and kept by the clean-up, the play CSP adds the voice host to `media-src` and `connect-src`, and `build.py` fails if any voice file is in `_site`. Verify: `test/voice-tools.test.mjs` (wrong hash refused, existing object skipped, nothing deleted); `e2e/tests/voice.spec.ts` against `wrangler dev` with the base URL pointed at a local fake; `offline.spec.ts` plays a heard line offline; `test/build.test.mjs` file count under 20,000; a workflow test that `deploy` needs `voice-upload`. If L8 is (b), this task becomes: keep `ci-fetch.mjs` unpacking into `_site/voice/` (with `--voice static`, below), the file limit check uses 100,000, and the owner moves to Workers Paid before the first deploy with voice.
@@ -92,6 +102,7 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 ## 9. Analytics (decision 12)
 
 - [ ] 9.1 `js/analytics.js` replaces `/assets/analytics.js` (same behaviour, site code `learnvedicmath`, idle load, Do Not Track and GPC off, queue); `vendor/goatcounter/count.js` pinned with its licence. `js/metrics.js` comments and the theme event name (`math/theme/<scheme>`). Verify: `e2e/tests/analytics.spec.ts` and `analytics-gpc.spec.ts` against the new endpoint (still answered locally in tests).
+  - Done 2026-10-19 (`js/analytics.js`, `vendor/goatcounter/count.js`, events specs stub `/js/analytics.js`). Open only for the GoatCounter site code (owner 1.9); the code `learnvedicmath` is already in place.
 - [ ] 9.2 Hand-off events (analytics spec). Verify: e2e on `/import/` sees exactly one event after the fragment is gone.
 - [ ] 9.3 Cloudflare Web Analytics manual snippet, loaded by `js/analytics.js` under the same off switch; try serving `beacon.min.js` from this site in Report-Only first; add the chosen hosts to `THIRD_PARTIES`. Verify: e2e sees no beacon with GPC on; production dashboard shows page loads.
 
@@ -105,11 +116,14 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 ## 11. CI/CD
 
 - [ ] 11.1 `ci.yml`: new stamp checks (`/js/app.js` pinned, `/play/` shell precached, `_headers` present and within limits), `compose.py --check`, then the `main`-only `deploy` job (`needs: [check, voice-upload]`, task 7.7) with `wrangler deploy` from `deploy/` using `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; the GitHub Pages deploy job removed. Verify: a push to a test branch runs checks only; `main` deploys.
+  - Written 2026-10-19 (`ci.yml`: checks, wrangler dry run, `voice-upload`, `deploy`; the Pages deploy is gone and `moved.yml` publishes Phase B by hand). The deploy jobs run only once `vars.CLOUDFLARE_ACCOUNT_ID` and `vars.R2_ACCOUNT_ID` exist (owner 1.7, 7.8), so the Verify (a push to main deploys) waits on the owner.
 - [ ] 11.2 `preview.yml`: same-repo pull requests build with `--preview`, upload with `--preview-alias pr-<n>`, comment the URL, run e2e chromium against it. Verify: a test PR gets a comment and a green run; a fork PR gets neither secret nor deploy.
+  - Written 2026-10-19 (`preview.yml`); runs once the owner has saved `CLOUDFLARE_PREVIEW_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (1.7).
 - [ ] 11.3 `e2e.yml`: base URL `https://learnvedicmath.com`; the deploy wait checks `/play/`, `/sw.js`, `/js/app.js`; daily and manual runs; comments about 429 rewritten (D12). `playwright.config.ts` and `fixtures.ts` follow (`APP = '/play/'` helper; the 208 `/vedic-math` references in 73 test files move to it). Verify: the suite passes against `wrangler dev` and against a preview.
-- [ ] 11.4 `.github/dependabot.yml` (github-actions, npm in `/e2e`, `/cloud/test`, `/deploy`; weekly, grouped). (sec P1)
+  - Written 2026-10-19: `e2e.yml`, `playwright.config.ts`, `fixtures.ts` (`APP = '/play/'`) and every spec moved to the root paths; the suite passes against a local `_site` (all three projects). The preview run waits on 11.2.
+- [x] 11.4 `.github/dependabot.yml` (github-actions, npm in `/e2e`, `/cloud/test`, `/deploy`; weekly, grouped). (sec P1)
 - [ ] 11.5 **[OWNER]** (sec P1) Turn on CodeQL default setup, secret scanning and push protection, and Dependabot alerts in the repo's Settings > Code security, while the repo is public.
-- [ ] 11.6 CI check that `CLOUDFLARE_API_TOKEN` is named only by the `deploy` job (environment `production`) and `CLOUDFLARE_PREVIEW_TOKEN` only by the preview job (environment `preview`, `pull_request` event). Verify: a test workflow naming either secret elsewhere fails the check.
+- [x] 11.6 CI check that `CLOUDFLARE_API_TOKEN` is named only by the `deploy` job (environment `production`) and `CLOUDFLARE_PREVIEW_TOKEN` only by the preview job (environment `preview`, `pull_request` event). Verify: a test workflow naming either secret elsewhere fails the check.
 
 ## 12. Docs and copy
 

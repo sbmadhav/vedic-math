@@ -3,7 +3,7 @@ import { test, expect, open, heldClock, typeAnswer } from '../fixtures';
 /* openspec/specs/analytics/spec.md
    - Requirement: Share clicks / Scenario: Share button
    - Requirement: Events carry no identifiers / Scenario: Event contents
-   The shared /assets/analytics.js is replaced by a stub that records every window.siteTrack(path, title) call
+   This site's /js/analytics.js is replaced by a stub that records every window.siteTrack(path, title) call
    in window.__events, so nothing is ever sent to GoatCounter. */
 const STUB = `window.__events = window.__events || []; window.siteTrack = (path, title) => { window.__events.push([path, title]); };`;
 type Page = import('@playwright/test').Page;
@@ -11,7 +11,7 @@ type Ev = [string, string];
 const events = (page: Page): Promise<Ev[]> => page.evaluate(() => (globalThis as any).__events || []);
 
 test.beforeEach(async ({ page }) => {
-  await page.route(/\/assets\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
+  await page.route(/\/js\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
 });
 
 /* The documented vocabulary (js/metrics.js and the track() calls in js/app.js): fixed words, route names,
@@ -88,10 +88,10 @@ test.describe('Share clicks: Share button', () => {
 
     // The share hook the app's share actions call: one tap, one event, with a documented surface only
     const ev0 = (await events(page)).length;
-    await page.evaluate(async () => { const m = await import('/vedic-math/js/metrics.js'); m.shareClick('result'); });
+    await page.evaluate(async () => { const m = await import('/js/metrics.js'); m.shareClick('result'); });
     let added = (await events(page)).slice(ev0);
     expect(added.map(e => e[0])).toEqual(['math/share_click/result']);
-    await page.evaluate(async () => { const m = await import('/vedic-math/js/metrics.js'); m.shareClick('challenge-link'); m.shareClick('Swift Tiger 42'); m.shareClick('result?id=p1'); });
+    await page.evaluate(async () => { const m = await import('/js/metrics.js'); m.shareClick('challenge-link'); m.shareClick('Swift Tiger 42'); m.shareClick('result?id=p1'); });
     added = (await events(page)).slice(ev0 + 1);
     expect(added.map(e => e[0])).toEqual(['math/share_click/challenge-link']);
     checkContents(await events(page), await playerSecrets(page));
@@ -146,7 +146,7 @@ test.describe('Events carry no identifiers: Event contents', () => {
 
     // Other routes, including numbered ones and a typed id not in the catalog
     for (const h of ['#/learn', '#/dojo', '#/tricks', '#/sutras', '#/games', '#/watch', '#/progress', '#/game/times-sprint/7', '#/katas/sq5']) await open(page, h);
-    await page.goto('/vedic-math/#/skill/my-secret-name');
+    await page.goto('/play/#/skill/my-secret-name');
     await page.waitForTimeout(300);
     secrets.add('my-secret-name');
 

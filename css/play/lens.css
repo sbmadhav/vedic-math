@@ -31,7 +31,7 @@
 .ln-kinds .md-chip[aria-checked="true"] { background: var(--ink); color: var(--bg); }
 .ln-lab { display: block; font-weight: 800; margin: var(--space-4) 0 var(--space-2); }
 .ln-inrow { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
-.ln-in { font: 700 1.5rem/1.2 var(--font-mono); letter-spacing: .06em; padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--edge); background: var(--bg); color: var(--ink); min-width: 0; flex: 1 1 200px; box-sizing: border-box; }
+.ln-in { font: 500 1.5rem/1.2 var(--font-mono); letter-spacing: .06em; padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--edge); background: var(--bg); color: var(--ink); min-width: 0; flex: 1 1 200px; box-sizing: border-box; }
 .ln-in::placeholder { color: var(--ink-muted); opacity: .6; }
 .ln-in:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .ln-err { color: var(--coral-strong); font-weight: 700; min-height: 1.2em; margin: var(--space-2) 0 0; }
@@ -70,10 +70,10 @@
 .ln-side { flex: 1 1 240px; }
 .ln-side .px-note { margin: 0 0 var(--space-3); }
 .ln-kicker { margin: 0; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; color: var(--teal-strong); }
-.ln-big { font: 700 clamp(1.8rem, 6vw, 2.6rem)/1.1 var(--font-mono); margin: 2px 0 var(--space-2); letter-spacing: .04em; word-break: break-all; }
+.ln-big { font: 500 clamp(1.8rem, 6vw, 2.6rem)/1.1 var(--font-mono); margin: 2px 0 var(--space-2); letter-spacing: .04em; word-break: break-all; }
 .ln-plate { display: flex; flex-direction: column; align-items: center; padding: 8px 22px 12px; border-radius: 14px; border: 4px solid var(--edge); background: var(--card); box-shadow: inset 0 0 0 4px var(--card), inset 0 0 0 6px var(--line), var(--shadow-ledge); min-width: 220px; }
 .ln-plate-top { font: 800 .7rem/1 var(--font-sans); letter-spacing: .3em; color: var(--teal-strong); margin-bottom: 4px; }
-.ln-plate b { font: 700 2.4rem/1 var(--font-mono); letter-spacing: .08em; white-space: nowrap; }
+.ln-plate b { font: 500 2.4rem/1 var(--font-mono); letter-spacing: .08em; white-space: nowrap; }
 .ln-sign { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 150px; height: 150px; border-radius: var(--radius-xl); background: var(--sun); color: var(--on-accent); border: 3px solid var(--edge); box-shadow: var(--shadow-ledge); }
 .ln-sign span { font: 800 .8rem/1 var(--font-sans); letter-spacing: .14em; text-transform: uppercase; }
 .ln-sign b { font: 700 clamp(2.4rem, 9vw, 3.4rem)/1 var(--font-display); }
@@ -84,7 +84,7 @@
 .ln-clock-m { stroke: var(--coral); stroke-width: 3.2; stroke-linecap: round; }
 .ln-clock-pin { fill: var(--ink); }
 .ln-clock-arc { fill: color-mix(in srgb, var(--sun) 55%, transparent); stroke: var(--sun-strong); stroke-width: 1; }
-.ln-digital { display: block; text-align: center; font: 700 1.2rem/1 var(--font-mono); margin-top: 6px; color: var(--ink-muted); }
+.ln-digital { display: block; text-align: center; font: 500 1.2rem/1 var(--font-mono); margin-top: 6px; color: var(--ink-muted); }
 .ln-receipt { width: 230px; padding: var(--space-4) var(--space-4) var(--space-5); background: var(--card); color: var(--ink); font: 500 .9rem/1.4 var(--font-mono); border: 2px solid var(--line); border-bottom: 0; box-shadow: var(--shadow-card); position: relative; transform: rotate(-1.5deg); }
 .ln-receipt::after { content: ""; position: absolute; left: -2px; right: -2px; bottom: -10px; height: 10px; background: linear-gradient(-45deg, transparent 6px, var(--card) 0) 0 0 / 12px 12px repeat-x, linear-gradient(45deg, transparent 6px, var(--card) 0) 0 0 / 12px 12px repeat-x; }
 .ln-receipt p { margin: 0; }
@@ -115,8 +115,8 @@
 .ln-exprf, .ln-numf { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .ln-expr { flex: 1 1 260px; }
 .ln-num { flex: 0 1 220px; text-align: center; }
-.ln-cur, .ln-unit { font: 700 1.5rem/1 var(--font-mono); color: var(--ink-muted); }
-.ln-val { font: 700 1.3rem/1 var(--font-mono); color: var(--ink-muted); min-width: 5ch; }
+.ln-cur, .ln-unit { font: 500 1.5rem/1 var(--font-mono); color: var(--ink-muted); }
+.ln-val { font: 500 1.3rem/1 var(--font-mono); color: var(--ink-muted); min-width: 5ch; }
 .ln-val.is-hit { color: var(--teal-strong); }
 .ln-yn { display: flex; flex-wrap: wrap; gap: var(--space-3); }
 .ln-yn .md-btn { font-size: 1.1rem; padding: 12px 22px; }
@@ -145,7 +145,7 @@
 .ln-jlist { list-style: none; padding: 0; margin: 0 0 var(--space-3); display: grid; gap: var(--space-2); grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); }
 .ln-jitem { width: 100%; display: grid; gap: 2px; text-align: left; padding: var(--space-3); border-radius: var(--radius-md); border: 2px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; font: inherit; }
 .ln-jitem:hover { border-color: var(--edge); }
-.ln-jitem b { font: 700 1.25rem/1.2 var(--font-mono); overflow-wrap: anywhere; }
+.ln-jitem b { font: 500 1.25rem/1.2 var(--font-mono); overflow-wrap: anywhere; }
 .ln-jitem small { color: var(--ink-muted); font-weight: 700; }
 .ln-jkind { justify-self: start; font-size: .7rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: var(--radius-pill); background: var(--bg-alt); }
 .ln-jkind--clock { background: var(--coral); color: var(--on-accent); } .ln-jkind--receipt { background: var(--sun); color: var(--on-accent); } .ln-jkind--plate { background: var(--teal); color: var(--on-accent); }

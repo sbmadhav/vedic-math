@@ -90,7 +90,7 @@ We keep a written information security program: one person is responsible for it
 
 ## Moving from sbmadhav.com
 
-Vedic Math used to live at sbmadhav.com/vedic-math/. When you open the old address, your progress moves to this site in the link itself, on your device; it is never sent to a server. You are asked first, and nothing already here is replaced unless you choose. World board entries and IDs from the old site do not move; the old leaderboard data is deleted when the move is finished.
+Vedic Math used to live on sbmadhav.com. When you open the old address, your progress moves to this site in the link itself, on your device; it is never sent to a server. You are asked first, and nothing already here is replaced unless you choose. World board entries and IDs from the old site do not move; the old leaderboard data is deleted when the move is finished.
 
 ## Visitors outside the United States
 

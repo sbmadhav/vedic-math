@@ -1,4 +1,4 @@
-import { test, expect, APP, open, openExplore, cloudLog } from './fixtures';
+import { test, expect, APP, open, togglePauseMotion, cloudLog } from './fixtures';
 import type { Page } from '@playwright/test';
 
 /* WCAG 2.1 AA checks axe cannot make: focus order after an answer (2.4.3), status messages (4.1.3),
@@ -86,24 +86,29 @@ test.describe('Pause motion (2.2.2)', () => {
   const looping = (page: Page) => page.evaluate(() => document.getAnimations()
     .filter(a => a.playState === 'running' && a.effect!.getTiming().iterations === Infinity).length);
 
-  test('the Explore menu switch stops the moving background and CSS loops, live and after a reload', async ({ page }) => {
-    await open(page, '#/');
+  test('the Pause motion switch on Me stops the moving background and CSS loops, live and after a reload', async ({ page }) => {
+    await open(page, '#/me');
     await expect.poll(() => bgMoving(page), { timeout: 15_000 }).toBe(true);
-    const dlg = await openExplore(page);
-    await dlg.locator('#xpMotion').click();
-    await page.keyboard.press('Escape');
+    const sw = page.locator('#setMotion');
+    await expect(sw).toHaveAttribute('aria-checked', 'false');
+    await sw.click();
+    await expect(sw).toHaveAttribute('aria-checked', 'true');
     await expect(page.locator('html')).toHaveClass(/motion-paused/);
+    expect(await page.evaluate(() => localStorage.getItem('motion-paused'))).toBe('1');
     await expect.poll(() => bgMoving(page)).toBe(false);
     expect(await looping(page)).toBe(0);
     await page.reload();
     await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
     await expect(page.locator('canvas.vm-bg')).toBeAttached({ timeout: 10_000 });
     expect(await bgMoving(page)).toBe(false);
-    // Turning it back on restarts the background
-    const dlg2 = await openExplore(page);
-    await dlg2.locator('#xpMotion').click();
-    await page.keyboard.press('Escape');
+    // Applied before paint: the class is there from the first script, and the switch says so
+    await expect(page.locator('html')).toHaveClass(/motion-paused/);
+    await expect(page.locator('#setMotion')).toHaveAttribute('aria-checked', 'true');
+    // Turning it off from the music panel restarts the background
+    expect(await togglePauseMotion(page)).toBe(false);
+    await expect(page.locator('#setMotion')).toHaveAttribute('aria-checked', 'false');
     await expect.poll(() => bgMoving(page)).toBe(true);
+    expect(await page.evaluate(() => localStorage.getItem('motion-paused'))).toBeNull();
   });
 
   test('the Moving background switch in #/me stops it too', async ({ page }) => {

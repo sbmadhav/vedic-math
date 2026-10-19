@@ -4,7 +4,7 @@ import { BASE_URL } from '../../playwright.config';
 /* analytics spec, Requirement "Events carry no identifiers", Scenario "Global Privacy Control":
    WHEN the browser sends Global Privacy Control THEN no analytics request is made.
 
-   e2e/tests/analytics-gpc.spec.ts covers this only against a real host: the shared /assets/analytics.js is off on
+   e2e/tests/analytics-gpc.spec.ts covers this only against a real host: this site's /js/analytics.js is off on
    localhost, so that test skips on a local BASE_URL. Here the app is served under a made-up, non-local host name
    (every request to it is answered from BASE_URL), so the real, unmodified analytics.js runs with analytics on,
    and the control run (GPC off) proves the setup would see a GoatCounter request. The fixtures still answer

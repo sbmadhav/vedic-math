@@ -17,7 +17,7 @@ test('offline mid-round, after the video list loaded: two misses show no offer a
   await open(page, '#/star/sq5/1');
   await question(page, 1);
   // The Trick's video is found while online (the list module loads)
-  await page.waitForFunction(() => performance.getEntriesByType('resource').some(e => /\/vedic-math\/js\/videos\.js/.test(e.name)));
+  await page.waitForFunction(() => performance.getEntriesByType('resource').some(e => /\/js\/videos\.js/.test(e.name)));
   await enter(page, '1');
   await page.locator('#stRSkip').click();
   await expect(tag(page)).toHaveText('Rematch');

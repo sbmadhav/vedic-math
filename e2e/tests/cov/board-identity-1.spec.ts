@@ -65,7 +65,7 @@ test.describe('Viewing a World board on a fresh device', () => {
     test.use({ seedMode: null });
     test('a first visit that opens the Arena makes no sign-in and creates no identity', async ({ page }) => {
       await seedRows(page);
-      await page.goto('/vedic-math/#/arena');
+      await page.goto('/play/#/arena');
       await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
       // If the Arena is shown, its World board lists the top entries
       if (await page.locator('#lbDay').count()) await expectWorldTop(page, '#lbDay');

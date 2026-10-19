@@ -157,7 +157,7 @@ function titleBar(T, cls = 'mq-sparkbar mq-sparkbar--big') {
 
 /* ---------- Mode picker (first visit, and from Me) ---------- */
 function modePicker({ signal } = {}) {
-  document.title = `${BRAND} for Everyone · Madhav`;
+  document.title = `Learn Vedic Math`;
   const p = store.player();
   view.innerHTML = `<section class="md-section mq-hero"><div class="md-wrap">
     <span class="md-tag md-tag--plum">Vedic Math for Everyone</span>
@@ -206,7 +206,7 @@ const tile = (href, title, sub, color, ic) => `<a class="play-tile play-tile--${
    tiles: the tile home whatever the switch says (#/tiles, from All places). */
 function home(ctx = {}, { tiles = false } = {}) {
   if (!tiles && SKY.skyOn(store.player())) return skyHome(ctx);
-  const m = fx.mode(); document.title = `${BRAND} for Everyone · Madhav`;
+  const m = fx.mode(); document.title = `Learn Vedic Math`;
   const last = store.lastSkill() && byId[store.lastSkill()];
   const cont = last ? `<a class="mq-continue" href="#/skill/${last.id}">${ring(store.mastery(last.id), 40)}<span><small>Keep going</small><b>${both(last.title, last.kid)}</b></span><span class="mq-go" aria-hidden="true">&rarr;</span></a>` : '';
   let body = '';
@@ -262,7 +262,7 @@ function home(ctx = {}, { tiles = false } = {}) {
 /* The Sky as home (openspec sky-home). Back from a Star (the route before was #/star/<trick>/<n>): that Star is focused. */
 const litStars = () => { const { lit } = store.starStates(); return SKY.PATH.filter(k => lit[k]).length; };
 function skyHome({ signal } = {}) {
-  document.title = `${BRAND} for Everyone · Madhav`;
+  document.title = `Learn Vedic Math`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}${newHereHTML()}<div id="skyHome"></div>
     <p class="mode-line">Mode: <b>${fx.MODES[fx.mode()].name}</b> <a href="#/me">Change</a></p></div></section>`;
   const back = (render.from || '').match(/^#\/star\/([\w-]+)\/(\d)$/);
@@ -272,7 +272,7 @@ function skyHome({ signal } = {}) {
 }
 /* All places: the Sky as a plain list (#/places) */
 function placesView({ signal } = {}) {
-  document.title = `All places: ${BRAND} · Madhav`;
+  document.title = `All places · Learn Vedic Math`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow places">
     ${crumbs([null, 'All places'])}
     <span class="md-tag md-tag--plum">Star Quest</span>
@@ -284,7 +284,7 @@ function placesView({ signal } = {}) {
 
 /* ---------- Learn ---------- */
 function learnView() {
-  document.title = `Skill map: ${BRAND} · Madhav`;
+  document.title = `Skill map · Learn Vedic Math`;
   const m = fx.MODES[fx.mode()], mine = GRADES.filter(g => m.grades.map(String).includes(String(g.id))), rest = GRADES.filter(g => !mine.includes(g) && g.id !== 'V');
   const card = g => { const st = gradeStats(g.id); return `<a class="mq-grade" href="#/grade/${g.id}"><span class="mq-grade-n">${gradeShort(g.id)}</span><span class="mq-grade-t"><b>${both(g.pro, g.kid)}</b><small>${g.band}</small></span><span class="mq-bar" role="progressbar" aria-label="Skills mastered" aria-valuemin="0" aria-valuemax="${st.total}" aria-valuenow="${st.done}" aria-valuetext="${st.done} of ${st.total} mastered"><i style="width:${pct(st.done / (st.total || 1))}%"></i></span></a>`; };
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
@@ -301,7 +301,7 @@ function learnView() {
 function gradeView(g) {
   const G = gradeOf(g); if (!G) return home();
   if (g !== 'V') store.setGrade(g);
-  document.title = `${G.pro}: ${BRAND} · Madhav`;
+  document.title = `${G.pro} · Learn Vedic Math`;
   const list = skillsFor(g), st = gradeStats(g), strands = Object.keys(STRANDS).filter(k => list.some(s => s.strand === k));
   const idx = GRADES.findIndex(x => String(x.id) === String(g)), prev = GRADES[idx - 1], next = GRADES[idx + 1];
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
@@ -320,7 +320,7 @@ function gradeView(g) {
 /* ---------- Skill: lesson plus practice ---------- */
 function skillView(id, { signal } = {}) {
   const s = byId[id]; if (!s) return home();
-  document.title = `${s.title}: ${BRAND} · Madhav`;
+  document.title = `${s.title} · Learn Vedic Math`;
   const S = STRANDS[s.strand], trick = s.trick && TRICKS.find(t => t.id === s.trick);
   const back = trick ? ['#/dojo', 'Dojo'] : ['#/grade/' + s.grade, gradeLabel(s.grade)];
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
@@ -459,7 +459,7 @@ function answerUI(p) {
 
 function mixView(g, isRun = false, { signal } = {}) {
   const G = gradeOf(g); if (!G) return home();
-  document.title = `${isRun ? 'Endless run' : 'Endless practice'}, ${G.pro}: ${BRAND} · Madhav`;
+  document.title = `${isRun ? 'Endless run' : 'Endless practice'}, ${G.pro} · Learn Vedic Math`;
   const list = skillsFor(g);
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs(['#/grade/' + g, gradeLabel(g)], [null, isRun ? 'Endless run' : 'Endless practice'])}
@@ -479,7 +479,7 @@ function mixView(g, isRun = false, { signal } = {}) {
 
 /* ---------- Dojo: belts of speed tricks ---------- */
 function dojoView() {
-  document.title = `Vedic Dojo: ${BRAND} · Madhav`;
+  document.title = `Vedic Dojo · Learn Vedic Math`;
   const bp = gm.beltProgress(), earned = bp.filter(b => b.earned).length, ex = fx.mode() === 'explorer'; /* Explorer is not offered Stars (star-round spec), so no belt progress is dangled: the Tricks, grouped by belt, and one honest line */
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs([null, 'Dojo'])}
@@ -531,7 +531,7 @@ const goalsText = (targets, unit) => `Bronze ${targets[0].toLocaleString('en-US'
 /* ---------- Dojo katas ---------- */
 function katasView(trickId) {
   const t = TRICKS.find(x => x.id === trickId); if (!t) return dojoView();
-  document.title = `${t.title} katas: ${BRAND} · Madhav`;
+  document.title = `${t.title} katas · Learn Vedic Math`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs(['#/dojo', 'Dojo'], [null, `${t.title}: katas`])}
     <span class="md-tag md-tag--plum" lang="sa-Latn">${t.sutra}</span>
@@ -545,7 +545,7 @@ function kataView(trickId, n, { signal } = {}) {
   const t = TRICKS.find(x => x.id === trickId); if (!t || n < 1 || n > LV.KATAS_PER_TRICK) return dojoView();
   if (n > 1 && !store.kataDone(LV.kataKey(trickId, n - 1))) { location.replace(`#/katas/${trickId}`); return; }
   const K = LV.kata(trickId, n);
-  document.title = `Kata ${n}: ${t.title} · ${BRAND}`;
+  document.title = `Kata ${n}: ${t.title} · Learn Vedic Math`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs(['#/dojo', 'Dojo'], [`#/katas/${trickId}`, t.title], [null, `Kata ${n}`])}
     <h1 class="md-heading">Kata ${n} <small class="kata-of">of ${LV.KATAS_PER_TRICK}</small></h1>
@@ -602,7 +602,7 @@ function starView(trick, n, { signal } = {}, back = null) {
   /* For a Player whose home is the Sky, Back always goes to the Sky (which then focuses this Star) */
   /* Opened from Home or the landing's Try a trick (openspec first-visit): Back goes home, not to the Dojo's long map */
   back = back || (SKY.skyOn(store.player()) ? { href: '#/', label: 'Back to the Sky' } : from === '#/skill/v-' + trick ? { href: from, label: `Back to ${t.title}` } : /^#?\/?$/.test(from) && from !== '' ? { href: '#/', label: 'Back home' } : { href: '#/dojo', label: 'Back to the Dojo' });
-  document.title = `Star ${n}: ${t.title} · ${BRAND}`;
+  document.title = `Star ${n}: ${t.title} · Learn Vedic Math`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs(['#/dojo', 'Dojo'], ['#/skill/v-' + trick, t.title], [null, `Star ${n}`])}</div></section>`;
   /* The round plays in the full-screen shell (openspec game-shell-and-calm); Back leaves the Star */
@@ -619,7 +619,7 @@ async function starVideo(trick, mode) {
 
 /* ---------- Arena challenge tower ---------- */
 function towerView() {
-  document.title = `Challenge tower: ${BRAND} · Madhav`;
+  document.title = `Challenge tower · Learn Vedic Math`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs(['#/arena', 'Arena'], [null, 'Challenge tower'])}
     <span class="md-tag md-tag--coral">Challenge tower</span>
@@ -633,7 +633,7 @@ function towerView() {
 function chapterView(c) {
   const tp = LV.TOPICS[c - 1]; if (!tp) return towerView();
   const lo = (c - 1) * LV.PER_CHAPTER;
-  document.title = `${tp.name}: Challenge tower · ${BRAND}`;
+  document.title = `${tp.name}: Challenge tower · Learn Vedic Math`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs(['#/arena', 'Arena'], ['#/tower', 'Challenge tower'], [null, `Chapter ${c}`])}
     <span class="md-tag md-tag--coral">Chapter ${c} of ${LV.TOPICS.length}</span>
@@ -648,7 +648,7 @@ function challengeView(id, { signal } = {}) {
   const ch = LV.challenge(id), chapterStart = ch.chapter * LV.PER_CHAPTER + 1;
   if (id > chapterStart && !store.medal(LV.challengeKey(id - 1))) { location.replace(`#/tower/${ch.chapter + 1}`); return; }
   const F = LV.FORMATS[ch.format], goalText = ch.goal === 'seconds' ? `Finish ${ch.total} with at least ${Math.ceil(ch.total * .8)} right. Medals: ${goalsText(ch.targets, 'seconds or faster')}.` : `Medals: ${goalsText(ch.targets, ch.goal)}.`;
-  document.title = `Challenge ${id}: ${BRAND}`;
+  document.title = `Challenge ${id} · Learn Vedic Math`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs(['#/tower', 'Challenge tower'], [`#/tower/${ch.chapter + 1}`, ch.topic.name], [null, `Challenge ${id}`])}
     <span class="md-tag md-tag--coral">${F.name}</span>
@@ -690,7 +690,7 @@ const sutraId = (c, sub) => (sub ? 'u' : 's') + c.n;
 const ALL_SUTRAS = [...SUTRAS.map(c => ({ ...c, sub: false, id: 's' + c.n })), ...SUBSUTRAS.map(c => ({ ...c, sub: true, id: 'u' + c.n }))];
 let sutraAmb = null; /* the Sutra ambience of the Sutra page on screen (js/sutra-ambience.js) */
 function sutrasView({ signal } = {}) {
-  document.title = `The sutras: ${BRAND} · Madhav`;
+  document.title = `The sutras · Learn Vedic Math`;
   store.markSeen('sutras');
   const got = ALL_SUTRAS.filter(gm.collectedCard).length;
   /* The Say it button is the card's sibling of the flip button (a button cannot sit in a button), in its top corner */
@@ -833,7 +833,7 @@ function openSutra(id, fromPage) {
   wireSay(sutraDlg, sutraScene.signal); wireAmbience(sutraDlg, sutraScene.signal);
   if (sutraAmb) sutraAmb.strike();
   collect(c.name); track('sutra/' + id, 'Sutra: ' + c.name);
-  document.title = `${c.name}: ${BRAND} · Madhav`;
+  document.title = `${c.name} · Learn Vedic Math`;
   if (swapping) { sutraDlg.scrollTop = 0; sutraDlg.querySelector('.sd-x').focus(); return; }
   openedInPage = fromPage;
   const art = document.querySelector(`.sutra-card[data-id="${id}"]`); sutraFrom = art;
@@ -850,7 +850,7 @@ function closeSutra(instant = false) {
   if (!sutraDlg || !sutraDlg.open) return;
   if (sutraScene) { sutraScene.abort(); sutraScene = null; }
   const art = sutraFrom && document.body.contains(sutraFrom) ? sutraFrom : null;
-  const done = () => { sutraDlg.close(); document.title = `The sutras: ${BRAND} · Madhav`; if (art) art.querySelector('.sutra-face').focus({ preventScroll: true }); };
+  const done = () => { sutraDlg.close(); document.title = `The sutras · Learn Vedic Math`; if (art) art.querySelector('.sutra-face').focus({ preventScroll: true }); };
   if (instant || !art || reducedMotion()) return done();
   const a = art.getBoundingClientRect(), b = sutraDlg.getBoundingClientRect();
   sutraDlg.querySelector('.sd-inner').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' });
@@ -949,7 +949,7 @@ function queueSparksPost() {
 }
 store.on(type => { if (type === 'sparks') queueSparksPost(); });
 function arenaView({ signal } = {}) {
-  document.title = `Arena: ${BRAND} · Madhav`;
+  document.title = `Arena · Learn Vedic Math`;
   const league = fx.MODES[fx.mode()].league, day = cloud.dayId(), wk = cloud.weekId();
   /* Round type: daily (Ranked, always timed), practice (timed, untimed in Calm) or untimed (Practice, no clock).
      With Calm on, the untimed Practice round is picked until the Player picks another this visit. */
@@ -1035,17 +1035,17 @@ function playShelf(section, heading) {
   const list = playIn(section, fx.mode()); if (!list.length) return '';
   return `<section class="play-shelf" aria-labelledby="ps-${section}"><h2 class="mq-strand" id="ps-${section}">${heading}</h2><ul class="play-shelf-grid">${list.map(e => `<li><a class="play-card play-card--${e.color}" href="${e.route}"><span class="play-card-ic" aria-hidden="true">${PLAY_ICONS[e.icon] || ''}</span><b>${e.title}</b><em>${e.tag}</em><span>${e.blurb}</span></a></li>`).join('')}</ul></section>`;
 }
-/* Styles load with the page that needs them; the build stamps their URLs (the #vm-css map in index.html) */
+/* Styles load with the page that needs them; the build stamps their URLs (the #vm-css map in play/index.html) */
 const cssStamps = (() => { try { return JSON.parse(document.getElementById('vm-css')?.textContent || '{}'); } catch (e) { return {}; } })();
 function playCss(name) {
-  const url = `/vedic-math/css/play/${name}.css`;
+  const url = `/css/play/${name}.css`;
   if (document.querySelector(`link[data-play="${name}"]`)) return Promise.resolve();
   return new Promise(res => { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = cssStamps[url] ? `${url}?v=${cssStamps[url]}` : url; l.dataset.play = name; l.onload = l.onerror = () => res(); document.head.append(l); });
 }
 function playView(hash, { signal }) {
   const hit = playFor(hash); if (!hit) return home({ signal });
   const [e, params] = hit, sec = SECTIONS[e.section];
-  document.title = `${e.title}: ${BRAND} · Madhav`;
+  document.title = `${e.title} · Learn Vedic Math`;
   /* Not for this Mode (a direct or shared link): say so and point at what this Mode can play, instead of opening it */
   if (!playOpen(e, fx.mode())) {
     const mine = PLAY.filter(x => playOpen(x, fx.mode())).slice(0, 3);
@@ -1091,7 +1091,7 @@ document.addEventListener('vmplay', onPlay);
 
 /* ---------- Games ---------- */
 function gamesView() {
-  document.title = `Games: ${BRAND} · Madhav`;
+  document.title = `Games · Learn Vedic Math`;
   const m = fx.mode(), mine = GAMES.filter(g => g.modes.includes(m)), rest = GAMES.filter(g => !g.modes.includes(m));
   const card = g => `<a class="md-card mq-game" href="#/game/${g.id}"><div class="md-icon-tile" style="background:color-mix(in srgb,var(--${g.color}) 18%,transparent);color:var(--${g.color}-strong)">${icon('game')}</div><h3>${both(g.title, g.kid)}</h3><p>${g.desc.split('. ')[0]}.</p><small class="mq-game-f">Skill ${Math.round(AD.rating('game:' + g.id, m))}/20 · ${store.medalsWhere(`g:${g.id}:`).any}/${LEVELS_PER_GAME} levels · ${store.medalsWhere(`g:${g.id}:`).gold} gold · leaderboard</small></a>`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
@@ -1112,7 +1112,7 @@ function gameView(id, lvl = 0, { signal } = {}) {
   if (lvl && (lvl > LEVELS_PER_GAME || !isOpen(lvl))) { location.replace(`#/game/${g.id}`); return; }
   const L = lvl ? LEVELS[g.id](lvl) : null, bDay = `${boardGame(g.id)}-daily-${cloud.dayId()}-${league}`, bWeek = `${boardGame(g.id)}-week-${cloud.weekId()}-${league}`;
   const lengthText = g.secs ? `${g.secs} seconds` : `${g.rounds} ${g.id === 'pairs' ? 'boards' : g.id === 'target' ? 'puzzles' : 'questions'}`;
-  document.title = `${g.title}${lvl ? ` level ${lvl}` : ''}: ${BRAND} · Madhav`;
+  document.title = `${g.title}${lvl ? ` level ${lvl}` : ''} · Learn Vedic Math`;
   let mode = lvl ? 'level' : 'ranked', round = null; /* round: the running round's controller */
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs(['#/games', 'Games'], lvl ? [`#/game/${g.id}`, both(g.title, g.kid)] : [null, both(g.title, g.kid)], ...(lvl ? [[null, `Level ${lvl}`]] : []))}
@@ -1196,7 +1196,7 @@ function gameView(id, lvl = 0, { signal } = {}) {
    sites, which open in a new tab, under Links. */
 const LENGTH_LABEL = { short: 'Under 2 min', mid: '2 to 5 min', long: '5 to 8 min', longer: '8 to 12 min' };
 function watchView({ signal } = {}) {
-  document.title = `Watch and learn: ${BRAND} · Madhav`;
+  document.title = `Watch and learn · Learn Vedic Math`;
   const m = fx.mode() || 'challenger', pro = linksOut();
   const f = { mode: m, level: W.MODE_SEES[m].length > 1 ? 'all' : m, strand: null, tricks: false, length: null, kind: 'video' };
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
@@ -1378,7 +1378,7 @@ function homeTour(signal) {
 }
 function guideView(section, { signal } = {}) {
   const m = fx.mode() || null, mode = m || 'challenger', explorer = m === 'explorer';
-  document.title = `Guide: ${BRAND} · Madhav`;
+  document.title = `Guide · Learn Vedic Math`;
   const list = sectionsFor(mode, guideCounts()), groups = GROUPS.map(g => ({ g, items: list.filter(s => s.group === g.id) })).filter(x => x.items.length);
   const T = v => esc(say(v, mode));
   const tryHTML = s => {
@@ -1422,7 +1422,7 @@ function guideView(section, { signal } = {}) {
 let findVideos = null; /* the lazy video list, once loaded */
 function findView({ signal } = {}) {
   const m = fx.mode() || 'challenger', ex = m === 'explorer';
-  document.title = `Find: ${BRAND} · Madhav`;
+  document.title = `Find · Learn Vedic Math`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap find">
     ${crumbs([null, 'Find'])}
     <span class="md-tag md-tag--teal">Find</span>
@@ -1459,7 +1459,7 @@ function findView({ signal } = {}) {
 document.addEventListener('keydown', e => {
   if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
   const t = e.target, typing = t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
-  if (typing || document.querySelector('dialog[open]') || document.querySelector('header [aria-expanded="true"]')) return; /* a header menu (Explore, Music) is open; an expanded control in the view, like a flipped Sutra card, does not count */
+  if (typing || document.querySelector('dialog[open]') || document.querySelector('header [aria-expanded="true"]')) return; /* a header menu (Music) is open; an expanded control in the view, like a flipped Sutra card, does not count */
   e.preventDefault();
   if ((location.hash || '#/') === '#/find') { const i = $('#findIn'); if (i) i.focus(); } else location.hash = '#/find';
 });
@@ -1474,7 +1474,7 @@ function skySwitchHTML(p) {
     <p class="pr-say" id="skyMsg" role="status" aria-live="polite"></p></div>`;
 }
 function meView() {
-  document.title = `Me: ${BRAND} · Madhav`;
+  document.title = `Me · Learn Vedic Math`;
   const p = store.player(), T = gm.titleInfo(), got = store.badges(), done = SKILLS.filter(s => store.mastered(s.id)).length;
   const badges = gm.badgesFor(fx.mode(), got); /* Explorer is not offered Belts or Sutra cards, so their badges are listed only once earned */
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
@@ -1501,7 +1501,8 @@ function meView() {
       <p class="mq-small" id="calmNote">No clocks in Practice and nothing moves. Ranked rounds keep their clock. Saved on this device.</p>
       <label class="me-bg"><input type="checkbox" id="setBg" ${bgOn() ? 'checked' : ''}> Moving background</label>
       <div class="me-size"><span id="sizeL">Text size in play</span><div class="play-size" role="group" aria-labelledby="sizeL"><button type="button" class="play-size-b" data-size="a" aria-pressed="${fx.textSize() === 'a'}" aria-label="Normal text">A</button><button type="button" class="play-size-b" data-size="a+" aria-pressed="${fx.textSize() === 'a+'}" aria-label="Larger text">A+</button></div></div>
-      <p class="mq-small">Pause motion in the Explore menu stops motion on every page of sbmadhav.com.</p>
+      <button type="button" class="md-switch" role="switch" id="setMotion" aria-checked="${fx.motionPaused()}" aria-describedby="motionNote"><span>Pause motion</span><span class="md-track" aria-hidden="true"><span class="md-knob"></span></span></button>
+      <p class="mq-small" id="motionNote">${fx.t({ explorer: 'Stops everything that wiggles, on every page of this site. Saved on this device.', challenger: 'Stops every animation on every page of this site, also after a reload. Saved on this device.', pro: 'Stops every looping animation on every page of this site, also after a reload (WCAG 2.2.2). Saved on this device.' })}</p>
     </div>
     ${fx.voiceSettingsHTML()}
     <p class="mq-small">Calm music: use the note button at the top right of the menu bar (singing bowls, tanpura drone, Himalayan dawn, temple chimes).</p>
@@ -1523,6 +1524,7 @@ function meView() {
   $('#setSound').onchange = e => { fx.setSound(e.target.checked); fx.sfx('ok'); };
   $('#setBg').onchange = e => { setBg(e.target.checked); const t = document.getElementById('vmBg'); if (t) t.checked = e.target.checked; };
   $('#setCalm').onclick = e => { fx.setCalm(!fx.calmOn()); e.currentTarget.setAttribute('aria-checked', String(fx.calmOn())); };
+  $('#setMotion').onclick = () => fx.setMotionPaused(!fx.motionPaused());
   view.querySelectorAll('.me-size [data-size]').forEach(b => b.onclick = () => { fx.setTextSize(b.dataset.size); view.querySelectorAll('.me-size [data-size]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.size === fx.textSize()))); });
   $('#setVoice').onchange = e => { fx.setVoice(e.target.checked); if (e.target.checked) fx.speak('Read aloud is on.', true); else fx.stopSpeaking(); };
   fx.wireVoiceSettings(view, { player: p.id });
@@ -1596,8 +1598,8 @@ gm.init();
 metrics.returnCheck(); /* before the first route view: remembers this device's first visit */
 render();
 initAmbient();
-/* Offline: sw.js (scope /vedic-math/) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */
+/* Offline: /sw.js (scope /play/, the game only) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
-  const registerSW = () => navigator.serviceWorker.register('/vedic-math/sw.js', { scope: '/vedic-math/' }).catch(() => {});
+  const registerSW = () => navigator.serviceWorker.register('/sw.js', { scope: '/play/' }).catch(() => {});
   if (document.readyState === 'complete') registerSW(); else addEventListener('load', registerSW, { once: true });
 }

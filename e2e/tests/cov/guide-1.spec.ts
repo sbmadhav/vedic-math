@@ -33,7 +33,7 @@ test('A new route: every route the menu bar and the section links reach is cover
   const hrefs = await page.locator('.mq-nav a[href^="#/"]').evaluateAll(els => els.map(e => e.getAttribute('href')!));
   expect(hrefs.length).toBeGreaterThanOrEqual(6);
   const uncovered = await page.evaluate(async (hrefs: string[]) => {
-    const g = await import('/vedic-math/js/guide.js' as string);
+    const g = await import('/js/guide.js' as string);
     const covers: string[] = g.sections({}).flatMap((s: any) => s.covers || []);
     const base = (h: string) => '#/' + h.replace(/^#\//, '').split('/')[0];
     return hrefs.filter(h => !covers.some(c => c === h || base(c) === base(h)));

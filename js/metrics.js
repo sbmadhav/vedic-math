@@ -1,5 +1,5 @@
-/* Anonymous usage counts (openspec analytics spec). Every event goes through window.siteTrack, the shared
-   GoatCounter helper of sbmadhav.com (/assets/analytics.js: no cookies, off with Do Not Track or Global
+/* Anonymous usage counts (openspec analytics spec). Every event goes through window.siteTrack, this site's
+   GoatCounter helper (js/analytics.js, site code learnvedicmath: no cookies, off with Do Not Track or Global
    Privacy Control, off on localhost), with the math/ prefix.
    Events carry no identifiers: paths are built only from fixed words, route names, catalog ids (skills,
    games, grades, tricks, sutras), Leagues and the fixed buckets below. Never a Player id, Nickname, avatar,
@@ -25,7 +25,7 @@ const flags = () => { try { return JSON.parse(get(FLAGS)) || {}; } catch (e) { r
 const setFlag = f => { const m = flags(); m[f] = true; put(FLAGS, JSON.stringify(m)); };
 
 /* The one place an event leaves: the shared helper, always safe to call. Titles are fixed words too.
-   index.html runs this module before the deferred /assets/analytics.js that defines siteTrack, so events
+   play/index.html runs this module before the deferred js/analytics.js that defines siteTrack, so events
    from the first render wait here (at most 20) until the page has parsed, then go; if the helper never
    arrives (blocked, offline) they are dropped. */
 const early = [];

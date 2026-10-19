@@ -345,7 +345,7 @@ function cardCanvas(c) {
   x.fillStyle = pat ? col('--coral-strong') : col('--teal-strong'); x.font = '800 22px "Nunito Sans", sans-serif';
   x.fillText(pat ? `Discovery: ${pat.title}` : c.test?.ok ? `Conjecture: held for ${c.test.tested} tests, not yet proved` : `Conjecture: broken by ${c.test?.counter ?? '?'}`, 48, yEnd + 52);
   x.fillStyle = col('--ink-muted'); x.font = '600 22px "Nunito Sans", sans-serif';
-  x.fillText('Pattern Wall · Vedic Math · sbmadhav.com/vedic-math', 48, H - 56);
+  x.fillText('Pattern Wall · learnvedicmath.com', 48, H - 56);
   return cv;
 }
 function wrapText(x, text, l, t, w, lh) { let line = '', y = t; for (const word of text.split(' ')) { const tryL = line ? line + ' ' + word : word; if (x.measureText(tryL).width > w && line) { x.fillText(line, l, y); line = word; y += lh; } else line = tryL; } x.fillText(line, l, y); return y; }

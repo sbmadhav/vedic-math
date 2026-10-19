@@ -1,6 +1,6 @@
 import { test, expect, APP, open, appErrors, cloudLog } from './fixtures';
 
-/* The in-app guide and the first-visit tour (openspec in-app-guide). The shared /assets/analytics.js is replaced by a
+/* The in-app guide and the first-visit tour (openspec in-app-guide). This site's /js/analytics.js is replaced by a
    stub that records window.siteTrack calls, so the tour's events can be checked and nothing is counted. */
 const STUB = `window.__events = window.__events || []; window.siteTrack = (path, title) => { window.__events.push(path); };`;
 type Page = import('@playwright/test').Page;
@@ -9,7 +9,7 @@ const tourState = (page: Page) => page.evaluate(() => localStorage.getItem('vm.t
 const tour = (page: Page) => page.locator('dialog.vm-tour');
 
 test.beforeEach(async ({ page }) => {
-  await page.route(/\/assets\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
+  await page.route(/\/js\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
 });
 
 test.describe('the guide page', () => {

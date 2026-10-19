@@ -7,7 +7,7 @@ type Page = import('@playwright/test').Page;
 const events = (page: Page): Promise<[string, string][]> => page.evaluate(() => (globalThis as any).__events || []);
 
 test.beforeEach(async ({ page }) => {
-  await page.route(/\/assets\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
+  await page.route(/\/js\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
 });
 
 test.describe('a new visitor', () => {

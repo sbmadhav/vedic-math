@@ -99,7 +99,7 @@ test.describe('Challenger daily', () => {
     await expect(page.locator('.g-best')).toContainText('League: Challenger');
     // The expected set, built from the pre-change daily seed and checked against the Challenger pool
     const items = await page.evaluate(async day => {
-      const A = await import('/vedic-math/js/arena.js' as string);
+      const A = await import('/js/arena.js' as string);
       const html = (h: string) => { const d = document.createElement('div'); d.innerHTML = h; return d.innerHTML; };
       const daily = A.dailySet('challenger', day), old = A.makeSet('challenger', `daily-${day}-challenger`);
       return { same: JSON.stringify(daily) === JSON.stringify(old), list: daily.map((q: any) => ({ q: html(q.q), answer: q.answer, skill: q.skill, d: q.d ?? null })) };

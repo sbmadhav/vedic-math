@@ -25,7 +25,7 @@ function isoWeek(d = new Date()) {
 async function arenaRound(page: Page, mode: Mode) {
   await open(page, '#/arena');
   const answer = await page.evaluate(async m => {
-    const cloud = await import('/vedic-math/js/cloud.js' as string), arena = await import('/vedic-math/js/arena.js' as string);
+    const cloud = await import('/js/cloud.js' as string), arena = await import('/js/arena.js' as string);
     return String(arena.dailySet(m, cloud.dayId())[0].answer);
   }, mode);
   await page.locator('#arGo').click();
@@ -82,7 +82,7 @@ test.describe('Grown-up gives the Parent step', () => {
     await expect.poll(async () => (await sparksWrites(page)).length).toBeGreaterThanOrEqual(1);
     const sp = (await sparksWrites(page)).at(-1)!;
     expect(sp.path).toBe(`boards/xp-week-${isoWeek()}-challenger/scores/e2e-fake-uid`);
-    const weekTotal = await page.evaluate(async () => (await import('/vedic-math/js/store.js' as string)).weekSparks());
+    const weekTotal = await page.evaluate(async () => (await import('/js/store.js' as string)).weekSparks());
     expect(weekTotal).toBeGreaterThan(40);
     expect(sp.data).toMatchObject({ name: 'Swift Tiger 42', avatar: 'teal', score: weekTotal });
   });

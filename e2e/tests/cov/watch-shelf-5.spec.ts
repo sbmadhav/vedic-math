@@ -16,7 +16,7 @@ test.beforeEach(async ({ page }) => {
 
 type Critique = { title: string; url?: string; yt?: string };
 const critiques = (page: Page) => page.evaluate(async () => {
-  const { VIDEOS, LINKS } = await import('/vedic-math/js/videos.js' as string);
+  const { VIDEOS, LINKS } = await import('/js/videos.js' as string);
   return [...(VIDEOS || []), ...(LINKS || [])].filter((e: any) => e.critique).map((e: any) => ({ title: e.title, url: e.url, yt: e.yt }));
 }) as Promise<Critique[]>;
 
@@ -65,7 +65,7 @@ test('when a Short finishes playing, nothing else starts on its own', async ({ p
   const short = page.locator('#view button.watch-card.watch-card--short').first();
   await expect(short).toBeVisible();
   const yt = await short.evaluate(el => (el as HTMLElement).dataset.watch || '');
-  const len = await page.evaluate(async y => { const { VIDEOS } = await import('/vedic-math/js/videos.js' as string); return VIDEOS.find((v: any) => v.yt === y).duration as number; }, yt);
+  const len = await page.evaluate(async y => { const { VIDEOS } = await import('/js/videos.js' as string); return VIDEOS.find((v: any) => v.yt === y).duration as number; }, yt);
   await short.click();
 
   const dlg = page.locator('dialog.vm-player');

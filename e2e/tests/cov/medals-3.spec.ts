@@ -9,7 +9,7 @@ type Page = import('@playwright/test').Page;
 type P = { kind: string; answer: unknown };
 const kataProblems = (page: Page, trick: string, n: number) =>
   page.evaluate(async ([t, k]) => {
-    const LV = await import('/vedic-math/js/levels.js' as string);
+    const LV = await import('/js/levels.js' as string);
     return LV.kata(t, k).problems.map((p: P) => ({ kind: p.kind, answer: p.answer }));
   }, [trick, n] as const);
 const saved = (page: Page) => page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1') || '{}'));

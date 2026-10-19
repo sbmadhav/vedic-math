@@ -21,9 +21,9 @@ const MANIFEST = new URL('../tools/voice/manifest.json', import.meta.url);
 const manifest = existsSync(MANIFEST) ? JSON.parse(readFileSync(MANIFEST, 'utf8')) : null;
 const spoken = p => [p.say || p.q, ...(p.hints || [])].filter(Boolean);
 
-test('the index: Aoede, served from /vedic-math/voice/, and an archive only with its hash and files', () => {
+test('the index: Aoede, served from the voice host (https://voice.learnvedicmath.com/), and an archive only with its hash and files', () => {
   assert.equal(STUDIO.voice, 'en-US-Chirp3-HD-Aoede');
-  assert.equal(STUDIO.base, '/vedic-math/voice/');
+  assert.equal(STUDIO.base, 'https://voice.learnvedicmath.com/');
   assert.equal(!!STUDIO.tag, !!STUDIO.sha256, 'a tag and its sha256 come together');
   /* record.mjs writes the manifest with the tag cleared; only publish.mjs sets it, so a manifest without a tag is a
      recording that was never published (the site would ask for files no release holds) */

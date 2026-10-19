@@ -214,7 +214,7 @@ test.describe('the site-wide motion pause', () => {
   test.use({ reducedMotion: 'no-preference' });
   test('html.motion-paused: nothing in the stage moves through a miss and a Comeback', async ({ page }) => {
     // The page as it loads with Pause motion on: the class is on <html> before any script runs
-    await page.route(/\/vedic-math\/(index\.html)?(\?.*)?$/, async route => {
+    await page.route(/\/play\/(index\.html)?(\?.*)?$/, async route => {
       const res = await route.fetch();
       await route.fulfill({ response: res, body: (await res.text()).replace('<html lang="en">', '<html lang="en" class="motion-paused">') });
     });
