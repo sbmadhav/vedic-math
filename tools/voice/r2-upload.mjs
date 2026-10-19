@@ -12,6 +12,8 @@
    - Only objects the bucket does not have yet are uploaded (file names are content or text hashes, so a name never
      changes meaning), with Cache-Control: public, max-age=31536000, immutable and If-None-Match: *, so an existing
      object is never overwritten. Nothing is ever deleted.
+     A whole line's clip (l/<hash>.m4a) is named by its text, so changing the voice itself must give its clips new
+     names (another prefix or a voice part in the hash), or the bucket keeps playing the old recordings.
    - Afterwards the bucket is listed again, and every file of the release must be in it.
    Locally and in test/voice-tools.test.mjs: VOICE_ARCHIVE=<a .tar> and VOICE_INDEX=<a module>, as for ci-fetch.mjs.
    The S3 calls are a minimal AWS Signature Version 4 client (R2's S3 API, region auto); no SDK is installed. */
