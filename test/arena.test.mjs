@@ -40,6 +40,15 @@ test('every challenge has targets in the right order and enough questions', () =
   assert.equal(JSON.stringify(challengeSet(CH[123])), JSON.stringify(SETS[123]), 'sets are seeded');
 });
 
+test('a tower question keeps its say, so a tap round reads what the picture shows (openspec read-aloud-wording)', () => {
+  /* The compare, missing angle, right triangle, rectangle and box questions always carry a say */
+  const PICTURE = ['1-compare', '3-area', '4-angles', '5-volume', '8-pyth'];
+  let seen = 0;
+  each((p, id) => { if (PICTURE.includes(p.skill)) { seen++; assert.ok(p.say, `${id} lost its say`); } });
+  assert.ok(seen > 100, `only ${seen} picture questions in the towers`);
+  assert.match(challengeSet(challenge(576))[1].say, /^A right triangle has /);
+});
+
 const tally = { ok: 0, skip: 0, wrong: [], ambiguous: [] };
 const skipped = {};
 each((p, id) => {

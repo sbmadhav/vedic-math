@@ -37,13 +37,17 @@ test.describe('eight white belt Stars lit', () => {
 });
 
 test.describe('the yellow belt under the old mastery rule, four yellow Stars lit', () => {
-  const m = { n: 10, c: 9, m: 0.9, streak: 3, last: 1 };
-  test.use({ seedProgress: { ...blank, skills: { 'v-sq5': m, 'v-by9s': m, 'v-ends10': m }, sky: { lit: { 'sq5:1': 1, 'sq5:2': 1, 'by9s:1': 1, 'ends10:1': 1 }, skipped: {}, last: {} } } });
+  /* The yellow belt is seeded as already kept (belts), with no mastered Tricks, so nothing can earn it again: only
+     keeping the Belt the Player held can show it. The record has no skyMigrated, so the one-time migration runs. */
+  test.use({ seedProgress: { ...blank, belts: { yellow: 1 }, sky: { lit: { 'sq5:1': 1, 'sq5:2': 1, 'by9s:1': 1, 'ends10:1': 1 }, skipped: {}, last: {} } } });
   test('Earned before: the Player still holds the yellow belt', async ({ page }) => {
     await open(page, '#/dojo');
     await expect(page.locator('.belt-chip.on')).toHaveText(/Yellow belt/);
     await expect(page.locator('#view')).toContainText('1 of 7 belts earned');
-    expect(await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('mathquest.v1.p1')!).belts || {}))).toEqual(['yellow']);
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1')!));
+    expect(saved.skyMigrated).toBe(1);
+    expect(Object.keys(saved.belts || {})).toEqual(['yellow']);
+    expect(saved.skills || {}).toEqual({});
   });
 });
 
