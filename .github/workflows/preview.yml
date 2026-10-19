@@ -1,0 +1,127 @@
+name: Preview
+
+# A preview of every pull request from a branch of this repo (openspec change learnvedicmath, design D12): the build
+# with --preview (X-Robots-Tag: noindex, nofollow on every response), uploaded as a Worker version with the alias
+# pr-<number> on workers.dev, its URL posted on the pull request, and the Playwright suite run against it (chromium).
+# Only the pull_request event, never pull_request_target: GitHub gives no secrets to runs for forks, and a fork's pull
+# request is skipped below anyway. The preview token (CLOUDFLARE_PREVIEW_TOKEN) is in the preview environment and is
+# separate from the production token, so revoking either never touches the other. Previews never post anything: the
+# suite uses the fake Firebase SDK, and the Firebase key's referrers do not include workers.dev.
+# The job skips its steps until the preview token is saved and build.py has --preview (secrets cannot be read in a
+# job-level if). A version can only be uploaded once the Worker exists: the first production deploy from main (owner
+# task 1.7, then 11.1) creates it, so previews start working after that deploy.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    if: github.event.pull_request.head.repo.full_name == github.repository && vars.CLOUDFLARE_ACCOUNT_ID != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: preview
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Is a preview possible?
+        id: token
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_PREVIEW_TOKEN }}
+        run: |
+          # The preview token is saved, and this branch's build.py knows --preview (it comes with the move itself)
+          if [ -z "$TOKEN" ]; then echo "::notice::CLOUDFLARE_PREVIEW_TOKEN is not saved in the preview environment yet; no preview"
+          elif ! grep -q -- "--preview" build.py; then echo "::notice::this branch's build.py has no --preview yet; no preview"
+          else echo "present=true" >> "$GITHUB_OUTPUT"; fi
+
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        if: steps.token.outputs.present == 'true'
+        with:
+          python-version: "3.x"
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        if: steps.token.outputs.present == 'true'
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            deploy/package-lock.json
+            e2e/package-lock.json
+
+      - name: Build the preview
+        if: steps.token.outputs.present == 'true'
+        run: python3 build.py --preview --out _site
+
+      - name: Upload a preview version
+        if: steps.token.outputs.present == 'true'
+        id: upload
+        working-directory: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PREVIEW_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          ALIAS: pr-${{ github.event.pull_request.number }}
+        run: |
+          npm ci --ignore-scripts
+          set +e
+          npx wrangler versions upload --config ../wrangler.jsonc --preview-alias "$ALIAS" 2>&1 | tee upload.log
+          code=${PIPESTATUS[0]}
+          set -e
+          if [ "$code" != 0 ]; then
+            grep -qiE "not found|does not exist|no such worker|10007" upload.log && echo "::error::the Worker learnvedicmath does not exist yet: previews start after the first production deploy from main"
+            exit "$code"
+          fi
+          url=$(grep -Eo "https://${ALIAS}-learnvedicmath\.[a-z0-9-]+\.workers\.dev" upload.log | head -1)
+          test -n "$url" || { echo "::error::no preview URL in the wrangler output"; exit 1; }
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Post the preview URL
+        if: steps.token.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          URL: ${{ steps.upload.outputs.url }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          body=$(printf 'Preview of %s: %s\n\nNot indexed (X-Robots-Tag: noindex, nofollow). The same URL updates with every push to this pull request.\n\n---\n_Posted by the preview workflow_' "$SHA" "$URL")
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --edit-last --body "$body" 2>/dev/null || gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "$body"
+
+      - name: The preview is not indexed
+        if: steps.token.outputs.present == 'true'
+        env:
+          URL: ${{ steps.upload.outputs.url }}
+        run: |
+          curl -fsSI "$URL/" | grep -i '^x-robots-tag: noindex, nofollow' || { echo "::error::the preview does not send X-Robots-Tag: noindex, nofollow"; exit 1; }
+
+      - name: Install Playwright
+        if: steps.token.outputs.present == 'true'
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Playwright tests against the preview (chromium)
+        if: steps.token.outputs.present == 'true'
+        working-directory: e2e
+        env:
+          BASE_URL: ${{ steps.upload.outputs.url }}
+          E2E_SKIP_COV: "1"
+        run: npx playwright test --project=chromium --grep-invert @live-videos
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: failure()
+        with:
+          name: playwright-report-preview
+          path: e2e/playwright-report
+          retention-days: 14

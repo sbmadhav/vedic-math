@@ -1,0 +1,41 @@
+# Dependency updates (openspec change learnvedicmath, task 11.4): GitHub Actions (pinned by commit SHA) and every npm
+# folder, weekly, grouped so each ecosystem is one pull request. Vendored code (vendor/: the design system, the Firebase
+# SDK, GoatCounter's count.js, Tesseract.js) is upgraded by hand: see THIRD-PARTY-NOTICES.md and the quarterly check in
+# docs/legal/security-program.md.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /e2e
+    schedule:
+      interval: weekly
+    groups:
+      e2e:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /cloud/test
+    schedule:
+      interval: weekly
+    groups:
+      rules-tests:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /deploy
+    schedule:
+      interval: weekly
+    groups:
+      deploy:
+        patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /tools/voice
+    schedule:
+      interval: weekly
+    groups:
+      voice-tools:
+        patterns: ["*"]

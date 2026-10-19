@@ -18,6 +18,10 @@ exclude:
   - LICENSE
   - LICENSE-CONTENT.md
   - build.py
+  # The learnvedicmath.com Worker and its deploy tool (openspec change learnvedicmath)
+  - wrangler.jsonc
+  - worker/
+  - deploy/
   - cloud/
   - test/
   - docs/
@@ -25,3 +29,5 @@ exclude:
   - tools/
   - e2e/
   - node_modules/
+  # Saved for learnvedicmath.com (openspec change learnvedicmath); published there, not on sbmadhav.com
+  - thumbs/

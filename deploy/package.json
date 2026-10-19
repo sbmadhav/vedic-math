@@ -1,0 +1,13 @@
+{
+  "name": "learnvedicmath-deploy",
+  "private": true,
+  "description": "Deploys the built site (_site/) to Cloudflare Workers with wrangler (see wrangler.jsonc at the repo root). CI only; the token comes from the environment, never a file.",
+  "scripts": {
+    "deploy": "wrangler deploy --config ../wrangler.jsonc",
+    "check": "wrangler deploy --config ../wrangler.jsonc --dry-run --outdir ../.wrangler/dry-run",
+    "dev": "wrangler dev --config ../wrangler.jsonc"
+  },
+  "devDependencies": {
+    "wrangler": "4.151.2"
+  }
+}
