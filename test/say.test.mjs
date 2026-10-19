@@ -137,7 +137,9 @@ test('aborting the signal stops a playing clip and cancels the idle prefetch', a
 test('after the first tap the other 28 clips are fetched one at a time, and never the tapped one again', async () => {
   const log = stubs(), ctl = new AbortController();
   S.tap(btn('s3'), ctl.signal);
-  await wait(200);
+  // Wait for the queue to finish rather than a fixed 200 ms, which a busy machine can miss; then check it stops at 28
+  for (let i = 0; i < 250 && log.fetched.length < 28; i++) await wait(20);
+  await wait(60);
   assert.equal(log.fetched.length, 28);
   assert.ok(!log.fetched.some(u => /\/s3\.m4a/.test(u)));
   assert.equal(new Set(log.fetched).size, 28);
