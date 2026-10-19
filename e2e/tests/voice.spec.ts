@@ -94,7 +94,7 @@ const NUMBER_IDS = [...Array.from({ length: 100 }, (_, n) => [`n:${n}`, `n:${n}.
 const FRAMES = ['f:plus', 'f:minus', 'f:equals what?', 'f:equals', 'f:How many dots are there?'];
 const PROVIDERS = /texttospeech\.googleapis\.com|api\.elevenlabs\.io|api\.openai\.com|tts\.speech\.microsoft\.com|amazonaws\.com\/.*polly/;
 
-async function fakeStudio(page: Page, { lineStatus = 200, lineDelay = 0, mapDrop = [] as string[] } = {}) {
+async function fakeStudio(page: Page, { lineStatus = 200, lineDelay = 0, indexDelay = 0, mapDrop = [] as string[] } = {}) {
   await page.addInitScript(() => { (window as any).__voiceLog = []; });
   const index = { voice: 'en-US-Chirp3-HD-Aoede', speed: 0.95, base: '/vedic-math/voice/', tag: 'voice-0123456789', sha256: '0'.repeat(64),
     lineSet: 'l/set.test.bin', dir: 'p/dir.test.json', packs: [{ name: 'core', audio: 'p/core.test.m4a', map: 'p/core.test.json', bytes: PACK_M4A.length, clips: 0 }],
@@ -105,6 +105,7 @@ async function fakeStudio(page: Page, { lineStatus = 200, lineDelay = 0, mapDrop
   await page.route('**/vedic-math/js/voice-index.js*', r => r.fulfill({ contentType: 'text/javascript', body: `export const STUDIO = ${JSON.stringify(index)};` }));
   await page.route('**/vedic-math/voice/**', async r => {
     const u = new URL(r.request().url()).pathname.replace('/vedic-math/voice/', '');
+    if (u === 'l/set.test.bin' && indexDelay) await new Promise(res => setTimeout(res, indexDelay));
     if (u === 'l/set.test.bin') return r.fulfill({ contentType: 'application/octet-stream', body: Buffer.from(Uint32Array.from([DOTS_KEY]).buffer) });
     if (u === 'p/dir.test.json') return r.fulfill({ json: Object.fromEntries(ids.map(id => [id, 'core'])) });
     if (u === 'p/core.test.json') return r.fulfill({ json: { rate: 24000, gap: 0.25, clips: Object.fromEntries(ids.filter(id => !mapDrop.includes(id)).map(id => [id, [0.25, 0.4]])) } });
@@ -189,6 +190,22 @@ test.describe('studio voice', () => {
     await page.locator('#practice').getByRole('button', { name: 'Hear it' }).click();
     await expect.poll(() => vlog(page)).toContain('studio:clips');
     expect(await vlog(page)).not.toContain('studio:line');
+  });
+
+  test('a studio index slower than 1 s: the built-in voice says the line, and the next line uses the studio voice', async ({ page }) => {
+    await fakeSpeech(page, [ENHANCED]);
+    const requests = await fakeStudio(page, { indexDelay: 4000 });
+    await open(page, '#/skill/k-count');
+    await expect.poll(() => vlog(page)).toEqual(expect.arrayContaining(['studio:noindex', 'builtin']));
+    expect(await vlog(page)).not.toContain('studio:line');
+    await expect.poll(async () => (await spoken(page)).map(s => s.text)).toContain('How many dots are there?');
+    await expect.poll(() => requests.some(u => u.endsWith('/p/core.test.m4a')), { timeout: 15_000 }).toBe(true); // the index loaded after all
+    await expect.poll(async () => {
+      await page.evaluate(() => { (window as any).__voiceLog.length = 0; });
+      await page.locator('#practice').getByRole('button', { name: 'Hear it' }).click();
+      await page.waitForTimeout(900);
+      return vlog(page);
+    }, { timeout: 15_000 }).toContain('studio:line');
   });
 
   test('choosing the device voice in Me reads the next line with it', async ({ page }) => {

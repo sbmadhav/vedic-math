@@ -488,7 +488,13 @@ const GAP = 0.04, PAUSE = { short: 0.12, long: 0.26 };
    done(true) runs when its last sound ends. */
 async function speakStudio(words, my, done = () => {}) {
   if (!studioOn() || !canAudio()) return false;
-  const sb = await loadStudio(); if (my !== token) return true; if (!sb) return false;
+  /* The index (line set and clip directory) gets 1 s: a stalled fetch hands this line to the built-in voice and keeps
+     loading, so later lines can use the studio voice */
+  let late = false;
+  const sb = await Promise.race([loadStudio(), wait(1000).then(() => { late = true; return null; })]);
+  if (my !== token) return true;
+  if (late) vlog('studio:noindex');
+  if (!sb) return false;
   const hash = lineHash(sb.idx.voice, words);
   if (inLineSet(sb.set, hash)) {
     /* A whole recorded line, if it arrives within 600 ms (a slow network falls through to clips) */
