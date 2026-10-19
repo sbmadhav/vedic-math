@@ -2,7 +2,7 @@
 
 The Sky, the Moving background, celebrations and Mandala art should look richer without slowing play on mid-range phones. We draw them with WebGL 2, in an OffscreenCanvas module worker where the browser supports it, with a canvas 2D fallback on the main thread, and nothing moving under reduced motion, Pause motion or Calm. WebGL is used only for decoration: pictures that carry no information, take no input and can disappear without anything being lost. Every question, answer, Star, Landmark, name, score, timer and control stays HTML, SVG or canvas 2D, and every canvas the engine draws is hidden from assistive technology and takes no pointer input.
 
-Status: proposed 2026-10-17 in the `gpu-effects` change (owner decision M4, accepted).
+Status: proposed 2026-10-17 in the `gpu-effects` change (owner decision M4, accepted). ADR 0013, proposed in the `react-typescript` change, would supersede the "no library" choice and the 20 KB budget; neither change is approved for implementation yet.
 
 ## Considered Options
 

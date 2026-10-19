@@ -1,0 +1,295 @@
+# Design
+
+## Context
+
+- **After the move** (`learnvedicmath`, shipped first): the game is `/play/` on learnvedicmath.com, Cloudflare Workers static assets with `not_found_handling: "404-page"`, hash routes (`/play/#/arena`), the landing and grown-up pages as static HTML from `site/`, `_headers` with a per-page CSP built from inline script hashes, a vendored design system at `/ds/2.1.0/`, the theme at `/theme/`, the Firebase SDK at `/vendor/firebase/<v>/`, `js/analytics.js`, and `sw.js` at `/sw.js` with scope `/play/`, caches `lvm-<VERSION>` plus `lvm-voice`, every precache entry hashed.
+- **The code today** (main, 2026-10-17): 41 modules in `js/` and `js/skills/`, about 10,800 lines with data. `js/app.js` (1,497 lines) holds the route table (25 hash patterns), `mount()`/`teardown()`, every view function, the Sutra, video player and Age dialogs, the World boards section and `parentNote()`. Views write template strings into `#view` with `innerHTML` (69 times in `js/app.js`, 22 in `js/games.js`, 15 in `js/arena.js`, 10 in `js/star.js`). Content modules build HTML strings too: `js/vedic.js` (Trick steps), `js/skills/high.js` and `upper.js` (questions with `<sup>`), `js/viz.js` (SVG pictures), `js/sutra-details.js`, `js/slokas.js`.
+- **Lifecycle:** `js/life.js` (`on`, `later`, `every`, `loop`, `child`, `onAbort`) ties every listener and timer to the view's `AbortSignal`. `test/lifecycle-scan.test.mjs` fails on bare calls in named files, with an allow-list of page-lifetime listeners. PR #47 adds `js/play/life.js` for the Play experiences.
+- **Build:** `build.py` writes an import map pinning every module to `?v=<hash>`, stamps `math.css`, writes the worker's `VERSION` and `PRECACHE`, computes the CSP, and checks the source carries no stamps. The move adds `_headers`, `_redirects`, `THIRD_PARTIES`, the landing pages and the moved target.
+- **Tests:** 33 node test files in `test/` (`node --test`), 30 Playwright specs plus 93 coverage specs in `e2e/tests/cov/`, chromium, webkit and mobile projects, service workers blocked except in `offline.spec.ts`.
+- **Plans after the move** (PR #54 and main): `render-performance` (esbuild per-file minify, `js/views/*.js` split, hash routes kept, "no bundler, no framework, no path routing"), `duel-online` (`worker/` in TypeScript, shared `.js` modules with `// @ts-check`, ADRs 0009 and 0010), `gpu-effects` (a hand-written WebGL 2 engine in an OffscreenCanvas worker, 20 KB budget, "no three.js", ADR 0011), `placement` and `age-bands` (new views and copy).
+- `openspec/config.yaml` and the move's design both still say "no framework, no bundler". This change replaces that rule.
+
+## Goals
+
+- No `innerHTML` XSS class in the game: React renders text as text, and the only way to put markup on screen is one reviewed component.
+- Code that is easier to change: typed logic, small components, one router, cleanup the framework enforces.
+- Faster feature work for the plans that follow.
+- Every step ships alone, the Playwright suite stays green after each, and feature work pauses only for the views being moved.
+- No regression in first load or interaction time compared with today's site, measured in CI.
+- Every old link keeps opening the same screen.
+
+## Non-goals
+
+- Making the game faster (that is `render-performance`); new features; changing stored data or what is sent; moving the landing pages to React; request-time server rendering.
+
+## Decisions
+
+D1 to D13 are the owner's decisions (2026-10-17, all approved; D5 is pending as Q18). B1 to B9 after them are builder choices that follow from them; review can change those without going back to the owner.
+
+### D1. Goal and budget
+
+**Decision.** The goal is safety (no `innerHTML` XSS class), maintainability and speed of building features. Player speed stays its own spec (`render-performance`, re-planned for React). Budget: no regression in first load or interaction time compared with today, measured in CI (performance-budget spec).
+
+**Rationale.** The XSS class is structural: 120 or so `innerHTML` writes, each relying on someone remembering `esc()`. A component model removes the class instead of policing it, and makes the move's stricter Report-Only CSP (`require-trusted-types-for 'script'`) enforceable later. Speed is real but separable; mixing it in would make every migration PR a perf PR, and `render-performance` already has a careful plan that only needs re-basing.
+
+**How "no regression" is measured.** Before phase 1, `docs/perf/baseline.md` records today's numbers on the live post-move site (task 0.4): Lighthouse mobile preset (simulated slow 4G, 4x CPU, 5 runs, median) on `/play/` first visit and repeat visit, `/play/#/arena`, `/play/#/games` and `/play/#/sutras/ekadhikena`; compressed bytes of JS and CSS before the first tap; and interaction timings from a Playwright script (open the Arena, answer one Arena question, open a Sutra's Deep dive, light a Star) measured with the Event Timing API under 4x CPU throttling in chromium. Every migration PR's preview must stay within the tolerances in the performance-budget spec.
+
+**Alternatives rejected.**
+- Make speed a goal of this change: doubles the scope of every PR and duplicates `render-performance`.
+- No budget: a framework migration can quietly add 100 KB; the owner wants it measured.
+- Absolute budgets (FCP under 1.5 s) now: those are `render-performance`'s targets; this change only promises not to go backwards.
+
+### D2. Step by step, not a big-bang rewrite
+
+**Decision.** The router mounts a Legacy view or a React view per route. Each PR moves a few views, and the Playwright suite stays green after every PR. Order: TypeScript for the logic; the app shell (header, router, dialogs); views from simplest to most interactive, with games, Arena, Party Mode and Play last.
+
+**Rationale.** The game is live, used by children, and has open feature work. A strangler migration keeps it shippable every day, makes each PR reviewable, and lets the Playwright suite prove behavior did not change one view at a time. Logic first means views are rewritten against typed, tested modules; shell second means every later PR only adds a route component; the most interactive views go last, when the patterns (rounds, timers, keypads, focus) are settled.
+
+**How a Legacy view runs inside React.** `app/src/shell/LegacyRoute.tsx` renders one `<div>` and, in an effect, sets the legacy module's view root to it, creates an `AbortController`, calls the legacy view function with `{ signal }` exactly as `mount()` does today, and aborts it (calling `destroy()` first if the view returned one) when the route changes or the component unmounts. Legacy code keeps `js/life.js` and its own `innerHTML` until it moves. `location.hash = '#/x'` writes in legacy code keep working through the hash shim (D5), which turns them into router navigations.
+
+**Alternatives rejected.**
+- Big-bang rewrite on a branch: months of drift against content and feature PRs, and one enormous unreviewable merge.
+- Micro-frontends or React islands inside legacy views: two routers, two lifecycles and harder tests, for no gain once the shell is React.
+- Views first, logic later: views would be written against untyped modules and rewritten again.
+
+### D3. Sequencing
+
+**Decision.**
+1. The learnvedicmath.com move ships unchanged.
+2. Next, this migration.
+3. Last, `placement`, `age-bands`, `render-performance` and `gpu-effects`, built in React, and `duel-online` too only if the owner keeps it (Q26).
+
+Content work (videos, voice, verses) continues throughout. Star Quest's mobile layout is redone when its view moves (the owner reports it looks bad on mobile).
+
+**Rationale.** The move is planned, approved and changes every path; doing both at once would double the risk on launch. Building the five later changes in React avoids writing a lot of template-string code that this change would then rewrite (`placement`'s climb, `age-bands`' copy, `duel-online`'s views, `render-performance`'s `js/views/` split, `gpu-effects`' engine). Content is data, not views, so it does not collide with the migration, apart from files that move (B6).
+
+**Alternatives rejected.**
+- Migrate before the move: the move's paths, build and worker would then have to be planned again on top of Vite.
+- Build `render-performance` first, then migrate: its per-file minify, `js/views/` split and import-map model are all replaced by Vite; most of it would be thrown away.
+- Freeze content during the migration: content is the product; it keeps flowing.
+
+### D4. Stack
+
+**Decision.** React 19 with the React Compiler, Vite, TypeScript `strict`, React Router v7 in SPA mode (`ssr: false`), and prerendering of public routes at build time.
+
+**Rationale.** React 19 is the most widely known component model, with the largest pool of examples and reviewers; the React Compiler removes most hand-written memoization, which matters for timers and rounds that re-render often. Vite is the standard React build tool, emits hashed files and a manifest (which D9 needs), and has no `eval` in production output. TypeScript `strict` catches the kind of shape mistakes the logic modules have today (optional fields, mixed number and string ids). React Router v7 in SPA mode gives nested routes, `basename: '/play/'` and build-time `prerender` without a server, which fits static assets on Cloudflare.
+
+**Alternatives rejected.**
+- Preact, Solid, Svelte or Lit: smaller runtimes, but fewer people know them, React Three Fiber (D13) is React only, and the owner chose React.
+- Next.js or React Router with a server: needs request-time rendering or a Node host; the site is static assets by design (ADR 0004).
+- TanStack Router: good types, but React Router v7's SPA-mode prerender is what we need for public pages, and its route model matches today's table.
+- Plain JS with JSDoc (`checkJs`), as ADR 0010 chose for the browser: workable for shared modules, but not for a component codebase; ADR 0012 supersedes that part of ADR 0010.
+
+### D5. URLs: path routes in `/play/` (pending owner, Q18)
+
+**Conflict.** The move keeps hash routes under `/play/` (`/play/#/arena`) with `not_found_handling: "404-page"`, plus a static prerendered landing page and grown-up pages. The owner's answer to Q5 asked for path URLs.
+
+**Recommended reconciliation (pending owner, Q18).**
+- The move ships hash routes as planned. Nothing in `learnvedicmath` changes.
+- This change switches `/play/` to path routes (`/play/arena`, `/play/sutras/ekadhikena`, `/play/game/times-sprint/12`) in phase 2, with an SPA fallback for `/play/*` only. Every other path keeps the move's 404 page.
+- A tiny pre-paint shim turns every `#/...` into its path, forever: an inline script in the `/play/` shell (allowed by its hash in the CSP) runs before anything paints: if `location.hash` starts with `#/`, it calls `history.replaceState` to `/play/<rest>` and keeps the query. It also runs on `hashchange`, so legacy code that sets `location.hash` and old in-page links keep working. Old `/vedic-math/#/...` links arrive through the move's redirects (`/vedic-math/* /play/ 301`, the landing page's `#/` forward) and end in the same shim. Hashes that do not start with `#/` (such as a skip link's `#view`) are left alone.
+- A Playwright test (`e2e/tests/old-routes.spec.ts`) opens every old route form and checks the screen and the final URL.
+- Public Sutra pages are prerendered for search: `/play/sutras/` and one page per Sutra and sub-sutra (`/play/sutras/<id>/index.html`), with real titles, descriptions, canonical links and the Deep dive's text in the HTML.
+
+**SPA fallback for `/play/*` only.** Workers static assets apply `not_found_handling` to the whole site, so the fallback is a `_redirects` rewrite instead: `/play/* /play/index.html 200`, listed after the prerendered files (a file that exists is always served first). The target is the file React Router writes: with `ssr: false` and the root not in the prerender list (the default, Q20), the SPA fallback is `index.html`; if Q20 adds `/play/` to the prerender list, React Router writes `/play/index.html` as the prerendered root and the fallback as `__spa-fallback.html`, and the rewrite and the Worker fallback point there instead. Task 3.4 checks that the target file exists in `_site/play/`. Whether Workers static assets honour a 200 rewrite in `_redirects` is unverified (task 3.4). If they do not, `not_found_handling` becomes `"none"`, so a request that matches no asset goes to the Worker script the move already has; the script answers `/play/*` with the SPA fallback (status 200) and everything else with `/404.html` (status 404), both read from `env.ASSETS`. That costs one Worker request per miss (a deep link that is not prerendered, a typo) and none for files that exist.
+
+**Rationale.** Path URLs are what the owner asked for, they let Sutra pages be prerendered and indexed (a hash is never sent to the server, so `/play/#/sutras/x` cannot have its own HTML), and they read better when shared. Doing it after the move keeps the move's plan intact; the shim makes the change invisible to old links.
+
+**Alternatives rejected.**
+- Keep hash routes for good: no prerendered Sutra pages, and against the owner's Q5 answer.
+- Switch to paths inside the move: re-opens an approved plan and its tests during launch.
+- SPA fallback for the whole site (`not_found_handling: "single-page-application"`): typos on the landing site would answer 200 with the game, and the move's 404 page would go.
+- Redirect hashes on the server: a hash never reaches the server.
+
+### D6. Logic stays framework-free TypeScript
+
+**Decision.** Game, math and storage logic stays framework-free TypeScript modules. Phase 1 converts the logic in `js/*.js` to `.ts` with no behavior change. React reads it through a small `useStore(selector)` hook on `useSyncExternalStore`. No Redux or Zustand.
+
+**Rationale.** The logic is already mostly pure (`skills/*`, `vedic.js`, `check.js`, `answers.js`, `adapt.js`, `levels.js`, `mental.js`, `lib.js`, `sky.js`, `gamify.js`) and well tested; it does not need a framework, and keeping it framework-free lets the Duel server (`workers/`) and Vitest use it directly. `store.js` already owns localStorage; adding `subscribe()` and a version counter is all React needs. `useSyncExternalStore` is React's own primitive for an external store and is safe with concurrent rendering.
+
+**Shape.** `app/src/logic/store.ts` gains `subscribe(listener): () => void` and bumps a version on every write (and on the `storage` event from another tab). `app/src/hooks/useStore.ts`: `useStore(selector, isEqual = Object.is)` caches the last selector result per store version so a selector that builds an object does not re-render forever. Settings that live in `fx.js` today (Mode, Calm, sound, theme, motion) get the same treatment through `app/src/logic/settings.ts`.
+
+**Alternatives rejected.**
+- Redux Toolkit or Zustand: a second state model next to localStorage, more code to learn, nothing the store cannot do.
+- React Context for state: re-renders whole subtrees on every write; fine for the router and theme, not for Sparks ticking during a round.
+- Rewrite the logic as hooks: ties tested pure code to React and breaks sharing with the Worker.
+
+### D7. Styling
+
+**Decision.** Plain CSS with design-system tokens. `math.css` is split into one CSS file per component. No Tailwind, no CSS-in-JS. Both color schemes (Daybreak and Deep Space, system default with a saved override). The design system is v2.1, consumed as the move vendors it (`/ds/2.1.0/tokens.css`, `components.css`, the `learnvedicmath` theme).
+
+**Rationale.** The house rules (tokens only, never raw hex, `var(--on-accent)` on accent fills) already work in plain CSS; a component file next to each component (`Arena.tsx` and `Arena.css`, imported by it) keeps styles findable and lets Vite load a route's CSS with its chunk. CSS-in-JS would need `style-src 'unsafe-inline'` or nonces, against the move's stricter CSP; Tailwind would replace the design system's vocabulary.
+
+**Rules.** Component CSS uses only design-system tokens and the theme's names; a stylelint rule (`color-no-hex`, `declaration-property-value-disallowed-list` for raw colors) fails on hex or `rgb()` in `app/src/**/*.css`. The vendored design system stays a `<link>` in the shell (not bundled), so its pinned files and hashes stay as the move set them. Prerendered markup carries no `style` attributes (they would need `'unsafe-inline'` under the stricter policy); dynamic values go through CSS custom properties set by `element.style.setProperty` in an effect, which CSP allows.
+
+**Alternatives rejected.** Tailwind (a second design vocabulary), CSS Modules with generated names (harder to target from Playwright and to override from the theme; plain BEM-style class names as today), CSS-in-JS (CSP), one big `math.css` kept as is (no per-route loading, no ownership).
+
+### D8. Lifecycle
+
+**Decision.** `js/life.js` retires, replaced by `useEffect` cleanup and a `useAbortSignal()` hook. Legacy views keep `js/life.js` until they are moved. `test/lifecycle-scan.test.mjs` becomes an ESLint rule banning bare `addEventListener`, `setTimeout` and `requestAnimationFrame` in components.
+
+**Rationale.** In React, cleanup belongs to the effect that started the work, and the framework calls it on unmount, route change and Strict Mode re-runs. A signal is still useful for rounds and fetches: `useAbortSignal()` returns a signal aborted on unmount, and `child(signal)`-style nesting for rounds and questions moves to `app/src/hooks/useRound.ts`. A lint rule sees every file, with real syntax, instead of a regex over a list of files.
+
+**Shape.**
+- `app/src/hooks/useAbortSignal.ts`: `useAbortSignal(deps?)` returns an `AbortSignal` aborted when the component unmounts or `deps` change.
+- `app/src/hooks/useTimer.ts`, `useInterval.ts`, `useFrame.ts` (a `requestAnimationFrame` loop that stops when it returns false), `useEvent.ts` (window or document listeners): each takes or creates a signal and is the only sanctioned way to start one.
+- `tools/eslint-rules/no-bare-lifecycle.js`: in `app/src/views/**` and `app/src/components/**`, a call to `addEventListener`, `setTimeout`, `setInterval` or `requestAnimationFrame` fails unless it is inside `app/src/hooks/`. Page-lifetime listeners (the router, the worker registration) live in `app/src/shell/` with a reviewed allow-list, as today's scan has.
+- `test/lifecycle-scan.test.mjs` keeps scanning whatever Legacy views remain and is deleted with the last one (task 9.2).
+
+**Alternatives rejected.** Keep `life.js` inside React (duplicates effect cleanup and confuses who owns a timer); no lint rule (the current spec requires the check); a runtime leak detector only (catches leaks after they ship).
+
+### D9. Service worker
+
+**Decision.** The worker stays hand-written, as `sw.ts`, with today's caching rules as modified by the move. Its precache list comes from Vite's manifest. No Workbox.
+
+**Rationale.** The worker's rules are specific and tested: network first for pages with a 3.5 s fallback, cache first for hashed files, `lvm-voice` kept across deploys, the `'dev'` and `KILL` branches, install failing on a hash mismatch. Workbox would replace a short, readable file with configuration and a runtime, and its precache manifest format differs from ours. Vite's `.vite/manifest.json` lists every emitted file with its hashed name, so the list is exact.
+
+**Shape.** `app/src/sw/sw.ts` is built by a second Vite build (`vite.sw.config.ts`, `build.lib`, one ES module, no chunks) to `_site/sw.js`. A small Vite plugin (`tools/vite-plugin-precache.ts`) reads the app build's manifest after it is written and injects `VERSION` (a hash of the precache list and the worker source) and `PRECACHE` (`[url, sha256 prefix]` for the shell, the SPA fallback, every chunk and CSS file of the entry and the core routes, the vendored design system, theme, fonts, icons and the manifest) between the existing `build.py: precache` markers. In the source those stay `'dev'` and empty. Hashed files (`/play/assets/*-<hash>.*`) are cache first, which replaces the `?v=` rule.
+
+**Alternatives rejected.** Workbox (`vite-plugin-pwa`) (more moving parts, different update semantics, large config); keeping `sw.js` as plain JS (it should be typed like everything else); no worker (offline play is a spec).
+
+### D10. Testing
+
+**Decision.** Playwright stays the behavior contract, unchanged in what it asserts (selectors may change). Vitest replaces `node --test`. React Testing Library only for tricky components.
+
+**Rationale.** The Playwright suite and its 93 coverage specs are the proof that a moved view behaves the same; it must not be weakened to make a migration pass. Vitest runs TypeScript directly, shares Vite's config and is fast; the existing node tests port almost line for line (`node:test` and `assert` map to `describe`, `it`, `expect`, or `assert` through Vitest's `chai` compatibility). Component tests are expensive to keep up; most behavior is better checked end to end.
+
+**Rules.** A migration PR may change a selector, a URL form (Q18) or a wait, never an expectation about what a Player sees or what is stored or sent; its description lists every changed spec line. React Testing Library is for components with logic that is hard to reach end to end (the keypad's input rules, the Markup component, the 3D fallback chooser).
+
+**Alternatives rejected.** Jest (slower with TypeScript and ESM, separate config); rewriting e2e tests per view (loses the contract); component tests for everything (cost without signal).
+
+### D11. Repo layout
+
+**Decision.** One repo with pnpm workspaces: `app/` (React), `workers/` (Cloudflare Workers and the Duel Durable Object) and `shared/` (question generators, scoring and message types, used by both).
+
+**Rationale.** One repo keeps the game, server and their shared types in one commit and one CI run; workspaces give each its own `package.json` and `tsconfig.json` without copying code. `shared/` is exactly what ADR 0009 says must be one source for the app and the Duel server.
+
+**Shape.**
+```text
+pnpm-workspace.yaml        packages: app, workers, shared, e2e, tools
+app/                       Vite + React Router; index.html is the /play/ shell
+  src/shell/               Root, Header, Nav, LegacyRoute, dialogs, hash shim source
+  src/views/<area>/        one folder per area: guide, watch, sutras, me, learn, dojo, tower, home, sky, star, games, arena, duel, play
+  src/components/          shared pieces: Markup, Bolt, Keypad, ResultCard, Crumbs, Board
+  src/logic/               store, settings, fx sound and motion, metrics, cloud, gamify, sky, levels, adapt, check, answers, viz
+  src/hooks/               useStore, useAbortSignal, useTimer, useFrame, useEvent, useRound
+  src/scenes-3d/           React Three Fiber scenes (phase 6)
+  src/sw/sw.ts
+shared/src/                questions (makeSet, seeded random), skills, vedic, mental, lib, names, scoring, messages
+workers/                   the move's worker/csp.js as src/csp.ts; later duel-online's src/duel/
+site/, vendor/, theme/, fonts/, icons/, thumbs/   unchanged from the move, copied by build.py
+e2e/, cloud/               unchanged places
+```
+`js/` shrinks as modules move and is gone at the end. `duel-online` planned `worker/` (singular) and shared `.js` files in `js/`; its revision moves them to `workers/` and `shared/src/*.ts` (task 11.3).
+
+**Alternatives rejected.** Separate repos (shared code by package publishing, drift); a single package (the Worker and the app need different TypeScript targets and libs); npm or Yarn workspaces (pnpm's strict `node_modules` catches undeclared dependencies, and it is fast in CI).
+
+### D12. Feature work during the migration
+
+**Decision.** Feature PRs pause only for the views being moved. Each migration PR names the views it locks.
+
+**Rationale.** A view is either legacy or React at any time; a feature PR against a view mid-move would be written twice. Locking only what is moving keeps everything else open.
+
+**How.** A migration PR's description starts with `Locks:` and the list of views (by route and file). The lock table in this design (Migration plan) and the GLOSSARY term **Locked view** say which views are locked; the PR is merged quickly (target: within 3 working days of opening) to keep locks short. A feature PR that touches a Locked view waits, or is rebased onto the React version after the migration PR merges. Content PRs (`js/videos.js`, `js/slokas.js`, voice files, verses) are never locked; B6 says how they follow moved files.
+
+**Alternatives rejected.** Freeze all features for the migration (months of no product work); no locks (double work and painful merges).
+
+### D13. Three.js for 3D
+
+**Decision.**
+- React Three Fiber plus drei, bundled from our own origin (no CDN, inside the CSP, no `eval`), with tree-shaken `three` imports.
+- 3D loads late, only on routes that use it and after the page is usable. The home Sky first shows the 2D Sky, then fades into 3D.
+- CI size budget: the 3D chunk stays under 200 KB gzip, and first load does not grow.
+- Fallbacks: Calm or reduced motion get a still frame; no WebGL, or a frame rate under 30, gets the 2D canvas or SVG; a hidden tab pauses rendering. Playwright covers each.
+- Three.js replaces the raw-WebGL plan in `gpu-effects`.
+- Order: the Sky, then Sutra deep-dive illustrations, then game effects and Mandala.
+
+**Rationale.** A hand-written engine (the `gpu-effects` plan) is small but is code nobody else knows, and real 3D (depth, camera, lighting) is far more work by hand. React Three Fiber makes a scene a component with the same lifecycle as the rest of the app (it unmounts and disposes with the route), and drei has the pieces the Sky needs (points, instancing, `AdaptiveDpr`, `PerformanceMonitor`). Bundling it ourselves keeps the CSP as it is (`script-src 'self'`) and the files in the worker's precache. Loading it late, behind the 2D Sky, means a Player never waits for 3D.
+
+**Pause motion.** The accessibility spec treats Pause motion like reduced motion, so the still frame applies to Calm, Pause motion and reduced motion alike.
+
+**How `gpu-effects` must be revised** (task 11.4): drop `js/gfx/` (`gfx.js`, `gl.js`, the hand-written shaders and the two-renderer scene format) for `app/src/scenes-3d/`; replace the 20 KB decoration budget with this change's 200 KB 3D budget (scenes-3d spec) and "never in first load"; replace ADR 0011's "no library" with ADR 0013 (ADR 0011's other rule stays: 3D is decoration only, never interface); decide whether rendering moves off the main thread (R3F renders on the main thread by default; `@react-three/offscreen` is experimental; Q22); move its Sky backdrop requirement here (the Sky ships in this change's phase 6) and keep Sutra deep-dive illustrations, celebrations, the Moving background and Mandala glow in `gpu-effects`; keep its tests (still frame, context loss, hidden tab, token colors, no flashes) as scenes-3d scenarios.
+
+**Alternatives rejected.** The hand-written WebGL 2 engine (more code to own, no 3D); PixiJS (2D only); Babylon.js (larger, not React-first); loading three from a CDN (new CSP origin, third-party request on a children's site, not precached); 3D in the first load (the budget forbids it).
+
+### B1. Markup from content stays behind one component
+
+Generators and content modules return HTML strings (`<sup>` in questions, `<b>` in Trick steps, SVG from `js/viz.js`). Converting them to typed node trees is a large content change, so phase 1 keeps them as strings, and React renders them only through `app/src/components/Markup.tsx`: it parses the string with `DOMParser` (inert, no scripts run), walks it against an allow-list (the same list `duel-online` planned for `safe-html.js`: `b`, `i`, `sup`, `sub`, `span`, `br`, `small`, `em`, `strong`, and the SVG elements `svg`, `g`, `circle`, `rect`, `line`, `path`, `text`, `tspan`, `polygon`, `polyline` with geometry, `viewBox`, `class` and `aria-*` attributes only), and builds React elements. Nothing is assigned to `innerHTML` and `dangerouslySetInnerHTML` is banned by lint everywhere (`react/no-danger` as an error, no exceptions). The allow-list is in `shared/src/markup.ts`, so the Duel client uses the same one. Whether generators later move to typed nodes is Q19.
+
+### B2. Build: Vite builds the game, `build.py` keeps the site steps
+
+`build.py` stays the single command CI runs (`python3 build.py --out _site`). It runs `pnpm --filter app build` (Vite to `_site/play/`, base `/play/`) and the worker build, then does what the move added: renders `site/`, copies `vendor/`, `theme/`, `fonts/`, `icons/`, `thumbs/`, writes `_headers` (CSP hashes now read from the built HTML, including React Router's inline hydration script on prerendered pages), `_redirects`, `robots.txt`, `sitemap.xml` (gains the prerendered Sutra pages), and runs its checks. The import map, `?v=` stamping and the "source carries stamps" check go: Vite's hashed file names replace them (`/play/assets/<name>-<hash>.js`). The build's import check becomes ESLint's `no-restricted-imports` plus a post-build check that no emitted file references a host outside `THIRD_PARTIES`. `build.py --dev` runs `vite build --mode development`; local work uses `pnpm --filter app dev` (Vite dev server with a proxy for the move's `wrangler dev`).
+
+### B3. Legacy views stay as plain JS until they move
+
+Legacy views are not converted to TypeScript; they move straight to React components. During phases 1 to 4, `app/` sets `allowJs` for `js/` so legacy files import the new `.ts` logic through Vite. The lifecycle scan keeps covering them.
+
+### B4. Analytics route names stay the same
+
+`metrics.routePath()` reads the router's matched route id and params instead of `location.hash`, and produces the same event names (`math/view/arena`, `math/view/game/<id>/level`, `math/view/star/<trick>/star`, `math/view/pick-mode`, `math/view/sky`), so dashboards continue across the switch.
+
+### B5. TypeScript settings
+
+All workspaces use `strict`, `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes` (ADR 0010's flags), `verbatimModuleSyntax`, `moduleResolution: "bundler"`. `shared/` has no DOM lib, so nothing in it can touch the page.
+
+### B6. Content files that move
+
+Data modules with active content branches (`js/videos.js`, `js/slokas.js`, `js/sutra-details.js`) and generated files (`js/say-clips.js`, `js/voice-index.js`, written by tools) are converted last in phase 1, in a PR announced on the content branches first. Generated files become `.ts` written by their tools (the tools change in the same PR). A content PR open at that moment is rebased with a rename only.
+
+### B7. Prerendered pages hydrate without side effects
+
+Prerendered Sutra pages hydrate into the full app. Start-up that writes storage, counts a visit, starts sound or registers the worker runs after hydration in an effect, once, the same as today's start-up order, so a crawler's render writes nothing (it has no storage anyway) and a Player's first paint is the prerendered page.
+
+### B8. Header
+
+The game's header becomes `app/src/shell/Header.tsx`, written to produce the same markup as the move's `theme/header.html` partial (the landing pages keep the partial). `e2e/tests/header.spec.ts` checks both match (same items, order and sticky behavior), so they cannot drift.
+
+### B9. Strict Mode and the Compiler
+
+The app runs under `<StrictMode>` in development, so effects that do not clean up show up as double timers in tests. The React Compiler runs through `babel-plugin-react-compiler` in Vite; `eslint-plugin-react-hooks` (with the compiler rules) is an error in CI.
+
+## Risks and mitigations
+
+- **Bytes in first load.** React and React DOM add about 60 KB gzip. Today's `/play/` loads every module of the static graph unminified (about 700 KB raw; the same graph minified and bundled is about 140 KB Brotli, measured for `render-performance`), so Vite's minification and per-route chunks should more than pay for it. Mitigation: the byte gate runs from the first PR (performance-budget spec); phase 1 PR 1 measures it before any view moves.
+- **Interaction time in rounds.** A re-render on every keypad tap or clock tick could cost more than today's direct DOM writes. Mitigation: the React Compiler, clocks drawn with `useFrame` into a ref (no state per frame), the interaction timing gate, and Arena, games and Play moving last when the patterns are known.
+- **Two systems during the migration.** Legacy and React views share the store and settings. Mitigation: the store's `subscribe()` notifies both; the LegacyRoute adapter is the only bridge; legacy code never imports React.
+- **Hash shim misses a form.** Mitigation: `old-routes.spec.ts` lists every form (D5) and runs on every PR and daily against production.
+- **SPA fallback on Workers static assets is unverified.** Mitigation: task 3.4 tries the `_redirects` rewrite on a preview; the Worker-script fallback is ready.
+- **CSP and prerendering.** React Router inlines a hydration script in prerendered HTML. Mitigation: `build.py` hashes every inline script in every built page (it already does this for the import map); `csp.spec.ts` runs on prerendered pages.
+- **Three.js size.** React Three Fiber's default catalogue imports all of `three`; full `three` is about 170 KB gzip, so R3F plus drei could pass 200 KB. Mitigation: task 10.1 is a measured spike with a go or no-go before any scene work; `extend()` with only the classes used; import drei pieces by path. If it cannot fit, the owner decides (raise the budget or drop drei).
+- **drei helpers that fetch from CDNs** (`Environment` presets, default fonts for `Text`). Mitigation: ESLint `no-restricted-imports` for those helpers; the CSP blocks them anyway; `third-party.spec.ts` covers 3D routes.
+- **Merge pain with feature and content branches.** Mitigation: D12 locks, short-lived migration PRs, B6 for content files, and phase 1 PRs that rename and convert in separate commits so `git` follows renames.
+- **The Playwright suite drifting to fit the code.** Mitigation: D10's rule that a migration PR changes selectors and URL forms only, listed in the PR description and checked in review.
+- **Learning curve.** Mitigation: `CLAUDE.md` gains the component, hook and CSS rules; the first moved views (Guide, Watch) are the examples later PRs copy.
+
+## Migration plan
+
+Phases, with rough PR counts. Every PR ships alone, keeps the Playwright suite green on its preview (chromium, webkit, mobile) and the performance gates within budget, and can be reverted alone.
+
+| Phase | What | PRs | Locks |
+|---|---|---|---|
+| 0 | Before building: the move archived, baseline measured, ADRs and docs | 1 (docs) | none |
+| 1 | Tooling and TypeScript logic: workspaces, Vite builds today's app unchanged, Vitest, `sw.ts`; then `shared/` and `app/src/logic/` in TypeScript | 3 | none (logic only; views untouched) |
+| 2 | The app shell: React root, React Router with LegacyRoute for every route, path routes, hash shim, SPA fallback; then header, nav, chip, Mode picker, the video player, Age and Player dialogs, ESLint lifecycle rule | 2 | header, nav, dialogs (`js/app.js` router, `chip()`, `modePicker`, `playerDlg`, `ageDlg`) |
+| 3 | Views, simplest first: Guide and Tour; Watch; Sutras with Deep dive and verses (prerendered); Me; Learn, grade, All places, tiles; Skill lesson and Practice; Mix and Run; Dojo and Katas; Tower and challenges; Home and the Sky; the Star round (Star Quest mobile layout) | about 11 | each PR its own views |
+| 4 | The most interactive: games (2 PRs), Arena and Boards, Party Mode (`#/duel` now redirects to it; the same-screen Duel is retired), Play experiences (2 or 3 PRs) | about 6 | each PR its own views |
+| 5 | Retire legacy: delete `js/life.js`, LegacyRoute, the lifecycle scan, `math.css` remnants, `js/` | 1 | none |
+| 6 | 3D: measured spike, then the Sky scene with its fallbacks | 2 | Home and the Sky |
+| 7 | Re-plan the follow-on changes for React (docs only; can start after phase 2) | 1 or 2 | none |
+
+About 27 to 30 PRs in all: 2 to 3 for TypeScript logic, 2 for the shell, about 17 for views (Play and Party Mode last), and the rest for setup, retirement, 3D and plans.
+
+Rollback: any PR is a revert. A route that moved to React can go back to its Legacy view by pointing its route entry at `LegacyRoute` again until phase 5 deletes the legacy code. The hash shim is never removed.
+
+## Open questions
+
+- **Q18 (pending owner).** Path URLs in `/play/` with the hash shim forever, as recommended in D5, or keep hash routes. This plan assumes paths from phase 2.
+- **Q19.** Generators keep returning HTML strings rendered through `Markup` (B1, default), or move to typed nodes in a later change. Default: strings now, decide after phase 5.
+- **Q20.** Which `/play/` routes are prerendered besides the Sutra pages. Default: `/play/sutras/` and each Sutra and sub-sutra only. Candidates: `/play/guide`, `/play/watch`, the first-visit Mode picker at `/play/` (`render-performance` D7 wants it).
+- **Q21.** The 3D chunk budget is 200 KB gzip while `render-performance` measures Brotli. Default: the 3D gate measures gzip (as the owner set), the other gates Brotli; both are printed.
+- **Q22.** Main thread or worker for 3D: ADR 0011 and `gpu-effects` chose an OffscreenCanvas worker; React Three Fiber renders on the main thread. Default: main thread, with the frame-rate fallback, since the Sky is never on screen during a round; revisit in `gpu-effects`.
+- **Q23.** Does the Sky's 3D scene ship in this change (phase 6, default) or in the revised `gpu-effects`?
+- **Q24.** Star Quest mobile layout: who signs off the new design? Default: the owner reviews phone screenshots on the PR before merge.
+- **Q25.** The "frame rate under 30" fallback: measured how long? Default: the median frame time over the first 2 seconds after the fade starts, and again whenever drei's `PerformanceMonitor` reports a decline; once on 2D, the page stays on 2D until reload.
+- **Q26 (open, owner).** Since this plan was written, `main` retired the Duel: the same-screen Duel became Party Mode, the `duel` spec was removed (archived `play-experiences`), and `GLOSSARY.md` lists Duel as retired. `duel-online` (PR #54, not merged) would bring the Duel back as an online game next to Party Mode; this plan names it as a follow-on (D3, D11, task 11.3) and reserves `workers/` and `shared/` for its server. Whether `duel-online` goes ahead, in what form, and what the word Duel then means is not decided here. The workspace layout does not depend on the answer; task 11.3 waits for it.

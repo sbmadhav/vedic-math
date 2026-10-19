@@ -2,7 +2,7 @@
 
 The site now has server code: the CSP report endpoint (ADR 0004) and the online Duel service (ADR 0009), with more likely later (a small backend-for-frontend, checkout webhooks once a paid plan exists). We write it in TypeScript on Cloudflare Workers with strict type checking (`strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`), in one small `worker/` project, tested inside the Workers runtime (`@cloudflare/vitest-pool-workers`). The modules shared with the browser stay plain JS with `// @ts-check` and JSDoc types, and the Worker's type check covers them, so the app keeps its no-build, no-framework modules while the server gets full types. Rust is used later only for one isolated, CPU-heavy module compiled to WASM, and only when a measurement shows TypeScript is too slow for it.
 
-Status: proposed 2026-10-17 in the `duel-online` change (owner decision M3, accepted).
+Status: proposed 2026-10-17 in the `duel-online` change (owner decision M3, accepted). ADR 0012, proposed in the `react-typescript` change, would supersede the rejected option "TypeScript in the browser app too"; neither change is approved for implementation yet.
 
 ## Considered Options
 
