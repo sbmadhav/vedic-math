@@ -52,13 +52,13 @@ test('the month carries across runs; each run starts its own run total', () => {
 });
 
 test('requests are paced, also when several workers ask at once', async () => {
-  /* Each pace() reads the clock twice: for its wait, then to mark when the request left. The marks are what must be
-     10 ms apart (a timer may fire up to 1 ms early); timing the callbacks instead would measure the test's own delays. */
-  const reads = [], g = makeGuard({ ledger: join(dir, 'd.json'), perMin: 6000, now: () => { const t = performance.now(); reads.push(t); return t; } });
-  await Promise.all([1, 2, 3].map(() => g.pace()));
-  const left = reads.filter((_, i) => i % 2 === 1);
+  /* The mark of when a request left is the last clock read before its pace() settles. The marks must be at least the
+     full 10 ms apart, even when a timer fires early (pace() then waits again). */
+  let last = 0; const left = [];
+  const g = makeGuard({ ledger: join(dir, 'd.json'), perMin: 6000, now: () => (last = performance.now()) });
+  await Promise.all([1, 2, 3].map(() => g.pace().then(() => left.push(last))));
   assert.equal(left.length, 3);
-  for (let i = 1; i < left.length; i++) assert.ok(left[i] - left[i - 1] >= 8.5, `gap ${left[i] - left[i - 1]} ms`);
+  for (let i = 1; i < left.length; i++) assert.ok(left[i] - left[i - 1] >= 10, `gap ${left[i] - left[i - 1]} ms`);
 });
 
 test('the default caps are the owner\'s: $300 a month, $50 a run', () => {
