@@ -138,6 +138,15 @@ test('the footer says progress stays in this browser', async ({ page }) => {
   await expect(page.locator('footer.mq-foot')).not.toContainText(/traditional|Vedas/i);
 });
 
+/* Daily quests are drawn per local date (js/gamify.js pickQuests), and Finish an Arena round is one of
+   Challenger's three on some days: finishing the round then completes it, for 25 bonus Sparks, and the weekly
+   Sparks total follows the Arena posts. Arena tests that count every write run on a fixed date, at local
+   noon, so the result does not depend on the day the suite runs. */
+const NO_ARENA_QUEST = new Date(2026, 9, 18, 12); // Challenger's quests: Get 10 right, Watch a speed trick, Finish an Endless run
+const ARENA_QUEST = new Date(2026, 9, 19, 12); // Challenger's quests: Get 10 right, Finish an Endless run, Finish an Arena round
+const questIds = (page: import('@playwright/test').Page) => page.evaluate(async () =>
+  (await import('/vedic-math/js/gamify.js' as string)).pickQuests(undefined, 'challenger').map((q: { id: string }) => q.id) as string[]);
+
 test.describe('a Player who may post (a grown-up)', () => {
 test.use({ seedConsent: { age: 'adult' } });
 
@@ -188,9 +197,10 @@ test('opening a leaderboard reads without loading Auth or signing in', async ({ 
 
 test('an Arena Daily challenge sends its score to today\'s and this week\'s Arena boards', async ({ page }, testInfo) => {
   chromiumOnly(testInfo, 'app logic, the same in every engine');
-  await page.clock.install();
+  await page.clock.install({ time: NO_ARENA_QUEST });
   await open(page, '#/arena');
   const { day, wk } = await ids(page);
+  expect(await questIds(page)).not.toContain('arena-1');
   // The daily round is seeded, so the first question's answer comes from the app's own module
   const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
   await page.locator('#arGo').click();
@@ -211,6 +221,36 @@ test('an Arena Daily challenge sends its score to today\'s and this week\'s Aren
   // The round earned 2 Sparks, under the weekly Sparks board's minimum of 10: nothing else is sent
   await page.clock.runFor(70_000);
   expect(await writes(page)).toHaveLength(2);
+});
+
+test('on a day with the Arena quest, the round\'s quest Sparks follow the Arena posts to the weekly Sparks board, under the same identity', async ({ page }, testInfo) => {
+  chromiumOnly(testInfo, 'app logic, the same in every engine');
+  await page.clock.install({ time: ARENA_QUEST });
+  await open(page, '#/arena');
+  const { day, wk } = await ids(page);
+  expect(await questIds(page)).toContain('arena-1');
+  const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
+  await page.locator('#arGo').click();
+  await page.clock.runFor(2_500); // 3, 2, 1
+  await typeAnswer(page, String(answer));
+  await page.locator('#arForm button').click();
+  await expect(page.locator('#arScore')).toHaveText('10');
+  await page.clock.runFor(61_000); // the 60 second round ends and completes Finish an Arena round
+  await expect(page.locator('.ar-result')).toBeVisible();
+  // The two Arena posts, then 2 Sparks for the round plus 25 for the quest: this week's Sparks total, once
+  await page.clock.runFor(3_500);
+  await expect.poll(async () => (await writes(page)).length).toBe(3);
+  await page.clock.runFor(70_000);
+  const w = await writes(page);
+  expect(w).toHaveLength(3);
+  expect(w.map(x => x.path).sort()).toEqual([`boards/daily-${day}-challenger/scores/${UID}`, `boards/week-${wk}-challenger/scores/${UID}`, `boards/xp-week-${wk}-challenger/scores/${UID}`]);
+  expect(w[2].path).toBe(`boards/xp-week-${wk}-challenger/scores/${UID}`); // after both Arena posts
+  for (const x of w) {
+    expect(Object.keys(x.data).sort()).toEqual(ENTRY_KEYS);
+    expect(x.data).toMatchObject({ name: 'Swift Tiger 42', avatar: 'teal' });
+  }
+  expect(w.find(x => x.path.includes('/xp-week-'))!.data.score).toBe(27);
+  expect((await cloudLog(page)).signIns).toBe(1);
 });
 
 test('a finished Ranked game round sends its score to that game\'s today and this week boards', async ({ page }, testInfo) => {
@@ -320,9 +360,10 @@ test.describe('two Players on one device', () => {
     chromiumOnly(testInfo, 'app logic, the same in every engine');
     test.slow(); // two full 60 second rounds on the fake clock take about 20 seconds each
     await seedSecondPlayer(page);
-    await page.clock.install();
+    await page.clock.install({ time: NO_ARENA_QUEST }); // no quest Sparks: each round sends its two Arena posts only
     await open(page, '#/arena');
     const { day, wk } = await boardIds(page);
+    expect(await questIds(page)).not.toContain('arena-1');
     const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
     const play = async () => {
       await page.locator('#arGo').click();
