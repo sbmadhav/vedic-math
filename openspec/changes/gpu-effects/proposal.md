@@ -1,5 +1,9 @@
 # Proposal
 
+Status: plan only, not yet approved for implementation. The owner decisions it cites answer design questions; they do not approve this change, and merging this plan is not that approval.
+
+Since this plan was written, the `react-typescript` change (also a plan, not yet approved) proposes moving the game to React and TypeScript first and re-planning this change for React before it is built (its task group 11 and open questions). This text is not revised for that yet; which plan goes first is the owner's call.
+
 ## Why
 
 The app's decoration is drawn on the main thread today: the moving background (`js/ambient.js`) paints a full-screen 2D canvas up to 30 times a second, confetti (`fx.confetti`) and Star bursts (`js/star.js`) are 2D canvases with hundreds of shapes, and the Sky twinkles with SVG opacity animations. On a mid Android phone that work competes with taps and timers during play. The owner wants the Sky, celebrations and Mandala art to feel richer without making the app slower, and decided (2026-10-17, M4, accepted):

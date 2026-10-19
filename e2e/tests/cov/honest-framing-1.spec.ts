@@ -11,7 +11,7 @@ const CREDIT = "Speed tricks use sutras from Bharati Krishna Tirtha's 1965 book"
 
 const PAGES = [
   '#/', '#/learn', '#/dojo', '#/arena', '#/games', '#/sutras', '#/watch', '#/me',
-  '#/tower', '#/katas/sq5', '#/skill/v-sq5', '#/game/balloons', '#/duel',
+  '#/tower', '#/katas/sq5', '#/skill/v-sq5', '#/game/balloons', '#/arena/party',
 ];
 
 async function expectCredit(page) {

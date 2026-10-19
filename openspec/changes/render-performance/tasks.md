@@ -4,7 +4,8 @@ Build order (owner M6): this change first after the learnvedicmath.com move, the
 
 ## 0. Before building
 
-- [ ] 0.1 Confirm the `learnvedicmath` change and PR #47 (`play-experiences`) are merged and archived, and rebase this change onto `main`. Update paths in `design.md` for anything they renamed.
+- [ ] 0.0 **[OWNER]** Approve this change for implementation (merging the plan is not approval), and decide its order against `react-typescript`.
+- [ ] 0.1 Confirm the `learnvedicmath` change and PR #47 (`play-experiences`) are merged and archived, and merge `main` into this change. Update paths in `design.md` for anything they renamed.
 - [ ] 0.2 Verify: `openspec validate render-performance --strict` reports no "Archive would refuse" notice (the `offline-app` and `play-experiences` MODIFIED deltas now have their base specs). If the base requirement text changed, copy the new text into the deltas before editing.
 - [ ] 0.3 **[OWNER]** Answer the open questions in `design.md` (moving background on low-memory devices, which check gates, real device). Fold a different answer in with `/opsx:update`.
 

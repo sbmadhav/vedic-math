@@ -357,3 +357,4 @@ Build behind the off switch (`DUEL_OPEN = "0"` in production) and an app flag th
 6. Launch waits for the lawyer's note on under-13 Friend Duels and Turnstile: default yes.
 7. `#/duel` and the Sky Landmark open the Online Duel; Party Mode stays on the Arena shelf: default yes.
 8. Report review: a weekly digest through an Access-protected admin read: default yes.
+9. The word Duel: `main` retired it with the same-screen game (`GLOSSARY.md`: Party Mode, "Avoid: Duel (retired)"), and there is no `duel` spec any more. This change brings the word back for the online game. Open for the owner: keep Duel for the online game, or pick a new name. No default is assumed here; the glossary marks both entries as pending.

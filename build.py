@@ -91,7 +91,10 @@ def publishable(out):
 # ---------- Content-Security-Policy ----------
 # Every origin the page itself loads from (openspec/specs/content-security). Workers started from a
 # URL get their own policy from their response, not this one, so the natural voice worker's
-# jsDelivr library and Hugging Face model downloads need nothing here.
+# jsDelivr library and Hugging Face model downloads need nothing here. 'wasm-unsafe-eval' is for the
+# Math Lens digit reader (vendor/tesseract/, served from this site), which compiles a WebAssembly
+# core in the worker it starts, so it runs whatever policy a browser gives that worker (owner
+# decision P1 in openspec/changes/play-experiences). It allows no eval() of strings.
 GOATCOUNTER = "https://sbmadhav.goatcounter.com"   # beacons from /assets/count.js (sendBeacon, <img> fallback)
 YOUTUBE = "https://www.youtube-nocookie.com"       # Watch shelf and Star round player (js/watch.js)
 YT_THUMBS = "https://i.ytimg.com"                  # Watch shelf thumbnails
@@ -136,7 +139,7 @@ def csp(html):
     join = lambda *parts: " ".join(x for part in parts for x in part)
     return "; ".join([
         "default-src 'self'",
-        "script-src " + join(["'self'"], dict.fromkeys(hashes), fb.get("script", [])),
+        "script-src " + join(["'self'", "'wasm-unsafe-eval'"], dict.fromkeys(hashes), fb.get("script", [])),
         # A critical <style> block, and style="" in markup the views build
         "style-src 'self' 'unsafe-inline'",
         "img-src " + join(["'self'", "data:", YT_THUMBS, GOATCOUNTER]),
@@ -169,7 +172,7 @@ def add_csp(html):
 def check_source(html, sw):
     if CSP_META.search(html):
         fail("index.html carries a Content-Security-Policy <meta>; the source must not (the build adds it)")
-    if 'type="importmap"' in html or MAP_START in html:
+    if 'type="importmap"' in html or MAP_START in html or 'id="vm-css"' in html:
         fail("index.html carries an import map; the source must not (the build adds it)")
     for url in [BASE + "js/app.js", BASE + "math.css", *SHARED]:
         if re.search(r'(?:src|href)="' + re.escape(url) + r'\?v=', html):
@@ -217,7 +220,10 @@ def main():
 
     # ---------- index.html: import map and stamps ----------
     imports = {u: f"{u}?v={v}" for u, v in versions.items()}
-    map_block = MAP_START + '\n<script type="importmap">\n' + json.dumps({"imports": imports}, indent=1) + "\n</script>\n" + MAP_END + "\n"
+    # Stylesheets the play experiences load on demand (css/play/*.css): js/app.js reads their hashes from #vm-css
+    play_css = {BASE + f: fhash(f) for f in files if f.startswith("css/") and f.endswith(".css")}
+    map_block = (MAP_START + '\n<script type="importmap">\n' + json.dumps({"imports": imports}, indent=1) + "\n</script>\n"
+                 + '<script type="application/json" id="vm-css">' + json.dumps(play_css) + "</script>\n" + MAP_END + "\n")
     entry = re.search(r'<script type="module" src="/vedic-math/js/app\.js"></script>', html)
     if not entry:
         fail("index.html: module entry script not found")
@@ -235,6 +241,7 @@ def main():
     # ---------- sw.js: precache list and VERSION ----------
     own_files = {BASE: "index.html", f"{BASE}math.css?v={own[BASE + 'math.css']}": "math.css", BASE + "manifest.webmanifest": "manifest.webmanifest"}
     own_files.update({imports[BASE + p]: p for p in js})
+    own_files.update({f"{u}?v={v}": u[len(BASE):] for u, v in play_css.items()})
     refs = set(re.findall(r'(?:src|href)="(/[^"]*)"', html)) | set(re.findall(r'url\((/[^)]+)\)', html))
     manifest = json.loads(src("manifest.webmanifest"))
     refs |= {posixpath.join(BASE, i["src"]) for i in manifest.get("icons", [])}

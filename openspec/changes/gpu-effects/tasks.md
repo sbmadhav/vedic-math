@@ -4,7 +4,8 @@ Last of the three changes after the learnvedicmath.com move (owner M6), after `r
 
 ## 0. Before building
 
-- [ ] 0.1 Confirm `render-performance` (budgets, `life.observe`, `life.idle`, the paused Sky and background) and PR #47 (Mandala Studio) are archived; rebase onto `main`.
+- [ ] 0.0 **[OWNER]** Approve this change for implementation (merging the plan is not approval), and decide its order against `react-typescript`.
+- [ ] 0.1 Confirm `render-performance` (budgets, `life.observe`, `life.idle`, the paused Sky and background) and PR #47 (Mandala Studio) are archived; merge `main` in.
 - [ ] 0.2 **[OWNER]** Answer the open questions in `design.md` (wallpaper source, twinkle layers replaced, Glow off by default).
 - [ ] 0.3 Record a trace of the Sky, a confetti burst and the Moving background on the mid Android phone used for `docs/perf/baseline.md` (main-thread time per second for each). Verify: the numbers are in `docs/perf/baseline.md` under "Before gpu-effects".
 

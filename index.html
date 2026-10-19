@@ -31,12 +31,13 @@
     <nav class="mq-nav" aria-label="Vedic Math">
       <a href="#/" data-match="^#?/?$">Home</a>
       <a href="#/learn" data-match="^#/(learn|grade|skill|mix)">Learn</a>
-      <a href="#/dojo" class="hide-explorer" data-match="^#/(dojo|tricks)$">Dojo</a>
-      <a href="#/arena" data-match="^#/(arena|duel)$">Arena</a>
+      <a href="#/dojo" class="hide-explorer" data-match="^#/(dojo|tricks)(/|$)">Dojo</a>
+      <a href="#/arena" data-match="^#/(arena|duel)(/|$)">Arena</a>
       <a href="#/games" data-match="^#/games?">Games</a>
-      <a href="#/sutras" class="hide-explorer">Sutras</a>
+      <a href="#/sutras" class="hide-explorer" data-match="^#/sutras(/|$)">Sutras</a>
       <a href="#/watch">Watch</a>
       <a href="#/guide" data-match="^#/guide">Guide</a>
+      <a href="#/find" class="nav-find" data-match="^#/find"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Find</a>
     </nav>
     <button class="xp-btn" id="exploreBtn" aria-label="Explore all pages"><svg class="xp-dots" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7l6 4 6-5M12 11l-3 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".55"/><circle cx="6" cy="7" r="2.4" fill="var(--coral)"/><circle cx="12" cy="11" r="2.4" fill="var(--sun)" stroke="currentColor" stroke-width="1.2"/><circle cx="18" cy="6" r="2.4" fill="var(--teal)"/><circle cx="9" cy="18" r="2.4" fill="var(--sky)"/></svg><span class="xp-lbl"><span class="pro">Explore</span><span class="kid">Star map</span></span></button>
     <button type="button" class="theme" id="themeBtn" aria-label="Switch color scheme" title="Switch color scheme">

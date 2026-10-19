@@ -51,6 +51,10 @@ _Avoid_: shortcut, hack, strategy
 One of the short named rules from Bharati Krishna Tirtha's 1965 book. Tricks are grouped under the Sutra they come from.
 _Avoid_: formula, verse, Vedic sutra (never "from the Vedas")
 
+**Verse** (śloka):
+A genuine Sanskrit verse, prose rule (sūtra) or Vedic mantra about mathematics from an older text, shown in Mathematics in Sanskrit verse at the end of the Sutras page (`js/slokas.js`). Verses are not the source of the Sutras; the only verse in the 1965 book (gopī bhāgya, π/10) is the Swami's own.
+_Avoid_: calling a Sutra a verse; "ancient" without a date
+
 **Deep dive**:
 The dialog that opens from a Sutra card's Learn more (route `#/sutras/<id>`): the plain explanation, an animated diagram, why it works, Worked examples, where it is used and further reading. Its close button and the footer to the previous and next Sutra stay pinned while it scrolls.
 _Avoid_: modal, popup, detail page
@@ -80,7 +84,7 @@ A fixed practice problem for one Trick, numbered from easy to hard. Stars draw t
 _Avoid_: drill, exercise
 
 **Belt**:
-A rank, white to black, earned by lighting every Star of its three Tricks. The Sky's suggested path follows Belt order.
+A rank, white to black, earned by lighting every Star of its three Tricks. The Sky's suggested path follows Belt order. Belts and Stars come with Challenger and Pro: Explorer's Dojo shows the Tricks grouped by belt, with no Star counts or belt progress, and the Me page lists a belt badge to Explorer only once it is earned.
 _Avoid_: level, rank, grade
 
 **Rating**:
@@ -118,6 +122,22 @@ _Avoid_: mascot, buddy, pet, avatar
 **Magic moment**:
 A Trick learned and then used correctly in a timed round. The thing the product exists to produce.
 _Avoid_: aha, win
+
+**Try a trick**:
+The one primary button on the landing (the mode picker). It sets Challenger as a Mode guess and opens the first Star of Bolt's path, so a curious visitor answers a question in two taps with no choice to make. (`first-visit-clarity` change.)
+_Avoid_: demo, trial mode, guest mode
+
+**Mode guess**:
+A Mode set by Try a trick rather than picked (`modeGuess` on the Player record). Home names it ("our guess for a first try") beside Change, and any pick on the landing's cards or on Me clears it. Kept on the device only.
+_Avoid_: default mode, auto mode
+
+**Door**:
+One of the three cards at the top of Challenger and Pro Home (Challenger: the next Star, the Arena, the Skill map; Pro: the Arena, the Dojo, the Skill map), each with one plain line that says what its word means. The other tiles wait under **More ways to play**.
+_Avoid_: tile (that is what is under More ways to play), hero, CTA
+
+**Find**:
+The page at `#/find` (menu bar, after Guide; the `/` key) with one box over every named thing: sections, grades, Skills, Tricks, Sutras, games, play experiences, guide sections and videos, by name or a plain word. Built in the page from the catalogs (`js/find.js`); nothing typed is stored or sent. Its browse list gives each section's one-line description, the same line the menu shows as a tooltip.
+_Avoid_: search engine, site search, lookup
 
 **Watch shelf**:
 The checked list of videos, Shorts and (for Pro) Links in `js/videos.js`, shown on the Watch page and in each Skill or Trick's "Watch it explained". Every video plays in the page.
@@ -169,8 +189,16 @@ _Avoid_: training, free play, unranked
 An Endless run: questions until three lives are lost, scored by how far the Player gets. A kind of Practice.
 _Avoid_: first run, streak
 
+**Party Mode**:
+Two to four Players on one screen, each answering questions at their own Mode, over a set of rounds that ends on a podium. It replaced the Duel; `#/duel` opens it.
+_Avoid_: Duel (retired for the same-screen game; `duel-online` proposes it for the online game), versus, battle, multiplayer
+
+**Play experience**:
+One of the twelve pages where math is the way you play (Sutra Spellbook, Tala Lab, Daily Number and the rest), each inside a section: Dojo, Arena, Games or Sutras. A section lists its play experiences on its **Shelf**. Defined in `js/play/catalog.js`.
+_Avoid_: mini-game, playground, Vedic Play
+
 **Duel**:
-Two Players on two devices racing the same question online at the same time. The server decides who answered right first, and the first to 10 points wins. Played with a friend (Friend Duel) or, for Players 13 and over, with someone new in the same League (Random Duel). Never posted to a Board. (Proposed in the `duel-online` change. The Duel live today is the same-screen game, which PR #47 replaces with Party Mode.)
+Two Players on two devices racing the same question online at the same time. The server decides who answered right first, and the first to 10 points wins. Played with a friend (Friend Duel) or, for Players 13 and over, with someone new in the same League (Random Duel). Never posted to a Board. (Proposed in the `duel-online` change, not yet approved. Live today, the same-screen Duel is retired: Party Mode replaced it and `#/duel` opens Party Mode. Whether the word comes back for the online game is an open question in `duel-online`.)
 _Avoid_: versus, battle, multiplayer, match (fine in code, not in copy)
 
 **Friend Duel**:
@@ -248,7 +276,7 @@ An optional harder question offered during a Star. Right pays double; a miss cos
 _Avoid_: challenge, boss, bonus question
 
 **Landmark**:
-A place on the edge of the Sky that leads somewhere else in the app, such as the Arena, Duel, Games, Watch or the Skill map.
+A place on the edge of the Sky that leads somewhere else in the app, such as the Arena, Party Mode, Games, Watch or the Skill map.
 _Avoid_: tab, menu item, building
 
 **Guide**:

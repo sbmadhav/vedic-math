@@ -1,0 +1,39 @@
+# CodeRabbit settings for this repo (they override the organization settings page).
+# Schema: https://docs.coderabbit.ai/reference/configuration
+# Goal: keep real findings, cut nitpicks and comment clutter.
+language: en-US
+reviews:
+  profile: chill            # was assertive: fewer nitpicks, real issues still flagged
+  request_changes_workflow: true   # the merge rule counts CodeRabbit's approval
+  high_level_summary: true
+  collapse_walkthrough: true
+  changed_files_summary: false
+  sequence_diagrams: false
+  estimate_code_review_effort: false
+  assess_linked_issues: false
+  related_issues: false
+  related_prs: false
+  suggested_labels: false
+  suggested_reviewers: false
+  poem: false
+  in_progress_fortune: false
+  path_filters:
+    - "!openspec/changes/archive/**"   # released changes are a frozen record
+    - "!sounds/**"
+  path_instructions:
+    - path: "openspec/specs/**"
+      instructions: "These describe released behavior only. Unreleased changes live in openspec/changes/<name>/specs and are merged at archive time."
+  auto_review:
+    enabled: true
+    drafts: false
+    auto_pause_after_reviewed_commits: 0   # never pause a busy PR
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+knowledge_base:
+  learnings:
+    scope: auto
+chat:
+  auto_reply: true

@@ -19,6 +19,7 @@ h1:focus, h2:focus, [tabindex="-1"]:focus-visible { outline: none !important; }
 .mq-nav a { white-space: nowrap; text-decoration: none; padding: 6px 10px; border-radius: var(--radius-pill); font-weight: 600; font-size: .95rem; color: var(--ink-muted); }
 .mq-nav a:hover { background: var(--bg-alt); color: var(--ink); }
 .mq-nav a[aria-current="true"] { background: var(--ink); color: var(--bg); }
+.nav-find { display: inline-flex; align-items: center; gap: 5px; } .nav-find svg { width: 15px; height: 15px; flex: none; }
 
 /* Color scheme button: a round sun (Daybreak) or moon (Deep Space) */
 .theme { display: inline-grid; place-items: center; width: 40px; height: 40px; flex: none; border: 2px solid var(--edge); border-radius: 50%; background: var(--card); color: var(--ink); padding: 0; cursor: pointer; transition: transform .4s cubic-bezier(.5,1.6,.5,1); }
@@ -299,6 +300,11 @@ html.motion-paused .mq-grade, body.calm .mq-grade, html.motion-paused .mq-skill,
 .mq-small { color: var(--ink-muted); font-size: 13.5px; margin: 6px 0; }
 
 /* Mode picker */
+/* Try a trick on the landing (openspec first-visit): one big primary action before the Mode cards */
+.try-it { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); margin: var(--space-5) 0 var(--space-7); }
+.try-it .md-btn { font-size: 1.2rem; padding: 14px 26px; } .try-it .md-btn svg { width: 22px; height: 22px; }
+.try-it small { color: var(--ink-muted); font-size: 14px; }
+.pick-h { margin: 0 0 var(--space-3) !important; }
 .mode-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 8px 0 18px; }
 @media (max-width: 760px) { .mode-pick { grid-template-columns: 1fr; } }
 .mode-card { display: grid; gap: 4px; align-content: start; justify-items: start; text-align: left; padding: 22px; border: 2px solid var(--edge); border-radius: var(--radius-xl); background: var(--card); color: var(--ink); cursor: pointer; box-shadow: var(--shadow-ledge); font: inherit; transition: transform .15s; }
@@ -338,7 +344,18 @@ html.motion-paused .mq-grade, body.calm .mq-grade, html.motion-paused .mq-skill,
 .play-grid--big .play-ic { width: 76px; height: 76px; border-radius: 24px; }
 .play-grid--big .play-ic svg { width: 40px; height: 40px; }
 .play-grid--big .play-tile b { font-size: 1.3rem; }
-.home-2 { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin-top: 18px; }
+/* Home doors (openspec first-visit): three things first, each with one plain line; the rest under More ways to play */
+.home-doors { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 16px; margin-top: 18px; align-items: start; }
+@media (max-width: 980px) { .home-doors { grid-template-columns: 1fr 1fr; } .home-doors .dojo-card { grid-column: 1 / -1; } }
+@media (max-width: 560px) { .home-doors { grid-template-columns: 1fr; } }
+.door { margin: 0; } .dojo-card .door-line { margin-top: 12px; } .door-line { color: var(--ink-muted); font-size: 14.5px; line-height: 1.45; margin: 6px 0 12px; }
+.door-acts { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; }
+a.door { display: grid; grid-template-rows: auto auto 1fr; gap: 6px; text-decoration: none; color: var(--ink); border: 2px solid var(--edge); transition: transform .15s, border-color .15s; }
+a.door:hover, a.door:focus-visible { transform: translateY(-3px); } a.door b { font: 600 1.15rem/1.2 var(--display); } a.door .door-line { margin: 0; }
+a.door .play-ic { width: 44px; height: 44px; } .door--coral .play-ic { background: var(--coral); } .door--sun .play-ic { background: var(--sun); } .door--sky .play-ic { background: var(--sky); } .door--plum .play-ic { background: var(--plum); }
+.home-more summary { font: 600 1.15rem/1.2 var(--display); padding: 10px 0; }
+.board-card .lb-wrap { margin-top: 8px; }
+.home-2 { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin-top: 18px; } .quest-card { margin-top: 18px; } .home-2 .quest-card { margin-top: 0; }
 @media (max-width: 860px) { .home-2 { grid-template-columns: 1fr; } }
 .home-2 .md-card:hover, .quest-card:hover, .history:hover, .me-head:hover { transform: none; }
 .dojo-card p { margin: 6px 0 12px; }
@@ -1218,6 +1235,50 @@ html.tour-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .tour-ring, .tour-card { transition: none; } }
 html.motion-paused .tour-ring, body.calm .tour-ring, html.motion-paused .tour-card, body.calm .tour-card { transition: none; }
 
+/* ---------- Play shelves (openspec play-experiences): a section's play experiences, js/play/catalog.js ---------- */
+.play-shelf { margin-block: var(--space-6); }
+/* Its own grid class: .play-grid is Home's tile grid (above), which a second rule here would override */
+.play-shelf-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: var(--space-4); }
+.play-card { --c: var(--coral); display: flex; flex-direction: column; gap: var(--space-1); height: 100%; box-sizing: border-box; padding: var(--space-5); border-radius: var(--radius-lg); background: var(--card); border: 2px solid var(--line); color: var(--ink); text-decoration: none; box-shadow: var(--shadow-card); position: relative; overflow: hidden; transition: transform .18s ease, border-color .18s ease; }
+.play-card::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 6px; background: var(--c); }
+.play-card:hover, .play-card:focus-visible { transform: translateY(-3px); border-color: var(--c); }
+.play-card-ic { width: 48px; height: 48px; color: var(--c); margin-bottom: var(--space-2); }
+.play-card-ic svg { width: 100%; height: 100%; }
+.play-card b { font-family: var(--font-display); font-size: 1.25rem; }
+.play-card em { font-style: normal; font-weight: 700; color: var(--cs); }
+.play-card span:last-child { color: var(--ink-muted); font-size: .95rem; }
+.play-card { --cs: var(--coral-strong); }
+.play-card--coral { --c: var(--coral); --cs: var(--coral-strong); } .play-card--sun { --c: var(--sun-strong); --cs: var(--sun-strong); } .play-card--teal { --c: var(--teal); --cs: var(--teal-strong); }
+@media (prefers-reduced-motion: reduce) { .play-card { transition: none; } .play-card:hover, .play-card:focus-visible { transform: none; } }
+html.motion-paused .play-card, body.calm .play-card { transition: none; } html.motion-paused .play-card:hover, body.calm .play-card:hover, html.motion-paused .play-card:focus-visible, body.calm .play-card:focus-visible { transform: none; }
+
+/* ---------- Mathematics in Sanskrit verse (openspec sanskrit-verses): Sutras page and deep dives. Tokens only.
+   Devanagari uses the device's own fonts (no download): Noto on Android and Linux, Kohinoor on Apple, Nirmala on Windows. */
+.verses { margin-top: var(--space-6); }
+.verse-group { margin-top: var(--space-5); }
+.verse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: var(--space-4); align-items: start; margin-top: var(--space-3); }
+.verse { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); min-width: 0; scroll-margin-top: 170px; overflow-wrap: anywhere; }
+.verse:hover { transform: none; }
+.verse-head h4 { font: 700 1.15rem/1.3 var(--font-display); margin: var(--space-2) 0 0; }
+.verse-deva, .sd-verse .verse-deva { font-family: "Noto Sans Devanagari", "Kohinoor Devanagari", "Nirmala UI", "Mangal", sans-serif; font-size: 1.2rem; line-height: 1.7; margin: 0; color: var(--ink); }
+.verse-iast, .sd-verse .verse-iast { font-style: italic; line-height: 1.6; margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+.verse-say { margin: 0; font-family: var(--font-mono); font-size: .85rem; color: var(--ink-muted); overflow-wrap: anywhere; }
+.verse-say--hl { outline: 2px dashed var(--sun-strong); outline-offset: 4px; }
+.verse-acts { margin: 0; }
+.verse-listen { display: inline-flex; align-items: center; gap: var(--space-1); min-height: 44px; }
+.verse-listen svg { width: 18px; height: 18px; }
+.verse-listen[aria-pressed="true"] { background: var(--sun); color: var(--on-accent); border-color: var(--sun-strong); }
+.verse-meaning, .verse-plain { margin: 0; }
+.verse-math { display: block; margin-top: var(--space-1); font-family: var(--font-mono); font-size: .85rem; color: var(--teal-strong); overflow-wrap: anywhere; }
+.verse-more summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
+.verse-words { display: grid; grid-template-columns: max-content 1fr; gap: var(--space-1) var(--space-3); margin: var(--space-2) 0; }
+.verse-words dt { font-style: italic; }
+.verse-words dd { margin: 0; color: var(--ink-muted); }
+.verse-refs { padding-left: var(--space-4); }
+.verse-refs a { overflow-wrap: anywhere; }
+.sd-verse { overflow-wrap: anywhere; margin-top: var(--space-4); padding: var(--space-3); border-left: 4px solid var(--sun); background: color-mix(in srgb, var(--sun) 8%, transparent); border-radius: var(--radius-sm); }
+@media (max-width: 420px) { .verse-words { grid-template-columns: 1fr; } .verse-words dd { margin-bottom: var(--space-1); } }
+
 /* ---------- Say it and the Respelling (openspec sutra-pronunciation) ---------- */
 .say-btn { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-width: 44px; min-height: 44px; padding: 0 10px; border: 2px solid var(--edge); border-radius: var(--radius-pill); background: var(--card); color: var(--plum-strong); font: 700 .9rem/1 var(--font-sans); cursor: pointer; vertical-align: middle; }
 .say-btn svg { width: 20px; height: 20px; flex: none; }
@@ -1249,3 +1310,14 @@ html.motion-paused .tour-ring, body.calm .tour-ring, html.motion-paused .tour-ca
 .amb-set .mq-h3 { margin: 0; }
 .amb-set input { width: 18px; height: 18px; accent-color: var(--teal-strong); }
 .amb-set .mq-small { margin: 0; font-weight: 400; }
+
+/* Find (openspec find): the search page */
+.find .vh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.find-form { margin: var(--space-4) 0 var(--space-2); }
+.find-in { width: 100%; box-sizing: border-box; font: inherit; font-size: 1.15rem; padding: 12px 16px; border: 2px solid var(--edge); border-radius: var(--radius-lg); background: var(--card); color: var(--ink); }
+.find-in:focus { outline: 3px solid var(--sky); outline-offset: 2px; }
+.find-hint { margin: 0 0 4px; } .find-count { min-height: 1.4em; margin: 0; }
+.find-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.find-hit { display: grid; gap: 2px; width: 100%; box-sizing: border-box; text-align: left; font: inherit; padding: 10px 14px; border: 2px solid var(--line); border-radius: var(--radius-lg); background: var(--card); color: var(--ink); text-decoration: none; cursor: pointer; }
+.find-hit:hover, .find-hit:focus-visible { border-color: var(--sky); } .find-hit b { font: 600 1.05rem/1.25 var(--display); } .find-hit small { color: var(--ink-muted); font-size: 13.5px; line-height: 1.35; }
+.find-group .mq-strand { margin: 22px 0 10px !important; } .find-none { margin: var(--space-4) 0; }

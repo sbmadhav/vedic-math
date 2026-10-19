@@ -1,8 +1,12 @@
 # Proposal
 
+Status: plan only, not yet approved for implementation. The owner decisions it cites answer design questions; they do not approve this change, and merging this plan is not that approval.
+
+Since this plan was written, the `react-typescript` change (also a plan, not yet approved) proposes moving the game to React and TypeScript first and re-planning this change for React before it is built (its task group 11 and open questions). This text is not revised for that yet; which plan goes first is the owner's call.
+
 ## Why
 
-The Duel was two Players on one screen. PR #47 replaces it with Party Mode (two to four Players on one screen, each at their own Mode). Children and teens also want to race a friend who is not in the same room, and teens want a quick race against someone new. The owner decided (2026-10-17, decisions M1 to M3, all accepted) that the Duel comes back as true online multiplayer:
+The Duel was two Players on one screen. PR #47 replaced it with Party Mode (archived as `play-experiences`; `GLOSSARY.md` on `main` now lists Duel as retired) (two to four Players on one screen, each at their own Mode). Children and teens also want to race a friend who is not in the same room, and teens want a quick race against someone new. The owner decided (2026-10-17, decisions M1 to M3, all accepted) that the Duel comes back as true online multiplayer:
 
 - **M1:** friends by invite link or 6-letter code for everyone; random matchmaking for Players 13 and over only, in the same League; no chat at all, only preset Reactions; generated Nicknames only; Report and Block.
 - **M2:** Cloudflare Durable Objects: one object per match holding both WebSockets and generating the questions from a seed with the same question generators the app uses (one shared JS module), acting as the authoritative referee (first right answer, scoring, anti-cheat), plus a matchmaking queue object; free or low cost.

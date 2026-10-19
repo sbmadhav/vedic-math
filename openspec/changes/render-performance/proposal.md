@@ -1,5 +1,9 @@
 # Proposal
 
+Status: plan only, not yet approved for implementation. The owner decisions it cites answer design questions; they do not approve this change, and merging this plan is not that approval.
+
+Since this plan was written, the `react-typescript` change (also a plan, not yet approved) proposes moving the game to React and TypeScript first and re-planning this change for React before it is built (its task group 11 and open questions). This text is not revised for that yet; which plan goes first is the owner's call.
+
 ## Why
 
 Vedic Math is played mostly on family phones and school tablets, many of them mid-range Android devices on mobile data. Today the game's first load is one static module graph from `js/app.js`: 34 modules, 7 import levels deep, served unminified (about 700 KB raw; 483 KB minified and 140 KB Brotli when measured with esbuild on 2026-10-17). Each import level costs a round trip before the next is found, so a throttled cold load reaches DOMContentLoaded at about 2.2 s even on a desktop CPU (`_handoff/architecture-microfrontends-prerender.md`, measured 2026-10-16). A full-screen moving background is drawn on the main thread at up to 30 frames a second, and the Sky's twinkle animations keep repainting while it is scrolled away. PR #47 adds twelve Play experiences (about 685 KB of JS and 180 KB of CSS) and precaches all of them for every visitor, whether or not they ever open one.

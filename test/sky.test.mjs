@@ -121,7 +121,7 @@ test('Bolt has a spot beside every Star that covers no Star and no name', () => 
 });
 
 test('Landmarks: Arena, Duel, Games, Watch and the Skill map, with the tower slot left free', () => {
-  assert.deepEqual(LANDMARKS.map(m => [m.href, m.what]), [['#/arena', 'race track'], ['#/duel', 'ring'], ['#/games', 'arcade'], ['#/watch', 'observatory'], ['#/learn', 'library']]);
+  assert.deepEqual(LANDMARKS.map(m => [m.href, m.what]), [['#/arena', 'race track'], ['#/arena/party', 'ring'], ['#/games', 'arcade'], ['#/watch', 'observatory'], ['#/learn', 'library']]);
   assert.ok(!LANDMARKS.some(m => m.at.join() === TOWER_SLOT.join()));
 });
 
