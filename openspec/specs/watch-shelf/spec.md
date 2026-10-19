@@ -60,14 +60,18 @@ Entries that question whether the methods are Vedic SHALL be shown to Pro Player
 - **THEN** no critique of the methods' origin is listed
 
 ### Requirement: Shorts are tiles
-Shorts SHALL be shown as tiles among the other entries and SHALL play one at a time in the page's player, tall. There SHALL be no swipe feed and no automatic next Short.
+Shorts SHALL be shown as tiles on their own, when the Player picks Shorts, and never mixed with videos. They SHALL play one at a time in the page's player, tall. There SHALL be no swipe feed and no automatic next Short.
 
 #### Scenario: A Short ends
 - **WHEN** a Short finishes playing
 - **THEN** nothing else starts on its own
 
+#### Scenario: Picking Shorts
+- **WHEN** a Player opens the Watch shelf and then picks Shorts
+- **THEN** no Short tile is shown before the pick, and only Short tiles are shown after it
+
 ### Requirement: Filters on the Watch shelf
-The Watch shelf SHALL open filtered to the Player's Mode and SHALL let the Player filter by Skill area, by Trick, by length (under 2 minutes, 2 to 5, 5 to 8, 8 to 12) and by videos or Shorts, within what their Mode may see.
+The Watch shelf SHALL open on every Mode the Player may see ("Both" for Challenger and Pro) and on Videos, and SHALL let the Player narrow it to their own Mode and filter by Skill area, by Trick, by length (under 2 minutes, 2 to 5, 5 to 8, 8 to 12) and by Videos or Shorts (and Links for Pro), within what their Mode may see. Pro's websites and games SHALL be shown only under Links, and Links SHALL show only them.
 
 #### Scenario: Shorts about tricks
 - **WHEN** a Challenger Player picks Shorts and the Tricks filter
@@ -75,7 +79,15 @@ The Watch shelf SHALL open filtered to the Player's Mode and SHALL let the Playe
 
 #### Scenario: Longer videos
 - **WHEN** a Player picks "8 to 12 min"
-- **THEN** only videos from 8 minutes up to, but not including, 12 minutes long are shown, or a note that none match
+- **THEN** only videos from 8 minutes up to just under 12 minutes long are shown, or a note that none match
+
+#### Scenario: Opening the shelf
+- **WHEN** a Challenger Player opens the Watch shelf
+- **THEN** "Both" and "Videos" are picked, videos for Challenger and Explorer are shown, and no Short is shown
+
+#### Scenario: Pro links
+- **WHEN** a Pro Player opens the Watch shelf and picks Links
+- **THEN** the websites and games are shown, with no video or Short tile, and they were not shown before the pick
 
 ### Requirement: Hand-picked videos first, keywords as a fallback
 A Skill or Trick page SHALL show 2 or 3 videos matched by hand to that Skill or Trick, by the rules above. Only when it has no hand-matched video visible to the Player SHALL it fall back to whole-word keyword matching, and it SHALL show nothing when neither finds one.

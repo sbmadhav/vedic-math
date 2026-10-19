@@ -34,7 +34,7 @@ test.describe('motion allowed', () => {
     chromiumOnly(testInfo, 'canvas frames: chromium');
     await open(page, '#/arena');
     await page.locator('[data-t="practice"]').click();
-    const running = () => page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running' && !((a.effect as KeyframeEffect | null)?.target as Element | null)?.closest('.ar-bar')).length);
+    const running = () => page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running').length);
     // Pause motion from the music panel in the header (the site has no Explore menu). A round's shell makes the site
     // header inert (js/shell.js), so the panel is reached on the game page, before the round starts.
     expect(await togglePauseMotion(page)).toBe(true);
@@ -48,7 +48,9 @@ test.describe('motion allowed', () => {
     expect(await running(), 'no motion in the round').toBe(0);
     await page.waitForTimeout(1600);
     const t2 = Number(await page.locator('#arTime').textContent());
-    expect(t2).toBeLessThan(t1);
+    expect(t1).toBeGreaterThan(0);
+    expect(t2, 'the numeric clock counts down').toBeLessThan(t1);
+    expect(await running(), 'no motion in the round, the timer bar included').toBe(0);
     expect(await page.evaluate(() => localStorage.getItem('vm.calm') === '1')).toBe(false);
     await expect(page.locator('.play-shell .play-calm')).toHaveAttribute('aria-checked', 'false');
     await page.locator('#arStop').click();

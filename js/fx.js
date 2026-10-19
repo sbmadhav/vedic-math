@@ -13,7 +13,7 @@ export const mode = () => store.player().mode;
 /* guess: the Mode was set for the Player by Try a trick (openspec first-visit), not picked; any pick clears it */
 export function setMode(m, { guess = false } = {}) {
   store.setPlayerMode(m, { guess }); applyMode();
-  try { window.siteTrack && window.siteTrack('math/mode/' + m, 'Vedic Math mode: ' + m); } catch (e) {}
+  if (!guess) try { window.siteTrack && window.siteTrack('math/mode/' + m, 'Vedic Math mode: ' + m); } catch (e) {} /* a guessed Mode is never sent (first-visit spec) */
 }
 export function applyMode() {
   const m = mode() || 'none';
