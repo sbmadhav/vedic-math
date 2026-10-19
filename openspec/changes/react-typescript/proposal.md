@@ -1,5 +1,7 @@
 # Proposal
 
+Status: plan only, not yet approved for implementation (task 0.0). The owner decisions it cites answer design questions; they do not approve this change.
+
 ## Why
 
 The game is about 40 hand-written ES modules (about 9,800 lines in `js/`, 10,800 with data) with no framework and no bundler. Views draw themselves by assigning template strings to `innerHTML`: `js/app.js` alone does it 69 times, `js/games.js` 22, `js/arena.js` 15, `js/star.js` 10. Every one of those is a place where a value that is not escaped by hand (`esc()`) becomes markup, so cross-site scripting is a class of bug the code invites rather than one it rules out. `js/app.js` is 1,497 lines holding the router, every view and every dialog, and each new feature (Play, verses, the Sky, Star Quest) has added to it. Lifecycle safety depends on every author remembering `js/life.js`, enforced after the fact by a regex scan (`test/lifecycle-scan.test.mjs`) with an allow-list of exceptions.
@@ -11,7 +13,7 @@ Player speed is not the goal of this change; it stays the job of `render-perform
 ## What Changes
 
 - **Stack (decision 4).** React 19 with the React Compiler, Vite, TypeScript `strict`, React Router v7 in SPA mode, and prerendering of public routes.
-- **Step by step (decision 2).** No big-bang rewrite. The router mounts either a Legacy view (today's template-string view, run through an adapter with its `{ signal }`) or a React view per route. Each pull request moves a few views and the Playwright suite stays green after every one. Order: TypeScript for the logic; the app shell (header, router, dialogs); then views from simplest to most interactive, with games, Arena, Duel and Play last.
+- **Step by step (decision 2).** No big-bang rewrite. The router mounts either a Legacy view (today's template-string view, run through an adapter with its `{ signal }`) or a React view per route. Each pull request moves a few views and the Playwright suite stays green after every one. Order: TypeScript for the logic; the app shell (header, router, dialogs); then views from simplest to most interactive, with games, Arena, Party Mode and Play last.
 - **Logic stays framework-free (decision 6).** Game, math and storage logic become plain TypeScript modules with no behavior change. React reads them through one small `useStore(selector)` hook on `useSyncExternalStore`. No Redux or Zustand.
 - **Path URLs in the game (decision 5, pending owner as Q18).** The move ships hash routes under `/play/` as planned. This change then switches `/play/` to path routes (`/play/arena`, `/play/sutras/ekadhikena`) with an SPA fallback for `/play/*` only. A tiny pre-paint shim turns every `#/...` into its path, forever, so every old link and bookmark keeps working. Public Sutra pages are prerendered for search.
 - **Styling (decision 7).** Plain CSS with design-system tokens; `math.css` is split into one CSS file per component. No Tailwind, no CSS-in-JS. Both color schemes. The design system is v2.1, consumed as the move vendors it.

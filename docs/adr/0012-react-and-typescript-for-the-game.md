@@ -16,7 +16,7 @@ Status: proposed 2026-10-17 in the `react-typescript` change (owner decisions 1 
 
 ## Consequences
 
-- Nothing a Player sees or stores changes, except path URLs in `/play/` (old `#/` links are turned into paths by a pre-paint shim, forever) and a redone Star Quest layout on phones.
+- Nothing a Player sees or stores changes, except path URLs in `/play/` (old `#/` links are turned into paths by a pre-paint shim, forever) a redone Star Quest layout on phones, and, for Players with WebGL and motion allowed, a Sky that fades from 2D into 3D (ADR 0013; a still frame or the 2D Sky for everyone else).
 - `build.py` stops writing the import map and `?v=` stamps; Vite's hashed file names replace them. The move's post-build steps (`_headers`, CSP hashes, `_redirects`, checks) stay.
 - `js/life.js` and the lifecycle scan retire when the last Legacy view moves; an ESLint rule bans bare listeners and timers in components, and `dangerouslySetInnerHTML` is banned everywhere. Content stored as HTML text is shown only through one allow-list `Markup` component.
 - React and React DOM add about 60 KB gzip; CI fails any regression in first load or interaction time against the pre-migration baseline.

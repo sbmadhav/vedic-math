@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Make sure moving the game to React never makes it slower than it was before the migration: measure today's site once, then fail CI on any regression in first load, interaction time or size.
+Make sure moving the game to React never makes it slower than it was before the migration: measure today's site once, then fail CI on any growth in first-load size and on any load or interaction time that is worse than the baseline by more than the stated tolerance.
 
 ## ADDED Requirements
 

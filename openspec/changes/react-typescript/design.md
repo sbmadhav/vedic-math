@@ -42,7 +42,7 @@ D1 to D13 are the owner's decisions (2026-10-17, all approved; D5 is pending as 
 
 ### D2. Step by step, not a big-bang rewrite
 
-**Decision.** The router mounts a Legacy view or a React view per route. Each PR moves a few views, and the Playwright suite stays green after every PR. Order: TypeScript for the logic; the app shell (header, router, dialogs); views from simplest to most interactive, with games, Arena, Duel and Play last.
+**Decision.** The router mounts a Legacy view or a React view per route. Each PR moves a few views, and the Playwright suite stays green after every PR. Order: TypeScript for the logic; the app shell (header, router, dialogs); views from simplest to most interactive, with games, Arena, Party Mode and Play last.
 
 **Rationale.** The game is live, used by children, and has open feature work. A strangler migration keeps it shippable every day, makes each PR reviewable, and lets the Playwright suite prove behavior did not change one view at a time. Logic first means views are rewritten against typed, tested modules; shell second means every later PR only adds a route component; the most interactive views go last, when the patterns (rounds, timers, keypads, focus) are settled.
 
@@ -92,7 +92,7 @@ Content work (videos, voice, verses) continues throughout. Star Quest's mobile l
 - A Playwright test (`e2e/tests/old-routes.spec.ts`) opens every old route form and checks the screen and the final URL.
 - Public Sutra pages are prerendered for search: `/play/sutras/` and one page per Sutra and sub-sutra (`/play/sutras/<id>/index.html`), with real titles, descriptions, canonical links and the Deep dive's text in the HTML.
 
-**SPA fallback for `/play/*` only.** Workers static assets apply `not_found_handling` to the whole site, so the fallback is a `_redirects` rewrite instead: `/play/* /play/__spa-fallback.html 200`, listed after the prerendered files (a file that exists is always served first). Whether Workers static assets honour a 200 rewrite in `_redirects` is unverified (task 3.4). If they do not, `not_found_handling` becomes `"none"`, so a request that matches no asset goes to the Worker script the move already has; the script answers `/play/*` with the SPA fallback (status 200) and everything else with `/404.html` (status 404), both read from `env.ASSETS`. That costs one Worker request per miss (a deep link that is not prerendered, a typo) and none for files that exist.
+**SPA fallback for `/play/*` only.** Workers static assets apply `not_found_handling` to the whole site, so the fallback is a `_redirects` rewrite instead: `/play/* /play/index.html 200`, listed after the prerendered files (a file that exists is always served first). The target is the file React Router writes: with `ssr: false` and the root not in the prerender list (the default, Q20), the SPA fallback is `index.html`; if Q20 adds `/play/` to the prerender list, React Router writes `/play/index.html` as the prerendered root and the fallback as `__spa-fallback.html`, and the rewrite and the Worker fallback point there instead. Task 3.4 checks that the target file exists in `_site/play/`. Whether Workers static assets honour a 200 rewrite in `_redirects` is unverified (task 3.4). If they do not, `not_found_handling` becomes `"none"`, so a request that matches no asset goes to the Worker script the move already has; the script answers `/play/*` with the SPA fallback (status 200) and everything else with `/404.html` (status 404), both read from `env.ASSETS`. That costs one Worker request per miss (a deep link that is not prerendered, a typo) and none for files that exist.
 
 **Rationale.** Path URLs are what the owner asked for, they let Sutra pages be prerendered and indexed (a hash is never sent to the server, so `/play/#/sutras/x` cannot have its own HTML), and they read better when shared. Doing it after the move keeps the move's plan intact; the shim makes the change invisible to old links.
 
@@ -273,12 +273,12 @@ Phases, with rough PR counts. Every PR ships alone, keeps the Playwright suite g
 | 1 | Tooling and TypeScript logic: workspaces, Vite builds today's app unchanged, Vitest, `sw.ts`; then `shared/` and `app/src/logic/` in TypeScript | 3 | none (logic only; views untouched) |
 | 2 | The app shell: React root, React Router with LegacyRoute for every route, path routes, hash shim, SPA fallback; then header, nav, chip, Mode picker, the video player, Age and Player dialogs, ESLint lifecycle rule | 2 | header, nav, dialogs (`js/app.js` router, `chip()`, `modePicker`, `playerDlg`, `ageDlg`) |
 | 3 | Views, simplest first: Guide and Tour; Watch; Sutras with Deep dive and verses (prerendered); Me; Learn, grade, All places, tiles; Skill lesson and Practice; Mix and Run; Dojo and Katas; Tower and challenges; Home and the Sky; the Star round (Star Quest mobile layout) | about 11 | each PR its own views |
-| 4 | The most interactive: games (2 PRs), Arena and Boards, Duel (whatever `#/duel` is then: PR #47's Party redirect or the old same-screen Duel), Play experiences (PR #47, 2 or 3 PRs) | about 6 | each PR its own views |
+| 4 | The most interactive: games (2 PRs), Arena and Boards, Party Mode (`#/duel` now redirects to it; the same-screen Duel is retired), Play experiences (2 or 3 PRs) | about 6 | each PR its own views |
 | 5 | Retire legacy: delete `js/life.js`, LegacyRoute, the lifecycle scan, `math.css` remnants, `js/` | 1 | none |
 | 6 | 3D: measured spike, then the Sky scene with its fallbacks | 2 | Home and the Sky |
 | 7 | Re-plan the follow-on changes for React (docs only; can start after phase 2) | 1 or 2 | none |
 
-About 27 to 30 PRs in all: 2 to 3 for TypeScript logic, 2 for the shell, about 17 for views (Play and Duel last), and the rest for setup, retirement, 3D and plans.
+About 27 to 30 PRs in all: 2 to 3 for TypeScript logic, 2 for the shell, about 17 for views (Play and Party Mode last), and the rest for setup, retirement, 3D and plans.
 
 Rollback: any PR is a revert. A route that moved to React can go back to its Legacy view by pointing its route entry at `LegacyRoute` again until phase 5 deletes the legacy code. The hash shim is never removed.
 
@@ -292,3 +292,4 @@ Rollback: any PR is a revert. A route that moved to React can go back to its Leg
 - **Q23.** Does the Sky's 3D scene ship in this change (phase 6, default) or in the revised `gpu-effects`?
 - **Q24.** Star Quest mobile layout: who signs off the new design? Default: the owner reviews phone screenshots on the PR before merge.
 - **Q25.** The "frame rate under 30" fallback: measured how long? Default: the median frame time over the first 2 seconds after the fade starts, and again whenever drei's `PerformanceMonitor` reports a decline; once on 2D, the page stays on 2D until reload.
+- **Q26 (open, owner).** Since this plan was written, `main` retired the Duel: the same-screen Duel became Party Mode and the `duel` spec was removed (archived `play-experiences`). `duel-online` (PR #54) plans online Duels on top of that Duel, and this plan names it as a follow-on (D3, D11, task 11.3) and reserves `workers/` and `shared/` for its server. Whether `duel-online` still goes ahead, is re-scoped onto Party Mode, or is dropped is not decided here. The workspace layout does not depend on the answer; task 11.3 waits for it.
