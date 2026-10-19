@@ -152,8 +152,5 @@ document.querySelectorAll('.vp-item').forEach(card => {
   }));
 });
 
-/* The recorded samples were deleted once the studio voice shipped (better-voice 5.2): only the live voices still play */
-document.querySelectorAll('[data-v="stitch"], [data-v="whole"]').forEach(b => { b.disabled = true; b.title = 'Sample removed after the studio voice shipped'; });
-
 window.__voiceProto = { KV, items, decodeWhole: url => fetch(url).then(r => r.arrayBuffer()).then(decode).then(x => x.duration),
   loadSprite: key => loadSprite(KV.find(v => v.key === key)).then(sp => ({ duration: sp.buf.duration, clips: Object.keys(sp.map.clips).length })) };
