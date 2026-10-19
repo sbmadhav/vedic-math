@@ -36,20 +36,26 @@ test('No speech on load: opening #/sutras/s3 plays nothing and downloads no clip
 });
 
 test('Tap while read aloud speaks: Say it on the Trick page stops the reading and plays the clip', async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('vm.voice', '1'));
+  await page.addInitScript(() => { localStorage.setItem('vm.voice', '1'); (window as any).__voiceLog = []; });
   await fakeAudio(page, { clipSecs: 30 });
-  // Count cancel() calls on the fake engine, so a stopped reading is observable
+  // Count cancel() calls on the fake engine, so a stopped device-voice reading is observable
   await page.addInitScript(() => { const s = (window as any).speechSynthesis; (window as any).__cancels = 0; s.cancel = () => { (window as any).__cancels++; }; });
   await open(page, '#/skill/v-div9');
-  // Hear it reads the question: a reading the Player started, then the Say it tap must stop it
+  // Hear it reads the question: a reading the Player started, then the Say it tap must stop it. The line goes to the
+  // studio voice (recorded files on the fake Web Audio) when its sounds are loaded, else to the device's voice.
   const hear = page.locator('#prHear');
   await expect(hear).toBeVisible();
   await hear.click();
-  await expect.poll(() => said(page).then(s => s.length)).toBeGreaterThan(0);
-  const before = await page.evaluate(() => (window as any).__cancels as number);
+  await expect.poll(() => page.evaluate(() => ((window as any).__voiceLog as string[]).some(e => ['builtin', 'studio:line', 'studio:clips'].includes(e)))).toBe(true);
+  const sources = async () => (await audioLog(page)).nodes.filter(n => n.kind === 'source');
+  const before = { cancels: await page.evaluate(() => (window as any).__cancels as number), sources: (await sources()).length };
   await page.locator('.mq-sutra .say-btn').click();
-  await expect.poll(() => page.evaluate(() => (window as any).__cancels as number)).toBeGreaterThan(before);
-  await expect.poll(() => started(page)).toBe(1);
+  await expect.poll(() => page.evaluate(() => (window as any).__cancels as number)).toBeGreaterThan(before.cancels);
+  // Every studio sound of the reading is stopped, and exactly one new sound starts: the clip
+  await expect.poll(async () => {
+    const all = await sources();
+    return { reading: all.slice(0, before.sources).filter(n => n.stopped === null).length, clip: all.slice(before.sources).filter(n => n.started !== null).length };
+  }).toEqual({ reading: 0, clip: 1 });
 });
 
 test('Leaving stops the clip: a route change while a clip plays stops it', async ({ page }) => {
