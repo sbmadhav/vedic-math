@@ -40,14 +40,30 @@ for (const mode of ['explorer', 'challenger', 'pro'] as Mode[]) {
       await open(page, '#/watch');
       const cards = page.locator('#view button.watch-card');
       await expect(cards.first()).toBeVisible();
+      // The shelf opens on every Mode this Player may see (Both) and on Videos
       const both = page.getByRole('group', { name: 'Mode', exact: true }).getByRole('button', { name: 'Both', exact: true });
-      if (await both.count()) await both.click();
+      if (mode !== 'explorer') await expect(both).toHaveAttribute('aria-pressed', 'true');
+      // Pro's kind chips include Links, and their group says so
+      const kind = (name: string) => page.getByRole('group', { name: mode === 'pro' ? 'Videos, Shorts or Links' : 'Videos or Shorts', exact: true }).getByRole('button', { name, exact: true });
+      const noPlaylistHref = async () => {
+        const hrefs = await page.locator('#view a[href]').evaluateAll(as => as.map(a => (a as HTMLAnchorElement).href));
+        for (const h of hrefs) expect(h).not.toMatch(PLAYLIST_OR_CHANNEL);
+        return hrefs.length;
+      };
+      await noPlaylistHref();
       if (mode === 'pro') {
-        const every = page.getByRole('group', { name: 'Videos or Shorts', exact: true }).getByRole('button', { name: 'Everything', exact: true });
-        if (await every.count()) await every.click();
+        // Pro's sites and games, under Links: none is YouTube at all
+        await kind('Links').click();
+        await expect(page.locator('#view .watch-links')).toBeVisible();
+        expect(await noPlaylistHref()).toBeGreaterThan(0);
+        for (const h of await page.locator('#view .watch-links a[href]').evaluateAll(as => as.map(a => (a as HTMLAnchorElement).href))) expect(h).not.toMatch(/youtube\.com|youtu\.be/i);
+        await kind('Videos').click();
       }
-      const hrefs = await page.locator('#view a[href]').evaluateAll(as => as.map(a => (a as HTMLAnchorElement).href));
-      for (const h of hrefs) expect(h).not.toMatch(PLAYLIST_OR_CHANNEL);
+      // Shorts too: every Short tile embeds a single video
+      await kind('Shorts').click();
+      await expect(cards.first()).toBeVisible();
+      await noPlaylistHref();
+      await kind('Videos').click();
       const n = await cards.count();
       expect(n).toBeGreaterThan(0);
       const dlg = page.locator('dialog.vm-player');

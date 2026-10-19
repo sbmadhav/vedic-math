@@ -35,10 +35,9 @@ const proSees = (v: V) => v.modes.some(m => m === 'pro' || m === 'challenger');
 async function shortsAndTricks(page: Page, both: boolean) {
   await open(page, '#/watch');
   await expect(cards(page).first()).toBeVisible();
-  if (both) {
-    await chip(page, 'Mode', 'Both').click();
-    await expect(chip(page, 'Mode', 'Both')).toHaveAttribute('aria-pressed', 'true');
-  }
+  // The shelf opens on Both; the Player's own Mode chip narrows it
+  await expect(chip(page, 'Mode', 'Both')).toHaveAttribute('aria-pressed', 'true');
+  if (!both) await chip(page, 'Mode', 'Challenger').click();
   await chip(page, 'Videos or Shorts', 'Shorts').click();
   await chip(page, 'Tricks', 'Tricks only').click();
   await expect(chip(page, 'Videos or Shorts', 'Shorts')).toHaveAttribute('aria-pressed', 'true');
