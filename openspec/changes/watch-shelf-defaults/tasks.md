@@ -11,4 +11,5 @@
 
 ## 3. Release check
 
-- [x] 3.1 Node tests, `build.py --out`, `openspec validate --strict`, and Playwright `watch cov/watch-shelf guide` on a local server pass.
+- [x] 3.1 Node tests, `build.py --out`, `openspec validate --all --strict`, and Playwright `watch`, `cov/watch-shelf-*` and `guide` on a local server, chromium and webkit.
+  Result after merging main (2026-10-18): node 549 pass; build and validate pass; Playwright chromium all pass (`cov/watch-shelf-7` and the Sutras test in `watch.spec.ts` included, which failed before the merge). On webkit, in the parallel run, `cov/watch-shelf-1` timed out (also flaky on main, untouched here) and `cov/watch-shelf-8` timed out on clicking a card for Challenger and Pro; `cov/watch-shelf-8` then passed on webkit run alone.
