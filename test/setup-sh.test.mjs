@@ -45,3 +45,25 @@ test('a reused App Check key gets the domains of this run, and the next steps na
   assert.match(src, /REFERRERS="\$\(printf 'https:\/\/%s\/\*, ' "\$\{DOMAINS_WANT\[@\]\}"\)"/);
   assert.doesNotMatch(src.slice(src.indexOf('Next steps')), /https:\/\/learnvedicmath\.com\/\*/);
 });
+
+test('writing the config for another project clears the old App Check key; the same project keeps it', async () => {
+  const { mkdtempSync, writeFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const src = readFileSync(script, 'utf8');
+  const start = src.indexOf('import json, re, sys');
+  const code = src.slice(start, src.indexOf(`' "$CONFIG_JS"`, start));
+  const dir = mkdtempSync(join(tmpdir(), 'setup-sh-'));
+  writeFileSync(join(dir, 'w.py'), code);
+  const current = readFileSync(config, 'utf8');
+  const key = current.match(/export const appCheckSiteKey = ([^;]*);/)[1];
+  const project = current.match(/projectId: "([^"]+)"/)[1];
+  for (const [id, want] of [['another-project', '""'], [project, key]]) {
+    writeFileSync(join(dir, 'c.js'), current);
+    const r = spawnSync('python3', [join(dir, 'w.py'), join(dir, 'c.js')], { input: JSON.stringify({ result: { sdkConfig: { apiKey: 'k', projectId: id, appId: 'a' } } }), encoding: 'utf8' });
+    assert.equal(r.status, 0, r.stderr);
+    const out = readFileSync(join(dir, 'c.js'), 'utf8');
+    assert.match(out, new RegExp(`projectId: "${id}"`));
+    assert.equal(out.match(/export const appCheckSiteKey = ([^;]*);/)[1], want, id);
+  }
+});

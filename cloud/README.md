@@ -29,7 +29,7 @@ If step 4 says Authentication is not initialized, open the Authentication page i
 
 The web config is public by design. Security comes from the rules and App Check (see below).
 
-The browser key (Google Cloud console > APIs & Services > Credentials, "Browser key (auto created by Firebase)") is restricted to the referrers `https://learnvedicmath.com/*`, `https://www.learnvedicmath.com/*`, `http://localhost:*/*`, `http://127.0.0.1:*/*` and the project's `firebaseapp.com`, and to the APIs the site uses: Firestore, Identity Toolkit, Secure Token, App Check and Firebase Installations. Previews on `workers.dev` are deliberately not in that list: they never post (the e2e suite uses a fake SDK).
+The browser key (Google Cloud console > APIs & Services > Credentials, "Browser key (auto created by Firebase)") is restricted to the referrers of the domains given to `cloud/setup.sh` (by default `https://learnvedicmath.com/*` and `https://www.learnvedicmath.com/*`; the script prints the list), `http://localhost:*/*`, `http://127.0.0.1:*/*` and the project's `firebaseapp.com`, and to the APIs the site uses: Firestore, Identity Toolkit, Secure Token, App Check and Firebase Installations. Previews on `workers.dev` are deliberately not in that list: they never post (the e2e suite uses a fake SDK).
 
 ## What the rules enforce
 
