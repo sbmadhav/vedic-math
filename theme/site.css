@@ -1,0 +1,39 @@
+/* Learn Vedic Math: the landing page and the pages for grown-ups (site/). Tokens only, both color schemes.
+   The game has its own styles (math.css). */
+.lv-kicker { margin: 0; font: var(--text-kicker); letter-spacing: var(--text-kicker-tracking); text-transform: uppercase; color: var(--coral-strong); }
+.lv-title { font-size: clamp(2rem, 5vw, 3.2rem); max-width: 16em; margin-top: var(--space-2) !important; }
+.lv-hero-in { display: grid; grid-template-columns: 1fr auto; gap: var(--space-6); align-items: center; }
+.lv-bolt { width: clamp(120px, 22vw, 220px); height: auto; filter: var(--bolt-glow); animation: lv-bob 4s ease-in-out infinite; }
+@keyframes lv-bob { 50% { transform: translateY(-8px) rotate(-3deg); } }
+@media (prefers-reduced-motion: reduce) { .lv-bolt { animation: none; } }
+html.motion-paused .lv-bolt { animation: none; }
+@media (max-width: 700px) { .lv-hero-in { grid-template-columns: 1fr; } .lv-bolt { order: -1; width: 120px; } }
+.lv-play { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 var(--space-7); border: 2px solid var(--primary-border); border-radius: var(--radius-pill); background: var(--primary-bg); color: var(--on-accent); font: 700 1.2rem/1 var(--font-sans); text-decoration: none; box-shadow: var(--shadow-ledge); }
+.lv-play:hover { box-shadow: var(--shadow-ledge-hover); transform: translateY(-1px); }
+.lv-play:active { box-shadow: var(--shadow-ledge-press); transform: translateY(2px); }
+.lv-modes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4-5); }
+@media (max-width: 800px) { .lv-modes { grid-template-columns: 1fr; } }
+.lv-mode { padding: var(--space-5); border: 2px solid var(--edge); border-radius: var(--radius-lg); background: var(--card); box-shadow: var(--shadow-ledge); border-top-width: 10px; }
+.lv-mode--sun { border-top-color: var(--sun); } .lv-mode--sky { border-top-color: var(--sky); } .lv-mode--plum { border-top-color: var(--plum); }
+.lv-mode h3 { font-size: var(--text-h3-size); }
+.lv-mode p { margin: var(--space-2) 0 0; }
+.lv-ages { color: var(--ink-muted); font-weight: 700; }
+.lv-cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-7); }
+@media (max-width: 800px) { .lv-cols { grid-template-columns: 1fr; } }
+.lv-links { padding-left: 1.2em; }
+.lv-foot { border-top: 1px solid var(--line); padding: var(--space-7) 0 var(--space-7); color: var(--ink-muted); font-size: 14px; }
+.lv-page a, .lv-foot a, .lv-cols a { color: var(--sky-strong); font-weight: 700; }
+
+/* Grown-up pages: readable text */
+.lv-page { max-width: 760px; }
+.lv-page h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); }
+.lv-page h2 { font-size: var(--text-h3-size); margin-top: var(--space-7) !important; }
+.lv-page h3 { font-size: var(--text-h4-size); margin-top: var(--space-5) !important; }
+.lv-page p, .lv-page li { line-height: 1.6; }
+.lv-page blockquote { margin: var(--space-4) 0; padding: var(--space-3) var(--space-4); border-left: 4px solid var(--sun); background: var(--card); border-radius: var(--radius-sm); }
+.lv-table { overflow-x: auto; margin: var(--space-4) 0; }
+.lv-page table { border-collapse: collapse; min-width: 560px; font-size: 15px; }
+.lv-page th, .lv-page td { border: 1px solid var(--line); padding: var(--space-2) var(--space-2-5); text-align: left; vertical-align: top; }
+.lv-page th { background: var(--bg-alt); }
+.lv-draft { margin: var(--space-4) 0; padding: var(--space-3) var(--space-4); border: 2px solid var(--edge); border-radius: var(--radius-md); background: color-mix(in srgb, var(--sun) 30%, var(--card)); color: var(--ink); font-weight: 700; }
+.lv-page code { font-family: var(--font-mono); font-size: .9em; }
