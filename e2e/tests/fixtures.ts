@@ -80,7 +80,8 @@ export const Timestamp = { fromMillis: ms => ({ millis: ms }) };`,
 export type Issues = { console: string[]; failed: string[] };
 export type Mode = 'explorer' | 'challenger' | 'pro';
 export type CloudLog = { signIns: number; signOuts: string[]; apps: string[]; authLoaded: boolean; reads: string[]; writes: { path: string; app: string; data: Record<string, unknown> }[] };
-/** The first Player's posting consent: the Age answer and, for under-13s, when the Parent step was given. */
+/** The first Player's posting consent: the Age answer. parentOk is the retired Parent step, which an old record or a
+    hand-off from sbmadhav.com may still carry; the game ignores it (docs/adr/0006). */
 export type Consent = { age: number | 'adult'; parentOk?: number | null };
 
 type Fixtures = {
@@ -88,7 +89,8 @@ type Fixtures = {
   liveFirebase: boolean;
   /** Play mode stored for the first player before the page loads, or null for a first visit. */
   seedMode: Mode | null;
-  /** Age answer (and Parent step) stored for that player. Default null: not answered, so nothing may be posted. */
+  /** Age answer stored for that player. Default null: not answered, so nothing may be posted and only the Device board
+      is shown (World boards are for an Age answer of 13 or over, after a tap: showWorld). */
   seedConsent: Consent | null;
   /** More fields for that player's record, for example { sky: true } (the Sky switch). Default null. */
   seedPlayer: Record<string, unknown> | null;
@@ -229,6 +231,14 @@ export async function openExplore(page: Page) {
   const dlg = page.locator('dialog.xpm');
   await expect(dlg).toBeVisible();
   return dlg;
+}
+
+/** Shows the World board in a Board (only a Player whose Age answer is 13 or over has the button; openspec board-identity,
+    change learnvedicmath): taps Show World board, then waits until the World tab is selected. */
+export async function showWorld(page: Page, board: string) {
+  const wrap = page.locator(board);
+  await wrap.locator('[data-show-world]').click();
+  await expect(wrap.locator('[data-src="world"]')).toHaveAttribute('aria-selected', 'true');
 }
 
 /** Types an answer into the Arena's hidden entry. On touch screens it is read-only (no system keyboard over the

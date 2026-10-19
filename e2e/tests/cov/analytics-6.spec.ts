@@ -35,7 +35,6 @@ const GRAMMAR: RegExp[] = [
   new RegExp(`^math/star/(lit|skipped|comeback|dare_taken|dare_won)/${ID}$`),
   new RegExp(`^math/game/${ID}/${ID}$`),
   /^math\/age-answer$/,
-  /^math\/parent-step\/(on|off)$/,
 ];
 
 /** Checks every recorded event against the vocabulary and against the identifying values seen on the page. */
@@ -99,24 +98,18 @@ test.describe('Share clicks: Share button', () => {
 });
 
 test.describe('Events carry no identifiers: Event contents', () => {
-  test('a tour of untimed play, the Me page, the Age answer and the Parent step sends only fixed vocabulary', async ({ page }) => {
+  test('a tour of untimed play, the Me page and the Age answer sends only fixed vocabulary', async ({ page }) => {
     test.slow();
     const secrets = new Set<string>();
     await open(page);
     for (const s of await playerSecrets(page)) secrets.add(s);
 
-    // Me page: the Age answer and the Parent step, then a new Nickname (first, before any score asks for the Age answer)
+    // Me page: the Age answer, then a new Nickname (first, before any score asks for the Age answer)
     await open(page, '#/me');
     await page.locator('#wbAsk').click();
     await expect(page.locator('dialog[open] [data-age="9"]')).toBeVisible();
     await page.locator('dialog[open] [data-age="9"]').click();
-    await page.locator('dialog[open] [data-grownup]').click(); // under 13: the sheet sends a grown-up to the Parent step
-    const form = page.locator('#wbCheck');
-    await expect(form).toBeVisible();
-    await page.locator('#wbIn').fill((await form.getAttribute('data-n'))!);
-    await form.locator('button').click();
-    await page.locator('#wbSwitch').click();
-    await expect(page.locator('#wbSwitch')).toHaveAttribute('aria-checked', 'true');
+    await page.locator('dialog[open] .vs-foot [data-close]').click(); // under 13: Device boards only, the sheet just says so
     await page.locator('#meName').click();
     for (const s of await playerSecrets(page)) secrets.add(s);
 
@@ -156,8 +149,9 @@ test.describe('Events carry no identifiers: Event contents', () => {
     expect(paths).toEqual(expect.arrayContaining([
       'math/view/home', 'math/view/skill/3-mult', 'math/q_answered/practice/miss', 'math/q_answered/practice/right',
       'math/q_answered/star/miss', 'math/q_answered/star/right', 'math/view/star/sq5/star', 'math/view/game/times-sprint/level',
-      'math/view/katas/sq5', 'math/view/skill/unknown', 'math/view/me', 'math/age-answer', 'math/parent-step/on',
+      'math/view/katas/sq5', 'math/view/skill/unknown', 'math/view/me', 'math/age-answer',
     ]));
+    expect(paths.filter(p => p.startsWith('math/parent-step')), 'the Parent step is retired (docs/adr/0006)').toEqual([]);
     checkContents(ev, [...secrets]);
     // The Age answer is never a path segment
     for (const p of paths) expect(p.split('/')).not.toContain('9');

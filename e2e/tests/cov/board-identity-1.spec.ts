@@ -1,7 +1,8 @@
-import { test, expect, open, cloudLog, heldClock } from '../fixtures';
+import { test, expect, open, cloudLog, heldClock, showWorld } from '../fixtures';
 import type { Page } from '@playwright/test';
 
-/* openspec board-identity: "No identity before the first post".
+/* openspec board-identity (change learnvedicmath): "No identity before the first post". World boards are shown only
+   to a Player whose Age answer is 13 or over, after a tap on Show World board.
    The fake Firebase SDK (fixtures) records sign-ins; the fixtures also fail the test on any request to
    identitytoolkit / securetoken (a real sign-in request). An identity would show up as a saved uid
    (vm.cloudUids / vm.cloudUid) or a fake Auth session (e2e.fakeAuth). */
@@ -21,7 +22,7 @@ async function seedRows(page: Page) {
 
 async function expectWorldTop(page: Page, sel: string) {
   const wrap = page.locator(sel);
-  await expect(wrap.locator('[data-src="world"]')).toHaveAttribute('aria-selected', 'true');
+  await showWorld(page, sel);
   const items = wrap.locator('ol.lb li');
   await expect(items).toHaveCount(ROWS.length);
   for (let i = 0; i < ROWS.length; i++) {
@@ -34,7 +35,8 @@ async function expectWorldTop(page: Page, sel: string) {
 }
 
 test.describe('Viewing a World board on a fresh device', () => {
-  test('a Player who has never posted sees the Arena World boards\' top entries, with no sign-in', async ({ page }) => {
+  test.use({ seedConsent: { age: 13 } });
+  test('a Player 13 or over who has never posted sees the Arena World boards\' top entries, with no sign-in', async ({ page }) => {
     await seedRows(page);
     await open(page, '#/arena');
     for (const sel of ['#lbDay', '#lbWeek', '#lbSparks']) await expectWorldTop(page, sel);
@@ -49,9 +51,8 @@ test.describe('Viewing a World board on a fresh device', () => {
   test('a game page\'s World boards show their top entries, with no sign-in', async ({ page }) => {
     await seedRows(page);
     await open(page, '#/game/times-sprint');
-    const worldTabs = page.locator('.lb-wrap [data-src="world"][aria-selected="true"]');
-    await expect(worldTabs.first()).toBeVisible();
-    const wrap = page.locator('.lb-wrap').first();
+    await showWorld(page, '#gbDay');
+    const wrap = page.locator('#gbDay');
     await expect(wrap.locator('ol.lb li')).toHaveCount(ROWS.length);
     await expect(wrap.locator('ol.lb li .lb-name').first()).toHaveText(ROWS[0][1]);
     const log = await cloudLog(page);
@@ -67,9 +68,10 @@ test.describe('Viewing a World board on a fresh device', () => {
       await seedRows(page);
       await page.goto('/vedic-math/#/arena');
       await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
-      // If the Arena is shown, its World board lists the top entries
-      if (await page.locator('#lbDay').count()) await expectWorldTop(page, '#lbDay');
+      // With no Age answer only the Device board is shown: nothing is read either
+      if (await page.locator('#lbDay').count()) await expect(page.locator('#lbDay [data-src="world"], #lbDay [data-show-world]')).toHaveCount(0);
       const log = await cloudLog(page);
+      expect(log.reads).toEqual([]);
       expect(log.signIns).toBe(0);
       expect(log.authLoaded).toBe(false);
       expect(log.writes).toEqual([]);
@@ -109,9 +111,9 @@ test.describe('Earning XP without posting', () => {
     });
   });
 
-  test.describe('under 13 without the Parent step', () => {
+  test.describe('under 13', () => {
     test.use({ seedConsent: { age: 9 } });
-    test('Sparks earned by an under-13 Player without the Parent step make no sign-in request and create no identity', async ({ page }) => {
+    test('Sparks earned by an under-13 Player make no sign-in request and create no identity', async ({ page }) => {
       await earnSparks(page);
       await expectNoIdentity(page);
     });

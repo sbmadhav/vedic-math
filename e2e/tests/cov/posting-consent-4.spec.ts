@@ -1,12 +1,10 @@
 import { test, expect, open, cloudLog, heldClock, type Mode, typeAnswer } from '../fixtures';
 import type { Page } from '@playwright/test';
 
-/* posting-consent spec, Requirement "Play is never blocked", Scenario "Under-13 Player without the Parent step
-   plays the Arena": the round plays normally and its Score ranks on the Device board.
-   e2e/tests/consent.spec.ts:121 covers it in Pro (storage only). These tests cover Explorer and Challenger and
-   check the ranking where the Player sees it: the This device tab of the Arena's Daily and Weekly boards.
-   "Withdrawing the Parent step" is asserted by e2e/tests/consent.spec.ts:158-170 (nothing more posted, the
-   earlier writes unchanged), so it is not repeated here. Every write goes to the fake Firebase SDK. */
+/* posting-consent spec (change learnvedicmath), Requirement "Play is never blocked", Scenario "Under-13 Player
+   without the Parent step plays the Arena": the round plays normally and its Score ranks on the Device board, the only
+   Board an under-13 Player sees. e2e/tests/consent.spec.ts covers Pro. These tests cover Explorer and Challenger and
+   check the ranking where the Player sees it. Every write goes to the fake Firebase SDK. */
 
 const ROUNDS_OFF_WEBKIT = "Arena rounds need the faked clock, which WebKit's requestAnimationFrame does not follow evenly";
 
@@ -29,12 +27,12 @@ async function arenaRound(page: Page, mode: Mode) {
 }
 
 const SAVED: Record<'explorer' | 'challenger', string> = {
-  explorer: 'Saved on this device. Your score is on the This device board. A grown-up can turn on World boards on the Me page.',
-  challenger: 'Saved on this device. It is on the This device board. Ask a grown-up to turn on World boards on the Me page.',
+  explorer: 'Saved on this device. Your score is on the This device board. Your scores stay on this device.',
+  challenger: "Saved on this device. It is on the This device board. Your scores stay on this device's board.",
 };
 
 for (const mode of ['explorer', 'challenger'] as const) {
-  test.describe(`under 13 without the Parent step, ${mode}`, () => {
+  test.describe(`under 13, ${mode}`, () => {
     test.use({ seedMode: mode, seedConsent: { age: 9 } });
 
     test(`${mode}: the Arena Daily round plays normally and ranks on the Device board`, async ({ page, browserName }) => {
@@ -54,12 +52,12 @@ for (const mode of ['explorer', 'challenger'] as const) {
       expect(log.writes).toEqual([]);
       expect(log.signIns).toBe(0);
 
-      // The Score ranks on the Device board: first on the This device tab of today's and this week's boards
+      // The Score ranks on the Device board: first on today's and this week's boards, which show this device only
       await page.locator('#arDone').click(); // Back from the result in the play shell to the Arena's boards
       for (const id of ['#lbDay', '#lbWeek']) {
         const board = page.locator(id);
-        await board.getByRole('tab', { name: 'This device' }).click();
-        await expect(board.getByRole('tab', { name: 'This device' })).toHaveAttribute('aria-selected', 'true');
+        await expect(board.locator('.lb-src')).toHaveText('This device');
+        await expect(board.locator('[data-src="world"], [data-show-world]')).toHaveCount(0);
         const me = board.locator('ol.lb li.me');
         await expect(me).toHaveCount(1);
         await expect(me.locator('.lb-rank')).toHaveText('1');

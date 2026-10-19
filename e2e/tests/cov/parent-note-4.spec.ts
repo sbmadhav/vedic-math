@@ -5,7 +5,7 @@ import type { Page } from '@playwright/test';
    - "The note explains Sparks and Practice" / A parent reads about Practice
    - "The note mentions videos" / Grown-up reads the note (in any Mode)
    The note is opened in every Mode, beside the Arena and game World boards and on the Me page, for a Player
-   with no Age answer, an under-13 Player without the Parent step and a grown-up Player. */
+   with no Age answer, an under-13 Player and a grown-up Player. */
 
 const SUMMARY: Record<Mode, string> = {
   explorer: 'For grown-ups: what the leaderboard keeps',
@@ -29,7 +29,7 @@ const sentences = (text: string) => text.replace(/\s+/g, ' ').split(/(?<=[.!?])\
 
 const CONSENTS: { name: string; consent: Consent | null }[] = [
   { name: 'no Age answer', consent: null },
-  { name: 'under 13 without the Parent step', consent: { age: 9 } },
+  { name: 'under 13', consent: { age: 9 } },
   { name: 'grown-up', consent: { age: 'adult' } },
 ];
 

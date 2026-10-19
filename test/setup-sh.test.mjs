@@ -1,0 +1,36 @@
+/* cloud/setup.sh (openspec change learnvedicmath, task 8.4): the project id and domains are arguments, the TTL policy
+   on exp is turned on, and --dry-run prints every command without running one or writing js/cloud-config.js. */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+const script = fileURLToPath(new URL('../cloud/setup.sh', import.meta.url));
+const config = fileURLToPath(new URL('../js/cloud-config.js', import.meta.url));
+const run = (...args) => spawnSync('bash', [script, ...args], { encoding: 'utf8', env: { ...process.env, APP_CHECK: '1' } });
+
+test('the script parses', () => {
+  assert.equal(spawnSync('bash', ['-n', script]).status, 0);
+});
+
+test('--dry-run prints the commands for the given project and domains, and changes nothing', () => {
+  const before = readFileSync(config, 'utf8');
+  const r = run('--dry-run', 'learnvedicmath-prod', 'learnvedicmath.com', 'www.learnvedicmath.com');
+  assert.equal(r.status, 0, r.stderr);
+  const out = r.stdout + r.stderr;
+  assert.match(out, /\+ gcloud services enable firebase\.googleapis\.com .* --project learnvedicmath-prod/);
+  assert.match(out, /\+ gcloud firestore fields ttls update exp --collection-group=scores --enable-ttl/);
+  assert.match(out, /\+ firebase deploy --only firestore:rules,firestore:indexes --project learnvedicmath-prod/);
+  assert.match(out, /"authorizedDomains":\["localhost", "learnvedicmath\.com", "www\.learnvedicmath\.com"\]/);
+  assert.match(out, /--domains=learnvedicmath\.com,www\.learnvedicmath\.com/);
+  assert.doesNotMatch(out, /sbmadhav/);
+  assert.equal(readFileSync(config, 'utf8'), before, 'a dry run writes nothing');
+});
+
+test('the domains default to learnvedicmath.com and www, and a bad domain is refused', () => {
+  assert.match(run('--dry-run', 'learnvedicmath').stdout, /domains learnvedicmath\.com,www\.learnvedicmath\.com/);
+  const bad = run('--dry-run', 'learnvedicmath', 'not a domain');
+  assert.notEqual(bad.status, 0);
+  assert.match(bad.stderr, /Not a domain/);
+});

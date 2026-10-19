@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog, FIREBASE_SDK } from '../fixtures';
+import { test, expect, open, cloudLog, FIREBASE_SDK, showWorld } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* openspec board-identity, Requirement "Removing a Player forgets their identity":
@@ -87,7 +87,7 @@ async function shownToday(page: Page) {
   await open(page, '#/me');
   await open(page, '#/arena');
   const wrap = page.locator('#lbDay');
-  await expect(wrap.locator('[data-src="world"]')).toHaveAttribute('aria-selected', 'true');
+  await showWorld(page, '#lbDay');
   await expect(wrap.locator('ol.lb')).toBeVisible();
   return wrap.locator('ol.lb li').evaluateAll(lis => lis.map(li => [
     li.querySelector('.lb-name')!.textContent, li.querySelector('b')!.textContent, li.classList.contains('me'),

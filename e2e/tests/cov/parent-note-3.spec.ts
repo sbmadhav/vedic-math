@@ -15,9 +15,9 @@ const SUMMARY: Record<Mode, string> = {
 
 /* Removing a Player forgets their ID on this device; entries already posted stay until removal is requested */
 const REMOVAL: Record<Mode, RegExp> = {
-  explorer: /Removing a player on the Me page forgets their ID on this device; entries they already posted stay until you ask for them to be removed\./,
-  challenger: /Removing a player on the Me page forgets their ID on this device; entries they already posted stay until you ask for them to be removed\./,
-  pro: /Removing a player on the Me page forgets their ID on this device; entries already posted stay until their removal is requested\./,
+  explorer: /Removing a player on the Me page forgets their ID on this device\./,
+  challenger: /Removing a player on the Me page forgets their ID on this device\./,
+  pro: /Removing a player on the Me page forgets their ID on this device\./,
 };
 
 /* Usage is counted anonymously, without cookies or IDs, separately from World boards */
@@ -48,7 +48,7 @@ for (const mode of ['explorer', 'challenger', 'pro'] as Mode[]) {
         await expect(note).toContainText('Firebase gives that player their own random ID on this browser');
         await expect(note).not.toContainText('gives this browser');
         // Entries are kept until removal is asked for, and the note says how to ask
-        await expect(note).toContainText('Entries are not deleted automatically');
+        await expect(note).toContainText('Entries are not deleted automatically.');
         await expect(note).toContainText('To have an entry removed, message Madhav on LinkedIn with the nickname, color and date.');
       });
 

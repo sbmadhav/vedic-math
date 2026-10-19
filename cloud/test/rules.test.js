@@ -127,11 +127,13 @@ test('client-set ts rejected (must be serverTimestamp)', async () => {
   await assertFails(setDoc(ref(ALICE), ok({ ts: 'now' })));
 });
 
-test('exp must be a timestamp 1 to 60 days ahead', async () => {
-  for (const e of [exp(3600e3), exp(-DAY), exp(90 * DAY), serverTimestamp(), Date.now() + 30 * DAY, 'soon', null]) {
+test('exp must be a timestamp 29 to 31 days ahead (the client sends 30)', async () => {
+  for (const e of [exp(3600e3), exp(-DAY), exp(2 * DAY), exp(28.9 * DAY), exp(31.1 * DAY), exp(45 * DAY), exp(90 * DAY), serverTimestamp(), Date.now() + 30 * DAY, 'soon', null]) {
     await assertFails(setDoc(ref(ALICE), ok({ exp: e })), String(e));
   }
-  await assertSucceeds(setDoc(ref(ALICE), ok({ exp: exp(2 * DAY) })));
+  await assertSucceeds(setDoc(ref(ALICE), ok({ exp: exp(30 * DAY) })));
+  await env.clearFirestore();
+  await assertSucceeds(setDoc(ref(ALICE), ok({ exp: exp(29.5 * DAY) })));
 });
 
 test('update only allowed with a strictly higher score', async () => {
@@ -219,10 +221,34 @@ test('reads and writes of other paths rejected', async () => {
   await assertFails(setDoc(doc(db(ALICE), 'boards', BOARD, 'scores', ALICE, 'more', 'x'), { a: 1 }));
 });
 
-test('old boards stay readable (the board window applies to writes only)', async () => {
-  const past = 'daily-2020-01-01-pro';
-  await seed(past, BOB, old());
-  await assertSucceeds(getDocs(query(collection(db(ALICE), 'boards', past, 'scores'), orderBy('score', 'desc'), limit(20))));
+test('a Board can be listed only until 28 days after it began, signed in or not', async () => {
+  const list = (uid, board) => getDocs(query(collection(db(uid), 'boards', board, 'scores'), orderBy('score', 'desc'), limit(20)));
+  // Began 27 days and some hours ago: still listable
+  const recent = `daily-${dayId(NOW - 27 * DAY)}-pro`;
+  await seed(recent, BOB, old());
+  await assertSucceeds(list(null, recent));
+  await assertSucceeds(list(ALICE, recent));
+  // Began 28 days (and the hours since midnight UTC) ago, or long ago: refused, whatever its entries' exp
+  for (const past of [`daily-${dayId(NOW - 28 * DAY)}-pro`, `daily-${dayId(NOW - 29 * DAY)}-pro`, 'daily-2020-01-01-pro', `week-${weekId(NOW - 35 * DAY)}-pro`, `xp-week-${weekId(NOW - 35 * DAY)}-pro`, `g_rain-daily-${dayId(NOW - 40 * DAY)}-pro`]) {
+    await seed(past, BOB, old());
+    await assertFails(list(null, past), past);
+    await assertFails(list(ALICE, past), past);
+  }
+  // This week's and last week's weekly Boards are listable
+  await assertSucceeds(list(null, WEEK));
+  await assertSucceeds(list(null, `week-${weekId(NOW - 7 * DAY)}-pro`));
+});
+
+test('no listable Board can hold an expired entry: the earliest write plus 29 days is after the last listable moment', () => {
+  // The numbers come from the rules themselves, so changing one without the others fails here
+  const hours = +RULES.match(/request\.time > start - duration\.value\((\d+), 'h'\)/)[1];
+  const minExp = +RULES.match(/d\.exp > request\.time \+ duration\.value\((\d+), 'd'\)/)[1];
+  const listDays = +RULES.match(/function listable\(\) \{ return request\.time < boardStart\(\) \+ duration\.value\((\d+), 'd'\)/)[1];
+  assert.deepEqual([hours, minExp, listDays], [15, 29, 28]);
+  for (const kind of ['daily', 'weekly']) {
+    const earliestWrite = -hours * 3600e3; // relative to boardStart(), the same for daily and weekly Boards
+    assert.ok(earliestWrite + minExp * DAY > listDays * DAY, `${kind}: an entry written at the earliest open time is still unexpired at the last listable moment`);
+  }
 });
 
 test('top-20 query ordered by score desc works with no composite index', async () => {
@@ -293,4 +319,18 @@ test('game boards keep every other protection: own entry, higher score, rate lim
   await assertFails(setDoc(ref(ALICE, ALICE, b), ok({ score: 900 })), 'second update within 50 s');
   await assertFails(deleteDoc(ref(ALICE, ALICE, b)));
   await assertSucceeds(getDocs(query(collection(db(BOB), 'boards', b, 'scores'), orderBy('score', 'desc'), limit(20))));
+});
+
+/* The frozen rules for the old sbmadhav.com project during Phase B (firestore.rules.frozen, owner task 16.3): every
+   write is refused, top-20 reads still work for tabs open on the old app */
+test('frozen rules (old project, Phase B): no write of any kind, reads as before', async () => {
+  const frozen = await initializeTestEnvironment({ projectId: 'demo-vedic-math-frozen', firestore: { rules: readFileSync(fileURLToPath(new URL('../firestore.rules.frozen', import.meta.url)), 'utf8') } });
+  try {
+    const fdb = uid => (uid ? frozen.authenticatedContext(uid) : frozen.unauthenticatedContext()).firestore();
+    await frozen.withSecurityRulesDisabled(async ctx => { await setDoc(doc(ctx.firestore(), 'boards', BOARD, 'scores', BOB), old()); });
+    await assertFails(setDoc(doc(fdb(ALICE), 'boards', BOARD, 'scores', ALICE), ok({ exp: exp(30 * DAY) })));
+    await assertFails(updateDoc(doc(fdb(BOB), 'boards', BOARD, 'scores', BOB), { score: 500, ts: serverTimestamp() }));
+    await assertFails(deleteDoc(doc(fdb(BOB), 'boards', BOARD, 'scores', BOB)));
+    await assertSucceeds(getDocs(query(collection(fdb(null), 'boards', BOARD, 'scores'), orderBy('score', 'desc'), limit(20))));
+  } finally { await frozen.cleanup(); }
 });

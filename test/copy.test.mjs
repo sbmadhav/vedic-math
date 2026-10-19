@@ -70,3 +70,23 @@ test('the Om note is shipped verbatim and nothing calls the Om or the ambience V
     .map(([, i]) => `${relative(root, f)}:${i + 1}`));
   assert.deepEqual(hits, []);
 });
+
+/* The parent note (openspec parent-note, change learnvedicmath): under 13 never posts and no Parent step is left; the
+   keeping and removal lines stay as they are on sbmadhav.com until the move (PR 5 brings the 30-day deletion, the
+   privacy contact and the links to the new site's privacy policy). Built in js/app.js (parentNote). */
+test('the parent note says under 13 never posts, in every Mode', () => {
+  const app = readFileSync(join(root, 'js', 'app.js'), 'utf8');
+  const note = app.slice(app.indexOf('function parentNote()'), app.indexOf('async function loadBoard('));
+  for (const s of [
+    'Nothing is posted before a player answers one question about their age.',
+    'Nothing is ever posted for a player whose answer is under 13: their scores rank on this device\'s board only.',
+    "there is no way to turn World boards on for them",
+  ]) assert.ok(note.includes(s), s);
+  for (const gone of ['Parent step', 'turn on World boards for them, a grown-up', 'turning World boards off']) assert.ok(!note.includes(gone), gone);
+  for (const mode of ['explorer:', 'challenger:', 'pro:']) assert.ok(note.split(mode).length >= 3, `${mode} wording in the note`);
+});
+
+test('no Parent step is left in the game', () => {
+  const app = readFileSync(join(root, 'js', 'app.js'), 'utf8');
+  for (const gone of ['parent-step/', 'wbSwitch', 'wbCheck', 'inWords(', 'needs-parent', 'setParentOk']) assert.ok(!app.includes(gone), gone);
+});

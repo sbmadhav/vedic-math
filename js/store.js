@@ -40,13 +40,12 @@ const newId = () => { let t = Date.now(), id; do id = 'p' + (t++).toString(36); 
 export function addPlayer() { const p = { id: newId(), name: makeName(), avatar: AVATARS[P.list.length % AVATARS.length], mode: null, created: Date.now() }; players().list.push(p); switchPlayer(p.id); return p; }
 export function switchPlayer(id) { players(); if (!P.list.some(p => p.id === id)) return; P.active = id; put(PKEY, P); S = null; emit('player', player()); }
 /* Posting consent, per Player and only on this device (never sent; see cloud.canPost):
-   age is the Age answer, a whole number of years or 'adult' (null until answered);
-   parentOk is when a grown-up gave the Parent step (null when not given or withdrawn). */
+   age is the Age answer, a whole number of years or 'adult' (null until answered). Under 13 means Device boards only
+   (ADR 0006). The retired Parent step's parentOk is never written; a record that still has one is ignored. */
 export function setAge(age) {
   if (!(age === 'adult' || (Number.isInteger(age) && age >= 1 && age <= 120))) throw new Error('bad age');
   updatePlayer({ age });
 }
-export const setParentOk = on => updatePlayer({ parentOk: on ? Date.now() : null });
 /* Removing a Player drops their record and progress; cloud.js hears 'removed' and forgets their World board
    identity on this device (their entries already posted stay). */
 /* A removed Player's play-experience progress (vm.play.<player id>.<key>, js/play/kit.js) goes with them */
