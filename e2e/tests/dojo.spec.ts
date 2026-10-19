@@ -98,3 +98,40 @@ test('leaving a kata mid-question and coming back starts a fresh kata', async ({
   await expect(page.locator('.kata-prog i').first()).toHaveClass('cur');
   await expect(page.locator('#kGo')).toHaveText('Check');
 });
+
+/* Explorer is not offered Stars (star-round spec), so its Dojo is an honest Trick library (openspec explorer-belts):
+   the Tricks in their seven belt groups, no Star counts or belt progress, one line that says where belts live, and
+   no Sutras button (Sutras are not in Explorer's menu). Challenger keeps the counts. */
+test.describe('Dojo in Explorer', () => {
+  test.use({ seedMode: 'explorer' });
+  test('shows the seven groups of tricks, no Star or belt counts, and says belts and Stars come with Challenger and Pro', async ({ page }) => {
+    await open(page, '#/dojo');
+    await expect(page.locator('.dojo-belt')).toHaveCount(7);
+    await expect(page.locator('.dojo-node')).toHaveCount(21);
+    await expect(page.locator('.md-lede')).toContainText('Belts and Stars come with Challenger and Pro.');
+    await expect(page.locator('#view')).not.toContainText(/belts earned/);
+    await expect(page.locator('#view')).not.toContainText(/\d\/9 Stars/);
+    await expect(page.locator('#view')).not.toContainText('Light all 9 Stars');
+    await expect(page.locator('.dojo-star')).toHaveCount(0);
+    await expect(page.locator('#view a[href="#/sutras"]')).toHaveCount(0);
+    await expect(page.locator('#view a[href="#/arena"]')).toHaveCount(1);
+  });
+  test.describe('with a White belt kept from Challenger', () => {
+    test.use({ seedProgress: { v: 3, skills: {}, sparks: 0, days: {}, best: {}, last: null, grade: null, badges: { 'belt-white': 1700000000000 }, counts: {}, seen: {}, belts: { white: 1700000000000 } } });
+    test('still shows the belt as earned', async ({ page }) => {
+      await open(page, '#/dojo');
+      await expect(page.locator('.belt-chip.on')).toHaveCount(1);
+      await expect(page.locator('.belt-chip.on')).toHaveText(/White belt/);
+      await expect(page.locator('.dojo-belt.earned')).toHaveCount(1);
+      await expect(page.locator('#view')).not.toContainText(/belts earned/);
+    });
+  });
+});
+
+test('Dojo in Challenger keeps the Star counts and the belts earned line', async ({ page }) => {
+  await open(page, '#/dojo');
+  await expect(page.locator('.md-lede')).toContainText('Light all 9 Stars');
+  await expect(page.locator('#view')).toContainText('0 of 7 belts earned.');
+  await expect(page.locator('.dojo-h small').first()).toHaveText('0/9 Stars');
+  await expect(page.locator('#view a[href="#/sutras"]')).toHaveCount(1);
+});

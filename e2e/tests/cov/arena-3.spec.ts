@@ -4,10 +4,10 @@ import { test, expect, APP, open, cloudLog, appErrors, type Page, typeAnswer } f
    - "The switch-over never mixes a Board", scenario "No algebra": WHEN a Pro Player plays an Arena round THEN no
      question asks to solve for x, simplify a power or evaluate a logarithm. The requirement keeps the previous pool
      only for Pro daily rounds dated before Monday 2026-10-19, so daily rounds are checked from that date on, and
-     Practice rounds and Duels on any date (today included).
+     Practice rounds on any date (today included). The Duel was retired for Party Mode (openspec play-experiences).
    - "Daily rounds are identical for a League", scenario "Two Pro Players on the same date": WHEN two Pro Players with
      different Arena Ratings play the daily round on the same date THEN they get the same questions in the same order.
-   Nothing here posts a score: daily rounds are left before they end, Practice never posts, Duels are local. */
+   Nothing here posts a score: daily rounds are left before they end, and Practice never posts. */
 
 /* What the scenario forbids, read from a question's HTML: an unknown x (solve for x, or x as a base),
    a power other than a square (simplify a power, or exponents beyond squares), a logarithm, a root. */
@@ -128,31 +128,6 @@ test.describe('Pro Arena: no algebra', () => {
       expect((await cloudLog(page)).writes).toEqual([]);
       expect(appErrors(issues), 'console errors').toEqual([]);
     });
-  });
-
-  test('a Pro Duel asks no algebra, through a whole Duel', async ({ page, issues }) => {
-    await heldAt(page, '2026-10-15T10:00:00');
-    await open(page, '#/duel');
-    const sets = await page.evaluate(async () => {
-      const A = await import('/vedic-math/js/arena.js' as string);
-      return Array.from({ length: 10 }, () => A.makeSet('pro', null, 120).map((q: any) => q.q as string));
-    }) as string[][];
-    sets.forEach((set, s) => set.forEach((h, i) => noAlgebra(h, `duel set ${s} #${i + 1}`)));
-    await page.locator('[data-l="pro"]').click();
-    await expect(page.locator('[data-l="pro"]')).toHaveAttribute('aria-pressed', 'true');
-    await page.locator('#dGo').click();
-    await expect(page.locator('.duel-side')).toHaveCount(2);
-    for (let k = 0; k < 10; k++) {
-      const html = await page.locator('#dQ0').innerHTML();
-      noAlgebra(html, `duel #${k + 1}`);
-      noAlgebra(await page.locator('#dQ1').innerHTML(), `duel top side #${k + 1}`);
-      await page.locator(`.duel-p${(k % 2) + 1} .ar-choice[data-v="${answerOf(html)}"]`).click();
-      if (k < 9) await expect(page.locator('#dQ0')).not.toHaveJSProperty('innerHTML', html);
-    }
-    await expect(page.locator('#dS0')).toHaveText('5');
-    await expect(page.locator('#dS1')).toHaveText('5');
-    expect((await cloudLog(page)).writes).toEqual([]);
-    expect(appErrors(issues), 'console errors').toEqual([]);
   });
 });
 

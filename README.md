@@ -9,7 +9,8 @@ Part of [sbmadhav.com](https://sbmadhav.com). GitHub Pages publishes this repo (
 | Path | What it is |
 |---|---|
 | `index.html`, `math.css` | The page and its styles |
-| `js/` | ES modules (`app.js` is the entry; `skills/` holds the skill map) |
+| `js/` | ES modules (`app.js` is the entry; `skills/` holds the skill map; `play/` holds the play experiences) |
+| `css/play/` | Styles of the play experiences, loaded with their pages |
 | `test/` | Unit tests (`node --test`) |
 | `e2e/` | Playwright end-to-end tests against the live site |
 | `cloud/` | Firebase setup, Firestore rules and the rules tests |

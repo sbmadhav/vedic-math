@@ -1,4 +1,4 @@
-import { test, expect, open, type Mode } from '../fixtures';
+import { test, expect, open, withVideos, type Mode } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* copy-accuracy spec, "Related videos match whole words": hand-matched picks come first, and keyword matches are
@@ -12,12 +12,14 @@ test.beforeEach(async ({ page }) => {
 
 const shown = (page: Page) => page.locator('[data-watch-for] button[data-watch]').evaluateAll(els => els.map(e => (e as HTMLElement).dataset.watch!));
 
-/* Skills with exactly one hand-matched video visible to the Mode whose title words also keyword-match 3 or more
-   other visible videos (checked in the page below, so the precondition cannot silently drift). */
+/* Skills served with exactly one hand-matched video visible to the Mode (withVideos keeps that one and takes the
+   Skill off every other video; the catalog gains hand matches in batches) whose title words also keyword-match 3
+   or more other visible videos (checked in the page below, so the precondition cannot silently drift). */
 for (const [mode, skill, yt] of [['challenger', '2-sub100', 'Qf_45zM68R4'], ['challenger', '2-add1000', 'Qf_45zM68R4'], ['pro', '9-expand', 'EAyI-yiXaek']] as [Mode, string, string][]) {
   test.describe(`hand-matched, ${mode}`, () => {
     test.use({ seedMode: mode });
     test(`${skill} shows only its hand-matched video, not the keyword matches (${mode})`, async ({ page }) => {
+      await withVideos(page, `list => list.map(v => (v.yt === '${yt}' || !v.skills.includes('${skill}')) ? v : { ...v, skills: v.skills.filter(s => s !== '${skill}') })`);
       await open(page, `#/skill/${skill}`);
       const box = page.locator('[data-watch-for]');
       await expect(box.locator('button[data-watch]').first()).toBeVisible();

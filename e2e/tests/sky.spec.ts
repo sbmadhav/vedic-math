@@ -71,7 +71,7 @@ test('Tab order from the first Star follows the path', async ({ page }, testInfo
 test('the race track Landmark opens the Arena', async ({ page }) => {
   await open(page);
   const marks = page.locator('.sky-mark');
-  await expect(marks).toHaveText(['Arena', 'Duel', 'Games', 'Watch', 'Skill map']);
+  await expect(marks).toHaveText(['Arena', 'Party', 'Games', 'Watch', 'Skill map']);
   await page.locator('.sky-mark[data-landmark="arena"]').click();
   await expect(page).toHaveURL(/#\/arena$/);
   await expect(page.locator('#view h1')).toHaveText('60 seconds. Same questions for everyone.');
@@ -131,7 +131,7 @@ test.describe('All places', () => {
     await expect(links).toHaveCount(63);
     for (const t of await links.allInnerTexts()) expect(t).toMatch(/^Star [123], (lit|skipped|not lit yet)$/);
     await expect(page.locator('a.places-star--lit')).toHaveCount(1);
-    for (const name of ['Arena', 'Duel', 'Games', 'Watch', 'Skill map', 'Dojo', 'Sutra cards', 'Challenge tower', 'Me', 'The tile home']) {
+    for (const name of ['Arena', 'Party', 'Games', 'Watch', 'Skill map', 'Dojo', 'Sutra cards', 'Challenge tower', 'Me', 'The tile home']) {
       await expect(page.locator('.places-list').getByRole('link', { name, exact: true })).toHaveCount(1);
     }
     const sk = page.getByRole('link', { name: 'Square numbers ending in 5, Star 2, skipped' });
@@ -197,9 +197,9 @@ test.describe('Belt copy with the Sky off', () => {
   });
   test.describe('Pro', () => {
     test.use({ seedMode: 'pro' });
-    test('the Pro Vedic Dojo tile counts lit Stars', async ({ page }) => {
+    test('the Pro Dojo door counts lit Stars', async ({ page }) => {
       await open(page);
-      await expect(page.locator('.play-tile[href="#/dojo"]')).toContainText('0 of 7 belts · 4 of 63 Stars lit');
+      await expect(page.locator('.door[href="#/dojo"]')).toContainText('0 of 7 belts · 4 of 63 Stars lit');
     });
   });
 });

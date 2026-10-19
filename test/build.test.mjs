@@ -129,10 +129,13 @@ test('the build writes a CSP that allows each inline script, the import map incl
   assert.ok(html.indexOf('http-equiv="Content-Security-Policy"') < html.indexOf('<script'), 'the policy comes before the first script');
   assert.ok(html.indexOf('<meta charset="utf-8">') < html.indexOf('http-equiv="Content-Security-Policy"'));
   assert.match(html, /<meta name="referrer" content="strict-origin-when-cross-origin">/);
-  const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]);
+  /* Scripts that run; data blocks (the play stylesheet map, #vm-css) never run and need no hash */
+  const inline = [...html.matchAll(/<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g)].filter(m => !/type="application\/json"/.test(m[1])).map(m => m[2]);
   assert.equal(inline.length, 3, 'the color scheme script, the import map and the color mode buttons');
   for (const body of inline) assert.ok(csp['script-src'].includes(`'sha256-${createHash('sha256').update(body).digest('base64')}'`), `no hash for ${body.slice(0, 40)}`);
-  for (const bad of ["'unsafe-inline'", "'unsafe-eval'", "'wasm-unsafe-eval'", '*', 'https:', 'data:', 'blob:']) assert.ok(!csp['script-src'].includes(bad), `script-src must not allow ${bad}`);
+  for (const bad of ["'unsafe-inline'", "'unsafe-eval'", '*', 'https:', 'data:', 'blob:', 'https://cdn.jsdelivr.net']) assert.ok(!csp['script-src'].includes(bad), `script-src must not allow ${bad}`);
+  assert.ok(csp['script-src'].includes("'wasm-unsafe-eval'"), 'the Math Lens reader compiles WebAssembly (vendor/tesseract/)');
+  assert.deepEqual(csp['worker-src'], ["'self'"], 'the reader worker starts from its own URL, never blob:');
   assert.deepEqual(csp['object-src'], ["'none'"]);
   assert.deepEqual(csp['default-src'], ["'self'"]);
   assert.ok(csp['frame-src'].includes('https://www.youtube-nocookie.com'));
