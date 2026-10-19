@@ -80,7 +80,7 @@ test('the history text names the Vedas only to say the sutras are not in them', 
   }
 });
 
-const ROUTES = ['#/', '#/learn', '#/dojo', '#/arena', '#/games', '#/sutras', '#/watch', '#/me', '#/tower', '#/duel'];
+const ROUTES = ['#/', '#/learn', '#/dojo', '#/arena', '#/games', '#/sutras', '#/watch', '#/me', '#/tower', '#/arena/party'];
 
 test('no page a Player sees calls them the Vedic sutras or claims they are from the Vedas', async ({ page }) => {
   const hits: string[] = [];

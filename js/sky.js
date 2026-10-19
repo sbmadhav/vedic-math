@@ -115,7 +115,7 @@ export function boltSpot(k) {
    (Daily Sutra and Boards), which arrives with the Daily Sutra. */
 export const LANDMARKS = [
   { id: 'arena', href: '#/arena', name: 'Arena', what: 'race track', at: [90, 70] },
-  { id: 'duel', href: '#/duel', name: 'Duel', what: 'ring', at: [910, 70] },
+  { id: 'duel', href: '#/arena/party', name: 'Party', what: 'ring', at: [910, 70] },
   { id: 'games', href: '#/games', name: 'Games', what: 'arcade', at: [90, 930] },
   { id: 'watch', href: '#/watch', name: 'Watch', what: 'observatory', at: [910, 930] },
   { id: 'learn', href: '#/learn', name: 'Skill map', what: 'library', at: [500, 935] }

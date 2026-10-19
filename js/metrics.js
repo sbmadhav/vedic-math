@@ -71,7 +71,10 @@ const ROUTES = [
   [/^#\/me$/, 'me'],
   [/^#\/progress$/, 'progress'],
   [/^#\/guide$/, 'guide'],
+  [/^#\/find$/, 'find'],
   [/^#\/guide\/[\w-]+$/, 'guide/section'],
+  /* Play experiences: the page name inside its section (js/play/catalog.js), never the params after it */
+  [/^#\/(dojo|arena|games|sutras)\/([a-z-]+)(?:\/.*)?$/, 'play/{play:2}'],
 ];
 /* The route-view path for a hash, or 'other'. known(kind, id) says whether id is in that catalog; an id
    that is not (a typed or stale link) becomes 'unknown', so nothing typed is ever sent. */
@@ -174,6 +177,11 @@ export function returnCheck(now = Date.now()) {
 export function shareClick(surface) {
   if (SHARE_SURFACES.includes(surface)) send('share_click/' + surface, 'Vedic Math: share');
 }
+
+/* ---------- Try a trick and Find (openspec first-visit, find) ---------- */
+/* Fixed words only: never the Find text, the result's name or the number of results */
+export function tryStart() { send('try/start', 'Vedic Math: try a trick'); }
+export function findGo() { send('find/go', 'Vedic Math: find result followed'); }
 
 /* ---------- Say it (openspec sutra-pronunciation) ---------- */
 /* A tap on a Say it button that starts a name clip. Fixed path and title: never the Sutra, the voice or the Mode.

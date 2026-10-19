@@ -29,6 +29,8 @@ const GRAMMAR: RegExp[] = [
   new RegExp(`^math/(mastered|kata|sutra|trick|challenge|watch)/${ID}$`),
   new RegExp(`^math/arena/${LEAGUE}/${ID}$`),
   new RegExp(`^math/duel/${LEAGUE}$`),
+  // Play experiences (openspec play-experiences, analytics delta): math/play/<experience>/<action>, fixed words
+  new RegExp(`^math/play/${ID}/${ID}$`),
   // Star events (js/metrics.js STAR_EVENTS, documented by the sky-home change)
   new RegExp(`^math/star/(lit|skipped|comeback|dare_taken|dare_won)/${ID}$`),
   new RegExp(`^math/game/${ID}/${ID}$`),
@@ -74,7 +76,8 @@ test.describe('Share clicks: Share button', () => {
     await expect(page.locator('.ar-result')).toBeVisible();
 
     // Every share control the result offers sends one event when used
-    const share = page.locator('#view').locator('button, a, [role="button"]').filter({ hasText: /share/i });
+    // The result's share controls (not the Arena's shelf of play experiences below it, whose cards mention sharing)
+    const share = page.locator('#view').locator('button, a, [role="button"]').filter({ hasText: /share/i }).and(page.locator(':not(.play-card)'));
     const n = await share.count();
     for (let i = 0; i < n; i++) {
       const before = (await events(page)).filter(([p]) => p.startsWith('math/share_click/')).length;

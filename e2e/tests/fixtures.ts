@@ -84,7 +84,7 @@ export type CloudLog = { signIns: number; signOuts: string[]; apps: string[]; au
 export type Consent = { age: number | 'adult'; parentOk?: number | null };
 
 type Fixtures = {
-  /** Load the real Firebase SDK (anonymous sign-in, live Firestore reads). Default false. */
+  /** Load the real Firebase SDK (live Firestore reads, no sign-in). Default false. */
   liveFirebase: boolean;
   /** Play mode stored for the first player before the page loads, or null for a first visit. */
   seedMode: Mode | null;
@@ -116,10 +116,12 @@ export const test = base.extend<Fixtures>({
     // The same no-op counter from the start, for pages whose queue flushes before the local count.js answer runs
     await context.addInitScript(() => { const w = window as any; w.goatcounter ||= {}; if (typeof w.goatcounter.count !== 'function') w.goatcounter.count = () => {}; });
     // A returning player with a mode, sound off. Only on an empty profile, so reloads keep progress.
+    // Sound is off only when nothing set it yet: Playwright does not order this context script against a test's own
+    // page.addInitScript, so a test that turns sound on (vm.sound '1') keeps it whichever script runs first.
     await context.addInitScript(([mode, consent, progress, more]) => {
       try {
         if (!localStorage.getItem('vm.players')) {
-          localStorage.setItem('vm.sound', '0');
+          if (localStorage.getItem('vm.sound') === null) localStorage.setItem('vm.sound', '0');
           if (mode) localStorage.setItem('vm.players', JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode, created: Date.now(), ...(consent || {}), ...(more || {}) }] }));
           if (mode && progress) localStorage.setItem('mathquest.v1.p1', JSON.stringify(progress));
         }
@@ -179,6 +181,16 @@ export { expect };
 export const APP = '/vedic-math/';
 
 /** Opens the app at a hash route (for example '#/dojo') and waits for the view to render. */
+/** Serves the app a transformed video list. `transform` is JavaScript source for a function (list) => list, run in
+    the page over the real js/videos.js (every other export passes through), so a scenario can hold its premise
+    (a Skill with no hand-matched video, exactly one, a planted counting video) whatever the catalog grows into.
+    Call before open(); the test's own import('/vedic-math/js/videos.js') in page.evaluate gets the same list. */
+export async function withVideos(page: Page, transform: string) {
+  const REAL = `${APP}js/videos.js?e2e-real`;
+  const body = `export * from '${REAL}';\nimport { VIDEOS as REAL } from '${REAL}';\nexport const VIDEOS = (${transform})(REAL);\n`;
+  await page.route(/\/vedic-math\/js\/videos\.js(\?(?!e2e-real).*)?$/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body }));
+}
+
 export async function open(page: Page, hash = '#/') {
   await page.goto(`${APP}${hash === '#/' ? '' : hash}`);
   await expect(page.locator('#view h1, #view h2').first()).toBeVisible();

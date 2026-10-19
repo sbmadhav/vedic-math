@@ -55,6 +55,7 @@ test.describe('A week of quests', () => {
   test.use({ seedMode: 'challenger', seedProgress: null });
 
   test('over seven consecutive dates the set of three quests is not the same every day', async ({ page }) => {
+    test.setTimeout(120_000); // seven full page loads; on the live host each takes several seconds
     await page.clock.install({ time: new Date(2026, 5, 1, 10, 0, 0) });
     await open(page, '#/');
     const sets: string[] = [];

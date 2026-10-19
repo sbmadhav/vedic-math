@@ -7,7 +7,7 @@ import { test, expect, APP, open, chromiumOnly } from './fixtures';
    (only that rule on that element) and recorded as its own test.fixme below, so it stays visible.
    When one is fixed, delete its KNOWN entry: the route checks then cover it again. */
 
-const ROUTES = ['#/', '#/learn', '#/dojo', '#/arena', '#/games', '#/sutras', '#/sutras/s3', '#/watch', '#/me', '#/skill/v-sq5', '#/game/times-sprint', '#/places', '#/guide'];  // #/sutras/s3: the deep dive with Say it and Ambience (sutra-pronunciation 3.3)
+const ROUTES = ['#/', '#/learn', '#/dojo', '#/arena', '#/games', '#/sutras', '#/sutras/s3', '#/watch', '#/me', '#/skill/v-sq5', '#/game/times-sprint', '#/places', '#/guide', '#/find'];  // #/sutras/s3: the deep dive with Say it and Ambience (sutra-pronunciation 3.3)
 
 /* Known violations on the live site: { route, rule, target, note }. Empty: the Sparks bar is a progressbar and
    #prRun lost its label (both fixed in js/app.js). Add an entry when a new one is found and reported. */
@@ -84,16 +84,15 @@ for (const scheme of ['light', 'dark'] as const) {
   });
 }
 
-/* The Duel after Start (duel spec): both sides show the same question, picture and choices */
+/* Play experiences (openspec play-experiences): the pages a family is most likely to open together */
 for (const scheme of ['light', 'dark'] as const) {
-  test.describe(`${scheme} scheme, explorer`, () => {
-    test.use({ colorScheme: scheme, seedMode: 'explorer' });
-    test('#/duel after Start has no serious or critical axe violations', async ({ page }, testInfo) => {
+  test.describe(`${scheme} scheme, play`, () => {
+    test.use({ colorScheme: scheme });
+    for (const hash of ['#/arena/party', '#/games/tala', '#/arena/daily-number', '#/dojo/spells']) test(`${hash} has no serious or critical axe violations`, async ({ page }, testInfo) => {
       chromiumOnly(testInfo);
-      await open(page, '#/duel');
-      await page.locator('#dGo').click();
-      await expect(page.locator('#dQ0')).not.toBeEmpty();
-      expect(await serious(page, '#/duel')).toEqual([]);
+      await open(page, hash);
+      await expect(page.locator('#view h1').first()).toBeVisible();
+      expect(await serious(page, hash)).toEqual([]);
     });
   });
 }

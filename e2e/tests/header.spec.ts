@@ -143,7 +143,7 @@ test.describe('color scheme button', () => {
 
 test.describe('nav', () => {
   test('highlights the current route and only that one', async ({ page }) => {
-    for (const [hash, name] of [['#/', 'Home'], ['#/learn', 'Learn'], ['#/arena', 'Arena'], ['#/games', 'Games'], ['#/watch', 'Watch'], ['#/guide', 'Guide']] as const) {
+    for (const [hash, name] of [['#/', 'Home'], ['#/learn', 'Learn'], ['#/arena', 'Arena'], ['#/games', 'Games'], ['#/watch', 'Watch'], ['#/guide', 'Guide'], ['#/find', 'Find']] as const) {
       await open(page, hash);
       const nav = page.locator('header .mq-nav');
       await expect(nav.locator('a[aria-current="true"]')).toHaveCount(1);
