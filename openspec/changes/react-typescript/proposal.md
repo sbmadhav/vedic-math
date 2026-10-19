@@ -6,7 +6,7 @@ Status: plan only, not yet approved for implementation (task 0.0). The owner dec
 
 The game is about 40 hand-written ES modules (about 9,800 lines in `js/`, 10,800 with data) with no framework and no bundler. Views draw themselves by assigning template strings to `innerHTML`: `js/app.js` alone does it 69 times, `js/games.js` 22, `js/arena.js` 15, `js/star.js` 10. Every one of those is a place where a value that is not escaped by hand (`esc()`) becomes markup, so cross-site scripting is a class of bug the code invites rather than one it rules out. `js/app.js` is 1,497 lines holding the router, every view and every dialog, and each new feature (Play, verses, the Sky, Star Quest) has added to it. Lifecycle safety depends on every author remembering `js/life.js`, enforced after the fact by a regex scan (`test/lifecycle-scan.test.mjs`) with an allow-list of exceptions.
 
-The owner wants three things (decision 1): **safety** (no `innerHTML` XSS class), **maintainability**, and **speed of building features**. The plans that follow the move (`placement`, `age-bands`, `duel-online`, `render-performance`, `gpu-effects`) would each add more template-string views, more hand-written listeners and, in `gpu-effects`, a hand-written WebGL engine. The owner decided (2026-10-17, decisions 1 to 13, all approved) to move the game to React 19 and TypeScript first, step by step, and to build those plans in React afterwards.
+The owner wants three things (decision 1): **safety** (no `innerHTML` XSS class), **maintainability**, and **speed of building features**. The plans that follow the move (`placement`, `age-bands`, `duel-online`, `render-performance`, `gpu-effects`) would each add more template-string views, more hand-written listeners and, in `gpu-effects`, a hand-written WebGL engine. The owner decided (2026-10-17: decisions 1 to 4 and 6 to 13 approved; decision 5, path URLs, is still pending as Q18) to move the game to React 19 and TypeScript first, step by step, and to build those plans in React afterwards.
 
 Player speed is not the goal of this change; it stays the job of `render-performance`, re-planned for React. This change must not make the game slower: first load and interaction time are measured in CI against today's site and may not regress (decision 1).
 
@@ -28,7 +28,7 @@ Player speed is not the goal of this change; it stays the job of `render-perform
 
 - New features, new copy or new game rules. A moved view looks and behaves as before, except Star Quest's mobile layout (decision 3) and the URL form (Q18).
 - Player speed work beyond "no regression": minifying targets, prefetching, Speculation Rules, the static first screen and font subsetting stay in `render-performance`, re-planned for React.
-- Online Duels, placement and age bands: built after this change, in React, from their own changes.
+- Placement, age bands and, only if the owner keeps `duel-online` (Q26 in design.md), online Duels: built after this change, in React, from their own changes.
 - The 3D scenes after the Sky (Sutra deep-dive illustrations, game effects, Mandala art): the revised `gpu-effects`.
 - The landing and grown-up pages (`site/`): they stay the static pages the move builds. Only `/play/` becomes a React app.
 - Server-side rendering at request time. Prerendering happens at build time only; the site stays static assets.
@@ -68,7 +68,7 @@ ADRs written with this change: `docs/adr/0012-react-and-typescript-for-the-game.
 
 1. The `learnvedicmath` move ships unchanged (decision 3), including its phase B start.
 2. This change.
-3. Then, in React: `placement`, `age-bands`, `duel-online`, `render-performance` and `gpu-effects` (each re-planned with `/opsx:update` before it is built; task group 11).
+3. Then, in React: `placement`, `age-bands`, `render-performance`, `gpu-effects` and, only if the owner keeps it (Q26 in design.md), `duel-online` (each re-planned with `/opsx:update` before it is built; task group 11).
 
 Until `learnvedicmath` is archived, `openspec validate --strict` reports "Archive would refuse" notices for the MODIFIED deltas on `hosting`, `offline-app` and `deploy-pipeline`. That is expected.
 

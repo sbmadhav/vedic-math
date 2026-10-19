@@ -58,7 +58,7 @@ D1 to D13 are the owner's decisions (2026-10-17, all approved; D5 is pending as 
 **Decision.**
 1. The learnvedicmath.com move ships unchanged.
 2. Next, this migration.
-3. Last, `placement`, `age-bands`, `duel-online`, `render-performance` and `gpu-effects`, built in React.
+3. Last, `placement`, `age-bands`, `render-performance` and `gpu-effects`, built in React, and `duel-online` too only if the owner keeps it (Q26).
 
 Content work (videos, voice, verses) continues throughout. Star Quest's mobile layout is redone when its view moves (the owner reports it looks bad on mobile).
 
