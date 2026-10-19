@@ -52,6 +52,13 @@ The Worker SHALL limit, per hashed IP address, how often codes are made (10 a mi
 - **WHEN** one IP address tries 30 codes in a minute
 - **THEN** the tries after the twentieth are refused until the minute is over
 
+### Requirement: A service-wide limit on failed joins
+The Worker SHALL count failed joins (a code that is not live) across all addresses for one minute. While that count is above 100 a minute, every join SHALL need a fresh Turnstile token and the per-IP join limit SHALL be 5 a minute.
+
+#### Scenario: Guessing codes from many addresses
+- **WHEN** more than 100 joins in one minute, from any number of addresses, name codes that are not live
+- **THEN** every join needs a fresh Turnstile token and each address may try at most 5 codes a minute until the count falls back
+
 ### Requirement: The IP address is never kept
 The Worker SHALL use a Player's IP address only to deliver the connection and, as a salted hash, as a rate-limit key for at most a minute. It SHALL NOT write the IP address, its hash, a Duel code, a ticket or a raw Duel key to any log or storage, and SHALL NOT write a Nickname or a hashed Duel key to any log.
 

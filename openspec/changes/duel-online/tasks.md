@@ -56,7 +56,7 @@ Second change after the learnvedicmath.com move (owner M6), after `render-perfor
 
 ## 6. End-to-end tests
 
-- [ ] 6.1 `e2e/local-server.mjs` (or the move's `wrangler dev` setup) runs the Worker locally with the Turnstile always-pass test key; `e2e/tests/fixtures.ts` gains a tripwire that fails any test sending a request to the production `/api/duel/` or `challenges.cloudflare.com` with a non-test key.
+- [ ] 6.1 `e2e/local-server.mjs` (or the move's `wrangler dev` setup) runs the Worker locally with the Turnstile always-pass test key; `e2e/tests/fixtures.ts` gains a tripwire that fails any test sending any request to the production `/api/duel/` or to production Firebase (`firestore.googleapis.com`, `identitytoolkit.googleapis.com`, `securetoken.googleapis.com`), whatever key it carries; `challenges.cloudflare.com` is allowed only with the Turnstile always-pass test site key.
 - [ ] 6.2 `e2e/tests/duel.spec.ts` (two browser contexts, chromium and mobile; WebKit for the UI only where the worker setup allows): every `online-duel` and `duel-safety` scenario a browser can show: code and link join, expired code, full room, under-13 lobby, nobody waiting (queue with one Player, wait shortened by a test-only variable in `wrangler dev`), the same question on both, wrong then right, timeout, reaching 10, rematch, connection drop and return (context offline for 8 s), gone for good, Sparks and no Firebase request, offline lobby, resting lobby, keyboard 1 to 4, screen reader status, mute, Reaction rate limit, Report and Block, the join confirmation's stranger line.
 - [ ] 6.3 `privacy.spec.ts`: a full Friend Duel sends no Player id, Age answer, Rating or Firebase request, and no analytics request contains the code.
 

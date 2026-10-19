@@ -29,7 +29,7 @@ Build order (owner M6): this change first after the learnvedicmath.com move, the
 - [ ] 3.1 `build.py` minify step through `tools/node_modules/.bin/esbuild` (transform per file, JS and CSS); hashes on minified bytes; `--dev` skips it; `--sourcemap` writes maps to a repo-only folder. Verify: `test/build.test.mjs` checks a minified module is smaller than its source and still has its import map entry.
 - [ ] 3.2 Import-specifier check with es-module-lexer (pinned in `tools/`): every minified module imports exactly its source's specifiers. Verify: a fixture whose minified output loses an import fails the build.
 - [ ] 3.3 Pre-commit hook and `ci.yml`: `npm ci --prefix tools` before the build. Verify: a clean clone builds with the hook.
-- [ ] 3.4 Check edge compression: `curl -sI -H 'Accept-Encoding: br' https://learnvedicmath.com/js/app.js?v=<hash>` and the same for `/math.css` and `/play/`. **[OWNER]** If not `br`, add a Cloudflare Compression Rule (steps from the builder). Add the curl check to the daily `e2e.yml`. Verify: the daily job passes.
+- [ ] 3.4 Check edge compression: `curl -sI -H 'Accept-Encoding: br' "https://learnvedicmath.com/js/app.js?v=${hash}"` (with `hash` set to the live stamp) and the same for `/math.css` and `/play/`. **[OWNER]** If not `br`, add a Cloudflare Compression Rule (steps from the builder). Add the curl check to the daily `e2e.yml`. Verify: the daily job passes.
 - [ ] 3.5 Re-run task 1.2 and add a "after minify" row to the report.
 
 ## 4. Per-route code splitting (D4)

@@ -7,7 +7,7 @@ An experience page SHALL open offline once it has been opened online. Experience
 
 #### Scenario: Tala Lab offline
 - **WHEN** a Player opened Tala Lab online before and is now offline and opens `#/games/tala`
-- **THEN** Tala Lab shows
+- **THEN** Tala Lab opens from the files saved when it was first opened, with no Retry message
 
 #### Scenario: Never opened
 - **WHEN** a Player who never opened Mandala Studio is offline and looks at the Games shelf
