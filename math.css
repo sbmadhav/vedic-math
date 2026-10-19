@@ -608,6 +608,11 @@ html.motion-paused .vm-player[open], body.calm .vm-player[open] { animation: non
 
 /* Sutra deep-dive modal */
 .sutra-modal { width: min(1100px, 96vw); max-width: 96vw; max-height: 92dvh; padding: 0; border: 2px solid var(--edge); border-radius: var(--radius-xl); background: var(--bg); color: var(--ink); box-shadow: 0 40px 100px -24px rgba(0,0,0,.55); overflow: auto; transform-origin: top left; scroll-padding: 64px 0 76px; } /* anything scrolled or focused into view lands clear of the pinned Close bar and footer (WCAG 2.4.11) */
+/* No glass inside the deep dive. In Deep Space the design system gives every .md-card and .md-btn a backdrop blur
+   (--glass); here they sit on the dialog's opaque background, so the blur shows nothing, yet a dozen blurred layers in
+   this scroller starve WebKitGTK of frames (requestAnimationFrame and IntersectionObserver stop, so on Linux WebKit
+   clicks never settle and the pinned bar never reports in view) */
+.sutra-modal { --glass: none; }
 .sutra-modal::backdrop { background: rgba(10,12,17,.6); backdrop-filter: blur(5px); }
 /* The dialog scrolls; the close button (top) and the prev / next footer (bottom) stay pinned over the content */
 .sd-inner { --sd-pad: 26px; padding: 22px var(--sd-pad) 0; }

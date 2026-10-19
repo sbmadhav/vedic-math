@@ -171,7 +171,6 @@ for (const scheme of ['light', 'dark'] as const) {
       // Only Playwright's Linux WebKit (CI), only Deep Space: the pinned bar leaves the viewport after scrolling and pointer
       // clicks never settle. macOS WebKit (closest to Safari) and every other project pass. Owner checks a real iPhone in
       // Deep Space; remove this once that check or a Linux WebKit update clears it.
-      test.fixme(testInfo.project.name === 'webkit' && process.platform === 'linux' && scheme === 'dark', 'Linux WebKit only: sticky bar in Deep Space (see comment)');
       await fakeAudio(page, { clipSecs: 30 });
       await page.emulateMedia({ colorScheme: scheme });
       await page.setViewportSize({ width, height: width >= 768 ? 800 : 700 });
@@ -184,14 +183,14 @@ for (const scheme of ['light', 'dark'] as const) {
       for (const b of [sb!, tb!]) { expect(overlap(b, cb!)).toBe(false); expect(overlap(b, ab!)).toBe(false); }
       expect(overlap(ab!, cb!)).toBe(false);
       expect(ab!.width).toBeGreaterThanOrEqual(44);
+      // No glass blur inside the deep dive (math.css): in Deep Space the blurred buttons starved Linux WebKit of frames,
+      // so clicks never settled and the pinned bar never reported in view
+      expect(await d.evaluate(el => [...el.querySelectorAll('.md-btn, .md-card')].map(b => { const cs: any = getComputedStyle(b); return cs.backdropFilter || cs.webkitBackdropFilter || 'none'; }).filter(f => f !== 'none'))).toEqual([]);
       // Say it plays, and the worked examples still open below
       await say.click();
       await expect(say).toHaveAttribute('aria-pressed', 'true');
       const second = d.locator('.sd-ex > li').nth(1).locator('details');
-      // Opened from the keyboard: in WebKit on Linux (CI only, Deep Space, 320 and 768px) a pointer click on this summary
-      // never passed Playwright's "stable" check, so the 45 s timeout hid what this test is about
-      await second.locator('summary').focus();
-      await page.keyboard.press('Enter');
+      await second.locator('summary').click();
       await expect(second).toHaveAttribute('open', '');
       // Scrolled to the bottom: Close, Ambience and the footer stay in view; nothing scrolls sideways
       await d.evaluate(el => { el.scrollTop = el.scrollHeight; });

@@ -1,14 +1,14 @@
-import { test, expect, open, VOICE_HOST, type Page } from '../fixtures';
+import { test, expect, open, type Page } from '../fixtures';
 
 /* read-aloud-wording spec, Requirements "A question can say what its picture shows" and "The hint read is the hint
-   shown": one test per scenario. speechSynthesis is a recorder, so nothing is spoken. The Studio voice host is cut off,
-   so every line goes through the recorder (with the recordings reachable, a recorded line plays as audio instead and
-   the recorder hears nothing). */
+   shown": one test per scenario. speechSynthesis is a recorder, so nothing is spoken. The studio voice (recorded files,
+   tried before the device's voice) is turned off, as in read-aloud.spec.ts, so every line goes to the recorder and its
+   words can be read back. */
 async function recordSpeech(page: Page) {
-  await page.route(`${VOICE_HOST}/**`, r => r.abort('blockedbyclient'));
   await page.addInitScript(() => {
     const w = window as any;
     w.__said = [];
+    try { localStorage.setItem('vm.studioVoice', '0'); } catch (e) { /* storage blocked */ }
     const voice = { name: 'Samantha', lang: 'en-US', voiceURI: 'Samantha', localService: true, default: true };
     const fake = {
       getVoices: () => [voice], pending: false, speaking: false, paused: false,
