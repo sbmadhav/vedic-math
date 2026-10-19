@@ -34,6 +34,7 @@ test('a test workflow naming either token elsewhere fails the check', () => {
     ['other.yml', `on:\n  push:\njobs:\n${job('up', 'production', 'R2_SECRET_ACCESS_KEY')}`, /other\.yml: job up names R2_SECRET_ACCESS_KEY/],
     /* A # inside quotes is not a comment, so a secret after it is still seen */
     ['other.yml', `on:\n  push:\njobs:\n  quoted:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo "a #b \${{ secrets.CLOUDFLARE_API_TOKEN }}"\n`, /other\.yml: job quoted names CLOUDFLARE_API_TOKEN/],
+    ['other.yml', `on:\n  push:\njobs:\n  escaped:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo "a \\" #b \${{ secrets.CLOUDFLARE_API_TOKEN }}"\n`, /other\.yml: job escaped names CLOUDFLARE_API_TOKEN/],
   ]) {
     const problems = check({ ...base, [file]: text });
     assert.ok(problems.some(p => re.test(p)), `${file}: ${problems.join(' | ') || 'no problem found'}`);

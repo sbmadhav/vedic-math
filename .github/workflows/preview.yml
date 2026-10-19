@@ -7,9 +7,9 @@ name: Preview
 # request is skipped below anyway. The preview token (CLOUDFLARE_PREVIEW_TOKEN) is in the preview environment and is
 # separate from the production token, so revoking either never touches the other. Previews never post anything: the
 # suite uses the fake Firebase SDK, and the Firebase key's referrers do not include workers.dev.
-# The job skips its steps until the preview token is saved (secrets cannot be read in a job-level if), and a version
-# can only be uploaded once the Worker exists: the first production deploy from main (owner task 1.7, then 11.1)
-# creates it, so previews start working after that deploy.
+# The job skips its steps until the preview token is saved and build.py has --preview (secrets cannot be read in a
+# job-level if). A version can only be uploaded once the Worker exists: the first production deploy from main (owner
+# task 1.7, then 11.1) creates it, so previews start working after that deploy.
 
 on:
   pull_request:
@@ -32,17 +32,19 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - name: Is the preview token saved?
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Is a preview possible?
         id: token
         env:
           TOKEN: ${{ secrets.CLOUDFLARE_PREVIEW_TOKEN }}
         run: |
-          if [ -n "$TOKEN" ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "::notice::CLOUDFLARE_PREVIEW_TOKEN is not saved in the preview environment yet; no preview"; fi
-
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        if: steps.token.outputs.present == 'true'
-        with:
-          persist-credentials: false
+          # The preview token is saved, and this branch's build.py knows --preview (it comes with the move itself)
+          if [ -z "$TOKEN" ]; then echo "::notice::CLOUDFLARE_PREVIEW_TOKEN is not saved in the preview environment yet; no preview"
+          elif ! grep -q -- "--preview" build.py; then echo "::notice::this branch's build.py has no --preview yet; no preview"
+          else echo "present=true" >> "$GITHUB_OUTPUT"; fi
 
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         if: steps.token.outputs.present == 'true'

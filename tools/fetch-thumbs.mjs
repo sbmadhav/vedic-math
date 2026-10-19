@@ -6,7 +6,7 @@
      node tools/fetch-thumbs.mjs --all    fetch every one again
 
    test/videos.test.mjs fails when a js/videos.js entry has no thumbnail, and when a thumbnail belongs to no entry. */
-import { existsSync, mkdirSync, writeFileSync, rmSync, readdirSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync, rmSync, renameSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -22,19 +22,24 @@ for (const id of ids) {
   const out = join(dir, `yt-${id}.webp`);
   if (existsSync(out) && !all) continue;
   /* One failure (network, a missing video, cwebp) is reported and the rest still run */
-  let jpg;
+  let jpg, webp;
   try {
     const r = await fetch(`https://i.ytimg.com/vi/${id}/mqdefault.jpg`);
     if (!r.ok) { console.error(`${id}: HTTP ${r.status}`); process.exitCode = 1; continue; }
     jpg = join(tmpdir(), `thumb-${id}.jpg`);
     writeFileSync(jpg, Buffer.from(await r.arrayBuffer()));
-    execFileSync('cwebp', ['-quiet', '-q', '72', '-resize', '320', '180', '-metadata', 'none', jpg, '-o', out]);
+    /* Into a temporary file first: a half-written thumbnail never takes the real name (a later run skips existing ones) */
+    webp = `${out}.tmp`;
+    execFileSync('cwebp', ['-quiet', '-q', '72', '-resize', '320', '180', '-metadata', 'none', jpg, '-o', webp]);
+    renameSync(webp, out);
+    webp = null;
     made++;
   } catch (e) {
     console.error(`${id}: ${e instanceof Error ? e.message : e}`);
     process.exitCode = 1;
   } finally {
     if (jpg) rmSync(jpg, { force: true });
+    if (webp) rmSync(webp, { force: true });
   }
 }
 const stale = readdirSync(dir).filter(f => f.endsWith('.webp') && !ids.includes(f.slice(3, -5)));
