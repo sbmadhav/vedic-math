@@ -244,7 +244,7 @@ export function sections(n) {
       what: w('Fun math videos and songs that play right here.', `Short videos picked by hand and matched to the skills and tricks they teach. None is longer than ${n.videoMinutes} minutes.`),
       how: [
         w('Tap a video. It plays right on this page.', 'Every video plays inside the page. Close it with the X button or Escape.'),
-        w('The buttons at the top show fewer videos, like only Shorts.', 'The filter buttons narrow the shelf: Skill area, Tricks only, Length, and Videos or Shorts.', 'The filter buttons narrow the shelf: Skill area, Tricks only, Length, and Videos, Shorts or Links. Links are sites and games, which open in a new tab.'),
+        w('The buttons at the top pick Videos or Shorts, or show fewer videos.', 'The shelf opens on both Modes and on Videos. Pick Shorts to see only Shorts, or narrow by Mode, Skill area, Tricks only and Length.', 'The shelf opens on both Modes and on Videos. Pick Shorts or Links to see only those, or narrow by Mode, Skill area, Tricks only and Length. Links are sites and games, which open in a new tab.'),
         w('Lessons have videos too, under Watch it explained.', 'Lessons and tricks link matching videos under Watch it explained.')
       ],
       tip: w('Watch with a grown-up nearby.', 'Watching a video for a whole minute earns the Video learner badge.', 'Videos use YouTube\'s privacy-enhanced mode. Watching one for a whole minute earns the Video learner badge.'),

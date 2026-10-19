@@ -67,9 +67,10 @@ export const lengthOf = v => Object.keys(LENGTHS).find(k => v.duration >= LENGTH
 /* The Skill areas (strands) a video belongs to: its Skills' strands, plus 'tricks' when it has a Trick */
 export const strandsOf = (v, byId) => [...new Set([...v.skills.map(id => byId[id] && byId[id].strand).filter(Boolean), ...(v.tricks.length ? ['tricks'] : [])])];
 
-/* The shelf's filters. mode: the Player's Mode (what may be seen). level: one Mode chip (default the Player's own,
-   'all' for every visible Mode). strand: a Skill area id. tricks: true keeps entries with a Trick. length: a
-   LENGTHS key. kind: 'video' or 'short'. Unset filters keep everything. */
+/* The shelf's filters. mode: the Player's Mode (what may be seen). level: one Mode chip, or 'all' for every
+   visible Mode (the shelf opens on 'all'; the default here is the Player's own). strand: a Skill area id. tricks:
+   true keeps entries with a Trick. length: a LENGTHS key. kind: 'video' or 'short' (the shelf always sets one).
+   Unset filters keep everything. */
 export function filterShelf(list, { mode, level = mode, strand = null, tricks = false, length = null, kind = null }, byId = {}) {
   return order(list.filter(v => visibleTo(v, mode)
     && (level === 'all' || v.modes.includes(level))
