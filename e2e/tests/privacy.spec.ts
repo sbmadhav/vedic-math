@@ -87,8 +87,16 @@ test.describe('under 13', () => {
     const events: string[] = [];
     await page.route(/\/js\/analytics\.js(\?.*)?$/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body: 'window.siteTrack = (p) => { (window.__ev ||= []).push(p); };' }));
     await page.route(/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>video</title>' }));
-    const sent: string[] = [];
-    page.on('request', r => { const u = r.url(); if (new URL(u).origin !== new URL(page.url() || 'http://x').origin && !/^https?:\/\/(localhost|127\.0\.0\.1|learnvedicmath\.com)/.test(u)) sent.push(u + ' ' + (r.postData() || '')); });
+    // The Watch shelf on sbmadhav.com shows YouTube's thumbnails (answered here with an empty picture); after the move
+    // to learnvedicmath.com they come from this site
+    await page.route(/^https:\/\/i\.ytimg\.com\//, r => r.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg"/>' }));
+    // Requests leaving this site, by exact host name (not by URL text, which a query string could fake)
+    const sent: string[] = [], hosts: string[] = [];
+    page.on('request', r => {
+      const u = r.url(), host = new URL(u).hostname;
+      if (['localhost', '127.0.0.1', 'sbmadhav.com'].includes(host)) return;
+      sent.push(u + ' ' + (r.postData() || '')); hosts.push(host);
+    });
     await open(page, '#/watch');
     await page.locator('#view button.watch-card').first().click();
     await expect(page.locator('dialog.vm-player iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\//);
@@ -96,7 +104,8 @@ test.describe('under 13', () => {
     expect(events.filter(e => e.startsWith('math/watch/'))).toEqual([expect.stringMatching(/^math\/watch\/(video|short)$/)]);
     expect(sent.filter(u => /firestore|identitytoolkit|securetoken/.test(u))).toEqual([]);
     expect(sent.filter(u => u.includes('Swift') || u.includes('Tiger'))).toEqual([]);
-    expect(sent.every(u => /youtube-nocookie\.com|i\.ytimg\.com|voice\.learnvedicmath\.com/.test(u)), sent.join('\n')).toBe(true);
+    const allowed = ['www.youtube-nocookie.com', 'i.ytimg.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+    expect(hosts.filter(h => !allowed.includes(h)), sent.join('\n')).toEqual([]);
     expect((await cloudLog(page)).writes).toEqual([]);
   });
 });
