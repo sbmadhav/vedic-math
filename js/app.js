@@ -1218,7 +1218,7 @@ function watchView({ signal } = {}) {
         ${chips('strand', [['null', 'Any area'], ...strands.map(id => [id, STRANDS[id].pro])], 'Skill area')}
         ${chips('tricks', [['false', 'Any'], ['true', 'Tricks only']], 'Tricks')}
         ${chips('length', [['null', 'Any length'], ...Object.entries(LENGTH_LABEL)], 'Length')}
-        ${chips('kind', [['video', 'Videos'], ['short', 'Shorts'], ...(pro ? [['link', 'Links']] : [])], 'Videos or Shorts')}
+        ${chips('kind', [['video', 'Videos'], ['short', 'Shorts'], ...(pro ? [['link', 'Links']] : [])], pro ? 'Videos, Shorts or Links' : 'Videos or Shorts')}
         ${navigator.onLine === false ? '<p class="mq-note watch-offline">Videos need a connection. Connect to play them.</p>' : ''}
         ${list.length ? `<div class="watch-grid">${list.map(card).join('')}</div>` : f.kind === 'link' ? '' : '<p class="mq-small">No videos match these filters yet.</p>'}
         ${links.length ? `<section class="watch-links" aria-labelledby="watchLinksH"><h2 class="mq-h3" id="watchLinksH">Sites and games</h2><p class="mq-note">Opens in a new tab.</p><div class="watch-grid">${links.map(linkCard).join('')}</div></section>` : ''}`;

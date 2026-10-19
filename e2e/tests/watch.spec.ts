@@ -42,15 +42,17 @@ for (const [mode, sees] of [['explorer', ['explorer']], ['challenger', ['challen
     });
     test(`${mode}: the shelf opens on Videos, and Shorts are shown only on their own`, async ({ page }) => {
       await openShelf(page);
-      const kinds = page.getByRole('group', { name: 'Videos or Shorts', exact: true }).getByRole('button');
+      // Pro's kind chips include Links, and their group says so
+      const KIND = mode === 'pro' ? 'Videos, Shorts or Links' : 'Videos or Shorts';
+      const kinds = page.getByRole('group', { name: KIND, exact: true }).getByRole('button');
       await expect(kinds).toHaveText(mode === 'pro' ? ['Videos', 'Shorts', 'Links'] : ['Videos', 'Shorts']);
-      await expect(chip(page, 'Videos or Shorts', 'Videos')).toHaveAttribute('aria-pressed', 'true');
+      await expect(chip(page, KIND, 'Videos')).toHaveAttribute('aria-pressed', 'true');
       await expect(page.locator('#view .watch-card--short')).toHaveCount(0);
       for (const k of await cards(page).evaluateAll(els => els.map(e => (e as HTMLElement).dataset.kind))) expect(k).toBe('video');
       await expect(page.locator('#view .watch-links')).toHaveCount(0);
-      await chip(page, 'Videos or Shorts', 'Shorts').click();
-      await expect(chip(page, 'Videos or Shorts', 'Shorts')).toHaveAttribute('aria-pressed', 'true');
-      await expect(chip(page, 'Videos or Shorts', 'Videos')).toHaveAttribute('aria-pressed', 'false');
+      await chip(page, KIND, 'Shorts').click();
+      await expect(chip(page, KIND, 'Shorts')).toHaveAttribute('aria-pressed', 'true');
+      await expect(chip(page, KIND, 'Videos')).toHaveAttribute('aria-pressed', 'false');
       await expect(cards(page).first()).toBeVisible();
       const n = await cards(page).count();
       await expect(page.locator('#view button.watch-card--short')).toHaveCount(n);
@@ -128,12 +130,12 @@ test.describe('pro', () => {
     await openShelf(page);
     const links = page.locator('#view .watch-links');
     await expect(links, 'sites and games only under Links').toHaveCount(0);
-    await chip(page, 'Videos or Shorts', 'Links').click();
+    await chip(page, 'Videos, Shorts or Links', 'Links').click();
     await expect(cards(page)).toHaveCount(0);
     await expect(links).toBeVisible();
     await expect(links).toContainText('Opens in a new tab');
     expect(await links.locator('a[target="_blank"]').count()).toBeGreaterThan(5);
-    await chip(page, 'Videos or Shorts', 'Videos').click();
+    await chip(page, 'Videos, Shorts or Links', 'Videos').click();
     await expect(links).toHaveCount(0);
     await cards(page).first().click();
     await expect(page.locator('dialog.vm-player .vp-yt')).toHaveAttribute('href', /^https:\/\/www\.youtube\.com\/watch\?v=/);

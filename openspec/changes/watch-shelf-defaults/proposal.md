@@ -7,7 +7,7 @@ The Watch shelf opens on the Player's own Mode and on "Everything", a mix of vid
 ## What Changes
 
 - **Mode chip:** the shelf opens on "Both" (every Mode the Player may see) whenever the Mode sees more than one Mode (Challenger and Pro). The Player's own Mode chip still narrows it. Explorer sees only Explorer and has no Mode chip, as before.
-- **"Videos or Shorts" chip:** Videos | Shorts, plus Links for Pro, with Videos picked when the shelf opens. The mixed "Everything" option goes, so videos and Shorts are never shown together.
+- **"Videos or Shorts" chip:** Videos | Shorts, plus Links for Pro (whose group is then labeled "Videos, Shorts or Links"), with Videos picked when the shelf opens. The mixed "Everything" option goes, so videos and Shorts are never shown together.
 - **Pro's sites and games** show only under Links, and Links shows only them (no video tiles). Under Videos and Shorts there is no "Sites and games" section.
 - **Copy:** the Watch shelf card in the in-app guide (`js/guide.js`) says the shelf opens on both Modes and on Videos.
 

@@ -20,7 +20,7 @@ async function openEverything(page: Page, mode: Mode) {
   // The shelf opens on Both; Pro's sites and games are under Links
   if (mode !== 'explorer') await expect(chip(page, 'Mode', 'Both')).toHaveAttribute('aria-pressed', 'true');
   if (mode === 'pro') {
-    await chip(page, 'Videos or Shorts', 'Links').click();
+    await chip(page, 'Videos, Shorts or Links', 'Links').click();
     await expect(page.locator('#view .watch-links')).toBeVisible();
   }
 }

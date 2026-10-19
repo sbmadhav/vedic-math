@@ -30,7 +30,7 @@ test.describe('Pro shelf', () => {
     expect(links.some(l => l.kind === 'game')).toBe(true);
     const section = page.locator('#view .watch-links');
     // Sites and games are under Links, shown on their own
-    await page.getByRole('group', { name: 'Videos or Shorts', exact: true }).getByRole('button', { name: 'Links', exact: true }).click();
+    await page.getByRole('group', { name: 'Videos, Shorts or Links', exact: true }).getByRole('button', { name: 'Links', exact: true }).click();
     await expect(section).toBeVisible();
     await expect(cards(page)).toHaveCount(0);
     const out = section.locator('a.watch-card');
@@ -45,7 +45,7 @@ test.describe('Pro shelf', () => {
       await expect(a.locator('.watch-type')).toHaveText(l.kind === 'game' ? 'Game' : 'Site');
     }
     // The shelf still lists videos, under Videos
-    await page.getByRole('group', { name: 'Videos or Shorts', exact: true }).getByRole('button', { name: 'Videos', exact: true }).click();
+    await page.getByRole('group', { name: 'Videos, Shorts or Links', exact: true }).getByRole('button', { name: 'Videos', exact: true }).click();
     await expect(section).toHaveCount(0);
     expect(await cards(page).count()).toBeGreaterThan(0);
   });

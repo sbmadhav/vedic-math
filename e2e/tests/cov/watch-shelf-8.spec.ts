@@ -43,7 +43,8 @@ for (const mode of ['explorer', 'challenger', 'pro'] as Mode[]) {
       // The shelf opens on every Mode this Player may see (Both) and on Videos
       const both = page.getByRole('group', { name: 'Mode', exact: true }).getByRole('button', { name: 'Both', exact: true });
       if (mode !== 'explorer') await expect(both).toHaveAttribute('aria-pressed', 'true');
-      const kind = (name: string) => page.getByRole('group', { name: 'Videos or Shorts', exact: true }).getByRole('button', { name, exact: true });
+      // Pro's kind chips include Links, and their group says so
+      const kind = (name: string) => page.getByRole('group', { name: mode === 'pro' ? 'Videos, Shorts or Links' : 'Videos or Shorts', exact: true }).getByRole('button', { name, exact: true });
       const noPlaylistHref = async () => {
         const hrefs = await page.locator('#view a[href]').evaluateAll(as => as.map(a => (a as HTMLAnchorElement).href));
         for (const h of hrefs) expect(h).not.toMatch(PLAYLIST_OR_CHANNEL);
