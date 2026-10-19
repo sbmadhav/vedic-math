@@ -363,7 +363,7 @@ const mins = d => (d < 60 ? `${d} s` : `${Math.floor(d / 60)}:${String(d % 60).p
 
 function showExample(s) {
   const box = $('#example'); const p = s.gen(1);
-  box.innerHTML = `<h2 class="mq-h3">Watch me do one</h2><div class="mq-q${plain(p.q).length > 60 ? ' long' : ''}">${p.q}</div>${p.viz ? `<div class="mq-viz">${p.viz}</div>` : ''}<ol class="mq-steps">${p.steps.map(x => `<li>${x}</li>`).join('')}</ol>${answerText(p, s) ? `<p class="mq-ans">Answer: <b>${answerText(p, s)}</b></p>` : ''}<p class="listen-row">${listenBtn('from:.mq-q, .mq-steps li', 'the worked example')} <button class="md-btn md-btn--sm" id="another">Another example</button></p>`;
+  box.innerHTML = `<h2 class="mq-h3">Watch me do one</h2><div class="mq-q${plain(p.q).length > 60 ? ' long' : ''}">${p.q}</div>${p.viz ? `<div class="mq-viz">${p.viz}</div>` : ''}<ol class="mq-steps">${p.steps.map(x => `<li>${x}</li>`).join('')}</ol>${answerText(p, s) ? `<p class="mq-ans">Answer: <b>${answerText(p, s)}</b></p>` : ''}<p class="listen-row">${listenBtn('from:.mq-q, .mq-steps li, .mq-ans', 'the worked example')} <button class="md-btn md-btn--sm" id="another">Another example</button></p>`;
   $('#another', box).onclick = () => showExample(s);
 }
 /* ---------- Practice engine ---------- */
@@ -401,7 +401,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
     const first = root.querySelector('input, .pr-choice'); if (first && render.n > 1 && matchMedia('(pointer: fine)').matches) first.focus({ preventScroll: true });
   };
   const say = (html, tone = '') => { const b = $('#prSay', root); b.className = 'pr-say ' + tone; b.innerHTML = html ? `${boltFor(tone)}<div class="md-bubble">${html}</div>` : ''; };
-  const reveal = () => { const sol = $('#prSol', root); sol.hidden = false; sol.innerHTML = `<h3>Here is how</h3><ol class="mq-steps">${p.steps.map(x => `<li>${x}</li>`).join('')}</ol><p class="mq-ans">Answer: <b>${answerText(p, s)}</b></p><p class="listen-row">${listenBtn('from:.mq-steps li', 'how to solve it')}</p>`; };
+  const reveal = () => { const sol = $('#prSol', root); sol.hidden = false; sol.innerHTML = `<h3>Here is how</h3><ol class="mq-steps">${p.steps.map(x => `<li>${x}</li>`).join('')}</ol><p class="mq-ans">Answer: <b>${answerText(p, s)}</b></p><p class="listen-row">${listenBtn('from:.mq-steps li, .mq-ans', 'how to solve it')}</p>`; };
   const finish = ok => {
     done = true; total++; if (ok) right++; run = ok && tries === 1 && !hints ? run + 1 : 0;
     const r = store.record(s.id, ok, hints > 0 || tries > 1);

@@ -115,7 +115,7 @@ def check_no_provider(out):
     for p in sorted(out.rglob("*")):
         if not p.is_file() or p.suffix not in TEXT_EXT:
             continue
-        text, rel = p.read_text(errors="ignore"), p.relative_to(out).as_posix()
+        text, rel = p.read_text(encoding="utf-8", errors="ignore"), p.relative_to(out).as_posix()
         if rel == "js/cloud-config.js":
             text = FIREBASE_KEY.sub("", text)
         host, secret = PROVIDER_HOSTS.search(text), SECRETS.search(text)

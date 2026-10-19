@@ -206,6 +206,25 @@ test.describe('studio voice', () => {
     expect((await vlog(page)).filter(e => e.startsWith('studio:'))).toEqual([]);
   });
 
+  test('the natural voice still loading after 2.5 s: the line goes to the studio voice, not the device voice', async ({ page }) => {
+    await fakeSpeech(page, [ENHANCED]);
+    const requests = await fakeStudio(page);
+    await page.addInitScript(() => {
+      try { localStorage.setItem('vm.naturalVoice', '1'); } catch (e) {}
+      /* A natural voice that never gets ready: its worker answers nothing */
+      (window as any).Worker = class { onmessage = null; onerror = null; postMessage() {} terminate() {} addEventListener() {} removeEventListener() {} };
+    });
+    await open(page, '#/skill/k-count');
+    await expect.poll(() => requests.some(u => u.endsWith('/p/core.test.m4a'))).toBe(true);
+    await expect.poll(async () => {
+      await page.evaluate(() => { (window as any).__voiceLog.length = 0; (window as any).__spoken.length = 0; });
+      await page.locator('#practice').getByRole('button', { name: 'Hear it' }).click();
+      await page.waitForTimeout(3600); // the 2.5 s wait for the natural voice, then the whole line
+      return vlog(page);
+    }, { timeout: 30_000 }).toContain('studio:line');
+    expect(await spoken(page)).toEqual([]); // the device voice said nothing
+  });
+
   test('leaving the page stops a studio line', async ({ page }) => {
     await fakeSpeech(page, [ENHANCED]);
     await fakeStudio(page);
@@ -231,6 +250,23 @@ test.describe('studio voice with read aloud off', () => {
     const requests = await fakeStudio(page);
     await open(page, '#/skill/3-mult');
     await page.waitForTimeout(2500); // past the idle warm-up
+    expect(requests).toEqual([]);
+  });
+
+  test('the first tap makes the audio context inside the tap (iOS plays only what a tap started), still fetching nothing', async ({ page }) => {
+    await fakeSpeech(page, [ENHANCED]);
+    const requests = await fakeStudio(page);
+    await page.addInitScript(() => {
+      const w = window as any, AC = w.AudioContext; w.__made = [];
+      w.AudioContext = class extends AC { constructor(...a: any[]) { super(...a); w.__made.push(w.__inTap ? 'tap' : 'later'); } };
+      addEventListener('pointerdown', () => { w.__inTap = true; }, { capture: true }); // first listener of the tap
+      addEventListener('pointerdown', () => { w.__inTap = false; }); // last one
+    });
+    await open(page, '#/skill/3-mult');
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(() => (window as any).__made)).toEqual([]);
+    await page.locator('#view h1').first().click();
+    await expect.poll(() => page.evaluate(() => (window as any).__made)).toEqual(['tap']);
     expect(requests).toEqual([]);
   });
 });

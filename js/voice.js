@@ -424,7 +424,10 @@ function audioCtx() {
 if (typeof document !== 'undefined' && document.addEventListener) {
   const unlock = () => {
     try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
-    try { if (actx && actx.state === 'suspended') actx.resume().catch(() => {}); } catch (e) {}
+    try {
+      if (!actx && studioOn() && canAudio()) actx = new (window.AudioContext || window.webkitAudioContext)(); // made inside the tap, so iOS lets it play
+      if (actx && actx.state === 'suspended') actx.resume().catch(() => {});
+    } catch (e) {}
   };
   document.addEventListener('pointerdown', unlock, { capture: true, passive: true });
   document.addEventListener('keydown', unlock, { capture: true });
@@ -563,15 +566,16 @@ export function speak(text, opts = {}) {
   const done = ok => { if (my === token) endLine(ok); };
   const builtIn = () => { if (my === token) { vlog('builtin'); speakBuiltIn(words, my, done); } };
   const natural = () => speakNatural(words, my).then(() => done(true), () => { if (my === token) speakBuiltIn(words, my, done); });
+  const studio = () => { if (my === token) speakStudio(words, my, done).then(ok => { if (!ok) builtIn(); }, builtIn); }; // studio, else built-in
   if (opts.builtIn) { builtIn(); return end; }
   const useNatural = (opts.natural ?? naturalOn()) && !failedThisVisit;
-  if (!useNatural) { speakStudio(words, my, done).then(ok => { if (!ok) builtIn(); }, builtIn); return end; }
+  if (!useNatural) { studio(); return end; }
   if (ready) { natural(); return end; }
-  // Not loaded yet: give a cached model a moment, otherwise read this one with the built-in voice
+  // Not loaded yet: give a cached model a moment, otherwise read this one with the next voice in the order
   let settled = false;
-  const fallback = setTimeout(() => { if (!settled && my === token) { settled = true; speakBuiltIn(words, my, done); } }, 2500);
+  const fallback = setTimeout(() => { if (!settled && my === token) { settled = true; studio(); } }, 2500);
   loadNatural().then(() => { if (settled || my !== token) return; settled = true; clearTimeout(fallback); natural(); })
-    .catch(() => { clearTimeout(fallback); if (!settled && my === token) { settled = true; speakBuiltIn(words, my, done); } });
+    .catch(() => { clearTimeout(fallback); if (!settled && my === token) { settled = true; studio(); } });
   return end;
 }
 /* speakAll(texts) says the lines one after another, each by the voice order above, with a short pause between.

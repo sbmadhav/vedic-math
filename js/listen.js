@@ -18,8 +18,8 @@ const ICON = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"
 export const listenBtn = (key, what) =>
   `<button type="button" class="listen-btn" data-listen="${esc(key)}" aria-pressed="false" aria-label="Listen: ${esc(what)}">${ICON}<span>Listen</span></button>`;
 
-let current = null; // the button playing now
-const release = btn => { if (btn) btn.setAttribute('aria-pressed', 'false'); if (current === btn) current = null; };
+let current = null, gen = 0; // the button playing now, and which start it is
+const release = btn => { gen++; if (btn) btn.setAttribute('aria-pressed', 'false'); if (current === btn) current = null; };
 
 /* The lines a button reads */
 export function linesFor(btn) {
@@ -40,7 +40,8 @@ export function toggle(btn, lines = linesFor(btn)) {
   if (!lines.length) return;
   current = btn; btn.setAttribute('aria-pressed', 'true');
   listened();
-  voice.speakAll(lines).then(() => release(btn), () => release(btn));
+  const my = ++gen, end = () => { if (my === gen) release(btn); }; // a stopped earlier start never releases a restarted one
+  voice.speakAll(lines).then(end, end);
 }
 /* Stops whatever a Listen button is playing */
 export function stopListen() { if (current) { const b = current; voice.stop(); release(b); } }

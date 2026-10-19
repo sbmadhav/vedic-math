@@ -147,11 +147,41 @@ test.describe('Listen', () => {
     expect((await spoken(page)).join(' ')).toContain(step.split(' ').slice(0, 2).join(' '));
   });
 
-  test('the worked example is read from the page', async ({ page }) => {
+  test('the worked example is read from the page, its answer too', async ({ page }) => {
     await setup(page);
     await open(page, '#/skill/3-mult');
+    const ans = page.locator('#view .mq-ans').first();
+    await expect(ans).toBeVisible();
+    const answer = (await ans.innerText()).trim();
     await page.getByRole('button', { name: 'Listen: the worked example' }).click();
     await expect.poll(async () => (await spoken(page)).length).toBeGreaterThan(1);
+    await expect.poll(async () => (await spoken(page)).at(-1), { timeout: 15_000 }).toBe(answer);
+  });
+
+  test('stopped in the pause between lines and started again: the earlier start does not release the button', async ({ page }) => {
+    await setup(page, { endAfter: 600 });
+    await open(page, '#/skill/3-mult');
+    const btn = page.getByRole('button', { name: 'Listen: the idea and how it works' });
+    await expect(btn).toBeVisible();
+    /* In the page, so the taps land inside the 250 ms pause after a line ends: a sentence ended and no next one
+       started within 40 ms (the next sentence of the same line starts at once) */
+    const pressed = await page.evaluate(async () => {
+      const w = window as any, b = [...document.querySelectorAll<HTMLButtonElement>('.listen-btn')].find(x => x.getAttribute('aria-label') === 'Listen: the idea and how it works')!;
+      const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
+      let ends = 0; const speak = w.speechSynthesis.speak.bind(w.speechSynthesis);
+      w.speechSynthesis.speak = (u: any) => { const end = u.onend; u.onend = () => { ends++; end && end(); }; speak(u); };
+      b.click();
+      for (;;) {
+        const seen = ends; while (ends === seen) await wait(2);
+        const said = w.__spoken.length; await wait(40);
+        if (w.__spoken.length === said) break; // in the pause between lines
+      }
+      b.click(); // stop
+      b.click(); // start again
+      await wait(400); // past the end of the earlier pause
+      return b.getAttribute('aria-pressed');
+    });
+    expect(pressed).toBe('true');
   });
 
   test('a tour step has its own Listen button', async ({ page }) => {
