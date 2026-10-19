@@ -33,17 +33,15 @@ test.describe('the Sky on', () => {
   });
 
   test('Another Player on the device: switching to a Player who did not turn the Sky on shows the tile home', async ({ page }) => {
-    await page.addInitScript(() => {
-      try {
-        const raw = localStorage.getItem('vm.players'); if (!raw) return;
-        const v = JSON.parse(raw);
-        if (!v.list.some((p: any) => p.id === 'p2')) v.list.push({ id: 'p2', name: 'Calm Otter 7', avatar: 'coral', mode: 'challenger', created: Date.now() });
-        localStorage.setItem('vm.players', JSON.stringify(v));
-      } catch (e) { /* storage blocked */ }
-    });
     await open(page);
     await expect(page.locator('.sky')).toHaveCount(1);
-    await page.evaluate(() => { const v = JSON.parse(localStorage.getItem('vm.players')!); v.active = 'p2'; localStorage.setItem('vm.players', JSON.stringify(v)); });
+    /* The second Player joins after the fixture has made the first, so their order is fixed */
+    await page.evaluate(() => {
+      const v = JSON.parse(localStorage.getItem('vm.players')!);
+      v.list.push({ id: 'p2', name: 'Calm Otter 7', avatar: 'coral', mode: 'challenger', created: Date.now() });
+      v.active = 'p2';
+      localStorage.setItem('vm.players', JSON.stringify(v));
+    });
     await page.reload();
     await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
     await expect(page.locator('.sky')).toHaveCount(0);

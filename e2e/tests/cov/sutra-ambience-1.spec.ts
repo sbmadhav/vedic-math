@@ -3,8 +3,8 @@ import { fakeAudio, audioLog, strikes, ambienceBus, hums } from '../audio-fake';
 import type { Page } from '@playwright/test';
 
 /* sutra-ambience spec, Requirements "Bowl strike on the Sutra pages", "Optional hum" and "Opt-in Om": one test per
-   scenario. Web Audio is a fake that records every node (audio-fake.ts); the fixtures turn Sound effects off, so each
-   test turns it back on. */
+   scenario. Web Audio is a fake that records every node (audio-fake.ts); the fixtures turn Sound effects off unless a
+   test set it first, so each test turns it back on. */
 async function prefs(page: Page, more: Record<string, string> = {}) {
   await page.addInitScript(m => { try { localStorage.setItem('vm.sound', '1'); for (const [k, v] of Object.entries(m)) localStorage.setItem(k, v); } catch (e) { /* storage blocked */ } }, more);
 }
@@ -56,6 +56,7 @@ test('Fresh load on the page: #/sutras loaded directly plays nothing and starts 
   expect(strikes(l)).toBe(0);
   expect(ambienceBus(l)).toHaveLength(0);
   expect(l.nodes.filter(n => n.started !== null)).toHaveLength(0);
+  expect(await page.evaluate(() => (window as any).__audio.contexts), 'no AudioContext before a gesture').toBe(0);
   await tapPage(page);
   await expect.poll(async () => strikes(await log(page))).toBe(1);
 });

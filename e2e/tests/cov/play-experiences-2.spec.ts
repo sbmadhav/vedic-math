@@ -24,20 +24,31 @@ test.describe('Calm on', () => {
   });
 
   test('Beat the lock in Calm: the quick level has no clock, so a slow right answer counts', async ({ page }) => {
-    await open(page, '#/dojo/locks');
-    await expect(page.locator('#view h1').first()).toHaveText('Discovery Locks');
-    const r = await page.evaluate(async () => {
-      const m: any = await import('/vedic-math/js/play/exp/locks-core.js' as string);
-      const calm = m.levelsFor('challenger', true).find((l: any) => l.kind === 'quick');
-      const timed = m.levelsFor('challenger', false).find((l: any) => l.kind === 'quick');
-      return { calmSecs: calm.secs || 0, timedSecs: timed.secs, slowRightCalm: m.counts(calm, true, 45), slowRightTimed: m.counts(timed, true, timed.secs + 30), wrongCalm: m.counts(calm, false, 1) };
-    });
-    expect(r.timedSecs).toBeGreaterThan(0);
-    expect(r.calmSecs).toBe(0);
-    expect(r.slowRightCalm).toBe(true);
-    expect(r.slowRightTimed).toBe(false);
-    expect(r.wrongCalm).toBe(false);
+    /* "Beat the lock" is level 3 (index 2); it opens once the first two levels are done */
+    await page.addInitScript(() => { try { if (!localStorage.getItem('vm.play.p1.locks')) localStorage.setItem('vm.play.p1.locks', JSON.stringify({ eleven: { done: 2, hints: 0 } })); } catch (e) { /* storage blocked */ } });
+    await page.clock.install();
+    await open(page, '#/dojo/locks/eleven/2');
+    await expect(page.locator('#view h1').first()).toHaveText('The Twin Wall');
+    await expect(page.locator('.lk-lv.is-now')).toContainText('Beat the lock');
     await expect(page.locator('#view')).not.toContainText(/within \d+ seconds/);
+    const ask = page.locator('.lk-q-ask');
+    await expect(ask).toBeVisible();
+    await expect(page.locator('.lk-timer')).toHaveCount(0);
+    /* The timed quick level gives a Challenger far less than this; under Calm a whole minute still counts */
+    const timedSecs = await page.evaluate(async () => {
+      const m: any = await import('/vedic-math/js/play/exp/locks-core.js' as string);
+      return m.levelsFor('challenger', false).find((l: any) => l.kind === 'quick').secs;
+    });
+    expect(timedSecs).toBeGreaterThan(0);
+    expect(timedSecs).toBeLessThan(60);
+    await page.clock.fastForward('01:00');
+    const x = parseInt((await ask.textContent()) || '', 10);
+    await page.keyboard.type(String(x * 11));
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.lk-result .lk-ok')).toBeVisible();
+    await expect(page.locator('.lk-result')).not.toContainText('quicker');
+    await expect(page.locator('.lk-goal i.is-on')).toHaveCount(1);
+    await expect(page.locator('.lk-goal')).toHaveAttribute('aria-label', /^1 of \d+ in a row$/);
   });
 });
 

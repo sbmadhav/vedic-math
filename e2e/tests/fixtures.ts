@@ -116,10 +116,12 @@ export const test = base.extend<Fixtures>({
     // The same no-op counter from the start, for pages whose queue flushes before the local count.js answer runs
     await context.addInitScript(() => { const w = window as any; w.goatcounter ||= {}; if (typeof w.goatcounter.count !== 'function') w.goatcounter.count = () => {}; });
     // A returning player with a mode, sound off. Only on an empty profile, so reloads keep progress.
+    // Sound is off only when nothing set it yet: Playwright does not order this context script against a test's own
+    // page.addInitScript, so a test that turns sound on (vm.sound '1') keeps it whichever script runs first.
     await context.addInitScript(([mode, consent, progress, more]) => {
       try {
         if (!localStorage.getItem('vm.players')) {
-          localStorage.setItem('vm.sound', '0');
+          if (localStorage.getItem('vm.sound') === null) localStorage.setItem('vm.sound', '0');
           if (mode) localStorage.setItem('vm.players', JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode, created: Date.now(), ...(consent || {}), ...(more || {}) }] }));
           if (mode && progress) localStorage.setItem('mathquest.v1.p1', JSON.stringify(progress));
         }
