@@ -1,0 +1,27 @@
+// Learn Vedic Math on Cloudflare Workers static assets (openspec change learnvedicmath, design D1; ADR 0004).
+// Deployed by CI from deploy/ (npx wrangler deploy --config ../wrangler.jsonc) after python3 build.py writes _site/.
+// Every path is a static asset served without running code, with _site/_headers and _site/_redirects applied; the
+// Worker script (worker/csp.js) runs only for /_csp, the policy-violation report endpoint.
+{
+  "$schema": "./deploy/node_modules/wrangler/config-schema.json",
+  "name": "learnvedicmath",
+  "compatibility_date": "2026-10-01",
+  "main": "worker/csp.js",
+  "assets": {
+    "directory": "./_site",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    // /404.html with status 404, not "single-page-application": the game's routes are hash routes
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/_csp"]
+  },
+  // Attached once by the owner in the dashboard as custom domains; www answers with a 301 to the apex through a zone
+  // Single Redirect rule (owner guide), because _redirects cannot match on the host
+  "routes": [
+    { "pattern": "learnvedicmath.com", "custom_domain": true },
+    { "pattern": "www.learnvedicmath.com", "custom_domain": true }
+  ],
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": { "enabled": true, "head_sampling_rate": 1 }
+}
