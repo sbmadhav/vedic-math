@@ -1,0 +1,8 @@
+/* Learn Vedic Math fonts: the one @font-face set for every page, served from /fonts/ on this site (licences in
+   /fonts/OFL-*.txt, listed on /licenses/). Nunito Sans and Fredoka are preloaded by each page. JetBrains Mono
+   ships one weight (500), so mono text never asks for another (no faux bold). */
+@font-face{font-family:Fredoka;font-style:normal;font-weight:600;font-display:swap;src:url(/fonts/fredoka-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:Fredoka;font-style:normal;font-weight:700;font-display:swap;src:url(/fonts/fredoka-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"Nunito Sans";font-style:normal;font-weight:200 1000;font-display:swap;src:url(/fonts/nunito-sans-latin-wght-normal.woff2) format("woff2-variations")}
+@font-face{font-family:"Space Grotesk";font-style:normal;font-weight:300 700;font-display:swap;src:url(/fonts/space-grotesk-latin-wght-normal.woff2) format("woff2-variations")}
+@font-face{font-family:"JetBrains Mono";font-style:normal;font-weight:500;font-display:swap;src:url(/fonts/jetbrains-mono-latin-500-normal.woff2) format("woff2")}
