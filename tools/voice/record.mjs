@@ -12,14 +12,15 @@
    and paces requests to RATE_PER_MIN (default 300).
    LIMIT=20 records only the first 20 whole lines and their clips into out-test/, and leaves the repo files alone. */
 import { writeFileSync, readFileSync, existsSync, mkdirSync, renameSync, rmSync, readdirSync, statSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { lineHash, lineKey, planLine, clipText as clipTextOf } from '../../js/voice-plan.js';
 import { indexModule } from './index-file.mjs';
 import { CLOUD, sharedGuard, trim, m4a, RATE, speakerFor } from './voice-lib.mjs';
 
-const ROOT = new URL('../../', import.meta.url).pathname;
-const HERE = new URL('./', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('../../', import.meta.url));
+const HERE = fileURLToPath(new URL('./', import.meta.url));
 const LIMIT = +(process.env.LIMIT || 0);
 const OUT = HERE + (LIMIT ? 'out-test/voice/' : 'out/voice/');
 const WORKERS = +(process.env.WORKERS || 6);

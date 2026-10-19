@@ -48,3 +48,13 @@ test('the trim keeps the newest VOICE_MAX whole lines and never drops the line s
   net.up = false;
   for (const u of index) assert.equal((await voiceFile(u)).body, 'net:' + u, `${u} still plays offline`);
 });
+
+test('a new recording replaces its line set, clip directory, packs and maps; other names and whole lines stay', async () => {
+  const { voiceFile, store } = load();
+  const old = [`${V}l/set.aaaaaaaaaa.bin`, `${V}p/dir.aaaaaaaaaa.json`, `${V}p/core.aaaaaaaaaa.json`, `${V}p/core.aaaaaaaaaa.m4a`, `${V}p/k-2.aaaaaaaaaa.m4a`];
+  for (const u of old) await voiceFile(u);
+  await voiceFile(line(1));
+  const now = [`${V}l/set.bbbbbbbbbb.bin`, `${V}p/dir.bbbbbbbbbb.json`, `${V}p/core.bbbbbbbbbb.json`, `${V}p/core.bbbbbbbbbb.m4a`];
+  for (const u of now) await voiceFile(u);
+  assert.deepEqual([...store.keys()], [`${V}p/k-2.aaaaaaaaaa.m4a`, line(1), ...now]);
+});

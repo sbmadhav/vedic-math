@@ -12,6 +12,8 @@
      the clip packs.
    Spoken text is what the app passes to fx.speak(): a question's `say` when it has one, else `q`; and its hints. */
 import { writeFileSync, readFileSync, mkdirSync, readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 import { normalize } from '../../js/voice.js';
 import { planLine, clipText, NUMBER_CLIPS } from '../../js/voice-plan.js';
 import { SKILLS } from '../../js/skills/index.js';
@@ -22,8 +24,8 @@ import { STUDIO } from '../../js/voice-index.js';
 import { allExplanationLines } from '../../js/explain-lines.js';
 import { VIDEOS, LINKS } from '../../js/videos.js';
 
-const ROOT = new URL('../../', import.meta.url).pathname;
-const OUT = new URL('./out/', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('../../', import.meta.url));
+const OUT = fileURLToPath(new URL('./out/', import.meta.url));
 const N = +(process.argv[2] || 500);
 const WHOLE_QUIET = +(process.env.WHOLE_QUIET || 200000);
 /* Skills recorded whole: every K to 2 Skill except the two whose lines run to hundreds of thousands */
@@ -91,4 +93,4 @@ function main() {
   console.log(`whole lines: ${whole.size} (${wholeChars} characters); clips: ${clips.size} (${clipChars} characters; ${perPack})`);
   console.log(`total to record: ${wholeChars + clipChars} characters, about $${((wholeChars + clipChars) * 30e-6).toFixed(2)} at list price (Chirp 3 HD, before the free 1 million a month)`);
 }
-if (import.meta.url === `file://${process.argv[1]}`) main();
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) main();

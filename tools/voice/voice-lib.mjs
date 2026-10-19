@@ -2,13 +2,14 @@
    and a rough pitch (F0) measure. Blends are weighted averages of Kokoro's voice style vectors, written next to
    the stock voices as <name>.bin (no retraining, no pitch shifting). */
 import { writeFileSync, readFileSync, existsSync, mkdirSync, rmSync, statSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { dirname } from 'node:path';
 
 export const RATE = 24000, BITRATE = 32000;
-const VOICES = new URL('./node_modules/kokoro-js/voices/', import.meta.url).pathname;
-const CACHE = new URL('./.cache/', import.meta.url).pathname;
+const VOICES = fileURLToPath(new URL('./node_modules/kokoro-js/voices/', import.meta.url));
+const CACHE = fileURLToPath(new URL('./.cache/', import.meta.url));
 
 /* "af_bella*0.5+af_sky*0.5" -> a voice id kokoro-js can load */
 export function voiceId(spec) {

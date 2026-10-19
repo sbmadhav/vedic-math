@@ -24,7 +24,7 @@
      while revalidate. This repo cannot hash them, so a change reaches visitors one visit late.
    - Studio voice audio (/vedic-math/voice/): cache first in its own cache, vedic-math-voice, which every
      deploy keeps (the file names hold their content's hash, so a name never changes meaning). Trimmed to
-     VOICE_MAX whole lines, oldest first. Nothing is precached: only Players who use read aloud download audio.
+     VOICE_MAX whole lines, oldest first; a new line set, clip directory or pack replaces its older copy. Nothing is precached: only Players who use read aloud download audio.
    - Sounds (/vedic-math/sounds/: the Sutra name clips and the Om, openspec sutra-pronunciation): cache first in
      their own cache, vedic-math-sounds, which every deploy keeps, so a name heard once plays offline after the next
      deploy too. Every sound URL the app builds carries ?v=<content hash> (js/say-clips.js), so a changed file is a new
@@ -56,6 +56,7 @@ const VOICE = BASE + 'voice/';
 const VOICE_CACHE = PREFIX + 'voice'; // kept across deploys (not a version cache)
 const VOICE_MAX = 4000; // whole lines kept (about 10 KB each); the index and pack files are not counted
 const VOICE_LINE = /\/voice\/l\/[0-9a-f]{14}\.m4a$/; // a whole line's file
+const VOICE_HASHED = /\/voice\/(l\/set|p\/[\w-]+)\.[0-9a-f]+\.(bin|json|m4a)$/; // the line set, clip directory, a pack or its map: one copy per name
 const SOUNDS = BASE + 'sounds/';
 const SOUNDS_CACHE = PREFIX + 'sounds'; // kept across deploys (not a version cache)
 const SOUNDS_MAX = 120; // 29 name clips and the Om, with room for remade ones
@@ -180,6 +181,12 @@ async function voiceFile(req) {
   if (cacheable(res)) {
     try {
       await cache.put(req, res.clone());
+      /* A new recording names its line set, directory and packs by a new hash: saving one drops the copy it replaces */
+      const own = new URL(req.url).pathname.match(VOICE_HASHED);
+      if (own) for (const k of await cache.keys()) {
+        const m = new URL(k.url).pathname.match(VOICE_HASHED);
+        if (m && m[1] === own[1] && m[2] === own[2] && k.url !== req.url) await cache.delete(k);
+      }
       /* Only whole lines count and are dropped: the line set, clip directory and packs are few, saved first and
          never re-saved, so an oldest-first trim over everything would drop them first and leave offline read aloud
          with nothing to look lines up in */

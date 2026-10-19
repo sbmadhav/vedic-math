@@ -565,7 +565,7 @@ export function speak(text, opts = {}) {
   const end = new Promise(r => { lineEnd = r; });
   const done = ok => { if (my === token) endLine(ok); };
   const builtIn = () => { if (my === token) { vlog('builtin'); speakBuiltIn(words, my, done); } };
-  const natural = () => speakNatural(words, my).then(() => done(true), () => { if (my === token) speakBuiltIn(words, my, done); });
+  const natural = () => speakNatural(words, my).then(() => done(true), () => studio()); // the natural voice failed: studio, else built-in
   const studio = () => { if (my === token) speakStudio(words, my, done).then(ok => { if (!ok) builtIn(); }, builtIn); }; // studio, else built-in
   if (opts.builtIn) { builtIn(); return end; }
   const useNatural = (opts.natural ?? naturalOn()) && !failedThisVisit;

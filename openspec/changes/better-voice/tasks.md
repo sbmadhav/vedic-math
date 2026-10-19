@@ -89,9 +89,9 @@ Part A (tasks 1) can ship on its own before part B.
 
 ## 4. Offline and coverage
 
-- [x] 4.1 `sw.js`: `/vedic-math/voice/` requests are cache first. On install, those entries are copied from the previous `vedic-math-*` cache. `build.py` leaves `voice/` out of `PRECACHE` (task 2.4).
+- [x] 4.1 `sw.js`: `/vedic-math/voice/` requests are cache first in their own cache, `vedic-math-voice`, which every deploy keeps. `build.py` leaves `voice/` out of `PRECACHE` (task 2.4).
   - Verify: `e2e/tests/offline.spec.ts` (built `_site`, chromium), new test: an Explorer Player hears two lines online, goes offline and reloads. A heard line logs `studio:line`, and a new line logs `studio:clips` or `builtin`.
-  - Note: instead of copying, voice files live in their own cache, `vedic-math-voice`, which version cleanup skips (trimmed to 4,000 whole lines; the line set, clip directory and packs are never trimmed, `test/sw-voice.test.mjs`). The offline test reads the real index of the build and skips when the build has no recordings.
+  - Note: instead of copying, voice files live in their own cache, `vedic-math-voice`, which version cleanup skips (trimmed to 4,000 whole lines; the line set, clip directory and packs are never trimmed, and a re-record's new copy of one replaces the old, `test/sw-voice.test.mjs`). The offline test reads the real index of the build and skips when the build has no recordings.
 - [x] 4.1b `test/build.test.mjs`: the built `_site` contains no `texttospeech.googleapis.com` (or other provider host) and nothing shaped like a Google key or token.
   - Verify: adding a fake `AIza...` string to a published file makes it fail.
   - Note: also `ya29.` tokens, `AQ.` keys, `sk-` keys and the ElevenLabs, OpenAI, Azure and Polly hosts; the Firebase web config's public `apiKey` is the one allowed.

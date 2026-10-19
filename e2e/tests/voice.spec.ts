@@ -225,6 +225,29 @@ test.describe('studio voice', () => {
     expect(await spoken(page)).toEqual([]); // the device voice said nothing
   });
 
+  test('the natural voice failing to say a line: the studio voice says it, not the device voice', async ({ page }) => {
+    await fakeSpeech(page, [ENHANCED]);
+    const requests = await fakeStudio(page);
+    await page.addInitScript(() => {
+      try { localStorage.setItem('vm.naturalVoice', '1'); } catch (e) {}
+      /* A natural voice that loads, then cannot make any line */
+      (window as any).Worker = class {
+        onmessage: any = null; onerror = null;
+        postMessage(m: any) { setTimeout(() => this.onmessage && this.onmessage({ data: m.type === 'load' ? { type: 'ready' } : { type: 'genError', id: m.id, message: 'no' } }), 0); }
+        terminate() {} addEventListener() {} removeEventListener() {}
+      };
+    });
+    await open(page, '#/skill/k-count');
+    await expect.poll(() => requests.some(u => u.endsWith('/p/core.test.m4a'))).toBe(true);
+    await expect.poll(async () => {
+      await page.evaluate(() => { (window as any).__voiceLog.length = 0; (window as any).__spoken.length = 0; });
+      await page.locator('#practice').getByRole('button', { name: 'Hear it' }).click();
+      await page.waitForTimeout(900);
+      return vlog(page);
+    }, { timeout: 15_000 }).toContain('studio:line');
+    expect(await spoken(page)).toEqual([]); // the device voice said nothing
+  });
+
   test('leaving the page stops a studio line', async ({ page }) => {
     await fakeSpeech(page, [ENHANCED]);
     await fakeStudio(page);

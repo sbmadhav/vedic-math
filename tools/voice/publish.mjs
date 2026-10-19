@@ -4,11 +4,12 @@
    GitHub outside git history, marked a prerelease so it never shows as the app's latest release), and writes the tag and the archive's SHA-256 into js/voice-index.js. Commit that file:
    the CI deploy (tools/voice/ci-fetch.mjs) then downloads the archive, checks the hash and unpacks it into _site/voice/. */
 import { readFileSync, existsSync, renameSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { writeIndex } from './index-file.mjs';
 
-const HERE = new URL('./', import.meta.url).pathname, VOICE = HERE + 'out/voice/';
+const HERE = fileURLToPath(new URL('./', import.meta.url)), VOICE = HERE + 'out/voice/';
 const { STUDIO } = await import(`../../js/voice-index.js?t=${Date.now()}`);
 const fail = m => { console.error('publish: ' + m); process.exit(1); };
 if (!STUDIO.lineSet || !STUDIO.dir || !STUDIO.packs.length) fail('js/voice-index.js names no recordings; run record.mjs first');
