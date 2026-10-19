@@ -52,6 +52,7 @@ const VOICE_CACHE = PREFIX + 'voice'; // kept across deploys (not a version cach
 const VOICE_MAX = 4000; // whole lines kept (about 10 KB each); the index and pack files are not counted
 const VOICE_LINE = /^(\/voice)?\/l\/[0-9a-f]{14}\.m4a$/; // a whole line's file
 const VOICE_HASHED = /^(?:\/voice)?\/(l\/set|p\/[\w-]+)\.[0-9a-f]+\.(bin|json|m4a)$/; // the line set, clip directory, a pack or its map: one copy per name
+const THUMBS = '/thumbs/'; // never cached (fetch handler)
 const SOUNDS = '/sounds/';
 const SOUNDS_CACHE = PREFIX + 'sounds'; // kept across deploys (not a version cache)
 const SOUNDS_MAX = 120; // 29 name clips and the Om, with room for remade ones
@@ -111,6 +112,9 @@ if (VERSION === 'dev') {
     if (req.mode === 'navigate') return url.pathname.startsWith(SCOPE) ? event.respondWith(page(req)) : undefined;
     if (url.pathname.startsWith(VOICE)) return event.respondWith(voiceFile(req));
     if (url.pathname.startsWith(SOUNDS)) return event.respondWith(soundFile(req));
+    /* Video pictures: network only. Offline the shelf has no videos anyway, and caching them would push the large
+       vendor files (the Math Lens reader, the Firebase SDK) out of the RUNTIME_MAX runtime entries */
+    if (url.pathname.startsWith(THUMBS)) return;
     if (url.searchParams.has('v')) return event.respondWith(versioned(req));
     event.respondWith(networkFirst(req));
   });

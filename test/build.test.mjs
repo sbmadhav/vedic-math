@@ -213,8 +213,9 @@ test('every response carries the security headers, without HSTS preload', () => 
   assert.equal(all['Cross-Origin-Resource-Policy'], 'same-origin');
   assert.equal(all['X-Frame-Options'], 'DENY');
   assert.equal(all['Reporting-Endpoints'], 'csp="/_csp"', 'relative: a preview reports to its own endpoint');
-  for (const off of ['camera=()', 'microphone=()', 'geolocation=()', 'payment=()', 'usb=()', 'serial=()', 'bluetooth=()', 'browsing-topics=()'])
+  for (const off of ['geolocation=()', 'payment=()', 'usb=()', 'serial=()', 'bluetooth=()', 'browsing-topics=()'])
     assert.ok(all['Permissions-Policy'].includes(off), off);
+  assert.doesNotMatch(all['Permissions-Policy'], /camera|microphone/, 'per page: Cloudflare would join a second value for the same feature');
   assert.ok(all['Permissions-Policy'].includes('fullscreen=(self "https://www.youtube-nocookie.com")'));
   assert.ok(!all['Content-Security-Policy'], 'no policy on /*: Cloudflare would join it with each page policy');
 });
@@ -237,6 +238,8 @@ test('each page has its own policy from its inline script hashes; COOP is same-o
     assert.deepEqual(csp['report-uri'], ['/_csp']);
     assert.ok('upgrade-insecure-requests' in csp);
     assert.equal(r['Cross-Origin-Opener-Policy'], 'same-origin');
+    // The game asks for the camera (Math Lens) and the microphone (Tala Lab); no other page may
+    assert.equal(r['Permissions-Policy'], url === '/play/' ? 'camera=(self), microphone=(self)' : 'camera=(), microphone=()', url);
     assert.deepEqual(ro['style-src'], ["'self'"], 'the Report-Only policy tries style-src without unsafe-inline');
     assert.deepEqual(ro['require-trusted-types-for'], ["'script'"]);
     assert.ok(!('report-uri' in ro), 'the Report-Only policy reports through report-to only (batched)');
@@ -358,4 +361,10 @@ test('every static page has a canonical link and Open Graph tags with the site i
     for (const p of ['og:title', 'og:description', 'og:type', 'og:site_name']) assert.match(html, new RegExp(`<meta property="${p}" content="[^"]+">`), `${page} ${p}`);
     assert.match(html, /<meta property="og:image" content="https:\/\/learnvedicmath\.com\/icons\/icon-512\.png">/, page);
   }
+});
+
+test('a Markdown link keeps its query string: the URL is escaped once', () => {
+  const r = spawnSync('python3', ['-c', 'import sys; sys.argv = ["build.py"]; import build; print(build.inline_md(sys.stdin.read()))'], { cwd: repo, input: 'see [the rule](https://example.org/a?x=1&y="2") & more', encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(r.stdout.trim(), 'see <a href="https://example.org/a?x=1&amp;y=&quot;2&quot;">the rule</a> &amp; more');
 });

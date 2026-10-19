@@ -10,7 +10,7 @@ const COMMON: Record<string, string | RegExp> = {
   'referrer-policy': 'strict-origin-when-cross-origin',
   'cross-origin-resource-policy': 'same-origin',
   'x-frame-options': 'DENY',
-  'permissions-policy': /camera=\(\), microphone=\(\), geolocation=\(\), payment=\(\), usb=\(\), serial=\(\), bluetooth=\(\)/,
+  'permissions-policy': /geolocation=\(\), payment=\(\), usb=\(\), serial=\(\), bluetooth=\(\)/,
 };
 
 test.beforeEach(async ({ request, baseURL }) => {
@@ -35,6 +35,10 @@ for (const path of ['/', APP, '/parents/', '/teachers/', '/privacy/', '/terms/']
   test(`${path}: its own policy with reporting, a Report-Only variant, and COOP same-origin`, async ({ request }) => {
     const h = (await request.get(path)).headers();
     expect(h['content-security-policy']).toMatch(/frame-ancestors 'none'/);
+    // Camera and microphone: this site only on the game page (Math Lens, Tala Lab), off everywhere else, named once
+    const pp = h['permissions-policy'];
+    expect(pp).toContain(path === APP ? 'camera=(self), microphone=(self)' : 'camera=(), microphone=()');
+    expect(pp.match(/camera=/g)).toHaveLength(1);
     expect(h['content-security-policy']).toMatch(/report-to csp/);
     expect(h['content-security-policy']).toMatch(/report-uri \/_csp/);
     expect(h['content-security-policy-report-only']).toMatch(/style-src 'self';/);
@@ -45,13 +49,6 @@ for (const path of ['/', APP, '/parents/', '/teachers/', '/privacy/', '/terms/']
     expect(h['content-security-policy'].split(',').length, 'one policy, not two joined').toBe(1);
   });
 }
-
-test('the camera is refused by Permissions-Policy without asking', async ({ page }) => {
-  await page.goto(`${APP}`);
-  const allowed = await page.evaluate(() => (document as any).featurePolicy?.allowsFeature?.('camera') ?? (document as any).permissionsPolicy?.allowsFeature?.('camera') ?? null);
-  test.skip(allowed === null, 'this engine has no Permissions-Policy introspection');
-  expect(allowed).toBe(false);
-});
 
 test('POST /_csp answers 204, and anything else is refused', async ({ request }) => {
   const ok = await request.post('/_csp', { headers: { 'content-type': 'application/csp-report' }, data: JSON.stringify({ 'csp-report': { 'document-uri': 'https://learnvedicmath.com/play/', 'blocked-uri': 'inline', 'effective-directive': 'script-src-elem' } }) });
@@ -67,4 +64,13 @@ test('security.txt names the security contact and expires within a year', async 
   const expires = new Date(txt.match(/^Expires: (\S+)$/m)![1]).getTime();
   expect(expires - Date.now()).toBeGreaterThan(30 * 86400_000);
   expect(expires - Date.now()).toBeLessThan(366 * 86400_000);
+});
+
+test('the game page may ask for the camera and microphone; a grown-up page is refused without asking', async ({ page }) => {
+  const allows = () => page.evaluate(() => { const fp = (document as any).featurePolicy || (document as any).permissionsPolicy; return fp?.allowsFeature ? [fp.allowsFeature('camera'), fp.allowsFeature('microphone')] : null; });
+  await page.goto(APP);
+  test.skip(await allows() === null, 'this engine has no Permissions-Policy introspection');
+  expect(await allows()).toEqual([true, true]);
+  await page.goto('/parents/');
+  expect(await allows()).toEqual([false, false]);
 });

@@ -14,11 +14,15 @@ Every response SHALL carry `Strict-Transport-Security: max-age=63072000; include
 - **THEN** the response carries each of these headers with these values
 
 ### Requirement: Powerful features are off
-Every response SHALL carry a `Permissions-Policy` that turns off camera, microphone, geolocation, payment, USB, serial, Bluetooth and interest-based ad topics, and allows fullscreen, autoplay, encrypted media and picture-in-picture only for this site and `https://www.youtube-nocookie.com`.
+Every response SHALL carry a `Permissions-Policy` that turns off geolocation, payment, USB, serial, Bluetooth and interest-based ad topics, and allows fullscreen, autoplay, encrypted media and picture-in-picture only for this site and `https://www.youtube-nocookie.com`. Every page except the game SHALL also turn off camera and microphone; the game page (`/play/`) SHALL allow them for this site only, for Math Lens (camera) and Tala Lab (microphone).
 
-#### Scenario: Camera
-- **WHEN** a script on the page asks for the camera
+#### Scenario: Camera on a grown-up page
+- **WHEN** a script on `/parents/` asks for the camera
 - **THEN** the browser refuses without asking the Player
+
+#### Scenario: Camera in the game
+- **WHEN** the Player taps Turn on the camera in Math Lens on `/play/`
+- **THEN** the browser asks the Player for the camera, and a frame from another origin cannot use it
 
 ### Requirement: Opener isolation
 Every page SHALL send `Cross-Origin-Opener-Policy: same-origin`, except `/import/`, which SHALL send `same-origin-allow-popups` so the export popup can answer it.

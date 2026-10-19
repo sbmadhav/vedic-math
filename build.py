@@ -308,10 +308,11 @@ def check_page(name, html):
 
 
 def inline_md(text):
-    """Inline Markdown: code, links, bold, italics. The text is escaped first, so nothing in it becomes markup."""
+    """Inline Markdown: code, links, bold, italics. The text is escaped first, so nothing in it becomes markup (and a
+    link's URL is already escaped: only a quote is left to escape in its attribute)."""
     text = htmllib.escape(text, quote=False)
     text = re.sub(r"`([^`]+)`", r"<code>\1</code>", text)
-    text = re.sub(r"\[([^\]]+)\]\(([^)\s]+)\)", lambda m: f'<a href="{htmllib.escape(m.group(2))}">{m.group(1)}</a>', text)
+    text = re.sub(r"\[([^\]]+)\]\(([^)\s]+)\)", lambda m: f'<a href="{m.group(2).replace(chr(34), "&quot;")}">{m.group(1)}</a>', text)
     text = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
     text = re.sub(r"(?<![\w*])\*([^*\n]+)\*(?![\w*])", r"<em>\1</em>", text)
     return text
@@ -454,7 +455,8 @@ COMMON_HEADERS = [
     ("Referrer-Policy", "strict-origin-when-cross-origin"),
     ("Cross-Origin-Resource-Policy", "same-origin"),
     ("X-Frame-Options", "DENY"),
-    ("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), interest-cohort=(), "
+    # Camera and microphone are per page (headers_file): the game uses them (Math Lens, Tala Lab), no other page does
+    ("Permissions-Policy", "geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), interest-cohort=(), "
      f"browsing-topics=(), fullscreen=(self {YT}), autoplay=(self {YT}), encrypted-media=(self {YT}), picture-in-picture=(self {YT})"),
     # Relative, so a preview or a local run reports to its own /_csp, never to production's
     ("Reporting-Endpoints", 'csp="/_csp"'),
@@ -463,10 +465,13 @@ COMMON_HEADERS = [
 
 def headers_file(pages, preview):
     """_headers for Cloudflare static assets. Policies and COOP sit on exact page paths only: Cloudflare joins the values
-    of every rule that matches a path, and two policies would both be enforced."""
+    of every rule that matches a path, and two policies would both be enforced. For the same reason camera and
+    microphone are named only here, never on /*: the game page allows them for this site (Math Lens asks for the camera,
+    Tala Lab for the microphone, each after a tap), every other page turns them off."""
     rules = [("/*", COMMON_HEADERS + ([("X-Robots-Tag", "noindex, nofollow")] if preview else []))]
     for url, (html, kind) in sorted(pages.items()):
         rules.append((url, [("Cross-Origin-Opener-Policy", "same-origin-allow-popups" if url == "/import/" else "same-origin"),
+                            ("Permissions-Policy", "camera=(self), microphone=(self)" if url == "/play/" else "camera=(), microphone=()"),
                             ("Content-Security-Policy", csp(html, kind)),
                             ("Content-Security-Policy-Report-Only", csp(html, kind, report_only=True))]))
     if len(rules) > MAX_HEADER_RULES:
