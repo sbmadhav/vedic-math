@@ -79,7 +79,7 @@ The Watch shelf SHALL open on every Mode the Player may see ("Both" for Challeng
 
 #### Scenario: Longer videos
 - **WHEN** a Player picks "8 to 12 min"
-- **THEN** only videos from 8 minutes up to 12 minutes long are shown, or a note that none match
+- **THEN** only videos from 8 minutes up to just under 12 minutes long are shown, or a note that none match
 
 #### Scenario: Opening the shelf
 - **WHEN** a Challenger Player opens the Watch shelf

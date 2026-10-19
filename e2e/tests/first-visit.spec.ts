@@ -31,6 +31,8 @@ test.describe('the landing', () => {
     await expect(page.locator('#stOut')).toContainText('7');
     expect(await player(page)).toMatchObject({ mode: 'challenger', modeGuess: true });
     expect((await events(page)).filter(e => e.startsWith('math/try/'))).toEqual(['math/try/start']);
+    // The guessed Mode is not counted as a Mode pick
+    expect((await events(page)).filter(e => e.startsWith('math/mode/'))).toEqual([]);
     await expect(page.locator('dialog.vm-tour')).toHaveCount(0);
     expect(appErrors(issues)).toEqual([]);
   });

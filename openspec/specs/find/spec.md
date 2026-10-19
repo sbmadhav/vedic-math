@@ -32,7 +32,7 @@ A result followed before a Mode is picked SHALL open the mode picker, and pickin
 - **THEN** Explorer Home opens
 
 ### Requirement: The index holds every named thing
-The index SHALL hold every section, grade, Skill, Trick, Sutra and sub-sutra, game, play experience, guide section and video in the catalogs, each with its kind, its title in the Mode's wording, a one-line description and the page it opens. It SHALL be built in the page from the catalogs, with no index file and no request to any server.
+The index SHALL hold every section, grade, Skill, Trick, Sutra and sub-sutra, game, play experience, guide section and video in the catalogs, each with its kind, its title in the Mode's wording, a one-line description and the page it opens. It SHALL be built in the page from the catalogs, with no index file and no request to any other server (the video catalog may load as the app's own module on first use).
 
 #### Scenario: A Skill by name
 - **WHEN** a Challenger types "fractions"
