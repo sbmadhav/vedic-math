@@ -33,10 +33,12 @@ async function expectNoViolations(page: Page, v: Awaited<ReturnType<typeof watch
   expect(v.console, `CSP console messages on ${where}`).toEqual([]);
 }
 
-/** The page's policy; skips when a plain local checkout has none. */
+/** The page's policy; skips only an unbuilt local checkout (no import map). */
 async function policy(page: Page, baseURL?: string) {
   const meta = page.locator('meta[http-equiv="Content-Security-Policy"]');
-  if (!/^https:/.test(baseURL || '') && await meta.count() === 0) test.skip(true, 'No CSP in the unbuilt source: serve a build (node e2e/local-server.mjs 8124 _site)');
+  // The build adds an import map: skip only the unbuilt source, so a build that lost its policy fails here
+  const built = await page.locator('script[type="importmap"]').count() > 0;
+  if (!/^https:/.test(baseURL || '') && !built) test.skip(true, 'Unbuilt source (no import map): serve a build (node e2e/local-server.mjs 8124 _site)');
   await expect(meta, 'the build adds a CSP <meta>').toHaveCount(1);
   return (await meta.getAttribute('content'))!;
 }
@@ -68,6 +70,35 @@ test('main routes render with no CSP violation', async ({ page, baseURL }) => {
     await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
   }
   await expectNoViolations(page, v, 'the main routes');
+});
+
+test('every play experience page renders with no CSP violation', async ({ page, baseURL }) => {
+  test.setTimeout(90_000);
+  const v = await watchViolations(page);
+  await open(page, '#/games');
+  await policy(page, baseURL);
+  // The twelve pages (js/play/catalog.js); each loads its module and stylesheet on demand
+  for (const hash of ['#/dojo/spells', '#/dojo/locks', '#/arena/party', '#/arena/ghosts', '#/arena/daily-number', '#/games/tala', '#/games/art',
+    '#/games/wall', '#/games/apprentice', '#/games/bets', '#/games/lens', '#/sutras/lost-scroll']) {
+    await page.goto(`${APP}${hash}`);
+    await expect(page.locator('#view h1').first()).toBeVisible();
+    await expect(page.locator('link[data-play="base"]')).toHaveCount(1);
+  }
+  await expectNoViolations(page, v, 'the play experiences');
+});
+
+test('Math Lens offers the camera under the published policy: its digit reader is served from this site', async ({ page, baseURL }) => {
+  const v = await watchViolations(page);
+  await open(page, '#/games/lens');
+  const csp = await policy(page, baseURL);
+  expect(csp).toMatch(/script-src[^;]*'wasm-unsafe-eval'/);
+  expect(csp).not.toContain('cdn.jsdelivr.net');
+  expect(csp).toMatch(/worker-src 'self'(;|$)/);
+  const cam = page.locator('[data-way="camera"]');
+  await expect(cam).toBeEnabled();
+  await page.locator('[data-way="type"]').click();
+  await expect(page.locator('#lnDigits')).toBeFocused();
+  await expectNoViolations(page, v, '#/games/lens');
 });
 
 test('Arena World boards load the Firebase SDK from gstatic with no CSP violation', async ({ page, baseURL }) => {
@@ -108,8 +139,10 @@ test('the Explore menu, the natural voice worker and GoatCounter run with no CSP
     try {
       const w = new Worker(url, { type: 'module' });
       w.onerror = e => resolve('error: ' + (e.message || 'worker failed'));
-      w.postMessage({ type: 'clear' });
-      setTimeout(() => { w.terminate(); resolve('ok'); }, 1500);
+      // An unloaded worker answers a gen with genError 'not loaded': that reply proves it started
+      w.onmessage = e => { if (e.data?.type === 'genError' && e.data.id === 'csp-probe') { w.terminate(); resolve('ok'); } };
+      w.postMessage({ type: 'gen', id: 'csp-probe', text: '' });
+      setTimeout(() => { w.terminate(); resolve('no reply from the worker'); }, 10_000);
     } catch (e) { resolve('threw: ' + e); }
   }));
   expect(started).toBe('ok');

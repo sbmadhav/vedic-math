@@ -1,4 +1,4 @@
-import { test, expect, open, type Mode } from '../fixtures';
+import { test, expect, open, withVideos, type Mode } from '../fixtures';
 import type { Page, Route } from '@playwright/test';
 
 /* watch-shelf:
@@ -9,7 +9,9 @@ import type { Page, Route } from '@playwright/test';
    - The video Bolt offers in a Star / A Trick with a hand-matched video: tests/star.spec.ts checks that a video
      is offered and plays in the page; this checks WHICH video (hand-matched, visible to Challenger, made for kids
      first, shortest first, never a keyword match).
-   YouTube is answered with an empty page, so no real player loads. */
+   YouTube is answered with an empty page, so no real player loads. The catalog keeps growing (batches of
+   hand-matched videos land for more Skills), so each scenario serves the real list through withVideos with
+   exactly the premise it needs, instead of leaning on a Skill that happens to have no match today. */
 
 test.beforeEach(async ({ page }) => {
   await page.route(/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>video</title>' }));
@@ -22,14 +24,16 @@ const visible = (v: V, mode: Mode) => v.modes.some(m => SEES[mode].includes(m)) 
 const videos = (page: Page) => page.evaluate(async () => (await import('/vedic-math/js/videos.js' as string)).VIDEOS) as Promise<V[]>;
 
 /* ---------- No hand match ---------- */
-// "Multiply by multiples of ten" (3-multtens) has no hand-matched video; its words include "multiply"
+// "Multiply by multiples of ten" (3-multtens), served with no hand-matched video; its words include "multiply"
 const MULT = /\bmultipl(?:y|ies|ied|ying|ication)\b/;
+const NO_HAND = `list => list.map(v => ({ ...v, skills: v.skills.filter(s => s !== '3-multtens') }))`;
 
 for (const mode of ['explorer', 'challenger', 'pro'] as Mode[]) {
   test.describe(`${mode}: a Skill with no hand-matched video`, () => {
     test.use({ seedMode: mode });
 
     test('shows keyword matches visible to the Mode, or no Watch section at all', async ({ page }) => {
+      await withVideos(page, NO_HAND);
       await open(page, '#/skill/3-multtens');
       await expect(page.locator('#practice')).toBeVisible();
       const all = await videos(page);
@@ -62,9 +66,21 @@ for (const mode of ['explorer', 'challenger', 'pro'] as Mode[]) {
 }
 
 test('a Skill with neither a hand match nor a keyword match shows no Watch section', async ({ page }) => {
+  // "Discounts, tax and percent change" (7-pctchange) served with no hand match; none of its words is a key word
+  // in js/related.js ("Discounts" is not "count"), which the premise below checks the way picksFor looks
+  await withVideos(page, `list => list.map(v => ({ ...v, skills: v.skills.filter(s => s !== '7-pctchange') }))`);
   await open(page, '#/skill/7-pctchange');
   await expect(page.locator('#practice')).toBeVisible();
-  await videos(page);
+  const premise = await page.evaluate(async () => {
+    const { VIDEOS } = await import('/vedic-math/js/videos.js' as string);
+    const { relatedTo } = await import('/vedic-math/js/related.js' as string);
+    const { byId } = await import('/vedic-math/js/skills/index.js' as string);
+    const s = byId['7-pctchange'];
+    return { hand: VIDEOS.filter((v: any) => v.skills.includes('7-pctchange')).length, keyword: relatedTo(`${s.title} ${s.strand}`.toLowerCase(), VIDEOS, 999).length, total: VIDEOS.length };
+  });
+  expect(premise.hand, 'no hand match').toBe(0);
+  expect(premise.keyword, 'no keyword match').toBe(0);
+  expect(premise.total, 'other videos are still listed').toBeGreaterThan(10);
   await page.waitForTimeout(300);
   await expect(page.locator('[data-watch-for] button')).toHaveCount(0);
   await expect(page.locator('#view')).not.toContainText('Watch it explained');

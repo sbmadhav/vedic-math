@@ -8,7 +8,7 @@
    source, note (what a reader must know), related (Sutra ids with a real mathematical link), refs [[title, url]]. */
 
 export const GROUPS = [
-  { id: 'vedic', title: 'From the Vedic texts', blurb: 'Verses and rules found in the Vedas and their helper texts: number names, the calendar, and the rope geometry of fire altars.' },
+  { id: 'vedic', title: 'From the Vedic texts', blurb: 'Verses and rules from the Vedic texts and their helper texts: number names, the calendar, and the rope geometry of fire altars.' },
   { id: 'classical', title: 'From India\'s great mathematicians', blurb: 'Rules written as short poems so they could be learned by heart, from Pingala to Bhaskara.' },
   { id: 'codes', title: 'Numbers hidden in words', blurb: 'Kerala mathematicians wrote numbers as words and syllables. The last verse here is the one verse in the 1965 book.' }
 ];
@@ -1433,7 +1433,8 @@ export const SLOKAS = [
    ],
    [
     "arXiv math/0611347 (quotes Agrawala and Dani on the sūtras' origin)",
-    "https://arxiv.org/pdf/math/0611347"
+    "https://arxiv.org/pdf/math/0611347",
+    "pro"
    ]
   ],
   "confidence": "high"

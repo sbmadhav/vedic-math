@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 const mem = {};
-globalThis.localStorage = { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; } };
+globalThis.localStorage = { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; }, get length() { return Object.keys(mem).length; }, key: i => Object.keys(mem)[i] ?? null };
 const store = await import('../js/store.js');
 const saved = () => JSON.parse(mem['vm.players']);
 
@@ -140,6 +140,15 @@ test('upgrade(fn) saves only when fn changed the record, and importData tells li
   assert.ok(seen.includes('import'));
 });
 
+test('removing a Player also forgets their play-experience progress (vm.play.<id>.*), and only theirs', () => {
+  const keep = store.player().id, b = store.addPlayer();
+  mem[`vm.play.${b.id}.daily`] = '{"x":1}'; mem[`vm.play.${b.id}.wall`] = '[]'; mem[`vm.play.${keep}.daily`] = '{"y":2}';
+  store.switchPlayer(keep); store.removePlayer(b.id);
+  assert.equal(mem[`vm.play.${b.id}.daily`], undefined);
+  assert.equal(mem[`vm.play.${b.id}.wall`], undefined);
+  assert.equal(mem[`vm.play.${keep}.daily`], '{"y":2}');
+});
+
 test('importData keeps a backup round trip and drops markup and non-numbers from a restored record', () => {
   store.addSparks(40); store.setBest('run-1', 12); store.lightStar('by11', 1); store.setStarLast('by11', 1, ['a', 'b']);
   const before = JSON.parse(store.exportData()).data;
@@ -169,4 +178,20 @@ test('importData refuses a backup whose skills are null or a list, and keeps the
   for (const skills of [null, [], 'x']) assert.throws(() => store.importData(JSON.stringify({ data: { skills, sparks: 1 } })), String(skills));
   assert.throws(() => store.importData('[]'));
   assert.equal(store.sparks(), 55);
+});
+
+/* Mode guess (openspec first-visit): Try a trick marks the Mode as a guess; any pick, or forgetting the Mode, clears it */
+test('setPlayerMode marks a guess only when asked, and a pick or null clears it', () => {
+  store.setPlayerMode('challenger', { guess: true });
+  assert.equal(store.player().mode, 'challenger');
+  assert.equal(store.modeGuessed(), true);
+  assert.equal(saved().list.find(p => p.id === store.player().id).modeGuess, true);
+  store.setPlayerMode('pro');
+  assert.equal(store.player().mode, 'pro');
+  assert.equal(store.modeGuessed(), false);
+  assert.ok(!('modeGuess' in saved().list.find(p => p.id === store.player().id)), 'the field is removed, not set to false');
+  store.setPlayerMode('challenger', { guess: true });
+  store.setPlayerMode(null);
+  assert.equal(store.player().mode, null);
+  assert.equal(store.modeGuessed(), false);
 });

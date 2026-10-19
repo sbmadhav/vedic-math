@@ -74,3 +74,69 @@ No route view or event SHALL contain a Player id, Nickname, avatar, Score, Age a
 #### Scenario: Global Privacy Control
 - **WHEN** the browser sends Global Privacy Control
 - **THEN** no analytics request is made
+
+### Requirement: Listening to a verse is counted
+Each Listen tap that starts speech SHALL send one anonymous event `math/sloka/listen`, with no verse id, voice or other value.
+
+#### Scenario: Listen
+- **WHEN** a Player taps Listen on any verse
+- **THEN** exactly `math/sloka/listen` is sent once
+
+### Requirement: Star Quest counts
+The system SHALL send one anonymous event when a Star is lit in a round (`math/star/lit/<trick>`), when a Star is skipped (`math/star/skipped/<trick>`), on each Comeback (`math/star/comeback/<trick>`), when a Dare is taken (`math/star/dare_taken/<trick>`) and when a Dare is won (`math/star/dare_won/<trick>`). `<trick>` SHALL be a Trick id from the catalog. Stars lit by the one-time migration of Kata progress SHALL send nothing. These events SHALL follow "Events carry no identifiers".
+
+#### Scenario: A round with a Comeback that lights the Star
+- **WHEN** a Player misses once, makes a Comeback and lights Star 1 of `sq5`
+- **THEN** `math/star/comeback/sq5` and `math/star/lit/sq5` are each sent once
+
+#### Scenario: A Dare lost
+- **WHEN** a Player takes a Dare on `by11` and misses it
+- **THEN** `math/star/dare_taken/by11` is sent and `math/star/dare_won/by11` is not
+
+#### Scenario: Migration
+- **WHEN** a Player's Kata progress lights 12 Stars on first load
+- **THEN** no `math/star/lit` event is sent for them
+
+### Requirement: Sky views are counted
+When home shows the Sky, its route view SHALL be `math/view/sky` instead of `math/view/home`, and the All places menu SHALL be counted as `math/view/places`.
+
+#### Scenario: Home with the Sky on
+- **WHEN** a Pro Player with the Sky on opens `#/`
+- **THEN** one `math/view/sky` event is sent and no `math/view/home`
+
+### Requirement: Guide and tour counts
+Opening the guide SHALL be counted as a route view, `math/view/guide`, or `math/view/guide/section` when opened at a section, without the section's name. The tour SHALL send `math/tour/start` when it opens, and then exactly one of `math/tour/finish` (Done on the last step) or `math/tour/skip` (Skip tour, Escape, or leaving Home while it is open). These events SHALL follow "Events carry no identifiers".
+
+#### Scenario: Guide at a section
+- **WHEN** a Player opens `#/guide/katas`
+- **THEN** one `math/view/guide/section` event is sent
+
+#### Scenario: Tour finished
+- **WHEN** a Player goes through every step of the tour and presses Done
+- **THEN** `math/tour/start` and `math/tour/finish` are each sent once, and no `math/tour/skip`
+
+#### Scenario: Tour skipped with Escape
+- **WHEN** a Player presses Escape on the second step
+- **THEN** `math/tour/start` and `math/tour/skip` are each sent once
+
+### Requirement: Say it is counted
+Each tap on a Say it button whose name clip starts playing SHALL send one anonymous `math/say/sutra` event titled "Say a Sutra name". The event SHALL NOT name the Sutra, the voice or the Mode, and SHALL follow "Events carry no identifiers".
+
+#### Scenario: Two taps
+- **WHEN** a Player taps Say it for Sutra 1, its clip starts playing, and then the Player taps Say it for Sutra 3 and that clip starts playing too
+- **THEN** two `math/say/sutra` events are sent, identical, with no Sutra id in path or title
+
+#### Scenario: Stopping is not counted
+- **WHEN** a Player taps a playing Say it button to stop it
+- **THEN** no event is sent
+
+#### Scenario: A clip that never plays is not counted
+- **WHEN** a Player taps Say it and the clip cannot be fetched or decoded, so the device voice reads the respelling instead
+- **THEN** no event is sent
+
+### Requirement: Play experience events
+Route views of a play experience SHALL be counted as `math/view/play/<name>`, never including the params after the name. Experiences SHALL send only `math/play/<experience>/<action>` events made of fixed words, with no score, count, seed, time or typed text in the path or title.
+
+#### Scenario: A shared ghost link
+- **WHEN** a Player opens `#/arena/ghosts/r/<code>`
+- **THEN** the route view sent is `math/view/play/ghosts`

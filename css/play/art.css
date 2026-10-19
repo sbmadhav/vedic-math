@@ -1,0 +1,125 @@
+/* Mandala Studio (class prefix ms-; ar- belongs to the Arena in math.css). Tokens only; text on accent fills uses var(--on-accent). The canvas reads the same
+   tokens through kit.token and redraws when the theme changes. */
+.ms { padding-bottom: var(--space-9); }
+.ms .px-head { padding-bottom: var(--space-2); }
+.ms-top { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-bottom: var(--space-3); }
+.ms-tabs { display: flex; gap: var(--space-2); overflow-x: auto; padding: 4px 2px 6px; flex: 1 1 auto; min-width: 0; scrollbar-width: none; }
+.ms-tabs::-webkit-scrollbar { display: none; }
+.ms-tabs a { flex: none; display: flex; flex-direction: column; gap: 1px; padding: 8px 14px; border-radius: var(--radius-md); border: 2px solid var(--line); background: var(--card); color: var(--ink); text-decoration: none; line-height: 1.15; }
+.ms-tabs a b { font-family: var(--font-display); font-weight: 600; font-size: 1.02rem; }
+.ms-tabs a small { color: var(--ink-muted); font-size: .76rem; font-weight: 700; }
+.ms-tabs a[aria-current="page"] { border-color: var(--edge); background: var(--coral); color: var(--on-accent); box-shadow: var(--shadow-ledge); }
+.ms-tabs a[aria-current="page"] small { color: var(--on-accent); opacity: .75; }
+.ms-surprise { flex: none; }
+.ms-surprise::before { content: "\2726"; margin-right: 6px; color: var(--sun-strong); }
+
+/* ---------- Stage ---------- */
+.ms-stage { padding: var(--space-4);
+  background: radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--coral) 10%, transparent), transparent 55%), radial-gradient(90% 70% at 100% 100%, color-mix(in srgb, var(--teal) 9%, transparent), transparent 60%), var(--card); }
+.ms-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+@media (min-width: 900px) { .ms-grid { grid-template-columns: minmax(0, 1.15fr) minmax(300px, 1fr); align-items: start; } }
+.ms-fig { margin: 0; position: relative; }
+.ms-cv { display: block; width: 100%; aspect-ratio: 1; border-radius: var(--radius-lg); border: 2px solid var(--line); background: var(--bg); touch-action: none; cursor: crosshair; }
+.ms-cv:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.ms-cap { margin-top: var(--space-2); text-align: center; font: 500 .82rem/1.3 var(--font-mono); color: var(--ink-muted); }
+.ms-side { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.ms-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ms-row[hidden] { display: none; }
+.ms-row .px-note { margin-right: 2px; }
+.ms-stage .md-chip { cursor: pointer; }
+.ms-stage .md-chip[aria-pressed="true"], .ms-stage .md-chip[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* sliders */
+.ms-sl { display: flex; flex-direction: column; gap: 4px; font-weight: 700; color: var(--ink-muted); font-size: .9rem; }
+.ms-sl b { font: 700 1.25rem/1 var(--font-display); color: var(--ink); margin-left: 4px; }
+.ms-sl input { width: 100%; accent-color: var(--coral-strong); height: 28px; }
+.ms-drift { display: inline-flex; align-items: center; gap: 8px; }
+.ms-drift-ic { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; border-top-color: transparent; }
+.ms-drift[aria-pressed="true"] { background: var(--teal); color: var(--on-accent); border-color: var(--edge); }
+.ms-drift[aria-pressed="true"] .ms-drift-ic { animation: ms-spin 1.4s linear infinite; }
+@keyframes ms-spin { to { transform: rotate(360deg); } }
+.ms-nudge { font-family: var(--font-mono); font-size: .8rem; padding-inline: 10px; }
+.ms-try .md-chip { font-family: var(--font-display); }
+
+/* palettes: a little swatch from the same tokens the canvas uses */
+.ms-pal { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px 6px 6px; border-radius: var(--radius-pill); border: 2px solid var(--line); background: var(--card); color: var(--ink); font-weight: 700; font-size: .85rem; cursor: pointer; }
+.ms-pal i { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--edge); }
+.ms-pal--dawn i { background: conic-gradient(var(--coral) 0 50%, var(--sun) 0); }
+.ms-pal--sea i { background: conic-gradient(var(--teal) 0 50%, var(--sun) 0); }
+.ms-pal--festival i { background: conic-gradient(var(--coral) 0 33%, var(--sun) 0 66%, var(--teal) 0); }
+.ms-pal--ink i { background: var(--ink); }
+.ms-pal[aria-checked="true"] { border-color: var(--edge); box-shadow: var(--shadow-ledge); }
+
+/* readouts */
+.ms-read:empty { display: none; }
+.ms-read { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--bg-alt); }
+.ms-read p { margin: 0 0 6px; }
+.ms-read p:last-child { margin-bottom: 0; }
+.ms-name b { font: 700 1.3rem/1.1 var(--font-display); color: var(--coral-strong); margin-right: 6px; }
+.ms-name span { color: var(--ink-muted); }
+.ms-rule b { font-family: var(--font-mono); }
+.ms-nums { font-family: var(--font-mono); letter-spacing: .02em; }
+.ms-meters span { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.ms-meters i { font: 500 .78rem/1 var(--font-mono); font-style: normal; padding: 4px 6px; border-radius: 6px; background: var(--card); border: 1px solid var(--line); }
+.ms-yes { color: var(--ink); }
+.ms-yes::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--teal); margin-right: 8px; }
+
+/* tools */
+.ms-tools { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: flex-start; padding-top: var(--space-2); border-top: 2px dashed var(--line); }
+.ms-hear { display: inline-flex; align-items: center; gap: 8px; }
+.ms-hear-ic { width: 16px; height: 14px; background: linear-gradient(90deg, currentColor 0 3px, transparent 3px 6px, currentColor 6px 9px, transparent 9px 12px, currentColor 12px 15px, transparent 15px); clip-path: polygon(0 40%, 20% 40%, 20% 0, 40% 0, 40% 100%, 60% 100%, 60% 20%, 80% 20%, 80% 60%, 100% 60%, 100% 100%, 0 100%); }
+.ms-hear[aria-pressed="true"] .ms-hear-ic { animation: ms-eq .5s ease-in-out infinite alternate; }
+@keyframes ms-eq { to { transform: scaleY(.5); } }
+.ms-wall { min-width: 0; }
+/* open, the box sits in the flow on its own line (an overlay was covered by the page foot and pushed phones sideways) */
+.ms-wall[open] { flex: 1 1 100%; }
+.ms-wall summary { list-style: none; cursor: pointer; }
+.ms-wall summary::-webkit-details-marker { display: none; }
+.ms-wallbox { box-sizing: border-box; width: 100%; max-width: 360px; margin-top: var(--space-2); padding: var(--space-3); border-radius: var(--radius-md); background: var(--card); border: 2px solid var(--edge); box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: var(--space-2); }
+.ms-wallbox fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ms-wallbox legend { font-weight: 700; color: var(--ink-muted); font-size: .82rem; margin-bottom: 2px; }
+.ms-wallbox label { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.ms-wallbox small { color: var(--ink-muted); font: 500 .74rem/1 var(--font-mono); margin-left: auto; }
+.ms-wallbox input { accent-color: var(--coral-strong); }
+[hidden].ms-save, [hidden].ms-share, [hidden].ms-wall { display: none; }
+
+.ms-why { margin-top: var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg); background: var(--card); border: 2px solid var(--line); }
+.ms-why summary { cursor: pointer; font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; }
+.ms-why p { max-width: 70ch; }
+
+/* ---------- Nine (digital roots) ---------- */
+.ms-digits { gap: 6px; }
+.ms-digit { width: 40px; height: 40px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--ink); font: 700 1.15rem/1 var(--font-display); cursor: pointer; }
+.ms-digit[aria-pressed="true"] { background: var(--coral); color: var(--on-accent); border-color: var(--edge); box-shadow: var(--shadow-ledge); }
+
+/* ---------- Rope ---------- */
+.ms-task { margin: 0; font-size: 1.02rem; }
+.ms-steps { display: flex; flex-direction: column; gap: var(--space-2); }
+.ms-root { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 6px; }
+.ms-root .md-btn:disabled { opacity: .45; cursor: not-allowed; }
+.ms-beat[aria-pressed="true"] { background: var(--teal); color: var(--on-accent); border-color: var(--edge); }
+.ms-table { width: 100%; border-collapse: collapse; font-size: .9rem; margin-bottom: 6px; }
+.ms-table td { padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.ms-table tr.is-now td { font-weight: 700; color: var(--coral-strong); }
+.ms-table tr.ms-true td { color: var(--teal-strong); font-weight: 700; border-bottom: 0; }
+.ms-mono { font-family: var(--font-mono); text-align: right; white-space: nowrap; }
+.ms-brush { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--edge); cursor: pointer; font: 700 .7rem/1 var(--font-sans); color: var(--ink); }
+.ms-brush--coral { background: var(--coral); } .ms-brush--sun { background: var(--sun); } .ms-brush--teal { background: var(--teal); } .ms-brush--ink { background: var(--ink); } .ms-brush--clear { background: var(--bg-alt); width: auto; padding: 0 12px; border-radius: var(--radius-pill); }
+.ms-brush[aria-checked="true"] { box-shadow: 0 0 0 3px var(--card), 0 0 0 6px var(--ink); }
+
+/* ---------- Gallery ---------- */
+.ms-gl { list-style: none; margin: var(--space-3) 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-3); }
+.ms-gl li { position: relative; }
+.ms-gi { display: flex; flex-direction: column; gap: 6px; text-decoration: none; color: var(--ink); font-weight: 700; font-size: .85rem; }
+.ms-gi canvas { width: 100%; height: auto; aspect-ratio: 1; border-radius: var(--radius-md); border: 2px solid var(--line); transition: transform .18s, border-color .18s; }
+.ms-gi:hover canvas, .ms-gi:focus-visible canvas { transform: translateY(-3px); border-color: var(--coral); }
+.ms-gdel { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--edge); background: var(--card); color: var(--ink); cursor: pointer; font-size: 1rem; line-height: 1; }
+.ms-empty { text-align: left; }
+
+@media (max-width: 480px) {
+  .ms-stage { padding: var(--space-3); }
+  .ms-digit { width: 34px; height: 34px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ms *, .ms *::before { animation: none !important; transition: none !important; }
+}

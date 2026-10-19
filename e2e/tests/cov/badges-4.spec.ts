@@ -8,12 +8,13 @@ const badge = (page: import('@playwright/test').Page, name: string) =>
   page.locator('.badge-grid .badge').filter({ has: page.locator('b', { hasText: new RegExp(`^${name}$`) }) });
 
 test.describe('Duelist earned under the old rule', () => {
-  // Earned by pressing Start (old rule): the badge is held, but no duel was ever finished (duelsDone 0)
+  // Earned by pressing Start (old rule): the badge is held, but no duel was ever finished (duelsDone 0).
+  // The Duelist badge became Party host (same id, openspec play-experiences), so it shows under its new name.
   test.use({ seedProgress: { v: 3, skills: {}, sparks: 0, days: {}, best: {}, last: null, grade: null, badges: { duel: 1700000000000 }, counts: {}, seen: {}, medals: {}, katasDone: {}, ratings: {}, weekSparks: {}, questDay: null } });
 
-  test('the Me page still shows Duelist as earned', async ({ page }) => {
+  test('the Me page still shows it as earned, as Party host', async ({ page }) => {
     await open(page, '#/me');
-    const duelist = badge(page, 'Duelist');
+    const duelist = badge(page, 'Party host');
     await expect(duelist).toHaveCount(1);
     await expect(duelist).toHaveClass(/\bgot\b/);
     // The saved record keeps it (the app does not drop it when it re-checks badges)

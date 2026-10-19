@@ -10,8 +10,9 @@ export const MODES = {
   pro: { name: 'Pro', ages: '13 to adult', blurb: 'Algebra to calculus, sutra deep dives, leaderboards.', color: 'plum', grades: [8, 9, 10, 11, 12], league: 'pro' }
 };
 export const mode = () => store.player().mode;
-export function setMode(m) {
-  store.updatePlayer({ mode: m }); applyMode();
+/* guess: the Mode was set for the Player by Try a trick (openspec first-visit), not picked; any pick clears it */
+export function setMode(m, { guess = false } = {}) {
+  store.setPlayerMode(m, { guess }); applyMode();
   try { window.siteTrack && window.siteTrack('math/mode/' + m, 'Vedic Math mode: ' + m); } catch (e) {}
 }
 export function applyMode() {
@@ -31,6 +32,9 @@ export const soundOn = () => pref('sound', true);
 export const setSound = v => setPref('sound', v);
 export const voiceOn = () => pref('voice', mode() === 'explorer');
 export const setVoice = v => setPref('voice', v);
+/* Home's More ways to play disclosure (openspec first-visit): closed until opened once on this device */
+export const homeMoreOpen = () => pref('homeMore', false);
+export const setHomeMoreOpen = v => setPref('homeMore', v);
 /* Reduced motion: the device setting, or Pause motion in the site's Explore menu (html.motion-paused, WCAG 2.2.2) */
 export const motionOff = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.classList.contains('motion-paused');
 

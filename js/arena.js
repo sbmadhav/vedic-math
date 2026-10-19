@@ -162,67 +162,6 @@ export function runArena(root, { league, day = null, dial, signal, onEnd, untime
   return { destroy: () => { over = true; round.abort(); } };
 }
 
-/* ---------- Duel: two Players, one screen, the same question on both sides (openspec duel spec) ----------
-   The question flow is pure, so it can be tested without a page: duelStart() gives the first state, and
-   duelAnswer(state, item, side, value) returns { state, event } without changing the state it was given.
-   The first right answer wins the point and both sides move on together. A miss freezes only that side and
-   takes it out of this question; when both have missed, the answer is revealed and duelNext() moves both on. */
-export const DUEL_GOAL = 10, DUEL_FREEZE_MS = 1200, DUEL_REVEAL_MS = 1200;
-export const duelStart = () => ({ item: 0, pts: [0, 0], frozen: [false, false], missed: [false, false], reveal: false, winner: null });
-/* event: 'point' (side scored, both on the next item), 'win' (side reached DUEL_GOAL), 'miss' (side frozen and out
-   of this item), 'both-missed' (reveal the answer, then duelNext), or 'ignored' (frozen, already missed, revealing or over) */
-export function duelAnswer(st, item, side, value) {
-  if (st.winner !== null || st.reveal || st.frozen[side] || st.missed[side]) return { state: st, event: 'ignored' };
-  if (Number(value) === item.answer) {
-    const pts = st.pts.map((n, p) => (p === side ? n + 1 : n));
-    if (pts[side] >= DUEL_GOAL) return { state: { ...st, pts, winner: side }, event: 'win' };
-    return { state: { ...st, pts, item: st.item + 1, missed: [false, false] }, event: 'point' };
-  }
-  const frozen = st.frozen.map((f, p) => f || p === side), missed = st.missed.map((m, p) => m || p === side);
-  const both = missed[0] && missed[1];
-  return { state: { ...st, frozen, missed, reveal: both }, event: both ? 'both-missed' : 'miss' };
-}
-export const duelUnfreeze = (st, side) => ({ ...st, frozen: st.frozen.map((f, p) => (p === side ? false : f)) });
-export const duelNext = st => ({ ...st, item: st.item + 1, missed: [false, false], reveal: false });
-
-/* The Duel on screen. Both sides show the same question, picture and choices; the face-to-face option rotates
-   the top Player's side (math.css). opts.signal: as in runArena, the Duel runs under a child of it, so a rematch
-   in the same root starts clean. */
-export function runDuel(root, { league, names = ['Player 1', 'Player 2'], signal, onEnd }) {
-  const set = makeSet(league, null, 120);
-  const duel = child(signal), ds = duel.signal, thaw = [null, null]; /* thaw[p]: that side's freeze timer */
-  let st = duelStart();
-  root.innerHTML = `<div class="duel">${[0, 1].map(p => `<div class="duel-side duel-p${p + 1}" data-p="${p}"><div class="duel-name">${names[p]} <b id="dS${p}">0</b>/${DUEL_GOAL}</div><div class="duel-q" id="dQ${p}"></div><div class="duel-viz" id="dV${p}"></div><div class="duel-ch" id="dC${p}" role="group" aria-label="${names[p]}: choices"></div><p class="duel-ans" id="dA${p}" aria-live="polite"></p></div>`).join('')}</div>`;
-  const $ = s => root.querySelector(s), item = () => set[st.item % set.length];
-  const sides = () => [0, 1].forEach(p => { const el = $(`.duel-p${p + 1}`); el.classList.toggle('frozen', st.frozen[p] || st.missed[p]); });
-  const deal = () => {
-    const q = item();
-    [0, 1].forEach(p => {
-      $(`#dQ${p}`).innerHTML = q.q; $(`#dV${p}`).innerHTML = q.viz || ''; $(`#dA${p}`).textContent = '';
-      $(`#dC${p}`).innerHTML = q.choices.map(c => `<button class="ar-choice" data-v="${c}">${c}</button>`).join('');
-    });
-    sides();
-  };
-  const reveal = () => {
-    const a = item().answer, line = t({ explorer: `It was ${a}!`, challenger: `Answer: ${a}`, pro: `Answer: ${a}` });
-    [0, 1].forEach(p => { $(`#dA${p}`).textContent = line; root.querySelectorAll(`#dC${p} .ar-choice`).forEach(b => b.classList.toggle('right', +b.dataset.v === a)); });
-  };
-  on(root, 'click', e => {
-    const b = e.target.closest('.ar-choice'); if (!b) return; const p = +b.closest('.duel-side').dataset.p;
-    const { state, event } = duelAnswer(st, item(), p, b.dataset.v); st = state;
-    if (event === 'ignored') return;
-    if (event === 'win') { $(`#dS${p}`).textContent = st.pts[p]; duel.abort(); confetti(120); sfx('level'); onEnd(p); return; }
-    if (event === 'point') { sfx('ok'); $(`#dS${p}`).textContent = st.pts[p]; deal(); return; }
-    sfx('no');
-    if (thaw[p]) thaw[p].abort();
-    thaw[p] = child(ds); later(() => { st = duelUnfreeze(st, p); sides(); }, DUEL_FREEZE_MS, thaw[p].signal);
-    sides();
-    if (event === 'both-missed') { reveal(); later(() => { st = duelNext(st); deal(); }, DUEL_REVEAL_MS, ds); }
-  }, ds);
-  deal();
-  return { destroy: () => duel.abort() };
-}
-
 /* Arena challenge runner for the 1,000-level tower: sprint, survival, sharpshooter, time attack and boss formats. */
 const PAD2 = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '-', '0', '.', '/', 'del'];
 /* opts.signal: as in runArena. untimed (Calm, openspec game-shell-and-calm): a Sprint runs UNTIMED_QS questions with
