@@ -2,9 +2,9 @@
    Loaded lazily, only when a World board is opened, something is posted or a Player who posted is removed,
    so it never slows the first view. Each Player who posts has their own anonymous identity (appNameFor).
    Stores only a generated nickname, an avatar color, a score and two timestamps: no names, emails or ages.
-   Two rules from docs/adr: nothing is posted for a Player without an Age answer, or under 13 without the
-   Parent step (canPost, checked inside submit so no caller can skip it); and no identity exists until the
-   first post (viewing a World board loads no Auth and never signs in). */
+   Two rules from docs/adr: nothing is posted for a Player without an Age answer, and nothing ever for a Player
+   whose Age answer is under 13 (canPost, checked inside submit so no caller can skip it; ADR 0006); and no
+   identity exists until the first post (viewing a World board loads no Auth and never signs in). */
 import { FIREBASE, appCheckSiteKey, appCheckProvider } from './cloud-config.js';
 import * as store from './store.js';
 
@@ -133,14 +133,19 @@ export async function forget(p) {
 }
 store.on((type, data) => { if (type === 'removed') forget(data); });
 
-/* May this Player's Scores and weekly Sparks leave the device? 'ok', 'needs-age' or 'needs-parent' (docs/adr/0001).
-   age is a number or 'adult'; parentOk is when a grown-up gave the Parent step, or null. Both stay on the device. */
+/* May this Player's Scores and weekly Sparks leave the device? 'ok', 'needs-age' or 'device-only' (ADR 0006).
+   age is a number or 'adult' and stays on the device. A Player whose Age answer is under 13 uses Device boards only,
+   in every Mode: nothing is posted for them and nothing loads Firebase for them. The retired Parent step (parentOk,
+   which an old record or a hand-off from sbmadhav.com may still carry) is ignored. */
 export const isUnder13 = p => typeof p?.age === 'number' && p.age < 13;
 export function canPost(p = store.player()) {
   if (!p || (p.age !== 'adult' && typeof p.age !== 'number')) return 'needs-age';
-  if (isUnder13(p) && !p.parentOk) return 'needs-parent';
+  if (isUnder13(p)) return 'device-only';
   return 'ok';
 }
+/* May this Player see a World board? Only with an Age answer of 13 or over, and only after a tap (App Check makes even
+   a read reach Google). Everyone else sees the Device board. */
+export const canViewWorld = (p = store.player()) => enabled() && canPost(p) === 'ok';
 
 /* The score a board accepts, as the rules check it: an integer from 10 to the board's cap, and even on
    Arena boards (every right answer in the Arena earns an even amount). 0 means the board takes none. */
@@ -152,7 +157,7 @@ export function boardScore(board, raw) {
 }
 
 /* The one place anything is posted. Keeps one entry per Player's identity per board; a lower score never replaces a
-   higher one (enforced by the rules too). Returns { posted, reason }: reason 'needs-age' or 'needs-parent'
+   higher one (enforced by the rules too). Returns { posted, reason }: reason 'needs-age' or 'device-only'
    when that Player may not post (then nothing is loaded or sent), 'low' when the board takes no such
    score, 'not-higher' when the board already holds a higher one. Only the nickname and color of `entry` are sent. */
 export async function submit(board, entry, p = store.player()) {
@@ -164,7 +169,7 @@ export async function submit(board, entry, p = store.player()) {
   const ref = fs.doc(db, 'boards', board, 'scores', uid);
   const cur = await fs.getDoc(ref);
   if (cur.exists() && cur.data().score >= score) return { posted: false, reason: 'not-higher' };
-  const exp = fs.Timestamp.fromMillis(Date.now() + KEEP_DAYS * 864e5); /* for a Firestore TTL policy on `exp`; TTL needs the Blaze plan, so it is off on Spark */
+  const exp = fs.Timestamp.fromMillis(Date.now() + KEEP_DAYS * 864e5); /* the rules take 29 to 31 days; the TTL policy on `exp` deletes it after */
   await fs.setDoc(ref, { name: entry.name, avatar: entry.avatar, score, ts: fs.serverTimestamp(), exp });
   return { posted: true };
 }
@@ -176,12 +181,16 @@ export const weekSparksBoard = (week = weekId(), league) => `xp-week-${week}-${l
 export const postWeekSparks = (league, sparks, p = store.player()) =>
   submit(weekSparksBoard(weekId(), league), { name: p.name, avatar: p.avatar, score: Math.min(MAX_WEEK_SPARKS, sparks) }, p);
 /* A World board's top entries, read without signing in. "me" marks only that Player's own entry (the active
-   Player by default), and only if they have posted from this browser before. */
+   Player by default), and only if they have posted from this browser before. An entry whose exp has passed is never
+   shown (the rules stop listing a Board before that can happen, and TTL deletes it in the background; this is the
+   second guard). */
+const expMs = e => (e && typeof e.toMillis === 'function' ? e.toMillis() : e && typeof e.seconds === 'number' ? e.seconds * 1000 : null);
 export async function top(board, n = 20, p = store.player()) {
   const { db, fs } = await bootRead();
   const snap = await fs.getDocs(fs.query(fs.collection(db, 'boards', board, 'scores'), fs.orderBy('score', 'desc'), fs.limit(Math.min(n, 20))));
-  const uid = savedUid(p);
-  return snap.docs.map(d => ({ name: d.data().name, avatar: d.data().avatar, score: d.data().score, me: !!uid && d.id === uid }));
+  const uid = savedUid(p), now = Date.now();
+  return snap.docs.filter(d => { const e = expMs(d.data().exp); return e === null || e > now; })
+    .map(d => ({ name: d.data().name, avatar: d.data().avatar, score: d.data().score, me: !!uid && d.id === uid }));
 }
 
 /* Board ids: daily-2026-10-12-challenger and week-2026-W42-challenger */

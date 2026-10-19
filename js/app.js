@@ -858,53 +858,59 @@ function closeSutra(instant = false) {
 }
 
 /* ---------- Arena ---------- */
-/* Note for grown-ups beside every World board and on the Me page. Must say exactly what cloud.js sends and
-   cloud/firestore.rules allow (openspec parent-note spec; keep cloud/README.md Privacy in step). */
+/* Note for grown-ups beside every Board and on the Me page. Must say exactly what cloud.js sends and
+   cloud/firestore.rules allow, and agree with the privacy policy (openspec parent-note spec; keep cloud/README.md
+   Privacy and docs/legal/privacy-policy.md in step). */
 function parentNote() {
   const on = cloud.enabled(), p = store.player(), gate = cloud.canPost(p);
   const sum = fx.t({ explorer: 'For grown-ups: what the leaderboard keeps', challenger: 'For parents: what the leaderboard keeps', pro: 'Privacy: what the leaderboard stores' });
   const now = !on ? 'Right now nothing is sent anywhere: World boards are switched off and scores stay in this browser. If they are switched on, this is what they keep.'
     : gate === 'needs-age' ? 'Right now nothing is posted for this player. They have not answered the age question yet; it is asked the first time a score would be posted.'
-    : gate === 'needs-parent' ? 'Right now nothing is posted for this player, because their age answer is under 13. To turn on World boards for them, a grown-up opens the Me page and goes to World boards.'
-    : p.parentOk ? 'A grown-up turned on World boards for this player on this device. They can turn it off again on the Me page, under World boards.'
+    : gate === 'device-only' ? "Nothing is posted for this player, because their age answer is under 13. Their scores stay on this device's board, and there is no way to turn World boards on for them."
     : "This player's scores and weekly Sparks post to World boards.";
   return `<details class="mq-small pn"><summary class="linkbtn">${sum}</summary>
     <p class="pn-now"><b>${now}</b></p>
     <p>World boards run on Google Firebase. Three kinds of post go to boards for the player's league: the score of a Daily challenge in the Arena and the score of a Ranked round of a game (today's and this week's board for each), and the player's Sparks total for this week (one weekly board). Sparks come from all play, Practice included, so practice adds to that posted weekly total. Practice scores themselves never leave this device.</p>
-    <p>Nothing is posted before a player answers one question about their age. The answer stays on this device and is never sent. Nothing is posted for a player under 13 until a grown-up turns on World boards for them on this device (Me page, World boards), and it can be turned off there at any time.</p>
+    <p>Nothing is posted before a player answers one question about their age. The answer stays on this device and is never sent. Nothing is ever posted for a player whose answer is under 13: their scores rank on this device's board only.</p>
     <p>No identity exists until the first post: looking at World boards needs no sign-in. ${fx.t({
-      explorer: "When a player first posts, Firebase gives that player their own random ID on this browser and keeps it with the dates it was created and last used. Each player on this device who posts has their own ID and their own entry on each board. Removing a player on the Me page forgets their ID on this device; entries they already posted stay until you ask for them to be removed.",
-      challenger: "At a player's first post, Firebase gives that player their own random ID on this browser and keeps it with the dates it was created and last used. Each player on this device who posts has their own ID and their own entry on each board. Removing a player on the Me page forgets their ID on this device; entries they already posted stay until you ask for them to be removed.",
-      pro: "At a player's first post, Firebase gives that player their own random ID on this browser and keeps it with the dates it was created and last used. Each player on this device who posts has their own ID and their own entry on each board. Removing a player on the Me page forgets their ID on this device; entries already posted stay until their removal is requested.",
+      explorer: "When a player 13 or older first posts, Firebase gives that player their own random ID on this browser and keeps it with the dates it was created and last used. Each player on this device who posts has their own ID and their own entry on each board. Removing a player on the Me page forgets their ID on this device.",
+      challenger: "At the first post of a player 13 or older, Firebase gives that player their own random ID on this browser and keeps it with the dates it was created and last used. Each player on this device who posts has their own ID and their own entry on each board. Removing a player on the Me page forgets their ID on this device.",
+      pro: "At the first post of a player 13 or older, Firebase gives that player their own random ID on this browser and keeps it with the dates it was created and last used. Each player on this device who posts has their own ID and their own entry on each board. Removing a player on the Me page forgets their ID on this device.",
     })} There is no account, sign-up or password.</p>
-    <p>Each entry holds exactly: the made-up nickname (picked from fixed word lists, never typed), an avatar color, the best score, the time it was saved, and the time it expires. No names, emails, ages, photos or typed text are ever collected. Progress, badges and the players on this device stay in this browser only.${on && cloud.appCheckOn() ? ' To stop cheating scripts, Google reCAPTCHA checks that scores come from this site.' : ''}</p>
+    <p>Each entry holds exactly: the made-up nickname (picked from fixed word lists, never typed), an avatar color, the best score, the time it was saved, and the time it expires. No names, emails, ages, photos or typed text are ever collected. Progress, badges and the players on this device stay in this browser only.${on && cloud.appCheckOn() ? ' To stop cheating scripts, Google reCAPTCHA checks that scores come from this site, for players 13 or older who open a World board or post.' : ''}</p>
+    <p class="pn-keep">Each entry stops being shown 30 days after its last update, and is then deleted by an automatic clean-up that usually finishes within a few days. To have an entry removed sooner, write to <a href="mailto:privacy@learnvedicmath.com">privacy@learnvedicmath.com</a> with the nickname, color and date.</p>
     <p>${fx.t({
-      explorer: 'Separately from World boards, the site counts visits and things done in the app (pages opened, questions answered, rounds finished) to make it better, with GoatCounter, anonymously: no cookies, no IDs and no names.',
-      challenger: 'Separately from World boards, the site counts visits and actions in the app (pages opened, questions answered, rounds finished) to improve it, with GoatCounter, anonymously: no cookies, no IDs and no names.',
-      pro: 'Separately from World boards, the site counts visits and actions in the app (pages opened, questions answered, rounds finished) to improve it, with GoatCounter, anonymously: no cookies, no IDs and no names.',
+      explorer: 'Separately from World boards, the site counts visits and things done in the app (pages opened, questions answered, rounds finished) to make it better, with GoatCounter and Cloudflare Web Analytics, anonymously: no cookies, no IDs and no names.',
+      challenger: 'Separately from World boards, the site counts visits and actions in the app (pages opened, questions answered, rounds finished) to improve it, with GoatCounter and Cloudflare Web Analytics, anonymously: no cookies, no IDs and no names.',
+      pro: 'Separately from World boards, the site counts visits and actions in the app (pages opened, questions answered, rounds finished) to improve it, with GoatCounter and Cloudflare Web Analytics, anonymously: no cookies, no IDs and no names.',
     })}</p>
-    <p class="pn-video">${fx.t({
-      explorer: "Videos play from YouTube in privacy-enhanced mode, and YouTube's own rules apply once one plays. Watching needs no grown-up step and posts nothing.",
-      challenger: "Videos play from YouTube in privacy-enhanced mode, and YouTube's own rules apply once one plays. Watching needs no parent step and posts nothing.",
-      pro: "Videos play from YouTube in privacy-enhanced mode, and YouTube's own rules apply once one plays. Watching needs no Parent step and posts nothing.",
-    })}</p>
-    <p>A board stops taking scores when its day or week ends. Entries are not deleted automatically, and turning World boards off does not delete them. To have an entry removed, message Madhav on <a href="https://www.linkedin.com/in/sbmadhav/" target="_blank" rel="noopener">LinkedIn</a> with the nickname, color and date.</p></details>`;
+    <p class="pn-video">Video pictures come from this site, and a video loads from YouTube, in privacy-enhanced mode, only after a player presses play; YouTube's own rules apply once it plays. Watching posts nothing.</p>
+    <p class="pn-more">More in the <a href="/privacy/?home">privacy policy</a> and the <a href="/parents/?home">page for parents</a>.</p></details>`;
 }
+/* A Board: this device's entries for everyone; the World board only for a Player whose Age answer is 13 or over, and
+   only after they tap Show World board (ADR 0006: with App Check even a read reaches Google, so nothing is read
+   before the tap, and never for anyone else). */
 async function loadBoard(el, board, n = 10) {
   if (!el) return;
-  const me = store.player(), online = cloud.enabled();
+  const me = store.player(), world = cloud.canViewWorld(me);
   const rows = (list, meTest) => list.length ? `<ol class="lb">${list.map((e, i) => `<li class="${meTest(e) ? 'me' : ''}"><span class="lb-rank r${i + 1}">${i + 1}</span>${avatar(e, 26)}<span class="lb-name">${esc(e.name)}</span><b>${e.score.toLocaleString('en-US')}</b></li>`).join('')}</ol>` : '<p class="mq-small">No scores yet. Be the first!</p>';
-  el.innerHTML = `<div class="lb-tabs" role="tablist"><button role="tab" aria-selected="${online}" data-src="world">World</button><button role="tab" aria-selected="${!online}" data-src="device">This device</button></div><div class="lb-body"></div>`;
+  const device = () => rows(store.boardTop(board, n), e => e.pid === me.id);
+  if (!world) {
+    const why = cloud.enabled() && cloud.canPost(me) === 'device-only' ? `<p class="mq-small lb-why">${fx.t({ explorer: 'Your scores stay on this device.', challenger: "Your scores stay on this device's board.", pro: "This player's scores stay on this device's board." })}</p>` : '';
+    el.innerHTML = `<p class="lb-src mq-small"><b>This device</b></p><div class="lb-body">${device()}</div>${why}`;
+    return;
+  }
+  el.innerHTML = `<div class="lb-tabs" role="tablist"><button role="tab" aria-selected="false" data-src="world">World</button><button role="tab" aria-selected="true" data-src="device">This device</button></div><div class="lb-body"></div>`;
   const body = $('.lb-body', el);
   const show = async src => {
     el.querySelectorAll('[data-src]').forEach(x => x.setAttribute('aria-selected', String(x.dataset.src === src)));
-    if (src === 'device') { body.innerHTML = rows(store.boardTop(board, n), e => e.pid === me.id); return; }
-    if (!online) { body.innerHTML = '<p class="mq-small">World leaderboards are not switched on yet. Scores compete with everyone who plays on this device.</p>'; return; }
+    if (src === 'device') { body.innerHTML = device(); return; }
     body.innerHTML = '<p class="mq-small">Loading world scores…</p>';
-    try { body.innerHTML = rows(await cloud.top(board, n), e => e.me); } catch (err) { body.innerHTML = '<p class="mq-small">World scores are not reachable right now. Showing this device.</p>' + rows(store.boardTop(board, n), e => e.pid === me.id); }
+    try { body.innerHTML = rows(await cloud.top(board, n), e => e.me); } catch (err) { body.innerHTML = '<p class="mq-small">World scores are not reachable right now. Showing this device.</p>' + device(); }
   };
+  body.innerHTML = device() + '<p class="lb-show"><button type="button" class="md-btn md-btn--sm" data-show-world>Show World board</button></p>';
   el.querySelectorAll('[data-src]').forEach(b => b.onclick = () => show(b.dataset.src));
-  show(online ? 'world' : 'device');
+  body.querySelector('[data-show-world]').onclick = () => show('world');
 }
 /* Send a Ranked round's score to this device's boards and the World boards, and say clearly where it went.
    cloud.submit decides whether it may leave the device; with no Age answer yet the age sheet asks it. */
@@ -917,15 +923,15 @@ async function sendScore(boards, score, label, p) {
   try {
     const res = await Promise.all(boards.map(b => cloud.submit(b, { name: p.name, avatar: p.avatar, score }, p)));
     if (res.some(r => r.posted)) return fx.toast(`<b>Posted to the world leaderboard</b> ${label}`, 'ok');
-    const why = res.find(r => r.reason === 'needs-age' || r.reason === 'needs-parent')?.reason;
+    const why = res.find(r => r.reason === 'needs-age' || r.reason === 'device-only')?.reason;
     if (why === 'needs-age') askAge({ onAnswer: () => { const q = store.playerById(p.id); if (q && cloud.canPost(q) === 'ok') { sendScore(boards, score, label, q); queueSparksPost(); } }, onDismiss: () => savedHere('needs-age') });
     else if (why) savedHere(why);
   } catch (err) { fx.toast(`Could not reach the world leaderboard${err && err.code ? ` (${esc(err.code)})` : ''}. Your score is saved on this device.`); }
 }
-/* After a post that may not leave the device: where the score went, and for under-13s how World boards get turned on */
+/* After a post that may not leave the device: where the score went */
 function savedHere(why) {
-  const how = why === 'needs-parent' ? ' ' + fx.t({ explorer: 'A grown-up can turn on World boards on the Me page.', challenger: 'Ask a grown-up to turn on World boards on the Me page.', pro: 'A parent or guardian can turn on World boards on the Me page.' }) : '';
-  fx.toast(`<b>Saved on this device.</b> ${fx.t({ explorer: 'Your score is on the This device board.', challenger: 'It is on the This device board.', pro: 'It ranks on the This device board.' })}${how}`);
+  const more = why === 'device-only' ? ' ' + fx.t({ explorer: 'Your scores stay on this device.', challenger: "Your scores stay on this device's board.", pro: "This player's scores stay on this device's board." }) : '';
+  fx.toast(`<b>Saved on this device.</b> ${fx.t({ explorer: 'Your score is on the This device board.', challenger: 'It is on the This device board.', pro: 'It ranks on the This device board.' })}${more}`);
 }
 /* Weekly Sparks Board: everything you do earns Sparks, so this ranks all activity. Sent at most once a minute.
    The Players who earned Sparks are remembered by id, so after a Player switch each one's own weekly total
@@ -933,7 +939,7 @@ function savedHere(why) {
 let sparksTimer = 0, sparksLast = 0;
 const sparksWho = new Set();
 function queueSparksPost() {
-  if (!cloud.enabled() || cloud.canPost() !== 'ok') return; /* no Age answer, or under 13 without the Parent step: nothing is sent (submit checks again) */
+  if (!cloud.enabled() || cloud.canPost() !== 'ok') return; /* no Age answer, or under 13 (Device boards only): nothing is sent (submit checks again) */
   sparksWho.add(store.player().id);
   clearTimeout(sparksTimer);
   const wait = Math.max(3000, 65000 - (Date.now() - sparksLast));
@@ -1269,11 +1275,11 @@ function openPlayer(v, opener, onClose = null) {
   clearTimeout(playerDlg._minute); playerDlg._minute = setTimeout(() => { if (playerDlg.open) store.bump('watchedMinute'); }, 60000);
 }
 
-/* ---------- Posting consent: the Age answer and the Parent step (docs/adr/0001) ----------
+/* ---------- Posting consent: the Age answer (docs/adr/0001, 0006) ----------
    One neutral question, asked the first time a Ranked round's score would be posted. No choice hints at what
-   it allows. The answer stays on this device (store.setAge); cloud.canPost reads it. */
+   it allows. The answer stays on this device (store.setAge); cloud.canPost reads it. Under 13: Device boards only. */
 const AGES = [[5, '5 or under'], ...Array.from({ length: 12 }, (_, i) => [i + 6, String(i + 6)]), ['adult', 'Grown-up']];
-let ageDlg = null, focusWorldBoards = false;
+let ageDlg = null;
 function askAge({ onAnswer = () => {}, onDismiss = () => {} } = {}) {
   if (!ageDlg) {
     ageDlg = document.createElement('dialog'); ageDlg.className = 'vm-sheet'; ageDlg.setAttribute('aria-labelledby', 'ageTitle'); ageDlg.setAttribute('aria-describedby', 'ageSub');
@@ -1294,61 +1300,31 @@ function askAge({ onAnswer = () => {}, onDismiss = () => {} } = {}) {
     const v = b.dataset.age === 'adult' ? 'adult' : Number(b.dataset.age);
     store.setAge(v); handlers.answered = true; fx.sfx('pop'); track('age-answer', 'Vedic Math: age question answered');
     if (cloud.canPost() === 'ok') { ageDlg.close(); handlers.onAnswer(); return; }
-    /* Under 13: the score stays here until a grown-up gives the Parent step */
-    ageDlg.innerHTML = `<div class="vs-head"><h2 id="ageTitle">${fx.t({ explorer: 'Saved on this device', challenger: 'Saved on this device', pro: 'Saved on this device' })}</h2>${x}</div>
-      <p id="ageSub" class="vs-sub">${fx.t({ explorer: 'Your score is on the This device board. Ask a grown-up to turn on World boards.', challenger: 'Your score is on the This device board. Ask a grown-up to turn on World boards.', pro: 'The score ranks on the This device board. Ask a grown-up to turn on World boards.' })}</p>
-      <p class="vs-foot"><a class="md-btn md-btn--sm md-btn--primary" href="#/me" data-grownup>For grown-ups: turn on World boards</a> <button type="button" class="md-btn md-btn--sm" data-close>OK</button></p>`;
+    /* Under 13: Device boards only, said in the words of the Mode; nothing to turn on */
+    ageDlg.innerHTML = `<div class="vs-head"><h2 id="ageTitle">Saved on this device</h2>${x}</div>
+      <p id="ageSub" class="vs-sub">${fx.t({ explorer: 'Your score is on the This device board. Your scores stay on this device.', challenger: "Your score is on the This device board. Your scores stay on this device's board.", pro: "The score ranks on the This device board. This player's scores stay on this device's board." })}</p>
+      <p class="vs-foot"><button type="button" class="md-btn md-btn--sm md-btn--primary" data-close>OK</button></p>`;
     ageDlg.querySelectorAll('[data-close]').forEach(c => c.onclick = () => ageDlg.close());
-    ageDlg.querySelector('[data-grownup]').onclick = e => {
-      focusWorldBoards = true; ageDlg._opener = null; ageDlg.close(); handlers.onAnswer();
-      if (location.hash === '#/me') { e.preventDefault(); meView(); } /* already there: no hashchange, so draw it here */
-    };
+    handlers.onAnswer();
     ageDlg.querySelector('[data-close]:not(.vp-x)').focus();
   });
   ageDlg.showModal();
   ageDlg.querySelector('[data-age]').focus();
 }
 
-/* The Parent step's adult check: a 4-digit number written in words, to type in digits. Simple for any adult,
-   not something a young child reads at a glance. A presence check, not age verification; nothing is stored. */
-const ONES = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
-const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
-function inWords(n) {
-  const th = Math.floor(n / 1000), h = Math.floor(n / 100) % 10, r = n % 100;
-  const rest = r < 20 ? ONES[r] : TENS[Math.floor(r / 10)] + (r % 10 ? '-' + ONES[r % 10] : '');
-  return `${ONES[th]} thousand${h ? `, ${ONES[h]} hundred` : ''}${r ? ` and ${rest}` : ''}`;
-}
+/* The World boards section of the Me page: what happens to this Player's scores. No switch: a Player 13 or over posts
+   once they have answered the age question, and a Player under 13 never does (ADR 0006). */
 function worldBoardsHTML(p) {
   const gate = cloud.canPost(p);
   if (!cloud.enabled()) return '<p>World boards are switched off on this site, so every score stays on this device.</p>';
   if (gate === 'needs-age') return `<p>${fx.t({ explorer: 'Before a score goes on a World board, there is one question to answer.', challenger: 'Before a score goes on a World board, there is one question to answer.', pro: 'Before anything is posted to a World board, each player answers one question.' })}</p><button type="button" class="md-btn md-btn--sm" id="wbAsk">Answer the question</button>`;
-  if (!cloud.isUnder13(p)) return `<p>${fx.t({ explorer: 'Your scores and weekly Sparks go on World boards.', challenger: 'Your scores and weekly Sparks go on World boards.', pro: "This player's scores and weekly Sparks post to World boards." })}</p>`;
-  const sw = on => `<button type="button" class="md-switch" role="switch" id="wbSwitch" aria-checked="${on}"><span>Allow World boards for ${esc(p.name)}</span><span class="md-track" aria-hidden="true"><span class="md-knob"></span></span></button>`;
-  if (p.parentOk) return `<p>A grown-up turned on World boards for this player on ${new Date(p.parentOk).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}. Turning it off stops posting; entries already on World boards stay until removed on request.</p>${sw(true)}`;
-  const n = 1001 + Math.floor(Math.random() * 8999);
-  return `<p>${fx.t({ explorer: 'Your scores stay on this device. A grown-up can turn on World boards here.', challenger: 'Your scores stay on this device. Ask a grown-up to turn on World boards here.', pro: "This player's scores stay on this device until a parent or guardian turns on World boards here." })}</p>
-    <form class="wb-check" id="wbCheck" data-n="${n}" novalidate><p class="wb-for"><b>For grown-ups</b></p><label for="wbIn">Type this number in digits: <b class="wb-words">${inWords(n)}</b></label>
-      <span class="wb-row"><input id="wbIn" inputmode="numeric" autocomplete="off" aria-describedby="wbErr"><button class="md-btn md-btn--sm md-btn--primary">Check</button></span>
-      <span class="wb-err" id="wbErr" role="alert"></span></form>
-    <div id="wbOk" hidden><p>Thanks. Turn this on to let ${esc(p.name)} post scores and weekly Sparks to World boards.</p>${sw(false)}</div>`;
+  if (gate === 'device-only') return `<p>${fx.t({ explorer: 'Your scores stay on this device. They rank on the This device board.', challenger: "Your scores stay on this device's board. They rank with everyone who plays on this device.", pro: "This player's scores stay on this device's board: nothing is posted to World boards for a player under 13." })}</p>`;
+  return `<p>${fx.t({ explorer: 'Your scores and weekly Sparks go on World boards.', challenger: 'Your scores and weekly Sparks go on World boards.', pro: "This player's scores and weekly Sparks post to World boards." })}</p>`;
 }
 function wireWorldBoards(root) {
   const box = $('#worldBoards', root); if (!box) return;
-  const redraw = (say = '') => { box.querySelector('.wb-body').innerHTML = worldBoardsHTML(store.player()); wireWorldBoards(root); if (say) $('#wbMsg', root).textContent = say; };
+  const redraw = () => { box.querySelector('.wb-body').innerHTML = worldBoardsHTML(store.player()); wireWorldBoards(root); };
   const ask = $('#wbAsk', box); if (ask) ask.onclick = () => askAge({ onAnswer: () => { redraw(); queueSparksPost(); }, onDismiss: () => {} });
-  const form = $('#wbCheck', box);
-  if (form) form.onsubmit = e => {
-    e.preventDefault();
-    const typed = $('#wbIn', form).value.replace(/[\s,.]/g, '');
-    if (typed !== form.dataset.n) { $('#wbErr', form).textContent = 'That is not the number. Try again.'; $('#wbIn', form).focus(); return; }
-    form.hidden = true; $('#wbOk', box).hidden = false; $('#wbSwitch', box).focus();
-  };
-  const sw = $('#wbSwitch', box);
-  if (sw) sw.onclick = () => {
-    if (sw.getAttribute('aria-checked') === 'true') { store.setParentOk(false); track('parent-step/off', 'Vedic Math: World boards turned off'); redraw('World boards are off for this player. Nothing more is posted; entries already posted stay.'); }
-    else { store.setParentOk(true); track('parent-step/on', 'Vedic Math: World boards turned on'); redraw('World boards are on for this player.'); queueSparksPost(); }
-    const again = $('#wbSwitch', box) || $('#wbIn', box); if (again) again.focus();
-  };
 }
 
 /* ---------- Guide and first-visit tour (openspec in-app-guide) ---------- */
@@ -1530,7 +1506,7 @@ function meView() {
   fx.wireVoiceSettings(view, { player: p.id });
   wireAmbienceSettings(view);
   wireWorldBoards(view);
-  if (focusWorldBoards) { focusWorldBoards = false; const wb = $('#worldBoards'); wb.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); ($('#wbIn') || $('#wbSwitch') || wb).focus({ preventScroll: true }); }
+
   $('#pExport').onclick = async () => { const code = btoa(unescape(encodeURIComponent(store.exportData()))); try { await navigator.clipboard.writeText(code); msg('Backup code copied. Paste it somewhere safe.'); } catch (e) { prompt('Copy this backup code:', code); } };
   $('#pImport').onclick = () => { const code = prompt('Paste your backup code:'); if (!code) return; try { store.importData(decodeURIComponent(escape(atob(code.trim())))); msg('Progress restored.'); meView(); } catch (e) { msg('That code did not work. Check that it was copied in full.'); } };
   $('#pReset').onclick = () => { if (confirm('Reset all progress for this player?')) { store.reset(); meView(); msg('Progress reset.'); } };

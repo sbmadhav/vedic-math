@@ -1,7 +1,8 @@
 import { test, expect, open, cloudLog, chromiumOnly, type Mode, typeAnswer } from '../fixtures';
 import type { Page } from '@playwright/test';
 
-/* openspec parent-note: "Note beside a World board" and "Note matches what is sent". */
+/* openspec parent-note: "Note beside a World board" and "Note matches what is sent". Every Board (the Device board for
+   anyone, with World boards after a tap for a Player 13 or over; change learnvedicmath) has the note beside it. */
 
 const SUMMARY: Record<Mode, string> = {
   explorer: 'For grown-ups: what the leaderboard keeps',
@@ -13,7 +14,7 @@ const noteIn = (page: Page, mode: Mode) =>
   page.locator('#view details.pn', { has: page.locator('summary', { hasText: SUMMARY[mode] }) });
 
 async function expectNoteBesideBoard(page: Page, mode: Mode, board: string) {
-  await expect(page.locator(board).locator('.lb-tabs')).toBeVisible();
+  await expect(page.locator(board).locator('.lb-body')).toBeVisible();
   const note = noteIn(page, mode);
   await expect(note).toHaveCount(1);
   await expect(note).toBeVisible();
@@ -34,12 +35,12 @@ async function expectNoteBesideBoard(page: Page, mode: Mode, board: string) {
 const MODES: Mode[] = ['explorer', 'challenger', 'pro'];
 
 for (const mode of MODES) {
-  test.describe(`${mode}: every World board has the parent note beside it`, () => {
+  test.describe(`${mode}: every Board has the parent note beside it`, () => {
     test.use({ seedMode: mode });
 
     test('Arena boards (today, this week, weekly Sparks)', async ({ page }) => {
       await open(page, '#/arena');
-      for (const b of ['#lbDay', '#lbWeek', '#lbSparks']) await expect(page.locator(b).locator('.lb-tabs')).toBeVisible();
+      for (const b of ['#lbDay', '#lbWeek', '#lbSparks']) await expect(page.locator(b).locator('.lb-body')).toBeVisible();
       await expectNoteBesideBoard(page, mode, '#lbSparks');
     });
 
@@ -50,19 +51,19 @@ for (const mode of MODES) {
       expect(ids.length).toBeGreaterThan(0);
       for (const id of ids) {
         await open(page, `#/game/${id}`);
-        await expect(page.locator('#gbDay .lb-tabs'), id).toBeVisible();
-        await expect(page.locator('#gbWeek .lb-tabs'), id).toBeVisible();
+        await expect(page.locator('#gbDay .lb-body'), id).toBeVisible();
+        await expect(page.locator('#gbWeek .lb-body'), id).toBeVisible();
         await expectNoteBesideBoard(page, mode, '#gbDay');
       }
     });
 
-    test('home: a World board only where the note is', async ({ page }) => {
+    test('home: a Board only where the note is', async ({ page }) => {
       await open(page);
-      const boards = page.locator('#view .lb-tabs');
+      const boards = page.locator('#view .lb-body');
       if (mode === 'pro') {
         await expectNoteBesideBoard(page, mode, '#homeBoard');
       } else {
-        // No World board on this home, so there is nothing for the note to sit beside
+        // No Board on this home, so there is nothing for the note to sit beside
         await expect(boards).toHaveCount(0);
       }
     });

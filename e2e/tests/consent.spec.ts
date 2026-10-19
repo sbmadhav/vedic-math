@@ -1,10 +1,11 @@
 import { test, expect, APP, open, cloudLog, type Mode, typeAnswer } from './fixtures';
 import type { Page } from '@playwright/test';
 
-/* Posting consent (openspec posting-consent spec, docs/adr/0001): the Age answer is asked the first time a
-   Ranked round's score would be posted, and a Player under 13 posts nothing, in any Mode, until a grown-up
-   gives the Parent step on the Me page. Every write goes to the fake Firebase SDK (fixtures.ts), never live.
-   The clock is faked so 60 second Arena rounds can be fast-forwarded. */
+/* Posting consent (openspec posting-consent spec, change learnvedicmath; docs/adr/0001, 0006): the Age answer is
+   asked the first time a Ranked round's score would be posted, and a Player whose answer is under 13 uses Device
+   boards only, in every Mode: nothing is posted, nothing loads Firebase, and there is no switch to turn World boards
+   on. Every write goes to the fake Firebase SDK (fixtures.ts), never live. The clock is faked so 60 second Arena
+   rounds can be fast-forwarded. */
 
 const TITLE: Record<Mode, string> = { explorer: 'How old are you?', challenger: 'How old are you?', pro: 'How old is this player?' };
 const SAVED: Record<Mode, string> = {
@@ -12,14 +13,21 @@ const SAVED: Record<Mode, string> = {
   challenger: 'Saved on this device. It is on the This device board.',
   pro: 'Saved on this device. It ranks on the This device board.',
 };
-const ASK_GROWNUP: Record<Mode, string> = {
-  explorer: 'A grown-up can turn on World boards on the Me page.',
-  challenger: 'Ask a grown-up to turn on World boards on the Me page.',
-  pro: 'A parent or guardian can turn on World boards on the Me page.',
+const DEVICE_ONLY: Record<Mode, string> = {
+  explorer: 'Your scores stay on this device.',
+  challenger: "Your scores stay on this device's board.",
+  pro: "This player's scores stay on this device's board.",
 };
+const SHEET_DEVICE_ONLY: Record<Mode, string> = {
+  explorer: 'Your score is on the This device board. Your scores stay on this device.',
+  challenger: "Your score is on the This device board. Your scores stay on this device's board.",
+  pro: "The score ranks on the This device board. This player's scores stay on this device's board.",
+};
+/* Every request for the Firebase SDK (served from this site) */
+const sdkRequests = (page: Page) => { const seen: string[] = []; page.on('request', r => { if (/\/vendor\/firebase\/|recaptcha/.test(r.url())) seen.push(r.url()); }); return seen; };
 /* The Arena round timer runs on requestAnimationFrame and performance.now, which WebKit's faked clock advances
-   unevenly (a 60 second round can need far more than 60 faked seconds). The sheet and the Parent step still run
-   on WebKit below (keyboard, reduced motion, 13 and over); the round-driven flows run on chromium and mobile. */
+   unevenly (a 60 second round can need far more than 60 faked seconds). The sheet still runs on WebKit below
+   (keyboard, reduced motion, 13 and over); the round-driven flows run on chromium and mobile. */
 const ROUNDS_OFF_WEBKIT = "Arena rounds need the faked clock, which WebKit's requestAnimationFrame does not follow evenly";
 const sheet = (page: Page) => page.locator('dialog.vm-sheet');
 const arenaWrites = async (page: Page) => (await cloudLog(page)).writes.filter(w => /^boards\/(daily|week)-/.test(w.path));
@@ -61,6 +69,7 @@ for (const { mode, dismiss, answer } of FLOW) {
       test.setTimeout(90_000);
       const sent: string[] = [];
       page.on('request', r => { const d = r.postData(); if (d) sent.push(`${r.url()} ${d}`); });
+      const sdk = sdkRequests(page);
       await page.clock.install();
       await arenaRound(page, mode);
 
@@ -96,83 +105,71 @@ for (const { mode, dismiss, answer } of FLOW) {
         for (const w of await arenaWrites(page)) expect(Object.keys(w.data).sort()).toEqual(['avatar', 'exp', 'name', 'score', 'ts']);
         expect(sent.filter(x => /"?age"?\s*[:=]|adult/.test(x))).toEqual([]);
       } else {
-        // Under 13: still nothing posted, and the sheet says how a grown-up turns World boards on
+        // Under 13: nothing posted, ever; the sheet says the scores stay on this device, with nothing to turn on
         await expect(sheet(page).locator('h2')).toHaveText('Saved on this device');
-        await expect(sheet(page)).toContainText('Ask a grown-up to turn on World boards.');
-        await expect(sheet(page).getByRole('link', { name: 'For grown-ups: turn on World boards' })).toHaveAttribute('href', '#/me');
+        await expect(sheet(page).locator('#ageSub')).toHaveText(SHEET_DEVICE_ONLY[mode]);
+        await expect(sheet(page).getByRole('link')).toHaveCount(0);
+        await expect(sheet(page)).not.toContainText(/grown-up|turn on|World boards/i);
         await expect(sheet(page).getByRole('button', { name: 'OK' })).toBeFocused();
         expect((await savedPlayer(page)).age).toBe(Number(answer));
         expect(log.writes).toEqual([]);
         expect(log.signIns).toBe(0);
         await sheet(page).getByRole('button', { name: 'OK' }).click();
         await expect(sheet(page)).toBeHidden();
-        // The next round asks nothing more and says where the score went and how to turn World boards on
+        // The next round asks nothing more and says where the score went
         await arenaRound(page, mode);
         await expect(sheet(page)).toBeHidden();
-        await expect(page.locator('.fx-toast').last()).toHaveText(`${SAVED[mode]} ${ASK_GROWNUP[mode]}`);
+        await expect(page.locator('.fx-toast').last()).toHaveText(`${SAVED[mode]} ${DEVICE_ONLY[mode]}`);
         expect((await cloudLog(page)).writes).toEqual([]);
         expect((await cloudLog(page)).authLoaded).toBe(false);
+        expect(sdk, 'no Firebase or reCAPTCHA file for an under-13 Player').toEqual([]);
       }
     });
   });
 }
 
-/* An under-13 Player who chose Pro: nothing posts, then the Parent step, then posts, then withdrawn, nothing again */
+/* An under-13 Player who chose Pro (posting-consent "Under-13 Player in Pro mode", "No switch for grown-ups") */
 test.describe('under 13 in Pro', () => {
-  test.use({ seedMode: 'pro', seedConsent: { age: 9 } });
-  test('posts nothing, posts after the Parent step, and nothing again after it is withdrawn', async ({ page, browserName }) => {
+  test.use({ seedMode: 'pro', seedConsent: { age: 11 } });
+  test('a Ranked round posts nothing and loads no Firebase file; the Score is on the Device board; the Me page has no switch', async ({ page, browserName }) => {
     test.skip(browserName === 'webkit', ROUNDS_OFF_WEBKIT);
-    test.setTimeout(120_000);
+    test.setTimeout(90_000);
+    const sdk = sdkRequests(page);
     await page.clock.install();
     await arenaRound(page, 'pro');
     await expect(sheet(page)).toBeHidden();
-    await expect(page.locator('.fx-toast').last()).toHaveText(`${SAVED.pro} ${ASK_GROWNUP.pro}`);
+    await expect(page.locator('.fx-toast').last()).toHaveText(`${SAVED.pro} ${DEVICE_ONLY.pro}`);
     expect((await cloudLog(page)).writes).toEqual([]);
     // Play is never blocked: the round ranked on the Device board
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem('vm.board') || '[]').map((e: any) => e.score))).toEqual([10, 10]);
+    expect(sdk).toEqual([]);
 
-    // The Parent step on the Me page: the adult check first, then the switch
     await open(page, '#/me');
     const card = page.locator('#worldBoards');
-    await expect(card).toContainText("This player's scores stay on this device until a parent or guardian turns on World boards here.");
+    await expect(card).toContainText("This player's scores stay on this device's board: nothing is posted to World boards for a player under 13.");
     await expect(card.getByRole('switch')).toHaveCount(0);
-    const form = card.locator('#wbCheck');
-    await expect(form.locator('.wb-words')).toHaveText(/^[a-z]+ thousand(, [a-z]+ hundred)?( and [a-z-]+)?$/);
-    await card.getByLabel(/Type this number in digits/).fill('1000');
-    await card.getByRole('button', { name: 'Check' }).click();
-    await expect(card.locator('#wbErr')).toHaveText('That is not the number. Try again.');
-    await card.getByLabel(/Type this number in digits/).fill((await form.getAttribute('data-n'))!);
-    await card.getByRole('button', { name: 'Check' }).click();
-    const sw = card.getByRole('switch', { name: 'Allow World boards for Swift Tiger 42' });
-    await expect(sw).toBeFocused();
-    await expect(sw).toHaveAttribute('aria-checked', 'false');
-    expect((await savedPlayer(page)).parentOk).toBeUndefined(); // passing the check alone changes nothing
-    await sw.click();
-    await expect(card.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
-    await expect(page.locator('#wbMsg')).toHaveText('World boards are on for this player.');
-    expect(typeof (await savedPlayer(page)).parentOk).toBe('number');
+    await expect(card.locator('form, input')).toHaveCount(0);
+    expect(sdk).toEqual([]);
+  });
+});
 
-    // Now the next Daily challenge posts (to the fake SDK)
-    await arenaRound(page, 'pro');
-    await expect.poll(async () => (await arenaWrites(page)).length).toBe(2);
-    await expect(page.locator('.fx-toast').last()).toContainText('Posted to the world leaderboard');
-
-    // Withdrawn: the switch turns off, posting stops, nothing posted is deleted
-    await open(page, '#/me');
-    await expect(card).toContainText('A grown-up turned on World boards for this player on');
-    await card.getByRole('switch').click();
-    await expect(page.locator('#wbMsg')).toHaveText('World boards are off for this player. Nothing more is posted; entries already posted stay.');
-    await expect(card.getByRole('switch')).toHaveCount(0);
-    await expect(card.locator('#wbCheck')).toBeVisible(); // turning it on again needs the check again
-    expect((await savedPlayer(page)).parentOk).toBeNull();
-    await arenaRound(page, 'pro');
-    await expect(page.locator('.fx-toast').last()).toHaveText(`${SAVED.pro} ${ASK_GROWNUP.pro}`);
-    expect(await arenaWrites(page)).toHaveLength(2);
+/* A Player imported from sbmadhav.com with the old Parent step (posting-consent "Imported Parent step") */
+test.describe('under 13 with the old Parent step', () => {
+  test.use({ seedMode: 'explorer', seedConsent: { age: 10, parentOk: 1760000000000 } });
+  test('still posts nothing and loads no Firebase file', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', ROUNDS_OFF_WEBKIT);
+    test.setTimeout(90_000);
+    const sdk = sdkRequests(page);
+    await page.clock.install();
+    await arenaRound(page, 'explorer');
+    await expect(page.locator('.fx-toast').last()).toHaveText(`${SAVED.explorer} ${DEVICE_ONLY.explorer}`);
+    expect((await cloudLog(page)).writes).toEqual([]);
+    expect(sdk).toEqual([]);
   });
 });
 
 test.describe('keyboard', () => {
-  test('the age sheet and the Parent step work from the keyboard alone, and focus returns', async ({ page, browserName }) => {
+  test('the age sheet works from the keyboard alone, and an under-13 answer is said plainly', async ({ page, browserName }) => {
     // Safari moves Tab only through fields and links unless Option is held
     const TAB = browserName === 'webkit' ? 'Alt+Tab' : 'Tab';
     await open(page, '#/me');
@@ -189,19 +186,11 @@ test.describe('keyboard', () => {
     await expect(sheet(page).locator('[data-age="8"]')).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(sheet(page).getByRole('button', { name: 'OK' })).toBeFocused();
-    await page.keyboard.press(browserName === 'webkit' ? 'Alt+Shift+Tab' : 'Shift+Tab');
-    await expect(sheet(page).getByRole('link', { name: 'For grown-ups: turn on World boards' })).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(sheet(page)).toBeHidden();
-    const input = page.locator('#wbIn');
-    await expect(input).toBeFocused();
-    await page.keyboard.type((await page.locator('#wbCheck').getAttribute('data-n'))!);
-    await page.keyboard.press('Enter');
-    await expect(page.locator('#worldBoards').getByRole('switch')).toBeFocused();
-    await page.keyboard.press('Space');
-    await expect(page.locator('#worldBoards').getByRole('switch')).toHaveAttribute('aria-checked', 'true');
-    expect(typeof (await savedPlayer(page)).parentOk).toBe('number');
-    await expect(page.locator('#worldBoards').getByRole('switch')).toBeFocused();
+    await expect(page.locator('#worldBoards')).toContainText("Your scores stay on this device's board.");
+    expect((await savedPlayer(page)).age).toBe(8);
+    expect((await savedPlayer(page)).parentOk).toBeUndefined();
   });
 });
 
@@ -214,10 +203,41 @@ test('reduced motion: the age sheet opens without animation', async ({ page }) =
 
 test.describe('13 and over', () => {
   test.use({ seedConsent: { age: 13 } });
-  test('the Me page says this player posts, with no Parent step to give', async ({ page }) => {
+  test('the Me page says this player posts, with no switch', async ({ page }) => {
     await page.goto(`${APP}#/me`);
     await expect(page.locator('#worldBoards')).toContainText('Your scores and weekly Sparks go on World boards.');
     await expect(page.locator('#worldBoards').getByRole('switch')).toHaveCount(0);
-    await expect(page.locator('#wbCheck')).toHaveCount(0);
+  });
+
+  test('the Arena shows the Device board, and the World board only after a tap on Show World board', async ({ page }) => {
+    const sdk = sdkRequests(page);
+    await open(page, '#/arena');
+    const day = page.locator('#lbDay');
+    await expect(day.locator('[data-src="device"]')).toHaveAttribute('aria-selected', 'true');
+    await page.waitForTimeout(500);
+    expect(sdk, 'nothing reaches Firebase before the tap').toEqual([]);
+    expect((await cloudLog(page)).reads).toEqual([]);
+    await day.getByRole('button', { name: 'Show World board' }).click();
+    await expect(day.locator('[data-src="world"]')).toHaveAttribute('aria-selected', 'true');
+    await expect.poll(async () => (await cloudLog(page)).reads.length).toBeGreaterThan(0);
+    expect((await cloudLog(page)).signIns).toBe(0);
   });
 });
+
+/* Board-identity "Under-13 Player opens the Boards": only the Device board, and no request leaves the device */
+for (const mode of ['explorer', 'challenger', 'pro'] as const) {
+  test.describe(`under 13 in ${mode}`, () => {
+    test.use({ seedMode: mode, seedConsent: { age: 9 } });
+    test('the Boards show this device only, say so, and nothing loads from Firebase', async ({ page }) => {
+      const sdk = sdkRequests(page);
+      await open(page, '#/arena');
+      const day = page.locator('#lbDay');
+      await expect(day).toContainText('This device');
+      await expect(day.locator('[data-src="world"], [data-show-world]')).toHaveCount(0);
+      await expect(day.locator('.lb-why')).toHaveText(DEVICE_ONLY[mode]);
+      await page.waitForTimeout(500);
+      expect(sdk).toEqual([]);
+      expect((await cloudLog(page)).reads).toEqual([]);
+    });
+  });
+}

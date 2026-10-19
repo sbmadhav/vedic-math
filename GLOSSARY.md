@@ -21,7 +21,7 @@ The group a Player competes against on Boards. Always the same as their Mode.
 _Avoid_: division, bracket, tier
 
 **Age answer**:
-A Player's reply to one neutral question about their age. It is the only thing that decides whether the Parent step is needed.
+A Player's reply to one neutral question about their age. It is the only thing that decides whether a Player may post to World boards: 13 or over posts, under 13 uses Device boards only (`docs/adr/0006`). Kept only on the device and never sent.
 _Avoid_: age gate, age check, birthday
 
 **Grade answer**:
@@ -32,10 +32,9 @@ _Avoid_: grade level, age gate, school grade (in code), grade (alone: that is a 
 How much reading help a Player gets, from their Grade answer: Early (about 4 to 6), Growing (about 7 to 9) or Fluent (10 and up). It changes read aloud, wording, answer buttons, the number of choices, Practice timers and Bolt's tone, in every Mode, and never math difficulty. A Player with no Grade answer has no band. Never shown to the Player. (Proposed in the `age-bands` change.)
 _Avoid_: age band (in copy), age group, reading level, kid mode
 
-**Parent step**:
-A grown-up's one-time permission, on this device, for a Player under 13 to post to World boards. Without it, nothing the Player does leaves the device.
+**Parent step** (retired):
+On sbmadhav.com, a grown-up's one-time permission, on the device, for a Player under 13 to post to World boards. Retired on learnvedicmath.com: Players under 13 use Device boards only, nothing writes `parentOk`, a record that still has one is ignored, and the Hand-off never carries it (`docs/adr/0006`).
 _Avoid_: opt-in, consent screen, parental gate
-On learnvedicmath.com the Parent step is retired: Players under 13 use Device boards only (`docs/adr/0006`, proposed in the `learnvedicmath` change).
 
 ## Learning
 
@@ -250,11 +249,11 @@ A ranked list for one League and one period (a day or a week). Arena, each game,
 _Avoid_: leaderboard (fine in copy, not in this glossary), ranking, table
 
 **World board**:
-A Board shared with every Player online. A Player only appears on it after posting a Score or weekly Sparks total.
+A Board shared with every Player online. A Player only appears on it after posting a Score or weekly Sparks total. Shown only to a Player whose Age answer is 13 or over, after a tap on Show World board; entries stop being shown 30 days after their last update and are then deleted.
 _Avoid_: global leaderboard, online board
 
 **Device board**:
-A Board made only from the Players on this device. Always available, offline included.
+A Board made only from the Players on this device. Always available, offline included. The only Board a Player under 13, or without an Age answer, sees.
 _Avoid_: local leaderboard, offline board
 
 ## Star Quest

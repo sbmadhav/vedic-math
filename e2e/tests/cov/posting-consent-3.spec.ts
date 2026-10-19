@@ -1,11 +1,12 @@
 import { test, expect, open, cloudLog, type Mode, typeAnswer } from '../fixtures';
 import type { Page } from '@playwright/test';
 
-/* posting-consent spec, Requirement "Parent step for Players under 13":
-   - Scenario "Grown-up gives the Parent step": after a grown-up completes the Parent step for an under-13
-     Player, that Player's later Scores AND weekly Sparks totals post to World boards as for any other Player.
-   - Scenario "Players 13 and over": a Player whose Age answer is 13 or over finishes a Ranked round, and the
-     Score posts to World boards without the Parent step.
+/* posting-consent spec (change learnvedicmath), Requirement "Players under 13 use Device boards only":
+   - "Under-13 Player in Pro mode": a Ranked round posts nothing, loads no Firebase file, ranks on the Device board,
+     and the Player is told their Scores stay on this device;
+   - "No switch for grown-ups": the Me page has no control that would let that Player post;
+   - "Imported Parent step": a Player who had the Parent step on sbmadhav.com posts nothing here.
+   Also "Players 13 and over" post a Ranked round's Score as before.
    Every write goes to the fake Firebase SDK in fixtures.ts, never to production Firestore. */
 
 const ROUNDS_OFF_WEBKIT = "Arena rounds need the faked clock, which WebKit's requestAnimationFrame does not follow evenly";
@@ -40,51 +41,49 @@ async function arenaRound(page: Page, mode: Mode) {
   await expect(page.locator('.ar-result')).toBeVisible();
 }
 
-/** Gives the Parent step on the Me page: the grown-up check, then the switch on. */
-async function giveParentStep(page: Page) {
-  await open(page, '#/me');
-  const card = page.locator('#worldBoards');
-  const form = card.locator('#wbCheck');
-  await card.getByLabel(/Type this number in digits/).fill((await form.getAttribute('data-n'))!);
-  await card.getByRole('button', { name: 'Check' }).click();
-  const sw = card.getByRole('switch');
-  await sw.click();
-  await expect(sw).toHaveAttribute('aria-checked', 'true');
-  expect(typeof (await savedPlayer(page)).parentOk).toBe('number');
-}
+const sdkRequests = (page: Page) => { const seen: string[] = []; page.on('request', r => { if (/\/vendor\/firebase\/|recaptcha/.test(r.url())) seen.push(r.url()); }); return seen; };
 
-test.describe('Grown-up gives the Parent step', () => {
-  // An under-13 Challenger with Sparks already earned this week (enough for the weekly Sparks board)
-  test.use({ seedMode: 'challenger', seedConsent: { age: 10 }, seedProgress: { v: 3, sparks: 40, weekSparks: { [isoWeek()]: 40 } } });
-
-  test('later Scores and the weekly Sparks total post to World boards', async ({ page, browserName }) => {
+test.describe('Under-13 Player in Pro mode', () => {
+  test.use({ seedMode: 'pro', seedConsent: { age: 11 }, seedProgress: { v: 3, sparks: 40, weekSparks: { [isoWeek()]: 40 } } });
+  test('a Ranked round posts nothing, Score or Sparks, loads no Firebase file, and ranks on the Device board', async ({ page, browserName }) => {
     test.skip(browserName === 'webkit', ROUNDS_OFF_WEBKIT);
     test.setTimeout(120_000);
+    const sdk = sdkRequests(page);
     await page.clock.install();
+    await arenaRound(page, 'pro');
+    await expect(page.locator('.fx-toast').last()).toHaveText("Saved on this device. It ranks on the This device board. This player's scores stay on this device's board.");
+    await page.clock.runFor(70_000); // past the weekly Sparks post's wait
+    expect((await cloudLog(page)).writes).toEqual([]);
+    expect(sdk).toEqual([]);
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('vm.board') || '[]').map((e: any) => e.score))).toEqual([10, 10]);
+  });
+});
 
-    // Before the Parent step: a Ranked round posts nothing, Score or Sparks
+test.describe('No switch for grown-ups', () => {
+  for (const mode of ['explorer', 'challenger', 'pro'] as Mode[]) {
+    test.describe(mode, () => {
+      test.use({ seedMode: mode, seedConsent: { age: 9 } });
+      test(`${mode}: the Me page has no control that would let an under-13 Player post`, async ({ page }) => {
+        await open(page, '#/me');
+        const card = page.locator('#worldBoards .wb-body');
+        await expect(card).toContainText(/scores stay on this device/);
+        await expect(card.locator('button, input, [role="switch"], form, a')).toHaveCount(0);
+      });
+    });
+  }
+});
+
+test.describe('Imported Parent step', () => {
+  test.use({ seedMode: 'challenger', seedConsent: { age: 10, parentOk: 1760000000000 } });
+  test('a Player under 13 who had the Parent step on sbmadhav.com posts nothing on learnvedicmath.com', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', ROUNDS_OFF_WEBKIT);
+    test.setTimeout(90_000);
+    const sdk = sdkRequests(page);
+    await page.clock.install();
     await arenaRound(page, 'challenger');
     await page.clock.runFor(70_000);
     expect((await cloudLog(page)).writes).toEqual([]);
-
-    await giveParentStep(page);
-
-    // The next Ranked round posts the Score to the World boards (today and this week)
-    await arenaRound(page, 'challenger');
-    await expect.poll(async () => (await scoreWrites(page)).map(w => w.path).sort()).toEqual(
-      [expect.stringMatching(/^boards\/daily-\d{4}-\d{2}-\d{2}-challenger\/scores\/e2e-fake-uid$/), expect.stringMatching(/^boards\/week-\d{4}-W\d{2}-challenger\/scores\/e2e-fake-uid$/)]);
-    await expect(page.locator('.fx-toast').last()).toContainText('Posted to the world leaderboard');
-    for (const w of await scoreWrites(page)) expect(w.data).toMatchObject({ name: 'Swift Tiger 42', avatar: 'teal', score: 10 });
-
-    // And this week's Sparks total goes to the weekly Sparks board (sent at most once a minute)
-    await page.clock.runFor(70_000);
-    // (it may already have gone out once during the round; the latest post carries the whole week's total)
-    await expect.poll(async () => (await sparksWrites(page)).length).toBeGreaterThanOrEqual(1);
-    const sp = (await sparksWrites(page)).at(-1)!;
-    expect(sp.path).toBe(`boards/xp-week-${isoWeek()}-challenger/scores/e2e-fake-uid`);
-    const weekTotal = await page.evaluate(async () => (await import('/js/store.js' as string)).weekSparks());
-    expect(weekTotal).toBeGreaterThan(40);
-    expect(sp.data).toMatchObject({ name: 'Swift Tiger 42', avatar: 'teal', score: weekTotal });
+    expect(sdk).toEqual([]);
   });
 });
 
@@ -92,7 +91,7 @@ test.describe('Players 13 and over', () => {
   for (const { mode, age } of [{ mode: 'challenger' as Mode, age: 13 }, { mode: 'explorer' as Mode, age: 16 }, { mode: 'pro' as Mode, age: 17 }]) {
     test.describe(`${mode}, age ${age}`, () => {
       test.use({ seedMode: mode, seedConsent: { age } });
-      test(`${mode}: age ${age} posts a Ranked round's Score without the Parent step`, async ({ page, browserName }) => {
+      test(`${mode}: age ${age} posts a Ranked round's Score`, async ({ page, browserName }) => {
         test.skip(browserName === 'webkit', ROUNDS_OFF_WEBKIT);
         test.setTimeout(90_000);
         await page.clock.install();
@@ -103,7 +102,7 @@ test.describe('Players 13 and over', () => {
           expect(w.data).toMatchObject({ score: 10 });
         }
         await expect(page.locator('.fx-toast').last()).toContainText('Posted to the world leaderboard');
-        // No age question, no Parent step, and nothing stored for one
+        // No age question
         await expect(sheet(page)).toBeHidden();
         expect((await savedPlayer(page)).parentOk).toBeUndefined();
       });
@@ -112,7 +111,7 @@ test.describe('Players 13 and over', () => {
 
   test.describe('answered 13 on the age sheet', () => {
     test.use({ seedMode: 'challenger', seedConsent: null });
-    test('the round posts as soon as 13 is picked, with no Parent step', async ({ page, browserName }) => {
+    test('the round posts as soon as 13 is picked', async ({ page, browserName }) => {
       test.skip(browserName === 'webkit', ROUNDS_OFF_WEBKIT);
       test.setTimeout(90_000);
       await page.clock.install();

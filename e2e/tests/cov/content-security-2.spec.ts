@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, policyOf } from '../fixtures';
+import { test, expect, APP, open, cloudLog, policyOf, showWorld } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* content-security spec (change learnvedicmath), Requirements "Only the origins the app uses are allowed" and
@@ -76,13 +76,16 @@ test('The natural voice worker: started from its import map URL it runs with no 
   await none(page, v, 'the voice worker');
 });
 
+test.describe('a Player 13 or over', () => {
+  test.use({ seedConsent: { age: 'adult' } });
 test('World boards: the Arena World board loads through the Firebase SDK with no violation', async ({ page, baseURL }) => {
   const v = await watchViolations(page);
   await open(page, '#/arena');
   await policy(page, baseURL);
-  await expect(page.locator('#lbDay [data-src="world"]')).toHaveAttribute('aria-selected', 'true');
+  await showWorld(page, '#lbDay');
   await expect.poll(async () => (await cloudLog(page)).reads.length).toBeGreaterThan(0);
   await none(page, v, '#/arena');
+});
 });
 
 test('Leaderboards off: the policy lists the Firebase hosts only while js/cloud-config.js configures them', async ({ page, baseURL }) => {

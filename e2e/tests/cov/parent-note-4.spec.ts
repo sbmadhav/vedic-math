@@ -5,7 +5,7 @@ import type { Page } from '@playwright/test';
    - "The note explains Sparks and Practice" / A parent reads about Practice
    - "The note mentions videos" / Grown-up reads the note (in any Mode)
    The note is opened in every Mode, beside the Arena and game World boards and on the Me page, for a Player
-   with no Age answer, an under-13 Player without the Parent step and a grown-up Player. */
+   with no Age answer, an under-13 Player and a grown-up Player. */
 
 const SUMMARY: Record<Mode, string> = {
   explorer: 'For grown-ups: what the leaderboard keeps',
@@ -15,7 +15,7 @@ const SUMMARY: Record<Mode, string> = {
 
 const SPARKS_POSTED = 'Sparks come from all play, Practice included, so practice adds to that posted weekly total.';
 const PRACTICE_LOCAL = 'Practice scores themselves never leave this device.';
-const VIDEO = "Videos play from YouTube in privacy-enhanced mode, and YouTube's own rules apply once one plays.";
+const VIDEO = "Video pictures come from this site, and a video loads from YouTube, in privacy-enhanced mode, only after a player presses play; YouTube's own rules apply once it plays.";
 
 async function openNote(page: Page, mode: Mode) {
   const note = page.locator('#view details.pn', { has: page.locator('summary', { hasText: SUMMARY[mode] }) }).first();
@@ -29,7 +29,7 @@ const sentences = (text: string) => text.replace(/\s+/g, ' ').split(/(?<=[.!?])\
 
 const CONSENTS: { name: string; consent: Consent | null }[] = [
   { name: 'no Age answer', consent: null },
-  { name: 'under 13 without the Parent step', consent: { age: 9 } },
+  { name: 'under 13', consent: { age: 9 } },
   { name: 'grown-up', consent: { age: 'adult' } },
 ];
 

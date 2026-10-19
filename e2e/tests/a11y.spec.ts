@@ -148,7 +148,7 @@ for (const scheme of ['light', 'dark'] as const) {
   }
 }
 
-/* Posting consent: the age sheet and the Parent step on the Me page, in both color schemes and every Mode */
+/* Posting consent: the age sheet and the World boards section of the Me page, in both color schemes and every Mode */
 const axeIn = async (page: import('@playwright/test').Page, sel: string) => {
   const res = await new AxeBuilder({ page }).include(sel).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice']).analyze();
   return res.violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => `${v.id}: ${v.nodes.map(n => n.target.join(' ')).join(' | ')}`);
@@ -170,20 +170,10 @@ for (const scheme of ['light', 'dark'] as const) {
     });
     test.describe(`${scheme} scheme, ${mode}, under 13`, () => {
       test.use({ colorScheme: scheme, seedMode: mode, seedConsent: { age: 8 } });
-      test('the Parent step and its switch have no serious or critical axe violations', async ({ page }, testInfo) => {
+      test('the World boards section for an under-13 Player has no serious or critical axe violations', async ({ page }, testInfo) => {
         chromiumOnly(testInfo);
         await open(page, '#/me');
-        expect(await axeIn(page, '#worldBoards')).toEqual([]);
-        await page.locator('#wbIn').fill('1');
-        await page.locator('#wbCheck button').click();
-        await expect(page.locator('#wbErr')).not.toBeEmpty();
-        expect(await axeIn(page, '#worldBoards')).toEqual([]);
-        await page.locator('#wbIn').fill((await page.locator('#wbCheck').getAttribute('data-n'))!);
-        await page.locator('#wbCheck button').click();
-        await expect(page.locator('#worldBoards').getByRole('switch')).toBeVisible();
-        expect(await axeIn(page, '#worldBoards')).toEqual([]);
-        await page.locator('#worldBoards').getByRole('switch').click();
-        await expect(page.locator('#worldBoards').getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+        await expect(page.locator('#worldBoards')).toContainText(/scores stay on this device/);
         expect(await axeIn(page, '#worldBoards')).toEqual([]);
       });
     });

@@ -93,3 +93,28 @@ test('grown-up pages: the contact on parents and privacy, the legal text include
   assert.doesNotMatch(readFileSync(join(root, 'site/index.html'), 'utf8'), /from the Vedas/i);
 });
 
+/* The parent note (openspec parent-note, change learnvedicmath; task 8.6): under 13 never posts, 30-day showing and
+   automatic deletion, the privacy contact, the videos sentence, and links to the privacy policy and the parents page.
+   The note is built in js/app.js (parentNote); its fixed sentences are checked in the source. */
+test('the parent note says what the privacy policy says, in every Mode', () => {
+  const app = readFileSync(join(root, 'js', 'app.js'), 'utf8');
+  const note = app.slice(app.indexOf('function parentNote()'), app.indexOf('async function loadBoard('));
+  for (const s of [
+    'Nothing is posted before a player answers one question about their age.',
+    'Nothing is ever posted for a player whose answer is under 13: their scores rank on this device\'s board only.',
+    'Each entry stops being shown 30 days after its last update, and is then deleted by an automatic clean-up that usually finishes within a few days.',
+    'privacy@learnvedicmath.com',
+    'Video pictures come from this site, and a video loads from YouTube, in privacy-enhanced mode, only after a player presses play; YouTube\'s own rules apply once it plays.',
+    'href="/privacy/?home"', 'href="/parents/?home"',
+    "there is no way to turn World boards on for them",
+  ]) assert.ok(note.includes(s), s);
+  for (const gone of ['linkedin', 'LinkedIn', 'Parent step', 'turn on World boards for them, a grown-up', 'Entries are not deleted automatically']) assert.ok(!note.includes(gone), gone);
+  for (const mode of ['explorer:', 'challenger:', 'pro:']) assert.ok(note.split(mode).length >= 3, `${mode} wording in the note`);
+  const policy = readFileSync(join(root, 'docs/legal/privacy-policy.md'), 'utf8');
+  assert.match(policy, /stop being shown after 30 days/);
+});
+
+test('no Parent step is left in the game', () => {
+  const app = readFileSync(join(root, 'js', 'app.js'), 'utf8');
+  for (const gone of ['parent-step/', 'wbSwitch', 'wbCheck', 'inWords(', 'needs-parent', 'setParentOk']) assert.ok(!app.includes(gone), gone);
+});

@@ -102,7 +102,6 @@ LINKS = {
     "www.w3.org", "www.sitemaps.org",  # XML namespaces, not requests
     "www.ftc.gov", "www.ecfr.gov", "policies.google.com", "www.cloudflare.com", "www.goatcounter.com", "firebase.google.com",
     "support.google.com", "openfontlicense.org", "www.apache.org", "opensource.org",
-    "www.linkedin.com",  # the parent note's removal link, until task 8.6 replaces it with privacy@learnvedicmath.com
 }
 OWN_HOST = re.compile(r"^([\w-]+\.)*learnvedicmath\.com$")
 

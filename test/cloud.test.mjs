@@ -86,22 +86,25 @@ const ENTRY = { name: 'Brave Tiger 42', avatar: 'teal', score: 120 };
 const BOARD = `daily-${cloud.dayId()}-challenger`;
 const as = (age, parentOk = null) => { store.updatePlayer({ age, parentOk }); };
 
-test('canPost: no Age answer needs it; under 13 needs the Parent step; 13 and over and grown-ups may post', () => {
+/* Under 13: Device boards only, in every Mode, whatever an old record or a hand-off says about the retired Parent step
+   (openspec change learnvedicmath, posting-consent; ADR 0006) */
+test('canPost: no Age answer needs it; under 13 is device-only, Parent step or not; 13 and over and grown-ups may post', () => {
   assert.equal(cloud.canPost({}), 'needs-age');
   assert.equal(cloud.canPost({ age: null }), 'needs-age');
   assert.equal(cloud.canPost({ age: '9' }), 'needs-age');
   for (const age of [4, 9, 12]) {
-    assert.equal(cloud.canPost({ age }), 'needs-parent', `age ${age}`);
-    assert.equal(cloud.canPost({ age, parentOk: null }), 'needs-parent', `age ${age}, withdrawn`);
-    assert.equal(cloud.canPost({ age, parentOk: 1760000000000 }), 'ok', `age ${age} with the Parent step`);
+    assert.equal(cloud.canPost({ age }), 'device-only', `age ${age}`);
+    assert.equal(cloud.canPost({ age, parentOk: 1760000000000 }), 'device-only', `age ${age} with an old Parent step`);
+    for (const mode of ['explorer', 'challenger', 'pro']) assert.equal(cloud.canPost({ age, mode }), 'device-only', `age ${age} in ${mode}`);
   }
   for (const age of [13, 17, 'adult']) assert.equal(cloud.canPost({ age }), 'ok', `age ${age}`);
 });
 
 for (const [label, age, parentOk, reason] of [
   ['no Age answer', undefined, null, 'needs-age'],
-  ['under 13 without the Parent step', 9, null, 'needs-parent'],
-  ['12, the step withdrawn', 12, null, 'needs-parent'],
+  ['under 13', 9, null, 'device-only'],
+  ['12 with an old Parent step', 12, Date.now(), 'device-only'],
+  ['5 or under', 5, null, 'device-only'],
 ]) {
   test(`submit refuses (${label}) with nothing loaded, signed in or sent`, async () => {
     const log = stubSdk(); as(age, parentOk);
@@ -112,7 +115,7 @@ for (const [label, age, parentOk, reason] of [
   });
 }
 
-for (const [label, age, parentOk] of [['under 13 with the Parent step', 9, Date.now()], ['13', 13, null], ['a grown-up', 'adult', null]]) {
+for (const [label, age, parentOk] of [['13', 13, null], ['a grown-up', 'adult', null]]) {
   test(`submit posts (${label}): signs in once, sends only nickname, color, score and times`, async () => {
     const log = stubSdk(); as(age, parentOk);
     assert.deepEqual(await cloud.submit(BOARD, { ...store.player(), score: 120 }), { posted: true });
@@ -156,15 +159,18 @@ test('after the first post, top() marks this device\'s row as "me", still withou
   assert.equal(log.signIns, 0);
 });
 
-test('weekly Sparks: an under-13 Player without the Parent step sends nothing; with it, the total posts', async () => {
+test('weekly Sparks: an under-13 Player sends nothing, even with an old Parent step; 13 and over, the total posts', async () => {
   let log = stubSdk(); as(10);
-  assert.deepEqual(await cloud.postWeekSparks('explorer', 250), { posted: false, reason: 'needs-parent' });
+  assert.deepEqual(await cloud.postWeekSparks('explorer', 250), { posted: false, reason: 'device-only' });
   assert.deepEqual(log.files, []);
   assert.equal(log.signIns, 0);
+  log = stubSdk(); as(10, Date.now());
+  assert.deepEqual(await cloud.postWeekSparks('explorer', 250), { posted: false, reason: 'device-only' });
+  assert.deepEqual(log.files, []);
   log = stubSdk(); as(undefined);
   assert.deepEqual(await cloud.postWeekSparks('explorer', 250), { posted: false, reason: 'needs-age' });
   assert.deepEqual(log.files, []);
-  log = stubSdk(); as(10, Date.now());
+  log = stubSdk(); as(13);
   assert.deepEqual(await cloud.postWeekSparks('explorer', 70000), { posted: true });
   assert.equal(log.writes[0].path, `boards/xp-week-${cloud.weekId()}-explorer/scores/uid-1`);
   assert.equal(log.writes[0].data.score, 60000);
@@ -217,7 +223,7 @@ test('the consent gate is checked for the Player whose post it is, not the activ
   const [, b] = family(), log = stubSdk();
   store.switchPlayer(b.id); store.updatePlayer({ age: 9, parentOk: null }); store.switchPlayer('p1');
   const kid = store.allPlayers().find(p => p.id === b.id);
-  assert.deepEqual(await cloud.submit(BOARD, ENTRY, kid), { posted: false, reason: 'needs-parent' });
+  assert.deepEqual(await cloud.submit(BOARD, ENTRY, kid), { posted: false, reason: 'device-only' });
   assert.deepEqual(log.files, []);
 });
 
@@ -349,4 +355,22 @@ test('the Firebase SDK loads from /vendor/firebase/<version>/ on this site, neve
   assert.ok(log.urls.length > 0);
   for (const u of log.urls) assert.match(u, /^\/vendor\/firebase\/\d+\.\d+\.\d+\/firebase-[a-z-]+\.js$/);
   assert.doesNotMatch(readFileSync(new URL('../js/cloud.js', import.meta.url), 'utf8'), /gstatic\.com/);
+});
+
+/* Expired entries are never shown (openspec change learnvedicmath, board-identity "The app's own guard"; task 8.3a) */
+test('top() drops a row whose exp has passed, and keeps one whose exp is ahead or missing', async () => {
+  const log = stubSdk(); as('adult');
+  const ms = Date.now();
+  const exp = d => ({ toMillis: () => ms + d * 864e5 });
+  log.rows = [['a', 500], ['b', 400], ['c', 300]];
+  /* the stub gives every row the same data shape; give each its own exp */
+  const getDocs = async () => ({ docs: [['a', 500, exp(-1)], ['b', 400, exp(10)], ['c', 300, undefined]].map(([id, score, e]) => ({ id, data: () => ({ name: 'Brave Tiger 42', avatar: 'teal', score, exp: e }) })) });
+  cloud._setLoader(async url => { const f = url.split('/').pop(); if (f === 'firebase-firestore.js') return { getFirestore: () => ({}), collection: () => ({}), orderBy: () => ({}), limit: () => ({}), query: c => c, getDocs }; if (f === 'firebase-app.js') return { initializeApp: (c, n = '[DEFAULT]') => ({ name: n }) }; return { initializeAppCheck: () => ({}), ReCaptchaEnterpriseProvider: class {}, ReCaptchaV3Provider: class {} }; });
+  const rows = await cloud.top(BOARD, 20);
+  assert.deepEqual(rows.map(r => r.score), [400, 300]);
+});
+
+test('canViewWorld: only a Player whose Age answer is 13 or over may see a World board', () => {
+  for (const [p, want] of [[{}, false], [{ age: 9 }, false], [{ age: 12, parentOk: 1 }, false], [{ age: 13 }, true], [{ age: 'adult' }, true]])
+    assert.equal(cloud.canViewWorld(p), want, JSON.stringify(p));
 });

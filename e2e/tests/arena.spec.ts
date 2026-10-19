@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, heldClock, appErrors, typeAnswer } from './fixtures';
+import { test, expect, APP, open, cloudLog, heldClock, appErrors, typeAnswer, showWorld } from './fixtures';
 
 /* Arena rounds start and take answers. Every test leaves before the 60 second round ends,
    so no score is ever submitted (and the fake SDK would record it if one were). */
@@ -44,16 +44,20 @@ test.describe('explorer', () => {
   });
 });
 
-test('the lobby shows today, this week and weekly Sparks boards with World and This device tabs', async ({ page }) => {
+test.describe('a Player 13 or over', () => {
+  test.use({ seedConsent: { age: 'adult' } });
+test('the lobby shows today, this week and weekly Sparks boards; Show World board brings World and This device tabs', async ({ page }) => {
   await open(page, '#/arena');
   await expect(page.locator('#arShell h2').filter({ hasText: 'Most Sparks this week' })).toBeVisible();
   await expect(page.locator('#arShell')).not.toContainText('XP');
   for (const id of ['#lbDay', '#lbWeek', '#lbSparks']) {
-    await expect(page.locator(`${id} [data-src="world"]`)).toBeVisible();
+    await expect(page.locator(`${id} [data-src="device"]`)).toHaveAttribute('aria-selected', 'true');
+    await showWorld(page, id);
     await page.locator(`${id} [data-src="device"]`).click();
     await expect(page.locator(`${id} [data-src="device"]`)).toHaveAttribute('aria-selected', 'true');
     await expect(page.locator(`${id} .lb-body`)).toContainText('No scores yet');
   }
+});
 });
 
 test('challenge tower: challenge 1 starts and takes an answer', async ({ page }) => {

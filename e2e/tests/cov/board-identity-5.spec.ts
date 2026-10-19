@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog, heldClock } from '../fixtures';
+import { test, expect, open, cloudLog, heldClock, showWorld } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* openspec board-identity, "One identity per Player":
@@ -44,7 +44,7 @@ async function seedRows(page: Page) {
 async function expectArenaWorldBoards(page: Page) {
   for (const sel of ['#lbDay', '#lbWeek', '#lbSparks']) {
     const wrap = page.locator(sel);
-    await expect(wrap.locator('[data-src="world"]')).toHaveAttribute('aria-selected', 'true');
+    await showWorld(page, sel);
     await expect(wrap.locator('ol.lb li')).toHaveCount(3);
     await expect(wrap.locator('ol.lb li .lb-name').first()).toHaveText(A_NAME);
     // B has no identity, so nothing (not even A's row) is marked as B's own

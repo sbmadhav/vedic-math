@@ -1,5 +1,5 @@
 rules_version = '2';
-// Vedic Math for Everyone: leaderboards.
+// Learn Vedic Math: World boards (learnvedicmath.com; a new Firebase project, openspec change learnvedicmath D14).
 // Three kinds of board, all written by vedic-math/js/app.js through cloud.submit:
 //   Arena daily round:   boards/daily-YYYY-MM-DD-<league>/scores/<uid> and boards/week-YYYY-Www-<league>/scores/<uid>
 //   Ranked game rounds:  boards/g_<game>-daily-YYYY-MM-DD-<league>/... and boards/g_<game>-week-YYYY-Www-<league>/...
@@ -11,7 +11,8 @@ rules_version = '2';
 //   avatar one of five colors
 //   score  an integer from 10 to the board's cap (see maxScore); Arena scores are also even
 //   ts     the server time of the write
-//   exp    when the entry deletes itself (Firestore TTL policy on `exp`), 1 to 60 days ahead
+//   exp    when the entry expires: 29 to 31 days ahead (the client sends 30); the Firestore TTL policy on `exp`
+//          deletes it after that, in the background
 service cloud.firestore {
   match /databases/{database}/documents {
     match /boards/{board}/scores/{uid} {
@@ -70,8 +71,14 @@ service cloud.firestore {
           && d.avatar in ['coral', 'teal', 'sun', 'sky', 'plum']
           && d.score is int && d.score >= 10 && d.score <= maxScore() && (kind() != 'arena' || d.score % 2 == 0)
           && d.ts == request.time
-          && d.exp is timestamp && d.exp > request.time + duration.value(1, 'd') && d.exp < request.time + duration.value(60, 'd');
+          && d.exp is timestamp && d.exp > request.time + duration.value(29, 'd') && d.exp < request.time + duration.value(31, 'd');
       }
+
+      // Retention (design D14): a Board can be listed only until 28 days after it began. A write is accepted only while
+      // its Board is open, at the earliest 15 hours before boardStart(), so every entry's exp is at least
+      // boardStart() - 15h + 29d, later than boardStart() + 28d: no list ever returns an expired entry, even while TTL
+      // has not deleted it yet. Both sides use server time. A list cannot filter on exp itself (it orders by score).
+      function listable() { return request.time < boardStart() + duration.value(28, 'd'); }
 
       // Reads: your own entry (checked before a submit) and lists of at most 20. Lists need no sign-in, so viewing a
       // World board creates no identity (docs/adr/0002). Every entry is public: a list can page past the top 20 with a
@@ -79,7 +86,7 @@ service cloud.firestore {
       // color, a score and times, never anything personal. Keep it that way: a field that is not public needs its own
       // owner-only collection. get is limited to the owner only so the client has no reason to fetch others' entries.
       allow get: if validBoard() && signedInAs();
-      allow list: if validBoard() && request.query.limit <= 20;
+      allow list: if validBoard() && request.query.limit <= 20 && listable();
 
       allow create: if signedInAs() && validBoard() && boardOpen() && validEntry();
       // Only a higher score replaces an entry, and at most once per 50 seconds (a round plus its countdown is 62 s).

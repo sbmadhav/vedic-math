@@ -124,7 +124,7 @@ test('Memory: a dot card lays its dots out in rows of five', async ({ page }) =>
 
 test('a ranked round shows the game leaderboards and starts the clock', async ({ page }) => {
   await open(page, '#/game/times-sprint');
-  await expect(page.locator('#gbDay .lb-tabs [data-src="world"]')).toBeVisible();
+  await expect(page.locator('#gbDay .lb-body')).toBeVisible();
   await expect(page.locator('#gShell [data-m="ranked"]')).toHaveAttribute('aria-pressed', 'true');
   await page.locator('#gStart').click();
   await expect(page.locator('#gArea .g-timer')).toBeAttached();
