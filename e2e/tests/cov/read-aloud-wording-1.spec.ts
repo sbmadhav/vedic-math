@@ -71,7 +71,8 @@ test('Every generated line: a seeded sample of every Skill, Kata, Arena League, 
     });
     for (const t of TRICKS) for (const n of [1, 17, 34, 50]) for (const p of L.kata(t.id, n).problems) add(`kata ${t.id} ${n}`, spoken(p));
     for (const league of ['explorer', 'challenger', 'pro']) for (const p of A.makeSet(league, 'voice-e2e')) add(`arena ${league}`, spoken(p));
-    for (let id = 1; id <= L.CHALLENGE_COUNT; id += 9) for (const p of L.challengeSet(L.challenge(id), 10)) add(`tower ${id}`, spoken(p));
+    // Every tower, 3 problems each (a tower's set is seeded, so this is the same sample every run)
+    for (let id = 1; id <= L.CHALLENGE_COUNT; id++) for (const p of L.challengeSet(L.challenge(id), 3)) add(`tower ${id}`, spoken(p));
     const problems = (w: string) => {
       const bad: string[] = [];
       if (/[<>&#_^{}\\|⟨⟩□√′∫·×÷−±≤≥≠≈→←²³…\u0001-\u0003]/.test(w)) bad.push('symbol left');
@@ -86,6 +87,8 @@ test('Every generated line: a seeded sample of every Skill, Kata, Arena League, 
     const out: string[] = [], seen = new Set<string>();
     for (const [src, html] of lines) { const w = V.normalize(html); if (seen.has(w)) continue; seen.add(w); const bad = problems(w); if (bad.length) out.push(`${src}: ${bad.join('; ')} :: ${w}`); }
     if (lines.length < 1000) out.push(`only ${lines.length} lines sampled`);
+    const towers = new Set(lines.filter(([src]) => src.startsWith('tower ')).map(([src]) => src));
+    if (towers.size !== L.CHALLENGE_COUNT) out.push(`only ${towers.size} of ${L.CHALLENGE_COUNT} towers sampled`);
     return out;
   });
   expect(fails).toEqual([]);

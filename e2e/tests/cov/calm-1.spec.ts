@@ -66,5 +66,10 @@ test('Daily challenge with Calm on: the lobby says the daily challenge is timed 
   await page.locator('#arGo').click();
   await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
   await expect(page.locator('#arTime')).toHaveText(/^([1-9]|[1-5]\d|60)$/);
+  // The clock really runs while Calm stays on
+  const t1 = Number(await page.locator('#arTime').textContent());
+  await expect.poll(async () => Number(await page.locator('#arTime').textContent()), { timeout: 5000 }).toBeLessThan(t1);
+  await expect(page.locator('body')).toHaveClass(/\bcalm\b/);
+  expect(await page.evaluate(() => localStorage.getItem('vm.calm'))).toBe('1');
   await page.locator('#arStop').click();
 });

@@ -1,6 +1,7 @@
 // Serves this checkout at /vedic-math/ for local end-to-end runs. Everything else (/design-system/,
 // /assets/, /manifest.webmanifest, ...) comes from the live site, so the page runs exactly as on
-// sbmadhav.com but with this branch's files.
+// sbmadhav.com but with this branch's files. The studio voice recordings are not in git, so a /vedic-math/voice/
+// file this checkout does not have comes from the live site too, and read aloud plays them as it does there.
 //   node local-server.mjs [port] [dir]   (default 8124 and this checkout; 8000 is often taken)
 // The checkout is unstamped source (a 'dev' worker, so no offline). To test what the deploy publishes,
 // build it and serve that: python3 build.py --out _site && node e2e/local-server.mjs 8124 _site
@@ -43,6 +44,7 @@ http.createServer(async (req, res) => {
     const s = await stat(p).catch(() => null);
     if (s && s.isDirectory()) p = path.join(p, 'index.html');
     const body = await readFile(p).catch(() => null);
+    if (!body && rel.startsWith('/voice/')) return await proxy(req, res);
     if (!body) { res.writeHead(404); return res.end('Not found'); }
     res.writeHead(200, { 'content-type': TYPES[path.extname(p)] || 'application/octet-stream', 'cache-control': 'no-cache' });
     res.end(body);

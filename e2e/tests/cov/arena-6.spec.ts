@@ -22,6 +22,24 @@ test('An untimed round: no clock, it ends after 20 questions or on Finish, and n
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('vm.board') || '[]'))).toEqual([]);
 });
 
+test('An untimed round, all 20 questions: the round ends by itself after the 20th answer, with no Finish press', async ({ page }) => {
+  await open(page, '#/arena');
+  await page.locator('[data-t="untimed"]').click();
+  await page.locator('#arGo').click();
+  await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
+  // The keyboard answers (the keypad is covered above): 20 rounds of taps are slow in WebKit under parallel load
+  for (let k = 1; k <= 20; k++) {
+    await expect(page.locator('#arNum')).toHaveText(`${k}/20`);
+    await page.keyboard.press('1');
+    await expect(page.locator('#arEntry')).toHaveText('1');
+    await page.keyboard.press('Enter');
+  }
+  await expect(page.locator('.play-shell .ar-result')).toContainText('Practice rounds do not count for the leaderboard.');
+  await expect(page.locator('#arFinish')).toHaveCount(0);
+  expect((await cloudLog(page)).writes.filter(w => /^boards\//.test(w.path))).toEqual([]);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('vm.board') || '[]'))).toEqual([]);
+});
+
 test.describe('Calm on', () => {
   test.beforeEach(async ({ page }) => { await page.addInitScript(() => localStorage.setItem('vm.calm', '1')); });
   test('Calm default: with Calm on the Arena opens with the untimed Practice round selected', async ({ page }) => {

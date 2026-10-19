@@ -36,20 +36,43 @@ test('No speech on load: opening #/sutras/s3 plays nothing and downloads no clip
 });
 
 test('Tap while read aloud speaks: Say it on the Trick page stops the reading and plays the clip', async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('vm.voice', '1'));
+  /* The device's voice reads (studio voice off): with the studio voice on, a recorded line plays as Web Audio sources of
+     its own, so the reading could not be held open and told apart from the clip */
+  await page.addInitScript(() => { localStorage.setItem('vm.voice', '1'); localStorage.setItem('vm.studioVoice', '0'); });
   await fakeAudio(page, { clipSecs: 30 });
-  // Count cancel() calls on the fake engine, so a stopped reading is observable
-  await page.addInitScript(() => { const s = (window as any).speechSynthesis; (window as any).__cancels = 0; s.cancel = () => { (window as any).__cancels++; }; });
+  /* Hold each utterance open until cancel(), so the reading is still going when Say it is tapped. window.__reading is
+     the text being spoken (null when nothing is), window.__cancels counts cancel() calls. */
+  await page.addInitScript(() => {
+    const w = window as any, s = w.speechSynthesis;
+    w.__cancels = 0; w.__reading = null;
+    let cur: any = null;
+    s.speak = (u: any) => { w.__said.push(u.text); cur = u; w.__reading = u.text; s.speaking = true; };
+    s.cancel = () => {
+      w.__cancels++;
+      const u = cur; cur = null; w.__reading = null; s.speaking = false;
+      if (u && u.onerror) setTimeout(() => u.onerror({ error: 'interrupted' }), 0);
+    };
+  });
   await open(page, '#/skill/v-div9');
-  // Hear it reads the question: a reading the Player started, then the Say it tap must stop it
   const hear = page.locator('#prHear');
   await expect(hear).toBeVisible();
+  // Hear it reads the question: a reading the Player started, and it is still going
+  await page.evaluate(() => { (window as any).__said.length = 0; });
   await hear.click();
-  await expect.poll(() => said(page).then(s => s.length)).toBeGreaterThan(0);
+  await expect.poll(() => page.evaluate(() => (window as any).__reading as string | null)).not.toBeNull();
+  expect((await said(page)).length).toBeGreaterThan(0);
   const before = await page.evaluate(() => (window as any).__cancels as number);
+  const startedBefore = await started(page);
+  // The Say it tap stops the reading and plays the clip
   await page.locator('.mq-sutra .say-btn').click();
   await expect.poll(() => page.evaluate(() => (window as any).__cancels as number)).toBeGreaterThan(before);
-  await expect.poll(() => started(page)).toBe(1);
+  await expect.poll(() => page.evaluate(() => (window as any).__reading as string | null)).toBeNull();
+  await expect.poll(() => started(page)).toBe(startedBefore + 1);
+  // Nothing more is read while the clip plays
+  const saidAtTap = (await said(page)).length;
+  await page.waitForTimeout(600);
+  expect(await page.evaluate(() => (window as any).__reading as string | null)).toBeNull();
+  expect((await said(page)).length).toBe(saidAtTap);
 });
 
 test('Leaving stops the clip: a route change while a clip plays stops it', async ({ page }) => {

@@ -147,15 +147,16 @@ export function challenge(id) {
   if (!base.targets) base.targets = [Math.ceil(base.total * .6), Math.ceil(base.total * .85), base.total];
   return { id, chapter: c, index: k + 1, topic, format: fmt, level: lv, tier, ...base, seed: `challenge:${id}` };
 }
-/* Questions for a challenge: numbers, simple fractions or multiple choice, so the number pad works everywhere */
+/* Questions for a challenge: numbers, simple fractions or multiple choice, so the number pad works everywhere. A question
+   keeps its say (openspec read-aloud-wording), so a tower's tap round reads what the picture shows. */
 export function challengeSet(ch, n = 90) {
   return seeded(ch.seed, () => {
     const out = []; let guard = 0;
     while (out.length < n && guard++ < n * 40) {
       const s = byId[P(ch.topic.ids)]; if (!s) continue;
       let p; try { p = s.gen(ch.level); } catch (e) { continue; }
-      if (p.kind === 'num' && Number.isFinite(p.answer) && (Number.isInteger(p.answer) || p.simplest || Math.round(p.answer * 100) === p.answer * 100) && Math.abs(p.answer) < 1e7) out.push({ q: p.q, viz: p.viz || '', answer: p.answer, kind: 'num', skill: s.id, steps: p.steps, ...(p.simplest && { simplest: true }), ...(p.asDecimal && { asDecimal: true }) });
-      else if (p.kind === 'choice') out.push({ q: p.q, viz: p.viz || '', answer: p.answer, kind: 'choice', choices: p.choices, skill: s.id, steps: p.steps });
+      if (p.kind === 'num' && Number.isFinite(p.answer) && (Number.isInteger(p.answer) || p.simplest || Math.round(p.answer * 100) === p.answer * 100) && Math.abs(p.answer) < 1e7) out.push({ q: p.q, ...(p.say && { say: p.say }), viz: p.viz || '', answer: p.answer, kind: 'num', skill: s.id, steps: p.steps, ...(p.simplest && { simplest: true }), ...(p.asDecimal && { asDecimal: true }) });
+      else if (p.kind === 'choice') out.push({ q: p.q, ...(p.say && { say: p.say }), viz: p.viz || '', answer: p.answer, kind: 'choice', choices: p.choices, skill: s.id, steps: p.steps });
     }
     return out;
   });
