@@ -1,4 +1,5 @@
 import { test, expect, APP, open, cloudLog, chromiumOnly, ANALYTICS, typeAnswer, showWorld } from './fixtures';
+import { BASE_URL } from '../playwright.config';
 
 /* The note for grown-ups is shown beside every Board (Arena, game pages, Pro home) and on the Me page, and what it
    promises must match what the app sends and the privacy policy (openspec parent-note spec, change learnvedicmath).
@@ -89,10 +90,11 @@ test.describe('under 13', () => {
     await page.route(/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>video</title>' }));
     // Requests leaving this site, by exact host name (not by URL text, which a query string could fake). The video
     // pictures come from this site (/thumbs/), so the shelf itself sends nothing to YouTube
-    const sent: string[] = [], hosts: string[] = [];
+    // The site under test is its own host too (a branch preview on workers.dev), but no other Workers host
+    const sent: string[] = [], hosts: string[] = [], own = ['localhost', '127.0.0.1', 'learnvedicmath.com', 'www.learnvedicmath.com', new URL(BASE_URL).hostname];
     page.on('request', r => {
       const u = r.url(), host = new URL(u).hostname;
-      if (['localhost', '127.0.0.1', 'learnvedicmath.com', 'www.learnvedicmath.com'].includes(host) || host.endsWith('.workers.dev')) return;
+      if (own.includes(host)) return;
       sent.push(u + ' ' + (r.postData() || '')); hosts.push(host);
     });
     await open(page, '#/watch');
