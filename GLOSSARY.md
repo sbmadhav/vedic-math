@@ -195,11 +195,43 @@ _Avoid_: first run, streak
 
 **Party Mode**:
 Two to four Players on one screen, each answering questions at their own Mode, over a set of rounds that ends on a podium. It replaced the Duel; `#/duel` opens it.
-_Avoid_: Duel (retired), versus, battle, multiplayer
+_Avoid_: Duel (retired for the same-screen game; `duel-online` proposes it for the online game), versus, battle, multiplayer
 
 **Play experience**:
 One of the twelve pages where math is the way you play (Sutra Spellbook, Tala Lab, Daily Number and the rest), each inside a section: Dojo, Arena, Games or Sutras. A section lists its play experiences on its **Shelf**. Defined in `js/play/catalog.js`.
 _Avoid_: mini-game, playground, Vedic Play
+
+**Duel**:
+Two Players on two devices racing the same question online at the same time. The server decides who answered right first, and the first to 10 points wins. Played with a friend (Friend Duel) or, for Players 13 and over, with someone new in the same League (Random Duel). Never posted to a Board. (Proposed in the `duel-online` change, not yet approved. Live today, the same-screen Duel is retired: Party Mode replaced it and `#/duel` opens Party Mode. Whether the word comes back for the online game is an open question in `duel-online`.)
+_Avoid_: versus, battle, multiplayer, match (fine in code, not in copy)
+
+**Friend Duel**:
+A Duel with someone the Player knows, joined by a Duel code or its link. Open to every Player, under 13 included; nothing about either Player is kept more than 10 minutes after it (reports aside).
+_Avoid_: private match, invite game
+
+**Random Duel**:
+A Duel with another waiting Player in the same League, found by Find a player. Only for Players whose Age answer is 13 or over.
+_Avoid_: matchmaking (fine in code), ranked duel, public match
+
+**Duel code**:
+Six letters from 20 consonants (no vowels, so never a word) that let a friend join a Friend Duel for 10 minutes. Also carried in the hash of a Duel link.
+_Avoid_: room code, PIN, invite code
+
+**Reaction**:
+One of six preset messages a Player can send during a Duel (Nice one!, Good game, Wow!, Oops!, Rematch?, Thanks!). The only thing one Player can send another; there is no chat.
+_Avoid_: emote, chat, message, sticker
+
+**Report**:
+Telling the service, with one of four fixed reasons and no text, that something was wrong in a Duel. It ends the Duel for the Player who reports and blocks the other.
+_Avoid_: flag, complaint
+
+**Block**:
+Ending a Duel so the two Players are not paired again: for a week in Random Duels, and by closing the room in Friend Duels (there is no friend list to remember).
+_Avoid_: ban, mute (mute only hides Reactions)
+
+**Duel key**:
+A random key made on the device for a Player 13 or over at their first Random Duel and replaced every week (the old one is kept 7 more days so a Block lasts its full week). Only its hash is sent, and only Block and the automatic limits use it. Under-13 Players never have one.
+_Avoid_: user id, device id, account
 
 **Title**:
 A name a Player earns from their total Sparks, from Number Rookie to Vedic Legend. It has no number.
@@ -266,6 +298,14 @@ _Avoid_: sitemap, menu, index
 **Comeback**:
 Getting the rematch right after a mistake in a Star. It pays more Sparks than a first-time right answer, at most once per kind of question in a round.
 _Avoid_: retry, second chance, redemption
+
+**Decoration**:
+Moving pictures that carry no information and take no input: the Sky backdrop, the Moving background, celebrations and Mandala Studio's glow. The only thing WebGL may draw (ADR 0011). Off with reduced motion, Pause motion and Calm. (Proposed in the `gpu-effects` change.)
+_Avoid_: effects, animations (too broad), graphics
+
+**Performance budget**:
+The written limits a build or pull request must meet: under 150 KB of Brotli-compressed JS before play, first contentful paint under 1.5 s on a mid phone over 4G, and the rest in `docs/perf/baseline.md`. CI fails when one is missed. (Proposed in the `render-performance` change.)
+_Avoid_: target, goal (a budget fails the build)
 
 ## The move to learnvedicmath.com
 

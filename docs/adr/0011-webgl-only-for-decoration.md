@@ -1,0 +1,19 @@
+# WebGL only for decoration
+
+The Sky, the Moving background, celebrations and Mandala art should look richer without slowing play on mid-range phones. We draw them with WebGL 2, in an OffscreenCanvas module worker where the browser supports it, with a canvas 2D fallback on the main thread, and nothing moving under reduced motion, Pause motion or Calm. WebGL is used only for decoration: pictures that carry no information, take no input and can disappear without anything being lost. Every question, answer, Star, Landmark, name, score, timer and control stays HTML, SVG or canvas 2D, and every canvas the engine draws is hidden from assistive technology and takes no pointer input.
+
+Status: proposed 2026-10-17 in the `gpu-effects` change (owner decision M4, accepted). ADR 0013, proposed in the `react-typescript` change, would supersede the "no library" choice and the 20 KB budget; neither change is approved for implementation yet.
+
+## Considered Options
+
+- **Interface in WebGL or a canvas engine (game-style UI):** smooth and uniform, but text, focus, screen readers, zoom, translation and form controls would all have to be rebuilt, and accessibility is a hard requirement of this app.
+- **A library (three.js, PixiJS):** faster to write, but 40 to 150 KB compressed for what two shaders and instanced quads do; the decoration budget is 20 KB.
+- **WebGPU:** the better API, but not yet everywhere the app runs (older iPads, many Android WebViews); it can be added behind the same engine later.
+- **Keep everything in canvas 2D and SVG:** simplest, but full-screen 2D drawing on the main thread is what competes with taps today.
+
+## Consequences
+
+- One engine (`js/gfx/`) with two renderers per scene; a scene that cannot run well drops to 2D or a still frame by itself.
+- Any future proposal to draw interface in WebGL needs a new ADR that supersedes this one.
+- Mandala Studio's saved wallpapers keep coming from the 2D drawing, so they look the same on every device.
+- The decoration code has its own byte budget and never loads before the first view.
