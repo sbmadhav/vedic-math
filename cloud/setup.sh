@@ -178,8 +178,14 @@ cfg = {k: cfg[k] for k in keys if cfg.get(k)}
 src = open(path, encoding="utf-8").read()
 body = ",\n".join(f"  {k}: {json.dumps(v)}" for k, v in cfg.items())
 # Replace only the FIREBASE export; keep the comments and the App Check settings below it.
+old = re.search(r"export const FIREBASE = (?:null|\{.*?\});", src, flags=re.S)
+old_project = re.search(r"projectId:\s*[\x22\x27]([^\x22\x27]+)[\x22\x27]", old.group(0)) if old else None
 new, n = re.subn(r"export const FIREBASE = (?:null|\{.*?\});", lambda _: f"export const FIREBASE = {{\n{body}\n}};", src, count=1, flags=re.S)
 if n != 1: sys.exit("Could not find export const FIREBASE in " + path)
+# Another project: the old App Check key is not registered for this web app, so it goes (APP_CHECK=1 writes a new one)
+if old_project and cfg.get("projectId") and old_project.group(1) != cfg["projectId"]:
+    new, n = re.subn(r"export const appCheckSiteKey = [^;]*;", "export const appCheckSiteKey = \"\";", new, count=1)
+    if n != 1: sys.exit("Could not find appCheckSiteKey in " + path)
 open(path, "w", encoding="utf-8").write(new)
 ' "$CONFIG_JS"
   cat "$CONFIG_JS"
@@ -192,6 +198,9 @@ if [ -z "$DRY" ] && gcloud firestore fields ttls list --collection-group=scores 
 else
   gcloud firestore fields ttls update exp --collection-group=scores --enable-ttl --async --project "$PROJECT_ID" \
     || die "Could not set the TTL policy (it needs the Blaze plan). Set it in the console: Firestore > Time-to-live > collection group scores, field exp."
+  # Asynchronous: building the policy can take a while, so the script does not wait. It is active when this shows ACTIVE:
+  info "TTL policy requested. It takes a while to build; check that it reaches ACTIVE with:"
+  info "  gcloud firestore fields ttls list --collection-group=scores --project $PROJECT_ID"
 fi
 
 # ---------- 9. App Check (optional: APP_CHECK=1) ----------
