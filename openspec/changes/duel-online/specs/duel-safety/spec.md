@@ -50,11 +50,15 @@ A Player whose Age answer is under 13 SHALL be able to play Friend Duels only, a
 - **THEN** the device holds no Duel key, and 10 minutes later the server holds nothing about that Duel
 
 ### Requirement: Teens get a weekly Duel key
-For a Player whose Age answer is 13 or over, the app SHALL make a random Duel key at their first Random Duel and a new one each ISO week, and SHALL send only its hash. It SHALL be used only for Block and for the automatic limits.
+For a Player whose Age answer is 13 or over, the app SHALL make a random Duel key at their first Random Duel and a new one each ISO week, and SHALL send only its hash. The replaced key SHALL stay on the device for 7 more days and its hash SHALL be sent as `prev` with each queue join, so the queue checks Block pairs against both hashes and a Block lasts its full 7 days across the week change. Both SHALL be used only for Block and for the automatic limits.
 
 #### Scenario: A new week
 - **WHEN** a Player aged 16 plays a Random Duel in a new ISO week
-- **THEN** a new key is made and the old one is deleted from the device
+- **THEN** a new key is made, the old one stays on the device and is sent as `prev` for 7 more days, and then it is deleted
+
+#### Scenario: A Block across the week change
+- **WHEN** a Player aged 15 blocks an opponent on the last day of an ISO week and both join the queue again the next day
+- **THEN** they are not paired with each other, because the queue checks the blocker's new key and its `prev`
 
 ### Requirement: Automatic limits on reported devices
 In Random Duels, a Duel key reported by three different keys within 24 hours, or with too-fast answers in three Duels in one day, SHALL NOT be paired again until it changes, and its Player SHALL be told only that Find a player is not available right now.
