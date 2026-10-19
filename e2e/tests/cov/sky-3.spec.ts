@@ -45,6 +45,7 @@ test.describe('the yellow belt under the old mastery rule, four yellow Stars lit
     await expect(page.locator('.belt-chip.on')).toHaveText(/Yellow belt/);
     await expect(page.locator('#view')).toContainText('1 of 7 belts earned');
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1')!));
+    expect(saved.skyMigrated).toBe(1);
     expect(Object.keys(saved.belts || {})).toEqual(['yellow']);
     expect(saved.skills || {}).toEqual({});
   });
