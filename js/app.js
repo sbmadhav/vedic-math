@@ -900,11 +900,15 @@ async function loadBoard(el, board, n = 10) {
   }
   el.innerHTML = `<div class="lb-tabs" role="tablist"><button role="tab" aria-selected="false" data-src="world">World</button><button role="tab" aria-selected="true" data-src="device">This device</button></div><div class="lb-body"></div>`;
   const body = $('.lb-body', el);
+  let shown = 0; // the latest tab picked: a World answer that arrives after another pick is dropped
   const show = async src => {
+    const mine = ++shown;
     el.querySelectorAll('[data-src]').forEach(x => x.setAttribute('aria-selected', String(x.dataset.src === src)));
     if (src === 'device') { body.innerHTML = device(); return; }
     body.innerHTML = '<p class="mq-small">Loading world scores…</p>';
-    try { body.innerHTML = rows(await cloud.top(board, n), e => e.me); } catch (err) { body.innerHTML = '<p class="mq-small">World scores are not reachable right now. Showing this device.</p>' + device(); }
+    let html;
+    try { html = rows(await cloud.top(board, n), e => e.me); } catch (err) { html = '<p class="mq-small">World scores are not reachable right now. Showing this device.</p>' + device(); }
+    if (mine === shown) body.innerHTML = html;
   };
   body.innerHTML = device() + '<p class="lb-show"><button type="button" class="md-btn md-btn--sm" data-show-world>Show World board</button></p>';
   el.querySelectorAll('[data-src]').forEach(b => b.onclick = () => show(b.dataset.src));

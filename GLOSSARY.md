@@ -249,7 +249,7 @@ A ranked list for one League and one period (a day or a week). Arena, each game,
 _Avoid_: leaderboard (fine in copy, not in this glossary), ranking, table
 
 **World board**:
-A Board shared with every Player online. A Player only appears on it after posting a Score or weekly Sparks total. Shown only to a Player whose Age answer is 13 or over, after a tap on Show World board; entries stop being shown 30 days after their last update and are then deleted.
+A Board shared with every Player online. A Player only appears on it after posting a Score or weekly Sparks total. Shown only to a Player whose Age answer is 13 or over, after a tap on Show World board; a World board is listed for 28 days after its day or week begins, and each entry expires 30 days after its last update and is then deleted (in the background, usually within a few days).
 _Avoid_: global leaderboard, online board
 
 **Device board**:

@@ -2,8 +2,11 @@ rules_version = '2';
 // FROZEN: the old sbmadhav.com project (sbmadhav-vedic-math) during Phase B of the move to learnvedicmath.com
 // (openspec change learnvedicmath, design D13; owner task 16.3). The old app is gone, so nothing should post: every
 // write is refused. Reads stay as they were, for tabs still open on the old app, until the project is deleted (19.2).
-// Deploy to the OLD project only:  cd cloud && cp firestore.rules.frozen /tmp/rules && npx firebase-tools deploy --only firestore:rules --project sbmadhav-vedic-math
-// (with firebase.json pointing at the frozen file, or by pasting it in the console).
+// Deploy to the OLD project only (or paste this file in the console). firebase.json names firestore.rules, so give the
+// CLI a config that names this file:
+//   cd cloud && printf '{"firestore":{"rules":"firestore.rules.frozen"}}' > firebase.frozen.json \
+//     && npx firebase-tools deploy --only firestore:rules --config firebase.frozen.json --project sbmadhav-vedic-math; \
+//     rm -f firebase.frozen.json
 // Vedic Math for Everyone: leaderboards.
 // Three kinds of board, all written by vedic-math/js/app.js through cloud.submit:
 //   Arena daily round:   boards/daily-YYYY-MM-DD-<league>/scores/<uid> and boards/week-YYYY-Www-<league>/scores/<uid>

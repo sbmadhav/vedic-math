@@ -6,6 +6,8 @@
 #   bash cloud/setup.sh <project-id> [domain ...]
 #   bash cloud/setup.sh learnvedicmath                  # domains default to learnvedicmath.com www.learnvedicmath.com
 #   bash cloud/setup.sh --dry-run learnvedicmath        # print every command it would run; run and write nothing
+#                                                       # (it checks nothing, so it shows every step as if the
+#                                                       # project, its web app and its key were new)
 #
 # The domains become Firebase Auth's authorized domains (with localhost) and the reCAPTCHA Enterprise key's domains.
 # Optional env: REGION (Firestore location, default nam5), BILLING_ACCOUNT (only used for a brand new project),
@@ -89,13 +91,13 @@ fi
 [[ "$PROJECT_ID" =~ ^[a-z][a-z0-9-]{4,28}[a-z0-9]$ ]] || die "Invalid project id '$PROJECT_ID' (6 to 30 chars: lowercase letters, digits, hyphens)."
 
 say "Project $PROJECT_ID"
-if gcloud projects describe "$PROJECT_ID" >/dev/null 2>&1; then
+if [ -z "$DRY" ] && gcloud projects describe "$PROJECT_ID" >/dev/null 2>&1; then
   info "Project exists."
 else
   info "Creating project (project ids are global: if this fails, pick another id)."
   gcloud projects create "$PROJECT_ID" --name="Learn Vedic Math"
-  if [ -n "${BILLING_ACCOUNT:-}" ]; then
-    gcloud billing projects link "$PROJECT_ID" --billing-account="$BILLING_ACCOUNT"
+  if [ -n "${BILLING_ACCOUNT:-}" ] || [ -n "$DRY" ]; then
+    gcloud billing projects link "$PROJECT_ID" --billing-account="${BILLING_ACCOUNT:-<billing-account>}"
   fi
 fi
 
@@ -153,7 +155,7 @@ APP_ID="$("${FB[@]}" apps:list WEB --project "$PROJECT_ID" --json | python3 -c '
 import json, sys
 apps = json.load(sys.stdin).get("result", [])
 print(apps[0]["appId"] if apps else "")')"
-if [ -z "$APP_ID" ]; then
+if [ -z "$APP_ID" ] || [ -n "$DRY" ]; then
   info "Creating web app '$APP_NAME'."
   "${FB[@]}" apps:create WEB "$APP_NAME" --project "$PROJECT_ID" >/dev/null
   APP_ID="$("${FB[@]}" apps:list WEB --project "$PROJECT_ID" --json | python3 -c '
@@ -202,6 +204,11 @@ if [ "${APP_CHECK:-}" = "1" ]; then
     info "Creating a reCAPTCHA Enterprise score key for $DOMAINS_CSV (localhost uses App Check debug tokens instead)."
     KEY_NAME="$(gcloud recaptcha keys create --display-name="Learn Vedic Math App Check" --web --integration-type=score \
       --domains="$DOMAINS_CSV" --project "$PROJECT_ID" --format='value(name)')"
+  else
+    # A re-run with other domains: the key must allow exactly these, or App Check fails on the new site
+    info "Using reCAPTCHA key ${KEY_NAME##*/}; setting its domains to $DOMAINS_CSV."
+    gcloud recaptcha keys update "${KEY_NAME##*/}" --web --domains="$DOMAINS_CSV" --project "$PROJECT_ID" \
+      || die "Could not update the reCAPTCHA key's domains. Set them in https://console.cloud.google.com/security/recaptcha?project=$PROJECT_ID"
   fi
   APP_CHECK_KEY="${KEY_NAME##*/}"
   [ -z "$DRY" ] || APP_CHECK_KEY="<site-key>"
@@ -230,14 +237,15 @@ fi
 # ---------- 10. Done ----------
 say "Done. World boards are configured for $PROJECT_ID ($DOMAINS_CSV)."
 if [ -n "$DRY" ]; then exit 0; fi
+REFERRERS="$(printf 'https://%s/*, ' "${DOMAINS_WANT[@]}")"
 cat <<NEXT
 
 Next steps (owner guide, docs/owner-setup-learnvedicmath.md):
   1. Review the config the script wrote (public by design) and open a pull request with it:
        git add js/cloud-config.js && git commit -m "World boards: the $PROJECT_ID Firebase project"
-  2. Restrict the browser API key to the referrers https://learnvedicmath.com/*, https://www.learnvedicmath.com/*,
-     http://localhost:*/* and http://127.0.0.1:*/*, and to the APIs it uses.
-  3. After the deploy, open https://learnvedicmath.com/play/ as a Player 13 or older, play an Arena round, and check
+  2. Restrict the browser API key to the referrers ${REFERRERS}http://localhost:*/* and http://127.0.0.1:*/*,
+     and to the APIs it uses.
+  3. After the deploy, open https://${DOMAINS_WANT[0]}/play/ as a Player 13 or older, play an Arena round, and check
      the World board. Data appears in: https://console.firebase.google.com/project/$PROJECT_ID/firestore
 
 Hardening:

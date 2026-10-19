@@ -58,6 +58,29 @@ test('the lobby shows today, this week and weekly Sparks boards; Show World boar
     await expect(page.locator(`${id} .lb-body`)).toContainText('No scores yet');
   }
 });
+test('a World answer that arrives after This device was picked leaves the Device board showing', async ({ page }) => {
+  await page.addInitScript(() => {
+    const w = globalThis as any;
+    w.__e2eRows = [['u1', 'Late World Row', 900]];
+    w.__e2eHold = new Promise(r => { w.__e2eRelease = r; });
+  });
+  await open(page, '#/arena');
+  const day = page.locator('#lbDay');
+  await day.locator('[data-show-world]').click();
+  await expect(day.locator('.lb-body')).toContainText('Loading world scores');
+  await day.locator('[data-src="device"]').click();
+  await expect(day.locator('.lb-body')).toContainText('No scores yet');
+  // The World read is waiting on the hold; let it answer now, after the pick
+  await expect.poll(async () => (await cloudLog(page)).reads.length).toBeGreaterThanOrEqual(1);
+  await page.evaluate(() => (globalThis as any).__e2eRelease());
+  await page.waitForTimeout(300);
+  await expect(day.locator('[data-src="device"]')).toHaveAttribute('aria-selected', 'true');
+  await expect(day.locator('.lb-body')).toContainText('No scores yet');
+  await expect(day.locator('.lb-body')).not.toContainText('Late World Row');
+  // Picking World again shows the World rows
+  await day.locator('[data-src="world"]').click();
+  await expect(day.locator('.lb-body')).toContainText('Late World Row');
+});
 });
 
 test('challenge tower: challenge 1 starts and takes an answer', async ({ page }) => {
