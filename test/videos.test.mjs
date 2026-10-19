@@ -97,5 +97,6 @@ test('every video has a thumbnail served from /thumbs/, and every thumbnail belo
     assert.equal(thumbSrc(v), `/thumbs/yt-${v.yt}.webp`);
     assert.ok(existsSync(new URL(`yt-${v.yt}.webp`, dir)), `${v.id} has no thumbnail: run node tools/fetch-thumbs.mjs`);
   }
-  assert.deepEqual(readdirSync(dir).filter(f => !ids.includes(f.replace(/^yt-/, '').replace(/\.webp$/, ''))), [], 'thumbnails with no video');
+  const want = new Set(ids.map(id => `yt-${id}.webp`));
+  assert.deepEqual(readdirSync(dir).filter(f => !want.has(f)), [], 'thumbnails with no video, or not named yt-<id>.webp');
 });
