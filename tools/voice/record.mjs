@@ -33,7 +33,7 @@ if (LIMIT) {
   const need = new Set(whole.flatMap(w => planLine(w.words).filter(p => p.clip).map(p => p.clip)));
   clipIds = clipIds.filter(id => need.has(id)).slice(0, LIMIT);
 }
-const failed = []; // whole lines the provider refused (not budget): left out of the index, so clips say them
+const failed = []; // whole lines the provider refused (HTTP 400 for that text): left out of the index, so clips say them
 const guard = sharedGuard(); // the same guard speakerFor() charges, so RUN_USD caps the whole run
 const sha = buf => createHash('sha256').update(buf).digest('hex');
 const short = buf => sha(buf).slice(0, 10);
@@ -64,7 +64,12 @@ async function recordWhole() {
       const { words } = whole[next++], file = `${OUT}l/${lineHash(L.voice, words)}.m4a`;
       if (!existsSync(file)) {
         try { m4a(trim(await say(words)), file); made++; }
-        catch (e) { if (String(e.message).startsWith('budget:')) throw e; failed.push(words); console.error(`  failed: "${words}": ${String(e.message).slice(0, 160)}`); }
+        catch (e) {
+          /* Only a 400 is about this line (the provider refused its text). A budget refusal, an auth or quota error, a
+             5xx that outlasted the retries or a failed encode is about the run: stop instead of failing every line. */
+          if (!String(e.message).startsWith('400 ')) throw e;
+          failed.push(words); console.error(`  failed: "${words}": ${String(e.message).slice(0, 160)}`);
+        }
       }
       if (++done % 500 === 0) console.log(`  whole lines: ${done} of ${whole.length} (${made} new, $${guard.runUsd().toFixed(2)} this run)`);
     }

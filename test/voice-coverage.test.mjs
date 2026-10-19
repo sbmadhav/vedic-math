@@ -14,6 +14,8 @@ import { seeded, kata, KATAS_PER_TRICK } from '../js/levels.js';
 import { TRICKS } from '../js/vedic.js';
 import { makeSet } from '../js/arena.js';
 import { wholeSkills, fixedLines, STITCHED_K2 } from '../tools/voice/lines.mjs';
+import { allExplanationLines } from '../js/explain-lines.js';
+import { VIDEOS, LINKS } from '../js/videos.js';
 
 const MANIFEST = new URL('../tools/voice/manifest.json', import.meta.url);
 const manifest = existsSync(MANIFEST) ? JSON.parse(readFileSync(MANIFEST, 'utf8')) : null;
@@ -23,7 +25,10 @@ test('the index: Aoede, served from /vedic-math/voice/, and an archive only with
   assert.equal(STUDIO.voice, 'en-US-Chirp3-HD-Aoede');
   assert.equal(STUDIO.base, '/vedic-math/voice/');
   assert.equal(!!STUDIO.tag, !!STUDIO.sha256, 'a tag and its sha256 come together');
-  if (STUDIO.tag) {
+  /* record.mjs writes the manifest with the tag cleared; only publish.mjs sets it, so a manifest without a tag is a
+     recording that was never published (the site would ask for files no release holds) */
+  if (manifest) assert.ok(STUDIO.tag && STUDIO.sha256, 'tools/voice/manifest.json exists: run tools/voice/publish.mjs so js/voice-index.js names its archive');
+  if (STUDIO.tag || manifest) {
     assert.match(STUDIO.tag, /^voice-[0-9a-f]{10}$/);
     assert.match(STUDIO.sha256, /^[0-9a-f]{64}$/);
     assert.match(STUDIO.lineSet, /^l\/set\.[0-9a-f]{10}\.bin$/);
@@ -67,4 +72,13 @@ test('studio audio covers at least 99% of all lines', { skip: !manifest && 'noth
   for (const t of TRICKS) for (let n = 1; n <= KATAS_PER_TRICK; n += 5) kata(t.id, n).problems.forEach(p => spoken(p).forEach(check));
   for (const league of ['challenger', 'pro']) for (let d = 0; d < 5; d++) makeSet(league, 'voice-coverage-' + d).forEach(p => spoken(p).forEach(check));
   assert.ok(ok / all >= 0.99, `coverage ${(ok / all * 100).toFixed(2)}% of ${all} lines`);
+});
+
+/* Explanations are recorded whole only (never stitched from clips), so a Listen line whose hash is not in the manifest
+   falls back to the device voice. A todo until the re-record of explanation-audio task 4.6 (the wording has moved on
+   since the 2026-10-17 recording); that task removes the todo so the check becomes a hard gate. */
+test('every explanation line is recorded whole', { skip: !manifest && 'nothing recorded yet (no tools/voice/manifest.json)', todo: 'until the explanation-audio 4.6 re-record' }, () => {
+  const lines = new Set(manifest.lines), miss = [];
+  for (const { text, src } of allExplanationLines({ videos: VIDEOS, links: LINKS })) { const w = normalize(text); if (w && !lines.has(lineHash(manifest.voice, w))) miss.push(`${src}: ${w}`); }
+  assert.deepEqual(miss.slice(0, 10), [], `${miss.length} explanation lines have no whole recording; re-run tools/voice/lines.mjs, record.mjs and publish.mjs`);
 });

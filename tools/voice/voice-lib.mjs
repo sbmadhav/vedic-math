@@ -118,6 +118,8 @@ export const PRICE_PER_CHAR = { google: 30e-6, azure: 15e-6, openai: 20e-6, elev
 const month = () => new Date().toISOString().slice(0, 7);
 /* A spend guard over one ledger file. charge() throws before a request that would pass a cap; pace() spaces requests. */
 export function makeGuard({ ledger = CACHE + 'ledger.json', budget = +(process.env.BUDGET_USD || 300), runCap = +(process.env.RUN_USD || 50), perMin = +(process.env.RATE_PER_MIN || 300), now = () => Date.now() } = {}) {
+  /* A typo such as BUDGET_USD=oops would be NaN, and NaN never passes a cap: refuse to make the guard at all */
+  for (const [name, v] of Object.entries({ BUDGET_USD: budget, RUN_USD: runCap, RATE_PER_MIN: perMin })) if (!(Number.isFinite(v) && v > 0)) throw new Error(`budget: ${name} must be a positive number, not ${v}`);
   let runUsd = 0, lastAt = 0, chain = Promise.resolve();
   const read = () => (existsSync(ledger) ? JSON.parse(readFileSync(ledger, 'utf8')) : {});
   return {

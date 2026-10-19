@@ -34,7 +34,7 @@ Prerequisites:
 - [ ] 4.3 Watch descriptions: each sits inside a card button, and a button cannot hold another. They are recorded already.
 - [ ] 4.4 Badge rules, quest labels, format rules and Mode blurbs: short labels; recorded already, no buttons yet.
 - [ ] 4.5 "Older roots" notes (`BG_NOTES`): move them out of `js/ambient.js` (not importable in Node) so they can be recorded, then add a button.
-- [ ] 4.6 Re-record after `sutra-examples` (#44) merges: its new worked examples are Sutra deep dive lines.
+- [ ] 4.6 Re-record after `sutra-examples` (#44) merges: its new worked examples are Sutra deep dive lines. Then remove the `todo` from "every explanation line is recorded whole" in `test/voice-coverage.test.mjs` (390 lines were missing on 2026-10-19) so it gates.
 
 ## 5. Release check
 

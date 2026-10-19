@@ -8,6 +8,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { makeGuard, PRICE_PER_CHAR } from '../tools/voice/voice-lib.mjs';
 
 const dir = mkdtempSync(join(tmpdir(), 'voice-ledger-'));
@@ -29,6 +30,17 @@ test('a request past the monthly budget is refused and not counted', () => {
 test('a request past the per-run cap is refused', () => {
   const g = makeGuard({ ledger: join(dir, 'b.json'), budget: 300, runCap: 0.0001 });
   assert.throws(() => g.charge('google', 10), /RUN_USD/);
+});
+
+test('a limit that is not a positive number refuses to make the guard', () => {
+  for (const bad of [{ budget: NaN }, { runCap: 0 }, { perMin: -1 }, { budget: Infinity }]) assert.throws(() => makeGuard({ ledger: join(dir, 'x.json'), ...bad }), /must be a positive number/);
+  const env = process.env.BUDGET_USD; process.env.BUDGET_USD = 'oops';
+  try { assert.throws(() => makeGuard({ ledger: join(dir, 'x.json') }), /BUDGET_USD must be a positive number/); } finally { if (env === undefined) delete process.env.BUDGET_USD; else process.env.BUDGET_USD = env; }
+});
+
+test('record.mjs leaves out only a line the provider refused (400) and stops on any other failure', () => {
+  const src = readFileSync(new URL('../tools/voice/record.mjs', import.meta.url), 'utf8');
+  assert.match(src, /if \(!String\(e\.message\)\.startsWith\('400 '\)\) throw e;/);
 });
 
 test('the month carries across runs; each run starts its own run total', () => {
@@ -69,7 +81,7 @@ function fakeRelease(name, { files = ['l/set.0123456789.bin', 'p/dir.0123456789.
   const index = { voice: 'en-US-Chirp3-HD-Aoede', base: '/vedic-math/voice/', tag: 'voice-' + sha256.slice(0, 10), sha256, lineSet: 'l/set.0123456789.bin', dir: 'p/dir.0123456789.json',
     packs: [{ name: 'core', audio: 'p/core.0123456789.m4a', map: 'p/core.0123456789.json' }], counts: { lines: 1, clips: 1 } };
   const idx = join(root, 'index.mjs'); writeFileSync(idx, `export const STUDIO = ${JSON.stringify(index)};`);
-  const run = () => spawnSync(process.execPath, [new URL('../tools/voice/ci-fetch.mjs', import.meta.url).pathname, site], { env: { ...process.env, VOICE_ARCHIVE: tar, VOICE_INDEX: idx }, encoding: 'utf8' });
+  const run = () => spawnSync(process.execPath, [fileURLToPath(new URL('../tools/voice/ci-fetch.mjs', import.meta.url)), site], { env: { ...process.env, VOICE_ARCHIVE: tar, VOICE_INDEX: idx }, encoding: 'utf8' });
   return { site, run };
 }
 
