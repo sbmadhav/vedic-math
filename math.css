@@ -1235,6 +1235,21 @@ html.tour-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .tour-ring, .tour-card { transition: none; } }
 html.motion-paused .tour-ring, body.calm .tour-ring, html.motion-paused .tour-card, body.calm .tour-card { transition: none; }
 
+/* ---------- Listen buttons (openspec explanation-audio): hear any explanation ---------- */
+.listen-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1); min-height: 44px; min-width: 44px; padding: 0 var(--space-3);
+  border: 1.5px solid var(--edge); border-radius: var(--radius-pill); background: var(--card); color: var(--ink); font: 600 .9rem/1 var(--font-sans); cursor: pointer; flex: none; }
+.listen-btn svg { flex: none; color: var(--teal-strong); }
+.listen-btn:hover { border-color: var(--teal-strong); }
+.listen-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.listen-btn[aria-pressed="true"] { background: var(--teal); border-color: var(--teal-strong); color: var(--on-accent); }
+.listen-btn[aria-pressed="true"] svg { color: var(--on-accent); }
+.listen-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: var(--space-2) 0; }
+.sd-h, .gd-hrow { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap; }
+.sd-h { margin: 18px 0 6px; }
+.sd-h h3 { margin: 0; }
+.sd-text > .sd-h:first-child { margin-top: 0; }
+.tour-card .listen-row { margin: 0 0 var(--space-2); }
+
 /* ---------- Play shelves (openspec play-experiences): a section's play experiences, js/play/catalog.js ---------- */
 .play-shelf { margin-block: var(--space-6); }
 /* Its own grid class: .play-grid is Home's tile grid (above), which a second rule here would override */

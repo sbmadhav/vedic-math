@@ -2,13 +2,14 @@
    and a rough pitch (F0) measure. Blends are weighted averages of Kokoro's voice style vectors, written next to
    the stock voices as <name>.bin (no retraining, no pitch shifting). */
 import { writeFileSync, readFileSync, existsSync, mkdirSync, rmSync, statSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { KokoroTTS } from 'kokoro-js';
+import { dirname } from 'node:path';
 
 export const RATE = 24000, BITRATE = 32000;
-const VOICES = new URL('./node_modules/kokoro-js/voices/', import.meta.url).pathname;
-const CACHE = new URL('./.cache/', import.meta.url).pathname;
+const VOICES = fileURLToPath(new URL('./node_modules/kokoro-js/voices/', import.meta.url));
+const CACHE = fileURLToPath(new URL('./.cache/', import.meta.url));
 
 /* "af_bella*0.5+af_sky*0.5" -> a voice id kokoro-js can load */
 export function voiceId(spec) {
@@ -25,7 +26,7 @@ export function voiceId(spec) {
 
 let tts = null;
 export async function speaker() {
-  if (!tts) { tts = await KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-v1.0-ONNX', { dtype: 'q8', device: 'cpu' }); tts._validate_voice = v => v.startsWith('b') && !v.startsWith('blend') ? 'b' : 'a'; }
+  if (!tts) { const { KokoroTTS } = await import('kokoro-js'); tts = await KokoroTTS.from_pretrained('onnx-community/Kokoro-82M-v1.0-ONNX', { dtype: 'q8', device: 'cpu' }); tts._validate_voice = v => v.startsWith('b') && !v.startsWith('blend') ? 'b' : 'a'; }
   mkdirSync(CACHE, { recursive: true });
   return async (text, spec, speed) => {
     const f = CACHE + createHash('sha1').update(`${spec}|${speed}|${text}`).digest('hex') + '.f32';
@@ -114,24 +115,39 @@ export const CLOUD = {
    RATE_PER_MIN (default 300) so a bug can never fire a burst. This guards this machine; the Google Cloud budget and
    API quota (design decision 12) guard the account. */
 export const PRICE_PER_CHAR = { google: 30e-6, azure: 15e-6, openai: 20e-6, elevenlabs: 50e-6 }; // Chirp 3 HD $30/M; OpenAI about 1.5 cents a minute
-const LEDGER = CACHE + 'ledger.json';
 const month = () => new Date().toISOString().slice(0, 7);
-let runUsd = 0, lastAt = 0;
-function charge(engine, chars) {
-  const budget = +(process.env.BUDGET_USD || 300), runCap = +(process.env.RUN_USD || 50), cost = chars * (PRICE_PER_CHAR[engine] || 50e-6);
-  const led = existsSync(LEDGER) ? JSON.parse(readFileSync(LEDGER, 'utf8')) : {};
-  const m = led[month()] ||= { usd: 0, chars: {} };
-  if (m.usd + cost > budget) throw new Error(`budget: this month is at $${m.usd.toFixed(2)} of $${budget}; refusing a $${cost.toFixed(4)} request`);
-  if (runUsd + cost > runCap) throw new Error(`budget: this run is at $${runUsd.toFixed(2)} of RUN_USD $${runCap}; refusing`);
-  m.usd += cost; m.chars[engine] = (m.chars[engine] || 0) + chars; runUsd += cost;
-  writeFileSync(LEDGER, JSON.stringify(led, null, 1));
+/* A spend guard over one ledger file. charge() throws before a request that would pass a cap; pace() spaces requests. */
+export function makeGuard({ ledger = CACHE + 'ledger.json', budget = +(process.env.BUDGET_USD || 300), runCap = +(process.env.RUN_USD || 50), perMin = +(process.env.RATE_PER_MIN || 300), now = () => Date.now() } = {}) {
+  /* A typo such as BUDGET_USD=oops would be NaN, and NaN never passes a cap: refuse to make the guard at all */
+  for (const [name, v] of Object.entries({ BUDGET_USD: budget, RUN_USD: runCap, RATE_PER_MIN: perMin })) if (!(Number.isFinite(v) && v > 0)) throw new Error(`budget: ${name} must be a positive number, not ${v}`);
+  let runUsd = 0, lastAt = 0, chain = Promise.resolve();
+  const read = () => (existsSync(ledger) ? JSON.parse(readFileSync(ledger, 'utf8')) : {});
+  return {
+    charge(engine, chars) {
+      const cost = chars * (PRICE_PER_CHAR[engine] || 50e-6), led = read(), m = led[month()] ||= { usd: 0, chars: {} };
+      if (m.usd + cost > budget) throw new Error(`budget: this month is at $${m.usd.toFixed(2)} of $${budget}; refusing a $${cost.toFixed(4)} request`);
+      if (runUsd + cost > runCap) throw new Error(`budget: this run is at $${runUsd.toFixed(2)} of RUN_USD $${runCap}; refusing`);
+      m.usd += cost; m.chars[engine] = (m.chars[engine] || 0) + chars; runUsd += cost;
+      mkdirSync(dirname(ledger), { recursive: true }); writeFileSync(ledger, JSON.stringify(led, null, 1));
+      return cost;
+    },
+    /* Requests leave at most perMin a minute, also when several workers ask at once */
+    pace() {
+      chain = chain.then(async () => {
+        const wait = lastAt + 60000 / perMin - now();
+        if (wait > 0) await new Promise(r => setTimeout(r, wait));
+        lastAt = now();
+      });
+      return chain;
+    },
+    spent: () => (read()[month()] || { usd: 0 }).usd,
+    runUsd: () => runUsd
+  };
 }
-async function pace() {
-  const gap = 60000 / +(process.env.RATE_PER_MIN || 300), wait = lastAt + gap - Date.now();
-  if (wait > 0) await new Promise(r => setTimeout(r, wait));
-  lastAt = Date.now();
-}
-export const spentThisMonth = () => { const led = existsSync(LEDGER) ? JSON.parse(readFileSync(LEDGER, 'utf8')) : {}; return (led[month()] || { usd: 0 }).usd; };
+/* One guard per process, so the run cap covers every request this run makes (record.mjs's whole lines and its clips) */
+let guard = null;
+export const sharedGuard = () => (guard ||= makeGuard());
+export const spentThisMonth = () => sharedGuard().spent();
 
 /* say(text, spec, speed) for an engine, cached like Kokoro. Kokoro loads only when a Kokoro voice is used. */
 export async function speakerFor(engine) {
@@ -140,7 +156,7 @@ export async function speakerFor(engine) {
   return async (text, spec, speed) => {
     const f = CACHE + createHash('sha1').update(`${engine}|${spec}|${speed}|${text}`).digest('hex') + '.f32';
     if (existsSync(f)) { const b = readFileSync(f); return new Float32Array(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength)); }
-    charge(engine, text.length); await pace();
+    const g = sharedGuard(); g.charge(engine, text.length); await g.pace();
     const a = await c.say(text, spec, speed); writeFileSync(f, Buffer.from(a.buffer)); console.log(`  made "${text}" (${engine} ${spec})`); return a;
   };
 }

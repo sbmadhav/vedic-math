@@ -22,6 +22,9 @@
    - Other /vedic-math/ files: network first, cache fallback.
    - Shared files from the rest of sbmadhav.com (/design-system/, /assets/, fonts, icons): stale
      while revalidate. This repo cannot hash them, so a change reaches visitors one visit late.
+   - Studio voice audio (/vedic-math/voice/): cache first in its own cache, vedic-math-voice, which every
+     deploy keeps (the file names hold their content's hash, so a name never changes meaning). Trimmed to
+     VOICE_MAX whole lines, oldest first; a new line set, clip directory or pack replaces its older copy. Nothing is precached: only Players who use read aloud download audio.
    - Sounds (/vedic-math/sounds/: the Sutra name clips and the Om, openspec sutra-pronunciation): cache first in
      their own cache, vedic-math-sounds, which every deploy keeps, so a name heard once plays offline after the next
      deploy too. Every sound URL the app builds carries ?v=<content hash> (js/say-clips.js), so a changed file is a new
@@ -49,6 +52,11 @@ const SHELL = BASE;
 const RUNTIME_MAX = 60; // entries kept beyond the precache list; the oldest go first
 const NAV_TIMEOUT = 3500; // ms before a page load falls back to the saved shell
 const PRECACHED = new Set(PRECACHE.map(([u]) => new URL(u, location.origin).href));
+const VOICE = BASE + 'voice/';
+const VOICE_CACHE = PREFIX + 'voice'; // kept across deploys (not a version cache)
+const VOICE_MAX = 4000; // whole lines kept (about 10 KB each); the index and pack files are not counted
+const VOICE_LINE = /\/voice\/l\/[0-9a-f]{14}\.m4a$/; // a whole line's file
+const VOICE_HASHED = /\/voice\/(l\/set|p\/[\w-]+)\.[0-9a-f]+\.(bin|json|m4a)$/; // the line set, clip directory, a pack or its map: one copy per name
 const SOUNDS = BASE + 'sounds/';
 const SOUNDS_CACHE = PREFIX + 'sounds'; // kept across deploys (not a version cache)
 const SOUNDS_MAX = 120; // 29 name clips and the Om, with room for remade ones
@@ -92,7 +100,7 @@ if (VERSION === 'dev') {
     event.waitUntil((async () => {
       /* Keep this version and the one before it (a tab opened on it may still load a module); delete older ones.
          CacheStorage lists caches in the order they were created. */
-      const ours = (await caches.keys()).filter(k => k.startsWith(PREFIX) && k !== CACHE && k !== SOUNDS_CACHE);
+      const ours = (await caches.keys()).filter(k => k.startsWith(PREFIX) && k !== CACHE && k !== VOICE_CACHE && k !== SOUNDS_CACHE);
       await Promise.all(ours.slice(0, -1).map(k => caches.delete(k)));
       await self.clients.claim();
     })());
@@ -105,6 +113,7 @@ if (VERSION === 'dev') {
     if (url.origin !== location.origin) return;
 
     if (req.mode === 'navigate') return event.respondWith(page(req));
+    if (url.pathname.startsWith(VOICE)) return event.respondWith(voiceFile(req));
     if (url.pathname.startsWith(SOUNDS)) return event.respondWith(soundFile(req));
     const own = url.pathname.startsWith(BASE);
     if (own && url.searchParams.has('v')) return event.respondWith(versioned(req));
@@ -156,11 +165,36 @@ async function versioned(req) {
   return res;
 }
 async function matchOlder(req) {
-  for (const k of (await caches.keys()).filter(k => k.startsWith(PREFIX) && k !== CACHE && k !== SOUNDS_CACHE).reverse()) {
+  for (const k of (await caches.keys()).filter(k => k.startsWith(PREFIX) && k !== CACHE && k !== VOICE_CACHE && k !== SOUNDS_CACHE).reverse()) {
     const hit = await (await caches.open(k)).match(req);
     if (hit) return hit;
   }
   return null;
+}
+
+/* Studio voice files: cache first; a miss goes to the network and is kept */
+async function voiceFile(req) {
+  const cache = await caches.open(VOICE_CACHE);
+  const hit = await cache.match(req);
+  if (hit) return hit;
+  const res = await fetch(req);
+  if (cacheable(res)) {
+    try {
+      await cache.put(req, res.clone());
+      /* A new recording names its line set, directory and packs by a new hash: saving one drops the copy it replaces */
+      const own = new URL(req.url).pathname.match(VOICE_HASHED);
+      if (own) for (const k of await cache.keys()) {
+        const m = new URL(k.url).pathname.match(VOICE_HASHED);
+        if (m && m[1] === own[1] && m[2] === own[2] && k.url !== req.url) await cache.delete(k);
+      }
+      /* Only whole lines count and are dropped: the line set, clip directory and packs are few, saved first and
+         never re-saved, so an oldest-first trim over everything would drop them first and leave offline read aloud
+         with nothing to look lines up in */
+      const lines = (await cache.keys()).filter(k => VOICE_LINE.test(new URL(k.url).pathname));
+      for (let i = 0; i < lines.length - VOICE_MAX; i++) await cache.delete(lines[i]);
+    } catch (e) { /* quota: play it without saving */ }
+  }
+  return res;
 }
 
 /* Sounds: a ?v= URL is cache first (its bytes never change); a miss goes to the network and is kept. A URL without

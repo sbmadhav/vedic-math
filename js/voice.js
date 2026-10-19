@@ -1,8 +1,12 @@
 /* Read-aloud voice for Vedic Math. No API keys, nothing leaves the browser.
-   Tier 1 (default and fallback): the browser's built-in Web Speech voice, ranked for quality and tuned for kids.
+   Studio voice (default when recorded): Google Chirp 3 HD lines recorded ahead of time and served as audio files from
+   this site (/vedic-math/voice/): a whole file per line where one was recorded, else short clips joined here.
+   Tier 1 (fallback): the browser's built-in Web Speech voice, ranked for quality and tuned for kids.
    Tier 2 (opt-in): Kokoro, a small neural voice that runs in a Web Worker. It downloads only after the
    player turns it on in Me settings; on later visits it loads the first time something is read aloud.
    Any error falls back to Tier 1. Speech only ever follows a tap. */
+
+import { lineHash, inLineSet, planLine } from './voice-plan.js';
 
 /* ---------- Math-aware normalization: question HTML to natural speech ----------
    normalize(html) is what the read-aloud voice says for a question, hint or line. The rules are general
@@ -295,16 +299,17 @@ export function bestVoice(all) {
 export const builtInTuning = kid => ({ pitch: 1, rate: kid ? 0.9 : 0.95 });
 
 let token = 0; // bumps on every new speech so stale work stops
-function speakBuiltIn(text, my) {
-  if (!hasSynth()) return;
-  const parts = sentences(text); if (!parts.length) return;
+function speakBuiltIn(text, my, done = () => {}) {
+  if (!hasSynth()) return done(false);
+  const parts = sentences(text); if (!parts.length) return done(true);
   const kid = explorer();
   loadVoices().then(() => {
     if (my !== token) return;
     const v = bestVoice(), { rate, pitch } = builtInTuning(kid);
     let i = 0;
     const next = () => {
-      if (my !== token || i >= parts.length) return;
+      if (my !== token) return;
+      if (i >= parts.length) return done(true);
       const u = new SpeechSynthesisUtterance(parts[i++]);
       if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-US';
       u.rate = rate; u.pitch = pitch; u.volume = 1;
@@ -402,6 +407,118 @@ async function speakNatural(text, my) {
   }
 }
 
+/* ---------- Studio voice: prerecorded files on this site (openspec better-voice, part B) ---------- */
+/* Test hook: when a test has put an array at window.__voiceLog, each line records the voice that said it */
+const vlog = e => { try { if (typeof window !== 'undefined' && Array.isArray(window.__voiceLog)) window.__voiceLog.push(e); } catch (x) {} };
+export const studioOn = () => get('studioVoice', '1') !== '0';
+export const setStudio = v => put('studioVoice', v ? '1' : '0');
+const canAudio = () => typeof window !== 'undefined' && typeof (window.AudioContext || window.webkitAudioContext) === 'function' && typeof fetch === 'function';
+function audioCtx() {
+  try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch (e) {} // iOS: play with the ringer off
+  actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+  if (actx.state === 'suspended') actx.resume().catch(() => {});
+  return actx;
+}
+/* iOS only lets Web Audio start inside a tap, and silences it with the ringer switch unless the session says playback.
+   Once per page, the first tap or key unlocks it (speech only ever follows a tap anyway). */
+if (typeof document !== 'undefined' && document.addEventListener) {
+  const unlock = () => {
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+    try {
+      if (!actx && studioOn() && canAudio()) actx = new (window.AudioContext || window.webkitAudioContext)(); // made inside the tap, so iOS lets it play
+      if (actx && actx.state === 'suspended') actx.resume().catch(() => {});
+    } catch (e) {}
+  };
+  document.addEventListener('pointerdown', unlock, { capture: true, passive: true });
+  document.addEventListener('keydown', unlock, { capture: true });
+}
+const fetchBuf = url => fetch(url).then(r => { if (!r.ok) throw new Error(`${url}: ${r.status}`); return r.arrayBuffer(); });
+const decode = buf => new Promise((res, rej) => audioCtx().decodeAudioData(buf, res, rej));
+const wait = ms => new Promise(r => setTimeout(r, ms));
+let studioBase = null; // Promise<{ idx, set, dir } | null>: the index, the sorted whole-line set and the clip directory
+function loadStudio() {
+  if (!studioBase) studioBase = import('./voice-index.js').then(async m => {
+    const idx = m.STUDIO;
+    if (!idx || !idx.tag || !idx.lineSet || !idx.dir) return null; // nothing recorded yet: the built-in voice reads
+    const [setBuf, dir] = await Promise.all([fetchBuf(idx.base + idx.lineSet), fetch(idx.base + idx.dir).then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status))))]);
+    return { idx, set: new Uint32Array(setBuf), dir };
+  }).catch(() => { studioBase = null; return null; });
+  return studioBase;
+}
+const packs = new Map(), packReady = new Map(); // pack name -> Promise, and -> { buf, map, bounds } once decoded
+function loadPack(sb, name) {
+  if (!packs.has(name)) {
+    const p = sb.idx.packs.find(x => x.name === name);
+    const job = !p ? Promise.reject(new Error('no pack ' + name))
+      : Promise.all([fetch(sb.idx.base + p.map).then(r => (r.ok ? r.json() : Promise.reject(new Error(r.status)))), fetchBuf(sb.idx.base + p.audio).then(decode)])
+        .then(([map, buf]) => { const v = { map, buf, bounds: new Map() }; packReady.set(name, v); return v; });
+    job.catch(() => packs.delete(name));
+    packs.set(name, job);
+  }
+  return packs.get(name);
+}
+/* Load the core pack (numbers and Explorer frames) while the page is idle, once read aloud is on */
+export function warmStudio() {
+  if (!studioOn() || !canAudio()) return;
+  const go = () => loadStudio().then(sb => sb && sb.idx.packs.some(p => p.name === 'core') && loadPack(sb, 'core')).catch(() => {});
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(go, { timeout: 4000 }); else setTimeout(go, 2000);
+}
+/* Where a clip really starts and ends in its decoded pack: AAC decoders add a short start offset, so search around it */
+function clipBounds(pack, id) {
+  if (pack.bounds.has(id)) return pack.bounds.get(id);
+  const [t, d] = pack.map.clips[id], sr = pack.buf.sampleRate, data = pack.buf.getChannelData(0);
+  const lo = Math.max(0, Math.floor((t - 0.15) * sr)), hi = Math.min(data.length - 1, Math.ceil((t + d + 0.15) * sr));
+  let a = lo, b = hi; const thr = 0.01;
+  while (a < hi && Math.abs(data[a]) < thr) a++;
+  while (b > a && Math.abs(data[b]) < thr) b--;
+  const pad = Math.round(0.012 * sr), start = Math.max(lo, a - pad), out = [start / sr, (Math.min(hi, b + pad) - start) / sr];
+  pack.bounds.set(id, out); return out;
+}
+let studioSrcs = [];
+function startSource(buf, at, offset, len, onEnd) {
+  const ctx = audioCtx(), src = ctx.createBufferSource(), g = ctx.createGain();
+  src.buffer = buf; g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(0.95, at + 0.006);
+  g.gain.setValueAtTime(0.95, Math.max(at + 0.006, at + len - 0.008)); g.gain.linearRampToValueAtTime(0, at + len);
+  src.connect(g).connect(ctx.destination); src.start(at, offset, len);
+  src.onended = () => { studioSrcs = studioSrcs.filter(x => x !== src); if (onEnd) onEnd(); };
+  studioSrcs.push(src);
+}
+const GAP = 0.04, PAUSE = { short: 0.12, long: 0.26 };
+/* Say a line with the studio voice. Resolves true when it started (or was superseded), false to hand it on.
+   done(true) runs when its last sound ends. */
+async function speakStudio(words, my, done = () => {}) {
+  if (!studioOn() || !canAudio()) return false;
+  /* The index (line set and clip directory) gets 1 s: a stalled fetch hands this line to the built-in voice and keeps
+     loading, so later lines can use the studio voice */
+  let late = false;
+  const sb = await Promise.race([loadStudio(), wait(1000).then(() => { late = true; return null; })]);
+  if (my !== token) return true;
+  if (late) vlog('studio:noindex');
+  if (!sb) return false;
+  const hash = lineHash(sb.idx.voice, words);
+  if (inLineSet(sb.set, hash)) {
+    /* A whole recorded line, if it arrives within 600 ms (a slow network falls through to clips) */
+    const buf = await Promise.race([fetchBuf(`${sb.idx.base}l/${hash}.m4a`).then(decode), wait(600).then(() => null)]).catch(() => null);
+    if (my !== token) return true;
+    if (buf) { startSource(buf, audioCtx().currentTime + 0.03, 0, buf.duration, () => done(true)); vlog('studio:line'); return true; }
+  }
+  const plan = planLine(words), need = new Set();
+  for (const p of plan) if (p.clip) { const name = sb.dir[p.clip]; if (!name) { vlog('studio:missing'); return false; } need.add(name); }
+  const missing = [...need].filter(n => !packReady.has(n));
+  if (missing.length) { missing.forEach(n => loadPack(sb, n).catch(() => {})); return false; } // this line: built-in; later lines: clips
+  /* Every clip must be in its pack before any is scheduled, so a gap never leaves half a line in the studio voice */
+  if (plan.some(p => p.clip && !packReady.get(sb.dir[p.clip]).map.clips[p.clip])) { vlog('studio:missing'); return false; }
+  const lastClip = plan.map(p => !!p.clip).lastIndexOf(true);
+  let at = audioCtx().currentTime + 0.05;
+  plan.forEach((p, i) => {
+    if (p.pause) { at += PAUSE[p.pause]; return; }
+    const pack = packReady.get(sb.dir[p.clip]), [off, len] = clipBounds(pack, p.clip);
+    startSource(pack.buf, at, off, len, i === lastClip ? () => done(true) : null); at += len + GAP;
+  });
+  vlog('studio:clips');
+  return true;
+}
+
 /* ---------- Name clips (openspec sutra-pronunciation) ----------
    playClip(url) plays one short recorded file, such as a Sutra name clip, on the same AudioContext and under the
    same stop token as read aloud: it stops anything being read, and stop() or the next speak() stops it. Resolves
@@ -435,24 +552,46 @@ export async function playClip(url, { onStart } = {}) {
 }
 
 /* ---------- Public API ---------- */
+let lineEnd = null; // settles the line now speaking: true when it finished, false when it was stopped
+function endLine(ok) { const f = lineEnd; lineEnd = null; if (f) f(ok); }
 export function stop() {
+  endLine(false);
   token++;
   try { hasSynth() && speechSynthesis.cancel(); } catch (e) {}
   try { playing && playing.stop(); } catch (e) {} playing = null;
   try { worker && ready && worker.postMessage({ type: 'clear' }); } catch (e) {}
+  if (studioSrcs.length) { studioSrcs.forEach(s => { try { s.stop(); } catch (e) {} }); studioSrcs = []; vlog('stop'); }
 }
-/* speak(text or HTML, { natural }) reads it aloud, cancelling anything already speaking. */
+/* speak(text or HTML, { natural, builtIn }) reads it aloud, cancelling anything already speaking. Order: the natural
+   voice (when on), the studio voice (a whole line, else clips), then the built-in voice. One line, one voice.
+   Returns a Promise: true when the line finished, false when it was stopped or a newer line took over. */
 export function speak(text, opts = {}) {
-  const words = normalize(text); if (!words) return;
+  const words = normalize(text); if (!words) return Promise.resolve(true);
   stop(); const my = token;
+  const end = new Promise(r => { lineEnd = r; });
+  const done = ok => { if (my === token) endLine(ok); };
+  const builtIn = () => { if (my === token) { vlog('builtin'); speakBuiltIn(words, my, done); } };
+  const natural = () => speakNatural(words, my).then(() => done(true), () => studio()); // the natural voice failed: studio, else built-in
+  const studio = () => { if (my === token) speakStudio(words, my, done).then(ok => { if (!ok) builtIn(); }, builtIn); }; // studio, else built-in
+  if (opts.builtIn) { builtIn(); return end; }
   const useNatural = (opts.natural ?? naturalOn()) && !failedThisVisit;
-  if (!useNatural) return speakBuiltIn(words, my);
-  if (ready) { speakNatural(words, my).catch(() => { if (my === token) speakBuiltIn(words, my); }); return; }
-  // Not loaded yet: give a cached model a moment, otherwise read this one with the built-in voice
+  if (!useNatural) { studio(); return end; }
+  if (ready) { natural(); return end; }
+  // Not loaded yet: give a cached model a moment, otherwise read this one with the next voice in the order
   let settled = false;
-  const fallback = setTimeout(() => { if (!settled && my === token) { settled = true; speakBuiltIn(words, my); } }, 2500);
-  loadNatural().then(() => { if (settled || my !== token) return; settled = true; clearTimeout(fallback); speakNatural(words, my).catch(() => { if (my === token) speakBuiltIn(words, my); }); })
-    .catch(() => { clearTimeout(fallback); if (!settled && my === token) { settled = true; speakBuiltIn(words, my); } });
+  const fallback = setTimeout(() => { if (!settled && my === token) { settled = true; studio(); } }, 2500);
+  loadNatural().then(() => { if (settled || my !== token) return; settled = true; clearTimeout(fallback); natural(); })
+    .catch(() => { clearTimeout(fallback); if (!settled && my === token) { settled = true; studio(); } });
+  return end;
+}
+/* speakAll(texts) says the lines one after another, each by the voice order above, with a short pause between.
+   Resolves true when every line finished, false as soon as one is stopped (a new line, Stop, leaving the view). */
+export async function speakAll(texts, opts = {}) {
+  for (let i = 0; i < texts.length; i++) {
+    if (!(await speak(texts[i], opts))) return false;
+    if (i + 1 < texts.length) { const my = token; await wait(250); if (my !== token) return false; }
+  }
+  return true;
 }
 export const supported = () => hasSynth() || canNatural();
 
@@ -481,6 +620,7 @@ function slowNote() {
 const escAttr = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 export function settingsHTML() {
   return `<div class="vv-set" id="vvSet">
+    <div class="vv-row" id="vvStudioRow" hidden><label class="vv-check"><input type="checkbox" id="setStudio" ${studioOn() ? 'checked' : ''}> Studio voice: clear, the same on every device, and saved for offline once heard</label></div>
     <div class="vv-row"><label for="setVoiceName">Built-in voice</label><select id="setVoiceName" class="vv-select"><option value="">Best available</option></select><button type="button" class="md-btn md-btn--sm" id="vvTest">Test voice</button></div>
     <div class="vv-row"><label class="vv-check"><input type="checkbox" id="setNatural" ${naturalOn() ? 'checked' : ''}> Natural voice (downloads about 100 MB once)</label>
       <select id="setNaturalVoice" class="vv-select" aria-label="Natural voice" ${naturalOn() ? '' : 'hidden'}>${NATURAL_VOICES.map(v => `<option value="${v.id}" ${v.id === naturalVoice() ? 'selected' : ''}>${v.name} (${v.note})</option>`).join('')}</select></div>
@@ -510,12 +650,15 @@ export function wireSettings(root = document, { player = '' } = {}) {
     const poor = root.querySelector('#vvPoor');
     if (poor) poor.hidden = !(onlyPoorVoices() && get(noteKey(player), '0') !== '1');
   };
+  const studioRow = root.querySelector('#vvStudioRow'), studioBox = root.querySelector('#setStudio');
+  if (studioRow) import('./voice-index.js').then(m => { studioRow.hidden = !(m.STUDIO && m.STUDIO.tag); }).catch(() => {});
+  if (studioBox) studioBox.onchange = () => { setStudio(studioBox.checked); speak(studioBox.checked ? 'Hi! This is the studio voice.' : 'Hi! This is the voice on this device.', {}); };
   const ok = root.querySelector('#vvPoorOk');
   if (ok) ok.onclick = () => { put(noteKey(player), '1'); const poor = root.querySelector('#vvPoor'); if (poor) poor.hidden = true; sel.focus(); };
   fill(); loadVoices().then(fill);
   if (hasSynth()) try { speechSynthesis.addEventListener('voiceschanged', fill); } catch (e) {}
   const sample = () => speak('Hi there! 7 &times; 8 = 56. Great job!', {});
-  sel.onchange = () => { setVoiceName(sel.value); speak('Hi! This is how I sound.', { natural: false }); };
+  sel.onchange = () => { setVoiceName(sel.value); speak('Hi! This is how I sound.', { builtIn: true }); };
   test.onclick = sample;
   natSel.onchange = () => { setNaturalVoice(natSel.value); speak('Hi! This is how I sound.', { natural: true }); };
   nat.onchange = () => {

@@ -9,4 +9,5 @@
 - To retire it, set `KILL = true` in `sw.js` and deploy (see the comment there).
 - `manifest.webmanifest` here makes Vedic Math its own installable app (scope `/vedic-math/`); the main site's manifest is unchanged.
 - `sounds/` (the 29 Sutra name clips in `sounds/sutras/` and the Om) is served cache first from `vedic-math-sounds`, a cache every deploy keeps, and is never precached. The clips are made by `tools/sutra-voice/make-sutra-clips.mjs`, which also writes `js/say-clips.js` (each clip's size and `?v=` content hash); remake both together (`test/say.test.mjs` checks them).
+- `/vedic-math/voice/` (the studio voice, `docs/agent/studio-voice.md`) is served cache first from `vedic-math-voice`, a cache every deploy keeps, and is never precached.
 - `vendor/tesseract/` (the Math Lens digit reader, about 11 MB) is fetched on first use and is never precached.

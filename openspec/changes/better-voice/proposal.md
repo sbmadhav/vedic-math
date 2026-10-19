@@ -16,7 +16,7 @@ The inventory in `design.md` shows that what the game says is very regular. Expl
 - When only poor voices exist, Me settings shows one note on how to add a better system voice.
 
 **B. Studio voice: one paid neural voice, recorded ahead of time and served as audio files (the new default).**
-- The voice is Google Chirp 3 HD (the owner's choice; one voice such as Aoede, picked by ear on the listening page). A repo-only script records with it, once:
+- The voice is Google Chirp 3 HD (the owner's choice; Aoede, picked by ear on the listening page). A repo-only script records with it, once:
   - **whole lines** for every Explorer line except three-digit adding and comparing (about 19,700 lines), and every fixed line (praise, feedback, toggles, digit-free questions and hints);
   - **clips** for everything else: the numbers 0 to 99 in a mid-sentence and an end-of-sentence take, hundred, thousand, million, point, negative, and about 1,100 word frames ("plus", "equals what?", "Count up from").
 - Format: AAC in `.m4a`, mono, 24 kHz, 32 kbps. About 210 MB of whole lines plus about 11 MB of clip packs.
@@ -51,9 +51,9 @@ None. `accessibility` keeps its "voice picker fits a 320px screen" scenario unch
 
 - `js/voice.js`: built-in tuning and rating (A); `speakStudio()` for whole lines and clips, line hashing and pack loading (B); Me settings gain the voice choice and the poor-voice note.
 - New generated `js/voice-index.js`: the studio voice id, base URL, pack names and hashes, the clip index, and the list of Skills and fixed lines covered by whole lines. It is imported only when read aloud first plays.
-- GitHub Releases of this repo hold the audio archive (`voice-<id>`); git holds no audio. `.github/workflows/ci.yml` downloads and verifies it before the deploy; `build.py --out` fails if `voice/` is missing or its hash does not match `js/voice-index.js`.
+- GitHub Releases of this repo hold the audio archive (`voice-<id>`); git holds no audio. `.github/workflows/ci.yml` downloads and verifies it before the deploy (`tools/voice/ci-fetch.mjs`, which fails on a missing archive, a wrong hash or a missing file); `build.py --out` fails on committed audio.
 - `sw.js`: `/vedic-math/voice/` files are cache first (their names hold their hash), and on install the worker carries them into the next deploy's cache.
-- New repo-only `tools/voice/` (moved from `docs/prototypes/voice/tools/`): `inventory.mjs`, `stitch-plan.mjs`, `voice-lib.mjs` (Kokoro and the four paid providers, keys only from the environment), `make-clips.mjs`, `publish.mjs`. `_config.yml` excludes `tools/`.
+- New repo-only `tools/voice/` (moved from `docs/prototypes/voice/tools/`): `inventory.mjs`, `lines.mjs`, `record.mjs`, `publish.mjs`, `ci-fetch.mjs`, `voice-lib.mjs` (Kokoro and the four paid providers, keys only from the environment) and the listening page's `make-clips.mjs`; the planner moves to `js/voice-plan.js`, shared with the app. `_config.yml` excludes `tools/`.
 - Tests: new `test/voice.test.mjs`, new `test/voice-coverage.test.mjs`; new Playwright `e2e/tests/voice.spec.ts`; `e2e/tests/offline.spec.ts`; `e2e/tests/games.spec.ts` (balloon stop and start still cancels).
 - `GLOSSARY.md`: Read aloud, Built-in voice, Studio voice, Natural voice.
 - One-time cost: $0 to about $40 for the recording, depending on the voice; hosting $0. No ADR: nothing new is sent and no new party is involved. Plan C would need one.

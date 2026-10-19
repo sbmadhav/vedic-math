@@ -22,6 +22,7 @@ This file holds the rules. The details behind each rule live in `docs/agent/` an
 - Never write to production Firestore from a test, and never submit an Arena or game score against the live backend.
 - Every non-trivial behavior change starts as an OpenSpec change in `openspec/changes/<name>/`, is implemented after the owner approves it, and is archived after release. Run `openspec validate --strict` before committing a change.
 - Use the words defined in `GLOSSARY.md` in code comments, docs and plans; read `docs/adr/` before changing who can post, what is sent, or when an identity is created.
+- Never commit studio voice audio or a speech service key, and a change to any spoken line needs a re-record and publish in the same PR (`docs/agent/studio-voice.md`).
 - Repo-only files (`cloud/`, `test/`, `docs/`, `tools/`, `e2e/`, this file, the README, `build.py`) are listed in `exclude` in `_config.yml`; add new ones there.
 
 ## Checks before a push
@@ -34,5 +35,6 @@ This file holds the rules. The details behind each rule live in `docs/agent/` an
 - `docs/agent/e2e.md`: the live suite, the local server, the Firebase fake, the service worker rule, coverage specs, the CSP rule for tests, the workflow.
 - `docs/agent/offline.md`: the service worker, caches, precache list, sounds, how to retire it.
 - `docs/agent/play-experiences.md`: the twelve experiences under `js/play/`, their module shape, kit, analytics and Math Lens.
+- `docs/agent/studio-voice.md`: the prerecorded read aloud voice, its release archive, the recording tools and the spend guard.
 - `docs/agent/leaderboards.md`: Firebase, rules and the browser client.
 - `docs/agent/language-and-decisions.md`: the glossary, ADRs, `docs/PLAN.md` and the OpenSpec workflow.

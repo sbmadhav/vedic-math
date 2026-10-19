@@ -1,14 +1,14 @@
 /* better-voice inventory: samples every text that reaches fx.speak / voice.speak, runs it through
    voice.normalize(), and measures how much of it prerecorded Kokoro clips could cover.
-   Run from the repo root:  node docs/prototypes/voice/tools/inventory.mjs [samplesPerSkillLevel]
-   Writes docs/prototypes/voice/tools/inventory.json (summary, frame list, top templates). */
+   Run from the repo root:  node tools/voice/inventory.mjs [samplesPerSkillLevel]
+   Writes tools/voice/inventory.json (summary, frame list, top templates). */
 import { writeFileSync } from 'node:fs';
-import { normalize } from '../../../../js/voice.js';
-import { SKILLS } from '../../../../js/skills/index.js';
-import { TRICKS } from '../../../../js/vedic.js';
-import { KATAS_PER_TRICK, kata, CHALLENGE_COUNT, challenge, challengeSet } from '../../../../js/levels.js';
-import { makeSet, practiceItem } from '../../../../js/arena.js';
-import { numClips, splitParts } from './stitch-plan.mjs';
+import { normalize } from '../../js/voice.js';
+import { SKILLS } from '../../js/skills/index.js';
+import { TRICKS } from '../../js/vedic.js';
+import { KATAS_PER_TRICK, kata, CHALLENGE_COUNT, challenge, challengeSet } from '../../js/levels.js';
+import { makeSet, practiceItem } from '../../js/arena.js';
+import { numClips, splitParts } from '../../js/voice-plan.js';
 
 const N = +(process.argv[2] || 300);
 

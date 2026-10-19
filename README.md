@@ -59,6 +59,21 @@ The end-to-end tests never write to production Firestore: the Firebase SDK is fa
 
 On a push to `main`, CI (`.github/workflows/ci.yml`) builds `_site/` with `python3 build.py --out _site`, checks it, and its `deploy` job publishes it to GitHub Pages. That needs two settings in this repo: **Settings > Pages > Source** set to "GitHub Actions", and the repository variable `PAGES_VIA_ACTIONS` set to `true` (Settings > Secrets and variables > Actions > Variables). Without them Pages deploys the `main` branch with Jekyll, which publishes the unstamped source: the app still works, but modules are not pinned and the service worker runs in its no-cache `'dev'` mode (no offline).
 
+### Studio voice audio
+
+Read aloud plays the Studio voice (Google Chirp 3 HD, Aoede), recorded ahead of time. The audio is not in git: it lives in a GitHub Release of this repo (tag `voice-<hash>`, one `.tar`), and `js/voice-index.js` (generated, committed) names that release and the archive's SHA-256. The CI deploy runs `node tools/voice/ci-fetch.mjs _site`, which downloads the archive, checks the hash and unpacks it into `_site/voice/` (served at `/vedic-math/voice/`). A line with no recording is read by the device's own voice. The site never calls a speech service, and `build.py` fails if a provider address or anything shaped like a key appears in a published file.
+
+After changing anything that is read aloud, re-record and publish (only new or changed lines are paid for; caps of $300 a month and $50 a run at list price, 300 requests a minute, in `tools/voice/voice-lib.mjs`):
+
+```sh
+gcloud auth login   # once; the owner's Google account, project sbmadhav-vedic-math
+node tools/voice/lines.mjs
+GOOGLE_TTS_TOKEN=$(gcloud auth print-access-token) GOOGLE_CLOUD_PROJECT=sbmadhav-vedic-math node tools/voice/record.mjs
+node tools/voice/publish.mjs   # uploads the archive with gh and writes its tag and hash into js/voice-index.js
+```
+
+Commit `js/voice-index.js` and `tools/voice/manifest.json` with the wording change. `test/voice-coverage.test.mjs` fails when an Explorer line has no recording.
+
 `main` is protected: every change from someone else arrives as a pull request, needs the owner's review and passing checks, and nothing merges without approval.
 
 ## Contributing
