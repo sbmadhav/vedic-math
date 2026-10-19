@@ -1,4 +1,4 @@
-import { test, expect, open, chromiumOnly, FIRESTORE, FIREBASE_AUTH, FIREBASE_SDK, isFirestoreWrite } from './fixtures';
+import { test, expect, open, chromiumOnly, FIRESTORE, FIREBASE_AUTH, FIREBASE_SDK, isFirestoreWrite, showWorld } from './fixtures';
 
 /* The ONLY test that talks to production Firebase. It loads the real SDK and reads the World
    leaderboards shown in the Arena lobby and on a game page, as a fresh device that has never posted.
@@ -7,7 +7,7 @@ import { test, expect, open, chromiumOnly, FIRESTORE, FIREBASE_AUTH, FIREBASE_SD
    never plays a round or earns Sparks. Chromium only, serial, no retries. It is also the suite's only check
    that the Content-Security-Policy (openspec content-security) lets the real SDK and App Check run. */
 
-test.use({ liveFirebase: true });
+test.use({ liveFirebase: true, seedConsent: { age: 'adult' } }); // World boards show for an Age answer of 13 or over, after a tap
 test.describe.configure({ mode: 'serial', retries: 0 });
 
 test('World leaderboards load from live Firestore (read-only)', async ({ page }, testInfo) => {
@@ -34,7 +34,7 @@ test('World leaderboards load from live Firestore (read-only)', async ({ page },
   for (const [route, id, label] of boards) {
     if (!page.url().endsWith(route)) await open(page, route);
     const body = page.locator(`${id} .lb-body`);
-    await expect(page.locator(`${id} [data-src="world"]`)).toHaveAttribute('aria-selected', 'true');
+    await showWorld(page, id);
     await expect(body).not.toContainText('Loading world scores', { timeout: 30_000 });
     // Ranked rows or the empty state, never the fallback for a backend that refused or failed
     await expect.soft(body, `${label} (${id} on ${route}) should load from Firestore`).not.toContainText('not reachable', { timeout: 1000 });

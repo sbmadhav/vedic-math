@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog } from './fixtures';
+import { test, expect, APP, open, cloudLog, showWorld } from './fixtures';
 import type { Page } from '@playwright/test';
 
 /* Content-Security-Policy (openspec content-security). build.py writes a <meta http-equiv="Content-Security-Policy">
@@ -101,13 +101,16 @@ test('Math Lens offers the camera under the published policy: its digit reader i
   await expectNoViolations(page, v, '#/games/lens');
 });
 
+test.describe('a Player 13 or over', () => {
+  test.use({ seedConsent: { age: 'adult' } });
 test('Arena World boards load the Firebase SDK from gstatic with no CSP violation', async ({ page, baseURL }) => {
   const v = await watchViolations(page);
   await open(page, '#/arena');
   await policy(page, baseURL);
-  await expect(page.locator('#lbDay [data-src="world"]')).toHaveAttribute('aria-selected', 'true');
+  await showWorld(page, '#lbDay');
   await expect.poll(async () => (await cloudLog(page)).reads.length, { message: 'the World board read through the (fake) SDK' }).toBeGreaterThan(0);
   await expectNoViolations(page, v, '#/arena');
+});
 });
 
 test('the Watch shelf shows thumbnails and plays a video in the page with no CSP violation', async ({ page, baseURL }) => {

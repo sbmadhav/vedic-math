@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog, typeAnswer } from '../fixtures';
+import { test, expect, open, cloudLog, typeAnswer, showWorld } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* openspec board-identity:
@@ -34,7 +34,8 @@ test.describe('First post', () => {
     await page.clock.install();
     await open(page, '#/arena');
     const { day, wk } = await ids(page);
-    // Before the round: World boards were read, but nothing signed in and no identity exists
+    // Before the round: World boards were read (after Show World board), but nothing signed in and no identity exists
+    for (const id of ['#lbDay', '#lbWeek', '#lbSparks']) await showWorld(page, id);
     await expect.poll(async () => (await cloudLog(page)).reads.length).toBeGreaterThanOrEqual(3);
     let log = await cloudLog(page);
     expect(log.signIns).toBe(0);
@@ -131,6 +132,7 @@ export const serverTimestamp = () => ({ serverTimestamp: true });
 export const Timestamp = { fromMillis: ms => ({ millis: ms }) };`;
 
 test.describe('Signed-out list query', () => {
+  test.use({ seedConsent: { age: 'adult' } }); // the app shows World boards only to a Player 13 or over
   test('a signed-out client asking for the top 20 entries of today\'s Arena Board gets them', async ({ page }) => {
     await page.route(/^https:\/\/www\.gstatic\.com\/firebasejs\/[^/]+\/firebase-firestore\.js$/, route =>
       route.fulfill({ status: 200, contentType: 'text/javascript', headers: { 'access-control-allow-origin': '*' }, body: QUERY_FAKE }));
@@ -152,7 +154,7 @@ test.describe('Signed-out list query', () => {
 
     // The Arena's own World board for today shows its top entries too, ordered by Score
     const items = page.locator('#lbDay ol.lb li');
-    await expect(page.locator('#lbDay [data-src="world"]')).toHaveAttribute('aria-selected', 'true');
+    await showWorld(page, '#lbDay');
     await expect(items).toHaveCount(10);
     for (let i = 0; i < 10; i++) {
       await expect(items.nth(i).locator('.lb-name')).toHaveText(ROWS[i][1]);

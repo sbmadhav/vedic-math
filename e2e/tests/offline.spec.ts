@@ -1,5 +1,5 @@
 import type { BrowserContext, Page, Route } from '@playwright/test';
-import { test, expect, APP, open, cloudLog, openExplore, chromiumOnly, FIREBASE_SDK, FIREBASE_AUTH, FIRESTORE } from './fixtures';
+import { test, expect, APP, open, cloudLog, openExplore, chromiumOnly, FIREBASE_SDK, FIREBASE_AUTH, FIRESTORE, showWorld } from './fixtures';
 import { fakeAudio, audioLog } from './audio-fake';
 
 /* Offline: /vedic-math/sw.js (scope /vedic-math/) saves the app after one visit, so every route, the
@@ -201,9 +201,9 @@ test('offline, the leaderboards fall back to this device, and nothing is queued 
 
   const FALLBACK = 'World scores are not reachable right now. Showing this device.';
   await page.goto(`${APP}#/arena`);
-  for (const id of ['#lbDay', '#lbWeek', '#lbSparks']) await expect(page.locator(`${id} .lb-body`)).toContainText(FALLBACK);
+  for (const id of ['#lbDay', '#lbWeek', '#lbSparks']) { await page.locator(`${id} [data-show-world]`).click(); await expect(page.locator(`${id} .lb-body`)).toContainText(FALLBACK); }
   await page.goto(`${APP}#/game/times-sprint`);
-  for (const id of ['#gbDay', '#gbWeek']) await expect(page.locator(`${id} .lb-body`)).toContainText(FALLBACK);
+  for (const id of ['#gbDay', '#gbWeek']) { await page.locator(`${id} [data-show-world]`).click(); await expect(page.locator(`${id} .lb-body`)).toContainText(FALLBACK); }
 
   // Earn 10 Sparks offline (two sutra cards), past the 3 second wait of the weekly Sparks post
   await page.goto(`${APP}#/sutras`);
@@ -222,6 +222,7 @@ test('offline, the leaderboards fall back to this device, and nothing is queued 
   // (A reload also clears WebKit's memory of the failed SDK import, which it does not retry in one page.)
   await page.reload();
   await page.goto(`${APP}#/arena`);
+  await showWorld(page, '#lbDay');
   await expect(page.locator('#lbDay .lb-body')).toContainText('No scores yet');
   await expect(page.locator('#lbDay .lb-body')).not.toContainText('not reachable');
   await page.waitForTimeout(4_500);

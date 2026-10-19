@@ -99,7 +99,8 @@ test.describe('ranked game round, Player with no Age answer', () => {
     await expect(sheet(page)).toBeHidden();
     await page.clock.runFor(2_000);
     await page.locator('#gDone').click(); // leave the result in the play shell
-    await page.locator('#gbDay [data-src="device"]').click();
+    // The only Board an under-13 Player sees is this device's (no World tab; change learnvedicmath)
+    await expect(page.locator('#gbDay [data-src="world"], #gbDay [data-show-world]')).toHaveCount(0);
     await expect(page.locator('#gbDay .lb li.me b')).toHaveText(pts.toLocaleString('en-US'));
   });
 });

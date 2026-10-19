@@ -1,8 +1,9 @@
-import { test, expect, APP, open, cloudLog, chromiumOnly, ANALYTICS, typeAnswer } from './fixtures';
+import { test, expect, APP, open, cloudLog, chromiumOnly, ANALYTICS, typeAnswer, showWorld } from './fixtures';
 
-/* The note for grown-ups is shown beside every World board (Arena, game pages, Pro home) and on the Me
-   page, and what it promises must match what the app sends (openspec parent-note spec). The fake Firebase
-   SDK records what the app tries to read, sign in and write, so these checks never touch production. */
+/* The note for grown-ups is shown beside every Board (Arena, game pages, Pro home) and on the Me page, and what it
+   promises must match what the app sends and the privacy policy (openspec parent-note spec, change learnvedicmath).
+   The fake Firebase SDK records what the app tries to read, sign in and write, so these checks never touch
+   production. */
 
 const SUMMARY = {
   explorer: 'For grown-ups: what the leaderboard keeps',
@@ -17,28 +18,27 @@ const REQUIRED = [
   "Three kinds of post go to boards for the player's league: the score of a Daily challenge in the Arena and the score of a Ranked round of a game (today's and this week's board for each), and the player's Sparks total for this week (one weekly board).",
   // Sparks and Practice
   'Sparks come from all play, Practice included, so practice adds to that posted weekly total. Practice scores themselves never leave this device.',
-  // consent
+  // consent: the Age answer first, and nothing ever for a Player under 13
   'Nothing is posted before a player answers one question about their age. The answer stays on this device and is never sent.',
-  'Nothing is posted for a player under 13 until a grown-up turns on World boards for them on this device (Me page, World boards), and it can be turned off there at any time.',
+  "Nothing is ever posted for a player whose answer is under 13: their scores rank on this device's board only.",
   // identity
   'No identity exists until the first post: looking at World boards needs no sign-in.',
   // one identity per Player (board-identity spec), and what removing a Player does
   'Firebase gives that player their own random ID on this browser and keeps it with the dates it was created and last used.',
   'Each player on this device who posts has their own ID and their own entry on each board.',
-  'Removing a player on the Me page forgets their ID on this device; entries',
-  'already posted stay until',
+  'Removing a player on the Me page forgets their ID on this device.',
   // fields and keeping
   'Each entry holds exactly: the made-up nickname (picked from fixed word lists, never typed), an avatar color, the best score, the time it was saved, and the time it expires.',
   'No names, emails, ages, photos or typed text are ever collected',
   'Google reCAPTCHA',
-  'Entries are not deleted automatically, and turning World boards off does not delete them.',
+  'Entries are not deleted automatically.',
   'To have an entry removed, message Madhav on LinkedIn with the nickname, color and date.',
   // anonymous usage counts (analytics spec), separate from World boards
   'Separately from World boards, the site counts visits and',
   '(pages opened, questions answered, rounds finished)',
   'with GoatCounter, anonymously: no cookies, no IDs and no names.',
   // videos (watch-shelf)
-  "Videos play from YouTube in privacy-enhanced mode, and YouTube's own rules apply once one plays.",
+  "Videos play from YouTube in privacy-enhanced mode, and YouTube's own rules apply once one plays. Watching posts nothing.",
 ];
 async function expectNote(page: import('@playwright/test').Page, summary: string, now?: string) {
   const note = page.locator('details', { has: page.locator('summary', { hasText: summary }) }).first();
@@ -54,39 +54,38 @@ async function expectNote(page: import('@playwright/test').Page, summary: string
   await expect(note).not.toContainText('gives this browser');
   await expect(note).not.toContainText('share one entry');
   await expect(note.getByRole('link', { name: 'LinkedIn' })).toHaveAttribute('href', 'https://www.linkedin.com/in/sbmadhav/');
+  await expect(note).not.toContainText(/Parent step|turning World boards off/);
   return note;
 }
 const NOW = {
   noAnswer: 'Right now nothing is posted for this player. They have not answered the age question yet; it is asked the first time a score would be posted.',
-  under13: 'Right now nothing is posted for this player, because their age answer is under 13. To turn on World boards for them, a grown-up opens the Me page and goes to World boards.',
-  parentOk: 'A grown-up turned on World boards for this player on this device. They can turn it off again on the Me page, under World boards.',
+  under13: "Nothing is posted for this player, because their age answer is under 13. Their scores stay on this device's board, and there is no way to turn World boards on for them.",
   posting: "This player's scores and weekly Sparks post to World boards.",
 };
 
-test('the parent note is on the Me page, in the Arena and beside a game\'s World boards', async ({ page }) => {
+test('the parent note is on the Me page, in the Arena and beside a game\'s Boards', async ({ page }) => {
   await open(page, '#/me');
   await expectNote(page, SUMMARY.challenger, NOW.noAnswer);
   await open(page, '#/arena');
   await expectNote(page, SUMMARY.challenger, NOW.noAnswer);
   await open(page, '#/game/times-sprint');
-  await expect(page.locator('#gbDay .lb-tabs')).toBeVisible();
+  await expect(page.locator('#gbDay .lb-body')).toBeVisible();
   await expectNote(page, SUMMARY.challenger, NOW.noAnswer);
 });
 
-test.describe('under 13 without the Parent step', () => {
+test.describe('under 13', () => {
   test.use({ seedMode: 'pro', seedConsent: { age: 10 } });
-  test('the note says nothing is posted for this player and how to turn World boards on', async ({ page }) => {
+  test('the note says nothing is posted for this player, ever, and offers no way to turn World boards on', async ({ page }) => {
     await open(page, '#/arena');
     await expectNote(page, SUMMARY.pro, NOW.under13);
   });
-  test('an under-13 Player without the Parent step can open and play a video; nothing is sent but the embed', async ({ page }, testInfo) => {
+  test('an under-13 Player can open and play a video; nothing is sent but the embed', async ({ page }, testInfo) => {
     chromiumOnly(testInfo);
     const events: string[] = [];
     await page.route(/\/assets\/analytics\.js(\?.*)?$/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body: 'window.siteTrack = (p) => { (window.__ev ||= []).push(p); };' }));
     await page.route(/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>video</title>' }));
-    await page.route(/^https:\/\/i\.ytimg\.com\//, r => r.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg"/>' }));
     const sent: string[] = [];
-    page.on('request', r => { const u = r.url(); if (!/^https?:\/\/(localhost|127\.0\.0\.1|sbmadhav\.com)/.test(u)) sent.push(u + ' ' + (r.postData() || '')); });
+    page.on('request', r => { const u = r.url(); if (new URL(u).origin !== new URL(page.url() || 'http://x').origin && !/^https?:\/\/(localhost|127\.0\.0\.1|learnvedicmath\.com)/.test(u)) sent.push(u + ' ' + (r.postData() || '')); });
     await open(page, '#/watch');
     await page.locator('#view button.watch-card').first().click();
     await expect(page.locator('dialog.vm-player iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\//);
@@ -94,15 +93,15 @@ test.describe('under 13 without the Parent step', () => {
     expect(events.filter(e => e.startsWith('math/watch/'))).toEqual([expect.stringMatching(/^math\/watch\/(video|short)$/)]);
     expect(sent.filter(u => /firestore|identitytoolkit|securetoken/.test(u))).toEqual([]);
     expect(sent.filter(u => u.includes('Swift') || u.includes('Tiger'))).toEqual([]);
-    expect(sent.every(u => /youtube-nocookie\.com|i\.ytimg\.com|fonts\.(googleapis|gstatic)\.com/.test(u)), sent.join('\n')).toBe(true);
+    expect(sent.every(u => /youtube-nocookie\.com|i\.ytimg\.com|voice\.learnvedicmath\.com/.test(u)), sent.join('\n')).toBe(true);
     expect((await cloudLog(page)).writes).toEqual([]);
   });
 });
-test.describe('under 13 with the Parent step', () => {
+test.describe('under 13 with the old Parent step (imported from sbmadhav.com)', () => {
   test.use({ seedMode: 'explorer', seedConsent: { age: 7, parentOk: 1760000000000 } });
-  test('the note says a grown-up turned World boards on and where to turn them off', async ({ page }) => {
+  test('the note says nothing is posted for this player: the old Parent step counts for nothing', async ({ page }) => {
     await open(page, '#/me');
-    await expectNote(page, SUMMARY.explorer, NOW.parentOk);
+    await expectNote(page, SUMMARY.explorer, NOW.under13);
   });
 });
 test.describe('13 and over', () => {
@@ -125,7 +124,7 @@ test.describe('pro', () => {
   test.use({ seedMode: 'pro' });
   test('the note sits next to the home leaderboard', async ({ page }) => {
     await open(page);
-    await expect(page.locator('#homeBoard .lb-tabs')).toBeVisible();
+    await expect(page.locator('#homeBoard .lb-body')).toBeVisible();
     await expectNote(page, SUMMARY.pro);
   });
 });
@@ -187,6 +186,8 @@ test('opening a leaderboard reads without loading Auth or signing in', async ({ 
   chromiumOnly(testInfo, 'app logic, the same in every engine');
   await open(page, '#/arena');
   const { day, wk } = await ids(page);
+  expect((await cloudLog(page)).reads, 'nothing is read before Show World board').toEqual([]);
+  for (const id of ['#lbDay', '#lbWeek', '#lbSparks']) await showWorld(page, id);
   await expect.poll(async () => (await cloudLog(page)).reads.length).toBeGreaterThanOrEqual(3);
   const log = await cloudLog(page);
   expect(log.authLoaded).toBe(false);
@@ -314,7 +315,7 @@ test('Sparks earned anywhere send this week\'s Sparks total to the weekly Sparks
 
 test.describe('a Player who may not post', () => {
   test.use({ seedConsent: { age: 9 } });
-  test('Sparks earned by an under-13 Player without the Parent step sends nothing and signs in nowhere', async ({ page }, testInfo) => {
+  test('Sparks earned by an under-13 Player send nothing and sign in nowhere', async ({ page }, testInfo) => {
     chromiumOnly(testInfo, 'app logic, the same in every engine');
     await page.clock.install();
     await open(page, '#/sutras');
@@ -415,12 +416,14 @@ test.describe('two Players on one device', () => {
     await seedSecondPlayer(page, {}, { 'vm.cloudUids': JSON.stringify({ p1: UID_A, [PB]: UID_B }) });
     await page.addInitScript(([a, b]) => { (globalThis as any).__e2eRows = [[a, 'Swift Tiger 42', 400], [b, 'Lucky Otter 17', 300], ['someone', 'Brave Panda 12', 200]]; }, [UID_A, UID_B] as const);
     await open(page, '#/arena');
+    await showWorld(page, '#lbDay');
     await expect(page.locator('#lbDay li.me')).toHaveCount(1);
     await expect(page.locator('#lbDay li.me .lb-name')).toHaveText('Swift Tiger 42');
     await open(page, '#/me');
     await page.locator(`[data-switch="${PB}"]`).click();
     await expect(page.locator('#view h1')).toHaveText('Lucky Otter 17');
     await open(page, '#/arena');
+    await showWorld(page, '#lbDay');
     await expect(page.locator('#lbDay li.me')).toHaveCount(1);
     await expect(page.locator('#lbDay li.me .lb-name')).toHaveText('Lucky Otter 17');
     const log = await cloudLog(page);
