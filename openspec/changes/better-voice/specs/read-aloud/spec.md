@@ -22,11 +22,11 @@ When read aloud says a line, the system SHALL use the first voice that can say a
 - **THEN** lines are read by the natural voice, as today
 
 ### Requirement: A slow studio index
-When the studio index (the line set and clip directory) has not loaded within 1 s, the built-in voice SHALL say the line, and the index SHALL keep loading so later lines can use the studio voice.
+When the studio voice is next in the voice order for a line and its index (the line set and clip directory) has not loaded within 1 s, the built-in voice SHALL say the line, and the index SHALL keep loading so later lines can use the studio voice. A loaded natural voice the Player turned on keeps its priority.
 
 #### Scenario: A slow studio index
-- **WHEN** read aloud says a line and the studio index takes longer than 1 s to load
-- **THEN** the built-in voice reads the line, and once the index has loaded the next line uses the studio voice
+- **WHEN** read aloud gives a line to the studio voice and the studio index takes longer than 1 s to load
+- **THEN** the built-in voice reads the line, and once the index has loaded a later line plays in the studio voice when its whole recording or all its clips are ready (otherwise the built-in voice reads it)
 
 ### Requirement: Studio audio is files on this site
 Studio audio SHALL be prerecorded files on this site's origin under `/vedic-math/voice/`: one AAC `.m4a` per whole line, named by a hash of the voice and the words, and content-hashed clip packs. No text SHALL be sent anywhere to say a line.
