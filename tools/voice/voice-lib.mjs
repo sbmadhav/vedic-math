@@ -134,8 +134,8 @@ export function makeGuard({ ledger = CACHE + 'ledger.json', budget = +(process.e
     /* Requests leave at most perMin a minute, also when several workers ask at once */
     pace() {
       chain = chain.then(async () => {
-        const wait = lastAt + 60000 / perMin - now();
-        if (wait > 0) await new Promise(r => setTimeout(r, wait));
+        /* A timer can fire a little early, so wait again until the full gap has passed */
+        for (let wait; (wait = lastAt + 60000 / perMin - now()) > 0;) await new Promise(r => setTimeout(r, Math.ceil(wait)));
         lastAt = now();
       });
       return chain;
