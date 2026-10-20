@@ -119,7 +119,7 @@ The robot co-pilot who shows each Trick and reacts to the Player's answers. A te
 _Avoid_: mascot, buddy, pet, avatar
 
 **Nikhilam Family**:
-The brand mark: the Devanagari digits 1, 0 and 9 drawn as a family (a tall One, a baby Zero and a Nine), in the header, the favicon (the baby Zero's face) and the app icons. Sources in `brand/nikhilam-family/`. Bolt teaches in the game; the Nikhilam Family is the site's name in pictures.
+The brand mark: the Devanagari digits 1, 0 and 9 drawn as a family (a tall One, a baby Zero and a Nine), in the header, the landing page's hero picture, the favicon (the baby Zero's face) and the app icons. Sources in `brand/nikhilam-family/`. Bolt teaches in the game and appears only there; the Nikhilam Family is the site's name in pictures.
 _Avoid_: logo Bolt, mascot
 
 **Magic moment**:

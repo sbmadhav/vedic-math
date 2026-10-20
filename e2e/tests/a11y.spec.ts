@@ -139,6 +139,17 @@ test('the brand link is named "Learn Vedic Math, home" and its mark is decorativ
   }
 });
 
+/* The landing hero is one image named for the Nikhilam Family; its parts are not read out one by one */
+test('the landing hero is one image named "The Nikhilam Family: the Devanagari digits one, zero and nine"', async ({ page }, testInfo) => {
+  chromiumOnly(testInfo);
+  await page.goto('/?home');
+  const hero = page.locator('main').getByRole('img', { name: 'The Nikhilam Family: the Devanagari digits one, zero and nine', exact: true });
+  await expect(hero).toHaveCount(1);
+  await expect(hero).toHaveJSProperty('tagName', 'svg');
+  expect(await page.locator('main').getByRole('img').count()).toBe(1);
+  await expect(page.locator('main')).not.toContainText('Bolt');
+});
+
 /* The site header (site-header spec): wide and on a 320px phone, in both schemes, with the music panel open */
 for (const scheme of ['light', 'dark'] as const) {
   for (const width of [1280, 320]) {

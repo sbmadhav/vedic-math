@@ -1,6 +1,6 @@
 /* The brand mark is the Nikhilam Family (the Devanagari digits 1, 0 and 9 as a family; sources in
-   brand/nikhilam-family/, PNGs made by tools/brand/render.mjs). Bolt stays the in-game teacher and the landing hero,
-   never the brand: the header shows the family drawn with tokens, every page links the favicon set, and the icons
+   brand/nikhilam-family/, PNGs made by tools/brand/render.mjs). Bolt stays the in-game teacher (inside /play/ only),
+   never the brand; the landing hero is the Nikhilam Family too: the header shows the family drawn with tokens, every page links the favicon set, and the icons
    have the sizes the manifest and the pages name. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -38,8 +38,29 @@ test('both stylesheets give the 3:2 mark its size', () => {
   for (const f of ['math.css', 'theme/site.css']) assert.match(src(f), /\.md-brand svg\.lv-mark \{ width: 48px; height: 32px; \}/, f);
 });
 
-test('the landing hero keeps Bolt as the character who plays along', () => {
-  assert.match(src('site/index.html'), /<svg class="lv-bolt"[^>]*aria-label="Bolt, the friendly robot who plays along"/);
+test('the landing hero is the Nikhilam Family, drawn with tokens, named for screen readers, and Bolt is not on it', () => {
+  const html = src('site/index.html');
+  const hero = html.match(/<svg class="lv-family"[^>]*>[\s\S]*?<\/svg>/);
+  assert.ok(hero, 'the landing page has the family hero');
+  assert.match(hero[0], /^<svg class="lv-family" viewBox="[^"]+" role="img" aria-label="The Nikhilam Family: the Devanagari digits one, zero and nine">/);
+  assert.ok(!/#[0-9a-f]{3,8}\b/i.test(hero[0]), 'no hex colours: tokens only, so both schemes work');
+  for (const t of ['--sky', '--sun', '--coral', '--ink', '--on-accent']) assert.ok(hero[0].includes(`var(${t})`), `the hero uses ${t}`);
+  for (const c of ['lv-f-one', 'lv-f-zero', 'lv-f-nine']) assert.ok(hero[0].includes(`class="${c}"`), `the hero draws ${c}`);
+  assert.ok(!/lv-bolt|--bolt-(body|accent|belly|screen|line)|aria-label="Bolt/.test(html), 'Bolt is not on the landing page');
+});
+
+test('every grown-up page is free of Bolt art: Bolt stays inside the game', () => {
+  for (const p of pages.filter(f => f.startsWith('site'))) {
+    assert.ok(!/lv-bolt|--bolt-(body|accent|belly|screen|line)|Bolt, the friendly robot/.test(src(p)), p);
+  }
+});
+
+test('the hero moves only when motion is allowed: reduced motion, Pause motion and Calm stop it, and the landing page applies Calm before paint', () => {
+  const css = src('theme/site.css');
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{ \.lv-family \* \{ animation: none !important; \} \}/);
+  assert.match(css, /html\.motion-paused \.lv-family \*, html\.calm \.lv-family \* \{ animation: none !important; \}/);
+  assert.match(css, /\.lv-family \{ width: clamp\(120px, 22vw, 220px\); height: auto;/, 'same width rules as before');
+  assert.ok(src('site/index.html').includes("if(localStorage.getItem('vm.calm')==='1')d.classList.add('calm');"));
 });
 
 test('every page links the favicon set and the Apple touch icon; pages with Open Graph tags use the social image', () => {
