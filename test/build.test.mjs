@@ -406,6 +406,9 @@ test('--voice off: no published file names the voice host, the index names no re
   assert.match(read('js/voice-index.js'), /"base": "https:\/\/voice\.learnvedicmath\.com\/"/);
   // A source file naming the host fails a --voice off build
   withEdit('js/voice-plan.js', s => s + "\n// https://voice.learnvedicmath.com/l/x.m4a\n", () => fails(tryBuild(['--voice', 'off']), /js\/voice-plan\.js: names the voice host/));
+  // Any case, and any published file, text or not
+  withEdit('js/voice-plan.js', s => s + "\n// https://VOICE.LearnVedicMath.com/l/x.m4a\n", () => fails(tryBuild(['--voice', 'off']), /js\/voice-plan\.js: names the voice host/));
+  withFile('thumbs/probe.png', Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 0xff]), Buffer.from('voice.learnvedicmath.com')]), () => fails(tryBuild(['--voice', 'off']), /thumbs\/probe\.png: names the voice host/));
 });
 
 test('every static page has a canonical link and Open Graph tags with the site image', () => {

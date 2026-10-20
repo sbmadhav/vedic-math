@@ -185,7 +185,7 @@ jobs:
       - name: Without R2, the site names no voice host
         if: vars.R2_ACCOUNT_ID == ''
         run: |
-          if grep -rlI 'voice\.learnvedicmath\.com' _site; then
+          if grep -rli 'voice\.learnvedicmath\.com' _site; then
             echo "::error::R2 is not set up, but the files above name the voice host; the site must be built with --voice off"
             exit 1
           fi

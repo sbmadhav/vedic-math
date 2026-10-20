@@ -237,14 +237,15 @@ def check_published(out, voice):
         rel = p.relative_to(out).as_posix()
         if p.stat().st_size > MAX_FILE_BYTES:
             fail(f"{rel}: {p.stat().st_size} bytes; Cloudflare Workers serves files up to 25 MiB")
+        if voice == "off" and VOICE_HOST.split("//")[1].encode() in p.read_bytes().lower():
+            # every published file, text or not, compared ignoring case
+            fail(f"{rel}: names the voice host {VOICE_HOST}; a build with --voice off must not (deploy-pipeline spec)")
         if not (p.suffix in TEXT_EXT or p.name in ("_headers", "_redirects")):
             continue
         text = p.read_text(encoding="utf-8", errors="ignore")
         if rel == "js/cloud-config.js":
             text = FIREBASE_KEY.sub("", text)
         host, secret = PROVIDER_HOSTS.search(text), SECRETS.search(text)
-        if voice == "off" and VOICE_HOST.split("//")[1] in text:
-            fail(f"{rel}: names the voice host {VOICE_HOST}; a build with --voice off must not (deploy-pipeline spec)")
         if host:
             fail(f"{rel}: names a speech provider ({host.group(0)}); the site must only play its own recorded files")
         if secret:
