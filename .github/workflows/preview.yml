@@ -112,7 +112,9 @@ jobs:
         run: |
           # Cloudflare answers *.workers.dev preview URLs with its own X-Robots-Tag: noindex, which replaces the
           # "noindex, nofollow" from _headers; noindex alone keeps the preview out of search results
-          curl -fsSI "$URL/" | grep -iE '^x-robots-tag:.*\bnoindex\b' || { echo "::error::the preview does not send X-Robots-Tag with noindex"; exit 1; }
+          # Require an unscoped noindex: "googlebot: noindex" binds one crawler only and does not count
+          curl -fsSI "$URL/" | tr -d '\r' | awk -F': ' 'tolower($1)=="x-robots-tag" { n=split($0, d, /, */); sub(/^[^:]*: */, "", d[1]); for (i=1; i<=n; i++) if (tolower(d[i])=="noindex") ok=1 } END { exit !ok }' \
+            || { echo "::error::the preview does not send an unscoped X-Robots-Tag: noindex"; exit 1; }
 
       - name: Install Playwright
         if: steps.token.outputs.present == 'true'
