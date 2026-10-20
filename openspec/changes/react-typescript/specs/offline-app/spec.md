@@ -13,6 +13,10 @@ In the published worker, every precache entry SHALL carry the hash the build rec
 - **WHEN** `python3 build.py --out _site` runs
 - **THEN** no file of the 3D dependency graph in the build manifest is in `_site/sw.js`'s precache list
 
+#### Scenario: A chunk shared with a 3D scene
+- **WHEN** the build emits a chunk that both the app's entry imports statically and a 3D scene imports
+- **THEN** that chunk is in the precache list, and the chunks only the 3D scene's dynamic import reaches are not
+
 #### Scenario: A half-propagated deploy
 - **WHEN** the network serves an older entry chunk during install
 - **THEN** install fails and the previous version keeps serving

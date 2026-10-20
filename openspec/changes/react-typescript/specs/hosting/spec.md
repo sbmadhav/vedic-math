@@ -31,19 +31,26 @@ A link to an old route SHALL open the same screen on the new site. A hash route 
 ## ADDED Requirements
 
 ### Requirement: The game's paths fall back to the app
-A request for a path under `/play/` that matches no published file SHALL be answered with status 200 and the game's SPA fallback page (`/play/__spa-fallback.html`), which then shows the screen for that path, or Home for a path that names no screen. A path outside `/play/` that matches no file SHALL be answered with the 404 page and status 404.
+A page navigation to a path under `/play/` that matches no published file SHALL be answered with status 200 and the game's SPA fallback page (`/play/__spa-fallback.html`), which then shows the screen for that path, or Home for a path that names no screen. A request counts as a page navigation when it carries `Sec-Fetch-Mode: navigate`, or, without that header, is a GET whose `Accept` prefers `text/html`.
 
 #### Scenario: A deep link that is not prerendered
 - **WHEN** a visitor opens `https://learnvedicmath.com/play/game/times-sprint/12` on a cold load
 - **THEN** the status is 200 and that game Level is shown
 
-#### Scenario: A typo outside the game
-- **WHEN** a visitor opens `https://learnvedicmath.com/plya/`
-- **THEN** the status is 404 and the page links to the landing page and the game
-
 #### Scenario: A path the game does not know
 - **WHEN** a visitor opens `https://learnvedicmath.com/play/nowhere`
 - **THEN** the status is 200 and Home (or the Mode picker on a first visit) is shown
+
+### Requirement: Other misses get a 404
+Any request that matches no published file and is not a page navigation under `/play/`, including every miss under `/play/assets/` and every script, style, image or data request, SHALL be answered with the 404 page and status 404, never with HTML at status 200. A path outside `/play/` that matches no file SHALL be answered the same way.
+
+#### Scenario: A missing script under the game
+- **WHEN** the browser requests `/play/assets/old-chunk-1a2b3c.js`, which no longer exists, as a script
+- **THEN** the status is 404 and the response is not the SPA fallback page
+
+#### Scenario: A typo outside the game
+- **WHEN** a visitor opens `https://learnvedicmath.com/plya/`
+- **THEN** the status is 404 and the page links to the landing page and the game
 
 ### Requirement: The Worker script answers only misses
 The Worker script SHALL give both answers above, and only for requests that match no published file; `not_found_handling` SHALL stay unset or `"none"`. A file that exists SHALL be served as itself without running the script. The fallback SHALL NOT be a `_redirects` rule.
