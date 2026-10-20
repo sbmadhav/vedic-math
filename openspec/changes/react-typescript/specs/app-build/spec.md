@@ -11,7 +11,7 @@ The repo SHALL be one pnpm workspace with the packages `app` (the game, rendered
 
 #### Scenario: A clean build
 - **WHEN** CI runs `pnpm install --frozen-lockfile` and then `python3 build.py --out _site`
-- **THEN** `_site/play/index.html`, `_site/play/__shell.html`, `_site/sw.js`, `_site/_headers`, `_site/_redirects` and the landing pages exist, the Worker bundle exists outside `_site`, and the build prints the budget table
+- **THEN** `_site/learn/index.html`, `_site/learn/__shell.html`, `_site/sw.js`, `_site/_headers`, `_site/_redirects` and the landing pages exist, the Worker bundle exists outside `_site`, and the build prints the budget table
 
 #### Scenario: Server code is never a public file
 - **WHEN** `python3 build.py --out _site` runs
@@ -58,11 +58,11 @@ Every JS and CSS file the build emits for the game SHALL have a content hash in 
 The built game SHALL run under the move's policy without `'unsafe-eval'`, without `'unsafe-inline'` scripts and without any script, style, font or 3D asset from another origin. Every inline script in a prerendered page or the offline shell SHALL be allowed by its hash in that page's policy, and every inline script in a server-rendered page SHALL carry the nonce made for that response. The policy for both SHALL come from one source, and rendered pages SHALL carry no `style` attributes.
 
 #### Scenario: A prerendered page
-- **WHEN** `/play/sutras/ekadhikena/` is opened with the published headers
+- **WHEN** `/learn/sutras/ekadhikena/` is opened with the published headers
 - **THEN** no CSP violation is reported
 
 #### Scenario: A server-rendered page
-- **WHEN** `/play/arena` is rendered by the server
+- **WHEN** `/learn/arena` is rendered by the server
 - **THEN** every inline script in it carries the response's nonce, the policy names that nonce, and no CSP violation is reported
 
 #### Scenario: The two policies drift

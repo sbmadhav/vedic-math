@@ -17,7 +17,7 @@ Let the game show 3D decoration that loads late, never slows the first screen, n
 The 3D code (three.js, React Three Fiber, drei and the scenes) SHALL be served from learnvedicmath.com, SHALL NOT be part of the first load of any page, and SHALL be requested only on a route that shows a 3D scene, after that route has rendered and the browser is idle. The Sky SHALL first show the 2D Sky, then fade into 3D once the scene is ready, without moving any Star, Landmark or text.
 
 #### Scenario: Home without the Sky
-- **WHEN** a Player whose Home does not show the Sky opens `/play/`
+- **WHEN** a Player whose Home does not show the Sky opens `/learn/`
 - **THEN** no 3D file is requested
 
 #### Scenario: The Sky fades in

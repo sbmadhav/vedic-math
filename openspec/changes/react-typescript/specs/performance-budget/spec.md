@@ -14,7 +14,7 @@ The repo SHALL keep `docs/perf/baseline.md` with the numbers of the live site af
 - **THEN** `docs/perf/baseline.md` is already on `main` with the numbers for the post-move site
 
 ### Requirement: What the baseline measures
-The baseline SHALL hold Lighthouse mobile preset results (simulated slow 4G, 4x CPU slowdown, median of 5 runs) for `/play/` first and repeat visit, the Arena, Games and one Deep dive, with time to first byte; the Brotli-compressed size of everything a first visit to `/play/` requests before the first tap, including every file the service worker's install downloads; and interaction timings for opening the Arena, answering one Arena question, opening a Deep dive and lighting a Star.
+The baseline SHALL hold Lighthouse mobile preset results (simulated slow 4G, 4x CPU slowdown, median of 5 runs) for `/learn/` first and repeat visit, the Arena, Games and one Deep dive, with time to first byte; the Brotli-compressed size of everything a first visit to `/learn/` requests before the first tap, including every file the service worker's install downloads; and interaction timings for opening the Arena, answering one Arena question, opening a Deep dive and lighting a Star.
 
 #### Scenario: The report
 - **WHEN** `docs/perf/baseline.md` is read
@@ -28,7 +28,7 @@ Every size budget in this change (first load and the 3D code) SHALL be measured 
 - **THEN** every budget line gives its limit and its measurement in Brotli bytes
 
 ### Requirement: First load does not grow
-The build SHALL measure the Brotli-compressed size of everything a first visit to `/play/` requests before the first tap: the page, its JS and CSS, fonts, icons and other files, and every file the service worker's install downloads (counted even when install ends after the tap), each unique file once. It SHALL fail when the total is larger than the baseline, and SHALL print the measurement on every build.
+The build SHALL measure the Brotli-compressed size of everything a first visit to `/learn/` requests before the first tap: the page, its JS and CSS, fonts, icons and other files, and every file the service worker's install downloads (counted even when install ends after the tap), each unique file once. It SHALL fail when the total is larger than the baseline, and SHALL print the measurement on every build.
 
 #### Scenario: A heavy import in the shell
 - **WHEN** a change makes the shell import a module that brings JS before the first tap above the baseline

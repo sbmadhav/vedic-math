@@ -7,7 +7,7 @@ The Playwright suite SHALL run against the preview of each pull request, against
 
 #### Scenario: After a deploy
 - **WHEN** a deploy finishes
-- **THEN** the suite waits until `/play/`, `/sw.js`, the entry chunk that `/play/` names and the build id a server-rendered page reports (a response header) on learnvedicmath.com match the build of that commit, then runs
+- **THEN** the suite waits until `/learn/`, `/sw.js`, the entry chunk that `/learn/` names and the build id a server-rendered page reports (a response header) on learnvedicmath.com match the build of that commit, then runs
 
 #### Scenario: A pull request preview
 - **WHEN** a preview is uploaded for a pull request
