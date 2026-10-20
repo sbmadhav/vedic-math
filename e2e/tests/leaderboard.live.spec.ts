@@ -1,4 +1,4 @@
-import { test, expect, open, chromiumOnly, FIRESTORE, FIREBASE_AUTH, FIREBASE_SDK, isFirestoreWrite, showWorld } from './fixtures';
+import { test, expect, open, chromiumOnly, needsWorldBoards, FIRESTORE, FIREBASE_AUTH, FIREBASE_SDK, isFirestoreWrite, showWorld } from './fixtures';
 
 /* The ONLY test that talks to production Firebase. It loads the real SDK and reads the World
    leaderboards shown in the Arena lobby and on a game page, as a fresh device that has never posted.
@@ -14,6 +14,9 @@ test('World leaderboards load from live Firestore (read-only)', async ({ page },
   chromiumOnly(testInfo, 'one live read per run: chromium only');
   // App Check only accepts the production origin (localhost would need a debug token)
   test.skip(!/^https:\/\/learnvedicmath\.com$/.test(testInfo.project.use.baseURL || ''), 'live Firebase only answers https://learnvedicmath.com');
+  // The served js/cloud-config.js has no Firebase project for learnvedicmath.com until owner task 1.8 and task 8.5;
+  // this switches itself back on once a config is published
+  await needsWorldBoards(page);
   test.setTimeout(90_000);
   const firestore: string[] = [], signIn: string[] = [], sdk: string[] = [];
   await page.addInitScript(() => {

@@ -110,7 +110,8 @@ test('the precache list holds every import-map module, the shell, the styles, fo
   assert.equal(urls.get(importMap()['/js/app.js']), sha('js/app.js'));
   const tokens = read('play/index.html').match(/href="(\/ds\/2\.1\.0\/tokens\.css\?v=\w+)"/)[1];
   assert.equal(urls.get(tokens), sha('ds/2.1.0/tokens.css'), 'the published tokens.css, as served');
-  for (const u of ['/fonts/nunito-sans-latin-wght-normal.woff2', '/fonts/jetbrains-mono-latin-500-normal.woff2', '/icons/icon-192.png', '/icons/maskable-512.png', '/manifest.webmanifest'])
+  for (const u of ['/fonts/nunito-sans-latin-wght-normal.woff2', '/fonts/jetbrains-mono-latin-500-normal.woff2', '/icons/icon-192.png', '/icons/maskable-512.png',
+    '/icons/favicon-16.png', '/icons/favicon-32.png', '/icons/favicon-48.png', '/icons/favicon.svg', '/icons/apple-touch-icon.png', '/manifest.webmanifest'])
     assert.equal(urls.get(u), sha(u.slice(1)), `${u} is precached with its hash`);
   for (const [u, hash] of precache) {
     assert.ok(u.startsWith('/'), `${u} is not an absolute path`);
@@ -420,7 +421,7 @@ test('every static page has a canonical link and Open Graph tags with the site i
     assert.match(html, new RegExp(`<link rel="canonical" href="https://learnvedicmath\\.com${url.replace(/\//g, '\\/')}">`), page);
     assert.match(html, new RegExp(`<meta property="og:url" content="https://learnvedicmath\\.com${url.replace(/\//g, '\\/')}">`), page);
     for (const p of ['og:title', 'og:description', 'og:type', 'og:site_name']) assert.match(html, new RegExp(`<meta property="${p}" content="[^"]+">`), `${page} ${p}`);
-    assert.match(html, /<meta property="og:image" content="https:\/\/learnvedicmath\.com\/icons\/icon-512\.png">/, page);
+    assert.match(html, /<meta property="og:image" content="https:\/\/learnvedicmath\.com\/icons\/og\.png">/, page);
   }
 });
 
@@ -428,4 +429,49 @@ test('a Markdown link keeps its query string: the URL is escaped once', () => {
   const r = spawnSync('python3', ['-B', '-c', 'import sys; sys.argv = ["build.py"]; import build; print(build.inline_md(sys.stdin.read()))'], { cwd: dir, env, input: 'see [the rule](https://example.org/a?x=1&y="2") & more', encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
   assert.equal(r.stdout.trim(), 'see <a href="https://example.org/a?x=1&amp;y=&quot;2&quot;">the rule</a> &amp; more');
+});
+
+/* ---------- the progress hand-off (progress-handoff spec; tasks 10.1, 10.4, 16.1) ---------- */
+test('the import page clears the fragment in its first script, sends events only, and gets its own policy', () => {
+  build();
+  const html = read('import/index.html');
+  const first = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  assert.match(first, /history\.replaceState\(null,'',location\.pathname\)/);
+  assert.ok(html.indexOf(first) < html.indexOf('/js/analytics.js'), 'before analytics');
+  assert.match(html, /<html lang="en" data-analytics="events-only">/);
+  assert.match(html, /<script type="module" src="\/js\/handoff\.js\?v=\w+"><\/script>/);
+  const r = headerRules()['/import/'];
+  assert.equal(r['Cross-Origin-Opener-Policy'], 'same-origin-allow-popups');
+  const csp = parse(r['Content-Security-Policy']);
+  for (const h of inlineHashes(html)) assert.ok(csp['script-src'].includes(h));
+  for (const bad of ["'unsafe-inline'", "'unsafe-eval'"]) assert.ok(!csp['script-src'].includes(bad));
+  assert.ok(!read('sitemap.xml').includes('/import/'));
+});
+
+test('--target moved builds the moved page, its pinned packer and the KILL worker under /vedic-math/', () => {
+  const moved = join(dir, '_moved_test');
+  execFileSync('python3', ['build.py', '--target', 'moved', '--out', moved], { cwd: dir, env, encoding: 'utf8' });
+  const m = f => readFileSync(join(moved, f), 'utf8');
+  assert.deepEqual(walk(moved).map(p => relative(moved, p)).sort(), ['.nojekyll', '404.html', 'index.html', 'js/handoff-pack.js', 'js/handoff-schema.js', 'sw.js']);
+  assert.equal(m('index.html'), m('404.html'), 'deep paths get the same page');
+  const html = m('index.html');
+  assert.match(html, /<link rel="canonical" href="https:\/\/learnvedicmath\.com\/">/);
+  assert.match(html, /<noscript><meta http-equiv="refresh" content="0; url=https:\/\/learnvedicmath\.com\/"><\/noscript>/);
+  assert.match(html, /<a id="go"[^>]*href="https:\/\/learnvedicmath\.com\/"/);
+  const map = JSON.parse(html.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
+  const pin = f => createHash('sha256').update(readFileSync(join(dir, f))).digest('hex').slice(0, 10);
+  assert.equal(map['/vedic-math/js/handoff-schema.js'], `/vedic-math/js/handoff-schema.js?v=${pin('js/handoff-schema.js')}`);
+  assert.match(html, new RegExp(`<script type="module" src="/vedic-math/js/handoff-pack\\.js\\?v=${pin('moved/handoff-pack.js')}"></script>`));
+  const policy = parse(html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)">/)[1]);
+  for (const h of inlineHashes(html)) assert.ok(policy['script-src'].includes(h));
+  assert.deepEqual(policy['connect-src'], ['https://sbmadhav.goatcounter.com'], 'the one hand-off count; nothing else leaves');
+  assert.doesNotMatch(html, /firebase|gstatic|\/vedic-math\/js\/app\.js|analytics\.js/);
+  for (const [, u] of html.matchAll(/(?:src|href)="(\/[^"]*)"/g)) assert.match(u, /^\/(vedic-math|design-system)\//, u);
+  const sw = m('sw.js');
+  assert.match(sw, /^const KILL = true;$/m);
+  assert.match(sw, /^const PREFIX = 'vedic-math-';$/m);
+  assert.match(sw, /^const VERSION = '[0-9a-f]{10}';$/m, 'a built VERSION: the KILL branch never runs on dev');
+  // The packer never puts progress in a query string
+  assert.match(m('js/handoff-pack.js'), /\/import\/\$\{fragment\(/);
+  assert.match(m('js/handoff-schema.js'), /`#v=\$\{VERSION\}&d=\$\{data\}`/);
 });

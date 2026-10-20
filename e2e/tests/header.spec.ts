@@ -48,6 +48,11 @@ test.describe('wide screen', () => {
     await expect(brand).toHaveAttribute('aria-label', 'Learn Vedic Math, home');
     await expect(brand).toHaveAttribute('href', '/?home');
     await expect(brand).toContainText('Learn Vedic Math');
+    // The brand mark is the Nikhilam Family (3:2), not Bolt
+    const mark = brand.locator('svg.lv-mark');
+    await expect(mark).toBeVisible();
+    await expect(mark).toHaveAttribute('aria-hidden', 'true');
+    expect(await mark.evaluate(e => [Math.round(e.getBoundingClientRect().width), Math.round(e.getBoundingClientRect().height)])).toEqual([48, 32]);
     await brand.click();
     await expect(page).toHaveURL(/\/\?home$/);
     await expect(page.locator('main h1')).toBeVisible();
