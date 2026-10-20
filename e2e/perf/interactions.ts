@@ -42,9 +42,14 @@ async function watchEvents(page: Page) {
 type Done = { sel: string; text?: string };
 
 /** Arms the page for one tap: the next pointerdown's time, then the first frame in which `done` is visible. First it
-    waits for every finite animation to finish (a card flip, a view's entrance), so the tap never shares its frames
-    with the step before it; endless ones (the background) keep running, as they do for a Player. */
+    waits for the network to be idle, an idle moment on the main thread and every finite animation to finish (a card
+    flip, a view's entrance), so the tap never shares its frames with the step before it; endless animations (the
+    background) keep running, as they do for a Player. */
 async function arm(page: Page, done: Done) {
+  // Nothing loading and an idle main thread: the screen's own idle work (prefetching sounds, decoding pictures) is done,
+  // so it never lands inside the measured tap
+  await page.waitForLoadState('networkidle');
+  await page.evaluate(() => new Promise<void>(r => requestIdleCallback(() => r(), { timeout: 3000 })));
   await page.waitForFunction(() => document.getAnimations().every(a => a.playState !== 'running' || a.effect?.getComputedTiming().endTime === Infinity), undefined, { timeout: 10_000 });
   await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
   await page.evaluate(({ sel, text }) => {
