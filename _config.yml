@@ -24,6 +24,7 @@ exclude:
   - test/
   - docs/
   - openspec/
+  - brand/
   - tools/
   - e2e/
   - node_modules/

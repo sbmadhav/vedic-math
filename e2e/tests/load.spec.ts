@@ -25,7 +25,9 @@ test.describe('first visit', () => {
     // The game is its own installable app (scope /play/)
     await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', '/manifest.webmanifest');
     await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href', '/icons/apple-touch-icon.png');
-    await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/icons/favicon.svg');
+    // The Nikhilam Family favicon: the SVG, and PNG cuts at 16, 32 and 48 px
+    await expect(page.locator('link[rel="icon"][type="image/svg+xml"]')).toHaveAttribute('href', '/icons/favicon.svg');
+    for (const s of [16, 32, 48]) await expect(page.locator(`link[rel="icon"][sizes="${s}x${s}"]`)).toHaveAttribute('href', `/icons/favicon-${s}.png`);
     await expect(page.locator('a.skip[href="#view"]')).toHaveCount(1);
     // The Vedic Math tabs are in the page but hidden until a Mode is picked (header.spec.ts 'tabs wait for a Mode')
     await expect(page.locator('nav.mq-nav')).toHaveCount(1);
@@ -104,7 +106,8 @@ test.describe('the site\'s own files', () => {
       expect(r.status(), i.src).toBe(200);
       expect(r.headers()['content-type'], i.src).toMatch(/image\/(png|svg\+xml)/);
     }
-    expect((await request.get('/icons/apple-touch-icon.png')).status()).toBe(200);
+    for (const f of ['apple-touch-icon.png', 'favicon-16.png', 'favicon-32.png', 'favicon-48.png', 'favicon.svg', 'og.png'])
+      expect((await request.get(`/icons/${f}`)).status(), f).toBe(200);
   });
 
   test('Chromium finds the game installable from /play/', async ({ page }, testInfo) => {

@@ -1,0 +1,12 @@
+{
+  "name": "brand-tools",
+  "private": true,
+  "type": "module",
+  "description": "Repo-only tool: renders the PNG icons and the social image in icons/ from the brand SVGs in brand/nikhilam-family/.",
+  "scripts": {
+    "render": "node render.mjs"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "2.6.2"
+  }
+}
