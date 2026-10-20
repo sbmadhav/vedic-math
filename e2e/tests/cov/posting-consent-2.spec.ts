@@ -111,7 +111,7 @@ test.describe('Age answer is never sent', () => {
       await typeAnswer(page, answer);
       await page.locator('#arForm button').click();
       await expect(page.locator('#arScore')).toHaveText('10');
-      await page.clock.runFor(61_000);
+      await page.clock.fastForward(61_000);
       await expect(page.locator('.ar-result')).toBeVisible();
     }
 

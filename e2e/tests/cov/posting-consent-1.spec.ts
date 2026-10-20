@@ -34,7 +34,7 @@ async function rankedSprint(page: Page) {
   }
   const pts = Number((await page.locator('#gPts').textContent())!.replace(/,/g, ''));
   expect(pts).toBeGreaterThanOrEqual(10);
-  await page.clock.runFor(61_000);
+  await page.clock.fastForward(61_000);
   await expect(page.locator('.play-shell .g-result')).toBeVisible();
   return pts;
 }

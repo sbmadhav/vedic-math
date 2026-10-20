@@ -10,7 +10,9 @@ import type { Page } from '@playwright/test';
 async function heldAt(page: Page, local: string) {
   await page.addInitScript(() => { (window as any).goatcounter ||= { count() {} }; });
   const t = new Date(local);
-  await page.clock.install({ time: t });
+  // Installed a second early: an installed clock runs, so pausing at the install time itself was already in the past
+  // whenever a millisecond went by between the two calls ("Cannot fast-forward to the past" on a busy machine)
+  await page.clock.install({ time: t.getTime() - 1000 });
   await page.clock.pauseAt(t);
 }
 

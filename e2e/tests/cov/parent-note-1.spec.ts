@@ -90,7 +90,7 @@ test.describe('the note matches what is sent', () => {
     await page.clock.runFor(2_500);
     await typeAnswer(page, String(answer));
     await page.locator('#arForm button').click();
-    await page.clock.runFor(61_000);
+    await page.clock.fastForward(61_000);
     await expect(page.locator('.ar-result')).toBeVisible();
     await expect.poll(async () => (await cloudLog(page)).writes.length).toBeGreaterThanOrEqual(2);
 
@@ -106,7 +106,7 @@ test.describe('the note matches what is sent', () => {
       await expect(page.locator('#gPts')).toHaveText(/^[1-9]/);
       await page.clock.runFor(1_500);
     }
-    await page.clock.runFor(61_000);
+    await page.clock.fastForward(61_000);
     await expect(page.locator('.g-result .md-kicker')).toHaveText('Ranked score');
     // Weekly Sparks follow a few seconds after a gain (at most once a minute)
     await page.clock.runFor(65_000);

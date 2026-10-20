@@ -61,15 +61,16 @@ test.describe('Ratings stay on the device', () => {
     await expect(page.locator('#gShell [data-m="ranked"]')).toHaveAttribute('aria-pressed', 'true');
     await page.locator('#gStart').click();
     await rightAnswers(page, 8);
-    await page.clock.runFor(61_000); // the 60 second round ends and posts
+    await page.clock.fastForward(61_000); // the 60 second round ends and posts
     await expect(page.locator('.g-result')).toContainText(/Your skill rose to \d+\./);
     await page.clock.runFor(70_000); // past the weekly Sparks post's wait
     const after = await ratings(page);
     expect(after['game:times-sprint']).toBeGreaterThan(5);
 
-    // The score was posted (so requests did leave), but with no Rating in them
+    // The score was posted (so requests did leave), but with no Rating in them. The post loads the SDK over the
+    // network after the round ends, so wait for it: read once, it could still be on its way
+    await expect.poll(async () => (await cloudLog(page)).writes.length).toBeGreaterThan(0);
     const writes = (await cloudLog(page)).writes;
-    expect(writes.length).toBeGreaterThan(0);
     for (const w of writes) {
       expect(JSON.stringify(w)).not.toMatch(/rating|game:|arena:|skill:/i);
       expect(Object.keys(w.data).sort()).toEqual(['avatar', 'exp', 'name', 'score', 'ts']);
