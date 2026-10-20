@@ -127,9 +127,15 @@ function moduleMap(ctx: BrowserContext | Page, baseURL: string): Promise<ModuleM
   const origin = new URL(baseURL).origin;
   let map = moduleMaps.get(origin);
   if (!map) {
+    // A 404 means no map (the identity). Any other failure is not cached, so the next call asks again instead of
+    // every e2eMod of this worker falling back to /js/<name>.js
     map = ctx.request.get(new URL(MODULE_MAP, origin).href)
-      .then(async res => (res.ok() ? (await res.json()) as ModuleMap : {}))
-      .catch(() => ({}));
+      .then(async res => {
+        if (res.status() === 404) return {} as ModuleMap;
+        if (!res.ok()) throw new Error(`${MODULE_MAP}: HTTP ${res.status()}`);
+        return (await res.json()) as ModuleMap;
+      })
+      .catch((e: unknown) => { moduleMaps.delete(origin); throw e; });
     moduleMaps.set(origin, map);
   }
   return map;
