@@ -152,7 +152,7 @@ jobs:
     needs: [check, voice-upload]
     # voice-upload is skipped until R2 is set up; the site still deploys then (the device voice reads), but a failed upload stops it
     if: >-
-      always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CLOUDFLARE_ACCOUNT_ID != ''
+      !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CLOUDFLARE_ACCOUNT_ID != ''
       && needs.check.result == 'success' && (needs.voice-upload.result == 'success' || needs.voice-upload.result == 'skipped')
     runs-on: ubuntu-latest
     environment:
