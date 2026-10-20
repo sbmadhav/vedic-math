@@ -184,7 +184,7 @@ export function storySizes(story, vw, capH, { maxArt = 240, minArt = 100, capMax
 /* The drawing alone (no caption), largest first, for a spot too small for any caption */
 export function artSizes(story, vw, vh) {
   const out = [], top = glimpseBox(story, vw, vh).h;
-  for (let ah = top; ah >= 64; ah -= 12) out.push({ layout: 'art', w: Math.round(ah * story.aspect), h: ah, art: [Math.round(ah * story.aspect), ah] });
+  for (let ah = top; ah >= 96; ah -= 12) out.push({ layout: 'art', w: Math.round(ah * story.aspect), h: ah, art: [Math.round(ah * story.aspect), ah] });
   return out;
 }
 
