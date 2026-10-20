@@ -28,6 +28,13 @@ The 3D code (three.js, React Three Fiber, drei and the scenes) SHALL be served f
 - **WHEN** the Sky's 3D scene loads
 - **THEN** every request it makes goes to learnvedicmath.com
 
+### Requirement: 3D never runs on the server
+3D code SHALL never run on the server, and a page the server renders SHALL hold the 2D drawing where a scene will be.
+
+#### Scenario: A server-rendered Sky
+- **WHEN** the server renders a page that shows the Sky
+- **THEN** its HTML holds the 2D Sky and no canvas, and the server bundle holds no 3D module
+
 ### Requirement: Still frame when motion is off
 With Calm, Pause motion or the device's reduced-motion setting on, a 3D scene SHALL show one still frame and draw nothing further. Turning any of them on SHALL stop the scene at once; turning all of them off SHALL let it move again, without a reload.
 

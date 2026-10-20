@@ -1,0 +1,25 @@
+# Server-side voice synthesis with an R2 cache
+
+Read aloud is the first thing a 4 to 7 year old hears, and about 98% of the lines Explorer can say hold numbers made up per question, so recordings made ahead of time can never cover them and stitched clips sound stitched. Until now `better-voice`'s guardrail was that the game calls no speech provider. We keep recordings for every fixed line (explanations, Sutra names, lessons, praise), served from R2, and add a Worker endpoint for sentences with a question's own numbers (Server lines): the game normalizes the sentence and names it by a hash of its text and voice; it asks the public voice host for that name first, and on a miss the Worker asks Google Text-to-Speech (Chirp 3 HD, Aoede) once, keeps the MP3 in R2 under that name for every later request from any Player, and returns it. A Durable Object ledger enforces a daily spend cap and a monthly ceiling at list price on the server. Only sentences the game itself can build from its recorded word frames and numbers are accepted, so the endpoint is not a general text-to-speech service and a sentence can hold nothing about a Player. The device's voice (or the clips) says the line whenever the cap is reached, the server refuses, the network is down or the line is slow. The Google key exists only as a Cloudflare secret.
+
+Status: accepted 2026-10-20 in the `react-typescript` change (owner decision N3, "yes"; design D16 and D17, `server-voice` spec). Supersedes `better-voice`'s guardrail "the game calls no speech provider" and its rejection of a live cloud voice (plan C) for sentences with numbers only: the browser still calls no speech provider, the server does, capped. Recommended cap (open question Q29): $5 a day and $150 a month for the server, with the recording tool's month budget lowered to $150 so both stay inside the owner's $300 a month, and the recording tool's $50 per run guard kept. Access for Players with no Firebase identity is open question Q27. Builds on ADR 0004 (Cloudflare) and the `learnvedicmath` voice host (R2 on `voice.learnvedicmath.com`).
+
+## Considered Options
+
+- **Recordings plus clips only** (`better-voice` as built): no running cost and nothing sent, but numbers are stitched from clips or said by the device's voice, which the owner finds not good enough.
+- **Record every possible sentence ahead of time:** about 1.2 million Explorer lines alone, most never heard; recording and storing them costs more than voicing the ones Players actually hear.
+- **Ask the provider on every play** (`better-voice` plan C): about $285 a month uncached at Chirp 3 HD prices for 100 Players a day, no offline, and the same privacy questions; caching each sentence forever turns that into a one-time cost per sentence.
+- **Call the provider from the browser:** the key would ship to every visitor.
+- **Serve cache hits through the Worker:** every play would run Worker code and count against Worker limits; the public R2 host with edge caching costs nothing per hit.
+- **A cheaper voice for Server lines** (WaveNet, Neural2): two voices in one game sound wrong.
+- **Count spend in Workers KV:** not strongly consistent, so concurrent requests could pass the cap; a single Durable Object is.
+
+## Consequences
+
+- The site sends something new: the text of a game sentence, with no Player data, from the browser to our Worker, and from the Worker to Google. `parentNote()`, `cloud/README.md` and the privacy drafts say so before it is switched on. Google never sees a Player's IP address or any identifier; the Worker logs no IP address and no access proof. COPPA holds: no personal information of a child is collected or sent.
+- Worst-case spend is bounded on the server ($5 a day and $150 a month recommended), and Google Cloud's $300 budget alerts and the Text-to-Speech quota stay as the outer stop.
+- The R2 voice bucket gains a `live/` prefix written by the Worker; the recorded files stay written only by CI. Both are public content, the same for every Player.
+- Offline, Server lines a Player has heard play from the device's voice cache; others fall back to the clips or the device's voice.
+- An off switch (`VOICE_LIVE`) and `build.py --voice off` turn the server voice off without a deploy of the game.
+- The endpoint needs an access check before a new recording: a verified Firebase ID token when the Player has one (owner decision N6), and, for Players who have none (every under-13 Player and anyone who never posted, ADR 0002 and ADR 0006), a short-lived anonymous ticket the Worker signs, if the owner confirms Q27. No identity is ever created for voice.
+- Leaving later is cheap: the stored audio is plain MP3 files named by hash, and switching the server voice off returns the game to `better-voice`'s behavior.

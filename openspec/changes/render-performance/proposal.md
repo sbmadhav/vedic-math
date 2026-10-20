@@ -2,7 +2,7 @@
 
 Status: plan only, not yet approved for implementation. The owner decisions it cites answer design questions; they do not approve this change, and merging this plan is not that approval.
 
-Superseded in part (owner, 2026-10-19): the game moves to React and TypeScript first (`react-typescript`, ADR 0012), which supersedes this plan's "no bundler, no framework, no path routing" and its esbuild, import-map and `js/views/` approach. This change is re-planned for Vite and React before it is built (`react-typescript` task 11.1), third of the follow-on changes, and its size budgets measure Brotli. This text is not revised for that yet.
+Superseded in part (owner, 2026-10-19): the game moves to React and TypeScript first (`react-typescript`, ADR 0012), which supersedes this plan's "no bundler, no framework, no path routing" and its esbuild, import-map and `js/views/` approach. This change is re-planned for Vite and React before it is built (`react-typescript` task 12.1), third of the follow-on changes, and its size budgets measure Brotli. This text is not revised for that yet.
 
 ## Why
 
