@@ -221,7 +221,7 @@ test('an Arena Daily challenge sends its score to today\'s and this week\'s Aren
   await page.locator('#arForm button').click();
   await expect(page.locator('#arScore')).toHaveText('10');
   expect(await writes(page)).toEqual([]);
-  await page.clock.runFor(61_000); // the 60 second round ends
+  await page.clock.fastForward(61_000); // the 60 second round ends
   await expect(page.locator('.ar-result')).toBeVisible();
   await expect.poll(async () => (await writes(page)).length).toBe(2);
   const w = await writes(page);
@@ -247,7 +247,7 @@ test('on a day with the Arena quest, the round\'s quest Sparks follow the Arena 
   await typeAnswer(page, String(answer));
   await page.locator('#arForm button').click();
   await expect(page.locator('#arScore')).toHaveText('10');
-  await page.clock.runFor(61_000); // the 60 second round ends and completes Finish an Arena round
+  await page.clock.fastForward(61_000); // the 60 second round ends and completes Finish an Arena round
   await expect(page.locator('.ar-result')).toBeVisible();
   // The two Arena posts, then 2 Sparks for the round plus 25 for the quest: this week's Sparks total, once
   await page.clock.runFor(3_500);
@@ -277,7 +277,7 @@ test('a finished Ranked game round sends its score to that game\'s today and thi
   await page.locator('#gArea .ans-in').fill(String(x * y));
   await page.locator('#gArea .ans-in').press('Enter');
   await expect(page.locator('#gPts')).toHaveText(/^[1-9]/);
-  await page.clock.runFor(61_000); // the 60 second round ends
+  await page.clock.fastForward(61_000); // the 60 second round ends
   await expect(page.locator('.g-result .md-kicker')).toHaveText('Ranked score');
   await expect.poll(async () => (await writes(page)).length).toBe(2);
   const w = await writes(page);
@@ -383,7 +383,7 @@ test.describe('two Players on one device', () => {
       await typeAnswer(page, String(answer));
       await page.locator('#arForm button').click();
       await expect(page.locator('#arScore')).toHaveText('10');
-      await page.clock.runFor(61_000);
+      await page.clock.fastForward(61_000);
       await expect(page.locator('.ar-result')).toBeVisible();
     };
     await play();
@@ -521,7 +521,7 @@ test.describe('Ratings', () => {
     await typeAnswer(page, String(answer));
     await page.locator('#arForm button').click();
     for (let k = 0; k < 4; k++) { await typeAnswer(page, '1'); await page.locator('#arForm button').click(); }
-    await page.clock.runFor(61_000);
+    await page.clock.fastForward(61_000);
     await expect(page.locator('.ar-result')).toBeVisible();
     await expect.poll(async () => (await sent(page)).length).toBe(2);
     await page.locator('#arDone').click(); // leave the result in the play shell
@@ -530,7 +530,7 @@ test.describe('Ratings', () => {
     await page.locator('#arGo').click();
     await page.clock.runFor(2_500);
     for (let k = 0; k < 5; k++) { await typeAnswer(page, '1'); await page.locator('#arForm button').click(); }
-    await page.clock.runFor(61_000);
+    await page.clock.fastForward(61_000);
     await expect(page.locator('.ar-result')).toBeVisible();
     // Skill Practice: 10 answers save a Skill Rating
     await page.goto(`${APP}#/skill/3-mult`);

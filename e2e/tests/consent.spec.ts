@@ -51,7 +51,10 @@ async function arenaRound(page: Page, mode: Mode) {
     await page.locator('#arForm button').click();
   }
   await expect(page.locator('#arScore')).toHaveText('10');
-  await page.clock.runFor(61_000);
+  // Jump past the 60 seconds: the round's next frame reads the time and ends it. runFor stepped through every one of
+  // the ~3,800 animation frames, about 30 s of real time each round on a busy machine, so three rounds ran past the
+  // 90 second budget
+  await page.clock.fastForward(61_000);
   await expect(page.locator('.ar-result')).toBeVisible();
 }
 

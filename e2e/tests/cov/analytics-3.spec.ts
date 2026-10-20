@@ -31,7 +31,7 @@ test('30 answers in an Arena round send no q_answered, and exactly one round_end
   expect(ev.filter(e => e.includes('q_answered'))).toEqual([]);
   expect(ev.filter(e => e.includes('round_end'))).toEqual([]);
 
-  await page.clock.runFor(61_000);
+  await page.clock.fastForward(61_000);
   await expect(page.locator('.ar-result')).toBeVisible();
   const counts = (await page.locator('.ar-result p').first().textContent()) || '';
   const [right, missed] = counts.match(/(\d+) right · (\d+) missed/)!.slice(1).map(Number);

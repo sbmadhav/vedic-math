@@ -71,7 +71,7 @@ test.describe('Share clicks: Share button', () => {
     await page.locator('#arGo').click();
     await page.clock.runFor(2_500);
     await expect(page.locator('#arType')).toBeVisible();
-    await page.clock.runFor(61_000);
+    await page.clock.fastForward(61_000);
     await expect(page.locator('.ar-result')).toBeVisible();
 
     // Every share control the result offers sends one event when used
@@ -165,7 +165,7 @@ test.describe('Events carry no identifiers: Event contents', () => {
     await page.clock.runFor(2_500);
     await expect(page.locator('#arType')).toBeVisible();
     for (let i = 0; i < 3; i++) { await typeAnswer(page, '424242'); await page.locator('#arForm button').click(); }
-    await page.clock.runFor(61_000);
+    await page.clock.fastForward(61_000);
     await expect(page.locator('.ar-result')).toBeVisible();
     await open(page, '#/game/times-sprint');
     await page.locator('#gStart').click();

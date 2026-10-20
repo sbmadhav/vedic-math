@@ -75,6 +75,13 @@ test('Spellbook: a new target starts with no spell chosen, so the last spell is 
 
 test('Spellbook: after a monster is beaten, the one still walking becomes the target, not a newcomer', async ({ page, issues }) => {
   await page.addInitScript(() => { try { localStorage.setItem('vm.play.p1.spells', JSON.stringify({ learned: ['crosswise'], pace: 'calm' })); } catch (e) { /* storage blocked */ } });
+  /* Every win note the page shows, kept here: the note lives only until the beaten monster leaves (0.5 s with reduced
+     motion), so waiting to see it on the page missed it on a busy machine although the win had happened */
+  await page.addInitScript(() => {
+    const w = window as any; w.__spWins = [];
+    new MutationObserver(recs => { for (const r of recs) r.addedNodes.forEach(n => { if (n instanceof HTMLElement && n.matches('.sp-win')) w.__spWins.push(n.textContent); }); })
+      .observe(document, { childList: true, subtree: true });
+  });
   await open(page, '#/dojo/spells');
   await expect(page.locator('.sp-m')).toHaveCount(2);
   const first = await page.locator('.sp-m.is-target').getAttribute('data-m');
@@ -95,7 +102,7 @@ test('Spellbook: after a monster is beaten, the one still walking becomes the ta
     if (!pair) break;
     for (const id of pair) { await page.locator(`.sp-board .sp-node[data-id="${id}"]`).focus(); await page.keyboard.press('Enter'); }
   }
-  await expect(page.locator('.sp-win')).toBeVisible();
+  await expect.poll(() => page.evaluate(() => (window as any).__spWins as string[])).toEqual([expect.stringMatching(/ = \d+\. /)]);
   await expect(page.locator(`.sp-m[data-m="${first}"]`)).toHaveCount(0);
   await expect(page.locator('.sp-m')).toHaveCount(2);
   await expect(page.locator('.sp-m.is-target')).toHaveAttribute('data-m', survivor!);

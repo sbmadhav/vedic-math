@@ -51,12 +51,21 @@ test('the month carries across runs; each run starts its own run total', () => {
   assert.ok(Math.abs(g.spent() - 0.03) < 1e-9);
 });
 
-test('requests are paced, also when several workers ask at once', async () => {
+test('requests are paced, also when several workers ask at once', async t => {
   /* The mark of when a request left is the last clock read before its pace() settles. The marks must be at least the
-     full 10 ms apart, even when a timer fires early (pace() then waits again). */
-  let last = 0; const left = [];
-  const g = makeGuard({ ledger: join(dir, 'd.json'), perMin: 6000, now: () => (last = performance.now()) });
-  await Promise.all([1, 2, 3].map(() => g.pace().then(() => left.push(last))));
+     full 10 ms apart, even when a timer fires early (pace() then waits again). Virtual time, so the result does not
+     depend on how busy the machine is: setTimeout is a fake that fires every timer 2 ms early, and the clock moves
+     1 ms at a time with the promise chains drained after each step. */
+  let clock = 1000, last = 0, done = false; const left = [], timers = [];
+  t.mock.method(globalThis, 'setTimeout', (fn, ms) => { timers.push({ at: clock + Math.max(0, ms - 2), fn }); return 0; });
+  const g = makeGuard({ ledger: join(dir, 'd.json'), perMin: 6000, now: () => (last = clock) });
+  const all = Promise.all([1, 2, 3].map(() => g.pace().then(() => left.push(last)))).then(() => { done = true; });
+  const flush = () => new Promise(r => setImmediate(r));
+  for (let ms = 0; ms < 1000 && !done; ms++) {
+    await flush(); clock++;
+    for (const due of timers.filter(x => x.at <= clock)) { timers.splice(timers.indexOf(due), 1); due.fn(); }
+  }
+  await all;
   assert.equal(left.length, 3);
   for (let i = 1; i < left.length; i++) assert.ok(left[i] - left[i - 1] >= 10, `gap ${left[i] - left[i - 1]} ms`);
 });

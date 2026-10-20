@@ -91,7 +91,7 @@ test('two Arena Practice rounds: round_end r1 and r2 and one round2_start, no pe
     await page.clock.runFor(2_500);
     await expect(page.locator('#arType')).toBeVisible();
     for (let i = 0; i < 3; i++) { await typeAnswer(page, '1'); await page.locator('#arForm button').click(); }
-    await page.clock.runFor(61_000);
+    await page.clock.fastForward(61_000);
     await expect(page.locator('.ar-result')).toBeVisible();
     await page.locator('#arDone').click(); // leave the result in the play shell
   };

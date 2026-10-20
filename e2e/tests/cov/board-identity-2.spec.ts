@@ -55,7 +55,7 @@ test.describe('First post', () => {
     expect(log.authLoaded).toBe(false);
     expect(await identity(page)).toEqual(NO_IDENTITY);
 
-    await page.clock.runFor(61_000); // the round ends: the first post
+    await page.clock.fastForward(61_000); // the round ends: the first post
     await expect(page.locator('.ar-result')).toBeVisible();
     await expect.poll(async () => (await cloudLog(page)).writes.length).toBe(2);
     log = await cloudLog(page);
@@ -91,7 +91,7 @@ test.describe('First post', () => {
     expect(log.signIns).toBe(0);
     expect(await identity(page)).toEqual(NO_IDENTITY);
 
-    await page.clock.runFor(61_000); // the 60 second round ends
+    await page.clock.fastForward(61_000); // the 60 second round ends
     await expect(page.locator('.g-result .md-kicker')).toHaveText('Ranked score');
     const gameBoards = [`boards/g_times_sprint-daily-${day}-challenger/scores/${UID}`, `boards/g_times_sprint-week-${wk}-challenger/scores/${UID}`];
     await expect.poll(async () => (await cloudLog(page)).writes.filter(w => w.path.startsWith('boards/g_')).length).toBe(2);
