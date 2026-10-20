@@ -34,6 +34,8 @@ jobs:
           python-version: "3.x"
       - name: Build the moved page
         run: |
+          # The moved page and its hand-off packer are task 10.4 (Phase B); until they exist nothing is built or deployed
+          test -f moved/index.html || { echo "::error::moved/index.html is not written yet (task 10.4): nothing to publish"; exit 1; }
           python3 build.py --target moved --out _moved
           grep -q "^const KILL = true;" _moved/sw.js || { echo "::error::_moved/sw.js is not the KILL worker"; exit 1; }
           find _moved -type f | sort

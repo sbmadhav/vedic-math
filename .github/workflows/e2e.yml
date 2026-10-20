@@ -126,5 +126,5 @@ jobs:
           for u in "https://sbmadhav.com/vedic-math/x?y=1" "https://sbmadhav.github.io/vedic-math/x?y=1"; do
             head=$(curl -sI "$u")
             echo "$head" | head -1 | grep -q ' 301' || { echo "::error::$u does not answer 301"; echo "$head"; exit 1; }
-            echo "$head" | grep -iEq '^location: https?://learnvedicmath\.com/x\?y=1' || { echo "::error::$u does not redirect to learnvedicmath.com/x?y=1"; echo "$head"; exit 1; }
+            printf '%s\n' "$head" | tr -d '\r' | grep -iExq 'location: https://learnvedicmath\.com/x\?y=1' || { echo "::error::$u does not redirect to learnvedicmath.com/x?y=1"; echo "$head"; exit 1; }
           done
