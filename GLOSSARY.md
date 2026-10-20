@@ -127,7 +127,7 @@ A Trick learned and then used correctly in a timed round. The thing the product 
 _Avoid_: aha, win
 
 **Try a trick**:
-The one primary button on the landing (the mode picker). It sets Challenger as a Mode guess and opens the first Star of Bolt's path, so a curious visitor answers a question in two taps with no choice to make. (`first-visit-clarity` change.)
+The one primary button on the landing (the mode picker). It sets Challenger as a Mode guess and opens the first Star of Bolt's path on a worked example of its Trick, so a curious visitor sees the Trick once and reaches a question in two taps with no choice to make. (`first-visit-clarity` change; the worked example is proposed in `try-trick-teaches`.)
 _Avoid_: demo, trial mode, guest mode
 
 **Mode guess**:
