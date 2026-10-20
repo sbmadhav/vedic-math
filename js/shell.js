@@ -32,7 +32,7 @@ export function openShell(title, { signal, onExit = null, exit = 'Stop', exitId 
   el.className = 'play-shell'; el.setAttribute('role', 'region'); el.setAttribute('aria-label', String(title)); el.tabIndex = -1;
   el.innerHTML = `<div class="play-head"><p class="play-title"></p>
     <button type="button" class="md-switch play-calm" role="switch" aria-checked="${fx.calmOn()}"><span>Calm</span><span class="md-track" aria-hidden="true"><span class="md-knob"></span></span></button>
-    <div class="play-size" role="group" aria-label="Text size">${sizeBtn('a', 'A', 'Normal text')}${sizeBtn('a+', 'A+', 'Larger text')}</div>
+    <div class="play-size" role="group" aria-label="Text size">${sizeBtn('a', 'A', 'A, normal text')}${sizeBtn('a+', 'A+', 'A+, larger text')}</div>
     <button type="button" class="md-btn md-btn--sm play-exit"></button></div><div class="play-area"></div>`;
   el.querySelector('.play-title').textContent = String(title);
   const header = el.querySelector('.play-head'), area = el.querySelector('.play-area'), exitBtn = el.querySelector('.play-exit');

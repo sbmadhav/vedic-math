@@ -31,7 +31,7 @@ test.describe('a Player with 2,340 XP (410 this week) opens the app after the up
     await expect(page.locator('.me-head')).toContainText('Times Tamer · 2340 Sparks');
     await expect(page.locator('.me-head')).toContainText('1260 Sparks to Fraction Fighter');
     await expect(page.locator('.me-head')).not.toContainText(/\bXP\b/);
-    await expect(page.locator('#mqChip a.mq-chip')).toHaveAttribute('aria-label', 'Swift Tiger 42, Times Tamer');
+    await expect(page.locator('#mqChip a.mq-chip')).toHaveAccessibleName('Swift Tiger 42, Times Tamer');
     // Stored as the same numbers, not reset or rounded
     const d = await saved(page);
     expect(d.v).toBe(3);

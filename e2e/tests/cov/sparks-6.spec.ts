@@ -26,7 +26,7 @@ test.describe('a Player at 3,590 Sparks earns 12 more', () => {
     await recordToasts(page);
     await open(page, '#/skill/3-mult');
     const chip = page.locator('#mqChip a.mq-chip');
-    await expect(chip).toHaveAttribute('aria-label', 'Swift Tiger 42, Times Tamer');
+    await expect(chip).toHaveAccessibleName('Swift Tiger 42, Times Tamer');
     const box = page.locator('#practice');
     const q = (await box.locator('#prQ').textContent()) || '';
     const [a, b] = q.match(/\d+/g)!.map(Number);
@@ -46,7 +46,7 @@ test.describe('a Player at 3,590 Sparks earns 12 more', () => {
 
     const sparks = await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1')!).sparks);
     expect(sparks).toBe(3602);
-    await expect(chip).toHaveAttribute('aria-label', 'Swift Tiger 42, Fraction Fighter');
+    await expect(chip).toHaveAccessibleName('Swift Tiger 42, Fraction Fighter');
   });
 
   test('earning more Sparks inside the same Title shows no New Title message', async ({ page }) => {
@@ -80,8 +80,8 @@ test.describe('the nav chip on any page', () => {
       await open(page, h);
       const chip = page.locator('#mqChip a.mq-chip');
       await expect(chip, h).toBeVisible();
-      await expect(chip, h).toHaveAttribute('aria-label', 'Swift Tiger 42, Sum Sprinter');
       await expect(chip, h).toHaveAccessibleName('Swift Tiger 42, Sum Sprinter');
+      await expect(chip, h).not.toHaveAttribute('aria-label'); // named by its own text, so the name holds what is on screen (WCAG 2.5.3)
       // The avatar: the Player's color and initials
       const av = chip.locator('.av');
       await expect(av, h).toBeVisible();
@@ -92,10 +92,10 @@ test.describe('the nav chip on any page', () => {
       await expect(bar, h).toBeVisible();
       await expect(bar.locator('i'), h).toHaveAttribute('style', /width:\s*18%/);
       // No level number anywhere in the chip
-      expect(await chip.textContent(), h).not.toMatch(/\d|Lv|Level/i);
-      const name = (await chip.getAttribute('aria-label'))!.replace(/^Swift Tiger 42, /, '');
+      expect(await chip.evaluate(e => [...e.children].filter(c => !c.classList.contains('md-sr-only')).map(c => c.textContent).join('')), h).not.toMatch(/\d|Lv|Level/i);
+      const name = (await chip.locator('.md-sr-only').textContent())!.replace(/^Swift Tiger 42, /, '');
       expect(name, h).toBe('Sum Sprinter'); // the rest of the name is the Title alone: no level number
-      await expect(chip, h).not.toHaveAttribute('aria-label', /\bLv\b|Level/i);
+      await expect(chip, h).not.toHaveAccessibleName(/\bLv\b|Level/i);
     }
   });
 
@@ -109,6 +109,6 @@ test.describe('the nav chip on any page', () => {
     await page.reload();
     await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
     await expect(fill).toHaveAttribute('style', /width:\s*50%/);
-    await expect(page.locator('#mqChip a.mq-chip')).toHaveAttribute('aria-label', 'Swift Tiger 42, Sum Sprinter');
+    await expect(page.locator('#mqChip a.mq-chip')).toHaveAccessibleName('Swift Tiger 42, Sum Sprinter');
   });
 });

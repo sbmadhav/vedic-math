@@ -146,7 +146,7 @@ window.addEventListener('hashchange', render);
 /* Player chip in the nav: avatar and the bar to the next Title (no number) */
 function chip() {
   const el = $('#mqChip'); if (!el) return; const p = store.player(), T = gm.titleInfo();
-  el.innerHTML = `<a href="#/me" class="mq-chip" aria-label="${esc(p.name)}, ${T.title}">${avatar(p, 30)}<span class="mq-chip-t"><span class="mq-sparkbar"><i style="width:${pct(T.pct)}%"></i></span></span></a>`;
+  el.innerHTML = `<a href="#/me" class="mq-chip">${avatar(p, 30)}<span class="md-sr-only">${esc(p.name)}, ${T.title}</span><span class="mq-chip-t"><span class="mq-sparkbar"><i style="width:${pct(T.pct)}%"></i></span></span></a>`;
 }
 store.on(type => { if (type === 'sparks' || type === 'player') chip(); });
 /* The bar to the next Title, as a progressbar with its Sparks in words */
@@ -695,7 +695,7 @@ function sutrasView({ signal } = {}) {
   const got = ALL_SUTRAS.filter(gm.collectedCard).length;
   /* The Say it button is the card's sibling of the flip button (a button cannot sit in a button), in its top corner */
   const card = c => { const have = gm.collectedCard(c); return `<article class="sutra-card${have ? ' got' : ''}" data-id="${c.id}" data-name="${esc(c.name)}">
-    ${sayButton(c.id, { cls: 'say-btn--card' })}<button class="sutra-face" aria-expanded="false" aria-label="${esc(c.name)}: ${esc(c.meaning)}. Flip card"><span class="sutra-n">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n}</span><b lang="sa-Latn">${c.name}</b>${respellHTML(c.id)}<i>${c.meaning}</i>${have ? '<span class="sutra-got">Collected</span>' : '<span class="sutra-tap">Tap to flip</span>'}</button>
+    ${sayButton(c.id, { cls: 'say-btn--card' })}<button class="sutra-face" aria-expanded="false"><span class="sutra-n">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n}</span><b lang="sa-Latn">${c.name}</b>${respellHTML(c.id)}<i>${c.meaning}</i>${have ? '<span class="sutra-got">Collected</span>' : '<span class="sutra-tap">Tap to flip</span>'}</button>
     <div class="sutra-back"><span>${c.plain}</span>${c.example ? `<code>${c.example}</code>` : ''}
       <span class="sutra-acts">${listenBtn('sutra-card:' + c.id, c.meaning)}<a class="sutra-more" href="#/sutras/${c.id}">Learn more ${icon('play')}</a><button type="button" class="sutra-flipback" aria-label="Flip back">${icon('loop')}</button></span></div></article>`; };
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
@@ -1480,7 +1480,7 @@ function meView() {
       <button type="button" class="md-switch" role="switch" id="setCalm" aria-checked="${fx.calmOn()}" aria-describedby="calmNote"><span>Calm</span><span class="md-track" aria-hidden="true"><span class="md-knob"></span></span></button>
       <p class="mq-small" id="calmNote">No clocks in Practice and nothing moves. Ranked rounds keep their clock. Saved on this device.</p>
       <label class="me-bg"><input type="checkbox" id="setBg" ${bgOn() ? 'checked' : ''}> Moving background</label>
-      <div class="me-size"><span id="sizeL">Text size in play</span><div class="play-size" role="group" aria-labelledby="sizeL"><button type="button" class="play-size-b" data-size="a" aria-pressed="${fx.textSize() === 'a'}" aria-label="Normal text">A</button><button type="button" class="play-size-b" data-size="a+" aria-pressed="${fx.textSize() === 'a+'}" aria-label="Larger text">A+</button></div></div>
+      <div class="me-size"><span id="sizeL">Text size in play</span><div class="play-size" role="group" aria-labelledby="sizeL"><button type="button" class="play-size-b" data-size="a" aria-pressed="${fx.textSize() === 'a'}" aria-label="A, normal text">A</button><button type="button" class="play-size-b" data-size="a+" aria-pressed="${fx.textSize() === 'a+'}" aria-label="A+, larger text">A+</button></div></div>
       <button type="button" class="md-switch" role="switch" id="setMotion" aria-checked="${fx.motionPaused()}" aria-describedby="motionNote"><span>Pause motion</span><span class="md-track" aria-hidden="true"><span class="md-knob"></span></span></button>
       <p class="mq-small" id="motionNote">${fx.t({ explorer: 'Stops everything that wiggles, on every page of this site. Saved on this device.', challenger: 'Stops every animation on every page of this site, also after a reload. Saved on this device.', pro: 'Stops every looping animation on every page of this site, also after a reload (WCAG 2.2.2). Saved on this device.' })}</p>
     </div>

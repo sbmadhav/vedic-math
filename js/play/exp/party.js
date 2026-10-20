@@ -121,7 +121,7 @@ export async function mount({ root, signal }) {
       <p class="pt-seat-name">${esc(C.playerName(p))}</p>
       <div class="pt-namepick"><label class="px-live" for="ptA${i}">First word for player ${i + 1}</label><select id="ptA${i}" data-f="adj" data-i="${i}">${C.ADJ.map((w, k) => `<option value="${k}"${k === p.adj ? ' selected' : ''}>${w}</option>`).join('')}</select>
         <label class="px-live" for="ptN${i}">Second word for player ${i + 1}</label><select id="ptN${i}" data-f="noun" data-i="${i}">${C.NOUNS.map((w, k) => `<option value="${k}"${k === p.noun ? ' selected' : ''}>${w}</option>`).join('')}</select>
-        <button type="button" class="md-btn md-btn--sm" data-shuffle="${i}" aria-label="Random name for player ${i + 1}">Shuffle</button></div>
+        <button type="button" class="md-btn md-btn--sm" data-shuffle="${i}" aria-label="Shuffle the name for player ${i + 1}">Shuffle</button></div>
       <div class="pt-colors" role="radiogroup" aria-label="Color for player ${i + 1}">${C.COLORS.map(c => `<button type="button" role="radio" class="pt-sw pt-c--${c}" data-i="${i}" data-color="${c}" aria-checked="${c === p.color}" aria-label="${COLOR_NAME[c]}"></button>`).join('')}</div>
       <div class="pt-lvls" role="radiogroup" aria-label="Level for player ${i + 1}">${C.LEVELS.map(l => `<button type="button" role="radio" class="md-chip" data-i="${i}" data-lvl="${l}" aria-checked="${l === p.level}">${LV_SHORT[l]}</button>`).join('')}</div>
     </div>

@@ -139,7 +139,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
       </div>
       <div class="star-side" id="stSide">
         <button type="button" class="star-dare" id="stDare" hidden></button>
-        <div class="star-pad" id="stPad" role="group" aria-label="Number pad">${['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(k => `<button type="button" class="star-key" data-k="${k}">${k}</button>`).join('')}<button type="button" class="star-key star-key--fn" data-k="-" aria-label="Minus">&minus;</button><button type="button" class="star-key" data-k="0">0</button><button type="button" class="star-key star-key--fn" data-k="del" aria-label="Delete">Del</button><button type="button" class="star-key star-key--go" data-k="go">Check</button></div>
+        <div class="star-pad" id="stPad" role="group" aria-label="Number pad">${['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(k => `<button type="button" class="star-key" data-k="${k}">${k}</button>`).join('')}<button type="button" class="star-key star-key--fn" data-k="-" aria-label="Minus">&minus;</button><button type="button" class="star-key" data-k="0">0</button><button type="button" class="star-key star-key--fn" data-k="del">Del</button><button type="button" class="star-key star-key--go" data-k="go">Check</button></div>
       </div>
     </div></div>`;
   const $ = s => root.querySelector(s), main = $('#stMain'), stage = $('#stStage'), boltEl = $('.star-bolt'), pad = $('#stPad'), dareBtn = $('#stDare');

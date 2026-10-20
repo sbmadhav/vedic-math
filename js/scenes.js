@@ -22,7 +22,7 @@ export function mountScene(host, scene, signal) {
   host.innerHTML = `<div class="sc">
     <div class="sc-stage" aria-hidden="true"></div>
     <p class="sc-say" aria-live="polite"></p>
-    <div class="sc-ctrl"><button type="button" class="md-btn md-btn--sm" data-a="back" aria-label="Previous step">Back</button><span class="sc-pos"></span><button type="button" class="md-btn md-btn--sm md-btn--primary" data-a="next">Next step</button><button type="button" class="md-btn md-btn--sm" data-a="play">Play all</button></div></div>`;
+    <div class="sc-ctrl"><button type="button" class="md-btn md-btn--sm" data-a="back" aria-label="Back to the previous step">Back</button><span class="sc-pos"></span><button type="button" class="md-btn md-btn--sm md-btn--primary" data-a="next">Next step</button><button type="button" class="md-btn md-btn--sm" data-a="play">Play all</button></div></div>`;
   const stage = host.querySelector('.sc-stage'), say = host.querySelector('.sc-say'), pos = host.querySelector('.sc-pos');
   const steps = scene.steps;
   const draw = () => {
