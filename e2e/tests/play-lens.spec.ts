@@ -13,13 +13,21 @@ async function fakeCamera(page: import('@playwright/test').Page) {
     const fake = async () => {
       w.__gum++;
       const c = document.createElement('canvas'); c.width = 320; c.height = 180;
-      // The stream first, then the paint: the canvas-capture spec promises a frame only for a paint made after the
-      // track exists. And no frame rate: with one (captureStream(5)) WebKit sends a frame only when the canvas is
-      // repainted, so a still canvas never gave the <video> a frame and videoWidth stayed 0 (Chromium sent one anyway)
-      const s = (c as any).captureStream() as MediaStream;
-      const g = c.getContext('2d')!; g.fillStyle = 'rgb(250, 250, 250)'; g.fillRect(0, 0, 320, 180);
-      // Bold monospace digits: WebKit's default sans-serif "1" (a flag and a base) read as "7" in the OCR
-      g.fillStyle = 'rgb(10, 10, 10)'; g.font = 'bold 84px "DejaVu Sans Mono", monospace'; g.fillText('4721', 40, 124);
+      // No frame rate: captureStream() sends one frame per paint (with a rate, WebKit sent none for a still canvas)
+      const s = (c as any).captureStream() as MediaStream, g = c.getContext('2d')!;
+      const paint = () => {
+        g.fillStyle = 'rgb(250, 250, 250)'; g.fillRect(0, 0, 320, 180);
+        // Bold monospace digits: WebKit's default sans-serif "1" (a flag and a base) read as "7" in the OCR
+        g.fillStyle = 'rgb(10, 10, 10)'; g.font = 'bold 84px "DejaVu Sans Mono", monospace'; g.fillText('4721', 40, 124);
+      };
+      // Like a real camera, the fake is already sending frames when getUserMedia resolves, and keeps sending while the
+      // track is live. A canvas stream sends a frame only for a paint, captured at the next rendering update. Before,
+      // one paint was made and the stream handed over at once, so the app set it on its <video> before the track had
+      // a frame; Linux WebKit then now and then never loaded it (readyState 0 for good, videoWidth 0, even with more
+      // paints; setting srcObject again recovered). Two rendering updates after the first paint, a frame has gone out
+      const frames = () => { if (s.getVideoTracks().some(t => t.readyState === 'live')) { paint(); requestAnimationFrame(frames); } };
+      frames();
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
       s.getTracks().forEach(t => w.__tracks.push(t));
       return s;
     };

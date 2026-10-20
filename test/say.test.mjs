@@ -1,7 +1,7 @@
 /* Say it (openspec sutra-pronunciation): the name clips on disk match the generated index, every Trick names a real
    Sutra card, and js/say.js plays, stops, counts, prefetches and falls back as the spec says. Playback, fetch, the
    count and the status are stubbed through say.js's deps; speechSynthesis is a fake. */
-import test from 'node:test';
+import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -19,7 +19,13 @@ const { indexSource, hashOf, VOICE: TOOL_VOICE } = await import('../tools/sutra-
 const { TRICKS } = await import('../js/vedic.js');
 const { SUTRAS, SUBSUTRAS } = await import('../js/sutras.js');
 
-const wait = ms => new Promise(r => setTimeout(r, ms));
+/* Virtual time: say.js's timers (the idle prefetch, the fallback voice's delay, lockWait) and the fake voice's run on
+   a mocked setTimeout, and wait(ms) moves that clock 1 ms at a time, draining the promise chains after each step.
+   A real clock made these tests depend on how busy the machine was (the queue of 28 fetches could miss a fixed
+   200 ms under load); on the virtual one every step happens in the same order and at the same ms each run. */
+mock.timers.enable({ apis: ['setTimeout'] });
+const flush = () => new Promise(r => setImmediate(r));
+const wait = async ms => { await flush(); for (let i = 0; i < ms; i++) { mock.timers.tick(1); await flush(); } };
 const btn = id => {
   const attrs = { 'aria-pressed': 'false' };
   return { dataset: { say: id }, attrs, setAttribute: (k, v) => { attrs[k] = v; }, classList: { toggle() {} }, closest() { return this; } };
@@ -137,9 +143,7 @@ test('aborting the signal stops a playing clip and cancels the idle prefetch', a
 test('after the first tap the other 28 clips are fetched one at a time, and never the tapped one again', async () => {
   const log = stubs(), ctl = new AbortController();
   S.tap(btn('s3'), ctl.signal);
-  // Wait for the queue to finish rather than a fixed 200 ms, which a busy machine can miss; then check it stops at 28
-  for (let i = 0; i < 250 && log.fetched.length < 28; i++) await wait(20);
-  await wait(60);
+  await wait(200); // virtual time: the queue of 28 has long finished, whatever the machine's load
   assert.equal(log.fetched.length, 28);
   assert.ok(!log.fetched.some(u => /\/s3\.m4a/.test(u)));
   assert.equal(new Set(log.fetched).size, 28);

@@ -345,6 +345,14 @@ test.describe('studio voice offline', () => {
 test('a Sutra name heard once online lets every other name play offline', async ({ page, context }, testInfo) => {
   chromiumOnly(testInfo, 'one engine is enough for the cache rule');
   await page.addInitScript(() => { try { localStorage.setItem('vm.sutraAmb', '0'); } catch (e) { /* storage blocked */ } });
+  /* The browser counts as idle at once. The prefetch takes one clip per idle callback, and on a busy machine Chromium
+     gave none until each callback's 3 second timeout: 28 clips then needed up to 84 s, so the 30 s check below saw 13
+     or 28 now and then. When idle time comes is the browser's business (the queue order is covered in
+     test/say.test.mjs); this test is about the cache rule */
+  await page.addInitScript(() => {
+    window.requestIdleCallback = (fn: IdleRequestCallback) => window.setTimeout(() => fn({ didTimeout: false, timeRemaining: () => 50 }), 0);
+    window.cancelIdleCallback = (h: number) => window.clearTimeout(h);
+  });
   await fakeAudio(page, { clipSecs: 0.3 });
   await open(page, '#/sutras/s1');
   await workerReady(page);
