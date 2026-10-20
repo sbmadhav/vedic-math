@@ -15,6 +15,14 @@ h1:focus, h2:focus, [tabindex="-1"]:focus-visible { outline: none !important; }
 .nav-find { display: inline-flex; align-items: center; gap: 5px; } .nav-find svg { width: 15px; height: 15px; flex: none; }
 #mqMusic, #mqChip { display: flex; flex: none; }
 .md-header .mq-chip { margin: 0; height: 40px; box-sizing: border-box; padding: 0 10px 0 3px; }
+/* A phone keeps the game's header short (openspec find-and-home-polish): tighter rows, the same controls and links.
+   Below 420px the brand shows its mark only (its name stays its accessible name), so the controls share its row. */
+@media (max-width: 600px) {
+  .md-header--tabs:has(.mq-nav) .md-header-in { padding-top: var(--space-2); padding-bottom: var(--space-1-5); row-gap: var(--space-1-5); }
+  .md-header--tabs .mq-nav { row-gap: 2px; gap: 0; }
+  .md-header--tabs .mq-nav a { padding: 5px var(--space-2); }
+}
+@media (max-width: 420px) { .md-header:has(.mq-nav) .md-brand-t { display: none; } }
 @media (max-width: 420px) { .md-header .mq-sparkbar { width: 36px; } .md-header .mq-chip { padding-right: 8px; } } /* the bar to the next Title stays, shorter */
 .md-brand svg.lv-mark { width: 48px; height: 32px; } /* the Nikhilam Family brand mark is 3:2, not square */
 html.motion-paused .md-brand svg, body.calm .md-brand svg, html.motion-paused .md-theme, body.calm .md-theme { transition: none; }
@@ -302,6 +310,21 @@ html.motion-paused .mq-grade, body.calm .mq-grade, html.motion-paused .mq-skill,
 .me-nums small { color: var(--ink-muted); font-size: 12px; }
 .home-h { margin-top: 26px !important; }
 .mode-line { color: var(--ink-muted); font-size: 14px; margin: 4px 0 16px; }
+/* A compact Player strip on a phone (openspec find-and-home-polish): one row with the avatar, name, Title and bar, and
+   the three numbers on one short line under it, so the first door is near the top of the screen */
+@media (max-width: 600px) {
+  .me-strip { display: grid; grid-template-columns: auto 1fr; gap: 4px var(--space-3); padding: 10px 14px; border-radius: var(--radius-lg); }
+  .me-strip > .av { width: 40px !important; height: 40px !important; font-size: 17px !important; }
+  .me-strip-t { min-width: 0; }
+  .me-strip-t b { font-size: 1.1rem; }
+  .me-strip-t span { font-size: 13px; }
+  .me-strip .mq-sparkbar--big { height: 8px; margin-top: 4px; }
+  .me-nums { grid-column: 1 / -1; gap: var(--space-4); }
+  .me-nums div { display: flex; align-items: baseline; gap: 4px; }
+  .me-nums b { font-size: 1rem; }
+  .home-h { margin-top: 16px !important; }
+  .mode-line { margin-bottom: 10px; }
+}
 .mode-line a { color: var(--sky-strong); font-weight: 700; }
 .play-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; margin-top: 18px; }
 .play-grid--big { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
@@ -526,6 +549,7 @@ a.door .play-ic { width: 44px; height: 44px; } .door--coral .play-ic { backgroun
 /* Fun layer */
 .fx-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 120; }
 .fx-toasts { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); display: grid; gap: 8px; z-index: 110; width: min(92vw, 420px); pointer-events: none; } /* toasts only tell; a tap goes through to the game under them */
+.fx-toasts.at-top { bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 8px); } /* toastSide() moves them up when the bottom holds the primary action (a number pad, a primary button) */
 .fx-toast { padding: 12px 16px; border-radius: var(--radius-lg); border: 2px solid var(--edge); background: var(--card); color: var(--ink); box-shadow: var(--shadow-ledge); font-size: 15px; animation: toastIn .35s cubic-bezier(.5,1.6,.5,1); }
 .fx-toast.win { background: color-mix(in srgb, var(--sun) 30%, var(--card)); } .fx-toast.ok { background: color-mix(in srgb, var(--teal) 18%, var(--card)); }
 .fx-toast.out { opacity: 0; transform: translateY(10px); transition: .35s; }
@@ -550,6 +574,7 @@ html.motion-paused .sutra-face, body.calm .sutra-face, html.motion-paused .sutra
 
 /* Calm atmosphere: Vedic background and music */
 .vm-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+@media (max-width: 600px) { .vm-bg { opacity: .45; } } /* on a phone the text boxes cover most of the screen: the drawing stays further back */
 #view, .mq-foot { position: relative; z-index: 1; }
 /* Reserve the screen before the view renders, so the footer does not jump on first load */
 #view { min-height: 100svh; }
@@ -1149,7 +1174,7 @@ html.play-open #view { z-index: 70; }
 html.motion-paused .md-switch .md-track, body.calm .md-switch .md-track, html.motion-paused .md-switch .md-knob, body.calm .md-switch .md-knob { transition: none; }
 
 /* ---------- Guide (openspec in-app-guide): the guide page, its pictures and the first-visit tour. Tokens only. ---------- */
-.gd-new { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-3) 0; padding: var(--space-2) var(--space-3); border: 2px dashed var(--edge); border-radius: var(--radius-md); font-size: .95rem; color: var(--ink-muted); }
+.gd-new { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-3) 0; padding: var(--space-2) var(--space-3); border: 2px dashed var(--edge); border-radius: var(--radius-md); font-size: .95rem; color: var(--ink-muted); background: var(--card); } /* a solid box: the background drawing never shows through its words */
 .gd-new a, .gd-new .linkbtn { font-weight: 700; }
 .gd-new-ic { display: inline-flex; color: var(--teal-strong); }
 .gd-new-ic svg { width: 22px; height: 22px; }
@@ -1320,4 +1345,4 @@ html.motion-paused .play-card, body.calm .play-card { transition: none; } html.m
 .find-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
 .find-hit { display: grid; gap: 2px; width: 100%; box-sizing: border-box; text-align: left; font: inherit; padding: 10px 14px; border: 2px solid var(--line); border-radius: var(--radius-lg); background: var(--card); color: var(--ink); text-decoration: none; cursor: pointer; }
 .find-hit:hover, .find-hit:focus-visible { border-color: var(--sky); } .find-hit b { font: 600 1.05rem/1.25 var(--display); } .find-hit small { color: var(--ink-muted); font-size: 13.5px; line-height: 1.35; }
-.find-group .mq-strand { margin: 22px 0 10px !important; } .find-none { margin: var(--space-4) 0; }
+.find-group .mq-strand { margin: 22px 0 10px !important; } .find-group--top .find-hit { border-color: var(--teal-strong); } /* the Best match: an answer to a question, before the kinds */ .find-none { margin: var(--space-4) 0; }

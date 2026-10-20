@@ -208,7 +208,7 @@ const tile = (href, title, sub, color, ic) => `<a class="play-tile play-tile--${
 function home(ctx = {}, { tiles = false } = {}) {
   if (!tiles && SKY.skyOn(store.player())) return skyHome(ctx);
   const m = fx.mode(); document.title = `Learn Vedic Math`;
-  const last = store.lastSkill() && byId[store.lastSkill()];
+  const last = keepGoingSkill(m);
   const cont = last ? `<a class="mq-continue" href="#/skill/${last.id}">${ring(store.mastery(last.id), 40)}<span><small>Keep going</small><b>${both(last.title, last.kid)}</b></span><span class="mq-go" aria-hidden="true">&rarr;</span></a>` : '';
   let body = '';
   if (m === 'explorer') {
@@ -258,6 +258,15 @@ function home(ctx = {}, { tiles = false } = {}) {
   if (hm) { if (ctx.signal) on(hm, 'toggle', keepMore, ctx.signal); else hm.ontoggle = keepMore; } /* home() also runs with no view signal (an unknown Skill falls back to it): then a property on an element of this view */
   if (m === 'pro') loadBoard($('#homeBoard'), `daily-${cloud.dayId()}-pro`, 5);
   homeTour(ctx.signal);
+}
+
+/* The Skill the Keep going card offers, or null. Challenger Home leaves it out when it is the Trick of the Star its
+   first door offers, so a new Player is not shown the same trick twice above the fold (openspec find-and-home-polish). */
+function keepGoingSkill(m) {
+  const last = store.lastSkill() && byId[store.lastSkill()]; if (!last) return null;
+  if (m !== 'challenger') return last;
+  const nk = SKY.suggested(store.starStates(), SKY.startBeltOf(store.player())), ns = nk && SKY.parseKey(nk);
+  return ns && last.id === `v-${ns.trick}` ? null : last;
 }
 
 /* The Sky as home (openspec sky-home). Back from a Star (the route before was #/star/<trick>/<n>): that Star is focused. */
@@ -1343,7 +1352,8 @@ function askTour() { tourAsked = true; if ((location.hash || '#/') === '#/' || l
 /* "New here?" on Home while the Player has not played on an earlier day */
 function newHereHTML() {
   if (store.playedBefore()) return '';
-  return `<p class="gd-new"><span class="gd-new-ic" aria-hidden="true">${icon('map')}</span><span>New here? <a href="#/guide">See how everything works</a> or <button type="button" class="linkbtn" id="tourAgain">take the tour</button>.</span></p>`;
+  /* One help control (openspec find-and-home-polish): the tour, which ends on the Guide in the menu bar */
+  return `<p class="gd-new"><span class="gd-new-ic" aria-hidden="true">${icon('map')}</span><span>New here? <button type="button" class="linkbtn" id="tourAgain">Quick tour</button></span></p>`;
 }
 /* On Home: the tour when it is due (a Player with a Mode and no Sparks, on a device that has never shown it) or asked
    for. It starts once the route has drawn the menu chip and focused the heading. */
@@ -1412,7 +1422,7 @@ function findView({ signal } = {}) {
     <span class="md-tag md-tag--teal">Find</span>
     <h1 class="md-heading">${ex ? 'What do you want to find?' : 'Find anything'}</h1>
     <form class="find-form" role="search" id="findForm"><label class="vh" for="findIn">Find</label><input type="search" id="findIn" class="find-in" placeholder="${ex ? 'A game, a skill or a video' : 'A skill, trick, sutra, game, video or setting'}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"></form>
-    <p class="mq-small find-hint">${ex ? 'Try: balloons, ten, shapes, songs, my name' : 'Try: squares, take away, fractions, leaderboard, videos, nickname, privacy'}</p>
+    <p class="mq-small find-hint">${ex ? 'Try: balloons, ten, shapes, songs, my name' : 'Try: squares, multiply, take away, leaderboard, for kids, how it works'}</p>
     <p class="mq-small find-count" id="findCount" role="status" aria-live="polite"></p>
     <div id="findOut"></div>
   </div></section>`;
@@ -1426,7 +1436,7 @@ function findView({ signal } = {}) {
     if (!q) { count.textContent = ''; out.innerHTML = browse(); return; }
     const groups = rank(index, q), n = countOf(groups);
     count.textContent = n ? `${n} ${n === 1 ? 'result' : 'results'}` : 'Nothing matched';
-    out.innerHTML = n ? groups.map(g => `<section class="find-group"><h2 class="mq-strand">${kindLabel(g.kind, m)}</h2><ul class="find-list">${g.items.map(hitHTML).join('')}</ul></section>`).join('')
+    out.innerHTML = n ? groups.map(g => `<section class="find-group${g.kind === 'top' ? ' find-group--top' : ''}"><h2 class="mq-strand">${kindLabel(g.kind, m)}</h2><ul class="find-list">${g.items.map(hitHTML).join('')}</ul></section>`).join('')
       : `<p class="find-none">Nothing called that here. Try a plain word, like ${ex ? 'balloons or songs' : 'squares, race or videos'}, or <a href="#/guide">read the guide</a>.</p>${browse()}`;
   }
   on(input, 'input', draw, signal);

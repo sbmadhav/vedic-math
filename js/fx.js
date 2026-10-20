@@ -151,8 +151,29 @@ export function confetti(n = 70) {
 }
 
 /* ---------- Toasts ---------- */
+/* Which edge the toasts sit on (openspec find-and-home-polish): the bottom, unless a primary action is there. A round's
+   number pad or answer choices (PADS) hold the lower part of the screen and move as feedback shows, so while one is on
+   screen the toasts go to the top; another primary action (PRIMARY) sends them up when it is in the bottom band they
+   would cover, with 12 px to spare, and the top band is clearer. Pure: H the viewport height, boxH the toasts' height,
+   rects the primary actions' { top, bottom, pad } in viewport pixels. */
+export const PADS = '.star-pad, .ar-pad, .star-choices, .ar-choices';
+export const PRIMARY = '.md-btn--primary';
+export function toastSide(H, boxH, rects, { edge = 20, top = 8, clear = 12 } = {}) {
+  if (rects.some(r => r.pad)) return 'top';
+  const cover = (a, b) => rects.reduce((n, r) => n + Math.max(0, Math.min(b, r.bottom) - Math.max(a, r.top)), 0);
+  const low = cover(H - edge - boxH - clear, H);
+  if (!low) return 'bottom';
+  return cover(0, top + boxH + clear) < low ? 'top' : 'bottom';
+}
+function placeToasts(box) {
+  try {
+    const H = innerHeight, seen = (sel, pad) => [...document.querySelectorAll(sel)].filter(e => !e.closest('[hidden]')).map(e => { const r = e.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, w: r.width, h: r.height, pad }; }).filter(r => r.w > 0 && r.h > 0 && r.bottom > 0 && r.top < H);
+    box.classList.toggle('at-top', toastSide(H, box.getBoundingClientRect().height, [...seen(PADS, true), ...seen(PRIMARY, false)]) === 'top');
+  } catch (e) { /* no layout (tests): the toasts stay at the bottom */ }
+}
 export function toast(html, tone = '') {
   let box = document.querySelector('.fx-toasts'); if (!box) { box = document.createElement('div'); box.className = 'fx-toasts'; box.setAttribute('role', 'status'); box.setAttribute('aria-live', 'polite'); document.body.append(box); }
   const el = document.createElement('div'); el.className = 'fx-toast ' + tone; el.innerHTML = html; box.append(el);
+  placeToasts(box); setTimeout(() => placeToasts(box), 300); /* again once the answer's feedback has moved the page */
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 3200);
 }
