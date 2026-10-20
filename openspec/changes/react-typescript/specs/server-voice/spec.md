@@ -56,7 +56,11 @@ The server SHALL count what every request to the speech provider costs at list p
 
 #### Scenario: Storing the audio fails
 - **WHEN** the provider returns audio but writing it to R2 fails
-- **THEN** the charge stays counted, the Player hears the audio, and the next request for that sentence does not ask the provider again
+- **THEN** the charge stays counted, the audio is kept by the server until it is stored, the Player hears it, and the next request for that sentence does not ask the provider again
+
+#### Scenario: The server stops after the provider answers
+- **WHEN** the server stops after the provider returned audio and before the audio reached R2
+- **THEN** the charge and the audio were already kept together, the audio reaches R2 later, and no later request asks the provider for that sentence
 
 #### Scenario: Many requests at once near the cap
 - **WHEN** 10,000 different sentences are requested at the same time with $1 left before the cap
