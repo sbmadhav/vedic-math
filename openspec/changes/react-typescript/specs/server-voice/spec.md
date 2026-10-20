@@ -14,7 +14,7 @@ Lines whose words never change (explanations, Sutra names, lessons, praise, feed
 - **THEN** the recorded line is played and no request is sent to the server voice
 
 ### Requirement: Sentences with numbers are voiced once by the server
-A sentence that holds a question's own numbers (a Server line) SHALL be built from a sentence template and its numbers, normalized the same way in the game and on the server, and named by the full SHA-256 of its text and voice profile (a profile fixes the voice name, rate and format). The game SHALL first ask the voice host for that name; if it is not there, the server SHALL voice it at most once and keep the audio in R2 under that name for every later request.
+A Server line (a sentence with a question's own numbers) SHALL be built from a sentence template and its numbers, normalized alike in the game and on the server, and named by the SHA-256 of its text and voice profile. The game SHALL first ask the voice host for that name; if it is not there, the server SHALL have at most one provider call in flight for that name, and once one succeeds SHALL keep the audio in R2 under that name and never call the provider for it again.
 
 #### Scenario: A new sentence
 - **WHEN** an Explorer Player with read aloud on is asked "What is 47 plus 38?" and no Player has heard it before
@@ -29,8 +29,8 @@ A sentence that holds a question's own numbers (a Server line) SHALL be built fr
 - **THEN** the speech provider is asked once, the second request is told the line is pending without waiting, and that Player hears the clips or the device's voice for that play
 
 #### Scenario: A request whose server stopped
-- **WHEN** the server stopped while asking the provider for a sentence, and a minute later another Player asks for it
-- **THEN** the provider is asked again, and the first reservation stays counted against the cap
+- **WHEN** the server stopped while asking the provider for a sentence, and after its in-flight mark expired another Player asks for it
+- **THEN** the provider may be asked again, and the first reservation stays counted against the cap
 
 #### Scenario: The Player's request is abandoned
 - **WHEN** the game stops waiting for a new Server line after 600 ms
