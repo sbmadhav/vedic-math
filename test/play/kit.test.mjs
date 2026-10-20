@@ -1,4 +1,4 @@
-import test from 'node:test';
+import test from '../support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { rng, hashSeed, int, shuffle, seedOf, dayKey, dayNumber, b64url } from '../../js/play/kit.js';
 

@@ -1,7 +1,7 @@
 /* Progress hand-off (openspec change learnvedicmath, design D9, progress-handoff spec; tasks 10.1 and 10.4): the schema
    both sides share (js/handoff-schema.js), the packer's reading of a device, the encoding, the strict validator, and
    the import's writes (js/handoff.js). Hostile and oversized input imports nothing. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';

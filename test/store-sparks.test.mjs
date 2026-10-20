@@ -1,15 +1,16 @@
 /* Sparks replace XP (docs/adr/0003, openspec sparks and medals specs): saved progress from before the change
    (schema v2: xp, weekXp, stars) carries over 1:1 for every Player on the device and from old backup codes,
    a second load changes nothing, and the new Sparks, Medal and Kata calls keep the rules they replace. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
+import { vi } from 'vitest';
 
 const mem = {};
 globalThis.localStorage = { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; } };
 const clear = () => { for (const k of Object.keys(mem)) delete mem[k]; };
-let fresh = 0;
-/* A new page load: a fresh copy of the store module over whatever this device has saved */
-const boot = () => import(`../js/store.js?load=${++fresh}`);
+/* A new page load: a fresh copy of the store module over whatever this device has saved (Vitest's module registry is
+   reset, as a new ?load= query did under node --test) */
+const boot = () => { vi.resetModules(); return import('../js/store.js'); };
 const saved = id => JSON.parse(mem['mathquest.v1.' + id]);
 
 const { isoWeek } = await boot();

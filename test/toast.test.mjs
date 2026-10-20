@@ -1,5 +1,5 @@
 /* Toasts never cover the primary action (openspec find-and-home-polish): toastSide() in js/fx.js picks the edge. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 
 const node = () => ({ classList: { add() {}, toggle() {}, remove() {} }, setAttribute() {}, append() {}, remove() {}, getContext: () => null });

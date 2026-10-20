@@ -3,7 +3,7 @@
    exact URL the import map uses, VERSION must change whenever a module does, repo-only files stay out, the source
    stays unstamped, and the headers carry a policy per page. Runs build.py on a throwaway git repo holding a copy of
    this one, so the working tree is never touched. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { cpSync, mkdtempSync, readFileSync, writeFileSync, appendFileSync, rmSync, existsSync, readdirSync, statSync, mkdirSync } from 'node:fs';
@@ -14,9 +14,10 @@ import { fileURLToPath } from 'node:url';
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dir = mkdtempSync(join(tmpdir(), 'lvm-build-'));
-for (const f of ['build.py', '_config.yml', '.gitignore', 'play', 'site', 'theme', 'vendor', 'fonts', 'icons', 'thumbs', 'math.css', 'css', 'sw.js',
-  'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'CLAUDE.md', 'README.md', 'wrangler.jsonc', 'worker',
-  'cloud/firestore.rules', 'test/index.js', '.github', 'tools/voice/ci-fetch.mjs', 'tools/sutra-voice/names.mjs'])
+for (const f of ['build.py', '_config.yml', '.gitignore', 'play', 'site', 'theme', 'vendor', 'fonts', 'icons', 'thumbs', 'math.css', 'css', 'app/src/sw',
+  'tools/build-sw.mjs', 'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'CLAUDE.md', 'README.md',
+  'wrangler.jsonc', 'workers/src', 'package.json', 'pnpm-workspace.yaml', 'tsconfig.base.json', 'vitest.config.ts',
+  'cloud/firestore.rules', 'test/support/verify.mjs', '.github', 'tools/voice/ci-fetch.mjs', 'tools/sutra-voice/names.mjs'])
   if (existsSync(join(repo, f))) cpSync(join(repo, f), join(dir, f), { recursive: true });
 writeFileSync(join(dir, '_notes.txt'), 'starts with _');
 /* Run git and the build in the temp copy only. A pre-commit hook exports GIT_DIR, GIT_INDEX_FILE and friends;
@@ -55,11 +56,11 @@ function withFile(f, body, fn) {
 const fails = (r, re) => { assert.notEqual(r.status, 0, 'the build must fail'); assert.match(r.stderr, re); };
 
 test('the source in git is unstamped: no import map, plain URLs, a dev worker', () => {
-  const html = readFileSync(join(repo, 'play/index.html'), 'utf8'), src = readFileSync(join(repo, 'sw.js'), 'utf8');
+  const html = readFileSync(join(repo, 'play/index.html'), 'utf8'), src = readFileSync(join(repo, 'app/src/sw/sw.ts'), 'utf8');
   assert.ok(!html.includes('type="importmap"'));
   assert.ok(!/\?v=/.test(html));
   assert.match(html, /<script type="module" src="\/js\/app\.js"><\/script>/);
-  assert.match(src, /\nconst VERSION = 'dev';\nconst PRECACHE = \[\];\n/);
+  assert.match(src, /\nconst VERSION: string = 'dev';\nconst PRECACHE: \[string, string\]\[\] = \[\];\n/);
   assert.ok(!existsSync(join(repo, 'index.html')), 'the game moved to play/index.html');
 });
 
@@ -75,7 +76,7 @@ test('the output has the pages at the root, is stamped, and holds only publishab
   assert.match(read('play/index.html'), /href="\/math\.css\?v=[0-9a-f]{10}"/);
   assert.match(read('index.html'), /href="\/theme\/site\.css\?v=[0-9a-f]{10}"/);
   for (const f of ['CLAUDE.md', 'README.md', 'build.py', '_config.yml', 'cloud', 'test', 'tools', '.github', '.gitignore', '_notes.txt', 'out', 'site',
-    'moved', 'worker', 'wrangler.jsonc', 'THIRD-PARTY-NOTICES.md', 'theme/header.html', 'vendor/design-system', 'docs', 'vendor/goatcounter/SHA256SUMS'])
+    'moved', 'workers', 'app', 'shared', 'package.json', 'pnpm-workspace.yaml', 'tsconfig.base.json', 'vitest.config.ts', 'wrangler.jsonc', 'THIRD-PARTY-NOTICES.md', 'theme/header.html', 'vendor/design-system', 'docs', 'vendor/goatcounter/SHA256SUMS'])
     assert.ok(!existsSync(join(out, f)), `${f} must not be published`);
   assert.equal(read('js/app.js'), readFileSync(join(dir, 'js/app.js'), 'utf8'), 'modules are copied byte for byte');
   for (const p of walk(out)) {
@@ -121,12 +122,12 @@ test('the precache list holds every import-map module, the shell, the styles, fo
 });
 
 test('a second build gives the same output, and the build never edits the source', () => {
-  const before = ['play/index.html', 'sw.js'].map(f => readFileSync(join(dir, f), 'utf8'));
+  const before = ['play/index.html', 'app/src/sw/sw.ts'].map(f => readFileSync(join(dir, f), 'utf8'));
   build();
   const first = [read('play/index.html'), read('sw.js'), read('_headers')];
   build();
   assert.deepEqual([read('play/index.html'), read('sw.js'), read('_headers')], first);
-  assert.deepEqual(['play/index.html', 'sw.js'].map(f => readFileSync(join(dir, f), 'utf8')), before);
+  assert.deepEqual(['play/index.html', 'app/src/sw/sw.ts'].map(f => readFileSync(join(dir, f), 'utf8')), before);
 });
 
 test('changing a module changes its import-map stamp, its precache entry and VERSION', () => {
@@ -145,13 +146,13 @@ test('changing a module changes its import-map stamp, its precache entry and VER
 test('changing the worker logic changes VERSION', () => {
   build();
   const v1 = sw().version;
-  withEdit('sw.js', s => s + '\n// changed\n', () => build());
+  withEdit('app/src/sw/sw.ts', s => s + '\n// changed\n', () => build());
   assert.notEqual(sw().version, v1);
 });
 
 test('the build fails if stamps are committed to the source', () => {
   for (const [f, edit] of [
-    ['sw.js', s => s.replace("const VERSION = 'dev';", "const VERSION = 'abc1234567';")],
+    ['app/src/sw/sw.ts', s => s.replace("const VERSION: string = 'dev';", "const VERSION: string = 'abc1234567';")],
     ['play/index.html', s => s.replace('src="/js/app.js"', 'src="/js/app.js?v=abc1234567"')],
     ['play/index.html', s => s.replace('<script type="module"', '<script type="importmap">{"imports":{}}</script>\n<script type="module"')],
     ['site/index.html', s => s.replace('href="/theme/site.css"', 'href="/theme/site.css?v=abc1234567"')],

@@ -1,6 +1,6 @@
 /* Copy scan (honest-framing spec): the shipped HTML, the manifest and every script never claim a Vedic
    source for the sutras, never call them "the Vedic sutras", and never use an em dash. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';

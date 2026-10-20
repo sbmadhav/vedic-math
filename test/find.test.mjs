@@ -1,6 +1,6 @@
 /* js/find.js (openspec find): the index holds every named thing the Mode can open with a real route, the section
    lines match the menu, synonyms name real entries, and ranking puts titles over synonyms over descriptions. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { sectionLines, buildIndex, rank, score, share, normalize, tokenize, countOf, KINDS, SYNONYMS, INTENTS, MODE_LINES, intentsOf, kindLabel } from '../js/find.js';

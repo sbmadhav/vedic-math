@@ -1,6 +1,6 @@
 /* Adaptive difficulty: the dial moves the right way, points weight difficulty, and the question
    ladders behind the games are valid, never tie, and do not repeat within a round. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 globalThis.matchMedia ??= () => ({ matches: false });
 globalThis.localStorage ??= { _: {}, getItem(k) { return this._[k] ?? null; }, setItem(k, v) { this._[k] = String(v); }, removeItem(k) { delete this._[k]; } };

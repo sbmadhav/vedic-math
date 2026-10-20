@@ -2,7 +2,7 @@
    fx.js is loaded with stubbed localStorage, matchMedia and document: each source of "no motion" is set on its own,
    Calm is a device preference with one vmcalm event per change, and onMotionChange listeners stop with their signal.
    math.css: every prefers-reduced-motion block has an html.motion-paused twin and a body.calm twin. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 

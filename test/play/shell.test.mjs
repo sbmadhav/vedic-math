@@ -1,7 +1,7 @@
 /* Play experiences (openspec play-experiences): every experience in the catalog has a module and a stylesheet,
    lives inside a section, has no em dashes, uses tokens (no raw hex), and ties listeners, timers and frame loops
    to the view's AbortSignal through js/life.js. */
-import test from 'node:test';
+import test from '../support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { PLAY, SECTIONS, playFor, playIn, playOpen } from '../../js/play/catalog.js';

@@ -1,5 +1,5 @@
 /* Mathematics in Sanskrit verse (openspec sanskrit-verses): the data is complete, honest and its math is right */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { GROUPS, SLOKAS, slokasIn, slokasFor } from '../js/slokas.js';
 import { SUTRAS, SUBSUTRAS } from '../js/sutras.js';

@@ -15,7 +15,7 @@ The site is self-contained: the design system is a pinned copy (`vendor/design-s
 | `worker/` | The Content-Security-Policy report endpoint (`/_csp`), the only Worker code |
 | `js/` | ES modules (`app.js` is the entry; `skills/` holds the skill map; `play/` holds the play experiences) |
 | `css/play/` | Styles of the play experiences, loaded with their pages |
-| `test/` | Unit tests (`node --test`) |
+| `test/` | Unit tests (Vitest, `pnpm test`) |
 | `e2e/` | Playwright end-to-end tests against the live site |
 | `cloud/` | Firebase setup, Firestore rules and the rules tests |
 | `build.py` | Builds the published copy (`_site/`) with the import map, cache versions, `_headers` and `_redirects` |
@@ -44,7 +44,7 @@ After one visit online, the game works offline: `/sw.js` (scope `/play/`) saves 
 | Check | Command |
 |---|---|
 | The app builds, and the source has no cache stamps | `python3 build.py --out _site` |
-| Unit tests | `node --test 'test/**/*.test.{js,mjs}'` |
+| Unit tests | `pnpm test` (after `pnpm install`) |
 | Firestore rules tests (emulator, needs Java) | `cd cloud/test && npm install && npm test` |
 | End-to-end tests (live site, or `BASE_URL=http://localhost:8124` for a local build) | `cd e2e && npm ci && npx playwright install chromium webkit && npx playwright test` |
 

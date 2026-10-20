@@ -1,11 +1,12 @@
 #!/bin/sh
-# Pre-commit checks for Vedic Math. Enable once per clone:
+# Pre-commit checks for Learn Vedic Math. Enable once per clone:
 #   git config core.hooksPath .githooks
 # Skip in an emergency with: git commit --no-verify
 #
-# 1. The app builds (build.py into a throwaway directory). This also fails if the source carries
-#    cache stamps, which only the CI deploy adds.
-# 2. Unit tests.
+# 1. Type check, lint and unit tests (pnpm typecheck, pnpm lint, pnpm test: Vitest; openspec change react-typescript,
+#    task 1.6). Needs pnpm install once per clone.
+# 2. The site builds (build.py into a throwaway directory). This also fails if the source carries cache stamps,
+#    which only the CI deploy adds.
 
 cd "$(git rev-parse --show-toplevel)" || exit 1
 
@@ -14,13 +15,19 @@ fail() {
   exit 1
 }
 
-tmp=$(mktemp -d) || fail "could not make a temp directory"
-trap 'rm -rf "$tmp"' EXIT
-python3 build.py --out "$tmp/site" >/dev/null || fail "build.py failed (see above)"
+command -v node >/dev/null 2>&1 || fail "node is required (22.19 or newer)"
+command -v pnpm >/dev/null 2>&1 || fail "pnpm is required: corepack enable, then pnpm install"
+test -d node_modules || fail "run pnpm install first"
 
 # Tests make their own temp git repos; git's hook variables would point those at this repository
 unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_PREFIX GIT_OBJECT_DIRECTORY GIT_COMMON_DIR
-command -v node >/dev/null 2>&1 || fail "node is required to run test/"
-node --test --test-reporter=dot 'test/**/*.test.{js,mjs}' >&2 || fail "tests failed"
+
+pnpm --silent typecheck >&2 || fail "type check failed"
+pnpm --silent lint >&2 || fail "lint failed"
+pnpm --silent test --reporter=dot >&2 || fail "tests failed"
+
+tmp=$(mktemp -d) || fail "could not make a temp directory"
+trap 'rm -rf "$tmp"' EXIT
+python3 build.py --out "$tmp/site" >/dev/null || fail "build.py failed (see above)"
 
 exit 0

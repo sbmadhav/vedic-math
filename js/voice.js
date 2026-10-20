@@ -336,8 +336,9 @@ function loadNatural() {
   if (!canNatural()) { failedThisVisit = true; return Promise.reject(new Error('unsupported')); }
   setStatus({ state: 'loading', pct: 0, msg: 'Getting the natural voice ready...' });
   loading = new Promise((resolve, reject) => {
-    /* import.meta.resolve goes through the import map, so the worker gets the same ?v= stamp as the page's modules */
-    try { worker = new Worker(import.meta.resolve ? import.meta.resolve('./voice-worker.js') : new URL('./voice-worker.js', import.meta.url), { type: 'module' }); }
+    /* new Worker(new URL(..., import.meta.url)), the form a bundler recognizes and names by content hash (phase 2). Today
+       it loads /js/voice-worker.js without a ?v= stamp, network first like the site's other plain files. */
+    try { worker = new Worker(new URL('./voice-worker.js', import.meta.url), { type: 'module' }); }
     catch (e) { reject(e); return; }
     const files = {};
     const timer = setTimeout(() => reject(new Error('timeout')), 10 * 60 * 1000);

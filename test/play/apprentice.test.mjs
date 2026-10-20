@@ -1,6 +1,6 @@
 /* Teach the Apprentice: every template in the mistake bank, for thousands of seeds, gives correct clean work
    that reaches the true answer, and slipped work with exactly one wrong step whose result really differs. */
-import test from 'node:test';
+import test from '../support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { rng } from '../../js/play/kit.js';
 import { BANK, makeRound, same, N, F, R, beltOf, BELTS, PER_BELT } from '../../js/play/exp/apprentice-core.js';

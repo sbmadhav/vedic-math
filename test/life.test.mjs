@@ -1,5 +1,5 @@
 /* js/life.js: listeners, timers, intervals and frame loops bound to an AbortSignal (view-lifecycle spec). */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { on, later, every, loop, child, onAbort } from '../js/life.js';
 

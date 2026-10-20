@@ -1,5 +1,5 @@
 /* The Watch shelf's data meets its schema and the bar (openspec watch-shelf, design decision 7). */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { VIDEOS, LINKS } from '../js/videos.js';
 import { byId } from '../js/skills/index.js';

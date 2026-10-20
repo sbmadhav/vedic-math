@@ -1,6 +1,6 @@
 /* The Lost Śulba Scroll: Katapayadi and bhūta-saṅkhyā codes, rope geometry, Piṅgala's lists, the weekly
    unlock schedule, and every puzzle's answer checked by recomputation for every level. */
-import test from 'node:test';
+import test from '../support/node-test.mjs';
 import assert from 'node:assert/strict';
 import * as S from '../../js/play/exp/scroll-core.js';
 

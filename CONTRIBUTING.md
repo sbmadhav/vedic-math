@@ -51,7 +51,7 @@ Then open http://localhost:8124/ (the landing page) or http://localhost:8124/pla
 | Check | Command |
 |---|---|
 | The app builds (and the source has no cache stamps) | `python3 build.py --out /tmp/vm-site` |
-| Unit tests | `node --test 'test/**/*.test.{js,mjs}'` |
+| Unit tests | `pnpm test` (after `corepack enable` and `pnpm install`) |
 | End-to-end tests | `cd e2e && npm ci && npx playwright test` |
 | Firestore rules tests (only when you change `cloud/`; needs Java) | `cd cloud/test && npm install && npm test` |
 

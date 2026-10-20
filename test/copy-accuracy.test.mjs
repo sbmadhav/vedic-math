@@ -1,5 +1,5 @@
 /* Copy accuracy: ordinals, the hundredths picture and related videos say what is true. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { ordinal } from '../js/lib.js';
 import { hundredGrid } from '../js/viz.js';

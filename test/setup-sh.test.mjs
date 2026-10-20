@@ -1,6 +1,6 @@
 /* cloud/setup.sh (openspec change learnvedicmath, task 8.4): the project id and domains are arguments, the TTL policy
    on exp is turned on, and --dry-run prints every command without running one or writing js/cloud-config.js. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';

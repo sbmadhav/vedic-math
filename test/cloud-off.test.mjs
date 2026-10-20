@@ -1,7 +1,7 @@
 /* The device-only launch (change learnvedicmath, tasks 1.8 and 8.5): js/cloud-config.js ships with FIREBASE = null and no
    App Check key, so World boards are off for everyone. Then js/cloud.js never loads a Firebase file, never reads and
    never posts, whatever the Player's Age answer. test/cloud.test.mjs covers the same module with a sample config. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 

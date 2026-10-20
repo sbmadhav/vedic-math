@@ -2,7 +2,7 @@
    AbortSignal through js/life.js. A bare addEventListener, setTimeout, setInterval or requestAnimationFrame
    in view or round code is a cleanup someone forgot, so it fails here. The page-lifetime listeners and
    timers that are added once (proposal "Out of scope") are allow-listed by what they attach to. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 

@@ -1,5 +1,5 @@
 /* Dot pictures (Which is more, Quick look): every dot sits inside the picture and the set is centred. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { dots } from '../js/viz.js';
 

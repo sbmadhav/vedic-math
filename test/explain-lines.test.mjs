@@ -1,7 +1,7 @@
 /* The explanation lines the studio voice records whole (js/explain-lines.js, openspec explanation-audio). The recording
    tool (tools/voice/lines.mjs) and the Listen buttons both read this list, so it must cover every explanation and
    every line must be something the provider accepts in one request. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { allExplanationLines, skillLines, trickLines, sutraDeepLines, guideCounts } from '../js/explain-lines.js';

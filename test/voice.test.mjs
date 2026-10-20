@@ -1,6 +1,6 @@
 /* Built-in voice (openspec better-voice, part A): every English voice is rated good, ok or poor, a poor voice is
    never picked when a better one exists, and speech is at pitch 1 with a calm rate. Run: node --test test/ */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { rateVoice, englishVoices, bestVoice, onlyPoorVoices, builtInTuning, speak, stop } from '../js/voice.js';
 

@@ -2,7 +2,7 @@
    its hashed name is refused, objects the bucket has are skipped, nothing is overwritten or deleted, and every file of
    the release must be in the bucket afterwards. The S3 calls are signed with AWS Signature Version 4. Runs on a fake
    bucket; no network. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { createHash } from 'node:crypto';

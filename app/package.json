@@ -1,0 +1,15 @@
+{
+  "name": "app",
+  "private": true,
+  "type": "module",
+  "description": "The game (openspec change react-typescript). Phase 1: the service worker source (src/sw/sw.ts), published by build.py; the React Router app arrives in phase 2.",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.test.json"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "tools": "workspace:*",
+    "typescript": "6.0.3",
+    "vitest": "4.1.12"
+  }
+}

@@ -69,7 +69,7 @@ export function readerSlot(load) {
 }
 let progressTo = null;
 const reader = readerSlot(async () => {
-  const mod = await import(TESS.lib);
+  const mod = await import(/* @vite-ignore */ TESS.lib);
   const T = mod.default || mod;
   const w = await T.createWorker('eng', 1, { workerPath: TESS.workerPath, corePath: TESS.corePath, langPath: TESS.langPath, workerBlobURL: false, logger: m => progressTo && progressTo(m) });
   await w.setParameters({ tessedit_char_whitelist: '0123456789:.$' });

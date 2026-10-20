@@ -52,8 +52,6 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
-          cache: npm
-          cache-dependency-path: e2e/package-lock.json
 
       - name: First-load bytes (Brotli) of this commit's build
         env:
@@ -66,8 +64,9 @@ jobs:
       - name: Install Playwright
         working-directory: e2e
         run: |
-          npm ci
-          npx playwright install --with-deps chromium
+          corepack enable
+          pnpm install --frozen-lockfile --filter e2e
+          pnpm exec playwright install --with-deps chromium
 
       - name: Lighthouse (mobile preset, 5 runs a page)
         working-directory: e2e
@@ -75,13 +74,13 @@ jobs:
 
       - name: Interaction timings (4x CPU, 5 runs)
         working-directory: e2e
-        run: npx playwright test -c perf/playwright.config.ts
+        run: pnpm exec playwright test -c perf/playwright.config.ts
 
       - name: Interaction timings, second run (the medians must agree within the spec's tolerances)
         working-directory: e2e
         run: |
           cp perf/results/interactions.json perf/results/interactions-1.json
-          npx playwright test -c perf/playwright.config.ts
+          pnpm exec playwright test -c perf/playwright.config.ts
           cp perf/results/interactions.json perf/results/interactions-2.json
           # Task 0.4's check: the two runs' medians agree within the spec's 20 ms, or within a timing's measured noise
           # where docs/perf/baseline.json records one (interactions.noise, with the reason in baseline.md)

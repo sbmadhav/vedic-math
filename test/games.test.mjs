@@ -1,6 +1,6 @@
 /* Strategy game levels: 14 games x 72 levels = 1,008. Levels set where the adaptive dial starts and the
    Medal goals in difficulty-weighted points. The question ladders are checked in adapt.test.mjs. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { GAMES, LEVELS, LEVELS_PER_GAME, levelMedal } from '../js/games.js';
 

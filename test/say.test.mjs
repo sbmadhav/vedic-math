@@ -1,7 +1,7 @@
 /* Say it (openspec sutra-pronunciation): the name clips on disk match the generated index, every Trick names a real
    Sutra card, and js/say.js plays, stops, counts, prefetches and falls back as the spec says. Playback, fetch, the
    count and the status are stubbed through say.js's deps; speechSynthesis is a fake. */
-import test, { mock } from 'node:test';
+import test, { mock } from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';

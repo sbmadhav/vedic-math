@@ -3,7 +3,7 @@
      a new version is vendored instead (build.py checks the same before every build).
    - theme/learnvedicmath.css only gives new values to token names the pinned design system defines, in both schemes,
      and the five category colours (Belts, avatars, tiles) are distinct from each other in each scheme. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';

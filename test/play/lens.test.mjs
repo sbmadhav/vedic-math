@@ -1,7 +1,7 @@
 /* Math Lens: the make-N solver is right for many digit sets, the expression reader is safe and exact
    (no eval), divisibility rules match real division, clock math, receipt shortcuts, and every challenge
    offered is solvable with its own revealed answer. */
-import test from 'node:test';
+import test from '../support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { rng } from '../../js/play/kit.js';
 import {

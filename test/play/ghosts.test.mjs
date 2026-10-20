@@ -1,6 +1,6 @@
 /* Ghost Races: question sets are deterministic and correct, ghosts survive the share code exactly (to the
    hundredth of a second), the ghost's position is interpolated between answers, and links stay small. */
-import test from 'node:test';
+import test from '../support/node-test.mjs';
 import assert from 'node:assert/strict';
 import * as G from '../../js/play/exp/ghosts-core.js';
 

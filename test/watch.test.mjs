@@ -1,5 +1,5 @@
 /* The Watch shelf's rules (openspec watch-shelf) over a small fixture list, plus scans of the real data and app. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { visibleTo, order, picksFor, pickForTrick, videoForTrick, filterShelf, lengthOf, LENGTHS, MAX_LENGTH, embedSrc, linksOut, loadVideos, MODE_SEES } from '../js/watch.js';
