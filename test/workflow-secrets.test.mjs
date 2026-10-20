@@ -12,7 +12,7 @@ const real = Object.fromEntries(readdirSync(dir).filter(f => f.endsWith('.yml'))
 test('the workflows in this repo pass', () => {
   assert.deepEqual(check(real), []);
   // Once ci.yml deploys to Cloudflare, the deploy waits for the voice upload (design D17)
-  if (/\n {2}voice-upload:/.test(real['ci.yml'])) assert.match(real['ci.yml'], /deploy:\n\s+needs: \[check, voice-upload\]/);
+  if (/\n {2}voice-upload:/.test(real['ci.yml'])) assert.match(real['ci.yml'], /deploy:\n\s+needs: \[check, rules, voice-upload\]/);
   assert.match(real['preview.yml'], /^on:\n {2}pull_request:/m);
   assert.doesNotMatch(real['preview.yml'].replace(/#.*$/gm, ''), /pull_request_target/);
 });

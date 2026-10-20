@@ -149,11 +149,11 @@ jobs:
   # the production environment, whose deployment branches are main only (owner guide section 8), so no other branch
   # and no pull request can read it; it is passed only as an environment variable.
   deploy:
-    needs: [check, voice-upload]
-    # voice-upload is skipped until R2 is set up; the site still deploys then (the device voice reads), but a failed upload stops it
-    if: >-
-      !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CLOUDFLARE_ACCOUNT_ID != ''
-      && needs.check.result == 'success' && (needs.voice-upload.result == 'success' || needs.voice-upload.result == 'skipped')
+    needs: [check, rules, voice-upload]
+    # Deploys only when every check, the Firestore rules tests and the voice step succeeded (deploy-pipeline spec:
+    # "if the voice step fails or does not run, nothing is deployed"). So R2 (task 7.8) must be set up before the first
+    # deploy: with R2_ACCOUNT_ID empty the voice step is skipped, and so is this job.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CLOUDFLARE_ACCOUNT_ID != ''
     runs-on: ubuntu-latest
     environment:
       name: production
