@@ -33,7 +33,7 @@ The landing page SHALL show the Nikhilam Family (the brand mark's three digits) 
 - **THEN** it credits the 1965 book and contains no claim of a Vedic source
 
 ### Requirement: Learning is the top-level word
-The site SHALL present itself as a place to learn, with games as one way to learn among several. The landing page's main button SHALL read "Start learning" and the Modes SHALL sit under the heading "Three ways to learn". The header and footer link to `/play/` on the landing and grown-up pages SHALL read "Learn". Inside the game, neither the page title nor a header tab SHALL name the app "Play". (The URL stays `/play/`, and the in-app Mode wording, such as "Reset play mode", is left to a later change.)
+The site SHALL present itself as a place to learn, with games as one way to learn among several. The landing page's main button SHALL read "Start learning" and the Modes SHALL sit under the heading "Three ways to learn". The header and footer link to `/play/` on the landing and grown-up pages SHALL read "Learn". Inside the game, neither the page title nor a header tab SHALL name the app "Play".
 
 #### Scenario: Landing labels
 - **WHEN** a visitor opens `/?home`
@@ -42,6 +42,10 @@ The site SHALL present itself as a place to learn, with games as one way to lear
 #### Scenario: Not-found page
 - **WHEN** a visitor opens an unknown path
 - **THEN** its main button to `/play/` reads "Start learning"
+
+#### Scenario: Inside the game
+- **WHEN** a Player opens `/play/` (the URL stays `/play/` for now)
+- **THEN** the page title is "Learn Vedic Math", not "Play · Learn Vedic Math", and no header tab is named Play
 
 ### Requirement: Pages for grown-ups
 `/parents/` SHALL explain, in plain words, what the game keeps on the device, what it sends and to whom, that Players under 13 post nothing, and how to ask a question or a deletion (`privacy@learnvedicmath.com`). `/teachers/` SHALL describe classroom use without promising any school plan, and say a school plan needs a separate agreement. `/privacy/` and `/terms/` SHALL show the published policy and terms with their last-updated dates.
