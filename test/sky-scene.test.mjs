@@ -57,7 +57,7 @@ test('on phones (320 to 430 px) every size a story may take fits the screen with
     assert.ok(compact.some(s => s.w <= w - 32), `${st.id}: a compact size fits ${w}px`);
     for (const s of artSizes(st, w, 700)) assert.ok(s.w <= w - 32, `${st.id}: drawing alone fits ${w}px`);
   }
-  const st = STORIES[0], spot = placeStory(375, 812, [[0, 0, 375, 300], [0, 560, 375, 812]], storySizes(st, 375, (cw, c) => (c ? 64 : 160)), { anchor: [0.5, 0.6] });
+  const st = STORIES.find(s => s.id === 'falcon'), spot = placeStory(375, 812, [[0, 0, 375, 300], [0, 560, 375, 812]], storySizes(st, 375, (cw, c) => (c ? 64 : 160)), { anchor: [0.5, 0.6] });
   assert.ok(spot && spot.size.compact, 'a 260 px gap on a phone takes a compact caption');
   assert.ok(spot.x >= 0 && spot.x + spot.w <= 375);
 });

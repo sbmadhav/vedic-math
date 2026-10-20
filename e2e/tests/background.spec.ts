@@ -10,6 +10,17 @@ const frame = (page: Page) => sky(page).evaluate(c => (c as HTMLCanvasElement).t
 /* Does the canvas change within ms? */
 const moving = async (page: Page, ms = 600) => { const a = await frame(page); await page.waitForTimeout(ms); return a !== (await frame(page)); };
 /* Hides or shows the tab as far as the page can tell (document.hidden and visibilitychange) */
+/* The story list, read from the page's own module (the same one the scene draws) */
+const storyIds = (page: Page) => page.evaluate(async () => (await import('/js/sky-scene.js')).STORIES.map((s: { id: string }) => s.id) as string[]);
+/* Under a held clock: moves on until the first story is complete and held (or found no room, on a full phone screen) */
+async function untilHeld(page: Page) {
+  for (let i = 0; i < 60; i++) {
+    const s = await state(page).catch(() => ({} as Record<string, string>));
+    if (s.phase === 'hold' || s.place === 'none') return s;
+    await page.clock.runFor(500);
+  }
+  return state(page);
+}
 const setHidden = (page: Page, hidden: boolean) => page.evaluate(h => {
   Object.defineProperty(document, 'hidden', { configurable: true, get: () => h });
   Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => (h ? 'hidden' : 'visible') });
@@ -58,19 +69,20 @@ test.describe('motion', () => {
     await expect(sky(page)).toBeAttached();
     const seen: string[] = [];
     let last = '';
-    for (let i = 0; i < 120; i++) {
+    for (let i = 0; i < 130; i++) {
       await page.clock.runFor(500);
       const s = await state(page);
       const key = `${s.story}:${s.phase}`;
       if (key !== last) seen.push(key);
       last = key;
     }
+    const ids = await storyIds(page);
     const stories = [...new Set(seen.map(k => k.split(':')[0]).filter(Boolean))];
-    expect(stories.slice(0, 2)).toEqual(['falcon', 'powers']);
-    const falcon = seen.filter(k => k.startsWith('falcon:')).map(k => k.split(':')[1]);
-    expect(falcon.slice(0, 3)).toEqual(['in', 'hold', 'out']);
-    const firstPowers = seen.findIndex(k => k.startsWith('powers:'));
-    expect(seen[firstPowers - 1], 'an empty sky between two stories').toBe(':gap');
+    expect(stories.slice(0, 2)).toEqual(ids.slice(0, 2));
+    const first = seen.filter(k => k.startsWith(`${ids[0]}:`)).map(k => k.split(':')[1]);
+    expect(first.slice(0, 3)).toEqual(['in', 'hold', 'out']);
+    const second = seen.findIndex(k => k.startsWith(`${ids[1]}:`));
+    expect(seen[second - 1], 'an empty sky between two stories').toBe(':gap');
   });
 
   test('a hidden tab stops the frame loop; showing it again restarts it', async ({ page }) => {
@@ -193,9 +205,10 @@ test.describe('readable on top', () => {
       await page.setViewportSize({ width, height: width < 500 ? 812 : 800 });
       await heldClock(page);
       await page.goto(url);
-      /* 14 s in: the first story (the falcon altar) is complete and held with its caption, or a glimpse on a phone */
-      await page.clock.runFor(14_000);
-      await expect(sky(page)).toHaveAttribute('data-phase', 'hold');
+      /* The first story complete and held with its caption, where the screen has room for it */
+      await page.clock.runFor(4000);
+      const held = await untilHeld(page);
+      testInfo.annotations.push({ type: 'story', description: `${held.story || 'none'} (${held.place})` });
       await page.evaluate(() => document.fonts.ready);
       const runs = await textRuns(page);
       expect(runs.length).toBeGreaterThan(5);

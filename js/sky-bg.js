@@ -12,11 +12,14 @@
 import { on, later, every, loop, child, onAbort } from './life.js';
 import { LEVELS, STORIES, DIGITS, DIGIT_ORDER, FALCON_BRICKS, BRAHMI, POWER_PICKS, POWERS, powerNumber, superscript, meruRows, PALETTE, ALPHA, TIMING, storyAt, placeStory, storySizes, artSizes, horizon, seeded } from './sky-scene.js';
 
-/* What a story must not sit on: text (measured to its words, not its box), controls, pictures, cards and opaque bands */
-const AVOID = 'header, footer, nav, h1, h2, h3, h4, p, li, dt, dd, label, small, a, button, input, select, textarea, img, svg, video, iframe, canvas:not(.vm-bg), table, figure, dialog[open], [role="dialog"], .md-card, .md-tag, .md-band, .mode-card, .lv-mode';
-const TEXTY = new Set(['H1', 'H2', 'H3', 'H4', 'P', 'LI', 'DT', 'DD', 'LABEL', 'SMALL']);
-/* What the sky is kept clear behind: text and controls (cards, bands and pictures only keep stories away) */
-const CLEAR = new Set([...TEXTY, 'A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA']);
+/* What a story must not sit on, and what the sky is kept clear behind (sky-bg measures the page, never a list of
+   class names): every run of text (measured to its words) and every control is cleared; pictures and any box that
+   shows a background, a border, a shadow or floats over the page (cards, bands, the header) keep stories away. */
+const CONTROL = new Set(['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA', 'SUMMARY']);
+const PICTURE = new Set(['IMG', 'SVG', 'VIDEO', 'IFRAME', 'CANVAS', 'PICTURE']);
+const SKIP = new Set(['SCRIPT', 'STYLE', 'TEMPLATE', 'NOSCRIPT', 'BR']);
+const BAND = new Set(['HEADER', 'NAV', 'FOOTER', 'DIALOG', 'TABLE', 'FIGURE']);
+const shows = v => { const m = /rgba?\(([^)]+)\)/.exec(v || ''); if (!m) return false; const p = m[1].split(/[ ,/]+/).filter(Boolean); return p.length < 4 || +p[3] > 0.05; };
 const TAU = Math.PI * 2;
 
 /* No motion: the device asks for reduced motion, Pause motion is on (html.motion-paused), or Calm (vm.calm) */
@@ -199,19 +202,31 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, parent =
       const out = { cv, w, h }; capCache.set(key, out); return out;
     }
     /* The page's obstacles on screen, as [x0, y0, x1, y1]: measured when the page may have moved (scroll, resize, a new
-       route, and every 1.5 seconds for anything else), never more than once a frame */
+       route, and every 2.5 seconds for anything else), never more than once a frame */
     let page = null, pageDirty = true, pageVersion = 0, measuring = false;
     let pageSig = '', clearList = [];
     function measure() {
-      const out = [], range = document.createRange();
+      const out = [], range = document.createRange(), on = r => r.width >= 1 && r.height >= 1 && r.bottom > 0 && r.top < H && r.right > 0 && r.left < W;
+      const push = (r, clear) => { const box = [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]; out.push(box); if (clear) clearList.push(box); };
       pageDirty = false; clearList = [];
-      for (const el of document.querySelectorAll(AVOID)) {
-        if (el === c) continue;
-        let r = el.getBoundingClientRect();
-        if (!r.width || !r.height || r.bottom < 0 || r.top > H || r.right < 0 || r.left > W) continue;
-        if (TEXTY.has(el.tagName)) { range.selectNodeContents(el); const tr = range.getBoundingClientRect(); if (tr.width && tr.height) r = tr; }
-        const box = [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)];
-        out.push(box); if (CLEAR.has(el.tagName)) clearList.push(box);
+      /* every run of text */
+      const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+        if (!n.nodeValue.trim() || SKIP.has(n.parentNode.nodeName)) continue;
+        range.selectNodeContents(n); const r = range.getBoundingClientRect(); if (on(r)) push(r, true);
+      }
+      /* controls, pictures and boxes that show */
+      for (const el of document.body.querySelectorAll('*')) {
+        const tag = el.tagName.toUpperCase(); if (el === c || SKIP.has(tag)) continue;
+        const r = el.getBoundingClientRect(); if (!on(r)) continue;
+        if (CONTROL.has(tag)) { push(r, true); continue; }
+        if (PICTURE.has(tag)) { if (!el.closest('svg') || tag === 'SVG') push(r, false); continue; }
+        if (BAND.has(tag)) { push(r, false); continue; }
+        if (r.width < 24 || r.height < 24 || el.closest('svg')) continue;
+        const cs = getComputedStyle(el);
+        if (cs.visibility !== 'visible' || +cs.opacity < 0.1) continue;
+        const edge = ['Top', 'Bottom', 'Left', 'Right'].some(k => parseFloat(cs[`border${k}Width`]) > 0 && shows(cs[`border${k}Color`]));
+        if (shows(cs.backgroundColor) || cs.backgroundImage !== 'none' || edge || cs.boxShadow !== 'none' || cs.position === 'fixed' || cs.position === 'sticky' || (cs.backdropFilter && cs.backdropFilter !== 'none')) push(r, false);
       }
       page = out;
       const sig = out.join(';'); if (sig !== pageSig) { pageSig = sig; pageVersion++; makeMask(); } /* the page really moved */
@@ -420,7 +435,7 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, parent =
     on(window, 'resize', debounced(() => { size(); pageDirty = true; cur = null; stillStory = undefined; if (stillWanted()) drawStill(); }, 150), signal, { passive: true });
     const settle = debounced(recheck, 180);
     on(window, 'scroll', () => { pageDirty = true; settle(); }, signal, { passive: true });
-    every(() => { pageDirty = true; }, 1500, signal);
+    every(() => { pageDirty = true; }, 2500, signal);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (signal.aborted) return; capCache.clear(); if (stillWanted()) drawStill(); });
     sync();
 
