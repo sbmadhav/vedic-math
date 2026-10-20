@@ -248,3 +248,23 @@ test('the game reads what the hand-off wrote', async () => {
   store.switchPlayer('pabc123');
   assert.equal(store.sparks(), 5);
 });
+
+test('a write that fails part way (storage full) leaves every key exactly as it was, for both choices', async () => {
+  const payload = await imported();
+  const start = { 'vm.players': players([P1, { ...P1, id: 'pzz', name: 'Bold Yak 55' }]), 'mathquest.v1.p1': record({ sparks: 999 }), 'mathquest.v1.pzz': record(),
+    'vm.play.pzz.art': { gallery: [] }, 'vm.board': [{ pid: 'pzz' }], 'vm.cloudUids': { p1: 'u1', pzz: 'u2' }, 'vm.cloudUid': 'u0', theme: 'light', 'vm.sound': '0' };
+  for (const choice of ['replace', 'both']) {
+    // How many writes a full run makes, then fail on each one in turn
+    const probe = storage(start); let writes = 0;
+    const set0 = probe.set; probe.set = (k, v) => { writes++; set0(k, v); };
+    applyHandoff(probe, payload, choice);
+    assert.ok(writes > 3, choice);
+    for (let n = 1; n <= writes; n++) {
+      const st = storage(start), snapshot = [...st.m.entries()].sort();
+      let calls = 0; const set = st.set;
+      st.set = (k, v) => { if (++calls === n) { const e = new Error('full'); e.name = 'QuotaExceededError'; throw e; } set(k, v); };
+      assert.throws(() => applyHandoff(st, payload, choice), /full/, `${choice} write ${n}`);
+      assert.deepEqual([...st.m.entries()].sort(), snapshot, `${choice}: failing write ${n} of ${writes} restores every key`);
+    }
+  }
+});

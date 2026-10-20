@@ -146,4 +146,27 @@ test.describe('a device that already has progress here', () => {
     expect(JSON.parse(s['mathquest.v1.' + otter.id]).sparks).toBe(1234);
     expect(new Set(P.list.map((p: any) => p.id)).size).toBe(3);
   });
+
+  test('storage full part way: nothing changes, the error shows, and the fragment comes back so a reload retries', async ({ page }) => {
+    // Every write succeeds until the Players list from the link is written: the import is half done when it fails
+    await page.addInitScript(() => {
+      const set = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k: string, v: string) {
+        if (k === 'vm.players' && String(v).includes('Brave Otter')) throw new DOMException('full', 'QuotaExceededError');
+        return set.call(this, k, v);
+      };
+    });
+    const d = payload();
+    await page.goto(link(d));
+    await expect(page.locator('#ho-conflict')).toBeVisible();
+    expect(page.url()).toMatch(/\/import\/$/);
+    const before = await stored(page);
+    await page.locator('#ho-use').click();
+    await expect(page.locator('#ho-error')).toContainText('nothing was changed on this device');
+    expect(await stored(page)).toEqual(before);
+    expect(page.url()).toContain('/import/#v=1&d=' + d);
+    await page.reload();
+    await expect(page.locator('#ho-conflict')).toBeVisible();
+    await expect(page.locator('#ho-list li')).toHaveText(['Brave Otter 17: 1,234 Sparks', 'Cosmic Comet 33: 7 Sparks']);
+  });
 });

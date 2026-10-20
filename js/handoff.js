@@ -37,7 +37,10 @@ function newId(taken) {
 }
 
 /* Writes a validated payload. choice: 'replace' (this device's Players and progress give way, also used when there is
-   none) or 'both' (the old site's Players are added; this device's settings win). Returns the Players written. */
+   none) or 'both' (the old site's Players are added; this device's settings win). Returns the Players written.
+   All or nothing: every write and removal is planned first, every key it touches is saved as it was, and if any write
+   fails (a full storage throws QuotaExceededError) every touched key is put back exactly as it was before the error is
+   rethrown, so this device never ends up with its progress gone and the import half written. */
 export function applyHandoff(st, payload, choice, now = Date.now()) {
   const here = progressHere(st);
   const uids = json(st, 'vm.cloudUids') || {};
@@ -48,25 +51,42 @@ export function applyHandoff(st, payload, choice, now = Date.now()) {
   for (const p of payload.players.list) rename[p.id] = taken.has(p.id) ? newId(taken) : p.id;
   for (const id of Object.values(rename)) taken.add(id);
 
+  const plan = []; // [key, value] to write, or [key, null] to remove, in order
   if (choice === 'replace') {
     // This device's Players go, as if removed on the Me page: their records, play records and identities
     const gone = here.list.map(p => p.id);
-    for (const k of st.keys()) if (/^mathquest\.v1(\.|$)/.test(k) || PLAY_RE.test(k) || k === 'vm.board') st.remove(k);
+    for (const k of st.keys()) if (/^mathquest\.v1(\.|$)/.test(k) || PLAY_RE.test(k) || k === 'vm.board') plan.push([k, null]);
     const forget = new Set(json(st, 'vm.cloudForget') || []);
     for (const id of gone) if (withIdentity.has(id) && id !== 'p1') forget.add(id);
     for (const id of gone) delete uids[id];
-    st.remove('vm.cloudUid');
-    if (st.get('vm.cloudUids') !== null) st.set('vm.cloudUids', JSON.stringify(uids));
-    if (forget.size) st.set('vm.cloudForget', JSON.stringify([...forget]));
+    plan.push(['vm.cloudUid', null]);
+    if (st.get('vm.cloudUids') !== null) plan.push(['vm.cloudUids', JSON.stringify(uids)]);
+    if (forget.size) plan.push(['vm.cloudForget', JSON.stringify([...forget])]);
   }
-  for (const [id, r] of Object.entries(payload.records)) st.set('mathquest.v1.' + rename[id], JSON.stringify(r));
-  for (const [id, m] of Object.entries(payload.play || {})) for (const [k, v] of Object.entries(m)) st.set(`vm.play.${rename[id]}.${k}`, JSON.stringify(v));
-  for (const [k, v] of Object.entries(payload.settings)) if (choice === 'replace' || st.get(k) === null) st.set(k, v);
+  for (const [id, r] of Object.entries(payload.records)) plan.push(['mathquest.v1.' + rename[id], JSON.stringify(r)]);
+  for (const [id, m] of Object.entries(payload.play || {})) for (const [k, v] of Object.entries(m)) plan.push([`vm.play.${rename[id]}.${k}`, JSON.stringify(v)]);
+  for (const [k, v] of Object.entries(payload.settings)) if (choice === 'replace' || st.get(k) === null) plan.push([k, v]);
   const incoming = payload.players.list.map(p => ({ ...p, id: rename[p.id] }));
   const list = choice === 'both' ? [...here.list, ...incoming] : incoming;
-  st.set('vm.players', JSON.stringify({ active: rename[payload.players.active], list }));
-  st.set('vm.migratedAt', String(now));
+  plan.push(['vm.players', JSON.stringify({ active: rename[payload.players.active], list })]);
+  plan.push(['vm.migratedAt', String(now)]);
+
+  const before = new Map();
+  for (const [k] of plan) if (!before.has(k)) before.set(k, st.get(k));
+  try {
+    for (const [k, v] of plan) { if (v === null) st.remove(k); else st.set(k, v); }
+  } catch (e) {
+    restore(st, before);
+    throw e;
+  }
   return incoming;
+}
+
+/* Puts every saved key back: first removes the ones that did not exist (the import's own keys free their space), then
+   writes the old values, which fitted before */
+function restore(st, before) {
+  for (const [k, v] of before) if (v === null) st.remove(k);
+  for (const [k, v] of before) if (v !== null) { try { st.set(k, v); } catch (e) { /* cannot happen: the value fitted before */ } }
 }
 
 /* ---------- the page ---------- */
@@ -117,7 +137,14 @@ async function start() {
   }
   show('ho-offer');
   const done = (choice, counted) => {
-    try { applyHandoff(local, payload, choice); } catch (e) { show('ho-error'); track('math/handoff/error', 'Hand-off: could not save'); return; }
+    try { applyHandoff(local, payload, choice); } catch (e) {
+      // Nothing changed (applyHandoff put every key back). The count goes first, while the address holds no payload;
+      // then the fragment returns to the address bar, so a reload after making room tries again.
+      track('math/handoff/error', 'Hand-off: could not save');
+      try { history.replaceState(null, '', location.pathname + raw); } catch (err) { /* the link still works from the old site */ }
+      show('ho-error');
+      return;
+    }
     counted();
     play(route);
   };
