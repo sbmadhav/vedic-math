@@ -123,7 +123,7 @@ jobs:
   # needs this job, so a site that names new voice files is never published before they exist. Runs only once the
   # owner has set up R2 (repository variable R2_ACCOUNT_ID, owner task 7.8); until then nothing is deployed either.
   voice-upload:
-    needs: check
+    needs: [check, rules]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.R2_ACCOUNT_ID != ''
     runs-on: ubuntu-latest
     environment: production
