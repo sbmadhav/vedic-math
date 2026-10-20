@@ -27,9 +27,12 @@ test.describe('a first visit', () => {
     expect(issues.failed).toEqual([]);
   });
 
-  test('Play opens the game and its Mode picker', async ({ page }) => {
+  test('Start learning opens the app and its Mode picker', async ({ page }) => {
     await page.goto('/');
-    await page.locator('main a.lv-play').click();
+    const start = page.locator('main a.lv-play');
+    await expect(start).toHaveText('Start learning');
+    await expect(page.locator('main h2').first()).toHaveText('Three ways to learn');
+    await start.click();
     await expect(page).toHaveURL(/\/play\/$/);
     await expect(page.locator('.mode-pick .mode-card')).toHaveCount(3);
   });
@@ -88,7 +91,8 @@ test.describe('a returning Player', () => {
 test('an unknown path answers 404 with a page that links to the landing page and the game', async ({ page }) => {
   const res = await page.goto('/plya/');
   expect(res!.status()).toBe(404);
-  await expect(page.locator('main a[href="/play/"]')).toBeVisible();
+  await expect(page.locator('main a[href="/play/"]')).toHaveText('Start learning');
+  await expect(page.locator('footer a[href="/play/"]')).toHaveText('Learn');
   await expect(page.locator('main a[href="/?home"]')).toBeVisible();
 });
 
