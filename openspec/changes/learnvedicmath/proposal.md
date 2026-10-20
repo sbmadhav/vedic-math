@@ -12,7 +12,7 @@ The 14 owner decisions in `_handoff/learnvedicmath-decisions.md` (all approved o
 
 **Layout (decisions 1, 2, 11).**
 - Everything is served from the root of learnvedicmath.com: no URL starts with `/vedic-math/`. Modules move from `/vedic-math/js/` to `/js/`.
-- The game moves to `/play/`. `/` becomes a static, prerendered landing page with the Nikhilam Family (first Bolt; the brand hero since `landing-hero-family`), plus `/parents/`, `/teachers/`, `/privacy/` and `/terms/`. A Player who already has progress on the device goes straight from `/` into `/play/`. Old deep links (`#/arena`, `/vedic-math/...`) reach the same screen.
+- The game moves to `/play/`. `/` becomes a static, prerendered landing page with the Nikhilam Family as its hero (Bolt, the game's teacher, was the hero until `landing-hero-family`), plus `/parents/`, `/teachers/`, `/privacy/` and `/terms/`. A Player who already has progress on the device goes straight from `/` into `/play/`. Old deep links (`#/arena`, `/vedic-math/...`) reach the same screen.
 - The build vendors a pinned copy of design-system v2.1.0 with a `learnvedicmath` theme on the same tokens, self-hosts the fonts, drops the sbmadhav.com Explore menu (and replaces its Pause motion switch with one in the app). There is no "Made by" credit line (owner, L6).
 - A new manifest, icons and service worker for the new brand: the worker is re-scoped to `/play/` and precaches every file with a hash, because nothing is shared with another repo any more.
 
