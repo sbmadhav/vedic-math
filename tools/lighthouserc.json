@@ -1,0 +1,20 @@
+{
+  "//": "Lighthouse settings and pages of the performance checks (openspec change react-typescript, performance-budget spec). e2e/perf/lighthouse.mts measures the baseline with them (task 0.4) and the preview perf job reads the same file (task 1.8). Mobile preset: Lighthouse's default (simulated slow 4G, 4x CPU slowdown). From phase 2 the paths move under /learn/ (task 2.7).",
+  "ci": {
+    "collect": {
+      "numberOfRuns": 5,
+      "settings": {
+        "formFactor": "mobile",
+        "throttlingMethod": "simulate",
+        "onlyCategories": ["performance"]
+      }
+    }
+  },
+  "pages": [
+    { "name": "play-first", "path": "/play/", "visit": "first" },
+    { "name": "play-repeat", "path": "/play/", "visit": "repeat" },
+    { "name": "arena", "path": "/play/#/arena", "visit": "returning" },
+    { "name": "games", "path": "/play/#/games", "visit": "returning" },
+    { "name": "deep-dive", "path": "/play/#/sutras/s1", "visit": "returning" }
+  ]
+}
