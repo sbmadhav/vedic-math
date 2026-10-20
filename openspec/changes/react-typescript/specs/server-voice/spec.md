@@ -40,15 +40,23 @@ The server SHALL voice a sentence only if it can be built from the recorded word
 - **THEN** the answer is a refusal
 
 ### Requirement: A daily spend cap on the server
-The server SHALL count what every request to the speech provider costs at list price, without the provider's free tier, per UTC day and per month, and SHALL refuse to ask the provider once a request would take the day past the daily cap ($5) or the month past the monthly ceiling ($150). Both SHALL be settings of the server, never of the game. A failed request SHALL not be counted.
+The server SHALL count what every request to the speech provider costs at list price, without the provider's free tier, per UTC day and per month, and SHALL refuse to ask the provider once a request would take the day past the daily cap ($5) or the month past the monthly ceiling ($150). Both SHALL be settings of the server, never of the game. Only a failed provider request SHALL be refunded; a provider request that returned audio SHALL stay counted even if storing it fails.
 
 #### Scenario: The cap is reached
 - **WHEN** the day's spend has reached the daily cap and a Player is asked a sentence no one has heard
 - **THEN** the server refuses without asking the provider, and the Player hears the clips or the device's voice
 
 #### Scenario: The next day
-- **WHEN** the UTC day changes after a capped day
+- **WHEN** the UTC day changes after a day capped by the daily cap
 - **THEN** new sentences are voiced again
+
+#### Scenario: The monthly ceiling
+- **WHEN** the month's spend has reached the monthly ceiling
+- **THEN** new sentences are refused until 00:00 UTC on the first of the next month, whatever the day
+
+#### Scenario: Storing the audio fails
+- **WHEN** the provider returns audio but writing it to R2 fails
+- **THEN** the charge stays counted, the Player hears the audio, and the next request for that sentence does not ask the provider again
 
 #### Scenario: Many requests at once near the cap
 - **WHEN** 10,000 different sentences are requested at the same time with $1 left before the cap

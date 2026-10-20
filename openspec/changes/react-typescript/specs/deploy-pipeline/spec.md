@@ -16,7 +16,7 @@ The Playwright suite SHALL run against the preview of each pull request, against
 ## ADDED Requirements
 
 ### Requirement: Test runs never make a new voice recording
-Every Playwright and performance run SHALL answer the voice host and the server voice endpoint from test fixtures, or run with the server voice switched off. A production run that checks the server voice SHALL only play a Server line the owner has already recorded, and SHALL fail if any request reaches the endpoint that makes a new recording.
+Every Playwright and performance run against a preview or a local server SHALL answer the voice host and the server voice endpoint from test fixtures, or run with the server voice switched off. Production runs are the one exception: they SHALL only read a Server line already cached under `live/` on the voice host, and any request to `/api/voice/v1/say` SHALL fail the run.
 
 #### Scenario: A missing fixture
 - **WHEN** a test with read aloud on is asked a sentence that no fixture covers
@@ -24,4 +24,4 @@ Every Playwright and performance run SHALL answer the voice host and the server 
 
 #### Scenario: The production voice check
 - **WHEN** the production run plays a Server line
-- **THEN** it is a line the owner recorded ahead, served from the voice host, and the run records no request to `/api/voice/v1/say`
+- **THEN** it is a Server line the Worker cached earlier under `live/`, read from the voice host, and the run sends no request to `/api/voice/v1/say`

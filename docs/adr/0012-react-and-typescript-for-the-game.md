@@ -20,7 +20,7 @@ Status: accepted 2026-10-19 (proposed 2026-10-17) in the `react-typescript` chan
 
 ## Consequences
 
-- Nothing a Player sees or stores changes, except path URLs in `/play/` (old `#/` links are sent to their paths by a pre-paint shim, forever), a redone Star Quest layout on phones, and, for Players with WebGL and motion allowed, a Sky that fades from 2D into 3D (ADR 0013).
+- The routing and rendering migration changes nothing a Player sees or stores, except path URLs in `/play/` (old `#/` links are sent to their paths by a pre-paint shim, forever), a redone Star Quest layout on phones, and, for Players with WebGL and motion allowed, a Sky that fades from 2D into 3D (ADR 0013). Separately, read aloud says question-specific sentences in the studio voice through the server (ADR 0014), which changes the voice a Player hears, never the words.
 - A cold load of any game path is answered with a server-rendered page (shell and server-safe parts) instead of a fallback file; static files, prerendered pages and every client-side navigation run no Worker code, and routes have no server loaders, so navigation works offline.
 - The Worker is no longer only a CSP report endpoint, so the site moves to Workers Paid ($5 a month) before server rendering reaches production (owner, 2026-10-20; the Free plan's 10 ms CPU per request is too tight for a React render), as ADR 0004 foresaw.
 - Responses the Worker renders carry the whole security header set themselves (`_headers` does not apply to them), with a per-request nonce; the policy text has one source for both.
