@@ -102,7 +102,7 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
           SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          body=$(printf 'Preview of %s: %s\n\nNot indexed (X-Robots-Tag: noindex, nofollow). The same URL updates with every push to this pull request.\n\n---\n_Posted by the preview workflow_' "$SHA" "$URL")
+          body=$(printf 'Preview of %s: %s\n\nNot indexed (X-Robots-Tag: noindex). The same URL updates with every push to this pull request.\n\n---\n_Posted by the preview workflow_' "$SHA" "$URL")
           gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --edit-last --body "$body" 2>/dev/null || gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "$body"
 
       - name: The preview is not indexed
@@ -110,7 +110,11 @@ jobs:
         env:
           URL: ${{ steps.upload.outputs.url }}
         run: |
-          curl -fsSI "$URL/" | grep -i '^x-robots-tag: noindex, nofollow' || { echo "::error::the preview does not send X-Robots-Tag: noindex, nofollow"; exit 1; }
+          # Cloudflare answers *.workers.dev preview URLs with its own X-Robots-Tag: noindex, which replaces the
+          # "noindex, nofollow" from _headers; noindex alone keeps the preview out of search results
+          # Require an unscoped noindex: "googlebot: noindex" binds one crawler only and does not count
+          curl -fsSI "$URL/" | tr -d '\r' | awk -F': ' 'tolower($1)=="x-robots-tag" { n=split($0, d, /, */); sub(/^[^:]*: */, "", d[1]); for (i=1; i<=n; i++) if (tolower(d[i])=="noindex") ok=1 } END { exit !ok }' \
+            || { echo "::error::the preview does not send an unscoped X-Robots-Tag: noindex"; exit 1; }
 
       - name: Install Playwright
         if: steps.token.outputs.present == 'true'

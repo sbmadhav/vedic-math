@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { test, expect, open, type Page } from './fixtures';
+import { test, expect, open, needsStudioVoice, studioVoiceOn, type Page } from './fixtures';
 
 /* Built-in voice (openspec better-voice, part A): pitch 1 and a calm rate, never a robotic voice when a better one
    exists, and a one-time note in Me when every voice on the device is robotic. The browser's speech engine is
@@ -84,7 +84,10 @@ test.describe('voice settings in Me', () => {
 /* ---------- Studio voice (openspec better-voice, part B) ----------
    The real recordings come from a release archive at deploy time, so these tests serve a fake index and tiny tone
    files (e2e/fixtures/voice/) through page.route. js/voice.js records the voice that said each line in
-   window.__voiceLog when a test puts an array there. */
+   window.__voiceLog when a test puts an array there.
+   A deploy built with --voice off (no voice host in its published index or its policy) cannot fetch from the voice
+   host at all, so the cases where recorded voice plays skip there (needsStudioVoice); the cases where the device voice
+   reads keep running, and so does the one below that checks the deploy's own state. */
 
 const FIX = join(__dirname, '..', 'fixtures', 'voice');
 const LINE_M4A = readFileSync(join(FIX, 'line.m4a')), PACK_M4A = readFileSync(join(FIX, 'pack.m4a'));
@@ -122,6 +125,7 @@ test.describe('studio voice', () => {
   test.use({ seedMode: 'explorer' });
 
   test('an Explorer line with a recording plays its whole file, with no call to a speech provider', async ({ page }) => {
+    await needsStudioVoice(page);
     const provider: string[] = []; page.on('request', r => { if (PROVIDERS.test(r.url())) provider.push(r.url()); });
     await fakeSpeech(page, [ENHANCED]);
     const requests = await fakeStudio(page);
@@ -141,9 +145,10 @@ test.describe('studio voice', () => {
   });
 
   test('a three-digit sum is said from clips once the core pack is loaded', async ({ page }) => {
+    await needsStudioVoice(page);
     await fakeSpeech(page, [ENHANCED]);
     await fakeStudio(page);
-    const core = page.waitForResponse(r => r.url().endsWith('voice.learnvedicmath.com/p/core.test.m4a'));
+    const core = page.waitForResponse(r => r.url().endsWith('voice.learnvedicmath.com/p/core.test.m4a'), { timeout: 15_000 });
     await open(page, '#/skill/2-add1000');
     await core;
     await page.waitForTimeout(300); // decode
@@ -152,6 +157,7 @@ test.describe('studio voice', () => {
   });
 
   test('a clip missing from its pack: no clip plays and the built-in voice says the whole line', async ({ page }) => {
+    await needsStudioVoice(page);
     await fakeSpeech(page, [ENHANCED]);
     await fakeStudio(page, { mapDrop: ['f:plus', 'f:minus'] }); // the directory names these clips, but the pack's map lacks them
     await page.addInitScript(() => {
@@ -159,7 +165,7 @@ test.describe('studio voice', () => {
       const start = AudioBufferSourceNode.prototype.start;
       AudioBufferSourceNode.prototype.start = function (...a: any[]) { w.__starts++; return (start as any).apply(this, a); };
     });
-    const core = page.waitForResponse(r => r.url().endsWith('voice.learnvedicmath.com/p/core.test.m4a'));
+    const core = page.waitForResponse(r => r.url().endsWith('voice.learnvedicmath.com/p/core.test.m4a'), { timeout: 15_000 });
     await open(page, '#/skill/2-add1000');
     await core;
     await page.waitForTimeout(300); // decode
@@ -179,7 +185,28 @@ test.describe('studio voice', () => {
     await expect.poll(async () => (await spoken(page)).map(s => s.text)).toContain('How many dots are there?');
   });
 
+  test('with no Studio voice in the build, an Explorer line is read by the device voice and the voice host is never asked', async ({ page }) => {
+    await fakeSpeech(page, [ENHANCED]);
+    await page.addInitScript(() => { (window as any).__voiceLog = []; });
+    /* On a --voice off deploy, the index it publishes; elsewhere the one build.py --voice off writes */
+    if (await studioVoiceOn(page)) {
+      const off = readFileSync(join(__dirname, '..', '..', 'build.py'), 'utf8').match(/^VOICE_OFF_INDEX = """([\s\S]*?)"""/m)![1];
+      await page.route('**/js/voice-index.js*', r => r.fulfill({ contentType: 'text/javascript', body: off }));
+    }
+    const asked: string[] = [];
+    page.on('request', r => { if (r.url().startsWith('https://voice.learnvedicmath.com/')) asked.push(r.url()); });
+    await open(page, '#/skill/k-count');
+    await expect.poll(async () => (await spoken(page)).map(s => s.text)).toContain('How many dots are there?');
+    await page.evaluate(() => { (window as any).__voiceLog.length = 0; (window as any).__spoken.length = 0; });
+    await page.locator('#practice').getByRole('button', { name: 'Hear it' }).click();
+    await expect.poll(() => vlog(page)).toContain('builtin');
+    expect((await vlog(page)).filter(e => e.startsWith('studio:'))).toEqual([]);
+    await expect.poll(async () => (await spoken(page)).map(s => s.text)).toContain('How many dots are there?');
+    expect(asked).toEqual([]);
+  });
+
   test('a whole line slower than 600 ms is said from clips instead', async ({ page }) => {
+    await needsStudioVoice(page);
     await fakeSpeech(page, [ENHANCED]);
     const requests = await fakeStudio(page, { lineDelay: 2000 });
     await open(page, '#/skill/k-count');
@@ -193,6 +220,7 @@ test.describe('studio voice', () => {
   });
 
   test('a studio index slower than 1 s: the built-in voice says the line, and the next line uses the studio voice', async ({ page }) => {
+    await needsStudioVoice(page);
     await fakeSpeech(page, [ENHANCED]);
     const requests = await fakeStudio(page, { indexDelay: 4000 });
     await open(page, '#/skill/k-count');
@@ -224,6 +252,7 @@ test.describe('studio voice', () => {
   });
 
   test('the natural voice still loading after 2.5 s: the line goes to the studio voice, not the device voice', async ({ page }) => {
+    await needsStudioVoice(page);
     await fakeSpeech(page, [ENHANCED]);
     const requests = await fakeStudio(page);
     await page.addInitScript(() => {
@@ -243,6 +272,7 @@ test.describe('studio voice', () => {
   });
 
   test('the natural voice failing to say a line: the studio voice says it, not the device voice', async ({ page }) => {
+    await needsStudioVoice(page);
     await fakeSpeech(page, [ENHANCED]);
     const requests = await fakeStudio(page);
     await page.addInitScript(() => {
@@ -266,6 +296,7 @@ test.describe('studio voice', () => {
   });
 
   test('leaving the page stops a studio line', async ({ page }) => {
+    await needsStudioVoice(page);
     await fakeSpeech(page, [ENHANCED]);
     await fakeStudio(page);
     await open(page, '#/skill/k-count');

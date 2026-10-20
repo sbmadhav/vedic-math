@@ -1,12 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, open, APP, type Page } from './fixtures';
+import { test, expect, open, APP, needsStudioVoice, studioVoiceOn, type Page } from './fixtures';
 
 /* Listen buttons (openspec explanation-audio): every explanation can be heard. Like voice.spec.ts, the studio voice
    is a fake index with tiny tone files (e2e/fixtures/voice/) served through page.route, and the device voice is a
    recorder whose sentences end after `endAfter` ms, so a test can catch a button while it plays. js/voice.js writes
-   the voice that said each line to window.__voiceLog. The shared analytics script is a stub recording siteTrack. */
+   the voice that said each line to window.__voiceLog. The shared analytics script is a stub recording siteTrack.
+   On a deploy with no Studio voice (build.py --voice off) the voice host is not in the policy, so the cases where a
+   recording plays skip (needsStudioVoice) and the device-voice cases run. */
 
 const FIX = join(__dirname, '..', 'fixtures', 'voice');
 const LINE_M4A = readFileSync(join(FIX, 'line.m4a')), PACK_M4A = readFileSync(join(FIX, 'pack.m4a'));
@@ -68,6 +70,7 @@ test.describe('Listen', () => {
   test.use({ seedMode: 'challenger' }); // read aloud is off: Listen still plays, because it follows a tap
 
   test('a Skill page plays its recorded explanation, line by line, and the button shows it is playing', async ({ page }) => {
+    await needsStudioVoice(page);
     const st = await setup(page);
     await open(page, '#/skill/3-mult');
     const n = await st.recordKey('skill:3-mult');
@@ -96,9 +99,14 @@ test.describe('Listen', () => {
 
   test('with Studio voice off in the build, the device voice reads and the voice host is never asked', async ({ page }) => {
     await setup(page);
-    /* The index build.py --voice off publishes (CI deploys this way until R2 is set up), taken from build.py itself */
-    const off = readFileSync(join(__dirname, '..', '..', 'build.py'), 'utf8').match(/^VOICE_OFF_INDEX = """([\s\S]*?)"""/m)![1];
-    await page.route('**/js/voice-index.js*', r => r.fulfill({ contentType: 'text/javascript', body: off }));
+    /* On a --voice off deploy (CI deploys this way until R2 is set up), the index it publishes; elsewhere the one
+       build.py --voice off writes, taken from build.py itself */
+    if (await studioVoiceOn(page)) {
+      const off = readFileSync(join(__dirname, '..', '..', 'build.py'), 'utf8').match(/^VOICE_OFF_INDEX = """([\s\S]*?)"""/m)![1];
+      await page.route('**/js/voice-index.js*', r => r.fulfill({ contentType: 'text/javascript', body: off }));
+    } else {
+      await page.unroute('**/js/voice-index.js*');
+    }
     const asked: string[] = [];
     page.on('request', req => { if (req.url().startsWith('https://voice.learnvedicmath.com/')) asked.push(req.url()); });
     await open(page, '#/skill/3-mult');
@@ -153,7 +161,8 @@ test.describe('Listen', () => {
     expect((await spoken(page)).length).toBe(before);
   });
 
-  test('a Sutra deep dive reads each section, and the diagram step on screen', async ({ page }) => {
+  test('a Sutra deep dive reads a recorded section in the studio voice', async ({ page }) => {
+    await needsStudioVoice(page);
     const st = await setup(page);
     await open(page, '#/sutras/s1');
     const dlg = page.locator('dialog.sutra-modal');
@@ -161,10 +170,19 @@ test.describe('Listen', () => {
     await st.recordKey('sutra:s1:why');
     await dlg.getByRole('button', { name: 'Listen: why it works' }).click();
     await expect.poll(() => vlog(page)).toContain('studio:line');
-    await dlg.getByRole('button', { name: 'Listen: this diagram step' }).click();
+  });
+
+  test('a Sutra deep dive reads each section, and the diagram step on screen', async ({ page }) => {
+    await setup(page);
+    await open(page, '#/sutras/s1');
+    const dlg = page.locator('dialog.sutra-modal');
+    await expect(dlg).toBeVisible();
+    await dlg.getByRole('button', { name: 'Listen: why it works' }).click();
     await expect.poll(async () => (await spoken(page)).length).toBeGreaterThan(0);
+    await page.evaluate(() => { (window as any).__spoken.length = 0; }); // the diagram step's own reading next
+    await dlg.getByRole('button', { name: 'Listen: this diagram step' }).click();
     const step = (await dlg.locator('.sc-say').innerText()).trim();
-    expect((await spoken(page)).join(' ')).toContain(step.split(' ').slice(0, 2).join(' '));
+    await expect.poll(async () => (await spoken(page)).join(' ')).toContain(step.split(' ').slice(0, 2).join(' '));
   });
 
   test('the worked example is read from the page, its answer too', async ({ page }) => {

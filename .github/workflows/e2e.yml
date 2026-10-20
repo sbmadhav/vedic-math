@@ -25,8 +25,10 @@ on:
 permissions:
   contents: read
 
+# A newer push cancels the run for an older push, but never the daily or on-demand run (the full suite, with the
+# scenario specs and the video check): one group per event, so a merge during a full run no longer cancels it
 concurrency:
-  group: e2e-${{ github.ref }}
+  group: e2e-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:

@@ -8,14 +8,22 @@ import { BASE_URL } from '../../playwright.config';
    localhost, so that test skips on a local BASE_URL. Here the app is served under a made-up, non-local host name
    (every request to it is answered from BASE_URL), so the real, unmodified analytics.js runs with analytics on,
    and the control run (GPC off) proves the setup would see a GoatCounter request. The fixtures still answer
-   GoatCounter locally, so nothing is ever counted. */
-const HOST = 'http://vedic-e2e.example';
+   GoatCounter locally, so nothing is ever counted. The made-up host is https: the live CSP carries
+   upgrade-insecure-requests, so on an http host every script and style would be fetched over https and miss the
+   route, and the page would never render. */
+const HOST = 'https://vedic-e2e.example';
 
 async function serveUnderFakeHost(context: import('@playwright/test').BrowserContext) {
-  await context.route(/^http:\/\/vedic-e2e\.example\//, async route => {
+  await context.route(/^https:\/\/vedic-e2e\.example\//, async route => {
     const url = BASE_URL + route.request().url().slice(HOST.length);
-    const response = await route.fetch({ url });
-    await route.fulfill({ response });
+    // A request still in flight when the test ends (the control passes as soon as GoatCounter is asked for) finds
+    // its response disposed with the context; it fails as a network error instead of throwing outside the test
+    try {
+      const response = await route.fetch({ url });
+      await route.fulfill({ response });
+    } catch {
+      await route.abort().catch(() => {});
+    }
   });
 }
 
@@ -45,7 +53,8 @@ for (const gpc of [true, false]) {
       await page.waitForTimeout(6500);
       expect(gc).toEqual([]);
     } else {
-      await expect.poll(() => gc.length, { timeout: 15_000 }).toBeGreaterThan(0);
+      // GoatCounter itself, not only the Cloudflare beacon (which loads too when CF_TOKEN is set)
+      await expect.poll(() => gc.some(u => /goatcounter/.test(u)), { timeout: 15_000 }).toBe(true);
     }
   });
 }
