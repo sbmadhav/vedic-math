@@ -38,7 +38,7 @@
 | `js/gamify.js` | Skill mastered | big (70) | big (unchanged) |
 | `js/star.js` | Right answer, Comeback, Dare won | particle burst (26, 40) | small: sparkles, bounce, "+N" twinkles |
 | `js/star.js` | Star lit | particle burst (60) | big (110) |
-| `js/arena.js` runArena, runChallenge | Every fifth combo | big (30) | small: combo ticks, sparkles; a miss wiggles the question |
+| `js/arena.js` runArena, runChallenge | Every fifth combo | big (30) | small: combo ticks, sparkles; a miss wiggles the answer it shows |
 | `js/play/exp/apprentice.js` | Apprentice earns a Belt | big (70) | big (unchanged) |
 | `js/play/exp/scroll.js` | Chapter completed, whole scroll | big (60, 120) | big (unchanged) |
 | `js/play/exp/lens.js` | Every challenge solved | big (70) | big (unchanged) |

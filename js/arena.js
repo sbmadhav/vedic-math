@@ -128,8 +128,9 @@ export function runArena(root, { league, day = null, dial, signal, onEnd, untime
     }
   };
   const pop = (txt, ok) => { const el = $('#arPop'); el.textContent = txt; el.className = 'ar-pop show ' + (ok ? 'ok' : 'no'); later(() => (el.className = 'ar-pop'), 600, rs); };
-  /* Everyday moments (openspec celebrations): the combo ticks, every fifth sparkles; a miss wiggles the question */
-  const celebrate = ok => { if (!ok) { wiggle($('#arQ'), rs); return; } if (combo >= 2) tick($('#arCombo b'), rs); if (combo % 5 === 0) sparkle($('#arCombo'), { n: 10, signal: rs }); };
+  /* Everyday moments (openspec celebrations): the combo ticks, every fifth sparkles; a miss wiggles the answer it shows
+     (#arPop stays up while the next question is drawn, so the wiggle stays on the miss) */
+  const celebrate = ok => { if (!ok) { wiggle($('#arPop'), rs); return; } if (combo >= 2) tick($('#arCombo b'), rs); if (combo % 5 === 0) sparkle($('#arCombo'), { n: 10, signal: rs }); };
   const answer = v => {
     if (over) return;
     const p = at(), ok = checkOne({ kind: 'num', answer: p.answer }, String(v)).ok;
@@ -199,8 +200,9 @@ export function runChallenge(root, ch, set, { onEnd, tap = false, signal, untime
     }
   };
   const pop = (txt, ok) => { const el = $('#arPop'); el.textContent = txt; el.className = 'ar-pop show ' + (ok ? 'ok' : 'no'); later(() => (el.className = 'ar-pop'), 600, rs); };
-  /* Everyday moments (openspec celebrations): the combo ticks, every fifth sparkles; a miss wiggles the question */
-  const celebrate = ok => { if (!ok) { wiggle($('#arQ'), rs); return; } if (combo >= 2) tick($('#arCombo b'), rs); if (combo % 5 === 0) sparkle($('#arCombo'), { n: 10, signal: rs }); };
+  /* Everyday moments (openspec celebrations): the combo ticks, every fifth sparkles; a miss wiggles its answer line
+     (#arFix keeps the missed answer while the next question is drawn, so the wiggle stays on the miss) */
+  const celebrate = ok => { if (!ok) { wiggle($('#arFix'), rs); return; } if (combo >= 2) tick($('#arCombo b'), rs); if (combo % 5 === 0) sparkle($('#arCombo'), { n: 10, signal: rs }); };
   const answer = v => {
     if (over) return;
     const p = set[i], ok = p.kind === 'choice' ? String(v) === String(p.answer) : checkOne({ kind: 'num', answer: p.answer, tol: 1e-6 }, String(v)).ok;
