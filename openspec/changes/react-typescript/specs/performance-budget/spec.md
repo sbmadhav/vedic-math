@@ -72,7 +72,7 @@ From the server-rendered shell on, the build SHALL read the first visit's JS and
 - **THEN** the first-load line of the budget table does not change, and the Worker line does
 
 ### Requirement: The server code stays within the Worker's limits
-The build SHALL measure the compressed size of the Worker bundle (the server render, the API and the Durable Objects) and SHALL fail when it is above 75% of the Cloudflare Worker size limit of the account's plan. No 3D module and no client-only module SHALL be in it.
+The build SHALL measure the uncompressed size of the Worker bundle (the server render, the API and the Durable Objects), the measure Cloudflare's Worker size limit uses, and SHALL fail when it is above 75% of that limit. It SHALL print the compressed size for information only. No 3D module and no client-only module SHALL be in it.
 
 #### Scenario: A large dependency on the server
 - **WHEN** a change makes a route module import a library that brings the Worker bundle above 75% of the limit

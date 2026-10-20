@@ -42,7 +42,11 @@ A page navigation to a path under `/play/` that matches no published file SHALL 
 - **THEN** the status is 200, the page carries `noindex`, and Home (or the Mode picker on a first visit) is shown
 
 ### Requirement: What counts as a page navigation
-A request SHALL count as a page navigation only with explicit evidence: it carries `Sec-Fetch-Mode: navigate`; or, from a browser that sends no `Sec-Fetch-Mode` at all, it is a GET for a path outside `/play/assets/` whose last segment has no file extension. A request with any other `Sec-Fetch-Mode` (such as `cors` or `no-cors`) SHALL never count as a page navigation, whatever its `Accept` header.
+A request for a path under `/play/assets/` SHALL never count as a page navigation. Any other request SHALL count as one only with explicit evidence: it carries `Sec-Fetch-Mode: navigate`; or, from a browser that sends no `Sec-Fetch-Mode` at all, it is a GET for a path outside `/play/assets/` whose last segment has no file extension. A request with any other `Sec-Fetch-Mode` (such as `cors` or `no-cors`) SHALL never count as a page navigation, whatever its `Accept` header.
+
+#### Scenario: A navigation to a missing asset
+- **WHEN** a visitor opens `/play/assets/missing.js` in the address bar (`Sec-Fetch-Mode: navigate`)
+- **THEN** the status is 404 with the 404 page, not a page of the game
 
 #### Scenario: A browser without fetch metadata
 - **WHEN** a browser that sends no `Sec-Fetch-Mode` opens `/play/arena`

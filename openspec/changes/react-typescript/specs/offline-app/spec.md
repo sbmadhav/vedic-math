@@ -3,7 +3,11 @@
 ## MODIFIED Requirements
 
 ### Requirement: Every precached file is checked
-In the published worker, every precache entry SHALL carry the hash the build recorded, and install SHALL fail if any file the network serves does not match. The list SHALL be made from the client build's manifest and SHALL cover the game's offline shell (a page the build renders), every JS and CSS file of the entry, the root route and the routes needed for offline play, the pinned design-system files, the theme, the fonts, the icons and the manifest. No entry SHALL be unhashed, and no entry SHALL be a 3D file (three.js, React Three Fiber, drei or a scene): 3D files are cached only when a route first loads them. The worker SHALL be written in TypeScript by hand and built with the game; the source SHALL keep `VERSION = 'dev'` and an empty list.
+In the published worker, every precache entry SHALL carry the hash the build recorded, and install SHALL fail if any file the network serves does not match. The list SHALL be made from the client build's manifest and SHALL cover the game's offline shell (a page the build renders), every JS and CSS file of the entry, the root route and the routes needed for offline play, the pinned design-system files, the theme, the fonts, the icons and the manifest. An entry whose URL is fixed (the shell and the files the move pins) SHALL be refreshed through its digest and `VERSION`, never by its name. No entry SHALL be a 3D file (three.js, React Three Fiber, drei or a scene): 3D files are cached only when a route first loads them. The worker SHALL be written in TypeScript by hand and built with the game; the source SHALL keep `VERSION = 'dev'` and an empty list.
+
+#### Scenario: A file with a fixed URL changes
+- **WHEN** a deploy changes the offline shell, whose URL `/play/__shell.html` stays the same
+- **THEN** its recorded digest and the worker's `VERSION` change, the new worker installs a fresh cache, and a network copy that does not match the digest fails the install
 
 #### Scenario: Built worker
 - **WHEN** `python3 build.py --out _site` runs

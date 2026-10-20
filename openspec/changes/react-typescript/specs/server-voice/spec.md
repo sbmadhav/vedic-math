@@ -14,7 +14,7 @@ Lines whose words never change (explanations, Sutra names, lessons, praise, feed
 - **THEN** the recorded line is played and no request is sent to the server voice
 
 ### Requirement: Sentences with numbers are voiced once by the server
-A sentence that holds a question's own numbers (a Server line) SHALL be normalized the same way in the game and on the server and named by a hash of its text and voice. The game SHALL first ask the voice host for that name; if it is not there, the server SHALL voice the sentence with the studio voice at most once, keep the audio in R2 under that name for every later request from any Player, and return it.
+A sentence that holds a question's own numbers (a Server line) SHALL be normalized the same way in the game and on the server and named by the full SHA-256 of its text and voice profile (a profile fixes the voice name, rate and format). The game SHALL first ask the voice host for that name; if it is not there, the server SHALL voice the sentence with the studio voice at most once, keep the audio in R2 under that name for every later request from any Player, and return it.
 
 #### Scenario: A new sentence
 - **WHEN** an Explorer Player with read aloud on is asked "What is 47 plus 38?" and no Player has heard it before
@@ -69,16 +69,23 @@ Read aloud SHALL say a line with studio clips when every clip is loaded, or else
 - **WHEN** the server takes 2 seconds to voice a new sentence
 - **THEN** the Player hears the clips or the device's voice at once, and the next Player to hear that sentence gets the studio voice
 
-### Requirement: Nothing about the Player is sent
-A request to the server voice SHALL carry only the protocol version, the voice name, the sentence text and the access proof, and no Player data or cookie. The speech provider SHALL receive only the sentence text and the voice name, from the server, never with the Player's IP address. The server SHALL keep nothing about the Player and log no IP address or access proof. The provider's key SHALL exist only as a server secret.
+### Requirement: No Player content is sent
+A request to the server voice SHALL carry only the protocol version, the voice profile, the sentence text and the access proof, and no Player content (no Player id, Nickname, Age answer, progress or setting) and no cookie. The speech provider SHALL receive only the sentence text and the voice name, from the server, never with the Player's IP address. The server SHALL keep nothing about the Player and log no IP address or access proof. The provider's key SHALL exist only as a server secret.
 
 #### Scenario: What the browser sends
 - **WHEN** a Player is asked a new sentence and the game asks the server to voice it
-- **THEN** the request body holds only `v`, `voice` and `text`, and the request carries no cookie
+- **THEN** the request body holds only `v`, `voice` and `text`, the access proof is in the `Authorization` header, and the request carries no cookie
 
 #### Scenario: A Player under 13
 - **WHEN** an Explorer Player whose Age answer is under 13 is asked a new sentence
 - **THEN** the same request is sent with no Player data, no Firebase identity is created, and no lasting identifier is sent
+
+### Requirement: The access proof is transient
+The access proof SHALL be either a Firebase ID token, which a Player has only after their first World board post and which names that Player's anonymous Firebase account, or an anonymous ticket the server signed. The server SHALL check it, then discard it: it SHALL never log, store or forward it, and SHALL never link it to a sentence. The parent note and privacy notice SHALL say so.
+
+#### Scenario: A Player who has posted
+- **WHEN** a Player with a Firebase identity is asked a new sentence
+- **THEN** the token is checked and discarded, the speech provider receives only the sentence and the voice, and no record joins the token to the sentence
 
 ### Requirement: Access is checked before a new recording
 The server SHALL check access before voicing a new sentence: a Firebase ID token when the Player has one, verified for signature, audience, issuer and expiry, or a short-lived session ticket the server signed when the Player has no Firebase identity. It SHALL never create an identity for this. Audio already stored SHALL be served without a check, like any recorded line. Requests SHALL be rate limited per connection address without keeping the address.

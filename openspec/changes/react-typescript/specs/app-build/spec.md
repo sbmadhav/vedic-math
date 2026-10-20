@@ -11,7 +11,11 @@ The repo SHALL be one pnpm workspace with the packages `app` (the game, rendered
 
 #### Scenario: A clean build
 - **WHEN** CI runs `pnpm install --frozen-lockfile` and then `python3 build.py --out _site`
-- **THEN** `_site/play/index.html`, `_site/play/__shell.html`, `_site/sw.js`, `_site/_headers`, `_site/_redirects`, the landing pages and the Worker bundle exist, and the build prints the budget table
+- **THEN** `_site/play/index.html`, `_site/play/__shell.html`, `_site/sw.js`, `_site/_headers`, `_site/_redirects` and the landing pages exist, the Worker bundle exists outside `_site`, and the build prints the budget table
+
+#### Scenario: Server code is never a public file
+- **WHEN** `python3 build.py --out _site` runs
+- **THEN** no file of the Worker bundle is under `_site`, so none can be requested as a static file
 
 #### Scenario: A package used without being declared
 - **WHEN** a file in `app` imports a package that only `workers` lists as a dependency
@@ -44,7 +48,7 @@ No component SHALL assign to `innerHTML`, `outerHTML` or `insertAdjacentHTML`, o
 - **THEN** it is shown as 7 with a superscript 2
 
 ### Requirement: Built files are hashed, the source is not stamped
-Every JS and CSS file the build emits for the game SHALL have a content hash in its name. The source in git SHALL carry no hashes and no precache list (`sw.ts` keeps `VERSION = 'dev'` and an empty `PRECACHE` between its markers), and the build SHALL fail if it does.
+Every JS and CSS file the build emits for the game SHALL have a content hash in its name, except the service worker at `/sw.js`, which keeps a fixed URL so the registration stays the same and changes through its `VERSION`. The source in git SHALL carry no hashes and no precache list (`sw.ts` keeps `VERSION = 'dev'` and an empty `PRECACHE` between its markers), and the build SHALL fail if it does.
 
 #### Scenario: A changed component
 - **WHEN** one component changes and the site is built again
@@ -66,7 +70,7 @@ The built game SHALL run under the move's policy without `'unsafe-eval'`, withou
 - **THEN** the tests fail and name the directive
 
 ### Requirement: No secret or provider endpoint in published files
-No file the browser can download SHALL hold an API key or the address of a speech provider; keys SHALL exist only as Cloudflare secrets used by the Worker.
+No file the browser can download (everything under `_site`) SHALL hold an API key or the address of a speech provider; keys SHALL exist only as Cloudflare secrets used by the Worker, whose bundle is built outside `_site`.
 
 #### Scenario: A key in client code
 - **WHEN** a change puts a Google API key or `texttospeech.googleapis.com` in a client module

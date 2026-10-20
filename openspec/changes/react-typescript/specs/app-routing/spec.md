@@ -36,6 +36,13 @@ A page navigation to a path under `/play/` that has no prerendered page SHALL be
 - **WHEN** a Player who opened the game online loses the connection and taps Games
 - **THEN** the Games view is shown
 
+### Requirement: Legacy routes render the shell on the server
+For a route still drawn by a Legacy view, the page the server renders SHALL be the document, header, nav and footer with an empty view root, and the view SHALL be drawn after start-up.
+
+#### Scenario: A Legacy route on a cold load
+- **WHEN** a Player opens `/play/tower` in a new tab while the Tower is still a Legacy view
+- **THEN** the HTML holds the header, nav and an empty view root, and the Tower is drawn once the game has started
+
 ### Requirement: No Player data on the server
 The server SHALL render nothing that depends on a Player's data (Players, progress, Sparks, settings, Mode, Age answer), and no request the game sends for a page SHALL carry that data. Parts of a screen that depend on it SHALL be drawn in the browser after start-up, without shifting the layout, and the browser's first render SHALL match the server's.
 
