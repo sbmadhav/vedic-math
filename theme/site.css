@@ -4,11 +4,25 @@
 .lv-kicker { margin: 0; font: var(--text-kicker); letter-spacing: var(--text-kicker-tracking); text-transform: uppercase; color: var(--coral-strong); }
 .lv-title { font-size: clamp(2rem, 5vw, 3.2rem); max-width: 16em; margin-top: var(--space-2) !important; }
 .lv-hero-in { display: grid; grid-template-columns: 1fr auto; gap: var(--space-6); align-items: center; }
-.lv-bolt { width: clamp(120px, 22vw, 220px); height: auto; filter: var(--bolt-glow); animation: lv-bob 4s ease-in-out infinite; }
-@keyframes lv-bob { 50% { transform: translateY(-8px) rotate(-3deg); } }
-@media (prefers-reduced-motion: reduce) { .lv-bolt { animation: none; } }
-html.motion-paused .lv-bolt { animation: none; }
-@media (max-width: 700px) { .lv-hero-in { grid-template-columns: 1fr; } .lv-bolt { order: -1; width: 120px; } }
+/* The landing hero: the Nikhilam Family (site/index.html). Same width rules Bolt had, so the layout is unchanged; the
+   inline SVG takes its height from its viewBox, so nothing shifts while it loads. Gentle motion, off with reduced
+   motion, Pause motion (html.motion-paused) and Calm (html.calm, applied before paint from vm.calm). */
+.lv-family { width: clamp(120px, 22vw, 220px); height: auto; overflow: visible; }
+.lv-family .lv-f-one, .lv-family .lv-f-zero, .lv-family .lv-f-nine { transform-box: fill-box; transform-origin: 50% 100%; }
+.lv-family .lv-f-one { animation: lv-sway 6s ease-in-out infinite; }
+.lv-family .lv-f-zero { animation: lv-hop 3s ease-in-out infinite; }
+.lv-family .lv-f-nine { animation: lv-nod 6s ease-in-out -2s infinite; }
+.lv-family .lv-f-shadow--zero { transform-box: fill-box; transform-origin: center; animation: lv-shrink 3s ease-in-out infinite; }
+.lv-family .lv-spark { transform-box: fill-box; transform-origin: center; animation: lv-twinkle 3.2s ease-in-out infinite; }
+.lv-family .lv-spark--b { animation-delay: -.8s; } .lv-family .lv-spark--c { animation-delay: -1.6s; } .lv-family .lv-spark--d { animation-delay: -2.4s; }
+@keyframes lv-sway { 50% { transform: rotate(-2.5deg); } }
+@keyframes lv-nod { 50% { transform: rotate(3deg); } }
+@keyframes lv-hop { 0%, 55%, 100% { transform: none; } 25% { transform: translateY(-5px); } }
+@keyframes lv-shrink { 0%, 55%, 100% { transform: none; } 25% { transform: scale(.7); } }
+@keyframes lv-twinkle { 50% { opacity: .3; transform: scale(.6); } }
+@media (prefers-reduced-motion: reduce) { .lv-family * { animation: none !important; } }
+html.motion-paused .lv-family *, html.calm .lv-family * { animation: none !important; }
+@media (max-width: 700px) { .lv-hero-in { grid-template-columns: 1fr; } .lv-family { order: -1; width: 120px; } }
 .lv-play { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 var(--space-7); border: 2px solid var(--primary-border); border-radius: var(--radius-pill); background: var(--primary-bg); color: var(--on-accent); font: 700 1.2rem/1 var(--font-sans); text-decoration: none; box-shadow: var(--shadow-ledge); }
 .lv-play:hover { box-shadow: var(--shadow-ledge-hover); transform: translateY(-1px); }
 .lv-play:active { box-shadow: var(--shadow-ledge-press); transform: translateY(2px); }

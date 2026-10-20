@@ -18,11 +18,15 @@ The landing page (`/`) and the grown-up pages (`/parents/`, `/teachers/`, `/priv
 - **THEN** no request is made for `/js/app.js`, any Firebase file or any YouTube host
 
 ### Requirement: The landing page
-The landing page SHALL show Bolt, say in plain words what Vedic Math is (Tricks from Bharati Krishna Tirtha's 1965 book, practice, games and Boards for ages 4 to adult), show the three Modes, offer one main "Play" button to `/play/`, and link to the grown-up pages. It SHALL NOT claim the methods come from the Vedas.
+The landing page SHALL show the Nikhilam Family (the brand mark's three digits) as its large picture, named for screen readers, and no Bolt (Bolt appears only inside the game), say in plain words what Vedic Math is (Tricks from Bharati Krishna Tirtha's 1965 book, practice, games and Boards for ages 4 to adult), show the three Modes, offer one main "Play" button to `/play/`, and link to the grown-up pages. It SHALL NOT claim the methods come from the Vedas.
 
 #### Scenario: Play
 - **WHEN** a first-time visitor taps Play on the landing page
 - **THEN** `/play/` opens and the Mode picker is shown
+
+#### Scenario: The hero picture
+- **WHEN** a visitor opens the landing page at 320, 375, 768 or 1280 px wide, in Daybreak or Deep Space
+- **THEN** the Nikhilam Family is shown, named "The Nikhilam Family: the Devanagari digits one, zero and nine", at the same size as before with no layout shift
 
 #### Scenario: Honest framing
 - **WHEN** the landing page text is checked by the copy tests
