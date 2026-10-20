@@ -7,6 +7,9 @@
     python3 build.py --preview --out DIR      a branch preview: adds X-Robots-Tag: noindex, nofollow on every response
     python3 build.py --target moved           the Phase B "Vedic Math has moved" output for https://sbmadhav.com/vedic-math/, into _moved/
     python3 build.py --voice static           Studio voice as static assets under /voice/ (Workers Paid, L8 option b)
+    python3 build.py --voice off              no Studio voice: the voice host is left out of the policy, the worker and the
+                                              published js/voice-index.js, so read aloud and Listen use the device voice
+                                              (CI deploys this way while R2 is not set up: R2_ACCOUNT_ID is empty)
 
 The site is served by Cloudflare Workers static assets (wrangler.jsonc; openspec change learnvedicmath, design D1)
 from the root of learnvedicmath.com: the landing page at /, the game at /play/, the grown-up pages at /parents/,
@@ -58,7 +61,7 @@ MARKERS = (".assetsignore", ".nojekyll")  # an earlier build: safe to empty
 GENERATED = ("robots.txt", "sitemap.xml", ".well-known/security.txt", "sw.js", "_headers", "_redirects")
 
 # Cloudflare Workers static assets limits (developers.cloudflare.com/workers/platform/limits; design D17)
-MAX_FILES = {"r2": 20_000, "static": 100_000}   # Workers Free; Workers Paid when the voice is static assets
+MAX_FILES = {"r2": 20_000, "off": 20_000, "static": 100_000}   # Workers Free; Workers Paid when the voice is static assets
 MAX_FILE_BYTES = 25 * 1024 * 1024
 MAX_HEADER_RULES, MAX_HEADER_LINE, MAX_REDIRECTS = 100, 2_000, 2_000
 
@@ -75,8 +78,9 @@ def fail(msg):
 # e2e/tests/third-party.spec.ts fails on a request to a host not here. "csp" maps a directive to the pages that allow
 # the host there ("play" is the game only, "*" every page). An empty csp means no page contacts it (only a worker,
 # which gets its own policy from its own response).
+VOICE_HOST = "https://voice.learnvedicmath.com"  # the R2 voice host (design D17)
 THIRD_PARTIES = [
-    {"host": "https://voice.learnvedicmath.com", "own": True, "csp": {"media-src": "play", "connect-src": "play"},
+    {"host": VOICE_HOST, "own": True, "csp": {"media-src": "play", "connect-src": "play"},
      "why": "Studio voice files (R2 bucket learnvedicmath-voice, design D17)", "when": "When read aloud plays a recorded line"},
     {"host": "https://www.youtube-nocookie.com", "csp": {"frame-src": "play"},
      "why": "A video plays in the page (privacy-enhanced mode)", "when": "After the Player taps play; no frame before"},
@@ -196,6 +200,23 @@ SBMADHAV = re.compile(r"(?:https?:)?//(?:[\w-]+\.)*sbmadhav\.(?:com|github\.io)|
 SHARED_PATHS = re.compile(r"(?<![\w.-])/(?:assets/(?:explore|analytics|count)\.js|assets/(?:fonts|icons)/|design-system/)")
 
 
+# --voice off: the published js/voice-index.js names no recording and no host, so js/voice.js finds nothing recorded and
+# the device voice reads (the same state as before the first recording), and sw.js gets no voice origin.
+VOICE_INDEX = "js/voice-index.js"
+VOICE_OFF_INDEX = """/* Studio voice index: written by build.py --voice off. This build has no Studio voice (the voice host is not set up),
+   so read aloud and every Listen button use the device voice. */
+export const STUDIO = {"voice": null, "speed": null, "base": null, "tag": null, "sha256": null, "lineSet": null, "dir": null, "packs": [], "coveredSkills": [], "counts": {"lines": 0, "clips": 0}};
+"""
+SW_VOICE_ORIGIN = re.compile(r"^const VOICE_ORIGIN = '[^']*';.*$", re.M)
+
+
+def voice_off_sw(sw):
+    """sw.js with no voice origin: no request is a Studio voice file."""
+    if len(SW_VOICE_ORIGIN.findall(sw)) != 1:
+        fail("sw.js: the VOICE_ORIGIN line was not found (build.py --voice off replaces it)")
+    return SW_VOICE_ORIGIN.sub("const VOICE_ORIGIN = null; // no Studio voice in this build (build.py --voice off)", sw)
+
+
 def check_voice(files):
     for f in files:
         if f.startswith("voice/") or (f.lower().endswith(AUDIO_EXT) and not f.startswith("sounds/")):
@@ -208,6 +229,8 @@ def check_published(out, voice):
     files = [p for p in out.rglob("*") if p.is_file()]
     if voice == "r2" and (out / "voice").exists():
         fail("voice/ is in the output; with the R2 voice host no voice file is published with the site (design D17)")
+    if voice == "off" and (out / "voice").exists():
+        fail("voice/ is in the output of a build with --voice off")
     if len(files) > MAX_FILES[voice]:
         fail(f"{len(files)} files in the output; Cloudflare Workers allows {MAX_FILES[voice]} per version on this plan (design D17)")
     for p in files:
@@ -220,6 +243,8 @@ def check_published(out, voice):
         if rel == "js/cloud-config.js":
             text = FIREBASE_KEY.sub("", text)
         host, secret = PROVIDER_HOSTS.search(text), SECRETS.search(text)
+        if voice == "off" and VOICE_HOST.split("//")[1] in text:
+            fail(f"{rel}: names the voice host {VOICE_HOST}; a build with --voice off must not (deploy-pipeline spec)")
         if host:
             fail(f"{rel}: names a speech provider ({host.group(0)}); the site must only play its own recorded files")
         if secret:
@@ -515,13 +540,23 @@ def build_site(args, out):
     check_notices(all_files)
     files = publishable(all_files)
     check_voice(files)
-    src = lambda p: (ROOT / p).read_bytes()
+    voice_off = args.voice == "off"
+    if voice_off:
+        global THIRD_PARTIES
+        THIRD_PARTIES = [t for t in THIRD_PARTIES if t["host"] != VOICE_HOST]  # out of every policy and the host check
+    if voice_off and VOICE_INDEX not in files:
+        fail(f"{VOICE_INDEX} is missing")
+    # Published path -> bytes that replace the source file's in the output
+    overrides = {VOICE_INDEX: VOICE_OFF_INDEX.encode()} if voice_off else {}
+    src = lambda p: overrides[p] if p in overrides else (ROOT / p).read_bytes()
     sw = (ROOT / "sw.js").read_text()
     blocks = re.findall(re.escape(SW_START) + r"\n?(.*?)\n?" + re.escape(SW_END), sw, re.S)
     if len(blocks) != 1:
         fail("sw.js: precache markers not found")
     if blocks[0].strip() != SW_DEV:
         fail(f"sw.js is stamped; the source must keep\n{SW_DEV}\nbetween the precache markers (the build stamps the copy)")
+    if voice_off:
+        sw = voice_off_sw(sw)
 
     # Published path -> source path. Pages are rendered separately; the design system goes to /ds/2.1.0/.
     publish = {f: f for f in files if not f.startswith("site/")}
@@ -626,7 +661,10 @@ def build_site(args, out):
     empty(out)
     for f, s in publish.items():
         (out / f).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(ROOT / s, out / f)
+        if f in overrides:
+            (out / f).write_bytes(overrides[f])
+        else:
+            shutil.copy2(ROOT / s, out / f)
     for url, (html, _) in pages.items():
         dest = out / (url[1:] + ("index.html" if url.endswith("/") else ""))
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -639,7 +677,8 @@ def build_site(args, out):
     rel = out.relative_to(ROOT) if out.is_relative_to(ROOT) else out
     n = sum(1 for p in out.rglob("*") if p.is_file())
     print(f"{rel}/: {n} files, {len(pages)} pages, {len(imports)} modules pinned, app.js v={versions['/js/app.js']}, "
-          f"sw.js VERSION={sw_version} ({len(precache)} files precached){' [dev]' if dev else ''}{' [preview]' if args.preview else ''}")
+          f"sw.js VERSION={sw_version} ({len(precache)} files precached){' [dev]' if dev else ''}{' [preview]' if args.preview else ''}"
+          f"{' [no Studio voice]' if voice_off else ''}")
 
 
 def empty(out):
@@ -708,7 +747,9 @@ def main():
     ap.add_argument("--dev", action="store_true", help="no stamps and the 'dev' worker, for local runs")
     ap.add_argument("--preview", action="store_true", help="a branch preview: X-Robots-Tag: noindex, nofollow on every response")
     ap.add_argument("--target", choices=["site", "moved"], default="site", help="site (learnvedicmath.com) or moved (the Phase B page for the old origin)")
-    ap.add_argument("--voice", choices=["r2", "static"], default="r2", help="where the Studio voice lives (design D17): the R2 voice host (default) or static assets (Workers Paid)")
+    ap.add_argument("--voice", choices=["r2", "static", "off"], default="r2",
+                    help="where the Studio voice lives (design D17): the R2 voice host (default), static assets (Workers Paid), "
+                         "or off (no voice host: the device voice reads; CI deploys this way until R2 is set up)")
     args = ap.parse_args()
     default = "_moved" if args.target == "moved" else "_dev" if args.dev else "_site"
     out = pathlib.Path(args.out).resolve() if args.out else ROOT / default

@@ -17,7 +17,7 @@
      or slow. Routes are hash routes, so one shell serves them all.
    - Same-origin files with ?v=<hash>: cache first (they never change at a given URL).
    - Other same-origin files (fonts, icons, the manifest, vendored code): network first, cache fallback.
-   - Studio voice audio (https://voice.learnvedicmath.com/, or /voice/ when the voice is static assets): cache first in
+   - Studio voice audio (VOICE_ORIGIN, or /voice/ when the voice is static assets): cache first in
      its own cache, lvm-voice, which every deploy keeps (file names hold their content's hash, so a name never changes
      meaning). Trimmed to VOICE_MAX whole lines, oldest first; a new line set, clip directory or pack replaces its older
      copy. Nothing is precached: only Players who use read aloud download audio.
@@ -46,7 +46,7 @@ const SHELL = SCOPE;
 const RUNTIME_MAX = 60; // entries kept beyond the precache list; the oldest go first
 const NAV_TIMEOUT = 3500; // ms before a page load falls back to the saved shell
 const PRECACHED = new Set(PRECACHE.map(([u]) => new URL(u, location.origin).href));
-const VOICE_ORIGIN = 'https://voice.learnvedicmath.com'; // the R2 voice host (design D17); /voice/ when the voice is static assets
+const VOICE_ORIGIN = 'https://voice.learnvedicmath.com'; // the R2 voice host (design D17); /voice/ when the voice is static assets; null with build.py --voice off
 const VOICE = '/voice/';
 const VOICE_CACHE = PREFIX + 'voice'; // kept across deploys (not a version cache)
 const VOICE_MAX = 4000; // whole lines kept (about 10 KB each); the index and pack files are not counted
