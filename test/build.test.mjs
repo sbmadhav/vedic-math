@@ -398,7 +398,7 @@ test('every static page has a canonical link and Open Graph tags with the site i
 });
 
 test('a Markdown link keeps its query string: the URL is escaped once', () => {
-  const r = spawnSync('python3', ['-c', 'import sys; sys.argv = ["build.py"]; import build; print(build.inline_md(sys.stdin.read()))'], { cwd: repo, input: 'see [the rule](https://example.org/a?x=1&y="2") & more', encoding: 'utf8' });
+  const r = spawnSync('python3', ['-B', '-c', 'import sys; sys.argv = ["build.py"]; import build; print(build.inline_md(sys.stdin.read()))'], { cwd: dir, env, input: 'see [the rule](https://example.org/a?x=1&y="2") & more', encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
   assert.equal(r.stdout.trim(), 'see <a href="https://example.org/a?x=1&amp;y=&quot;2&quot;">the rule</a> &amp; more');
 });
