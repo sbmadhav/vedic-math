@@ -465,7 +465,8 @@ def csp(html, page, report_only=False):
         "base-uri 'none'",
         "form-action 'self'",
         "frame-ancestors 'none'",
-        "upgrade-insecure-requests",
+        # Browsers ignore upgrade-insecure-requests in a Report-Only policy and log a console warning on every page
+        *([] if report_only else ["upgrade-insecure-requests"]),
         *(["require-trusted-types-for 'script'"] if report_only else []),
         # The Report-Only variant reports through report-to only, which the Reporting API batches: through report-uri
         # every innerHTML of a view would be one request to /_csp

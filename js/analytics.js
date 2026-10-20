@@ -15,7 +15,7 @@
   const CODE = 'learnvedicmath';                               // https://learnvedicmath.goatcounter.com
   const ENDPOINT = `https://${CODE}.goatcounter.com/count`;
   const SCRIPT = '/vendor/goatcounter/count.js';
-  const CF_TOKEN = '';                                         // Cloudflare Web Analytics site token (public); empty: off
+  const CF_TOKEN = '1841b328071d489da44be107523bf818';         // Cloudflare Web Analytics site token (public); empty: off
   const CF_BEACON = 'https://static.cloudflareinsights.com/beacon.min.js';
 
   const optedOut = navigator.doNotTrack === '1' || window.doNotTrack === '1' || navigator.globalPrivacyControl === true;

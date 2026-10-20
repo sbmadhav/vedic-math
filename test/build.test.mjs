@@ -243,6 +243,7 @@ test('each page has its own policy from its inline script hashes; COOP is same-o
     assert.deepEqual(ro['style-src'], ["'self'"], 'the Report-Only policy tries style-src without unsafe-inline');
     assert.deepEqual(ro['require-trusted-types-for'], ["'script'"]);
     assert.ok(!('report-uri' in ro), 'the Report-Only policy reports through report-to only (batched)');
+    assert.ok(!('upgrade-insecure-requests' in ro), 'browsers ignore upgrade-insecure-requests in Report-Only and log a warning');
     assert.deepEqual(ro['report-to'], ['csp']);
     const all = JSON.stringify(csp);
     for (const gone of ['i.ytimg.com', 'gstatic.com/firebasejs', 'gc.zgo.at', 'sbmadhav.com', 'sbmadhav.goatcounter']) assert.ok(!all.includes(gone), `${url} allows ${gone}`);
