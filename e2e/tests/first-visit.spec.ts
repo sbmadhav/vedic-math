@@ -84,6 +84,51 @@ test.describe('the landing', () => {
   });
 });
 
+/* The Star's first question, answered right: its text is plain arithmetic ("100 − 98 = ?") */
+async function answerFirst(page: Page) {
+  const q = (await page.locator('#stQ').innerText()).replace(/[\u2212\u2013]/g, '-').replace(/[×x]/g, '*').replace(/[^\d+\-*/(). ]/g, '');
+  const ans = String(Math.round(Function(`return (${q})`)()));
+  for (const ch of ans) await page.locator(`.star-key[data-k="${ch}"]`).click();
+  await page.locator('.star-key[data-k="go"]').click();
+}
+
+/* Home on a phone (openspec change find-and-home-polish): the primary action in the first screen, no card that repeats it */
+test.describe('Home on a 390 px phone after Try a trick', () => {
+  test.use({ seedMode: null, viewport: { width: 390, height: 844 } });
+  for (const scheme of ['light', 'dark'] as const) {
+    test(`compact Player strip, no Keep going for the Star's own Trick, Play this Star on screen (${scheme})`, async ({ page, issues }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.goto(APP);
+      await page.locator('#tryBtn').click();
+      await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
+      await answerFirst(page);
+      await expect(page.locator('#stMain .star-tag')).toHaveText('Question 2 of 4');
+      await page.locator('#stExit').click();
+      await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
+      expect(await page.evaluate(() => localStorage.getItem('mathquest.v1.' + JSON.parse(localStorage.getItem('vm.players')!).active))).toContain('"last":"v-');
+      await expect(page.locator('.mq-continue')).toHaveCount(0);
+      const strip = (await page.locator('.me-strip').boundingBox())!;
+      expect(strip.height).toBeLessThanOrEqual(130);
+      const play = (await page.locator('#view .md-btn--primary').boundingBox())!;
+      expect(play.y + play.height).toBeLessThanOrEqual(844);
+      await expect(page.locator('#view .md-btn--primary')).toHaveText('Play this Star');
+      // The New here? note: one control, on a solid card so the drawing behind never crosses its words
+      await expect(page.locator('.gd-new').locator('a, button')).toHaveCount(1);
+      expect(await page.locator('.gd-new').evaluate(e => getComputedStyle(e).backgroundColor)).toBe(await page.locator('.me-strip').evaluate(e => getComputedStyle(e).backgroundColor));
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+      expect(appErrors(issues)).toEqual([]);
+    });
+  }
+});
+
+test.describe('Keep going for another Skill', () => {
+  test.use({ seedProgress: { v: 3, skills: {}, sparks: 0, days: {}, last: '3-mult' } });
+  test('a Challenger who last practiced another Skill is offered it', async ({ page }) => {
+    await open(page);
+    await expect(page.locator('.mq-continue')).toHaveAttribute('href', '#/skill/3-mult');
+  });
+});
+
 test.describe('Home: three doors first', () => {
   test('a new Challenger on a phone: Play this Star, Open the Dojo and the Arena door come first, the Star is explained, the rest is folded', async ({ page, issues }) => {
     await page.setViewportSize({ width: 390, height: 844 });

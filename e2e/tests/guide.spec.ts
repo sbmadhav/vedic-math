@@ -79,9 +79,13 @@ test.describe('the guide page', () => {
 });
 
 test.describe('Home: New here?', () => {
-  test('a Player with no earlier day sees the note', async ({ page }) => {
+  test('a Player with no earlier day sees the note: one Quick tour control that starts the tour', async ({ page }) => {
     await open(page);
-    await expect(page.locator('.gd-new a[href="#/guide"]')).toBeVisible();
+    const note = page.locator('.gd-new');
+    await expect(note).toHaveText('New here? Quick tour');
+    await expect(note.locator('a, button')).toHaveCount(1);
+    await note.getByRole('button', { name: 'Quick tour' }).click();
+    await expect(page.locator('dialog.vm-tour[open]')).toBeVisible();
   });
   const d = new Date(Date.now() - 864e5), yesterday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   test.describe('played yesterday', () => {

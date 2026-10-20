@@ -158,10 +158,10 @@ test.describe('explorer, toast over the choices', () => {
     });
     const toast = page.locator('.fx-toast');
     await expect(toast).toBeVisible();
-    /* Where the toast lands depends on the screen and the round's layout, so pin it over the first choice */
+    /* Where the toast lands depends on the screen and the round's layout (toastSide moves it up off the choices), so pin it over the first choice */
     const choice = page.locator('.ar-choice').first();
     const c = (await choice.boundingBox())!;
-    await page.evaluate(y => { (document.querySelector('.fx-toasts') as HTMLElement).style.bottom = `${innerHeight - y}px`; }, c.y + c.height);
+    await page.evaluate(y => { const box = document.querySelector('.fx-toasts') as HTMLElement; box.style.top = 'auto'; box.style.bottom = `${innerHeight - y}px`; }, c.y + c.height);
     const t = (await toast.boundingBox())!;
     expect(t.y < c.y + c.height / 2 && t.y + t.height > c.y + c.height / 2, 'the toast covers the choice').toBe(true);
     await choice.click();
