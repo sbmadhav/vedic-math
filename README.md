@@ -60,7 +60,7 @@ The end-to-end tests never write to production Firestore: the Firebase SDK is fa
 
 ## Deploy
 
-On a push to `main`, CI (`.github/workflows/ci.yml`) builds `_site/` with `python3 build.py --out _site` and checks it; its `voice-upload` job copies any new Studio voice files to the voice host, and then its `deploy` job publishes the checked `_site/` with `wrangler deploy`, using the Cloudflare API token held in the `production` environment (main only). Both run only once the owner's setup is done (the repository variables `CLOUDFLARE_ACCOUNT_ID` and `R2_ACCOUNT_ID`; `docs/owner-setup-learnvedicmath.md`).
+On a push to `main`, CI (`.github/workflows/ci.yml`) builds `_site/` with `python3 build.py --out _site` and checks it; its `voice-upload` job copies any new Studio voice files to the voice host, and then its `deploy` job publishes the checked `_site/` with `wrangler deploy`, using the Cloudflare API token held in the `production` environment (main only). The deploy runs once the repository variable `CLOUDFLARE_ACCOUNT_ID` is set, and the voice upload once `R2_ACCOUNT_ID` is (`docs/owner-setup-learnvedicmath.md`). Until R2 is set up, CI builds with `python3 build.py --voice off`, which leaves the voice host out of the published site, and deploys that: read aloud and Listen use the device voice.
 
 Phase B of the move publishes the "Vedic Math has moved" page at sbmadhav.com/vedic-math/ once, by hand: `.github/workflows/moved.yml` (`python3 build.py --target moved`).
 

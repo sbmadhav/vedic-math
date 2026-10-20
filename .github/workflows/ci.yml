@@ -40,9 +40,13 @@ jobs:
 
       # Fails on stamps in the source, a policy <meta>, a header that differs from theme/header.html (compose.py),
       # a vendored file that does not match its SHA256SUMS, a /vedic-math/ or sbmadhav.com reference, an unlisted
-      # third-party host, a _headers file Cloudflare would refuse, or more or bigger files than Cloudflare serves
+      # third-party host, a _headers file Cloudflare would refuse, or more or bigger files than Cloudflare serves.
+      # Until the owner sets up R2 (repository variable R2_ACCOUNT_ID, owner guide section 8b) the site is built with
+      # --voice off: no published file names the voice host and read aloud uses the device voice (deploy-pipeline spec).
       - name: Build _site with cache stamps and headers
-        run: python3 build.py --out _site
+        env:
+          VOICE: ${{ vars.R2_ACCOUNT_ID != '' && 'r2' || 'off' }}
+        run: python3 build.py --out _site --voice "$VOICE"
 
       - name: Every page header is the composed theme/header.html
         run: python3 vendor/design-system/2.1.0/compose.py --check theme/header.html play/index.html $(find site -name '*.html')
@@ -121,7 +125,8 @@ jobs:
   # the R2 bucket behind https://voice.learnvedicmath.com/ (checked against the archive's SHA-256 and their own hashed
   # names, never overwriting or deleting), then confirm every file the committed index names is there. The deploy
   # needs this job, so a site that names new voice files is never published before they exist. Runs only once the
-  # owner has set up R2 (repository variable R2_ACCOUNT_ID, owner task 7.8); until then nothing is deployed either.
+  # owner has set up R2 (repository variable R2_ACCOUNT_ID, owner task 7.8); until then the site is built with
+  # --voice off and deployed without it (see the deploy job).
   voice-upload:
     needs: [check, rules]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.R2_ACCOUNT_ID != ''
@@ -150,10 +155,16 @@ jobs:
   # and no pull request can read it; it is passed only as an environment variable.
   deploy:
     needs: [check, rules, voice-upload]
-    # Deploys only when every check, the Firestore rules tests and the voice step succeeded (deploy-pipeline spec:
-    # "if the voice step fails or does not run, nothing is deployed"). So R2 (task 7.8) must be set up before the first
-    # deploy: with R2_ACCOUNT_ID empty the voice step is skipped, and so is this job.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CLOUDFLARE_ACCOUNT_ID != ''
+    # Deploys only when every check and the Firestore rules tests succeeded, and the voice step either succeeded or was
+    # skipped because R2 is not set up (deploy-pipeline spec). With R2_ACCOUNT_ID set, a failed or skipped voice step
+    # deploys nothing, so the site never names voice files that are not on the voice host. With it empty, the check job
+    # built _site with --voice off, which names no voice host, and the first step below confirms that. always() lets
+    # this job run when voice-upload was skipped; the explicit results keep a failed or cancelled job blocking.
+    if: >-
+      always()
+      && github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CLOUDFLARE_ACCOUNT_ID != ''
+      && needs.check.result == 'success' && needs.rules.result == 'success'
+      && (needs.voice-upload.result == 'success' || (needs.voice-upload.result == 'skipped' && vars.R2_ACCOUNT_ID == ''))
     runs-on: ubuntu-latest
     environment:
       name: production
@@ -170,6 +181,15 @@ jobs:
         with:
           name: site
           path: _site
+
+      - name: Without R2, the site names no voice host
+        if: vars.R2_ACCOUNT_ID == ''
+        run: |
+          if grep -rli 'voice\.learnvedicmath\.com' _site; then
+            echo "::error::R2 is not set up, but the files above name the voice host; the site must be built with --voice off"
+            exit 1
+          fi
+          echo "R2 is not set up: deploying without the Studio voice; read aloud uses the device voice"
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:

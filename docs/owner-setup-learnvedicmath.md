@@ -97,7 +97,7 @@ Then the production token:
 
 ## 8b. R2 for the Studio voice (task 7.8, only if decision L8 stays R2)
 
-**Needed before the first deploy.** The deploy waits for the voice step, and the voice step is skipped until `R2_ACCOUNT_ID` is set, so with Cloudflare set up but R2 not, nothing deploys (deploy-pipeline spec).
+**Optional for the first deploy.** Until `R2_ACCOUNT_ID` is set, the voice step is skipped and CI deploys the site without the Studio voice (`build.py --voice off`): nothing in it names `voice.learnvedicmath.com`, and read aloud and every Listen button use the device voice. Recorded voice turns on by setting up R2 with the steps below: the next push to `main` uploads the voice files and deploys a site that plays them. Once `R2_ACCOUNT_ID` is set, a failed voice upload stops the deploy (deploy-pipeline spec).
 
 The Studio voice (about 23,700 files, 414 MB) is too many files for Workers static assets on the Free plan (20,000 per version), so it lives in an R2 bucket on its own subdomain (design D17).
 

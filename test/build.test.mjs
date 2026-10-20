@@ -385,6 +385,32 @@ test('sounds/ is published and left out of the precache; tools/ is not published
   assert.ok(walk(out).length < 20000, 'under the Workers Free file limit');
 });
 
+/* CI deploys with --voice off while R2 is not set up (vars.R2_ACCOUNT_ID empty; deploy-pipeline spec): the site must
+   never point at voice files that are not on the voice host, and read aloud uses the device voice */
+test('--voice off: no published file names the voice host, the index names no recording, the worker has no voice origin', async () => {
+  build('--voice', 'off');
+  for (const f of walk(out)) assert.ok(!readFileSync(f, 'utf8').includes('voice.learnvedicmath.com'), `${relative(out, f)} names the voice host`);
+  const rules = read('_headers');
+  assert.match(rules, /^\/play\/$/m);
+  assert.ok(!/voice\.learnvedicmath/.test(rules), 'no policy allows the voice host');
+  const { STUDIO } = await import(join(out, 'js/voice-index.js') + '?off');
+  assert.equal(STUDIO.tag, null, 'no recording: js/voice.js falls back to the built-in voice');
+  assert.equal(STUDIO.base, null);
+  assert.match(read('sw.js'), /^const VOICE_ORIGIN = null;/m);
+  const v = sha('js/voice-index.js');
+  assert.equal(importMap()['/js/voice-index.js'], `/js/voice-index.js?v=${v}`, 'the import map pins the published index, not the source');
+  assert.ok(sw().precache.some(([u, hash]) => u === `/js/voice-index.js?v=${v}` && hash === v), 'the worker precaches the published index');
+  // The default build keeps the voice host
+  build();
+  assert.match(read('_headers'), /media-src 'self' https:\/\/voice\.learnvedicmath\.com/);
+  assert.match(read('js/voice-index.js'), /"base": "https:\/\/voice\.learnvedicmath\.com\/"/);
+  // A source file naming the host fails a --voice off build
+  withEdit('js/voice-plan.js', s => s + "\n// https://voice.learnvedicmath.com/l/x.m4a\n", () => fails(tryBuild(['--voice', 'off']), /js\/voice-plan\.js: names the voice host/));
+  // Any case, and any published file, text or not
+  withEdit('js/voice-plan.js', s => s + "\n// https://VOICE.LearnVedicMath.com/l/x.m4a\n", () => fails(tryBuild(['--voice', 'off']), /js\/voice-plan\.js: names the voice host/));
+  withFile('thumbs/probe.png', Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 0xff]), Buffer.from('voice.learnvedicmath.com')]), () => fails(tryBuild(['--voice', 'off']), /thumbs\/probe\.png: names the voice host/));
+});
+
 test('every static page has a canonical link and Open Graph tags with the site image', () => {
   build();
   for (const [page, url] of [['index.html', '/'], ['play/index.html', '/play/'], ['parents/index.html', '/parents/'], ['teachers/index.html', '/teachers/'],

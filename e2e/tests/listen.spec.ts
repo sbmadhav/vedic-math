@@ -94,6 +94,26 @@ test.describe('Listen', () => {
     await expect.poll(async () => (await spoken(page)).join(' ')).toContain(want[0].split('. ')[0]);
   });
 
+  test('with Studio voice off in the build, the device voice reads and the voice host is never asked', async ({ page }) => {
+    await setup(page);
+    /* The index build.py --voice off publishes (CI deploys this way until R2 is set up), taken from build.py itself */
+    const off = readFileSync(join(__dirname, '..', '..', 'build.py'), 'utf8').match(/^VOICE_OFF_INDEX = """([\s\S]*?)"""/m)![1];
+    await page.route('**/js/voice-index.js*', r => r.fulfill({ contentType: 'text/javascript', body: off }));
+    const asked: string[] = [];
+    page.on('request', req => { if (req.url().startsWith('https://voice.learnvedicmath.com/')) asked.push(req.url()); });
+    await open(page, '#/skill/3-mult');
+    const n = await page.evaluate(async () => {
+      const { linesForKey } = await import('/js/explain-lines.js' as string);
+      return linesForKey('skill:3-mult').length;
+    });
+    const btn = page.getByRole('button', { name: 'Listen: the idea and how it works' });
+    await btn.click();
+    await expect.poll(async () => (await vlog(page)).filter(e => e === 'builtin').length).toBe(n);
+    expect(await vlog(page)).not.toContain('studio:line');
+    expect((await spoken(page)).length).toBeGreaterThan(0);
+    expect(asked).toEqual([]);
+  });
+
   test('one at a time: pressing another stops the first, pressing a playing one stops it', async ({ page }) => {
     await setup(page, { endAfter: 4000 });
     await open(page, '#/guide');
