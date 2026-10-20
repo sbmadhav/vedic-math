@@ -40,7 +40,7 @@ The server SHALL voice a sentence only if it can be built from the recorded word
 - **THEN** the answer is a refusal
 
 ### Requirement: A daily spend cap on the server
-The server SHALL count what every request to the speech provider costs at list price, without the provider's free tier, per UTC day and per month, and SHALL refuse to ask the provider once a request would take the day past the daily cap or the month past the monthly ceiling. The cap and ceiling SHALL be settings of the server, never of the game. A failed request SHALL not be counted.
+The server SHALL count what every request to the speech provider costs at list price, without the provider's free tier, per UTC day and per month, and SHALL refuse to ask the provider once a request would take the day past the daily cap ($5) or the month past the monthly ceiling ($150). Both SHALL be settings of the server, never of the game. A failed request SHALL not be counted.
 
 #### Scenario: The cap is reached
 - **WHEN** the day's spend has reached the daily cap and a Player is asked a sentence no one has heard
@@ -82,6 +82,10 @@ A request to the server voice SHALL carry only the protocol version, the voice n
 
 ### Requirement: Access is checked before a new recording
 The server SHALL check access before voicing a new sentence: a Firebase ID token when the Player has one, verified for signature, audience, issuer and expiry, or a short-lived session ticket the server signed when the Player has no Firebase identity. It SHALL never create an identity for this. Audio already stored SHALL be served without a check, like any recorded line. Requests SHALL be rate limited per connection address without keeping the address.
+
+#### Scenario: A Player with no Firebase identity
+- **WHEN** an Explorer Player whose Age answer is under 13 is asked a new sentence
+- **THEN** the game gets a short-lived ticket the server signed, the server accepts it, and no Firebase identity is created
 
 #### Scenario: A bad token
 - **WHEN** a request to voice a new sentence carries an expired or forged token
