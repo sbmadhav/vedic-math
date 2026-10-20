@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog, typeAnswer, showWorld } from '../fixtures';
+import { test, expect, open, cloudLog, typeAnswer, showWorld, needsWorldBoards } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* openspec board-identity:
@@ -29,6 +29,7 @@ test.describe('First post', () => {
   test.use({ seedConsent: { age: 'adult' } });
 
   test('finishing the first Ranked Arena round creates an identity and posts the Score under it', async ({ page, browserName }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     test.skip(browserName === 'webkit', ROUNDS_OFF_WEBKIT);
     test.setTimeout(90_000);
     await page.clock.install();
@@ -69,6 +70,7 @@ test.describe('First post', () => {
   });
 
   test('finishing the first Ranked game round creates an identity and posts the Score under it', async ({ page, browserName }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     test.skip(browserName === 'webkit', ROUNDS_OFF_WEBKIT);
     test.setTimeout(90_000);
     await page.clock.install();
@@ -134,6 +136,7 @@ export const Timestamp = { fromMillis: ms => ({ millis: ms }) };`;
 test.describe('Signed-out list query', () => {
   test.use({ seedConsent: { age: 'adult' } }); // the app shows World boards only to a Player 13 or over
   test('a signed-out client asking for the top 20 entries of today\'s Arena Board gets them', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await page.route(/\/vendor\/firebase\/[^/]+\/firebase-firestore\.js$/, route =>
       route.fulfill({ status: 200, contentType: 'text/javascript', headers: { 'access-control-allow-origin': '*' }, body: QUERY_FAKE }));
     // Shuffled, so the order on the page comes from the Score ordering

@@ -55,7 +55,22 @@ test('writing the config for another project clears the old App Check key; the s
   const code = src.slice(start, src.indexOf(`' "$CONFIG_JS"`, start));
   const dir = mkdtempSync(join(tmpdir(), 'setup-sh-'));
   writeFileSync(join(dir, 'w.py'), code);
-  const current = readFileSync(config, 'utf8');
+  const committed = readFileSync(config, 'utf8');
+  /* The launch ships with FIREBASE = null and no App Check key (tasks 1.8 and 8.5): the first write fills both in from
+     null and leaves the empty key empty */
+  if (/export const FIREBASE = null;/.test(committed)) {
+    assert.match(committed, /export const appCheckSiteKey = '';/);
+    writeFileSync(join(dir, 'c.js'), committed);
+    const r = spawnSync('python3', [join(dir, 'w.py'), join(dir, 'c.js')], { input: JSON.stringify({ result: { sdkConfig: { apiKey: 'k', projectId: 'learnvedicmath', appId: 'a' } } }), encoding: 'utf8' });
+    assert.equal(r.status, 0, r.stderr);
+    const out = readFileSync(join(dir, 'c.js'), 'utf8');
+    assert.match(out, /export const FIREBASE = \{\n  apiKey: "k",\n  projectId: "learnvedicmath",\n  appId: "a"\n\};/);
+    assert.match(out, /export const appCheckSiteKey = '';/);
+  }
+  /* A configured project with an App Check key, as after task 8.5 */
+  const current = committed
+    .replace(/export const FIREBASE = (?:null|\{[\s\S]*?\});/, 'export const FIREBASE = {\n  apiKey: "k0",\n  projectId: "learnvedicmath",\n  appId: "a0"\n};')
+    .replace(/export const appCheckSiteKey = [^;]*;/, "export const appCheckSiteKey = 'site-key-0';");
   const key = current.match(/export const appCheckSiteKey = ([^;]*);/)[1];
   const project = current.match(/projectId: "([^"]+)"/)[1];
   for (const [id, want] of [['another-project', '""'], [project, key]]) {

@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, policyOf, showWorld } from '../fixtures';
+import { test, expect, APP, open, cloudLog, policyOf, showWorld, needsWorldBoards } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* content-security spec (change learnvedicmath), Requirements "Only the origins the app uses are allowed" and
@@ -79,6 +79,7 @@ test('The natural voice worker: started from its import map URL it runs with no 
 test.describe('a Player 13 or over', () => {
   test.use({ seedConsent: { age: 'adult' } });
 test('World boards: the Arena World board loads through the Firebase SDK with no violation', async ({ page, baseURL }) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   const v = await watchViolations(page);
   await open(page, '#/arena');
   await policy(page, baseURL);

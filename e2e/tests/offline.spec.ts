@@ -1,5 +1,5 @@
 import type { BrowserContext, Page, Route } from '@playwright/test';
-import { test, expect, APP, open, cloudLog, chromiumOnly, FIREBASE_SDK, FIREBASE_AUTH, FIRESTORE, showWorld } from './fixtures';
+import { test, expect, APP, open, cloudLog, chromiumOnly, FIREBASE_SDK, FIREBASE_AUTH, FIRESTORE, showWorld, needsWorldBoards } from './fixtures';
 import { fakeAudio, audioLog } from './audio-fake';
 
 /* Offline: /sw.js (scope /play/) saves the app after one visit, so every route, the
@@ -191,6 +191,7 @@ test.describe('a Player who may post', () => {
 // A grown-up's Sparks would post when online, so this checks that nothing earned offline is saved up to send later
 test.use({ seedConsent: { age: 'adult' } });
 test('offline, the leaderboards fall back to this device, and nothing is queued or written', async ({ page, context }) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   test.setTimeout(90_000);
   await open(page);
   await workerReady(page);

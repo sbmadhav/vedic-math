@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog, heldClock, showWorld } from '../fixtures';
+import { test, expect, open, cloudLog, heldClock, showWorld, needsWorldBoards } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* openspec board-identity (change learnvedicmath): "No identity before the first post". World boards are shown only
@@ -37,6 +37,7 @@ async function expectWorldTop(page: Page, sel: string) {
 test.describe('Viewing a World board on a fresh device', () => {
   test.use({ seedConsent: { age: 13 } });
   test('a Player 13 or over who has never posted sees the Arena World boards\' top entries, with no sign-in', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await seedRows(page);
     await open(page, '#/arena');
     for (const sel of ['#lbDay', '#lbWeek', '#lbSparks']) await expectWorldTop(page, sel);
@@ -49,6 +50,7 @@ test.describe('Viewing a World board on a fresh device', () => {
   });
 
   test('a game page\'s World boards show their top entries, with no sign-in', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await seedRows(page);
     await open(page, '#/game/times-sprint');
     await showWorld(page, '#gbDay');

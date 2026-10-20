@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog } from './fixtures';
+import { test, expect, APP, open, cloudLog, needsWorldBoards } from './fixtures';
 
 /* Progress lives in localStorage (vm.players, mathquest.v1.<player>) and survives a reload. */
 
@@ -128,6 +128,7 @@ test('Video learner: closing a video after 5 seconds earns nothing, a minute in 
 test.describe('removing a Player who posted', () => {
   test.use({ seedConsent: { age: 'adult' } });
   test('signs them out here and sends nothing; the next new Player gets a new identity', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     const PB = 'pbgone1', UID_B = `e2e-fake-vm-${PB}`;
     await page.addInitScript(([pb, uid]) => {
       if (localStorage.getItem('e2e.seeded2')) return;

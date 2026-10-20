@@ -260,6 +260,20 @@ export async function policyOf(page: Page, baseURL?: string, path?: string) {
 
 /** Shows the World board in a Board (only a Player whose Age answer is 13 or over has the button; openspec board-identity,
     change learnvedicmath): taps Show World board, then waits until the World tab is selected. */
+/** Whether the served js/cloud-config.js configures Firebase (World boards on). The launch ships with FIREBASE = null
+    (Device boards only, change learnvedicmath tasks 1.8 and 8.5); task 8.5 pastes the new project's config. */
+export async function worldBoardsOn(page: Page) {
+  const res = await page.request.get('/js/cloud-config.js');
+  expect(res.ok(), '/js/cloud-config.js is served').toBe(true);
+  return !/export const FIREBASE\s*=\s*null\s*;/.test(await res.text());
+}
+
+/** Skips a test that is about the World board while the served config has none (the device-only launch). Each such
+    spec keeps a device-only counterpart (boards-off.spec.ts) that runs in that state instead. */
+export async function needsWorldBoards(page: Page) {
+  base.skip(!(await worldBoardsOn(page)), 'World boards are off: js/cloud-config.js has FIREBASE = null until task 8.5 (device-only launch)');
+}
+
 export async function showWorld(page: Page, board: string) {
   const wrap = page.locator(board);
   await wrap.locator('[data-show-world]').click();

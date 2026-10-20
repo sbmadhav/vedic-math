@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, showWorld } from './fixtures';
+import { test, expect, APP, open, cloudLog, showWorld, needsWorldBoards } from './fixtures';
 import type { Page } from '@playwright/test';
 
 /* Content-Security-Policy (openspec content-security, change learnvedicmath). build.py writes each page's policy into
@@ -106,6 +106,7 @@ test('Math Lens offers the camera under the published policy: its digit reader i
 test.describe('a Player 13 or over', () => {
   test.use({ seedConsent: { age: 'adult' } });
 test('Arena World boards load the Firebase SDK from this site with no CSP violation', async ({ page, baseURL }) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   const v = await watchViolations(page);
   await open(page, '#/arena');
   await policy(page, baseURL);

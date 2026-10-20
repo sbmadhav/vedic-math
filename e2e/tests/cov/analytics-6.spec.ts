@@ -1,4 +1,4 @@
-import { test, expect, open, heldClock, typeAnswer } from '../fixtures';
+import { test, expect, open, heldClock, typeAnswer, worldBoardsOn } from '../fixtures';
 
 /* openspec/specs/analytics/spec.md
    - Requirement: Share clicks / Scenario: Share button
@@ -106,10 +106,14 @@ test.describe('Events carry no identifiers: Event contents', () => {
 
     // Me page: the Age answer, then a new Nickname (first, before any score asks for the Age answer)
     await open(page, '#/me');
-    await page.locator('#wbAsk').click();
-    await expect(page.locator('dialog[open] [data-age="9"]')).toBeVisible();
-    await page.locator('dialog[open] [data-age="9"]').click();
-    await page.locator('dialog[open] .vs-foot [data-close]').click(); // under 13: Device boards only, the sheet just says so
+    // The Me page asks the Age question only while World boards are on (the launch has them off until task 8.5)
+    const asksAge = await worldBoardsOn(page);
+    if (asksAge) {
+      await page.locator('#wbAsk').click();
+      await expect(page.locator('dialog[open] [data-age="9"]')).toBeVisible();
+      await page.locator('dialog[open] [data-age="9"]').click();
+      await page.locator('dialog[open] .vs-foot [data-close]').click(); // under 13: Device boards only, the sheet just says so
+    }
     await page.locator('#meName').click();
     for (const s of await playerSecrets(page)) secrets.add(s);
 
@@ -149,7 +153,7 @@ test.describe('Events carry no identifiers: Event contents', () => {
     expect(paths).toEqual(expect.arrayContaining([
       'math/view/home', 'math/view/skill/3-mult', 'math/q_answered/practice/miss', 'math/q_answered/practice/right',
       'math/q_answered/star/miss', 'math/q_answered/star/right', 'math/view/star/sq5/star', 'math/view/game/times-sprint/level',
-      'math/view/katas/sq5', 'math/view/skill/unknown', 'math/view/me', 'math/age-answer',
+      'math/view/katas/sq5', 'math/view/skill/unknown', 'math/view/me', ...(asksAge ? ['math/age-answer'] : []),
     ]));
     expect(paths.filter(p => p.startsWith('math/parent-step')), 'the Parent step is retired (docs/adr/0006)').toEqual([]);
     checkContents(ev, [...secrets]);

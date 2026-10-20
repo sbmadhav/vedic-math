@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, APP, open, chromiumOnly } from './fixtures';
+import { test, expect, APP, open, chromiumOnly, needsWorldBoards } from './fixtures';
 
 /* axe-core on the main routes, failing on serious or critical violations. Chromium only: the rules
    check the DOM and computed styles, which the other engines would only repeat.
@@ -158,6 +158,7 @@ for (const scheme of ['light', 'dark'] as const) {
     test.describe(`${scheme} scheme, ${mode}`, () => {
       test.use({ colorScheme: scheme, seedMode: mode });
       test('the age sheet has no serious or critical axe violations', async ({ page }, testInfo) => {
+        await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
         chromiumOnly(testInfo);
         await open(page, '#/me');
         await page.locator('#wbAsk').click();
@@ -171,6 +172,7 @@ for (const scheme of ['light', 'dark'] as const) {
     test.describe(`${scheme} scheme, ${mode}, under 13`, () => {
       test.use({ colorScheme: scheme, seedMode: mode, seedConsent: { age: 8 } });
       test('the World boards section for an under-13 Player has no serious or critical axe violations', async ({ page }, testInfo) => {
+        await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
         chromiumOnly(testInfo);
         await open(page, '#/me');
         await expect(page.locator('#worldBoards')).toContainText(/scores stay on this device/);

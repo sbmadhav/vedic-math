@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog, FIREBASE_SDK, showWorld } from '../fixtures';
+import { test, expect, open, cloudLog, FIREBASE_SDK, showWorld, needsWorldBoards } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* openspec board-identity, Requirement "One identity per Player":
@@ -104,6 +104,7 @@ test.describe('One identity per Player', () => {
   });
 
   test('Two Players on one device post to the same Board: two entries, A 400 and B 300, each with its own Nickname and avatar', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await open(page, '#/arena');
     const board = await dayBoard(page);
 
@@ -127,6 +128,7 @@ test.describe('One identity per Player', () => {
   });
 
   test('A higher Score from one Player never replaces another Player\'s entry', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await open(page, '#/arena');
     const board = await dayBoard(page);
 

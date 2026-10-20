@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, chromiumOnly, ANALYTICS, typeAnswer, showWorld } from './fixtures';
+import { test, expect, APP, open, cloudLog, chromiumOnly, ANALYTICS, typeAnswer, showWorld, needsWorldBoards, worldBoardsOn } from './fixtures';
 import { BASE_URL } from '../playwright.config';
 
 /* The note for grown-ups is shown beside every Board (Arena, game pages, Pro home) and on the Me page, and what it
@@ -46,8 +46,15 @@ async function expectNote(page: import('@playwright/test').Page, summary: string
   await expect(note).toBeVisible();
   await note.locator('summary').click();
   await expect(note).toHaveAttribute('open', '');
-  for (const line of REQUIRED) await expect(note).toContainText(line);
-  if (now) await expect(note.locator('.pn-now')).toHaveText(now);
+  // With World boards off (the device-only launch, until task 8.5) the note says so first, and names no reCAPTCHA check
+  // (App Check is off too); everything else it says about World boards still holds for when they are on
+  const on = await worldBoardsOn(page);
+  for (const line of REQUIRED) {
+    if (!on && line === 'Google reCAPTCHA') await expect(note).not.toContainText(line);
+    else await expect(note).toContainText(line);
+  }
+  if (!on) await expect(note.locator('.pn-now')).toHaveText(NOW.off);
+  else if (now) await expect(note.locator('.pn-now')).toHaveText(now);
   // Practice is never described as staying on the device without its Sparks counting, and XP is gone
   await expect(note).not.toContainText('practice and endless rounds');
   await expect(note).not.toContainText(/\bXP\b/);
@@ -65,6 +72,7 @@ const NOW = {
   noAnswer: 'Right now nothing is posted for this player. They have not answered the age question yet; it is asked the first time a score would be posted.',
   under13: "Nothing is posted for this player, because their age answer is under 13. Their scores stay on this device's board, and there is no way to turn World boards on for them.",
   posting: "This player's scores and weekly Sparks post to World boards.",
+  off: 'Right now no score is sent anywhere: World boards are switched off on this site, so every score stays in this browser. If they are switched on, this is what they keep.',
 };
 
 test('the parent note is on the Me page, in the Arena and beside a game\'s Boards', async ({ page }) => {
@@ -80,6 +88,7 @@ test('the parent note is on the Me page, in the Arena and beside a game\'s Board
 test.describe('under 13', () => {
   test.use({ seedMode: 'pro', seedConsent: { age: 10 } });
   test('the note says nothing is posted for this player, ever, and offers no way to turn World boards on', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await open(page, '#/arena');
     await expectNote(page, SUMMARY.pro, NOW.under13);
   });
@@ -111,6 +120,7 @@ test.describe('under 13', () => {
 test.describe('under 13 with the old Parent step (imported from sbmadhav.com)', () => {
   test.use({ seedMode: 'explorer', seedConsent: { age: 7, parentOk: 1760000000000 } });
   test('the note says nothing is posted for this player: the old Parent step counts for nothing', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await open(page, '#/me');
     await expectNote(page, SUMMARY.explorer, NOW.under13);
   });
@@ -118,6 +128,7 @@ test.describe('under 13 with the old Parent step (imported from sbmadhav.com)', 
 test.describe('13 and over', () => {
   test.use({ seedConsent: { age: 14 } });
   test('the note says this player posts', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await open(page, '#/arena');
     await expectNote(page, SUMMARY.challenger, NOW.posting);
   });
@@ -161,6 +172,7 @@ test.describe('a Player who may post (a grown-up)', () => {
 test.use({ seedConsent: { age: 'adult' } });
 
 test('an Arena score entry holds only the nickname, avatar color, score and two timestamps', async ({ page }) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   // Calls the app's own cloud.submit (what the Arena daily round uses) against the fake SDK
   await open(page, '#/arena');
   const writes = await page.evaluate(async () => {
@@ -188,12 +200,14 @@ const ids = (page: import('@playwright/test').Page) => page.evaluate(async () =>
 const writes = async (page: import('@playwright/test').Page) => (await cloudLog(page)).writes;
 
 test('the note names every kind of score that is sent', async ({ page }) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   await open(page, '#/me');
   // The write-path tests below check the app sends exactly these three kinds of post
   await expectNote(page, SUMMARY.challenger, NOW.posting);
 });
 
 test('opening a leaderboard reads without loading Auth or signing in', async ({ page }, testInfo) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   chromiumOnly(testInfo, 'app logic, the same in every engine');
   await open(page, '#/arena');
   const { day, wk } = await ids(page);
@@ -208,6 +222,7 @@ test('opening a leaderboard reads without loading Auth or signing in', async ({ 
 });
 
 test('an Arena Daily challenge sends its score to today\'s and this week\'s Arena boards', async ({ page }, testInfo) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   chromiumOnly(testInfo, 'app logic, the same in every engine');
   await page.clock.install({ time: NO_ARENA_QUEST });
   await open(page, '#/arena');
@@ -236,6 +251,7 @@ test('an Arena Daily challenge sends its score to today\'s and this week\'s Aren
 });
 
 test('on a day with the Arena quest, the round\'s quest Sparks follow the Arena posts to the weekly Sparks board, under the same identity', async ({ page }, testInfo) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   chromiumOnly(testInfo, 'app logic, the same in every engine');
   await page.clock.install({ time: ARENA_QUEST });
   await open(page, '#/arena');
@@ -266,6 +282,7 @@ test('on a day with the Arena quest, the round\'s quest Sparks follow the Arena 
 });
 
 test('a finished Ranked game round sends its score to that game\'s today and this week boards', async ({ page }, testInfo) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   chromiumOnly(testInfo, 'app logic, the same in every engine');
   await page.clock.install();
   await open(page, '#/game/times-sprint');
@@ -294,6 +311,7 @@ test('a finished Ranked game round sends its score to that game\'s today and thi
 });
 
 test('Sparks earned anywhere send this week\'s Sparks total to the weekly Sparks board (id xp-week-), at most once a minute', async ({ page }, testInfo) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   chromiumOnly(testInfo, 'app logic, the same in every engine');
   await page.clock.install();
   await open(page, '#/sutras');
@@ -369,6 +387,7 @@ test.describe('two Players on one device', () => {
   test.use({ seedConsent: { age: 'adult' } });
 
   test('each Player\'s Arena Daily challenge goes under their own identity, with their own Nickname', async ({ page }, testInfo) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     chromiumOnly(testInfo, 'app logic, the same in every engine');
     test.slow(); // two full 60 second rounds on the fake clock take about 20 seconds each
     await seedSecondPlayer(page);
@@ -405,6 +424,7 @@ test.describe('two Players on one device', () => {
   });
 
   test('Sparks earned by A and posted after a switch to B goes out as A\'s own total, under A\'s identity', async ({ page }, testInfo) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     chromiumOnly(testInfo, 'app logic, the same in every engine');
     await seedSecondPlayer(page, { mode: 'pro' });
     await page.clock.install();
@@ -424,6 +444,7 @@ test.describe('two Players on one device', () => {
   });
 
   test('"me" on a World board follows the active Player', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await seedSecondPlayer(page, {}, { 'vm.cloudUids': JSON.stringify({ p1: UID_A, [PB]: UID_B }) });
     await page.addInitScript(([a, b]) => { (globalThis as any).__e2eRows = [[a, 'Swift Tiger 42', 400], [b, 'Lucky Otter 17', 300], ['someone', 'Brave Panda 12', 200]]; }, [UID_A, UID_B] as const);
     await open(page, '#/arena');
@@ -507,6 +528,7 @@ test.describe('the Sky', () => {
 test.describe('Ratings', () => {
   test.use({ seedMode: 'pro', seedConsent: { age: 'adult' } });
   test('no request after Arena daily and Practice rounds and skill Practice contains a Rating', async ({ page }, testInfo) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     chromiumOnly(testInfo, 'app logic, the same in every engine');
     test.slow(); // two 60 second rounds, a skill Practice and the weekly Sparks wait on the fake clock
     const out: string[] = [];

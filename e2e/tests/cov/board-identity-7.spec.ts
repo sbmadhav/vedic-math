@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog, type Page } from '../fixtures';
+import { test, expect, open, cloudLog, type Page, needsWorldBoards } from '../fixtures';
 
 /* openspec board-identity: "Existing shared identity stays with the first Player".
    A device from before Players had their own identity holds the shared id in vm.cloudUid, and its
@@ -35,6 +35,7 @@ test.describe('existing shared identity stays with the first Player', () => {
   test.use({ seedConsent: { age: 'adult' } });
 
   test('single-Player device: the post after the update is filed under the same identity, and none is created', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await seedLegacy(page, false);
     await page.clock.install();
     await open(page, '#/sutras');
@@ -52,6 +53,7 @@ test.describe('existing shared identity stays with the first Player', () => {
   });
 
   test('second Player: their post creates a new identity, and the first Player\'s entries are not changed', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await seedLegacy(page, true);
     await page.clock.install();
     await open(page, '#/sutras');

@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, appErrors, type Page, typeAnswer } from '../fixtures';
+import { test, expect, APP, open, cloudLog, appErrors, type Page, typeAnswer, needsWorldBoards } from '../fixtures';
 
 /* arena spec:
    - Arena Practice rounds adapt / Practice is not posted: an Arena Practice round that ends, played by a Player
@@ -78,6 +78,7 @@ test.describe('Practice is not posted', () => {
   });
 
   test('control: the same Player finishing a Daily round does post to today\'s and this week\'s boards', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await clockAt(page, NOW);
     await open(page, '#/arena');
     await startRound(page, 'daily');

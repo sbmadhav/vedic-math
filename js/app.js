@@ -864,7 +864,7 @@ function closeSutra(instant = false) {
 function parentNote() {
   const on = cloud.enabled(), p = store.player(), gate = cloud.canPost(p);
   const sum = fx.t({ explorer: 'For grown-ups: what the leaderboard keeps', challenger: 'For parents: what the leaderboard keeps', pro: 'Privacy: what the leaderboard stores' });
-  const now = !on ? 'Right now nothing is sent anywhere: World boards are switched off and scores stay in this browser. If they are switched on, this is what they keep.'
+  const now = !on ? 'Right now no score is sent anywhere: World boards are switched off on this site, so every score stays in this browser. If they are switched on, this is what they keep.'
     : gate === 'needs-age' ? 'Right now nothing is posted for this player. They have not answered the age question yet; it is asked the first time a score would be posted.'
     : gate === 'device-only' ? "Nothing is posted for this player, because their age answer is under 13. Their scores stay on this device's board, and there is no way to turn World boards on for them."
     : "This player's scores and weekly Sparks post to World boards.";

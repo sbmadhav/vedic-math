@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, type Mode, typeAnswer, FIREBASE_SDK } from './fixtures';
+import { test, expect, APP, open, cloudLog, type Mode, typeAnswer, FIREBASE_SDK, needsWorldBoards } from './fixtures';
 import type { Page } from '@playwright/test';
 
 /* Posting consent (openspec posting-consent spec, change learnvedicmath; docs/adr/0001, 0006): the Age answer is
@@ -68,6 +68,7 @@ for (const { mode, dismiss, answer } of FLOW) {
   test.describe(mode, () => {
     test.use({ seedMode: mode });
     test(`${mode}: the age question after a Daily challenge, dismissed, offered again, then answered`, async ({ page, browserName }) => {
+      await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
       test.skip(browserName === 'webkit', ROUNDS_OFF_WEBKIT);
       test.setTimeout(90_000);
       const sent: string[] = [];
@@ -135,6 +136,7 @@ for (const { mode, dismiss, answer } of FLOW) {
 test.describe('under 13 in Pro', () => {
   test.use({ seedMode: 'pro', seedConsent: { age: 11 } });
   test('a Ranked round posts nothing and loads no Firebase file; the Score is on the Device board; the Me page has no switch', async ({ page, browserName }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     test.skip(browserName === 'webkit', ROUNDS_OFF_WEBKIT);
     test.setTimeout(90_000);
     const sdk = sdkRequests(page);
@@ -160,6 +162,7 @@ test.describe('under 13 in Pro', () => {
 test.describe('under 13 with the old Parent step', () => {
   test.use({ seedMode: 'explorer', seedConsent: { age: 10, parentOk: 1760000000000 } });
   test('still posts nothing and loads no Firebase file', async ({ page, browserName }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     test.skip(browserName === 'webkit', ROUNDS_OFF_WEBKIT);
     test.setTimeout(90_000);
     const sdk = sdkRequests(page);
@@ -173,6 +176,7 @@ test.describe('under 13 with the old Parent step', () => {
 
 test.describe('keyboard', () => {
   test('the age sheet works from the keyboard alone, and an under-13 answer is said plainly', async ({ page, browserName }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     // Safari moves Tab only through fields and links unless Option is held
     const TAB = browserName === 'webkit' ? 'Alt+Tab' : 'Tab';
     await open(page, '#/me');
@@ -198,6 +202,7 @@ test.describe('keyboard', () => {
 });
 
 test('reduced motion: the age sheet opens without animation', async ({ page }) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   await open(page, '#/me');
   await page.locator('#wbAsk').click();
   await expect(sheet(page)).toBeVisible();
@@ -207,12 +212,14 @@ test('reduced motion: the age sheet opens without animation', async ({ page }) =
 test.describe('13 and over', () => {
   test.use({ seedConsent: { age: 13 } });
   test('the Me page says this player posts, with no switch', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await page.goto(`${APP}#/me`);
     await expect(page.locator('#worldBoards')).toContainText('Your scores and weekly Sparks go on World boards.');
     await expect(page.locator('#worldBoards').getByRole('switch')).toHaveCount(0);
   });
 
   test('the Arena shows the Device board, and the World board only after a tap on Show World board', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     const sdk = sdkRequests(page);
     await open(page, '#/arena');
     const day = page.locator('#lbDay');
@@ -232,6 +239,7 @@ for (const mode of ['explorer', 'challenger', 'pro'] as const) {
   test.describe(`under 13 in ${mode}`, () => {
     test.use({ seedMode: mode, seedConsent: { age: 9 } });
     test('the Boards show this device only, say so, and nothing loads from Firebase', async ({ page }) => {
+      await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
       const sdk = sdkRequests(page);
       await open(page, '#/arena');
       const day = page.locator('#lbDay');

@@ -253,16 +253,50 @@ test('each page has its own policy from its inline script hashes; COOP is same-o
   assert.deepEqual(play['worker-src'], ["'self'"]);
   assert.ok(play['frame-src'].includes('https://www.youtube-nocookie.com'));
   assert.ok(play['media-src'].includes('https://voice.learnvedicmath.com') && play['connect-src'].includes('https://voice.learnvedicmath.com'));
-  assert.ok(play['connect-src'].includes('https://firestore.googleapis.com'));
+  // Launch state (tasks 1.8 and 8.5): js/cloud-config.js has FIREBASE = null, so no page lists a Firebase or Google
+  // host; the test below builds with a config and checks the hosts come back
+  if (/export const FIREBASE = null;/.test(readFileSync(join(dir, 'js/cloud-config.js'), 'utf8')))
+    assert.ok(!/firebase|googleapis|recaptcha|gstatic/.test(JSON.stringify(play)), 'device-only launch: /play/ lists no Firebase host');
+  else assert.ok(play['connect-src'].includes('https://firestore.googleapis.com'));
   assert.ok(play['connect-src'].includes('https://learnvedicmath.goatcounter.com'));
   assert.ok(!parse(rules['/']['Content-Security-Policy'])['script-src'].includes("'wasm-unsafe-eval'"));
   assert.ok(Object.keys(rules).length <= 100);
   for (const line of read('_headers').split('\n')) assert.ok(line.length <= 2000, `a _headers line of ${line.length} characters`);
 });
 
+/* The committed config and a sample one: the launch ships with Device boards only (FIREBASE = null, tasks 1.8 and 8.5),
+   and task 8.5 pastes the new project's config, which must bring back exactly the Firebase and App Check hosts */
+const OFF = s => s.replace(/export const FIREBASE = (?:null|\{[\s\S]*?\});/, 'export const FIREBASE = null;').replace(/export const appCheckSiteKey = [^;]*;/, "export const appCheckSiteKey = '';");
+const ON = s => s.replace(/export const FIREBASE = (?:null|\{[\s\S]*?\});/, `export const FIREBASE = {
+  apiKey: "AIzaSyB-sample-key-for-the-build-test-0000",
+  authDomain: "learnvedicmath.firebaseapp.com",
+  projectId: "learnvedicmath",
+  storageBucket: "learnvedicmath.firebasestorage.app",
+  messagingSenderId: "1",
+  appId: "1:1:web:1"
+};`).replace(/export const appCheckSiteKey = [^;]*;/, "export const appCheckSiteKey = 'sample-site-key';");
+
 test('with leaderboards off no policy lists a Firebase or Google host', () => {
-  withEdit('js/cloud-config.js', s => s.replace(/export const FIREBASE = \{[\s\S]*?\};/, 'export const FIREBASE = null;'), () => build());
+  const cfg = readFileSync(join(dir, 'js/cloud-config.js'), 'utf8');
+  if (OFF(cfg) === cfg) build(); else withEdit('js/cloud-config.js', OFF, () => build());
   assert.ok(!/google|gstatic|firebase/.test(read('_headers')));
+});
+
+test('the launch ships with Device boards only: js/cloud-config.js has no Firebase config and no App Check key (task 8.5 restores them)', () => {
+  const cfg = readFileSync(join(dir, 'js/cloud-config.js'), 'utf8');
+  assert.match(cfg, /export const FIREBASE = null;/);
+  assert.match(cfg, /export const appCheckSiteKey = '';/);
+  assert.match(cfg, /task 8\.5/i, 'the comment says which task turns World boards on');
+});
+
+test('with a Firebase config and an App Check key, /play/ lists the Firebase and App Check hosts and no other page does', () => {
+  withEdit('js/cloud-config.js', ON, () => build());
+  const rules = headerRules(), play = parse(rules['/play/']['Content-Security-Policy']);
+  for (const h of ['https://firestore.googleapis.com', 'https://identitytoolkit.googleapis.com', 'https://securetoken.googleapis.com', 'https://content-firebaseappcheck.googleapis.com'])
+    assert.ok(play['connect-src'].includes(h), h);
+  assert.ok(play['frame-src'].includes('https://learnvedicmath.firebaseapp.com'), 'the authDomain');
+  assert.ok(play['script-src'].includes('https://www.google.com/recaptcha/'));
+  for (const url of ['/', '/parents/', '/privacy/']) assert.ok(!/google|gstatic|firebase/.test(rules[url]['Content-Security-Policy']), url);
 });
 
 test('the build fails on a CSP <meta> in a page, an inline event handler or a javascript: URL', () => {

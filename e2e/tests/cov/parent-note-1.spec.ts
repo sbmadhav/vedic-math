@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog, chromiumOnly, type Mode, typeAnswer } from '../fixtures';
+import { test, expect, open, cloudLog, chromiumOnly, type Mode, typeAnswer, needsWorldBoards } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* openspec parent-note: "Note beside a World board" and "Note matches what is sent". Every Board (the Device board for
@@ -75,6 +75,7 @@ test.describe('the note matches what is sent', () => {
   test.use({ seedConsent: { age: 'adult' } });
 
   test('each kind of post the app sends is named in the note, and the note names no other', async ({ page }, testInfo) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     chromiumOnly(testInfo, 'app logic, the same in every engine');
     test.setTimeout(90_000);
     await page.clock.install();

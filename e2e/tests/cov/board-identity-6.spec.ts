@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog, FIREBASE_SDK, showWorld } from '../fixtures';
+import { test, expect, open, cloudLog, FIREBASE_SDK, showWorld, needsWorldBoards } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* openspec board-identity, Requirement "Removing a Player forgets their identity":
@@ -123,6 +123,7 @@ test.describe('Removing a Player forgets their identity', () => {
   });
 
   test('Remove a Player who has posted: a new Player gets a new identity at their first post, the removed Player\'s entry is unchanged', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await open(page, '#/arena');
     const board = await dayBoard(page);
     expect(await postAs(page, PA, board, 400)).toEqual({ posted: true });
@@ -177,6 +178,7 @@ test.describe('Removing a Player forgets their identity', () => {
   });
 
   test('Remove the first Player after they posted: their default identity is signed out and a new Player gets a new one', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await open(page, '#/arena');
     const board = await dayBoard(page);
     expect(await postAs(page, PA, board, 400)).toEqual({ posted: true });

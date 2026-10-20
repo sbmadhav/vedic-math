@@ -1,4 +1,4 @@
-import { test, expect, open, heldClock, cloudLog, type Mode, typeAnswer } from '../fixtures';
+import { test, expect, open, heldClock, cloudLog, type Mode, typeAnswer, needsWorldBoards } from '../fixtures';
 import type { Page, BrowserContext } from '@playwright/test';
 
 /* openspec posting-consent, "Age answer is never sent": a Player gives an Age answer and later posts (13 or over) or
@@ -69,6 +69,7 @@ test.describe('Age answer is never sent', () => {
   test.use({ seedMode: 'pro' });
 
   test('a 15 answer: the weekly Sparks post carries no Age answer', async ({ page, context }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     const AGE = 15;
     const sent = await recordOutgoing(context);
     await heldClock(page);
@@ -92,6 +93,7 @@ test.describe('Age answer is never sent', () => {
   });
 
   test('an under-13 answer given at the first would-be post: nothing is posted, and nothing sent carries the answer', async ({ page, context, browserName }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     test.skip(browserName === 'webkit', "Arena rounds need the faked clock, which WebKit's requestAnimationFrame does not follow evenly");
     test.setTimeout(120_000);
     const AGE = 7, mode: Mode = 'pro';

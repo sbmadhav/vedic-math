@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog, heldClock, showWorld } from '../fixtures';
+import { test, expect, open, cloudLog, heldClock, showWorld, needsWorldBoards } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* openspec board-identity, "One identity per Player":
@@ -65,6 +65,7 @@ test.describe('One identity per Player: a second Player who has never posted', (
   test.use({ seedConsent: { age: 'adult' } });
 
   test('A posted on an earlier visit; B opens the Arena World boards: no sign-in, no identity for B', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await addPlayerB(page, { aPosted: true, active: 'b' });
     await seedRows(page);
     await open(page, '#/arena');
@@ -83,6 +84,7 @@ test.describe('One identity per Player: a second Player who has never posted', (
   });
 
   test('A posts in this page, the device switches to B, B opens a World board: no sign-in for B', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await addPlayerB(page, { aPosted: false, active: 'p1' });
     await seedRows(page);
     await open(page, '#/me');
@@ -134,6 +136,7 @@ test.describe('One identity per Player: weekly XP after switching Player', () =>
   test.use({ seedConsent: { age: 'adult' } });
 
   test('A earns Sparks, the device switches to B before the post: A\'s total goes under A\'s identity, never B\'s', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await heldClock(page);
     await addPlayerB(page, { aPosted: false, active: 'p1', bMode: 'pro' });
     await open(page, '#/');
@@ -162,6 +165,7 @@ test.describe('One identity per Player: weekly XP after switching Player', () =>
   });
 
   test('A and B both earn Sparks around the switch: each total goes under its own Player\'s identity', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await heldClock(page);
     await addPlayerB(page, { aPosted: false, active: 'p1', bMode: 'pro' });
     await open(page, '#/');
