@@ -31,7 +31,7 @@ A link to an old route SHALL open the same screen on the new site. A hash route 
 ## ADDED Requirements
 
 ### Requirement: The game's paths fall back to the app
-A request for a path under `/play/` that matches no published file SHALL be answered with status 200 and the game's app shell, which then shows the screen for that path, or Home for a path that names no screen. A path outside `/play/` that matches no file SHALL keep the 404 page.
+A request for a path under `/play/` that matches no published file SHALL be answered with status 200 and the game's SPA fallback page (`/play/__spa-fallback.html`), which then shows the screen for that path, or Home for a path that names no screen. A path outside `/play/` that matches no file SHALL be answered with the 404 page and status 404.
 
 #### Scenario: A deep link that is not prerendered
 - **WHEN** a visitor opens `https://learnvedicmath.com/play/game/times-sprint/12` on a cold load
@@ -44,3 +44,10 @@ A request for a path under `/play/` that matches no published file SHALL be answ
 #### Scenario: A path the game does not know
 - **WHEN** a visitor opens `https://learnvedicmath.com/play/nowhere`
 - **THEN** the status is 200 and Home (or the Mode picker on a first visit) is shown
+
+### Requirement: The Worker script answers only misses
+The Worker script SHALL give both answers above, and only for requests that match no published file; `not_found_handling` SHALL stay unset or `"none"`. A file that exists SHALL be served as itself without running the script. The fallback SHALL NOT be a `_redirects` rule.
+
+#### Scenario: A file that exists under the game
+- **WHEN** a browser requests one of the game's hashed files under `/play/assets/`
+- **THEN** that file is served with its own content type and the Worker script does not run

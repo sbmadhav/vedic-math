@@ -1,6 +1,6 @@
 # Proposal
 
-Status: plan only, not yet approved for implementation (task 0.0). The owner decisions it cites answer design questions; they do not approve this change. The owner answered every open question (Q18 to Q26) on 2026-10-19, and implementation starts the day the `learnvedicmath` move is live, not before.
+Status: approved for implementation by the owner 2026-10-19 (task 0.0). Work starts once the `learnvedicmath` move is live, not before. The owner also answered every open question (Q18 to Q26) on 2026-10-19.
 
 ## Why
 
@@ -24,7 +24,7 @@ Player speed is not the goal of this change; it stays the job of `render-perform
 - **One repo, three workspaces (decision 11).** pnpm workspaces: `app/` (React), `workers/` (the Cloudflare Workers, later the Duel Durable Objects) and `shared/` (question generators, scoring and message types, used by both).
 - **Superseded rules.** React and TypeScript supersede "no framework, no bundler, no TypeScript in the browser" in the `learnvedicmath` design, `openspec/config.yaml`, ADR 0010 and `render-performance`; ADR 0012 supersedes those parts. `render-performance` is re-planned for Vite and React before it is built.
 - **Feature work keeps going (decisions 3 and 12).** Feature pull requests pause only for the views being moved; each migration pull request names the views it locks. Content work (videos, voice, verses) continues throughout. Star Quest's mobile layout is redone when its view moves, and the owner signs it off from phone screenshots on its PR (Q24).
-- **3D with Three.js (decision 13).** React Three Fiber and drei, bundled from our own origin (no CDN, inside the CSP, no `eval`). 3D loads late and only where used; the Sky first shows the 2D Sky, then fades into 3D. A CI budget keeps the 3D chunk under 170 KB Brotli (about 200 KB gzip) and first load from growing; every size budget measures Brotli (Q21). Calm, Pause motion and reduced motion get a still frame; no WebGL, or a scene that stays under 30 frames a second for 3 seconds, gets the 2D canvas or SVG (Q25); 3D renders on the main thread and a hidden tab pauses it (Q22). The Sky ships in this change as the first 3D scene (Q23). This replaces the raw-WebGL plan in `gpu-effects` (no three.js, 20 KB, OffscreenCanvas worker), which is revised; ADR 0013 supersedes ADR 0011 in those parts.
+- **3D with Three.js (decision 13).** React Three Fiber and drei, bundled from our own origin (no CDN, inside the CSP, no `eval`). 3D loads late and only where used; the Sky first shows the 2D Sky, then fades into 3D. A CI budget keeps the whole 3D dependency graph under 170 KB Brotli in total (about 200 KB gzip) and first load from growing; 3D files are never precached by the service worker, only cached on first use; every size budget measures Brotli (Q21). Calm, Pause motion and reduced motion get a still frame; no WebGL, or a scene that stays under 30 frames a second for 3 seconds, gets the 2D canvas or SVG (Q25); 3D renders on the main thread and a hidden tab pauses it (Q22). The Sky ships in this change as the first 3D scene (Q23). This replaces the raw-WebGL plan in `gpu-effects` (no three.js, 20 KB, OffscreenCanvas worker), which is revised; ADR 0013 supersedes ADR 0011 in those parts.
 
 ## Out of scope
 
@@ -58,7 +58,7 @@ Every Mode (Explorer, Challenger, Pro) and every Player, but nothing a Player do
 ### Modified Capabilities
 
 - `hosting` (added by `learnvedicmath`): the game's paths, the SPA fallback for `/play/*`, and how old links reach the same screen.
-- `offline-app` (added by `learnvedicmath`): the precache list comes from Vite's manifest; hashed asset files are cache first; offline page loads under `/play/*` get the app shell.
+- `offline-app` (added by `learnvedicmath`): the precache list comes from Vite's manifest and never holds a 3D file; hashed asset files are cache first (3D files once first loaded); offline page loads under `/play/*` get the app shell.
 - `deploy-pipeline` (added by `learnvedicmath`): the post-deploy wait checks the built entry instead of `/js/app.js`, and the budget gates run.
 - `analytics`: route views are counted for path routes, with the same event names.
 - `view-lifecycle`: cleanup holds across Legacy and React views, and is enforced by lint.

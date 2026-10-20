@@ -21,6 +21,10 @@ Every route of the game SHALL be a path under `/play/`: the hash route `#/<route
 - **WHEN** a Player opens `/play/progress`
 - **THEN** the Me page is shown
 
+#### Scenario: A cold load of a path that is not prerendered
+- **WHEN** a Player opens `https://learnvedicmath.com/play/arena` in a new tab
+- **THEN** the server answers 200 with the SPA fallback page from the Worker script's miss handler, and the Arena is shown
+
 ### Requirement: Old hash links reach the same screen, forever
 The game SHALL turn any address under `/play/` whose fragment starts with `#/` into the matching path before anything is painted, keeping the query, and SHALL do the same whenever the fragment changes to one that starts with `#/` while the game is open. Fragments that do not start with `#/` SHALL be left alone. This SHALL never be removed.
 

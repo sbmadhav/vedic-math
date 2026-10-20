@@ -14,7 +14,7 @@ The repo SHALL keep `docs/perf/baseline.md` with the numbers of the live site af
 - **THEN** `docs/perf/baseline.md` already holds the numbers for the post-move site
 
 ### Requirement: What the baseline measures
-The baseline SHALL hold Lighthouse mobile preset results (simulated slow 4G, 4x CPU slowdown, median of 5 runs) for `/play/` first visit and repeat visit, the Arena, Games and one Sutra's Deep dive; the Brotli-compressed size of the JS and CSS a first visit to `/play/` loads before the first tap; and interaction timings for opening the Arena, answering one Arena question, opening a Deep dive and lighting a Star.
+The baseline SHALL hold Lighthouse mobile preset results (simulated slow 4G, 4x CPU slowdown, median of 5 runs) for `/play/` first visit and repeat visit, the Arena, Games and one Sutra's Deep dive; the Brotli-compressed size of everything a first visit to `/play/` requests before the first tap, including every file the service worker's install downloads; and interaction timings for opening the Arena, answering one Arena question, opening a Deep dive and lighting a Star.
 
 #### Scenario: The report
 - **WHEN** `docs/perf/baseline.md` is read
@@ -28,11 +28,15 @@ Every size budget in this change (first load and the 3D code) SHALL be measured 
 - **THEN** every budget line gives its limit and its measurement in Brotli bytes
 
 ### Requirement: First load does not grow
-The build SHALL measure the Brotli-compressed size of the JS and CSS a first visit to `/play/` loads before the first tap and SHALL fail when either is larger than the baseline. It SHALL print the measurement on every build.
+The build SHALL measure the Brotli-compressed size of everything a first visit to `/play/` requests before the first tap: the page, its JS and CSS, fonts, icons and other files, and every file the service worker's install downloads (counted even when install ends after the tap), each unique file once. It SHALL fail when the total is larger than the baseline, and SHALL print the measurement on every build.
 
 #### Scenario: A heavy import in the shell
 - **WHEN** a change makes the shell import a module that brings JS before the first tap above the baseline
 - **THEN** `python3 build.py --out _site` fails and names the budget, the size and the largest new module
+
+#### Scenario: A large file added to the precache
+- **WHEN** a change adds a file to the worker's precache list that brings the first visit above the baseline
+- **THEN** `python3 build.py --out _site` fails and names the budget, the size and that file
 
 ### Requirement: Load and interaction times do not regress
 Every pull request with a preview SHALL measure the pages and interactions of the baseline in the same way, and SHALL fail when a median is worse than the baseline by more than the tolerance: first contentful paint or largest contentful paint by more than 100 ms, total blocking time by more than 25 ms, layout shift above the larger of the baseline and 0.1, or any interaction timing by more than 20 ms.
@@ -46,11 +50,15 @@ Every pull request with a preview SHALL measure the pages and interactions of th
 - **THEN** an issue is opened with the numbers, and the deploy stays
 
 ### Requirement: The 3D chunk has its own budget
-The 3D code SHALL stay under 170 KB Brotli (about 200 KB gzip) in total, measured by the build, and SHALL NOT be reachable from the static imports of any page's entry.
+The 3D code SHALL stay under 170 KB Brotli (about 200 KB gzip) in total, measured by the build as the sum of the Brotli sizes of the unique files it emits for the whole 3D dependency graph (three.js, React Three Fiber, drei and the scenes, across every chunk they land in). No 3D module SHALL be reachable from the static imports of any page's entry.
 
 #### Scenario: A large drei import
 - **WHEN** a change imports a drei helper that brings the 3D code to 180 KB Brotli
 - **THEN** the build fails and names the 3D budget
+
+#### Scenario: 3D split over several chunks
+- **WHEN** the build splits the 3D code into a 100 KB Brotli chunk for three and React Three Fiber and two 40 KB Brotli scene chunks
+- **THEN** the 3D line of the budget table reads 180 KB and the build fails
 
 #### Scenario: 3D in the entry
 - **WHEN** a change imports a 3D scene statically from the Home view
