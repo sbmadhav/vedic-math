@@ -9,7 +9,7 @@ for (const [w, h] of [[1280, 800], [768, 900], [375, 740], [320, 640]]) {
     const cards = page.locator('.sutra-card');
     await expect(cards.first()).toBeVisible();
     const n = await cards.count();
-    expect(n).toBeGreaterThanOrEqual(16);
+    expect(n).toBe(29); // 16 sutras and 13 sub-sutras
     for (let i = 0; i < n; i++) {
       const card = cards.nth(i);
       // The layout is under test, not the tap: flip through the card's own button handler, then wait for the flip
