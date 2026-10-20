@@ -20,8 +20,8 @@ test('Sparks, collected sutra cards, answers and the nickname survive a reload',
   await expect(page.locator('.me-head')).not.toContainText('XP');
   // The nav chip names the Player and their Title, with no level number
   const chip = page.locator('#mqChip a.mq-chip');
-  await expect(chip).toHaveAttribute('aria-label', 'Swift Tiger 42, Number Rookie');
-  await expect(chip).not.toContainText(/Lv|\d/);
+  await expect(chip).toHaveAccessibleName('Swift Tiger 42, Number Rookie');
+  expect(await chip.evaluate(e => [...e.children].filter(c => !c.classList.contains('md-sr-only')).map(c => c.textContent).join(''))).not.toMatch(/Lv|\d/); // on screen: the avatar and the bar
   await page.goto(`${APP}#/sutras`);
   await expect(page.locator('.sutra-card').first()).toHaveClass(/got/);
   await expect(page.locator('.sutra-card').first()).toContainText('Collected');

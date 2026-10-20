@@ -76,8 +76,8 @@ export function mount({ root, signal, params }) {
     const slotsOf = i => D.replay(P.tiers[i].nums, tierState(i).moves);
     const drawTabs = () => {
       if (!tabs) return;
-      tabs.innerHTML = P.tiers.map((tr, i) => { const st = tierState(i); return `<button type="button" class="dn-tab dn-tab--${TIER_COLOR[i]}" data-tier="${i}" aria-pressed="${i === cur}" aria-label="${tr.name} target ${tr.target}${rec.tiers[i].done ? `, ${rec.tiers[i].stars} stars` : ''}">
-        <span>${tr.name}</span><b>${tr.target}</b>${rec.tiers[i].done ? starHtml(rec.tiers[i].stars) : `<small>${st.moves.length ? 'in progress' : 'new'}</small>`}</button>`; }).join('');
+      tabs.innerHTML = P.tiers.map((tr, i) => { const st = tierState(i); return `<button type="button" class="dn-tab dn-tab--${TIER_COLOR[i]}" data-tier="${i}" aria-pressed="${i === cur}">
+        <span>${tr.name}</span><span class="md-sr-only"> target</span> <b>${tr.target}</b>${rec.tiers[i].done ? starHtml(rec.tiers[i].stars) : `<small>${st.moves.length ? 'in progress' : 'new'}</small>`}</button>`; }).join('');
     };
     const draw = () => {
       const tr = P.tiers[cur], st = tierState(cur), slots = slotsOf(cur), locked = st.done;

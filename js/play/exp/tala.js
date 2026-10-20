@@ -111,7 +111,7 @@ export function mount({ root, signal, params }) {
             <div class="tl-transport">${playBtn()} ${tempo('tlBpm', bpm)}</div>
             <ol class="tl-strip" aria-label="Four beats of syllables"></ol>
             <div class="tl-tapbox">
-              <button type="button" class="tl-pad" aria-label="Tap along. Space or T also taps."><span>Tap</span><small>or Space</small></button>
+              <button type="button" class="tl-pad" aria-label="Tap or Space to tap along. T also taps."><span>Tap</span> <small>or Space</small></button>
               <div class="tl-meter">
                 <p class="tl-feel" aria-live="off">${t({ explorer: 'Press Play, then tap with the clap.', challenger: 'Press Play, then tap on every clap.', pro: 'Press Play, then tap every syllable.' })}</p>
                 <div class="tl-dots" aria-hidden="true"><i class="tl-dots-mid"></i></div>
