@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog, typeAnswer, showWorld } from '../fixtures';
+import { test, expect, open, cloudLog, typeAnswer, showWorld, needsWorldBoards } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* openspec board-identity:
@@ -19,7 +19,7 @@ const identity = (page: Page) => page.evaluate(() => ({
 const NO_IDENTITY = { uids: null, legacy: null, session: null };
 
 const ids = (page: Page) => page.evaluate(async () => {
-  const cloud = await import('/vedic-math/js/cloud.js' as string);
+  const cloud = await import('/js/cloud.js' as string);
   return { day: cloud.dayId() as string, wk: cloud.weekId() as string };
 });
 
@@ -29,6 +29,7 @@ test.describe('First post', () => {
   test.use({ seedConsent: { age: 'adult' } });
 
   test('finishing the first Ranked Arena round creates an identity and posts the Score under it', async ({ page, browserName }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     test.skip(browserName === 'webkit', ROUNDS_OFF_WEBKIT);
     test.setTimeout(90_000);
     await page.clock.install();
@@ -43,7 +44,7 @@ test.describe('First post', () => {
     expect(log.writes).toEqual([]);
     expect(await identity(page)).toEqual(NO_IDENTITY);
 
-    const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
+    const answer = await page.evaluate(async d => (await import('/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
     await page.locator('#arGo').click();
     await page.clock.runFor(2_500); // 3, 2, 1
     await typeAnswer(page, String(answer));
@@ -69,6 +70,7 @@ test.describe('First post', () => {
   });
 
   test('finishing the first Ranked game round creates an identity and posts the Score under it', async ({ page, browserName }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     test.skip(browserName === 'webkit', ROUNDS_OFF_WEBKIT);
     test.setTimeout(90_000);
     await page.clock.install();
@@ -134,7 +136,8 @@ export const Timestamp = { fromMillis: ms => ({ millis: ms }) };`;
 test.describe('Signed-out list query', () => {
   test.use({ seedConsent: { age: 'adult' } }); // the app shows World boards only to a Player 13 or over
   test('a signed-out client asking for the top 20 entries of today\'s Arena Board gets them', async ({ page }) => {
-    await page.route(/^https:\/\/www\.gstatic\.com\/firebasejs\/[^/]+\/firebase-firestore\.js$/, route =>
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
+    await page.route(/\/vendor\/firebase\/[^/]+\/firebase-firestore\.js$/, route =>
       route.fulfill({ status: 200, contentType: 'text/javascript', headers: { 'access-control-allow-origin': '*' }, body: QUERY_FAKE }));
     // Shuffled, so the order on the page comes from the Score ordering
     const shuffled = [...ROWS].reverse();
@@ -144,7 +147,7 @@ test.describe('Signed-out list query', () => {
     const board = `daily-${day}-challenger`;
 
     // A signed-out client asks for the top 20 of today's Arena Board
-    const got = await page.evaluate(async b => (await import('/vedic-math/js/cloud.js' as string)).top(b, 20), board);
+    const got = await page.evaluate(async b => (await import('/js/cloud.js' as string)).top(b, 20), board);
     const queries = await page.evaluate(() => (globalThis as any).__e2eQueries as { path: string; limit: number; orderBy: [string, string] }[]);
     const q = queries.filter(x => x.path === `boards/${board}/scores`);
     expect(q.length).toBeGreaterThanOrEqual(1);

@@ -13,12 +13,12 @@ test.describe.configure({ mode: 'serial', retries: 0 });
 test('World leaderboards load from live Firestore (read-only)', async ({ page }, testInfo) => {
   chromiumOnly(testInfo, 'one live read per run: chromium only');
   // App Check only accepts the production origin (localhost would need a debug token)
-  test.skip(!/^https:\/\/sbmadhav\.com$/.test(testInfo.project.use.baseURL || ''), 'live Firebase only answers https://sbmadhav.com');
+  test.skip(!/^https:\/\/learnvedicmath\.com$/.test(testInfo.project.use.baseURL || ''), 'live Firebase only answers https://learnvedicmath.com');
   test.setTimeout(90_000);
   const firestore: string[] = [], signIn: string[] = [], sdk: string[] = [];
   await page.addInitScript(() => {
     (window as any).__csp = [];
-    document.addEventListener('securitypolicyviolation', e => (window as any).__csp.push(`${e.effectiveDirective} ${e.blockedURI}`));
+    document.addEventListener('securitypolicyviolation', e => { if (e.disposition !== 'report') (window as any).__csp.push(`${e.effectiveDirective} ${e.blockedURI}`); });
   });
   page.on('request', r => {
     if (FIRESTORE.test(r.url())) firestore.push(`${r.method()} ${isFirestoreWrite(r.method(), r.url()) ? 'WRITE' : 'read'} ${r.url().split('?')[0]}`);

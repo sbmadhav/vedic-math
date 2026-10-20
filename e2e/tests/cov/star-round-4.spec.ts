@@ -18,7 +18,7 @@ async function enter(page: Page, v: string) { await page.keyboard.type(v); await
 
 /** The n of each n² this round deals, from the round's saved keys (<kata>:<index>) and the app's seeded Katas */
 const roundBases = (page: Page) => page.evaluate(async () => {
-  const L = await import('/vedic-math/js/levels.js' as string);
+  const L = await import('/js/levels.js' as string);
   const keys: string[] = JSON.parse(localStorage.getItem('mathquest.v1.p1') || '{}').sky.last['sq5:1'];
   return keys.map(k => { const [n, i] = k.split(':').map(Number); return L.kata('sq5', n).problems[i].vals[0] as number; });
 });
@@ -59,7 +59,7 @@ test.describe('A miss replays the Trick on the Player\'s number: Miss on 85 squa
     test.setTimeout(120_000);
     await open(page, '#/star/sq5/1');
     // 85 squared is a question of this Star (at a new Player's Rating)
-    const pool = await page.evaluate(async () => (await import('/vedic-math/js/levels.js' as string)).starPool('sq5', 1, 5).map((p: { vals: number[] }) => p.vals[0]));
+    const pool = await page.evaluate(async () => (await import('/js/levels.js' as string)).starPool('sq5', 1, 5).map((p: { vals: number[] }) => p.vals[0]));
     expect(pool).toContain(85);
     // Deal rounds (skipping them, so nothing is answered) until one deals 85 squared
     let dealt: number[] = [];
@@ -89,7 +89,7 @@ test.describe('A miss replays the Trick on the Player\'s number: Miss on 85 squa
     await expect(replay).toBeVisible();
     await expect(replay.locator('#stQ')).toHaveText('852 = ?');
     const expected = await page.evaluate(async () => {
-      const V = await import('/vedic-math/js/vedic.js' as string);
+      const V = await import('/js/vedic.js' as string);
       const t = V.TRICKS.find((x: { id: string }) => x.id === 'sq5');
       return t.steps([85]).map((s: { say: string }) => { const d = document.createElement('div'); d.innerHTML = s.say; return d.textContent || ''; });
     });

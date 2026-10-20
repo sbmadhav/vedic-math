@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog, chromiumOnly } from '../fixtures';
+import { test, expect, open, cloudLog, chromiumOnly, needsWorldBoards } from '../fixtures';
 
 /* sparks spec, requirement "The weekly Sparks Board":
    - The week of the update: a Player with a weekly XP entry of 800 from before the update who earns 50 Sparks
@@ -20,12 +20,13 @@ test.describe('the week of the update', () => {
   test.use({ seedConsent: { age: 'adult' }, seedProgress: { v: 2, xp: 800, weekXp: { [WK]: 800 }, skills: {}, days: {}, best: {}, badges: {}, counts: {}, seen: {} } });
 
   test('a weekly XP entry of 800 plus 50 Sparks earned after the update posts 850 to the same xp-week Board', async ({ page }, testInfo) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     chromiumOnly(testInfo, 'app logic, the same in every engine');
     await page.clock.install();
     await open(page, '#/arena');
     const ids = await page.evaluate(async () => {
-      const cloud = await import('/vedic-math/js/cloud.js' as string);
-      const store = await import('/vedic-math/js/store.js' as string);
+      const cloud = await import('/js/cloud.js' as string);
+      const store = await import('/js/store.js' as string);
       return { wk: cloud.weekId() as string, board: cloud.weekSparksBoard(cloud.weekId(), 'challenger') as string, week: store.weekSparks() as number };
     });
     test.skip(ids.wk !== WK, 'the ISO week turned over between seeding and loading');
@@ -35,7 +36,7 @@ test.describe('the week of the update', () => {
     expect((await cloudLog(page)).writes).toEqual([]);
 
     // Earn 50 Sparks after the update
-    await page.evaluate(async () => { (await import('/vedic-math/js/store.js' as string)).addSparks(50, 'e2e'); });
+    await page.evaluate(async () => { (await import('/js/store.js' as string)).addSparks(50, 'e2e'); });
     await page.clock.runFor(3_500);
     await expect.poll(async () => (await cloudLog(page)).writes.length).toBe(1);
     const [w] = (await cloudLog(page)).writes;
@@ -44,6 +45,7 @@ test.describe('the week of the update', () => {
   });
 
   test('earning Sparks in the app (sutra cards) raises the carried-over 800 on the same Board', async ({ page }, testInfo) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     chromiumOnly(testInfo, 'app logic, the same in every engine');
     await page.clock.install();
     await open(page, '#/sutras');
@@ -53,7 +55,7 @@ test.describe('the week of the update', () => {
     await cards.nth(1).click();
     await page.clock.runFor(3_500);
     await expect.poll(async () => (await cloudLog(page)).writes.length).toBe(1);
-    const week = await page.evaluate(async () => (await import('/vedic-math/js/store.js' as string)).weekSparks() as number);
+    const week = await page.evaluate(async () => (await import('/js/store.js' as string)).weekSparks() as number);
     expect(week).toBeGreaterThanOrEqual(810);
     const [w] = (await cloudLog(page)).writes;
     expect(w.path).toBe(`boards/xp-week-${WK}-challenger/scores/${UID}`);

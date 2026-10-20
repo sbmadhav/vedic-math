@@ -143,7 +143,7 @@ for (const scheme of ['light', 'dark'] as const) {
 }
 
 test('Typing and following: no request carries the text, the address is the result\'s route, and exactly one math/find/go is sent', async ({ page }) => {
-  await page.route(/\/assets\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
+  await page.route(/\/js\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
   const urls: string[] = [];
   page.on('request', r => urls.push(r.url() + ' ' + (r.postData() || '')));
   await open(page, '#/find');

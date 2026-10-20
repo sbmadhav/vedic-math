@@ -22,7 +22,7 @@ for (const p of PAGES) test(`${p.hash} opens ${p.h1} inside ${p.back}, with no e
   await open(page, p.hash);
   await expect(page.locator('#view h1').first()).toHaveText(p.h1);
   await expect(page.locator('.px-back').first()).toHaveText(new RegExp(p.back));
-  await expect(page).toHaveTitle(new RegExp(`^${p.h1}: Vedic Math`));
+  await expect(page).toHaveTitle(new RegExp(`^${p.h1} · Learn Vedic Math`));
   // Its section is the current nav item (spec: "Experiences live inside sections")
   await expect(page.locator(`.mq-nav a[href="#/${p.back.toLowerCase()}"]`)).toHaveAttribute('aria-current', 'true');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
@@ -149,9 +149,9 @@ test('the badge for Party Mode is listed on Me', async ({ page }) => {
 test('leaving an experience page suspends the shared audio context', async ({ page }) => {
   await open(page, '#/games/tala');
   await page.locator('#view h1').first().click(); // a user gesture, so the context may run
-  const state = () => page.evaluate(async () => { const k = await import('/vedic-math/js/play/kit.js' as string); return k.audio()?.state; });
+  const state = () => page.evaluate(async () => { const k = await import('/js/play/kit.js' as string); return k.audio()?.state; });
   await expect.poll(state).toBe('running');
   await page.locator('.px-back').first().click();
   await expect(page).toHaveURL(/#\/games$/);
-  await expect.poll(() => page.evaluate(async () => { const k = await import('/vedic-math/js/play/kit.js' as string); return (k as any).audioState?.(); })).toBe('suspended');
+  await expect.poll(() => page.evaluate(async () => { const k = await import('/js/play/kit.js' as string); return (k as any).audioState?.(); })).toBe('suspended');
 });

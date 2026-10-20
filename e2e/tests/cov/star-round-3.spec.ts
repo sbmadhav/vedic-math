@@ -10,7 +10,7 @@ const base = async (page: Page) => Number((await page.locator('#stQ').innerHTML(
 const lastKeys = (page: Page) => page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1') || '{}').sky.last['sq5:1'] as string[]);
 /** The n of the n² a Kata key ("kata:index") stands for, from the app's own seeded Katas */
 const keyBases = (page: Page, keys: string[]) => page.evaluate(async keys => {
-  const L = await import('/vedic-math/js/levels.js' as string);
+  const L = await import('/js/levels.js' as string);
   return keys.map(k => { const [n, i] = k.split(':').map(Number); return L.kata('sq5', n).problems[i].vals[0] as number; });
 }, keys);
 /** Difficulty rank of each key in dealt order (by Kata, then by place in the Kata): the shape of the order */

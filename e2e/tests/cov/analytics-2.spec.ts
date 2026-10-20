@@ -1,13 +1,13 @@
 import { test, expect, open } from '../fixtures';
 
 /* openspec analytics: "Route views are counted / A Star" and "Answer events in untimed play / Practice answer".
-   The shared /assets/analytics.js is replaced by a stub that only records window.siteTrack paths. */
+   This site's /js/analytics.js is replaced by a stub that only records window.siteTrack paths. */
 const STUB = `window.__events = window.__events || []; window.siteTrack = (path) => { window.__events.push(path); };`;
 type Page = import('@playwright/test').Page;
 const events = (page: Page): Promise<string[]> => page.evaluate(() => (globalThis as any).__events || []);
 
 test.beforeEach(async ({ page }) => {
-  await page.route(/\/assets\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
+  await page.route(/\/js\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
 });
 
 test('opening #/star/sq5/2 sends exactly one route view, math/view/star/sq5/star, without the Star number', async ({ page }) => {

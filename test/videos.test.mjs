@@ -86,14 +86,17 @@ test('the migration left no playlist or channel', () => {
   for (const l of LINKS) assert.doesNotMatch(l.url, /[?&]list=|\/@|\/channel\//, l.id);
 });
 
-/* Thumbnails served from this site (openspec change learnvedicmath, third-party-requests "Self-hosted thumbnails"):
-   every entry has thumbs/yt-<YouTube id>.webp (tools/fetch-thumbs.mjs), and none is left over from a removed entry.
-   The Watch shelf switches to them with the move to learnvedicmath.com (js/watch.js thumbSrc). */
-test('every video has a thumbnail in thumbs/, and every thumbnail belongs to a video', async () => {
+/* Thumbnails from this site (openspec change learnvedicmath, third-party-requests spec): every entry has
+   thumbs/yt-<YouTube id>.webp (tools/fetch-thumbs.mjs), and none is left over from a removed entry */
+test('every video has a thumbnail served from /thumbs/, and every thumbnail belongs to a video', async () => {
   const { readdirSync, existsSync } = await import('node:fs');
+  const { thumbSrc } = await import('../js/watch.js');
   const dir = new URL('../thumbs/', import.meta.url);
   const ids = VIDEOS.filter(v => v.yt).map(v => v.yt);
-  for (const v of VIDEOS.filter(x => x.yt)) assert.ok(existsSync(new URL(`yt-${v.yt}.webp`, dir)), `${v.id} has no thumbnail: run node tools/fetch-thumbs.mjs`);
+  for (const v of VIDEOS.filter(x => x.yt)) {
+    assert.equal(thumbSrc(v), `/thumbs/yt-${v.yt}.webp`);
+    assert.ok(existsSync(new URL(`yt-${v.yt}.webp`, dir)), `${v.id} has no thumbnail: run node tools/fetch-thumbs.mjs`);
+  }
   const want = new Set(ids.map(id => `yt-${id}.webp`));
   assert.deepEqual(readdirSync(dir).filter(f => !want.has(f)), [], 'thumbnails with no video, or not named yt-<id>.webp');
 });

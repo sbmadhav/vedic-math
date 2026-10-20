@@ -36,7 +36,7 @@ test.describe('Calm on', () => {
     await expect(page.locator('.lk-timer')).toHaveCount(0);
     /* The timed quick level gives a Challenger far less than this; under Calm a whole minute still counts */
     const timedSecs = await page.evaluate(async () => {
-      const m: any = await import('/vedic-math/js/play/exp/locks-core.js' as string);
+      const m: any = await import('/js/play/exp/locks-core.js' as string);
       return m.levelsFor('challenger', false).find((l: any) => l.kind === 'quick').secs;
     });
     expect(timedSecs).toBeGreaterThan(0);
@@ -55,7 +55,7 @@ test.describe('Calm on', () => {
 test('Sharing a ghost: the link holds the seed, answer times and an optional word-list nickname, and nothing else', async ({ page }) => {
   await open(page, '#/arena/ghosts');
   const check = await page.evaluate(async () => {
-    const G: any = await import('/vedic-math/js/play/exp/ghosts-core.js' as string);
+    const G: any = await import('/js/play/exp/ghosts-core.js' as string);
     const kind = Object.keys(G.SPRINTS)[0];
     const g = G.makeGhost({ kind, lv: 'challenger', seed: 12345, n: 3, t: [1200, 2700, 3600], miss: [[1, 300]], nick: [1, 2] });
     let code: string;
@@ -74,7 +74,7 @@ test('Sharing a ghost: the link holds the seed, answer times and an optional wor
 });
 
 test('A typed plate in a share link: a plate typed with other words is shared as its digits only', async ({ page }) => {
-  await page.route(/\/vedic-math\/vendor\/tesseract\//, r => r.abort());
+  await page.route(/\/vendor\/tesseract\//, r => r.abort());
   await open(page, '#/games/lens');
   await page.locator('[data-way="type"]').click();
   await page.locator('#lnDigits').fill('KA 05 call me 4721 <b>');

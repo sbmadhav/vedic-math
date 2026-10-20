@@ -11,7 +11,7 @@ const enter = async (page: Page, v: string) => { await page.keyboard.type(v); aw
 const tag = (page: Page) => page.locator('#stMain .star-tag');
 
 test.beforeEach(async ({ page }) => {
-  await page.route(/\/assets\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
+  await page.route(/\/js\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
 });
 
 test('A round with a Comeback that lights the Star: comeback/sq5 and lit/sq5 are each sent once', async ({ page }) => {
@@ -109,7 +109,7 @@ test.describe('the tour on a fresh device', () => {
 
 test('A shared ghost link: opening #/arena/ghosts/r/<code> sends the route view view/play/ghosts', async ({ page }) => {
   await open(page, '#/arena/ghosts');
-  const code = await page.evaluate(async () => { const G: any = await import('/vedic-math/js/play/exp/ghosts-core.js' as string); const kind = Object.keys(G.SPRINTS)[0]; return G.encode(G.makeGhost({ kind, lv: 'challenger', seed: 7, n: 3, t: [1000, 2000, 3000], miss: [], nick: null })); });
+  const code = await page.evaluate(async () => { const G: any = await import('/js/play/exp/ghosts-core.js' as string); const kind = Object.keys(G.SPRINTS)[0]; return G.encode(G.makeGhost({ kind, lv: 'challenger', seed: 7, n: 3, t: [1000, 2000, 3000], miss: [], nick: null })); });
   await page.evaluate(() => { (window as any).__events.length = 0; });
   await page.goto(`${APP}#/arena/ghosts/r/${code}`);
   await expect(page.locator('#view h1').first()).toHaveText('Ghost Races');

@@ -10,7 +10,7 @@ const hits = (page: Page) => page.locator('#findOut .find-hit');
 const groups = (page: Page) => page.locator('#findOut .find-group h2').allInnerTexts();
 
 test.beforeEach(async ({ page }) => {
-  await page.route(/\/assets\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
+  await page.route(/\/js\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
 });
 
 test('Find in the menu bar opens the page with the box focused and Find current; empty, it shows the browse list', async ({ page, issues }) => {

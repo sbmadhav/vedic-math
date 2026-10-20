@@ -1,18 +1,19 @@
 {
-  "name": "Vedic Math for Everyone",
+  "name": "Learn Vedic Math",
   "short_name": "Vedic Math",
   "description": "Speed tricks from the sutras, a counting-to-calculus skill map, games and daily quests. Works offline once opened.",
-  "id": "/vedic-math/",
-  "start_url": "/vedic-math/?source=pwa",
-  "scope": "/vedic-math/",
+  "id": "/play/",
+  "start_url": "/play/?source=pwa",
+  "scope": "/play/",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#F6F7F9",
   "theme_color": "#F6F7F9",
   "categories": ["education", "games", "kids"],
   "icons": [
-    { "src": "/assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/assets/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
   ]
 }

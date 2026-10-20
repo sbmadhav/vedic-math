@@ -3,13 +3,13 @@ import { test, expect, open, heldClock, cloudLog, typeAnswer } from '../fixtures
 /* openspec analytics spec, "Answer events in untimed play" / Scenario: Arena answers.
    WHEN a Player answers 30 questions in an Arena round
    THEN no per-answer event is sent, and one round_end event is sent when the round ends.
-   The shared /assets/analytics.js is replaced by a stub that only records window.siteTrack calls. */
+   This site's /js/analytics.js is replaced by a stub that only records window.siteTrack calls. */
 const STUB = `window.__events = window.__events || []; window.siteTrack = (path, title) => { window.__events.push(path); };`;
 type Page = import('@playwright/test').Page;
 const events = (page: Page): Promise<string[]> => page.evaluate(() => (globalThis as any).__events || []);
 
 test.beforeEach(async ({ page }) => {
-  await page.route(/\/assets\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
+  await page.route(/\/js\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
 });
 
 test('30 answers in an Arena round send no q_answered, and exactly one round_end when the round ends', async ({ page }) => {

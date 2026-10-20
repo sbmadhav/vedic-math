@@ -7,7 +7,7 @@ import type { Page } from '@playwright/test';
      it for the first time after this change THEN their questions on that Skill are still generated at level 1.
      (A new Pro Player starts at Rating 9, which is level 2, so level 1 here comes only from the mastery fallback.) */
 
-const progress = (page: Page) => page.evaluate(async () => (await import('/vedic-math/js/store.js' as string)).load());
+const progress = (page: Page) => page.evaluate(async () => (await import('/js/store.js' as string)).load());
 const blank = { v: 3, skills: {}, sparks: 0, days: {}, best: {}, last: null, grade: null, badges: {}, counts: {}, seen: {}, medals: {}, katasDone: {}, ratings: {}, weekSparks: {}, questDay: null };
 
 test.describe('Existing Pro Player with mastery level 1 on a Skill and no Skill Rating', () => {

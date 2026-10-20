@@ -11,7 +11,7 @@ const player = (page: Page) => page.evaluate(() => { const p = JSON.parse(localS
 const actions = (page: Page) => page.evaluate(() => [...document.querySelectorAll('#view a[href], #view button')].filter(e => (e as HTMLElement).offsetWidth > 0).map(e => (e.textContent || '').replace(/\s+/g, ' ').trim()));
 
 test.beforeEach(async ({ page }) => {
-  await page.route(/\/assets\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
+  await page.route(/\/js\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
 });
 
 test.describe('the landing', () => {
@@ -25,9 +25,11 @@ test.describe('the landing', () => {
     await expect(page.locator('.pick-h')).toHaveText('Or pick who is playing');
     await page.locator('#tryBtn').click(); // tap 1
     await expect(page).toHaveURL(/#\/star\/[\w-]+\/1$/);
+    await expect(page.locator('#stStart')).toBeFocused(); // the Trick worked once (openspec try-trick-teaches)
+    await page.locator('#stStart').click(); // tap 2
     await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
     await expect(page.locator('.star-key[data-k="7"]')).toBeVisible();
-    await page.locator('.star-key[data-k="7"]').click(); // tap 2: the first answer digit
+    await page.locator('.star-key[data-k="7"]').click(); // tap 3: the first answer digit
     await expect(page.locator('#stOut')).toContainText('7');
     expect(await player(page)).toMatchObject({ mode: 'challenger', modeGuess: true });
     expect((await events(page)).filter(e => e.startsWith('math/try/'))).toEqual(['math/try/start']);
@@ -61,6 +63,7 @@ test.describe('the landing', () => {
   test('Back from the trial Star goes Home, where the mode line names the guess; picking on Me clears it', async ({ page }) => {
     await page.goto(APP);
     await page.locator('#tryBtn').click();
+    await page.locator('#stStart').click();
     await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
     await expect(page.locator('#stExit')).toBeVisible();
     await page.locator('#stExit').click();
@@ -100,6 +103,7 @@ test.describe('Home on a 390 px phone after Try a trick', () => {
       await page.emulateMedia({ colorScheme: scheme });
       await page.goto(APP);
       await page.locator('#tryBtn').click();
+      await page.locator('#stStart').click(); /* the trial Star teaches its Trick first (openspec try-trick-teaches) */
       await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
       await answerFirst(page);
       await expect(page.locator('#stMain .star-tag')).toHaveText('Question 2 of 4');

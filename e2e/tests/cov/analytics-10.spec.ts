@@ -9,7 +9,7 @@ const says = (page: Page): Promise<[string, string][]> => page.evaluate(() => ((
 const started = async (page: Page) => (await audioLog(page)).nodes.filter(n => n.kind === 'source' && n.started !== null).length;
 
 test.beforeEach(async ({ page }) => {
-  await page.route(/\/assets\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
+  await page.route(/\/js\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
   await page.addInitScript(() => { try { localStorage.setItem('vm.sound', '0'); localStorage.setItem('vm.sutraAmb', '0'); } catch (e) { /* storage blocked */ } });
 });
 
@@ -41,7 +41,7 @@ test('Stopping is not counted: a tap on the playing button sends nothing', async
 
 test('A clip that never plays is not counted: the device voice reads the respelling and no event is sent', async ({ page }) => {
   await fakeAudio(page);
-  await page.route(/\/vedic-math\/sounds\/sutras\//, route => route.abort('failed'));
+  await page.route(/\/sounds\/sutras\//, route => route.abort('failed'));
   await open(page, '#/sutras/s1');
   await page.locator('dialog .say-btn').click();
   await expect.poll(() => said(page)).toEqual(['ay kah dhi kay nuh poor vay nuh']);

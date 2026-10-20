@@ -21,11 +21,11 @@ test.describe('restoring a crafted backup code', () => {
     expect(saved.best).toEqual({ 'run-2': 7 });
     expect(saved.last).toBeNull();
     for (const hash of ['#/', '#/me', '#/run/1', '#/arena']) {
-      await page.goto('/vedic-math/' + hash);
+      await page.goto('/play/' + hash);
       await expect(page.locator('main')).toBeVisible();
       await expect(page.locator('img.injected')).toHaveCount(0);
     }
-    await page.goto('/vedic-math/#/run/1');
+    await page.goto('/play/#/run/1');
     await expect(page.locator('.md-lede')).toContainText('Your best: 0.');
     expect(dialogs).toEqual(['prompt']);
   });

@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog } from '../fixtures';
+import { test, expect, open, cloudLog, needsWorldBoards } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* sparks spec, Requirement "Stored XP carries over 1:1":
@@ -25,6 +25,7 @@ test.describe('a Player with 2,340 XP (410 this week) opens the app after the up
   test.use({ seedMode: 'challenger', seedConsent: { age: 'adult' }, seedProgress: v2(2340, { [WK]: 410 }) });
 
   test('they have 2,340 Sparks, 410 this week, and the Title they had before', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await page.clock.install();
     await open(page, '#/me');
     // 2,340 Sparks and the Title from before (Times Tamer), with no XP shown
@@ -39,7 +40,7 @@ test.describe('a Player with 2,340 XP (410 this week) opens the app after the up
     expect(d.weekSparks).toEqual({ [WK]: 410 });
 
     // This week's Sparks are 410: earning 5 more (a sutra card) posts 415 to this week's Sparks Board
-    await page.goto('/vedic-math/#/sutras');
+    await page.goto('/play/#/sutras');
     await page.locator('.sutra-card .sutra-face').first().click();
     await page.clock.runFor(3_500);
     await expect.poll(async () => (await sparksWrites(page)).length).toBe(1);

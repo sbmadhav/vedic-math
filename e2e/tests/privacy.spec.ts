@@ -1,4 +1,5 @@
-import { test, expect, APP, open, cloudLog, chromiumOnly, ANALYTICS, typeAnswer, showWorld } from './fixtures';
+import { test, expect, APP, open, cloudLog, chromiumOnly, ANALYTICS, typeAnswer, showWorld, needsWorldBoards, worldBoardsOn } from './fixtures';
+import { BASE_URL } from '../playwright.config';
 
 /* The note for grown-ups is shown beside every Board (Arena, game pages, Pro home) and on the Me page, and what it
    promises must match what the app sends and the privacy policy (openspec parent-note spec, change learnvedicmath).
@@ -31,36 +32,47 @@ const REQUIRED = [
   'Each entry holds exactly: the made-up nickname (picked from fixed word lists, never typed), an avatar color, the best score, the time it was saved, and the time it expires.',
   'No names, emails, ages, photos or typed text are ever collected',
   'Google reCAPTCHA',
-  'Entries are not deleted automatically.',
-  'To have an entry removed, message Madhav on LinkedIn with the nickname, color and date.',
+  'Each entry stops being shown 30 days after its last update, and is then deleted by an automatic clean-up that usually finishes within a few days.',
+  'To have an entry removed sooner, write to privacy@learnvedicmath.com with the nickname, color and date.',
   // anonymous usage counts (analytics spec), separate from World boards
   'Separately from World boards, the site counts visits and',
   '(pages opened, questions answered, rounds finished)',
-  'with GoatCounter, anonymously: no cookies, no IDs and no names.',
+  'with GoatCounter and Cloudflare Web Analytics, anonymously: no cookies, no IDs and no names.',
   // videos (watch-shelf)
-  "Videos play from YouTube in privacy-enhanced mode, and YouTube's own rules apply once one plays. Watching posts nothing.",
+  "Video pictures come from this site, and a video loads from YouTube, in privacy-enhanced mode, only after a player presses play; YouTube's own rules apply once it plays.",
 ];
 async function expectNote(page: import('@playwright/test').Page, summary: string, now?: string) {
   const note = page.locator('details', { has: page.locator('summary', { hasText: summary }) }).first();
   await expect(note).toBeVisible();
   await note.locator('summary').click();
   await expect(note).toHaveAttribute('open', '');
-  for (const line of REQUIRED) await expect(note).toContainText(line);
-  if (now) await expect(note.locator('.pn-now')).toHaveText(now);
+  // With World boards off (the device-only launch, until task 8.5) the note says so first, and names no reCAPTCHA check
+  // (App Check is off too); everything else it says about World boards still holds for when they are on
+  const on = await worldBoardsOn(page);
+  for (const line of REQUIRED) {
+    if (!on && line === 'Google reCAPTCHA') await expect(note).not.toContainText(line);
+    else await expect(note).toContainText(line);
+  }
+  if (!on) await expect(note.locator('.pn-now')).toHaveText(NOW.off);
+  else if (now) await expect(note.locator('.pn-now')).toHaveText(now);
   // Practice is never described as staying on the device without its Sparks counting, and XP is gone
   await expect(note).not.toContainText('practice and endless rounds');
   await expect(note).not.toContainText(/\bXP\b/);
   // The ID belongs to one Player, not to the browser
   await expect(note).not.toContainText('gives this browser');
   await expect(note).not.toContainText('share one entry');
-  await expect(note.getByRole('link', { name: 'LinkedIn' })).toHaveAttribute('href', 'https://www.linkedin.com/in/sbmadhav/');
-  await expect(note).not.toContainText(/Parent step|turning World boards off/);
+  await expect(note.getByRole('link', { name: 'privacy@learnvedicmath.com' })).toHaveAttribute('href', 'mailto:privacy@learnvedicmath.com');
+  // It ends with the privacy policy and the page for parents, both on this site
+  await expect(note.getByRole('link', { name: 'privacy policy' })).toHaveAttribute('href', '/privacy/?home');
+  await expect(note.getByRole('link', { name: 'page for parents' })).toHaveAttribute('href', '/parents/?home');
+  await expect(note).not.toContainText(/LinkedIn|Parent step|not deleted automatically/);
   return note;
 }
 const NOW = {
   noAnswer: 'Right now nothing is posted for this player. They have not answered the age question yet; it is asked the first time a score would be posted.',
   under13: "Nothing is posted for this player, because their age answer is under 13. Their scores stay on this device's board, and there is no way to turn World boards on for them.",
   posting: "This player's scores and weekly Sparks post to World boards.",
+  off: 'Right now no score is sent anywhere: World boards are switched off on this site, so every score stays in this browser. If they are switched on, this is what they keep.',
 };
 
 test('the parent note is on the Me page, in the Arena and beside a game\'s Boards', async ({ page }) => {
@@ -76,22 +88,22 @@ test('the parent note is on the Me page, in the Arena and beside a game\'s Board
 test.describe('under 13', () => {
   test.use({ seedMode: 'pro', seedConsent: { age: 10 } });
   test('the note says nothing is posted for this player, ever, and offers no way to turn World boards on', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await open(page, '#/arena');
     await expectNote(page, SUMMARY.pro, NOW.under13);
   });
   test('an under-13 Player can open and play a video; nothing is sent but the embed', async ({ page }, testInfo) => {
     chromiumOnly(testInfo);
     const events: string[] = [];
-    await page.route(/\/assets\/analytics\.js(\?.*)?$/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body: 'window.siteTrack = (p) => { (window.__ev ||= []).push(p); };' }));
+    await page.route(/\/js\/analytics\.js(\?.*)?$/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body: 'window.siteTrack = (p) => { (window.__ev ||= []).push(p); };' }));
     await page.route(/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>video</title>' }));
-    // The Watch shelf on sbmadhav.com shows YouTube's thumbnails (answered here with an empty picture); after the move
-    // to learnvedicmath.com they come from this site
-    await page.route(/^https:\/\/i\.ytimg\.com\//, r => r.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg"/>' }));
-    // Requests leaving this site, by exact host name (not by URL text, which a query string could fake)
-    const sent: string[] = [], hosts: string[] = [];
+    // Requests leaving this site, by exact host name (not by URL text, which a query string could fake). The video
+    // pictures come from this site (/thumbs/), so the shelf itself sends nothing to YouTube
+    // The site under test is its own host too (a branch preview on workers.dev), but no other Workers host
+    const sent: string[] = [], hosts: string[] = [], own = ['localhost', '127.0.0.1', 'learnvedicmath.com', 'www.learnvedicmath.com', new URL(BASE_URL).hostname];
     page.on('request', r => {
       const u = r.url(), host = new URL(u).hostname;
-      if (['localhost', '127.0.0.1', 'sbmadhav.com'].includes(host)) return;
+      if (own.includes(host)) return;
       sent.push(u + ' ' + (r.postData() || '')); hosts.push(host);
     });
     await open(page, '#/watch');
@@ -101,14 +113,14 @@ test.describe('under 13', () => {
     expect(events.filter(e => e.startsWith('math/watch/'))).toEqual([expect.stringMatching(/^math\/watch\/(video|short)$/)]);
     expect(sent.filter(u => /firestore|identitytoolkit|securetoken/.test(u))).toEqual([]);
     expect(sent.filter(u => u.includes('Swift') || u.includes('Tiger'))).toEqual([]);
-    const allowed = ['www.youtube-nocookie.com', 'i.ytimg.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
-    expect(hosts.filter(h => !allowed.includes(h)), sent.join('\n')).toEqual([]);
+    expect(hosts.filter(h => !['www.youtube-nocookie.com', 'voice.learnvedicmath.com'].includes(h)), sent.join('\n')).toEqual([]);
     expect((await cloudLog(page)).writes).toEqual([]);
   });
 });
 test.describe('under 13 with the old Parent step (imported from sbmadhav.com)', () => {
   test.use({ seedMode: 'explorer', seedConsent: { age: 7, parentOk: 1760000000000 } });
   test('the note says nothing is posted for this player: the old Parent step counts for nothing', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await open(page, '#/me');
     await expectNote(page, SUMMARY.explorer, NOW.under13);
   });
@@ -116,6 +128,7 @@ test.describe('under 13 with the old Parent step (imported from sbmadhav.com)', 
 test.describe('13 and over', () => {
   test.use({ seedConsent: { age: 14 } });
   test('the note says this player posts', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await open(page, '#/arena');
     await expectNote(page, SUMMARY.challenger, NOW.posting);
   });
@@ -140,7 +153,7 @@ test.describe('pro', () => {
 
 test('the footer says progress stays in this browser', async ({ page }) => {
   await open(page);
-  await expect(page.locator('footer.mq-foot')).toContainText('Progress stays in this browser, and leaderboards only see a made-up nickname.');
+  await expect(page.locator('footer.mq-foot')).toContainText('Progress stays in this browser, and World boards only see a made-up Nickname.');
   // Honest framing: the sutras come from the 1965 book, not "traditional Vedic mathematics"
   await expect(page.locator('footer.mq-foot')).toContainText("Speed tricks use sutras from Bharati Krishna Tirtha's 1965 book; lessons, problems and visuals are original.");
   await expect(page.locator('footer.mq-foot')).not.toContainText(/traditional|Vedas/i);
@@ -153,16 +166,17 @@ test('the footer says progress stays in this browser', async ({ page }) => {
 const NO_ARENA_QUEST = new Date(2026, 9, 18, 12); // Challenger's quests: Get 10 right, Watch a speed trick, Finish an Endless run
 const ARENA_QUEST = new Date(2026, 9, 19, 12); // Challenger's quests: Get 10 right, Finish an Endless run, Finish an Arena round
 const questIds = (page: import('@playwright/test').Page) => page.evaluate(async () =>
-  (await import('/vedic-math/js/gamify.js' as string)).pickQuests(undefined, 'challenger').map((q: { id: string }) => q.id) as string[]);
+  (await import('/js/gamify.js' as string)).pickQuests(undefined, 'challenger').map((q: { id: string }) => q.id) as string[]);
 
 test.describe('a Player who may post (a grown-up)', () => {
 test.use({ seedConsent: { age: 'adult' } });
 
 test('an Arena score entry holds only the nickname, avatar color, score and two timestamps', async ({ page }) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   // Calls the app's own cloud.submit (what the Arena daily round uses) against the fake SDK
   await open(page, '#/arena');
   const writes = await page.evaluate(async () => {
-    const cloud = await import('/vedic-math/js/cloud.js' as string);
+    const cloud = await import('/js/cloud.js' as string);
     const day = `daily-${cloud.dayId()}-challenger`;
     await cloud.submit(day, { id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode: 'challenger', created: 1, score: 121 });
     return (globalThis as any).__e2eCloud.writes;
@@ -180,18 +194,20 @@ test('an Arena score entry holds only the nickname, avatar color, score and two 
 const UID = 'e2e-fake-uid';
 const ENTRY_KEYS = ['avatar', 'exp', 'name', 'score', 'ts'];
 const ids = (page: import('@playwright/test').Page) => page.evaluate(async () => {
-  const cloud = await import('/vedic-math/js/cloud.js' as string);
+  const cloud = await import('/js/cloud.js' as string);
   return { day: cloud.dayId() as string, wk: cloud.weekId() as string };
 });
 const writes = async (page: import('@playwright/test').Page) => (await cloudLog(page)).writes;
 
 test('the note names every kind of score that is sent', async ({ page }) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   await open(page, '#/me');
   // The write-path tests below check the app sends exactly these three kinds of post
   await expectNote(page, SUMMARY.challenger, NOW.posting);
 });
 
 test('opening a leaderboard reads without loading Auth or signing in', async ({ page }, testInfo) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   chromiumOnly(testInfo, 'app logic, the same in every engine');
   await open(page, '#/arena');
   const { day, wk } = await ids(page);
@@ -206,13 +222,14 @@ test('opening a leaderboard reads without loading Auth or signing in', async ({ 
 });
 
 test('an Arena Daily challenge sends its score to today\'s and this week\'s Arena boards', async ({ page }, testInfo) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   chromiumOnly(testInfo, 'app logic, the same in every engine');
   await page.clock.install({ time: NO_ARENA_QUEST });
   await open(page, '#/arena');
   const { day, wk } = await ids(page);
   expect(await questIds(page)).not.toContain('arena-1');
   // The daily round is seeded, so the first question's answer comes from the app's own module
-  const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
+  const answer = await page.evaluate(async d => (await import('/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
   await page.locator('#arGo').click();
   await page.clock.runFor(2_500); // 3, 2, 1
   await typeAnswer(page, String(answer));
@@ -234,12 +251,13 @@ test('an Arena Daily challenge sends its score to today\'s and this week\'s Aren
 });
 
 test('on a day with the Arena quest, the round\'s quest Sparks follow the Arena posts to the weekly Sparks board, under the same identity', async ({ page }, testInfo) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   chromiumOnly(testInfo, 'app logic, the same in every engine');
   await page.clock.install({ time: ARENA_QUEST });
   await open(page, '#/arena');
   const { day, wk } = await ids(page);
   expect(await questIds(page)).toContain('arena-1');
-  const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
+  const answer = await page.evaluate(async d => (await import('/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
   await page.locator('#arGo').click();
   await page.clock.runFor(2_500); // 3, 2, 1
   await typeAnswer(page, String(answer));
@@ -264,6 +282,7 @@ test('on a day with the Arena quest, the round\'s quest Sparks follow the Arena 
 });
 
 test('a finished Ranked game round sends its score to that game\'s today and this week boards', async ({ page }, testInfo) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   chromiumOnly(testInfo, 'app logic, the same in every engine');
   await page.clock.install();
   await open(page, '#/game/times-sprint');
@@ -292,6 +311,7 @@ test('a finished Ranked game round sends its score to that game\'s today and thi
 });
 
 test('Sparks earned anywhere send this week\'s Sparks total to the weekly Sparks board (id xp-week-), at most once a minute', async ({ page }, testInfo) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   chromiumOnly(testInfo, 'app logic, the same in every engine');
   await page.clock.install();
   await open(page, '#/sutras');
@@ -344,7 +364,7 @@ test.describe('a Player who may not post', () => {
    'e2e-fake-vm-<id>' for any other. */
 const PB = 'pbtest1', UID_A = 'e2e-fake-uid', UID_B = `e2e-fake-vm-${PB}`;
 const boardIds = (page: import('@playwright/test').Page) => page.evaluate(async () => {
-  const cloud = await import('/vedic-math/js/cloud.js' as string);
+  const cloud = await import('/js/cloud.js' as string);
   return { day: cloud.dayId() as string, wk: cloud.weekId() as string };
 });
 const sent = async (page: import('@playwright/test').Page) => (await cloudLog(page)).writes;
@@ -360,13 +380,14 @@ async function seedSecondPlayer(page: import('@playwright/test').Page, extra: Re
   }, [{ ...B, ...extra }, more] as const);
 }
 const switchTo = (page: import('@playwright/test').Page, id: string) => page.evaluate(async id => {
-  (await import('/vedic-math/js/store.js' as string)).switchPlayer(id);
+  (await import('/js/store.js' as string)).switchPlayer(id);
 }, id);
 
 test.describe('two Players on one device', () => {
   test.use({ seedConsent: { age: 'adult' } });
 
   test('each Player\'s Arena Daily challenge goes under their own identity, with their own Nickname', async ({ page }, testInfo) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     chromiumOnly(testInfo, 'app logic, the same in every engine');
     test.slow(); // two full 60 second rounds on the fake clock take about 20 seconds each
     await seedSecondPlayer(page);
@@ -374,7 +395,7 @@ test.describe('two Players on one device', () => {
     await open(page, '#/arena');
     const { day, wk } = await boardIds(page);
     expect(await questIds(page)).not.toContain('arena-1');
-    const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
+    const answer = await page.evaluate(async d => (await import('/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
     const play = async () => {
       await page.locator('#arGo').click();
       await page.clock.runFor(2_500);
@@ -403,6 +424,7 @@ test.describe('two Players on one device', () => {
   });
 
   test('Sparks earned by A and posted after a switch to B goes out as A\'s own total, under A\'s identity', async ({ page }, testInfo) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     chromiumOnly(testInfo, 'app logic, the same in every engine');
     await seedSecondPlayer(page, { mode: 'pro' });
     await page.clock.install();
@@ -422,6 +444,7 @@ test.describe('two Players on one device', () => {
   });
 
   test('"me" on a World board follows the active Player', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await seedSecondPlayer(page, {}, { 'vm.cloudUids': JSON.stringify({ p1: UID_A, [PB]: UID_B }) });
     await page.addInitScript(([a, b]) => { (globalThis as any).__e2eRows = [[a, 'Swift Tiger 42', 400], [b, 'Lucky Otter 17', 300], ['someone', 'Brave Panda 12', 200]]; }, [UID_A, UID_B] as const);
     await open(page, '#/arena');
@@ -442,7 +465,7 @@ test.describe('two Players on one device', () => {
 });
 
 /* The app's own files (js/sky.js, js/sky-view.js) are named after the Sky; a GET for one carries nothing */
-const sameOriginFile = (r: import('@playwright/test').Request) => r.method() === 'GET' && new URL(r.url()).pathname.startsWith('/vedic-math/') && /\.(js|css|json|webmanifest|png|svg|woff2)$/.test(new URL(r.url()).pathname);
+const sameOriginFile = (r: import('@playwright/test').Request) => r.method() === 'GET' && new URL(r.url()).origin === new URL(r.frame().page().url()).origin && /\.(js|css|json|webmanifest|png|svg|webp|woff2)$/.test(new URL(r.url()).pathname);
 
 /* Stars post nothing (star-round spec, Stars are Practice): only the weekly Sparks total may go */
 test.describe('Stars', () => {
@@ -505,6 +528,7 @@ test.describe('the Sky', () => {
 test.describe('Ratings', () => {
   test.use({ seedMode: 'pro', seedConsent: { age: 'adult' } });
   test('no request after Arena daily and Practice rounds and skill Practice contains a Rating', async ({ page }, testInfo) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     chromiumOnly(testInfo, 'app logic, the same in every engine');
     test.slow(); // two 60 second rounds, a skill Practice and the weekly Sparks wait on the fake clock
     const out: string[] = [];
@@ -513,7 +537,7 @@ test.describe('Ratings', () => {
     await open(page, '#/arena');
     const { day } = await boardIds(page);
     // A finished daily round: it posts, and its entries hold no Rating
-    const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('pro', d)[0].answer, day);
+    const answer = await page.evaluate(async d => (await import('/js/arena.js' as string)).dailySet('pro', d)[0].answer, day);
     await page.locator('#arGo').click();
     await page.clock.runFor(2_500);
     await typeAnswer(page, String(answer));
@@ -536,7 +560,7 @@ test.describe('Ratings', () => {
     for (let k = 0; k < 10; k++) { await box.locator('#prShow').click(); await box.locator('#prCheck').click(); }
     await page.goto(`${APP}#/learn`);
     await page.clock.runFor(70_000); // past the weekly Sparks post's wait
-    const ratings = await page.evaluate(async () => (await import('/vedic-math/js/store.js' as string)).load().ratings);
+    const ratings = await page.evaluate(async () => (await import('/js/store.js' as string)).load().ratings);
     expect(Object.keys(ratings)).toEqual(expect.arrayContaining(['arena:pro', 'skill:3-mult']));
     for (const r of out) { expect(r).not.toMatch(/rating/i); expect(r).not.toContain('arena:'); }
     for (const w of await sent(page)) { expect(JSON.stringify(w)).not.toMatch(/rating|arena:/i); expect(Object.keys(w.data).sort()).toEqual(['avatar', 'exp', 'name', 'score', 'ts']); }

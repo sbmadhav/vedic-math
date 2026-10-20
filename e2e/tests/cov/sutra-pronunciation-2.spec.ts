@@ -3,7 +3,7 @@ import { fakeAudio, audioLog, said } from '../audio-fake';
 import type { Page, Request } from '@playwright/test';
 
 /* sutra-pronunciation spec, Requirement "Speech only follows a tap": one test per scenario. */
-const SOUNDS = /\/vedic-math\/sounds\//;
+const SOUNDS = /\/sounds\//;
 function soundRequests(page: Page) {
   const urls: string[] = [];
   page.on('request', (r: Request) => { if (SOUNDS.test(r.url())) urls.push(new URL(r.url()).pathname); });

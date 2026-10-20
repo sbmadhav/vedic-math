@@ -1,6 +1,7 @@
 /* Read-aloud voice for Vedic Math. No API keys, nothing leaves the browser.
    Studio voice (default when recorded): Google Chirp 3 HD lines recorded ahead of time and served as audio files from
-   this site (/vedic-math/voice/): a whole file per line where one was recorded, else short clips joined here.
+   the voice host (STUDIO.base in js/voice-index.js): a whole file per line where one was recorded, else short clips joined here.
+   A build without the voice host (build.py --voice off) publishes an index with no tag, so the built-in voice reads.
    Tier 1 (fallback): the browser's built-in Web Speech voice, ranked for quality and tuned for kids.
    Tier 2 (opt-in): Kokoro, a small neural voice that runs in a Web Worker. It downloads only after the
    player turns it on in Me settings; on later visits it loads the first time something is read aloud.

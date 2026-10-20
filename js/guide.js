@@ -33,7 +33,7 @@ export function sections(n) {
         w('On a phone, slide the menu sideways to see the rest.', 'On a phone, swipe the menu bar sideways to reach the music button and your Me page.'),
         w('Daybreak makes the page light. Deep Space makes it dark.', 'Daybreak (light) and Deep Space (dark) at the top change the colors; System follows your device.'),
         w('The links above a page title take you back a step.', 'The trail of links above each page title (Vedic Math / Games / ...) takes you back a step.'),
-        w('The Star map button at the top shows the rest of this website.', 'The Star map button at the top opens a map of every page on sbmadhav.com.', 'Explore, at the top, opens a map of every page on sbmadhav.com.')
+        w('Bolt, at the top left, opens the front page of this website.', 'Learn Vedic Math, at the top left, opens the front page of the site, with the pages for grown-ups.')
       ],
       tip: w('Lost? Tap Home. This guide is always in the menu.', 'Keyboard friendly: Tab moves between buttons, Enter checks an answer, and Escape closes any pop-up.'),
       try: { action: 'tour', label: w('Show me around', 'Take the tour') } },
@@ -256,7 +256,7 @@ export function sections(n) {
       how: [
         w('Turn on Calm at the top of any game or race, or on Me.', 'Turn Calm on with the switch at the top of any game, race or Star, or on Me under Calm and motion.'),
         w('Tap A+ to make the numbers bigger.', 'A and A+ next to it make the question, answers and keypad bigger.'),
-        w('Untick Moving background to keep the page still.', 'Moving background, on Me and in the music panel, turns the slow drawings behind the page on or off.', 'Moving background, on Me and in the music panel, turns the slow drawings behind the page on or off. Pause motion in the Explore menu stops motion on every page of sbmadhav.com.')
+        w('Untick Moving background to keep the page still. Pause motion stops everything that wiggles.', 'Moving background, on Me and in the music panel, turns the slow drawings behind the page on or off. Pause motion, next to it, stops every animation.', 'Moving background, on Me and in the music panel, turns the slow drawings behind the page on or off. Pause motion, next to it, stops every looping animation on every page of this site.')
       ],
       tip: w('In Calm you still win Sparks!', 'In Calm you still earn Sparks. Medals measured against the clock need Calm off.'),
       try: { href: '#/me', label: w('Find Calm on Me', 'Calm on Me') } },

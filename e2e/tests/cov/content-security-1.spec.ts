@@ -1,48 +1,43 @@
-import { test, expect, APP, open } from '../fixtures';
+import { test, expect, APP, open, policyOf } from '../fixtures';
 import type { Page } from '@playwright/test';
 
-/* content-security spec, Requirements "The published page carries a Content-Security-Policy" and "Inline scripts run
-   only by hash": one test per scenario. The policy exists only in the build, so against a plain local checkout these
-   skip (serve a build: python3 build.py --out _site && node e2e/local-server.mjs 8124 _site). The build-time rules
-   (a policy or an inline handler committed to the source fails the build) are run by test/build.test.mjs; here the
-   published page is checked for what those rules guarantee. */
+/* content-security spec (change learnvedicmath), Requirements "The published page carries a Content-Security-Policy"
+   and "Inline scripts run only by hash": one test per scenario. The policy is a response header (build.py writes it
+   into _headers), so against a server that sends none these skip (serve a build: python3 build.py &&
+   node e2e/local-server.mjs 8124 _site). The build-time rules (a policy or an inline handler committed to a page fails
+   the build) are run by test/build.test.mjs; here the served pages are checked for what those rules guarantee. */
 
 type Violation = { directive: string; blocked: string; source: string };
 async function watchViolations(page: Page) {
   await page.addInitScript(() => {
     const w = window as any; w.__csp = [];
     document.addEventListener('securitypolicyviolation', (e: SecurityPolicyViolationEvent) => {
+      if (e.disposition === 'report') return; // the stricter Report-Only policy only reports
       w.__csp.push({ directive: e.effectiveDirective || e.violatedDirective, blocked: e.blockedURI, source: `${e.sourceFile}:${e.lineNumber}` });
     });
   });
   return () => page.evaluate(() => ((window as any).__csp || []) as Violation[]);
 }
-async function policy(page: Page, baseURL?: string) {
-  const meta = page.locator('meta[http-equiv="Content-Security-Policy"]');
-  // The build adds an import map: skip only the unbuilt source, so a build that lost its policy fails here
-  const built = await page.locator('script[type="importmap"]').count() > 0;
-  if (!/^https:/.test(baseURL || '') && !built) test.skip(true, 'Unbuilt source (no import map): serve a build');
-  await expect(meta).toHaveCount(1);
-  return (await meta.getAttribute('content'))!;
-}
+const directives = (csp: string) => Object.fromEntries(csp.split(';').map(d => d.trim().split(/\s+/)).map(([k, ...v]) => [k, v]));
 
-test('Built page: the published index.html has the policy right after <meta charset>, and the source in git has none', async ({ page, baseURL }) => {
-  await open(page);
-  await policy(page, baseURL);
-  const html = await (await page.request.get(APP)).text();
-  const charset = html.search(/<meta charset=/i), csp = html.search(/<meta http-equiv="Content-Security-Policy"/);
-  expect(charset).toBeGreaterThanOrEqual(0);
-  expect(csp).toBeGreaterThan(charset);
-  // Nothing but whitespace between the two
-  expect(html.slice(html.indexOf('>', charset) + 1, csp).trim()).toBe('');
-  // The source carries none: the build adds it (test/build.test.mjs fails the build on a committed policy), and the
-  // published page carries exactly one
-  expect(html.match(/<meta http-equiv="Content-Security-Policy"/g)!.length).toBe(1);
+test('Built page: every page is sent with its own policy, and no published page carries a policy <meta>', async ({ page, baseURL }) => {
+  for (const path of ['/', '/play/', '/parents/', '/teachers/', '/privacy/', '/terms/']) {
+    const csp = directives(await policyOf(page, baseURL, path));
+    expect(csp['default-src'], path).toEqual(["'self'"]);
+    expect(csp['object-src'], path).toEqual(["'none'"]);
+    expect(csp['base-uri'], path).toEqual(["'none'"]);
+    expect(csp['form-action'], path).toEqual(["'self'"]);
+    expect(csp['frame-ancestors'], path).toEqual(["'none'"]);
+    expect(csp['report-to'], path).toEqual(['csp']);
+    expect(csp['report-uri'], path).toEqual(['/_csp']);
+    const html = await (await page.request.get(path)).text();
+    expect(html, path).not.toMatch(/<meta http-equiv="Content-Security-Policy"/i);
+  }
 });
 
-test('A policy committed to the source: the published policy is the build\'s (hashes for its own inline scripts, no unsafe-inline), never a hand-written one', async ({ page, baseURL }) => {
+test('A policy committed to the source: the served policy is the build\'s (hashes for its own inline scripts, no unsafe-inline), never a hand-written one', async ({ page, baseURL }) => {
   await open(page);
-  const csp = await policy(page, baseURL);
+  const csp = await policyOf(page, baseURL);
   const script = csp.split(';').map(s => s.trim()).find(s => s.startsWith('script-src'))!;
   expect(script).toMatch(/'sha256-[A-Za-z0-9+/=]+'/);
   expect(script).not.toContain("'unsafe-inline'");
@@ -51,10 +46,20 @@ test('A policy committed to the source: the published policy is the build\'s (ha
   expect((script.match(/'sha256-/g) || []).length).toBeGreaterThanOrEqual(inline);
 });
 
+test('Framing: another site cannot show the game in a frame', async ({ page, baseURL }) => {
+  await policyOf(page, baseURL, APP);
+  await page.goto('about:blank');
+  await page.setContent(`<iframe id="f" src="${baseURL}${APP}" width="600" height="400"></iframe>`);
+  await page.waitForTimeout(1500);
+  const child = page.frames().find(f => f !== page.mainFrame());
+  const shown = child ? await child.locator('#view').count().catch(() => 0) : 0;
+  expect(shown, 'the game must not render inside another page').toBe(0);
+});
+
 test("The page's own inline scripts: the color scheme script, the import map and the color mode buttons work with no violation", async ({ page, baseURL }) => {
   const list = await watchViolations(page);
   await open(page);
-  await policy(page, baseURL);
+  await policyOf(page, baseURL);
   await page.emulateMedia({ colorScheme: 'light' });
   await page.locator('#themeBtn').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
@@ -68,7 +73,7 @@ test("The page's own inline scripts: the color scheme script, the import map and
 test('An injected inline script: it does not run and a securitypolicyviolation event reports script-src', async ({ page, baseURL }) => {
   const list = await watchViolations(page);
   await open(page);
-  await policy(page, baseURL);
+  await policyOf(page, baseURL);
   await page.evaluate(() => { (window as any).__ran = false; const s = document.createElement('script'); s.textContent = 'window.__ran = true;'; document.body.appendChild(s); });
   await expect.poll(async () => (await list()).some(x => /script-src/.test(x.directive)), { message: 'a securitypolicyviolation for script-src' }).toBe(true);
   expect(await page.evaluate(() => (window as any).__ran)).toBe(false);
@@ -76,7 +81,7 @@ test('An injected inline script: it does not run and a securitypolicyviolation e
 
 test('An inline handler in the source: the published page has no inline event handler attribute and no javascript: link', async ({ page, baseURL }) => {
   await open(page);
-  await policy(page, baseURL);
+  await policyOf(page, baseURL);
   const html = await (await page.request.get(APP)).text();
   expect(html).not.toMatch(/\son[a-z]+="/i);
   expect(html).not.toMatch(/href="javascript:/i);

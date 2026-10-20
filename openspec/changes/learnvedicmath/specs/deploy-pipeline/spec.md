@@ -32,7 +32,11 @@ Preview uploads SHALL use a separate token, `CLOUDFLARE_PREVIEW_TOKEN`, held in 
 - **THEN** it can read `CLOUDFLARE_PREVIEW_TOKEN` and cannot read `CLOUDFLARE_API_TOKEN`
 
 ### Requirement: Voice files exist before the site that names them
-On every push to `main`, the deploy SHALL wait for the voice step, which SHALL publish any new voice files and then confirm that every file named by the committed voice index exists on the voice host. If the voice step fails or does not run, nothing SHALL be deployed.
+On every push to `main` while the voice host is set up (the repository variable `R2_ACCOUNT_ID` is not empty), the deploy SHALL wait for the voice step, which SHALL publish any new voice files and then confirm that every file named by the committed voice index exists on the voice host. If the voice step fails or does not run, nothing SHALL be deployed.
+
+#### Scenario: Voice host set up
+- **WHEN** a commit lands on `main`, `R2_ACCOUNT_ID` is set and the checks pass
+- **THEN** the site is built with the voice host and deployed only if the voice step succeeds; if it fails or is skipped, nothing is deployed
 
 #### Scenario: A new recording
 - **WHEN** a push changes `js/voice-index.js` to a new release
@@ -41,6 +45,13 @@ On every push to `main`, the deploy SHALL wait for the voice step, which SHALL p
 #### Scenario: A push without voice changes
 - **WHEN** a push does not change the voice index
 - **THEN** the voice step still runs, finds nothing to upload, confirms the files exist, and the deploy goes ahead
+
+### Requirement: Deploy without the voice host until it is set up
+While `R2_ACCOUNT_ID` is empty, the voice step SHALL not run and the site SHALL be built without the Studio voice and deployed: no published file SHALL name the voice host, and read aloud and every Listen button SHALL use the device voice. A voice step that fails SHALL always stop the deploy.
+
+#### Scenario: Voice host not set up yet
+- **WHEN** a commit lands on `main`, `R2_ACCOUNT_ID` is empty and the checks pass
+- **THEN** the voice step is skipped, the site is built with `build.py --voice off` and deployed, no published file (policy, worker or voice index) names `voice.learnvedicmath.com`, and a Listen button reads with the device voice
 
 ### Requirement: A preview for every branch
 A pull request from a branch of this repo SHALL get a preview version on `workers.dev` with an alias for that pull request, built with the preview flag (no indexing), whose URL is posted on the pull request.

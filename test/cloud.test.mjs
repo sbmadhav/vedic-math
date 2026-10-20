@@ -3,7 +3,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { boardScore, MAX_SCORE, MAX_GAME_SCORE, MAX_WEEK_SPARKS, weekSparksBoard } from '../js/cloud.js';
+import { register } from 'node:module';
+
+/* The launch ships js/cloud-config.js with FIREBASE = null (Device boards only, change learnvedicmath tasks 1.8 and
+   8.5), and with that config every post and read stops at enabled(). These tests are about what happens once World
+   boards are on, so js/cloud.js gets a sample config here (the real one is checked in test/cloud-off.test.mjs). */
+const SAMPLE = `export const FIREBASE = { apiKey: "k", authDomain: "learnvedicmath.firebaseapp.com", projectId: "learnvedicmath", appId: "a" };
+export const appCheckSiteKey = "sample-site-key";
+export const appCheckProvider = "enterprise";`;
+register('data:text/javascript,' + encodeURIComponent(`
+export async function resolve(specifier, context, next) {
+  if (/(^|\\/)cloud-config\\.js$/.test(specifier) && /\\/js\\/cloud\\.js$/.test(context.parentURL || ''))
+    return { url: 'data:text/javascript,' + encodeURIComponent(${JSON.stringify(SAMPLE)}), shortCircuit: true };
+  return next(specifier, context);
+}`));
+const { boardScore, MAX_SCORE, MAX_GAME_SCORE, MAX_WEEK_SPARKS, weekSparksBoard } = await import('../js/cloud.js');
 
 const rules = readFileSync(new URL('../cloud/firestore.rules', import.meta.url), 'utf8');
 
@@ -78,7 +92,8 @@ function stubSdk(saved = {}) {
     },
   };
   log.rows = [];
-  cloud._setLoader(async url => { const f = url.split('/').pop(); log.files.push(f); return mods[f]; });
+  log.urls = [];
+  cloud._setLoader(async url => { const f = url.split('/').pop(); log.files.push(f); log.urls.push(url); return mods[f]; });
   return log;
 }
 const ENTRY = { name: 'Brave Tiger 42', avatar: 'teal', score: 120 };
@@ -345,6 +360,15 @@ test('if p1 is gone, the shared default identity is signed out at the next post 
   assert.ok(!('[DEFAULT]' in saved));
   assert.ok(!log.writes.some(w => w.path.endsWith('old-shared')));
   assert.equal(log.writes[0].app, 'vm-' + b.id);
+});
+
+/* The SDK is served from this site (openspec change learnvedicmath, third-party-requests; task 7.3) */
+test('the Firebase SDK loads from /vendor/firebase/<version>/ on this site, never from gstatic', async () => {
+  const log = stubSdk();
+  await cloud.top(BOARD, 5);
+  assert.ok(log.urls.length > 0);
+  for (const u of log.urls) assert.match(u, /^\/vendor\/firebase\/\d+\.\d+\.\d+\/firebase-[a-z-]+\.js$/);
+  assert.doesNotMatch(readFileSync(new URL('../js/cloud.js', import.meta.url), 'utf8'), /gstatic\.com/);
 });
 
 /* Expired entries are never shown (openspec change learnvedicmath, board-identity "The app's own guard"; task 8.3a) */

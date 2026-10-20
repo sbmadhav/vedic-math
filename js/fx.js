@@ -37,12 +37,28 @@ export const warmVoice = () => { if (voiceOn()) voice.warmStudio(); };
 /* Home's More ways to play disclosure (openspec first-visit): closed until opened once on this device */
 export const homeMoreOpen = () => pref('homeMore', false);
 export const setHomeMoreOpen = v => setPref('homeMore', v);
-/* Reduced motion: the device setting, or Pause motion in the site's Explore menu (html.motion-paused, WCAG 2.2.2) */
+/* Reduced motion: the device setting, or Pause motion (html.motion-paused, WCAG 2.2.2) */
 export const motionOff = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.classList.contains('motion-paused');
+
+/* ---------- Pause motion (openspec accessibility): one device setting for every page of this site ----------
+   Sets html.motion-paused, which every page treats like the reduced-motion setting, and saves it under
+   motion-paused ('1'), which each page's first inline script applies before paint. The switch is on the Me page and
+   in the music panel. Fires sitemotion so moving things stop or start at once. */
+export const MOTION_KEY = 'motion-paused';
+export const motionPaused = () => document.documentElement.classList.contains('motion-paused');
+export function setMotionPaused(on) {
+  on = !!on;
+  document.documentElement.classList.toggle('motion-paused', on);
+  try { if (on) localStorage.setItem(MOTION_KEY, '1'); else localStorage.removeItem(MOTION_KEY); } catch (e) {}
+  try { document.dispatchEvent(new CustomEvent('sitemotion', { detail: { paused: on } })); } catch (e) {}
+  /* The Me page and the music panel each have the switch; both show the same state */
+  document.querySelectorAll('#vmMotion, #setMotion').forEach(b => b.setAttribute('aria-checked', String(on)));
+  announce(on ? 'Pause motion on. Nothing moves.' : 'Pause motion off.');
+}
 
 /* ---------- Calm (openspec game-shell-and-calm): one device preference, vm.calm ----------
    Calm takes the clock off Practice rounds and stops all motion. Ranked rounds keep their clock. It is per device,
-   like sound and the site's Pause motion: motion sensitivity belongs to whoever holds the device. Pause motion never
+   like sound and Pause motion: motion sensitivity belongs to whoever holds the device. Pause motion never
    sets Calm, and Calm never sets html.motion-paused; each control owns its own state. */
 export const calmOn = () => { try { return localStorage.getItem('vm.calm') === '1'; } catch (e) { return false; } };
 export function setCalm(on) {
@@ -52,12 +68,12 @@ export function setCalm(on) {
   try { document.dispatchEvent(new CustomEvent('vmcalm', { detail: { on } })); } catch (e) {}
   announce(on ? 'Calm on. No clocks in Practice, no motion.' : 'Calm off.');
 }
-/* No motion at all: reduced motion on the device, the site's Pause motion, or Calm. The same steps and messages
+/* No motion at all: reduced motion on the device, Pause motion, or Calm. The same steps and messages
    appear, without movement. This is the one check every moving thing in the app asks. */
 export const noMotion = () => motionOff() || calmOn();
 const reduced = noMotion;
-/* Calls fn whenever any source of noMotion() may have changed: the reduced-motion media query, the site's
-   sitemotion event (explore.js) and Calm (vmcalm). Stops when signal aborts. */
+/* Calls fn whenever any source of noMotion() may have changed: the reduced-motion media query, Pause motion (its
+   sitemotion event, setMotionPaused) and Calm (vmcalm). Stops when signal aborts. */
 export function onMotionChange(fn, signal) {
   const opts = { signal };
   try { const mq = matchMedia('(prefers-reduced-motion: reduce)'); if (mq && mq.addEventListener) mq.addEventListener('change', fn, opts); } catch (e) {}

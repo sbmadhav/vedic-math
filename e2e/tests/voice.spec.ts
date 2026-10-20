@@ -96,15 +96,15 @@ const PROVIDERS = /texttospeech\.googleapis\.com|api\.elevenlabs\.io|api\.openai
 
 async function fakeStudio(page: Page, { lineStatus = 200, lineDelay = 0, indexDelay = 0, mapDrop = [] as string[] } = {}) {
   await page.addInitScript(() => { (window as any).__voiceLog = []; });
-  const index = { voice: 'en-US-Chirp3-HD-Aoede', speed: 0.95, base: '/vedic-math/voice/', tag: 'voice-0123456789', sha256: '0'.repeat(64),
+  const index = { voice: 'en-US-Chirp3-HD-Aoede', speed: 0.95, base: 'https://voice.learnvedicmath.com/', tag: 'voice-0123456789', sha256: '0'.repeat(64),
     lineSet: 'l/set.test.bin', dir: 'p/dir.test.json', packs: [{ name: 'core', audio: 'p/core.test.m4a', map: 'p/core.test.json', bytes: PACK_M4A.length, clips: 0 }],
     coveredSkills: ['k-count'], counts: { lines: 1, clips: NUMBER_IDS.length + FRAMES.length } };
   const ids = [...NUMBER_IDS, ...FRAMES];
   const requests: string[] = [];
-  page.on('request', r => { if (r.url().includes('/vedic-math/voice/')) requests.push(r.url()); });
-  await page.route('**/vedic-math/js/voice-index.js*', r => r.fulfill({ contentType: 'text/javascript', body: `export const STUDIO = ${JSON.stringify(index)};` }));
-  await page.route('**/vedic-math/voice/**', async r => {
-    const u = new URL(r.request().url()).pathname.replace('/vedic-math/voice/', '');
+  page.on('request', r => { if (r.url().includes('https://voice.learnvedicmath.com/')) requests.push(r.url()); });
+  await page.route('**/js/voice-index.js*', r => r.fulfill({ contentType: 'text/javascript', body: `export const STUDIO = ${JSON.stringify(index)};` }));
+  await page.route('https://voice.learnvedicmath.com/**', async r => {
+    const u = new URL(r.request().url()).pathname.replace('/', '');
     if (u === 'l/set.test.bin' && indexDelay) await new Promise(res => setTimeout(res, indexDelay));
     if (u === 'l/set.test.bin') return r.fulfill({ contentType: 'application/octet-stream', body: Buffer.from(Uint32Array.from([DOTS_KEY]).buffer) });
     if (u === 'p/dir.test.json') return r.fulfill({ json: Object.fromEntries(ids.map(id => [id, 'core'])) });
@@ -143,7 +143,7 @@ test.describe('studio voice', () => {
   test('a three-digit sum is said from clips once the core pack is loaded', async ({ page }) => {
     await fakeSpeech(page, [ENHANCED]);
     await fakeStudio(page);
-    const core = page.waitForResponse(r => r.url().endsWith('/vedic-math/voice/p/core.test.m4a'));
+    const core = page.waitForResponse(r => r.url().endsWith('voice.learnvedicmath.com/p/core.test.m4a'));
     await open(page, '#/skill/2-add1000');
     await core;
     await page.waitForTimeout(300); // decode
@@ -159,7 +159,7 @@ test.describe('studio voice', () => {
       const start = AudioBufferSourceNode.prototype.start;
       AudioBufferSourceNode.prototype.start = function (...a: any[]) { w.__starts++; return (start as any).apply(this, a); };
     });
-    const core = page.waitForResponse(r => r.url().endsWith('/vedic-math/voice/p/core.test.m4a'));
+    const core = page.waitForResponse(r => r.url().endsWith('voice.learnvedicmath.com/p/core.test.m4a'));
     await open(page, '#/skill/2-add1000');
     await core;
     await page.waitForTimeout(300); // decode
@@ -186,7 +186,7 @@ test.describe('studio voice', () => {
     await expect.poll(() => requests.some(u => u.endsWith('/p/core.test.m4a'))).toBe(true);
     await page.waitForTimeout(2500); // the first line's slow request is over, and the pack is decoded
     await page.evaluate(() => { (window as any).__voiceLog.length = 0; });
-    await page.route('**/vedic-math/voice/l/*.m4a', async r => { await new Promise(res => setTimeout(res, 2000)); await r.fulfill({ contentType: 'audio/mp4', body: LINE_M4A }); });
+    await page.route('https://voice.learnvedicmath.com/l/*.m4a', async r => { await new Promise(res => setTimeout(res, 2000)); await r.fulfill({ contentType: 'audio/mp4', body: LINE_M4A }); });
     await page.locator('#practice').getByRole('button', { name: 'Hear it' }).click();
     await expect.poll(() => vlog(page)).toContain('studio:clips');
     expect(await vlog(page)).not.toContain('studio:line');

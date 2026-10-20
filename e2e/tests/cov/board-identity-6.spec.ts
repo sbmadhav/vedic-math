@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog, FIREBASE_SDK, showWorld } from '../fixtures';
+import { test, expect, open, cloudLog, FIREBASE_SDK, showWorld, needsWorldBoards } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* openspec board-identity, Requirement "Removing a Player forgets their identity":
@@ -58,12 +58,12 @@ async function seedPlayerB(page: Page) {
 }
 
 const dayBoard = (page: Page) => page.evaluate(async () =>
-  `daily-${(await import('/vedic-math/js/cloud.js' as string)).dayId()}-challenger`);
+  `daily-${(await import('/js/cloud.js' as string)).dayId()}-challenger`);
 
 /** Switches the device to a Player and posts a Score as them, the way app.js sendScore does. */
 const postAs = (page: Page, id: string, board: string, score: number) => page.evaluate(async ([id, board, score]) => {
-  const store = await import('/vedic-math/js/store.js' as string);
-  const cloud = await import('/vedic-math/js/cloud.js' as string);
+  const store = await import('/js/store.js' as string);
+  const cloud = await import('/js/cloud.js' as string);
   store.switchPlayer(id);
   const p = store.playerById ? store.playerById(id) : store.allPlayers().find((q: any) => q.id === id);
   return cloud.submit(board, { name: p.name, avatar: p.avatar, score }, p);
@@ -107,7 +107,7 @@ async function addPlayerOnMePage(page: Page) {
   await open(page, '#/me');
   await page.locator('#meAdd').click();
   return page.evaluate(async () => {
-    const store = await import('/vedic-math/js/store.js' as string);
+    const store = await import('/js/store.js' as string);
     store.updatePlayer({ mode: 'challenger', age: 'adult' });
     const p = store.player();
     return { id: p.id as string, name: p.name as string };
@@ -123,6 +123,7 @@ test.describe('Removing a Player forgets their identity', () => {
   });
 
   test('Remove a Player who has posted: a new Player gets a new identity at their first post, the removed Player\'s entry is unchanged', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await open(page, '#/arena');
     const board = await dayBoard(page);
     expect(await postAs(page, PA, board, 400)).toEqual({ posted: true });
@@ -177,6 +178,7 @@ test.describe('Removing a Player forgets their identity', () => {
   });
 
   test('Remove the first Player after they posted: their default identity is signed out and a new Player gets a new one', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await open(page, '#/arena');
     const board = await dayBoard(page);
     expect(await postAs(page, PA, board, 400)).toEqual({ posted: true });
@@ -184,7 +186,7 @@ test.describe('Removing a Player forgets their identity', () => {
     expect(Object.keys(before)).toEqual([UID_A]);
 
     // B takes over the device and removes A
-    await page.evaluate(async id => (await import('/vedic-math/js/store.js' as string)).switchPlayer(id), PB);
+    await page.evaluate(async id => (await import('/js/store.js' as string)).switchPlayer(id), PB);
     await removeOnMePage(page, PA);
     await expect.poll(async () => (await cloudLog(page)).signOuts).toContain('[DEFAULT]');
     expect(await fakeSessions(page)).not.toHaveProperty('[DEFAULT]');

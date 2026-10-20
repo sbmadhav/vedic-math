@@ -84,4 +84,5 @@ export function filterShelf(list, { mode, level = mode, strand = null, tricks = 
    for every choice, so nothing plays next on its own. */
 export const embedSrc = (v, { autoplay = true } = {}) =>
   `https://www.youtube-nocookie.com/embed/${v.yt}?${autoplay ? 'autoplay=1&' : ''}rel=0&modestbranding=1&playsinline=1`;
-export const thumbSrc = v => `https://i.ytimg.com/vi/${v.yt}/mqdefault.jpg`;
+/* Thumbnails are served from this site (thumbs/, saved by tools/fetch-thumbs.mjs), so the shelf reaches no YouTube host */
+export const thumbSrc = v => `/thumbs/yt-${v.yt}.webp`;

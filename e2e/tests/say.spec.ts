@@ -8,7 +8,7 @@ import type { Page, Request } from '@playwright/test';
    a stub that records siteTrack calls, so nothing is counted. */
 const STUB = `window.__events = window.__events || []; window.siteTrack = (path, title) => { window.__events.push([path, title]); };`;
 const events = (page: Page): Promise<[string, string][]> => page.evaluate(() => (globalThis as any).__events || []);
-const SOUNDS = /\/vedic-math\/sounds\//;
+const SOUNDS = /\/sounds\//;
 
 /** Every request for a sound file, from the start of the test */
 function soundRequests(page: Page) {
@@ -18,7 +18,7 @@ function soundRequests(page: Page) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.route(/\/assets\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
+  await page.route(/\/js\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
   await page.addInitScript(() => { try { localStorage.setItem('vm.sound', '0'); localStorage.setItem('vm.sutraAmb', '0'); } catch (e) { /* storage blocked */ } }); // no ambience here: ambience.spec.ts
 });
 
@@ -37,7 +37,7 @@ test('the deep dive shows the name, its Respelling and Devanagari; Say it plays 
   await btn.click();
   await expect(btn).toHaveAttribute('aria-pressed', 'true');
   await expect.poll(() => audioLog(page).then(l => l.decoded)).toBe(1);
-  expect(urls[0]).toBe('/vedic-math/sounds/sutras/s1.m4a');
+  expect(urls[0]).toBe('/sounds/sutras/s1.m4a');
   await expect(btn).toHaveAttribute('aria-pressed', 'false', { timeout: 5000 }); // the 1.2 s fake clip ended
   const src = (await audioLog(page)).nodes.filter(n => n.kind === 'source');
   expect(src).toHaveLength(1);
@@ -51,7 +51,7 @@ test('a tap on a card\'s Say it plays its clip and the card stays unflipped', as
   const card = page.locator('.sutra-card[data-id="s3"]');
   await expect(card.locator('.say-resp')).toHaveText('Say it like: OOR-dhvuh tir-YUHG-bhyahm');
   await card.getByRole('button', { name: 'Hear how to say Ūrdhva-Tiryagbhyām' }).click();
-  await expect.poll(() => urls[0]).toBe('/vedic-math/sounds/sutras/s3.m4a');
+  await expect.poll(() => urls[0]).toBe('/sounds/sutras/s3.m4a');
   await expect(card).not.toHaveClass(/flipped/);
   await expect(card.locator('.sutra-face')).toHaveAttribute('aria-expanded', 'false');
 });
@@ -62,7 +62,7 @@ test('the Trick page of div9 (Nikhilaṃ, division by 9) plays the Sutra 2 clip'
   await open(page, '#/skill/v-div9');
   await expect(page.locator('.mq-sutra b[lang="sa-Latn"]')).toHaveText('Nikhilaṃ (division by 9)');
   await page.locator('.mq-sutra').getByRole('button', { name: 'Hear how to say Nikhilaṃ Navataścaramaṃ Daśataḥ' }).click();
-  await expect.poll(() => urls[0]).toBe('/vedic-math/sounds/sutras/s2.m4a');
+  await expect.poll(() => urls[0]).toBe('/sounds/sutras/s2.m4a');
 });
 
 test('All places: each of the 17 Constellation headings has one Say it button', async ({ page }) => {
@@ -96,7 +96,7 @@ test('leaving the page while a clip plays stops it', async ({ page }) => {
 
 test('when the clip cannot load, the device voice reads the Respelling and the status says so', async ({ page }) => {
   await fakeAudio(page);
-  await page.route(/\/vedic-math\/sounds\/sutras\//, route => route.abort('failed'));
+  await page.route(/\/sounds\/sutras\//, route => route.abort('failed'));
   await open(page, '#/sutras/s1');
   const btn = page.locator('dialog .say-btn');
   await btn.click();

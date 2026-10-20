@@ -24,8 +24,8 @@ test('vendor/tesseract holds exactly the pinned reader files, unchanged', () => 
   for (const [f, sum] of Object.entries(PINNED)) assert.equal(createHash('sha256').update(readFileSync(new URL(f, dir))).digest('hex'), sum, f);
 });
 
-test('every reader path is on this site, under /vedic-math/vendor/tesseract/', () => {
-  for (const [k, u] of Object.entries(TESS)) assert.ok(u.startsWith('/vedic-math/vendor/tesseract/'), `${k}: ${u}`);
+test('every reader path is on this site, under /vendor/tesseract/', () => {
+  for (const [k, u] of Object.entries(TESS)) assert.ok(u.startsWith('/vendor/tesseract/'), `${k}: ${u}`);
   assert.ok(!JSON.stringify(TESS).includes('://'), 'no other origin');
   const src = readFileSync(new URL('../../js/play/exp/lens-cam.js', import.meta.url), 'utf8');
   assert.match(src, /workerBlobURL: false/, 'the worker starts from its URL (worker-src \'self\'), never blob:');

@@ -21,7 +21,7 @@ test.beforeEach(async ({ page }) => {
 type V = { yt: string; title: string; why: string; modes: string[]; skills: string[]; tricks: string[]; madeForKids: boolean; duration: number; critique?: boolean };
 const SEES: Record<Mode, string[]> = { explorer: ['explorer'], challenger: ['challenger', 'explorer'], pro: ['pro', 'challenger'] };
 const visible = (v: V, mode: Mode) => v.modes.some(m => SEES[mode].includes(m)) && (!v.critique || mode === 'pro');
-const videos = (page: Page) => page.evaluate(async () => (await import('/vedic-math/js/videos.js' as string)).VIDEOS) as Promise<V[]>;
+const videos = (page: Page) => page.evaluate(async () => (await import('/js/videos.js' as string)).VIDEOS) as Promise<V[]>;
 
 /* ---------- No hand match ---------- */
 // "Multiply by multiples of ten" (3-multtens), served with no hand-matched video; its words include "multiply"
@@ -72,9 +72,9 @@ test('a Skill with neither a hand match nor a keyword match shows no Watch secti
   await open(page, '#/skill/7-pctchange');
   await expect(page.locator('#practice')).toBeVisible();
   const premise = await page.evaluate(async () => {
-    const { VIDEOS } = await import('/vedic-math/js/videos.js' as string);
-    const { relatedTo } = await import('/vedic-math/js/related.js' as string);
-    const { byId } = await import('/vedic-math/js/skills/index.js' as string);
+    const { VIDEOS } = await import('/js/videos.js' as string);
+    const { relatedTo } = await import('/js/related.js' as string);
+    const { byId } = await import('/js/skills/index.js' as string);
     const s = byId['7-pctchange'];
     return { hand: VIDEOS.filter((v: any) => v.skills.includes('7-pctchange')).length, keyword: relatedTo(`${s.title} ${s.strand}`.toLowerCase(), VIDEOS, 999).length, total: VIDEOS.length };
   });
@@ -140,7 +140,7 @@ test('the Star offer prefers a made-for-kids hand match over a shorter one, skip
     { id: 'e2e-pro-short', yt: 'PROSHORT001', title: 'E2E pro short', channel: 'e2e', duration: 10, kind: 'video', modes: ['pro'], skills: [], tricks: ['sq5'], madeForKids: true, captions: true, checked: '2026-10-15', why: 'e2e' },
     { id: 'e2e-keyword', yt: 'KEYWORD0001', title: 'Square numbers ending in 5 the vedic way', channel: 'e2e', duration: 5, kind: 'video', modes: ['challenger', 'explorer'], skills: [], tricks: [], madeForKids: true, captions: true, checked: '2026-10-15', why: 'squaring' }
   ];
-  await page.route(/\/vedic-math\/js\/videos\.js(\?.*)?$/, async (route: Route) => {
+  await page.route(/\/js\/videos\.js(\?.*)?$/, async (route: Route) => {
     const res = await route.fetch();
     const body = (await res.text()) + `\nVIDEOS.push(...${JSON.stringify(extra)});\n`;
     await route.fulfill({ response: res, body, headers: { ...res.headers(), 'content-type': 'text/javascript' } });

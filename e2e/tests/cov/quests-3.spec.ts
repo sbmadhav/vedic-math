@@ -38,7 +38,7 @@ test.describe('Two Players in the same Mode', () => {
       let s = 987654321; Math.random = () => ((s = (s * 1103515245 + 12345) % 2147483648) / 2147483648);
     });
     // Same blocks on Firebase as the fixture: the fake is not needed on Home, so abort anything Google-shaped
-    await ctx.route(/firestore\.googleapis\.com|identitytoolkit|securetoken|gstatic\.com\/firebasejs/, r => r.abort('blockedbyclient'));
+    await ctx.route(/firestore\.googleapis\.com|identitytoolkit|securetoken|\/vendor\/firebase\//, r => r.abort('blockedbyclient'));
     try {
       const other = await ctx.newPage();
       await other.clock.install({ time: new Date(2026, 4, 14, 18, 45, 0) });

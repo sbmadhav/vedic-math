@@ -7,9 +7,19 @@ import type { Page } from '@playwright/test';
 
 async function noYouTube(page: Page) {
   await page.route(/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>video</title>' }));
-  await page.route(/^https:\/\/i\.ytimg\.com\//, r => r.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg"/>' }));
 }
 test.beforeEach(async ({ page }) => { await noYouTube(page); });
+
+/* Thumbnails come from this site (openspec change learnvedicmath, third-party-requests "Self-hosted thumbnails") */
+test('the shelf shows every thumbnail from /thumbs/ and reaches no YouTube or ytimg host', async ({ page, baseURL }) => {
+  const outside: string[] = [];
+  page.on('request', r => { if (/ytimg\.com|youtube(-nocookie)?\.com|googlevideo/.test(new URL(r.url()).host)) outside.push(r.url()); });
+  await openShelf(page);
+  const imgs = cards(page).locator('img');
+  await expect.poll(() => imgs.evaluateAll(is => is.slice(0, 6).every(i => (i as HTMLImageElement).complete && (i as HTMLImageElement).naturalWidth > 0))).toBe(true);
+  for (const src of await imgs.evaluateAll(is => is.map(i => (i as HTMLImageElement).src))) expect(src.startsWith(`${new URL(baseURL!).origin}/thumbs/yt-`), src).toBe(true);
+  expect(outside).toEqual([]);
+});
 
 const cards = (page: Page) => page.locator('#view button.watch-card');
 async function openShelf(page: Page) {
@@ -72,7 +82,7 @@ test.describe('explorer', () => {
     await expect(box).toHaveAttribute('data-how', 'hand');
     const yts = await box.locator('button[data-watch]').evaluateAll(els => els.map(e => (e as HTMLElement).dataset.watch));
     expect(yts.length).toBeGreaterThanOrEqual(2);
-    const picked = await page.evaluate(async ys => { const { VIDEOS } = await import('/vedic-math/js/videos.js' as string); return ys.map((y: string) => VIDEOS.find((v: any) => v.yt === y)); }, yts);
+    const picked = await page.evaluate(async ys => { const { VIDEOS } = await import('/js/videos.js' as string); return ys.map((y: string) => VIDEOS.find((v: any) => v.yt === y)); }, yts);
     for (const v of picked) {
       expect(v.skills).toContain('k-bonds');
       expect(v.madeForKids).toBe(true);
@@ -147,7 +157,7 @@ test.describe('pro', () => {
     await expect(box).toHaveAttribute('data-how', 'hand');
     const n = await box.locator('button[data-watch]').count();
     expect(n).toBeGreaterThanOrEqual(2); expect(n).toBeLessThanOrEqual(3);
-    const tricks = await page.evaluate(async yts => { const { VIDEOS } = await import('/vedic-math/js/videos.js' as string); return yts.map((y: string) => VIDEOS.find((v: any) => v.yt === y).tricks); },
+    const tricks = await page.evaluate(async yts => { const { VIDEOS } = await import('/js/videos.js' as string); return yts.map((y: string) => VIDEOS.find((v: any) => v.yt === y).tricks); },
       await box.locator('button[data-watch]').evaluateAll(els => els.map(e => (e as HTMLElement).dataset.watch)));
     for (const t of tricks) expect(t).toContain('sq5');
   });
@@ -175,7 +185,7 @@ const watchPicks = async (page: Page) => {
   const box = page.locator('[data-watch-for]');
   await expect(box).toHaveAttribute('data-how', 'hand');
   const yts = await box.locator('button[data-watch]').evaluateAll(els => els.map(e => (e as HTMLElement).dataset.watch));
-  return page.evaluate(async ys => { const { VIDEOS } = await import('/vedic-math/js/videos.js' as string); return ys.map((y: string) => VIDEOS.find((v: any) => v.yt === y)); }, yts);
+  return page.evaluate(async ys => { const { VIDEOS } = await import('/js/videos.js' as string); return ys.map((y: string) => VIDEOS.find((v: any) => v.yt === y)); }, yts);
 };
 
 test('a grade 6 to 8 Skill shows its own hand-matched videos, made for kids first for Challenger', async ({ page }) => {
@@ -205,14 +215,14 @@ test('a Skill with no hand-matched video gets keyword matches or no Watch sectio
   await expect(page.locator('[data-watch-for]')).toHaveAttribute('data-how', 'keyword');
   await open(page, '#/skill/11-logs');
   await expect(page.locator('#practice')).toBeVisible();
-  await page.waitForFunction(() => import('/vedic-math/js/videos.js' as string));
+  await page.waitForFunction(() => import('/js/videos.js' as string));
   await expect(page.locator('[data-watch-for] button')).toHaveCount(0);
   await expect(page.locator('#view')).not.toContainText('Watch it explained');
 });
 
 test('the Sutras page and a deep dive have no outside link and no critique for Challenger; the deep dive video plays here', async ({ page }) => {
   await open(page, '#/sutras');
-  await page.waitForFunction(() => import('/vedic-math/js/videos.js' as string));
+  await page.waitForFunction(() => import('/js/videos.js' as string));
   await expect(page.locator('[data-history-links]')).toBeHidden();
   await expect(page.locator('#view a[target="_blank"]')).toHaveCount(0);
   // The history card lists no critique; the verse cards' sources leave out the one that questions the Sutras' origin
@@ -242,7 +252,7 @@ test('a Short plays tall in the page, and closing it starts nothing else', async
 
 test('the video list is not part of first loads, and the shelf requests it once', async ({ page }) => {
   const asked: string[] = [];
-  page.on('request', r => { if (/\/vedic-math\/js\/videos\.js/.test(r.url())) asked.push(r.url()); });
+  page.on('request', r => { if (/\/js\/videos\.js/.test(r.url())) asked.push(r.url()); });
   await open(page);
   await open(page, '#/game/times-sprint');
   await page.waitForLoadState('networkidle');

@@ -3,9 +3,9 @@ import { test, expect, APP } from './fixtures';
 /* Play modes set the wording on this page only. The site-wide `kidmode` setting is never written. */
 
 const MODES = [
-  { id: 'explorer', name: 'Explorer', heading: 'What do you want to play?', kid: true, explore: 'Star map' },
-  { id: 'challenger', name: 'Challenger', heading: 'Ready to get faster?', kid: true, explore: 'Star map' },
-  { id: 'pro', name: 'Pro', heading: 'Train your mental math', kid: false, explore: 'Explore' },
+  { id: 'explorer', name: 'Explorer', heading: 'What do you want to play?', kid: true },
+  { id: 'challenger', name: 'Challenger', heading: 'Ready to get faster?', kid: true },
+  { id: 'pro', name: 'Pro', heading: 'Train your mental math', kid: false },
 ] as const;
 
 test.describe('mode picker', () => {
@@ -27,10 +27,13 @@ test.describe('mode picker', () => {
       else await expect(page.locator('body')).not.toHaveClass(/kidmode/);
       // .pro / .kid wording from the shared components.css follows the mode
       // (checked by computed style: the label itself is hidden on narrow screens)
-      const shown = await page.locator('#exploreBtn .xp-lbl > span').evaluateAll(els => els.filter(e => getComputedStyle(e).display !== 'none').map(e => e.textContent));
-      expect(shown).toEqual([m.explore]);
-      // The button's name starts with the word on screen, at every width (WCAG 2.5.3 Label in Name)
-      await expect(page.locator('#exploreBtn')).toHaveAccessibleName(`${m.explore}${m.kid ? ' of' : ''} all pages`);
+      const shown = await page.evaluate(() => {
+        document.body.insertAdjacentHTML('beforeend', '<span class="pro" id="e2eP">pro words</span><span class="kid" id="e2eK">kid words</span>');
+        const out = ['e2eP', 'e2eK'].filter(id => getComputedStyle(document.getElementById(id)!).display !== 'none').map(id => document.getElementById(id)!.textContent);
+        document.getElementById('e2eP')!.remove(); document.getElementById('e2eK')!.remove();
+        return out;
+      });
+      expect(shown).toEqual([m.kid ? 'kid words' : 'pro words']);
       // Explorer hides the Dojo and Sutras tabs
       const dojo = page.locator('.mq-nav a[href="#/dojo"]');
       if (m.id === 'explorer') await expect(dojo).toBeHidden(); else await expect(dojo).toBeVisible();

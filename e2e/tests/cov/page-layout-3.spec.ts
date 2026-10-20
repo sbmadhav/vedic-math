@@ -23,7 +23,7 @@ test('Badge earned in a Star round: the toast does not overlap the number pad or
 test('Home: with no primary button near the bottom, a toast shows at the bottom as before', async ({ page }) => {
   await open(page);
   await expect(page.locator('h1.home-h')).toBeVisible();
-  await page.evaluate(async () => { const fx = await import('/vedic-math/js/fx.js' as string); fx.toast('<b>Quest complete</b> test', 'ok'); });
+  await page.evaluate(async () => { const fx = await import('/js/fx.js' as string); fx.toast('<b>Quest complete</b> test', 'ok'); });
   const t = (await page.locator('.fx-toast').first().boundingBox())!;
   expect(t.y + t.height).toBeGreaterThan(844 - 120);
   const p = (await page.locator('#view .md-btn--primary').boundingBox())!;

@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog, heldClock, type Mode, typeAnswer } from '../fixtures';
+import { test, expect, open, cloudLog, heldClock, type Mode, typeAnswer, needsWorldBoards } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* posting-consent spec (change learnvedicmath), Requirement "Play is never blocked", Scenario "Under-13 Player
@@ -12,7 +12,7 @@ const ROUNDS_OFF_WEBKIT = "Arena rounds need the faked clock, which WebKit's req
 async function arenaRound(page: Page, mode: Mode) {
   await open(page, '#/arena');
   const answer = await page.evaluate(async m => {
-    const cloud = await import('/vedic-math/js/cloud.js' as string), arena = await import('/vedic-math/js/arena.js' as string);
+    const cloud = await import('/js/cloud.js' as string), arena = await import('/js/arena.js' as string);
     return String(arena.dailySet(m, cloud.dayId())[0].answer);
   }, mode);
   await page.locator('#arGo').click();
@@ -36,6 +36,7 @@ for (const mode of ['explorer', 'challenger'] as const) {
     test.use({ seedMode: mode, seedConsent: { age: 9 } });
 
     test(`${mode}: the Arena Daily round plays normally and ranks on the Device board`, async ({ page, browserName }) => {
+      await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
       test.skip(browserName === 'webkit', ROUNDS_OFF_WEBKIT);
       test.setTimeout(90_000);
       await heldClock(page);

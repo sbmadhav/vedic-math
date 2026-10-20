@@ -4,7 +4,7 @@ import type { Page, Request } from '@playwright/test';
 
 /* sutra-pronunciation spec, Requirements "Say it button" and "Respelling under the name": one test per scenario.
    Web Audio and speech are fakes (audio-fake.ts); the clips are the real files from sounds/sutras/. */
-const SOUNDS = /\/vedic-math\/sounds\//;
+const SOUNDS = /\/sounds\//;
 function soundRequests(page: Page) {
   const urls: string[] = [];
   page.on('request', (r: Request) => { if (SOUNDS.test(r.url())) urls.push(new URL(r.url()).pathname); });
@@ -24,7 +24,7 @@ test('Deep dive: Say it on #/sutras/s1 plays the Ekādhikena Pūrveṇa clip and
   await btn.click();
   await expect(btn).toHaveAttribute('aria-pressed', 'true');
   await expect.poll(() => audioLog(page).then(l => l.decoded)).toBe(1);
-  expect(urls[0]).toBe('/vedic-math/sounds/sutras/s1.m4a');
+  expect(urls[0]).toBe('/sounds/sutras/s1.m4a');
   await expect(btn).toHaveAttribute('aria-pressed', 'false', { timeout: 5000 });
   expect((await audioLog(page)).nodes.filter(n => n.kind === 'source' && n.started !== null)).toHaveLength(1);
 });
@@ -36,7 +36,7 @@ test('Card does not flip: Say it on an unflipped card plays the clip and the car
   const card = page.locator('.sutra-card[data-id="s3"]');
   await expect(card).not.toHaveClass(/flipped/);
   await card.getByRole('button', { name: 'Hear how to say Ūrdhva-Tiryagbhyām' }).click();
-  await expect.poll(() => urls[0]).toBe('/vedic-math/sounds/sutras/s3.m4a');
+  await expect.poll(() => urls[0]).toBe('/sounds/sutras/s3.m4a');
   await expect.poll(() => audioLog(page).then(l => l.decoded)).toBe(1);
   await expect(card).not.toHaveClass(/flipped/);
   await expect(card.locator('.sutra-face')).toHaveAttribute('aria-expanded', 'false');
@@ -48,7 +48,7 @@ test('Trick page with a bracketed Sutra: Say it on div9 ("Nikhilaṃ (division b
   await open(page, '#/skill/v-div9');
   await expect(page.locator('.mq-sutra b[lang="sa-Latn"]')).toHaveText('Nikhilaṃ (division by 9)');
   await page.locator('.mq-sutra').getByRole('button', { name: 'Hear how to say Nikhilaṃ Navataścaramaṃ Daśataḥ' }).click();
-  await expect.poll(() => urls[0]).toBe('/vedic-math/sounds/sutras/s2.m4a');
+  await expect.poll(() => urls[0]).toBe('/sounds/sutras/s2.m4a');
 });
 
 test('All places: each of the 17 Constellation headings has one Say it button for its Sutra', async ({ page }) => {
@@ -75,7 +75,7 @@ test('Stored text matches the generator: the shipped names module carries a Resp
   // the shipped module must carry exactly those 29 entries, and the s1 entry the spec quotes
   await open(page, '#/sutras');
   const names: Record<string, { say: string; deva: string }> = await page.evaluate(async () => {
-    const m: any = await import('/vedic-math/js/say.js' as string);
+    const m: any = await import('/js/say.js' as string);
     const out: Record<string, { say: string; deva: string }> = {};
     for (const [id, n] of Object.entries(m.NAMES as Record<string, any>)) out[id] = { say: n.say, deva: n.deva };
     return out;

@@ -1,11 +1,11 @@
-import { test, expect, open, openExplore } from '../fixtures';
+import { test, expect, open, togglePauseMotion } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* openspec/specs/accessibility/spec.md
    - Pages reflow at 320px / Settings on a small phone: the voice picker fits the screen and #/me does not scroll sideways.
-   - Motion can be paused / Pause from the Explore menu: the background canvas stops changing and no looping
-     animation runs, and BOTH resume when Pause motion is turned off. (e2e/tests/wcag.spec.ts checks the pause and
-     the background resuming, but never that a looping animation runs before the pause or runs again after it.) */
+   - Motion can be paused / Pause from the Explore menu (on learnvedicmath.com the switch is on the Me page and in the
+     music panel): the background canvas stops changing and no looping animation runs, and BOTH resume when Pause
+     motion is turned off. */
 
 const sideways = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 
@@ -32,7 +32,7 @@ test.describe('Settings on a small phone', () => {
   });
 });
 
-test.describe('Pause from the Explore menu', () => {
+test.describe('Pause motion (from the music panel; formerly the Explore menu)', () => {
   test.use({ reducedMotion: 'no-preference' });
 
   const bgMoving = (page: Page) => page.evaluate(async () => {
@@ -50,11 +50,7 @@ test.describe('Pause from the Explore menu', () => {
     await expect.poll(() => bgMoving(page), { timeout: 15_000 }).toBe(true);
     await expect.poll(() => looping(page)).toBeGreaterThan(0);
 
-    const dlg = await openExplore(page);
-    const sw = dlg.locator('#xpMotion');
-    await sw.click();
-    await expect(sw).toHaveAttribute('aria-pressed', 'true');
-    await page.keyboard.press('Escape');
+    expect(await togglePauseMotion(page)).toBe(true);
     await expect(page.locator('html')).toHaveClass(/motion-paused/);
     await expect.poll(() => bgMoving(page)).toBe(false);
     await expect.poll(() => looping(page)).toBe(0);
@@ -62,10 +58,7 @@ test.describe('Pause from the Explore menu', () => {
     expect(await bgMoving(page)).toBe(false);
     expect(await looping(page)).toBe(0);
 
-    const dlg2 = await openExplore(page);
-    await dlg2.locator('#xpMotion').click();
-    await expect(dlg2.locator('#xpMotion')).toHaveAttribute('aria-pressed', 'false');
-    await page.keyboard.press('Escape');
+    expect(await togglePauseMotion(page)).toBe(false);
     await expect(page.locator('html')).not.toHaveClass(/motion-paused/);
     await expect.poll(() => bgMoving(page), { timeout: 15_000 }).toBe(true);
     await expect.poll(() => looping(page)).toBeGreaterThan(0);

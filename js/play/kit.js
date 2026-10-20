@@ -95,7 +95,7 @@ export const b64url = {
   enc: s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''),
   dec: s => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))))
 };
-export const shareUrl = hash => `${location.origin}/vedic-math/${hash}`;
+export const shareUrl = hash => `${location.origin}/play/${hash}`;
 
 /* ---------- Feedback ---------- */
 export function toast(text, ms = 2600) {

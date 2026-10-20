@@ -1,4 +1,4 @@
-import { test, expect, open, chromiumOnly } from '../fixtures';
+import { test, expect, open, chromiumOnly, togglePauseMotion } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* calm spec, Requirements "Calm stops motion", "The moving background with Calm and Pause motion" and "Calm is
@@ -30,21 +30,15 @@ test.describe('Calm on', () => {
 
 test.describe('motion allowed', () => {
   test.use({ reducedMotion: 'no-preference' });
-  test('Pause motion from the Explore menu: motion stops at once, the clock keeps running, and Calm stays off', async ({ page }, testInfo) => {
+  test('Pause motion (music panel): motion stops at once, the clock keeps running, and Calm stays off', async ({ page }, testInfo) => {
     chromiumOnly(testInfo, 'canvas frames: chromium');
     await open(page, '#/arena');
     await page.locator('[data-t="practice"]').click();
-    const running = () => page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running' && !((a.effect as KeyframeEffect | null)?.target as Element | null)?.closest('dialog.xpm')).length);
-    // The Explore menu's own Pause motion control. A round's shell makes the site header inert (js/shell.js),
-    // so the menu is reached on the game page, before the round starts.
-    await page.locator('#exploreBtn').click();
-    const pause = page.locator('dialog.xpm #xpMotion');
-    await expect(pause).toHaveAttribute('aria-pressed', 'false');
-    await pause.click();
-    await expect(pause).toHaveAttribute('aria-pressed', 'true');
+    const running = () => page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running').length);
+    // Pause motion from the music panel in the header (the site has no Explore menu). A round's shell makes the site
+    // header inert (js/shell.js), so the panel is reached on the game page, before the round starts.
+    expect(await togglePauseMotion(page)).toBe(true);
     await expect(page.locator('html')).toHaveClass(/\bmotion-paused\b/);
-    await page.keyboard.press('Escape');
-    await expect(page.locator('dialog.xpm')).toBeHidden();
     await page.waitForTimeout(150);
     expect(await running(), 'motion stops at once on the game page').toBe(0);
     await page.locator('#arGo').click();

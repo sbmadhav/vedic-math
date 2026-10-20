@@ -11,6 +11,7 @@ async function answer(page: Page) {
 async function trialThenHome(page: Page) {
   await page.goto(APP);
   await page.locator('#tryBtn').click();
+  await page.locator('#stStart').click(); /* the trial Star teaches its Trick first (openspec try-trick-teaches) */
   for (let k = 1; k <= 4; k++) {
     await expect(page.locator('#stMain .star-tag')).toHaveText(`Question ${k} of 4`);
     await answer(page);

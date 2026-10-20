@@ -21,7 +21,7 @@ async function recordSpeech(page: Page) {
   });
 }
 const said = (page: Page) => page.evaluate(() => ((window as any).__said as string[]).join(' '));
-const words = (page: Page, html: string) => page.evaluate(async h => (await import('/vedic-math/js/voice.js' as string)).normalize(h) as string, html);
+const words = (page: Page, html: string) => page.evaluate(async h => (await import('/js/voice.js' as string)).normalize(h) as string, html);
 
 test.describe('Explorer', () => {
   test.use({ seedMode: 'explorer' });
@@ -67,7 +67,7 @@ test.describe('Explorer in Calm', () => {
     await recordSpeech(page);
     await open(page, '#/challenge/576');
     const want = await page.evaluate(async () => {
-      const L: any = await import('/vedic-math/js/levels.js' as string), V: any = await import('/vedic-math/js/voice.js' as string);
+      const L: any = await import('/js/levels.js' as string), V: any = await import('/js/voice.js' as string);
       const p = L.challengeSet(L.challenge(576))[1];
       return { skill: p.skill as string, q: V.normalize(p.q) as string, say: p.say ? V.normalize(p.say) as string : '' };
     });

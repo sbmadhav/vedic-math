@@ -125,7 +125,7 @@
 @keyframes tl-bloom { 0% { opacity: .75; transform: scale(.4); } 40% { opacity: .35; } 100% { opacity: 0; transform: scale(7); } }
 .tl-ask { margin: var(--space-3) 0 var(--space-2); font-size: 1.05rem; }
 .tl-line { list-style: none; margin: 0 0 var(--space-3); padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 4px; }
-.tl-cell { position: relative; width: 100%; aspect-ratio: 1; border-radius: 10px; border: 2px solid var(--line); background: var(--bg-alt); color: var(--ink-muted); font: 700 .85rem/1 var(--font-mono); cursor: pointer; padding: 0; overflow: hidden; transition: background .25s, transform .2s; }
+.tl-cell { position: relative; width: 100%; aspect-ratio: 1; border-radius: 10px; border: 2px solid var(--line); background: var(--bg-alt); color: var(--ink-muted); font: 500 .85rem/1 var(--font-mono); cursor: pointer; padding: 0; overflow: hidden; transition: background .25s, transform .2s; }
 .tl-cell[aria-pressed="true"] { border-color: var(--edge); color: var(--ink); box-shadow: 0 0 0 3px color-mix(in srgb, var(--sun) 55%, transparent); }
 .tl-cell.is-now { transform: translateY(-3px); border-color: var(--ink-muted); }
 .tl-cell.hit-0 { background: color-mix(in srgb, var(--coral) 45%, var(--bg-alt)); color: var(--ink); }
@@ -176,7 +176,7 @@
 .tl-pz { margin: 0; font-weight: 700; color: var(--ink-muted); }
 .tl-pz b { font-family: var(--font-display); color: var(--ink); font-size: 1.2rem; }
 .tl-pzs { gap: 6px; }
-.tl-pzb { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--line); background: var(--card); color: var(--ink-muted); font: 700 .9rem/1 var(--font-mono); cursor: pointer; }
+.tl-pzb { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--line); background: var(--card); color: var(--ink-muted); font: 500 .9rem/1 var(--font-mono); cursor: pointer; }
 .tl-pzb.is-done { background: color-mix(in srgb, var(--teal) 35%, var(--card)); color: var(--ink); }
 .tl-pzb[aria-current="true"] { border-color: var(--edge); color: var(--ink); box-shadow: var(--shadow-ledge); }
 .tl-thsay { font-size: 1.08rem; margin: var(--space-2) 0 var(--space-3); max-width: 68ch; }

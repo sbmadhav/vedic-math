@@ -119,7 +119,7 @@ const keep = new Set(hashes.map(h => h + '.m4a')); mkdirSync(OUT + '../stale/', 
 for (const f of readdirSync(OUT + 'l').filter(f => f.endsWith('.m4a') && !keep.has(f))) renameSync(OUT + 'l/' + f, OUT + '../stale/' + f);
 const lineSet = `l/set.${short(setBuf)}.bin`; writeFileSync(OUT + lineSet, setBuf);
 
-const index = { voice: L.voice, speed: L.speed, base: '/vedic-math/voice/', tag: null, sha256: null, lineSet, dir, packs, coveredSkills: L.coveredSkills, counts: { lines: hashes.length, clips: clipIds.length } };
+const index = { voice: L.voice, speed: L.speed, base: 'https://voice.learnvedicmath.com/', tag: null, sha256: null, lineSet, dir, packs, coveredSkills: L.coveredSkills, counts: { lines: hashes.length, clips: clipIds.length } };
 if (LIMIT) {
   console.log(`test run: ${OUT} written; js/voice-index.js and manifest.json left alone`, JSON.stringify(index).slice(0, 300));
 } else {

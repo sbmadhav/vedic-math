@@ -7,7 +7,7 @@ type Page = import('@playwright/test').Page;
 const events = (page: Page): Promise<[string, string][]> => page.evaluate(() => (globalThis as any).__events || []);
 
 test.beforeEach(async ({ page }) => {
-  await page.route(/\/assets\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
+  await page.route(/\/js\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
 });
 
 test.describe('a new visitor', () => {
@@ -15,6 +15,7 @@ test.describe('a new visitor', () => {
   test("Try a trick: math/try/start is sent once, followed by the Star's route view", async ({ page }) => {
     await page.goto(APP);
     await page.locator('#tryBtn').click();
+    await page.locator('#stStart').click();
     await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
     const paths = (await events(page)).map(([p]) => p);
     expect(paths.filter(p => p.startsWith('math/try/'))).toEqual(['math/try/start']);

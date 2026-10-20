@@ -9,10 +9,11 @@ const actions = (page: Page) => page.evaluate(() => [...document.querySelectorAl
 test.describe('a new visitor', () => {
   test.use({ seedMode: null });
 
-  test('Two taps to a question: Try a trick opens a Star round on its first question, and a digit enters the first answer', async ({ page }) => {
+  test('Two taps to a question: Try a trick opens the worked example, Start the Star opens the first question, and a digit enters the first answer', async ({ page }) => {
     await page.goto(APP);
     await page.locator('#tryBtn').click();
     await expect(page.locator('.star-h')).toBeVisible();
+    await page.locator('#stStart').click();
     await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
     await page.locator('.star-key[data-k="3"]').click();
     await expect(page.locator('#stOut')).toContainText('3');

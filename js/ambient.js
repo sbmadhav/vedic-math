@@ -3,9 +3,9 @@
    Himalayan dawn pad, temple chimes). Music never starts on its own and pauses when the tab is hidden.
    Everything is drawn and synthesized in the browser: no audio files, no extra downloads. */
 
-import { noMotion, onMotionChange } from './fx.js';
+import { noMotion, onMotionChange, motionPaused, setMotionPaused } from './fx.js';
 
-/* No motion (fx.noMotion: reduced motion on the device, Pause motion in the site's Explore menu, or Calm) draws the
+/* No motion (fx.noMotion: reduced motion on the device, Pause motion, or Calm) draws the
    background still. The Moving background switch decides whether it is drawn at all. */
 const reduced = noMotion;
 const pref = (k, d) => { try { const v = localStorage.getItem('vm.' + k); return v === null ? d : v; } catch (e) { return d; } };
@@ -246,12 +246,13 @@ const subs = new Set(); export const onChange = fn => (subs.add(fn), () => subs.
 export function mountMusic(slot) {
   if (!slot) return;
   const note = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l11-2v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.5" fill="currentColor"/><circle cx="17.5" cy="16" r="2.5" fill="currentColor"/></svg>';
-  // Styled like the music control in the header of the rest of sbmadhav.com (a pill with a note, "Music" and a little equalizer)
+  // The design system's music pill (a note, "Music" and a little equalizer)
   slot.innerHTML = `<button type="button" class="vm-mbtn" id="vmMBtn" aria-expanded="false" aria-controls="vmMPanel" aria-label="Calm music">${note}<span class="lbl" aria-hidden="true">Music</span><span class="vm-eq" aria-hidden="true"><i></i><i></i><i></i></span></button>
     <div class="vm-mpanel md-card" id="vmMPanel" hidden><b class="vm-mt">Calm music</b><p class="mq-small">Gentle sounds made live in your browser. They never start by themselves.</p>
     <div class="vm-tracks" role="group" aria-label="Choose music">${TRACKS.map(t => `<button class="vm-track" data-t="${t.id}" aria-pressed="false"><b>${t.name}</b><small>${t.note}</small></button>`).join('')}</div>
     <div class="vm-mrow"><button class="md-btn md-btn--sm" id="vmStop">Stop</button><label class="vm-vol">Volume <input type="range" min="0" max="1" step="0.05" value="${volume()}" id="vmVol"></label></div>
     <label class="vm-bgt"><input type="checkbox" id="vmBg" ${bgOn() ? 'checked' : ''}> Moving background</label>
+    <button type="button" class="md-switch vm-motion" role="switch" id="vmMotion" aria-checked="${motionPaused()}"><span>Pause motion</span><span class="md-track" aria-hidden="true"><span class="md-knob"></span></span></button>
     <details class="vm-about"><summary>What is in the background?</summary><ul>${BG_NOTES.map(([h, b]) => `<li><b>${h}</b> ${b}</li>`).join('')}</ul></details></div>`;
   const btn = slot.querySelector('#vmMBtn'), panel = slot.querySelector('#vmMPanel');
   const sync = () => { btn.classList.toggle('on', isPlaying()); slot.querySelectorAll('[data-t]').forEach(b => b.setAttribute('aria-pressed', String(playing === b.dataset.t))); };
@@ -262,6 +263,7 @@ export function mountMusic(slot) {
   slot.querySelector('#vmStop').onclick = stop;
   slot.querySelector('#vmVol').oninput = e => setVolume(+e.target.value);
   slot.querySelector('#vmBg').onchange = e => setBg(e.target.checked);
+  slot.querySelector('#vmMotion').onclick = () => setMotionPaused(!motionPaused());
   onChange(sync); sync();
 }
 

@@ -12,7 +12,7 @@ const r = (v: number) => (v + 9 + 0.5) / 19;
 
 async function fixNextQuestion(page: Page, randoms: number[], level?: number) {
   await page.evaluate(async ({ randoms, level }) => {
-    const mod = await import('/vedic-math/js/skills/high.js' as string);
+    const mod = await import('/js/skills/high.js' as string);
     const s = (mod.default as any[]).find(x => x.id === '9-factor');
     const orig = s.gen;
     s.gen = function (lv: unknown, ...rest: unknown[]) {

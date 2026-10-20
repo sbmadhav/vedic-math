@@ -6,9 +6,9 @@ for (const scheme of ['light', 'dark'] as const) {
     test.use({ colorScheme: scheme, viewport: { width: 390, height: 844 } });
     test(`A 390px phone: the header is at most 132px tall, every link and control on screen, links at least 24px tall (${scheme})`, async ({ page }) => {
       await open(page);
-      const h = (await page.locator('header.top').boundingBox())!;
+      const h = (await page.locator('body > header.md-header').boundingBox())!;
       expect(h.height).toBeLessThanOrEqual(132);
-      for (const sel of ['.home', '#exploreBtn', '#themeBtn', '#vmMBtn', '#mqChip a']) {
+      for (const sel of ['.md-brand', '#themeBtn', '#vmMBtn', '#mqChip a']) {
         const b = (await page.locator(sel).boundingBox())!;
         expect(b.x >= 0 && b.x + b.width <= 390, sel).toBe(true);
       }

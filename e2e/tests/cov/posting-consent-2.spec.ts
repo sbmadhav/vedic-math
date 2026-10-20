@@ -1,4 +1,4 @@
-import { test, expect, open, heldClock, cloudLog, type Mode, typeAnswer } from '../fixtures';
+import { test, expect, open, heldClock, cloudLog, type Mode, typeAnswer, needsWorldBoards } from '../fixtures';
 import type { Page, BrowserContext } from '@playwright/test';
 
 /* openspec posting-consent, "Age answer is never sent": a Player gives an Age answer and later posts (13 or over) or
@@ -69,13 +69,14 @@ test.describe('Age answer is never sent', () => {
   test.use({ seedMode: 'pro' });
 
   test('a 15 answer: the weekly Sparks post carries no Age answer', async ({ page, context }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     const AGE = 15;
     const sent = await recordOutgoing(context);
     await heldClock(page);
     await open(page, '#/me');
     // This week's Sparks (50), so the weekly Sparks Board post goes out once posting is allowed
     await page.evaluate(async () => {
-      const store = await import('/vedic-math/js/store.js' as string);
+      const store = await import('/js/store.js' as string);
       localStorage.setItem('mathquest.v1.p1', JSON.stringify({ v: 3, sparks: 50, weekSparks: { [store.isoWeek()]: 50 } }));
     });
     await page.reload();
@@ -92,6 +93,7 @@ test.describe('Age answer is never sent', () => {
   });
 
   test('an under-13 answer given at the first would-be post: nothing is posted, and nothing sent carries the answer', async ({ page, context, browserName }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     test.skip(browserName === 'webkit', "Arena rounds need the faked clock, which WebKit's requestAnimationFrame does not follow evenly");
     test.setTimeout(120_000);
     const AGE = 7, mode: Mode = 'pro';
@@ -103,7 +105,7 @@ test.describe('Age answer is never sent', () => {
       // The last round's result is still in the play shell: Back to the Arena
       if (await page.locator('#arDone').isVisible()) await page.locator('#arDone').click();
       const answer = await page.evaluate(async m => {
-        const cloud = await import('/vedic-math/js/cloud.js' as string), arena = await import('/vedic-math/js/arena.js' as string);
+        const cloud = await import('/js/cloud.js' as string), arena = await import('/js/arena.js' as string);
         return String(arena.dailySet(m, cloud.dayId())[0].answer);
       }, mode);
       await page.locator('#arGo').click();

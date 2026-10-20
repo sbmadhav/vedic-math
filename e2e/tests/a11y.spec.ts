@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, APP, open, chromiumOnly } from './fixtures';
+import { test, expect, APP, open, chromiumOnly, needsWorldBoards } from './fixtures';
 
 /* axe-core on the main routes, failing on serious or critical violations. Chromium only: the rules
    check the DOM and computed styles, which the other engines would only repeat.
@@ -117,13 +117,26 @@ test.describe('first visit', () => {
   });
 });
 
-test('the Explore menu has no serious or critical axe violations', async ({ page }, testInfo) => {
+test('the landing and grown-up pages have no serious or critical axe violations', async ({ page }, testInfo) => {
   chromiumOnly(testInfo);
-  await open(page);
-  await page.locator('#exploreBtn').click();
-  await expect(page.locator('dialog.xpm')).toBeVisible();
-  const res = await new AxeBuilder({ page }).include('dialog.xpm').analyze();
-  expect(res.violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => `${v.id}: ${v.nodes.map(n => n.target.join(' ')).join(' | ')}`)).toEqual([]);
+  for (const url of ['/?home', '/parents/', '/teachers/', '/privacy/', '/terms/', '/licenses/']) {
+    await page.goto(url);
+    await expect(page.locator('main h1')).toBeVisible();
+    const res = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+    expect(res.violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => `${url} ${v.id}: ${v.nodes.map(n => n.target.join(' ')).join(' | ')}`)).toEqual([]);
+  }
+});
+
+/* The brand link's accessible name comes from its label, not from the mark (which is hidden), on the game and the landing page */
+test('the brand link is named "Learn Vedic Math, home" and its mark is decorative', async ({ page }, testInfo) => {
+  chromiumOnly(testInfo);
+  for (const url of ['/?home', APP]) {
+    await page.goto(url);
+    const brand = page.locator('body > header').getByRole('link', { name: 'Learn Vedic Math, home', exact: true });
+    await expect(brand, url).toHaveCount(1);
+    await expect(brand.locator('svg.lv-mark'), url).toHaveAttribute('aria-hidden', 'true');
+    expect(await brand.getByRole('img').count(), url).toBe(0);
+  }
 });
 
 /* The site header (site-header spec): wide and on a 320px phone, in both schemes, with the music panel open */
@@ -157,6 +170,7 @@ for (const scheme of ['light', 'dark'] as const) {
     test.describe(`${scheme} scheme, ${mode}`, () => {
       test.use({ colorScheme: scheme, seedMode: mode });
       test('the age sheet has no serious or critical axe violations', async ({ page }, testInfo) => {
+        await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
         chromiumOnly(testInfo);
         await open(page, '#/me');
         await page.locator('#wbAsk').click();
@@ -170,6 +184,7 @@ for (const scheme of ['light', 'dark'] as const) {
     test.describe(`${scheme} scheme, ${mode}, under 13`, () => {
       test.use({ colorScheme: scheme, seedMode: mode, seedConsent: { age: 8 } });
       test('the World boards section for an under-13 Player has no serious or critical axe violations', async ({ page }, testInfo) => {
+        await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
         chromiumOnly(testInfo);
         await open(page, '#/me');
         await expect(page.locator('#worldBoards')).toContainText(/scores stay on this device/);
