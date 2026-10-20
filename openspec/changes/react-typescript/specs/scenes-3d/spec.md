@@ -17,7 +17,7 @@ Let the game show 3D decoration that loads late, never slows the first screen, n
 The 3D code (three.js, React Three Fiber, drei and the scenes) SHALL be served from learnvedicmath.com, SHALL NOT be part of the first load of any page, and SHALL be requested only on a route that shows a 3D scene, after that route has rendered and the browser is idle. The Sky SHALL first show the 2D Sky, then fade into 3D once the scene is ready, without moving any Star, Landmark or text.
 
 #### Scenario: Home without the Sky
-- **WHEN** a Player whose Home does not show the Sky opens `/play/`
+- **WHEN** a Player whose Home does not show the Sky opens `/learn/`
 - **THEN** no 3D file is requested
 
 #### Scenario: The Sky fades in
@@ -27,6 +27,13 @@ The 3D code (three.js, React Three Fiber, drei and the scenes) SHALL be served f
 #### Scenario: No other origin
 - **WHEN** the Sky's 3D scene loads
 - **THEN** every request it makes goes to learnvedicmath.com
+
+### Requirement: 3D never runs on the server
+3D code SHALL never run on the server. A page the server renders SHALL hold only the scene's host element, with its space reserved and no canvas; the 2D drawing (which shows the Player's Stars) SHALL be drawn in the browser after start-up, before any 3D.
+
+#### Scenario: A server-rendered Sky
+- **WHEN** the server renders a page that shows the Sky
+- **THEN** its HTML holds the Sky's host element with its space reserved and no canvas, the 2D Sky is drawn after start-up without a layout shift, and the server bundle holds no 3D module
 
 ### Requirement: Still frame when motion is off
 With Calm, Pause motion or the device's reduced-motion setting on, a 3D scene SHALL show one still frame and draw nothing further. Turning any of them on SHALL stop the scene at once; turning all of them off SHALL let it move again, without a reload.
