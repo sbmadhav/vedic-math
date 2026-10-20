@@ -31,7 +31,7 @@ A link to an old route SHALL open the same screen on the new site. A hash route 
 ## ADDED Requirements
 
 ### Requirement: The game's paths fall back to the app
-A page navigation to a path under `/play/` that matches no published file SHALL be answered with status 200 and the game's SPA fallback page (`/play/__spa-fallback.html`), which then shows the screen for that path, or Home for a path that names no screen. A request counts as a page navigation when it carries `Sec-Fetch-Mode: navigate`, or, without that header, is a GET whose `Accept` prefers `text/html`.
+A page navigation to a path under `/play/` that matches no published file SHALL be answered with status 200 and the game's SPA fallback page (`/play/__spa-fallback.html`), which then shows the screen for that path, or Home for a path that names no screen.
 
 #### Scenario: A deep link that is not prerendered
 - **WHEN** a visitor opens `https://learnvedicmath.com/play/game/times-sprint/12` on a cold load
@@ -41,8 +41,19 @@ A page navigation to a path under `/play/` that matches no published file SHALL 
 - **WHEN** a visitor opens `https://learnvedicmath.com/play/nowhere`
 - **THEN** the status is 200 and Home (or the Mode picker on a first visit) is shown
 
+### Requirement: What counts as a page navigation
+A request SHALL count as a page navigation only with explicit evidence: it carries `Sec-Fetch-Mode: navigate`; or, from a browser that sends no `Sec-Fetch-Mode` at all, it is a GET for a path outside `/play/assets/` whose last segment has no file extension. A request with any other `Sec-Fetch-Mode` (such as `cors` or `no-cors`) SHALL never count as a page navigation, whatever its `Accept` header.
+
+#### Scenario: A browser without fetch metadata
+- **WHEN** a browser that sends no `Sec-Fetch-Mode` opens `/play/arena`
+- **THEN** the request counts as a page navigation and the Arena is shown
+
 ### Requirement: Other misses get a 404
 Any request that matches no published file and is not a page navigation under `/play/`, including every miss under `/play/assets/` and every script, style, image or data request, SHALL be answered with the 404 page and status 404, never with HTML at status 200. A path outside `/play/` that matches no file SHALL be answered the same way.
+
+#### Scenario: A fetch that asks for HTML
+- **WHEN** page code sends `fetch('/play/missing')` with `Accept: text/html` (so `Sec-Fetch-Mode: cors`)
+- **THEN** the status is 404 and the response is not the SPA fallback page
 
 #### Scenario: A missing script under the game
 - **WHEN** the browser requests `/play/assets/old-chunk-1a2b3c.js`, which no longer exists, as a script
