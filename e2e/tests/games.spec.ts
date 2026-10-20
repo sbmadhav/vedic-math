@@ -299,7 +299,7 @@ test.describe('Calm on', () => {
     await page.locator('#gStart').click();
     await expect(page.locator('#gArea .g-q')).toContainText('×');
     await expect(page.locator('.g-timer')).toHaveCount(0);
-    const perQ = await page.evaluate(async () => (await import('/js/games.js' as string)).GAMES.find((g: { id: string }) => g.id === 'times-sprint').perQ);
+    const perQ = await page.evaluate(async () => (await e2eMod('games')).GAMES.find((g: { id: string }) => g.id === 'times-sprint').perQ);
     for (let k = 0; k < perQ; k++) {
       const q = await page.locator('#gArea .g-q').textContent();
       await page.locator('#gArea .ans-in').fill(await timesAnswer(page));

@@ -8,7 +8,7 @@ import { test, expect, open, type Page } from '../fixtures';
 
 async function fixNextQuestion(page: Page, skillId: string, randoms: number[]) {
   await page.evaluate(async ({ skillId, randoms }) => {
-    const mod = await import('/js/skills/middle.js' as string);
+    const mod = await e2eMod('skills/middle');
     const s = (mod.default as any[]).find(x => x.id === skillId);
     const orig = s.gen;
     s.gen = function (...args: unknown[]) {

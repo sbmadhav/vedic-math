@@ -9,7 +9,7 @@ async function seedRandom(page: Page, seed: number) {
     Math.random = () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   }, seed);
 }
-const sparks = (page: Page) => page.evaluate(async () => (await import('/js/store.js' as string)).sparks() as number);
+const sparks = (page: Page) => page.evaluate(async () => (await e2eMod('store')).sparks() as number);
 
 /* The like-fractions question on screen: a/d + b/d (or minus), as numbers */
 async function fracQuestion(page: Page) {
@@ -153,7 +153,7 @@ test.describe('explorer', () => {
   test('a percent lesson links no counting videos; the counting lesson does', async ({ page }) => {
     await open(page, '#/skill/7-pctchange');
     await expect(page.locator('#view h1')).toHaveText(/Discounts, tax and percent change/);
-    await page.waitForFunction(() => import('/js/videos.js' as string));
+    await page.waitForFunction(() => e2eMod('videos'));
     await expect(page.locator('.rel-links button', { hasText: /count/i })).toHaveCount(0);
     await open(page, '#/skill/k-count');
     await expect(page.locator('.rel-links')).toContainText(/Count/);
@@ -161,7 +161,7 @@ test.describe('explorer', () => {
 });
 
 /* Skill Ratings (ratings spec): the Rating picks each Practice question's generator level; mastery is unchanged */
-const progress = (page: Page) => page.evaluate(async () => (await import('/js/store.js' as string)).load());
+const progress = (page: Page) => page.evaluate(async () => (await e2eMod('store')).load());
 /* The times-table question on screen, answered right on the first try */
 async function answerTimes(page: Page, ok = true) {
   const box = page.locator('#practice');

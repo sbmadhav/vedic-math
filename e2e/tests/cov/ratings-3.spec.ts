@@ -8,7 +8,7 @@ import type { Page } from '@playwright/test';
      THEN that Skill's Rating is higher afterwards.
    (practice.spec.ts covers 10 right answers with no miss; here the session includes one miss.) */
 
-const ratings = (page: Page) => page.evaluate(async () => ((await import('/js/store.js' as string)).load().ratings || {}) as Record<string, number>);
+const ratings = (page: Page) => page.evaluate(async () => ((await e2eMod('store')).load().ratings || {}) as Record<string, number>);
 
 /** Answers the times-table question on screen (right, or one too many) and waits for the feedback. */
 async function answerTimes(page: Page, ok: boolean) {

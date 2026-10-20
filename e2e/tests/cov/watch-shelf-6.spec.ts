@@ -28,7 +28,7 @@ async function serveList(page: Page, videos: V[]) {
 const cards = (page: Page) => page.locator('#view button.watch-card');
 const chip = (page: Page, group: string, name: string) => page.getByRole('group', { name: group, exact: true }).getByRole('button', { name, exact: true });
 const shownIds = (page: Page) => cards(page).evaluateAll(els => els.map(e => (e as HTMLElement).dataset.watch || ''));
-const realList = (page: Page) => page.evaluate(async () => (await import('/js/videos.js' as string)).VIDEOS as V[]);
+const realList = (page: Page) => page.evaluate(async () => (await e2eMod('videos')).VIDEOS as V[]);
 const challengerSees = (v: V) => v.modes.some(m => m === 'challenger' || m === 'explorer') && !v.critique;
 const proSees = (v: V) => v.modes.some(m => m === 'pro' || m === 'challenger');
 

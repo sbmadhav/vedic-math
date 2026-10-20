@@ -30,7 +30,7 @@ test.describe('a Player who may post, with 120 Sparks (40 this week), opens a vi
     await open(page, '#/watch');
     // Record every Sparks gain, whatever its reason
     await page.evaluate(async () => {
-      const store = await import('/js/store.js' as string);
+      const store = await e2eMod('store');
       (window as any).__gains = [];
       store.on((type: string, d: any) => { if (type === 'sparks') (window as any).__gains.push(d); });
     });

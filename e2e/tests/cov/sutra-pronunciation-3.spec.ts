@@ -20,7 +20,7 @@ test.beforeEach(async ({ page }) => {
 test('Size: 29 clips, each under 30 KB and all together under 500 KB', async ({ page }, testInfo) => {
   chromiumOnly(testInfo, 'fetches the 29 files once');
   await open(page, '#/sutras');
-  const urls: string[] = await page.evaluate(async () => { const m: any = await import('/js/say.js' as string); return Object.keys(m.NAMES).map((id: string) => m.clipUrl(id)); });
+  const urls: string[] = await page.evaluate(async () => { const m: any = await e2eMod('say'); return Object.keys(m.NAMES).map((id: string) => m.clipUrl(id)); });
   expect(urls).toHaveLength(29);
   let total = 0;
   for (const u of urls) {
@@ -57,7 +57,7 @@ test('Save-Data: with Save-Data on only the tapped clip is fetched', async ({ pa
 
 test('Offline after first use: the clips are served cache first by the worker (asserted end to end in offline.spec.ts); the shipped index pins every clip URL', async ({ page }) => {
   await open(page, '#/sutras');
-  const pinned: boolean = await page.evaluate(async () => { const m: any = await import('/js/say.js' as string); return Object.keys(m.NAMES).every((id: string) => /\/sounds\/sutras\/[su]\d+\.m4a\?v=[0-9a-f]{10}$/.test(m.clipUrl(id))); });
+  const pinned: boolean = await page.evaluate(async () => { const m: any = await e2eMod('say'); return Object.keys(m.NAMES).every((id: string) => /\/sounds\/sutras\/[su]\d+\.m4a\?v=[0-9a-f]{10}$/.test(m.clipUrl(id))); });
   expect(pinned).toBe(true);
 });
 

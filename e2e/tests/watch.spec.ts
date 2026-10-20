@@ -82,7 +82,7 @@ test.describe('explorer', () => {
     await expect(box).toHaveAttribute('data-how', 'hand');
     const yts = await box.locator('button[data-watch]').evaluateAll(els => els.map(e => (e as HTMLElement).dataset.watch));
     expect(yts.length).toBeGreaterThanOrEqual(2);
-    const picked = await page.evaluate(async ys => { const { VIDEOS } = await import('/js/videos.js' as string); return ys.map((y: string) => VIDEOS.find((v: any) => v.yt === y)); }, yts);
+    const picked = await page.evaluate(async ys => { const { VIDEOS } = await e2eMod('videos'); return ys.map((y: string) => VIDEOS.find((v: any) => v.yt === y)); }, yts);
     for (const v of picked) {
       expect(v.skills).toContain('k-bonds');
       expect(v.madeForKids).toBe(true);
@@ -157,7 +157,7 @@ test.describe('pro', () => {
     await expect(box).toHaveAttribute('data-how', 'hand');
     const n = await box.locator('button[data-watch]').count();
     expect(n).toBeGreaterThanOrEqual(2); expect(n).toBeLessThanOrEqual(3);
-    const tricks = await page.evaluate(async yts => { const { VIDEOS } = await import('/js/videos.js' as string); return yts.map((y: string) => VIDEOS.find((v: any) => v.yt === y).tricks); },
+    const tricks = await page.evaluate(async yts => { const { VIDEOS } = await e2eMod('videos'); return yts.map((y: string) => VIDEOS.find((v: any) => v.yt === y).tricks); },
       await box.locator('button[data-watch]').evaluateAll(els => els.map(e => (e as HTMLElement).dataset.watch)));
     for (const t of tricks) expect(t).toContain('sq5');
   });
@@ -185,7 +185,7 @@ const watchPicks = async (page: Page) => {
   const box = page.locator('[data-watch-for]');
   await expect(box).toHaveAttribute('data-how', 'hand');
   const yts = await box.locator('button[data-watch]').evaluateAll(els => els.map(e => (e as HTMLElement).dataset.watch));
-  return page.evaluate(async ys => { const { VIDEOS } = await import('/js/videos.js' as string); return ys.map((y: string) => VIDEOS.find((v: any) => v.yt === y)); }, yts);
+  return page.evaluate(async ys => { const { VIDEOS } = await e2eMod('videos'); return ys.map((y: string) => VIDEOS.find((v: any) => v.yt === y)); }, yts);
 };
 
 test('a grade 6 to 8 Skill shows its own hand-matched videos, made for kids first for Challenger', async ({ page }) => {
@@ -215,14 +215,14 @@ test('a Skill with no hand-matched video gets keyword matches or no Watch sectio
   await expect(page.locator('[data-watch-for]')).toHaveAttribute('data-how', 'keyword');
   await open(page, '#/skill/11-logs');
   await expect(page.locator('#practice')).toBeVisible();
-  await page.waitForFunction(() => import('/js/videos.js' as string));
+  await page.waitForFunction(() => e2eMod('videos'));
   await expect(page.locator('[data-watch-for] button')).toHaveCount(0);
   await expect(page.locator('#view')).not.toContainText('Watch it explained');
 });
 
 test('the Sutras page and a deep dive have no outside link and no critique for Challenger; the deep dive video plays here', async ({ page }) => {
   await open(page, '#/sutras');
-  await page.waitForFunction(() => import('/js/videos.js' as string));
+  await page.waitForFunction(() => e2eMod('videos'));
   await expect(page.locator('[data-history-links]')).toBeHidden();
   await expect(page.locator('#view a[target="_blank"]')).toHaveCount(0);
   // The history card lists no critique; the verse cards' sources leave out the one that questions the Sutras' origin

@@ -19,7 +19,7 @@ const identity = (page: Page) => page.evaluate(() => ({
 const NO_IDENTITY = { uids: null, legacy: null, session: null };
 
 const ids = (page: Page) => page.evaluate(async () => {
-  const cloud = await import('/js/cloud.js' as string);
+  const cloud = await e2eMod('cloud');
   return { day: cloud.dayId() as string, wk: cloud.weekId() as string };
 });
 
@@ -44,7 +44,7 @@ test.describe('First post', () => {
     expect(log.writes).toEqual([]);
     expect(await identity(page)).toEqual(NO_IDENTITY);
 
-    const answer = await page.evaluate(async d => (await import('/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
+    const answer = await page.evaluate(async d => (await e2eMod('arena')).dailySet('challenger', d)[0].answer, day);
     await page.locator('#arGo').click();
     await page.clock.runFor(2_500); // 3, 2, 1
     await typeAnswer(page, String(answer));
@@ -147,7 +147,7 @@ test.describe('Signed-out list query', () => {
     const board = `daily-${day}-challenger`;
 
     // A signed-out client asks for the top 20 of today's Arena Board
-    const got = await page.evaluate(async b => (await import('/js/cloud.js' as string)).top(b, 20), board);
+    const got = await page.evaluate(async b => (await e2eMod('cloud')).top(b, 20), board);
     const queries = await page.evaluate(() => (globalThis as any).__e2eQueries as { path: string; limit: number; orderBy: [string, string] }[]);
     const q = queries.filter(x => x.path === `boards/${board}/scores`);
     expect(q.length).toBeGreaterThanOrEqual(1);
