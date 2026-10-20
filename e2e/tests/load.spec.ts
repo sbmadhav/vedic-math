@@ -125,7 +125,9 @@ test.describe('the site\'s own files', () => {
     page.on('request', r => hosts.add(new URL(r.url()).host));
     await open(page);
     await page.waitForLoadState('networkidle');
-    expect([...hosts].filter(h => /sbmadhav/.test(h))).toEqual([]);
+    // The site's own host is allowed: a pull request preview is served from <name>.sbmadhav.workers.dev
+    const own = new URL(page.url()).host;
+    expect([...hosts].filter(h => h !== own && /sbmadhav/.test(h))).toEqual([]);
     await expect(page.locator('#exploreBtn, dialog.xpm')).toHaveCount(0);
   });
 });

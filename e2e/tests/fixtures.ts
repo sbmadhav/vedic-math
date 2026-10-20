@@ -47,6 +47,14 @@ async function voiceFrom(ctx: BrowserContext) {
   });
 }
 
+/* Until the voice host is set up (owner task 7.8), it has no DNS record. A build that names it (build.py's default
+   --voice r2: local builds and pull request previews; CI deploys with --voice off until R2 is set up) still warms the
+   core pack whenever read aloud is on (Explorer, js/voice.js warmStudio), and the failed lookup is logged as a console
+   error the app cannot prevent (the Player hears the device voice instead). Only that lookup failure is ignored: once
+   the host is live it never matches, and a 404 or any other failure from the host still counts. */
+const VOICE_HOST_UNSET = /ERR_NAME_NOT_RESOLVED|server with the specified hostname could not be found/i;
+export const voiceHostUnset = (url: string, text: string) => url.startsWith(`${VOICE_HOST}/`) && VOICE_HOST_UNSET.test(text);
+
 /** True for a request that could change production Firestore data. */
 export function isFirestoreWrite(method: string, url: string) {
   if (!FIRESTORE.test(url)) return false;
@@ -188,12 +196,12 @@ export const test = base.extend<Fixtures>({
   issues: async ({ page }, use) => {
     const issues: Issues = { console: [], failed: [] };
     // WebKit logs the stricter Report-Only policy's reports (style="" and Trusted Types) as console errors; they block nothing
-    page.on('console', m => { if (m.type() === 'error' && !/^\[Report Only\]/.test(m.text())) issues.console.push(`${m.text()} (${m.location().url || 'inline'})`); });
+    page.on('console', m => { if (m.type() === 'error' && !/^\[Report Only\]/.test(m.text()) && !voiceHostUnset(m.location().url || '', m.text())) issues.console.push(`${m.text()} (${m.location().url || 'inline'})`); });
     page.on('pageerror', e => issues.console.push(`pageerror: ${e.message}`));
     page.on('requestfailed', r => {
       const err = r.failure()?.errorText || '';
       // Navigations away, media cancelled by the browser and requests the fixtures block are not failures
-      if (ANALYTICS.test(r.url()) || /ERR_ABORTED|ERR_BLOCKED_BY_CLIENT|cancelled|NS_BINDING_ABORTED/i.test(err)) return;
+      if (ANALYTICS.test(r.url()) || voiceHostUnset(r.url(), err) || /ERR_ABORTED|ERR_BLOCKED_BY_CLIENT|cancelled|NS_BINDING_ABORTED/i.test(err)) return;
       issues.failed.push(`${err} ${r.url()}`);
     });
     page.on('response', r => { if (r.status() >= 400 && !ANALYTICS.test(r.url())) issues.failed.push(`${r.status()} ${r.url()}`); });
