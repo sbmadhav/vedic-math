@@ -33,7 +33,7 @@ The landing page SHALL show the Nikhilam Family (the brand mark's three digits) 
 - **THEN** it credits the 1965 book and contains no claim of a Vedic source
 
 ### Requirement: Learning is the top-level word
-The site SHALL present itself as a place to learn, with games as one way to learn among several. The landing page's main button SHALL read "Start learning" and the Modes SHALL sit under the heading "Three ways to learn". The header and footer link to `/play/` on the landing and grown-up pages SHALL read "Learn". Inside the game, "Play" SHALL name only playing a game or a round.
+The site SHALL present itself as a place to learn, with games as one way to learn among several. The landing page's main button SHALL read "Start learning" and the Modes SHALL sit under the heading "Three ways to learn". The header and footer link to `/play/` on the landing and grown-up pages SHALL read "Learn". Inside the game, neither the page title nor a header tab SHALL name the app "Play". (The URL stays `/play/`, and the in-app Mode wording, such as "Reset play mode", is left to a later change.)
 
 #### Scenario: Landing labels
 - **WHEN** a visitor opens `/?home`
