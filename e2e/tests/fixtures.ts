@@ -258,8 +258,6 @@ export async function policyOf(page: Page, baseURL?: string, path?: string) {
   return csp!;
 }
 
-/** Shows the World board in a Board (only a Player whose Age answer is 13 or over has the button; openspec board-identity,
-    change learnvedicmath): taps Show World board, then waits until the World tab is selected. */
 /** Whether the served js/cloud-config.js configures Firebase (World boards on). The launch ships with FIREBASE = null
     (Device boards only, change learnvedicmath tasks 1.8 and 8.5); task 8.5 pastes the new project's config. */
 export async function worldBoardsOn(page: Page) {
@@ -274,6 +272,27 @@ export async function needsWorldBoards(page: Page) {
   base.skip(!(await worldBoardsOn(page)), 'World boards are off: js/cloud-config.js has FIREBASE = null until task 8.5 (device-only launch)');
 }
 
+/** Whether this deploy has a Studio voice: its published js/voice-index.js names a voice host. A build with
+    build.py --voice off (CI deploys this way until the R2 voice host is set up, PR #96) publishes an index with no host
+    and no recording, so read aloud and every Listen button use the device voice, and the policy leaves the voice host
+    out. Read from the server, not through the page, so a spec's own route for the index does not change the answer. */
+export async function studioVoiceOn(page: Page) {
+  const res = await page.request.get('/js/voice-index.js');
+  expect(res.ok(), '/js/voice-index.js is served').toBe(true);
+  const m = (await res.text()).match(/export const STUDIO\s*=\s*(\{[\s\S]*\})\s*;/);
+  expect(m, '/js/voice-index.js exports STUDIO').toBeTruthy();
+  return !!JSON.parse(m![1]).base;
+}
+
+/** Skips a test that only means something with recorded voice (a recording or clip plays, the studio voice takes over)
+    while the deploy has none. The device-voice cases keep running, and these switch back on once a build with a voice
+    host is deployed. */
+export async function needsStudioVoice(page: Page) {
+  base.skip(!(await studioVoiceOn(page)), 'No Studio voice in this deploy: the published js/voice-index.js names no voice host (build.py --voice off until R2 is set up), so the device voice reads');
+}
+
+/** Shows the World board in a Board (only a Player whose Age answer is 13 or over has the button; openspec board-identity,
+    change learnvedicmath): taps Show World board, then waits until the World tab is selected. */
 export async function showWorld(page: Page, board: string) {
   const wrap = page.locator(board);
   await wrap.locator('[data-show-world]').click();
