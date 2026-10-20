@@ -15,13 +15,13 @@ A live first-visit audit on 2026-10-20 (https://sbmadhav.com/vedic-math/, 390 by
 - **Find ranks by share of words matched.** Question and size words (how, does, is, what, for, big, work and others) are dropped; an entry is listed when every remaining word matches it, or at least half do with one of them in its title, synonyms or kind words; more words matched ranks higher, within a kind and between kinds.
 - **Find answers questions first.** Known questions and phrases ("how does it work", "help", "what is vedic math", "for kids", "my child", "for adults") list their answers first under "Best match": the Guide and Getting around, the Sutras and their guide section, Explorer Mode or Pro Mode and the Play modes section.
 - **Find knows the Modes and more plain words.** Explorer, Challenger and Pro join the index as "Play modes" entries (opening Me, where a Mode is picked); kind words ("games", "tricks", "videos") list that kind; "multiply", "multiplication", "times", "divide" and similar plain words are added to the Tricks they describe.
-- **Home fits a phone.** On screens up to 600 px the Player strip is compact (one row, numbers on one short line), the header rows are packed tighter, the "New here?" note is one control, "Quick tour", and has a solid background, and the background drawing is fainter. Challenger Home leaves out Keep going when it offers the Trick of the Star its first door offers.
+- **Home fits a phone.** On screens up to 600 px the Player strip is compact (one row, numbers on one short line), the header rows are packed tighter (the brand shows its mark only under 420 px), the "New here?" note is one control, "Quick tour", and has a solid background, and the background drawing is fainter. Challenger Home leaves out Keep going when it offers the Trick of the Star its first door offers.
 - **Toasts keep the primary action clear.** While a round's number pad or answer choices are on screen, toasts show at the top; elsewhere they move to the top when a primary button is in the bottom band they would cover.
 
 Out of scope:
 
 - The `hook-first-star` change being built in parallel: Try a trick's teaching and the Star door's Star and belt wording on Home are untouched here.
-- A two-row header at 390 px. It does not fit without dropping a required control or shrinking the menu below a readable size (see design, "Header"); this change packs the three rows tighter instead.
+- A two-row header at 390 px. It does not fit without dropping a required control or shrinking the menu below a readable size (see design, "Header"); this change packs the three rows tighter instead (under 420 px the game's brand shows its mark only, so the controls share its row).
 - The guide's and the tour's own words (they are recorded studio voice lines); no spoken line changes, so no re-record is needed.
 - Any server, index file or query logging: Find stays in the page, and the typed text never leaves the device.
 

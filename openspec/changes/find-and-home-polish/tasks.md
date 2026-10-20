@@ -1,6 +1,6 @@
 # Tasks
 
-The audit script and its numbers are in `design.md`. Playwright specs run on chromium, webkit and mobile against the local server (`node e2e/local-server.mjs 8174`, `BASE_URL=http://localhost:8174`).
+The audit script and its numbers are in `design.md`. Playwright specs run on chromium, webkit and mobile against a local build (`python3 build.py && node e2e/local-server.mjs 8174 _site`, `BASE_URL=http://localhost:8174`).
 
 ## 1. Find ranking (`js/find.js`, pure)
 
@@ -19,7 +19,7 @@ The audit script and its numbers are in `design.md`. Playwright specs run on chr
 - [x] 3.1 `keepGoingSkill()`: Challenger leaves out Keep going when it offers the first door's Trick. Verify: `e2e/tests/first-visit.spec.ts` "after the trial Star, no Keep going"; `e2e/tests/cov/first-visit-2.spec.ts`.
 - [x] 3.2 Compact Player strip under 600 px; Play this Star on screen at 390 by 844 after Try a trick. Verify: `first-visit.spec.ts` (strip height, button bottom, no sideways scroll), both schemes.
 - [x] 3.3 "New here?" note: one Quick tour control, solid background; fainter background drawing under 600 px. Verify: `e2e/tests/guide.spec.ts` "New here?"; `e2e/tests/cov/guide-5.spec.ts`.
-- [x] 3.4 Header rows packed under 600 px. Verify: `e2e/tests/header.spec.ts` (390 px: at most 132 px, every link on screen and at least 24 px tall; the 320, 375 and 768 px checks unchanged); `e2e/tests/cov/site-header-4.spec.ts`.
+- [x] 3.4 Header rows packed under 600 px. Verify: `e2e/tests/header.spec.ts` (390 px: at most 132 px, the brand mark only and every control on its row, every link on screen and at least 24 px tall; the 320, 375 and 768 px checks unchanged); `e2e/tests/cov/site-header-4.spec.ts`.
 
 ## 4. Toasts (`js/fx.js`, `math.css`)
 

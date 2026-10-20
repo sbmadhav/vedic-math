@@ -4,6 +4,8 @@
 
 `first-visit-clarity` (archived 2026-10-19) added Try a trick, the three Home doors and Find. A live audit on 2026-10-20 repeated its method on the live site: Playwright, 390 by 844, a fresh context with no saved state, the service worker blocked, analytics answered locally. Two paths to Home: picking the Challenger card, and Try a trick then answering the Star's four questions and going Home. "Actions" are visible links, buttons and summaries in the view; "above the fold" means on screen with no scroll. The same script ran against this branch (local server, the rest of the site proxied from sbmadhav.com) for the after numbers.
 
+The app then moved to learnvedicmath.com (`/play/`) with its own header (no Explore; the Learn Vedic Math brand, mark and name, 193 px wide) and Try a trick gained a Learn the trick card before Star 1. After merging that into this branch the numbers were measured again on local builds of `main` (315288c) and of this branch, chromium and webkit, same viewport and paths (Try a trick now presses Start on the trick card first); see "After the move".
+
 ## The audit
 
 ### Home, phone, Challenger
@@ -18,6 +20,21 @@
 | y of Play this Star (after Try a trick) | 817 (button ends below the fold) | 594 |
 | View actions above the fold (after Try a trick) | 6: Change, See how everything works, take the tour, Keep going, Play this Star, Open the Dojo | 5: Change, Quick tour, Play this Star, Open the Dojo, Race in the Arena |
 | Words above the fold (after Try a trick) | 64 | 85 (the Star door's line, now in view) |
+
+### After the move (local builds, `main` 315288c vs this branch)
+
+| | `main` | This change |
+| --- | --- | --- |
+| Header rows / height at 390 px | 4 / 194 px (brand and color scheme; Music and Player chip; two nav rows) | 3 / 130 px (brand mark and every control; two nav rows) |
+| Header at 320 and 375 px | 188 and 194 px | 130 px |
+| Player strip height | 181 px | 122 to 123 px |
+| "New here?" controls | 2 | 1 ("Quick tour") |
+| Keep going after Try a trick | shown | left out |
+| y of Play this Star (Challenger card) | 750 to 791 | 590 to 631 |
+| y of Play this Star (after Try a trick) | 864 to 904 (below the fold) | 594 to 634 |
+| View actions above the fold (after Try a trick) | 4: Change, See how everything works, take the tour, Keep going | 4: Change, Quick tour, Play this Star, Open the Dojo |
+| Words above the fold (after Try a trick) | 51 | 85 |
+| "Badge earned" toast vs pad after the first right answer | y 772 to 824, pad 435 to 714 (clear at that moment; the pad still moves with the feedback) | y 8 to 60 |
 
 ### Toasts in a Star round, phone
 
@@ -82,7 +99,7 @@ Explorer, Challenger and Pro join the index as kind `mode`, titled "Explorer Mod
 
 ### Header
 
-Under 600 px the rows are packed tighter (padding 8 and 6 px, row gap 6 px, nav row gap 2 px, link padding 5 by 8 px): 147 px to 130 px. Two rows do not fit at 390 px: the first row holds the brand (34 px), Explore (40), the color scheme button (36), Music (36) and the Player chip (93), 271 px with gaps out of 358; the nine menu links need 421 px even at 13 px text with the Find icon hidden. The `site-header` spec requires every control on the first row and every menu link on screen without scrolling (a sideways-scrolling menu hid Sutras, Watch and Guide in an earlier version), so a third row stays. Explorer's seven links need about 385 px at the tighter size and also wrap.
+Under 600 px the rows are packed tighter (padding 8 and 6 px, row gap 6 px, nav row gap 2 px, link padding 5 by 8 px), on top of the design system's `.md-header--tabs` rules. On the old sbmadhav.com header that took 147 px to 130 px. The Learn Vedic Math header's brand (mark and name) is 193 px wide, so at 390 px the brand, the color scheme button (36), Music (36) and the Player chip (93) need 382 px with gaps out of 358 and Music and the chip wrap to their own row: four rows, 194 px on `main`. Under 420 px the game's brand shows its mark only (48 px; "Learn Vedic Math, home" stays its accessible name, as the old header hid part of its name at that width), so the brand and every control share the first row: three rows, 130 px at 320, 375 and 390 px. The landing and grown-up pages (no `.mq-nav`) keep the full brand. Two rows do not fit: the nine menu links need 421 px even at 13 px text with the Find icon hidden, and the `site-header` spec requires every menu link on screen without scrolling (a sideways-scrolling menu hid Sutras, Watch and Guide in an earlier version). Explorer's seven links need about 385 px at the tighter size and also wrap.
 
 ### Toasts
 

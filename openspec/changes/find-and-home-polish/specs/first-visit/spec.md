@@ -6,7 +6,7 @@
 On a screen up to 600 px wide, Home SHALL show the Player strip compactly (the avatar, nickname, Title and bar on one row, the Sparks, day streak and badge numbers on one short line), and a new Challenger Player's first primary action (Play this Star) SHALL be on screen without scrolling at 390 by 844, whether they picked the Challenger card or came Home from Try a trick. Nothing on Home SHALL be removed for this.
 
 #### Scenario: After Try a trick
-- **WHEN** a new visitor presses Try a trick, answers the Star's questions and opens Home on a 390 by 844 screen
+- **WHEN** a new visitor presses Try a trick, starts the Star from the trick card, answers its questions and opens Home on a 390 by 844 screen
 - **THEN** Play this Star is on screen without scrolling, the Player strip is at most 130 px tall, and the page does not scroll sideways
 
 ### Requirement: Keep going does not repeat the first door

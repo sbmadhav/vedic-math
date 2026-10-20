@@ -219,10 +219,15 @@ test.describe('390px wide', () => {
     await open(page);
     const h = (await page.locator('body > header.md-header').boundingBox())!;
     expect(h.height).toBeLessThanOrEqual(132);
+    // Under 420 px the brand shows its mark only and keeps its name as its accessible name, so every control shares its row
+    await expect(page.locator('body > header .md-brand-t')).toBeHidden();
+    await expect(page.locator('body > header .md-brand')).toHaveAccessibleName('Learn Vedic Math, home');
+    const mid = (b: { y: number; height: number }) => b.y + b.height / 2, row = mid((await page.locator('.md-brand').boundingBox())!);
     for (const sel of ['.md-brand', '#themeBtn', '#vmMBtn', '#mqChip a']) {
       const b = (await page.locator(sel).boundingBox())!;
       expect(b.x + b.width, sel).toBeLessThanOrEqual(390);
       expect(b.y + b.height, sel).toBeLessThanOrEqual(h.y + h.height);
+      expect(Math.abs(mid(b) - row), sel).toBeLessThanOrEqual(4);
     }
     const tabs = page.locator('header .mq-nav a:visible');
     expect(await tabs.count()).toBe(9);
@@ -232,5 +237,13 @@ test.describe('390px wide', () => {
       expect(b.x + b.width, await tab.innerText()).toBeLessThanOrEqual(390);
       expect(b.y + b.height, await tab.innerText()).toBeLessThanOrEqual(h.y + h.height);
     }
+  });
+});
+
+test.describe('390px wide, landing', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+  test('the landing page keeps the brand name (only the game shows the mark alone)', async ({ page }) => {
+    await page.goto('/?home');
+    await expect(page.locator('body > header .md-brand-t')).toBeVisible();
   });
 });
