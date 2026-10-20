@@ -1,7 +1,7 @@
 import { test, expect, open } from '../fixtures';
 
 /* find spec, Requirements "The index holds every named thing" (A Play mode), "Plain words find things too" (Multiply
-   big numbers, A kind word), "Results are grouped and ranked" (One stray word) and "Questions are answered first":
+   big numbers, A title made of an ignored word, A kind word), "Results are grouped and ranked" (One stray word) and "Questions are answered first":
    one test per new scenario (openspec change find-and-home-polish). */
 type Page = import('@playwright/test').Page;
 const hits = (page: Page) => page.locator('#findOut .find-hit');
@@ -23,6 +23,13 @@ test('Multiply big numbers: the Tricks come first, led by Multiply any two numbe
   await find(page, 'multiply big numbers');
   expect((await groups(page))[0]).toBe('Tricks');
   await expect(group(page, 'Tricks').first().locator('b')).toHaveText('Multiply any two numbers in one line');
+});
+
+test('A title made of an ignored word: "Me" puts Me first', async ({ page }) => {
+  await open(page, '#/find');
+  await find(page, 'Me');
+  await expect(hits(page).first().locator('b')).toHaveText('Me');
+  await expect(hits(page).first()).toHaveAttribute('href', '#/me');
 });
 
 test('A kind word: "games" lists the Games section and at least four games', async ({ page }) => {

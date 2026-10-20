@@ -200,6 +200,16 @@ test('score: a title hit is 10, a synonym 8, a kind word 6, a description 3, a p
   assert.equal(share(e, ['square', 'ends']), 1);
 });
 
+test('review: a section named by an ignored word is still found, and a title prefix beats a whole synonym', () => {
+  const idx = buildIndex({ mode: 'challenger', videos: VIDEOS });
+  assert.equal(titles(rank(idx, 'Me'))[0], 'Me');
+  assert.equal(titles(rank(idx, 'me'))[0], 'Me');
+  assert.deepEqual(rank(idx, 'the'), [], 'an ignored word that names nothing still gives nothing');
+  const a = { kind: 'trick', title: 'Squares', t: ['squares'], s: [], k: [], d: [] }, b = { kind: 'trick', title: 'Other', t: ['other'], s: ['squ'], k: [], d: ['squ', 'squad'] };
+  const g = rank([b, a], 'squ');
+  assert.deepEqual(g[0].items.map(e => e.title), ['Squares', 'Other'], 'title prefix (7) above a whole synonym plus a description (11)');
+});
+
 test('tokenize drops question and size words', () => {
   assert.deepEqual(tokenize('how does it work'), []);
   assert.deepEqual(tokenize('multiply big numbers'), ['multiply', 'numbers']);

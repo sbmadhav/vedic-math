@@ -22,7 +22,7 @@ The index SHALL hold every section, Play mode (Explorer, Challenger, Pro), grade
 - **THEN** Me opens, where the Mode can be changed
 
 ### Requirement: Plain words find things too
-Each entry MAY carry plain-word synonyms, and the sections SHALL: "take away" and "minus" find the subtraction Trick, "squares" finds the Trick for numbers ending in 5, "multiply" and "multiplication" find the Trick "Multiply any two numbers in one line", "leaderboard", "scores" and "race" find the Arena, "settings", "nickname", "name", "color" and "reset" find Me, "videos" finds Watch. A word that names a kind ("games", "tricks", "skills", "sutras", "videos", "grades") SHALL find the entries of that kind. Question and size words (such as how, does, is, what, for, big, work) SHALL be ignored. Matching SHALL ignore case and diacritics and SHALL accept a prefix of at least two letters.
+Each entry MAY carry plain-word synonyms, and the sections SHALL: "take away" and "minus" find the subtraction Trick, "squares" finds the Trick for numbers ending in 5, "multiply" and "multiplication" find the Trick "Multiply any two numbers in one line", "leaderboard", "scores" and "race" find the Arena, "settings", "nickname", "name", "color" and "reset" find Me, "videos" finds Watch. A word that names a kind ("games", "tricks", "skills", "sutras", "videos", "grades") SHALL find the entries of that kind. Question and size words (such as how, does, is, what, me, for, big, work) SHALL be ignored, except when the whole query is the title of an entry. Matching SHALL ignore case and diacritics and SHALL accept a prefix of at least two letters.
 
 #### Scenario: Take away
 - **WHEN** a Challenger types "take away"
@@ -36,12 +36,16 @@ Each entry MAY carry plain-word synonyms, and the sections SHALL: "take away" an
 - **WHEN** a Challenger types "multiply big numbers"
 - **THEN** the Tricks are the first group and "Multiply any two numbers in one line" is its first result
 
+#### Scenario: A title made of an ignored word
+- **WHEN** a Player types "Me"
+- **THEN** Me is the first result
+
 #### Scenario: A kind word
 - **WHEN** a Challenger types "games"
 - **THEN** the Games section is listed and at least four games are listed under Games
 
 ### Requirement: Results are grouped and ranked
-Results SHALL be grouped by kind: the Best match group first (see "Questions are answered first"), then sections, Play modes, Tricks, Skills, Sutras, games, play experiences, guide, grades, videos, at most eight per kind. An entry SHALL be listed when every word of the query matches it, or when at least half of the words match it and one of them is in its title, synonyms or kind words. Within a kind, an entry matching a larger share of the words SHALL rank above one matching fewer; at equal share, a match on the title SHALL rank above a match on a synonym, which SHALL rank above a match on a kind word, which SHALL rank above a match in the description. Between kinds, a group whose best entry matches a larger share of the words SHALL come first; groups with equal shares keep the order above.
+Results SHALL be grouped by kind: the Best match group first (see "Questions are answered first"), then sections, Play modes, Tricks, Skills, Sutras, games, play experiences, guide, grades, videos, at most eight per kind. An entry SHALL be listed when every word of the query matches it, or when at least half of the words match it and one of them is in its title, synonyms or kind words. Within a kind, an entry matching a larger share of the words SHALL rank above one matching fewer; at equal share, a match on the title (whole or a prefix) SHALL rank above a match on a synonym, which SHALL rank above a match on a kind word, which SHALL rank above a match in the description. Between kinds, a group whose best entry matches a larger share of the words SHALL come first; groups with equal shares keep the order above.
 
 #### Scenario: Title first
 - **WHEN** a Pro types "arena"

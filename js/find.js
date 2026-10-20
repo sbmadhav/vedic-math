@@ -186,6 +186,9 @@ const tokScore = (e, tok) => Math.max(10 * hit(e.t, tok), 8 * hit(e.s, tok), 6 *
 export const score = (e, toks) => toks.reduce((n, tok) => n + tokScore(e, tok), 0);
 /* The share of the query's tokens that match the entry somewhere, 0 to 1 */
 export const share = (e, toks) => (toks.length ? toks.filter(tok => tokScore(e, tok) > 0).length / toks.length : 0);
+/* The strongest field any token matches: 3 title, 2 synonym, 1 kind word, 0 description or none. At an equal share it
+   ranks before the summed score, so a prefix of the title still beats a whole synonym. */
+export const field = (e, toks) => toks.reduce((best, tok) => Math.max(best, hit(e.t, tok) ? 3 : hit(e.s, tok) ? 2 : hit(e.k || [], tok) ? 1 : 0), 0);
 /* An entry is listed when every query word matches it, or when at least half of them do and one of those is in its
    title, synonyms or kind words (not only its description): "multiply big numbers" lists the Tricks that say multiply
    and numbers, and one stray word does not empty the page. Entries matching more words come first. */
@@ -215,12 +218,15 @@ export function rank(index, query, { per = 8 } = {}) {
   const top = [...new Set(intentsOf(query).flatMap(it => it.ids))].map(id => byId.get(id)).filter(Boolean).slice(0, per);
   const pinned = new Set(top.map(e => e.id));
   const groups = top.length ? [{ kind: 'top', items: top, best: 2 }] : [];
-  if (toks.length) {
-    const scored = index.filter(e => !pinned.has(e.id)).filter(e => listed(e, toks)).map(e => [share(e, toks), score(e, toks), e]);
+  /* Only ignored words ("me", "how"): an entry whose whole title is the query still counts, so "Me" finds Me */
+  const exact = !toks.length && !top.length ? index.filter(e => normalize(e.title) === normalize(query)) : [];
+  if (toks.length || exact.length) {
+    const words = toks.length ? toks : normalize(query).split(' ');
+    const scored = (toks.length ? index.filter(e => !pinned.has(e.id) && listed(e, toks)) : exact).map(e => [share(e, words), field(e, words), score(e, words), e]);
     const kinds = [];
     for (const kind of KINDS) {
-      const items = scored.filter(([, , e]) => e.kind === kind).sort((a, b) => b[0] - a[0] || b[1] - a[1] || a[2].title.length - b[2].title.length).slice(0, per);
-      if (items.length) kinds.push({ kind, items: items.map(([, , e]) => e), best: items[0][0] });
+      const items = scored.filter(x => x[3].kind === kind).sort((a, b) => b[0] - a[0] || b[1] - a[1] || b[2] - a[2] || a[3].title.length - b[3].title.length).slice(0, per);
+      if (items.length) kinds.push({ kind, items: items.map(x => x[3]), best: items[0][0] });
     }
     groups.push(...kinds.sort((a, b) => b.best - a.best)); /* a stable sort: equal shares stay in KINDS order */
   }
