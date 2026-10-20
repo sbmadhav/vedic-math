@@ -62,7 +62,10 @@ jobs:
 
       - name: Build the preview
         if: steps.token.outputs.present == 'true'
-        run: python3 build.py --preview --out _site
+        # Same voice mode as production (ci.yml): with R2 not set up there is no voice host, so read aloud uses the device voice
+        env:
+          VOICE: ${{ vars.R2_ACCOUNT_ID != '' && 'r2' || 'off' }}
+        run: python3 build.py --preview --out _site --voice "$VOICE"
 
       - name: Upload a preview version
         if: steps.token.outputs.present == 'true'
