@@ -192,7 +192,7 @@ for (const width of [320, 375, 768]) {
         expect(await page.locator('header .mq-nav').evaluate(n => n.scrollWidth <= n.clientWidth)).toBe(true);
         if (width < 600) {
           // Labels give way to icons on phones, and each icon keeps its name
-          await expect(page.locator('#exploreBtn')).toHaveAttribute('aria-label', /Explore/);
+          await expect(page.locator('#exploreBtn')).toHaveAccessibleName('Star map of all pages'); // Challenger wording
           await expect(page.locator('#vmMBtn .lbl')).toBeHidden();
           await expect(page.locator('#vmMBtn')).toHaveAttribute('aria-label', 'Calm music');
         }

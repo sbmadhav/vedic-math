@@ -277,7 +277,7 @@ test.describe('Medals from saved stars', () => {
     await expect(page.locator('a.lv-node[href="#/kata/sq5/2"]')).toBeVisible();
     await open(page, '#/me');
     await expect(page.locator('.me-head')).toContainText('Times Tamer · 2340 Sparks');
-    await expect(page.locator('#mqChip a.mq-chip')).toHaveAttribute('aria-label', 'Swift Tiger 42, Times Tamer');
+    await expect(page.locator('#mqChip a.mq-chip')).toHaveAccessibleName('Swift Tiger 42, Times Tamer');
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1')!));
     expect(saved.v).toBe(3);
     expect(saved.sparks).toBe(2340);

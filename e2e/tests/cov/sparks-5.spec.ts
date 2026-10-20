@@ -32,12 +32,12 @@ test('the eleven Titles start at their Sparks thresholds', async ({ page }) => {
     // Exactly at the threshold: this Title
     await loadWith(page, v3(from));
     await expect(head.locator('p').first()).toHaveText(`${title} · ${from} Sparks`);
-    await expect(chip).toHaveAttribute('aria-label', `Swift Tiger 42, ${title}`);
+    await expect(chip).toHaveAccessibleName(`Swift Tiger 42, ${title}`);
     // One Spark short: still the Title before
     if (i > 0) {
       await loadWith(page, v3(from - 1));
       await expect(head.locator('p').first()).toHaveText(`${TITLES[i - 1][1]} · ${from - 1} Sparks`);
-      await expect(chip).toHaveAttribute('aria-label', `Swift Tiger 42, ${TITLES[i - 1][1]}`);
+      await expect(chip).toHaveAccessibleName(`Swift Tiger 42, ${TITLES[i - 1][1]}`);
     }
   }
   // Far past the top threshold: still Vedic Legend, the top Title
@@ -69,13 +69,13 @@ test.describe('a Player who was "Level 6 · Sum Sprinter" loads the app after th
       await expect(head).not.toContainText(/\bXP\b/);
       // The nav chip names the Title with no level number, and shows no digits at all
       const chip = page.locator('#mqChip a.mq-chip');
-      await expect(chip).toHaveAttribute('aria-label', 'Swift Tiger 42, Sum Sprinter');
-      expect(await chip.textContent()).not.toMatch(/\d/);
+      await expect(chip).toHaveAccessibleName('Swift Tiger 42, Sum Sprinter');
+      expect(await chip.evaluate(e => [...e.children].filter(c => !c.classList.contains('md-sr-only')).map(c => c.textContent).join(''))).not.toMatch(/\d/); // on screen: the avatar and the bar (the name is for screen readers)
       // No "Level 6" anywhere on the Me page or the home page
       await expect(page.locator('body')).not.toContainText(/Level\s*6/i);
       await page.goto('/vedic-math/');
       await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
-      await expect(page.locator('#mqChip a.mq-chip')).toHaveAttribute('aria-label', 'Swift Tiger 42, Sum Sprinter');
+      await expect(page.locator('#mqChip a.mq-chip')).toHaveAccessibleName('Swift Tiger 42, Sum Sprinter');
       await expect(page.locator('body')).not.toContainText(/Level\s*6\b/i);
       // The saved record now holds the same total as Sparks
       const d = await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1')!));

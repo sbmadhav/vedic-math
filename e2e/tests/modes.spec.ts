@@ -29,6 +29,8 @@ test.describe('mode picker', () => {
       // (checked by computed style: the label itself is hidden on narrow screens)
       const shown = await page.locator('#exploreBtn .xp-lbl > span').evaluateAll(els => els.filter(e => getComputedStyle(e).display !== 'none').map(e => e.textContent));
       expect(shown).toEqual([m.explore]);
+      // The button's name starts with the word on screen, at every width (WCAG 2.5.3 Label in Name)
+      await expect(page.locator('#exploreBtn')).toHaveAccessibleName(`${m.explore}${m.kid ? ' of' : ''} all pages`);
       // Explorer hides the Dojo and Sutras tabs
       const dojo = page.locator('.mq-nav a[href="#/dojo"]');
       if (m.id === 'explorer') await expect(dojo).toBeHidden(); else await expect(dojo).toBeVisible();
