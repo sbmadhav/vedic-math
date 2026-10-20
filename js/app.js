@@ -171,7 +171,8 @@ function modePicker({ signal } = {}) {
   </div></section>`;
   view.querySelectorAll('[data-mode]').forEach(b => on(b, 'click', () => { fx.sfx('level'); fx.setMode(b.dataset.mode); gm.startDay(); fx.confetti(60); location.hash = afterPick(b.dataset.mode); render(); }, signal));
   /* Try a trick (openspec first-visit): Challenger as a guess, then the first Star of Bolt's path, the one Home offers */
-  on($('#tryBtn'), 'click', () => { fx.setMode('challenger', { guess: true }); gm.startDay(); metrics.tryStart(); location.hash = firstStarHref(); }, signal);
+  /* The trial Star teaches before it asks (openspec try-trick-teaches): starView shows the worked example once for this route */
+  on($('#tryBtn'), 'click', () => { fx.setMode('challenger', { guess: true }); gm.startDay(); metrics.tryStart(); location.hash = starView.introFor = firstStarHref(); }, signal);
 }
 /* Where a Mode card goes: the page the visitor asked for before picking (a Find result, a link), when it is a route
    in this app the picked Mode can open (one of its Find entries), else Home. Kept in memory only, never stored. */
@@ -599,6 +600,9 @@ const dojoStars = t => (fx.mode() === 'explorer' ? '' : `<span class="dojo-stars
 function starView(trick, n, { signal } = {}, back = null) {
   const t = TRICKS.find(x => x.id === trick); if (!t || !(n >= 1 && n <= 3)) return dojoView();
   const from = render.from || '';
+  /* Try a trick's Star opens on the Trick worked once (openspec try-trick-teaches); in memory, once, so Play again,
+     a reload or the same Star from Home goes straight to the first question */
+  const intro = starView.introFor === `#/star/${trick}/${n}`; starView.introFor = null;
   /* For a Player whose home is the Sky, Back always goes to the Sky (which then focuses this Star) */
   /* Opened from Home or the landing's Try a trick (openspec first-visit): Back goes home, not to the Dojo's long map */
   back = back || (SKY.skyOn(store.player()) ? { href: '#/', label: 'Back to the Sky' } : from === '#/skill/v-' + trick ? { href: from, label: `Back to ${t.title}` } : /^#?\/?$/.test(from) && from !== '' ? { href: '#/', label: 'Back home' } : { href: '#/dojo', label: 'Back to the Dojo' });
@@ -608,7 +612,7 @@ function starView(trick, n, { signal } = {}, back = null) {
   /* The round plays in the full-screen shell (openspec game-shell-and-calm); Back leaves the Star */
   const play = openShell(`Star ${n}: ${t.title}`, { signal, exit: 'Back', exitId: 'stExit', onExit: () => { location.hash = back.href; } });
   play.area.id = 'star';
-  return runStar(play.area, { trick, star: n, signal, back, again: () => mount(ctx => starView(trick, n, ctx, back)), findVideo: starVideo });
+  return runStar(play.area, { trick, star: n, signal, back, again: () => mount(ctx => starView(trick, n, ctx, back)), findVideo: starVideo, intro });
 }
 /* star-round's findVideo seam: the Trick's hand-matched video (null offline or when the list fails to load), opened
    in the in-page player. open(opener) resolves when the player closes. */

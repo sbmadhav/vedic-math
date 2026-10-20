@@ -25,9 +25,11 @@ test.describe('the landing', () => {
     await expect(page.locator('.pick-h')).toHaveText('Or pick who is playing');
     await page.locator('#tryBtn').click(); // tap 1
     await expect(page).toHaveURL(/#\/star\/[\w-]+\/1$/);
+    await expect(page.locator('#stStart')).toBeFocused(); // the Trick worked once (openspec try-trick-teaches)
+    await page.locator('#stStart').click(); // tap 2
     await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
     await expect(page.locator('.star-key[data-k="7"]')).toBeVisible();
-    await page.locator('.star-key[data-k="7"]').click(); // tap 2: the first answer digit
+    await page.locator('.star-key[data-k="7"]').click(); // tap 3: the first answer digit
     await expect(page.locator('#stOut')).toContainText('7');
     expect(await player(page)).toMatchObject({ mode: 'challenger', modeGuess: true });
     expect((await events(page)).filter(e => e.startsWith('math/try/'))).toEqual(['math/try/start']);
@@ -61,6 +63,7 @@ test.describe('the landing', () => {
   test('Back from the trial Star goes Home, where the mode line names the guess; picking on Me clears it', async ({ page }) => {
     await page.goto(APP);
     await page.locator('#tryBtn').click();
+    await page.locator('#stStart').click();
     await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
     await expect(page.locator('#stExit')).toBeVisible();
     await page.locator('#stExit').click();

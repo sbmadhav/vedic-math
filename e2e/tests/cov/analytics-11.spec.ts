@@ -15,6 +15,7 @@ test.describe('a new visitor', () => {
   test("Try a trick: math/try/start is sent once, followed by the Star's route view", async ({ page }) => {
     await page.goto(APP);
     await page.locator('#tryBtn').click();
+    await page.locator('#stStart').click();
     await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
     const paths = (await events(page)).map(([p]) => p);
     expect(paths.filter(p => p.startsWith('math/try/'))).toEqual(['math/try/start']);
