@@ -22,7 +22,7 @@ async function recordSpeech(page: Page) {
   });
 }
 const said = (page: Page) => page.evaluate(() => ((window as any).__said as string[]).join(' '));
-const words = (page: Page, html: string) => page.evaluate(async h => (await import('/vedic-math/js/voice.js' as string)).normalize(h) as string, html);
+const words = (page: Page, html: string) => page.evaluate(async h => (await import('/js/voice.js' as string)).normalize(h) as string, html);
 
 test.describe('Explorer', () => {
   test.use({ seedMode: 'explorer' });

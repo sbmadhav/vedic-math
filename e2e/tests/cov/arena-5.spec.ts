@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, appErrors, type Page, typeAnswer } from '../fixtures';
+import { test, expect, APP, open, cloudLog, appErrors, type Page, typeAnswer, needsWorldBoards } from '../fixtures';
 
 /* arena spec:
    - Arena Practice rounds adapt / Practice is not posted: an Arena Practice round that ends, played by a Player
@@ -78,6 +78,7 @@ test.describe('Practice is not posted', () => {
   });
 
   test('control: the same Player finishing a Daily round does post to today\'s and this week\'s boards', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await clockAt(page, NOW);
     await open(page, '#/arena');
     await startRound(page, 'daily');
@@ -99,7 +100,7 @@ test.describe('Challenger daily', () => {
     await expect(page.locator('.g-best')).toContainText('League: Challenger');
     // The expected set, built from the pre-change daily seed and checked against the Challenger pool
     const items = await page.evaluate(async day => {
-      const A = await import('/vedic-math/js/arena.js' as string);
+      const A = await import('/js/arena.js' as string);
       const html = (h: string) => { const d = document.createElement('div'); d.innerHTML = h; return d.innerHTML; };
       const daily = A.dailySet('challenger', day), old = A.makeSet('challenger', `daily-${day}-challenger`);
       return { same: JSON.stringify(daily) === JSON.stringify(old), list: daily.map((q: any) => ({ q: html(q.q), answer: q.answer, skill: q.skill, d: q.d ?? null })) };

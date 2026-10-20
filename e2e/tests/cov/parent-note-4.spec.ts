@@ -15,7 +15,7 @@ const SUMMARY: Record<Mode, string> = {
 
 const SPARKS_POSTED = 'Sparks come from all play, Practice included, so practice adds to that posted weekly total.';
 const PRACTICE_LOCAL = 'Practice scores themselves never leave this device.';
-const VIDEO = "Videos play from YouTube in privacy-enhanced mode, and YouTube's own rules apply once one plays.";
+const VIDEO = "Video pictures come from this site, and a video loads from YouTube, in privacy-enhanced mode, only after a player presses play; YouTube's own rules apply once it plays.";
 
 async function openNote(page: Page, mode: Mode) {
   const note = page.locator('#view details.pn', { has: page.locator('summary', { hasText: SUMMARY[mode] }) }).first();

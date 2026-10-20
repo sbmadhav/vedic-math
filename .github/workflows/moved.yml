@@ -1,0 +1,57 @@
+name: Moved page (Phase B)
+
+# Publishes the Phase B "Vedic Math has moved" page to https://sbmadhav.com/vedic-math/ through this repo's GitHub
+# Pages (openspec change learnvedicmath, design D8, D9, D13; task 16.1). Run by hand on launch day, once
+# learnvedicmath.com is live: python3 build.py --target moved builds index.html and 404.html (the moved page), its
+# packer and the hand-off schema, and sw.js with KILL = true, which retires the old app's service worker. Needs
+# Settings > Pages > Source set to "GitHub Actions" (it is today). On GitHub Pro, Pages keep serving after the repo goes
+# private (owner, L2).
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type MOVED to replace the old app at sbmadhav.com/vedic-math/ with the moved page'
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: inputs.confirm == 'MOVED'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.x"
+      - name: Build the moved page
+        run: |
+          # The moved page and its hand-off packer are task 10.4 (Phase B); until they exist nothing is built or deployed
+          test -f moved/index.html || { echo "::error::moved/index.html is not written yet (task 10.4): nothing to publish"; exit 1; }
+          python3 build.py --target moved --out _moved
+          grep -q "^const KILL = true;" _moved/sw.js || { echo "::error::_moved/sw.js is not the KILL worker"; exit 1; }
+          find _moved -type f | sort
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: _moved
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

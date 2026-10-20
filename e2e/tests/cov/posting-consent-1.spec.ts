@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog, heldClock } from '../fixtures';
+import { test, expect, open, cloudLog, heldClock, needsWorldBoards } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* posting-consent spec, "Age answer before the first post":
@@ -43,6 +43,7 @@ test.describe('ranked game round, Player with no Age answer', () => {
   test.use({ seedMode: 'challenger', seedConsent: null });
 
   test('the age question comes before any post, dismissing posts nothing, the next round asks again', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     test.setTimeout(90_000);
     await heldClock(page);
     await open(page, '#/game/times-sprint');
@@ -82,6 +83,7 @@ test.describe('ranked game round, Player with no Age answer', () => {
   });
 
   test('answered under 13: nothing is posted and the Score stays on the Device board', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     test.setTimeout(60_000);
     await heldClock(page);
     await open(page, '#/game/times-sprint');

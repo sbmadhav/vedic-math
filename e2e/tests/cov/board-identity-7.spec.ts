@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog, type Page } from '../fixtures';
+import { test, expect, open, cloudLog, type Page, needsWorldBoards } from '../fixtures';
 
 /* openspec board-identity: "Existing shared identity stays with the first Player".
    A device from before Players had their own identity holds the shared id in vm.cloudUid, and its
@@ -19,7 +19,7 @@ async function seedLegacy(page: Page, second: boolean) {
     if (b) { const P = JSON.parse(localStorage.getItem('vm.players')!); P.list.push(b); localStorage.setItem('vm.players', JSON.stringify(P)); }
   }, [LEGACY, second ? B : null] as const);
 }
-const weekId = (page: Page) => page.evaluate(async () => (await import('/vedic-math/js/cloud.js' as string)).weekId() as string);
+const weekId = (page: Page) => page.evaluate(async () => (await import('/js/cloud.js' as string)).weekId() as string);
 const stored = (page: Page) => page.evaluate(() => ({
   uids: JSON.parse(localStorage.getItem('vm.cloudUids') || '{}') as Record<string, string>,
   legacy: localStorage.getItem('vm.cloudUid'),
@@ -35,6 +35,7 @@ test.describe('existing shared identity stays with the first Player', () => {
   test.use({ seedConsent: { age: 'adult' } });
 
   test('single-Player device: the post after the update is filed under the same identity, and none is created', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await seedLegacy(page, false);
     await page.clock.install();
     await open(page, '#/sutras');
@@ -52,11 +53,12 @@ test.describe('existing shared identity stays with the first Player', () => {
   });
 
   test('second Player: their post creates a new identity, and the first Player\'s entries are not changed', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     await seedLegacy(page, true);
     await page.clock.install();
     await open(page, '#/sutras');
     const wk = await weekId(page);
-    await page.evaluate(async id => (await import('/vedic-math/js/store.js' as string)).switchPlayer(id), PB);
+    await page.evaluate(async id => (await import('/js/store.js' as string)).switchPlayer(id), PB);
     await open(page, '#/sutras');
     await earnAndPost(page);
     await expect.poll(async () => (await cloudLog(page)).writes.length).toBe(1);
@@ -72,7 +74,7 @@ test.describe('existing shared identity stays with the first Player', () => {
     expect(s.legacy).toBe(LEGACY); // the shared identity still belongs to the first Player
     expect(s.auth['[DEFAULT]']).toBe(LEGACY);
     expect(await page.evaluate(async () => {
-      const [cloud, store] = await Promise.all([import('/vedic-math/js/cloud.js' as string), import('/vedic-math/js/store.js' as string)]);
+      const [cloud, store] = await Promise.all([import('/js/cloud.js' as string), import('/js/store.js' as string)]);
       return cloud.savedUid(store.allPlayers().find((p: { id: string }) => p.id === 'p1'));
     })).toBe(LEGACY);
   });

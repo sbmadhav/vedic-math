@@ -21,14 +21,14 @@ const vid = (id: string, yt: string, o: Partial<V>): V => ({ id, title: `Fixture
 
 /** Serves a fixed list in place of js/videos.js (any ?v= stamp). */
 async function serveList(page: Page, videos: V[]) {
-  await page.route(/\/vedic-math\/js\/videos\.js(\?.*)?$/, r => r.fulfill({ status: 200, contentType: 'text/javascript',
+  await page.route(/\/js\/videos\.js(\?.*)?$/, r => r.fulfill({ status: 200, contentType: 'text/javascript',
     body: `export const VIDEOS = ${JSON.stringify(videos)};\nexport const LINKS = [];\n` }));
 }
 
 const cards = (page: Page) => page.locator('#view button.watch-card');
 const chip = (page: Page, group: string, name: string) => page.getByRole('group', { name: group, exact: true }).getByRole('button', { name, exact: true });
 const shownIds = (page: Page) => cards(page).evaluateAll(els => els.map(e => (e as HTMLElement).dataset.watch || ''));
-const realList = (page: Page) => page.evaluate(async () => (await import('/vedic-math/js/videos.js' as string)).VIDEOS as V[]);
+const realList = (page: Page) => page.evaluate(async () => (await import('/js/videos.js' as string)).VIDEOS as V[]);
 const challengerSees = (v: V) => v.modes.some(m => m === 'challenger' || m === 'explorer') && !v.critique;
 const proSees = (v: V) => v.modes.some(m => m === 'pro' || m === 'challenger');
 

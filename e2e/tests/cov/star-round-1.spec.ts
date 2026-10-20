@@ -11,7 +11,7 @@ const lastKeys = (page: Page) => page.evaluate(() => JSON.parse(localStorage.get
 
 /** The n of every n² in the given Katas of Square numbers ending in 5, read from the app's own seeded Katas */
 const kataBases = (page: Page, a: number, b: number) => page.evaluate(async ([a, b]) => {
-  const L = await import('/vedic-math/js/levels.js' as string);
+  const L = await import('/js/levels.js' as string);
   const out: number[] = [];
   for (let n = a; n <= b; n++) for (const p of L.kata('sq5', n).problems) out.push(p.vals[0]);
   return out;
@@ -49,7 +49,7 @@ test.describe('Count', () => {
     // Every Star is open on a fresh start: none is locked
     await expect(page.locator('.dojo-star--open')).toHaveCount(63);
     // The app's own list of Tricks agrees: 21 Tricks
-    const tricks = await page.evaluate(async () => (await import('/vedic-math/js/vedic.js' as string)).TRICKS.map((t: { id: string }) => t.id));
+    const tricks = await page.evaluate(async () => (await import('/js/vedic.js' as string)).TRICKS.map((t: { id: string }) => t.id));
     expect(tricks).toHaveLength(21);
     expect([...byTrick.keys()].sort()).toEqual([...tricks].sort());
   });

@@ -1,37 +1,31 @@
-import { test, expect, APP, open, cloudLog, showWorld } from '../fixtures';
+import { test, expect, APP, open, cloudLog, policyOf, showWorld, needsWorldBoards } from '../fixtures';
 import type { Page } from '@playwright/test';
 
-/* content-security spec, Requirements "Only the origins the app uses are allowed" and "Leaderboard hosts follow the
-   configuration": one test per scenario. Skips against the unbuilt source (no policy). YouTube is answered with an
-   empty page and the Firebase SDK is the fixtures' fake served from its real gstatic URL, so script-src is checked. */
+/* content-security spec (change learnvedicmath), Requirements "Only the origins the app uses are allowed" and
+   "Leaderboard hosts follow the configuration": one test per scenario. Skips against a server that sends no policy.
+   YouTube is answered with an empty page and the Firebase SDK is the fixtures' fake, served at its /vendor/firebase/
+   URL on this site, so script-src is checked. */
 
 type Violation = { directive: string; blocked: string; source: string };
 async function watchViolations(page: Page) {
   await page.addInitScript(() => {
     const w = window as any; w.__csp = [];
     document.addEventListener('securitypolicyviolation', (e: SecurityPolicyViolationEvent) => {
+      if (e.disposition === 'report') return; // the stricter Report-Only policy only reports
       w.__csp.push({ directive: e.effectiveDirective || e.violatedDirective, blocked: e.blockedURI, source: `${e.sourceFile}:${e.lineNumber}` });
     });
   });
   const console: string[] = [];
-  page.on('console', m => { if (/Content.Security.Policy|Refused to/i.test(m.text())) console.push(m.text()); });
+  page.on('console', m => { if (/Content.Security.Policy|Refused to/i.test(m.text()) && !/report.only/i.test(m.text())) console.push(m.text()); });
   return { console, list: () => page.evaluate(() => ((window as any).__csp || []) as Violation[]) };
 }
 async function none(page: Page, v: Awaited<ReturnType<typeof watchViolations>>, where: string) {
   expect(await v.list(), `securitypolicyviolation events on ${where}`).toEqual([]);
   expect(v.console, `CSP console messages on ${where}`).toEqual([]);
 }
-async function policy(page: Page, baseURL?: string) {
-  const meta = page.locator('meta[http-equiv="Content-Security-Policy"]');
-  // The build adds an import map: skip only the unbuilt source, so a build that lost its policy fails here
-  const built = await page.locator('script[type="importmap"]').count() > 0;
-  if (!/^https:/.test(baseURL || '') && !built) test.skip(true, 'Unbuilt source (no import map): serve a build');
-  await expect(meta).toHaveCount(1);
-  return (await meta.getAttribute('content'))!;
-}
+const policy = policyOf;
 async function noYouTube(page: Page) {
   await page.route(/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>video</title>' }));
-  await page.route(/^https:\/\/i\.ytimg\.com\//, r => r.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg"/>' }));
 }
 test.beforeEach(async ({ page }) => { await noYouTube(page); });
 
@@ -68,7 +62,7 @@ test('The natural voice worker: started from its import map URL it runs with no 
   await policy(page, baseURL);
   const started = await page.evaluate(() => new Promise<string>(resolve => {
     const map = JSON.parse(document.querySelector('script[type="importmap"]')?.textContent || '{"imports":{}}').imports;
-    const url = map['/vedic-math/js/voice-worker.js'] || '/vedic-math/js/voice-worker.js';
+    const url = map['/js/voice-worker.js'] || '/js/voice-worker.js';
     try {
       const w = new Worker(url, { type: 'module' });
       w.onerror = e => resolve('error: ' + (e.message || 'worker failed'));
@@ -85,6 +79,7 @@ test('The natural voice worker: started from its import map URL it runs with no 
 test.describe('a Player 13 or over', () => {
   test.use({ seedConsent: { age: 'adult' } });
 test('World boards: the Arena World board loads through the Firebase SDK with no violation', async ({ page, baseURL }) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   const v = await watchViolations(page);
   await open(page, '#/arena');
   await policy(page, baseURL);
@@ -97,8 +92,14 @@ test('World boards: the Arena World board loads through the Firebase SDK with no
 test('Leaderboards off: the policy lists the Firebase hosts only while js/cloud-config.js configures them', async ({ page, baseURL }) => {
   await open(page);
   const csp = await policy(page, baseURL);
-  const configured = await page.evaluate(async () => { const m: any = await import('/vedic-math/js/cloud-config.js' as string); return !!m.FIREBASE; });
-  const names = /firestore\.googleapis\.com|identitytoolkit\.googleapis\.com|securetoken\.googleapis\.com|gstatic\.com\/firebasejs/;
+  const configured = await page.evaluate(async () => { const m: any = await import('/js/cloud-config.js' as string); return !!m.FIREBASE; });
+  const names = /firestore\.googleapis\.com|identitytoolkit\.googleapis\.com|securetoken\.googleapis\.com/;
   // test/build.test.mjs builds with FIREBASE = null and checks the policy then lists no Firebase or Google host
   expect(names.test(csp)).toBe(configured);
+});
+
+test('The landing page: its policy lists no Firebase, Google or YouTube host', async ({ page, baseURL }) => {
+  const csp = await policy(page, baseURL, '/');
+  expect(csp).not.toMatch(/google|gstatic|firebase|youtube/);
+  for (const gone of ['i.ytimg.com', 'gc.zgo.at', 'sbmadhav.com']) expect(csp).not.toContain(gone);
 });

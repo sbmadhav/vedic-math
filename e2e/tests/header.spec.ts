@@ -1,87 +1,69 @@
-import { test, expect, open, openExplore, chromiumOnly } from './fixtures';
+import { test, expect, open } from './fixtures';
 
-/* The site header (openspec site-header): Vedic Math's header looks and behaves like the header on the rest of
-   sbmadhav.com (the home page's): one sticky bar with the brand, the section nav, Explore, the round color scheme
-   button and music, in that order. Vedic Math has no kid mode switch; its Player chip sits where the home page has it. */
+/* The site header (openspec site-header, change learnvedicmath): every page, the game included, uses the Learn Vedic
+   Math header from theme/header.html (design system 2.1.0's header without Explore): one sticky bar with the brand
+   (linking to /?home), the page's nav, the round color scheme button, and in the game the music pill and the Player
+   chip last. No Explore button and no kid mode switch. */
 
 type Page = import('@playwright/test').Page;
 
-/* The header's controls in order, by kind. Works on the home page (the design system's md-header since v2.1, whose
-   music and kid mode switch sit in an .md-header-end group) and on Vedic Math (header.top). */
+/* The header's controls in order, by kind */
 const kinds = (page: Page) => page.evaluate(() => {
-  const wrap = document.querySelector('body > header .wrap, body > header .md-wrap')!;
+  const wrap = document.querySelector('body > header .md-wrap')!;
   const parts = [...wrap.children].flatMap(e => e.matches('.md-header-end') ? [...e.children] : [e]);
   return parts.map(e => {
-    if (e.matches('.logo, .home, .md-brand')) return 'brand';
+    if (e.matches('.md-brand')) return 'brand';
     if (e.matches('nav')) return 'nav';
-    if (e.matches('#exploreBtn')) return 'explore';
+    if (e.matches('#exploreBtn, .xp-btn')) return 'explore';
     if (e.matches('#themeBtn')) return 'theme';
-    if (e.matches('.music, #mqMusic, .md-music')) return 'music';
-    if (e.matches('#modeToggle')) return 'kid-mode';
+    if (e.matches('#mqMusic')) return 'music';
     if (e.matches('#mqChip')) return 'player';
     return 'other:' + (e.id || e.className);
-  });
-});
-
-/* The look of the bar and its shared controls, for comparing the two pages */
-const look = async (page: Page) => { await page.evaluate(() => document.fonts.ready); return page.evaluate(() => {
-  const h = document.querySelector('body > header')!, cs = getComputedStyle(h);
-  const size = (sel: string) => { const e = document.querySelector(sel); if (!e) return null; const r = e.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height)]; };
-  const theme = document.querySelector('#themeBtn')!;
-  return {
-    position: cs.position, top: cs.top, height: Math.round(h.getBoundingClientRect().height), background: cs.backgroundColor,
-    border: `${cs.borderBottomWidth} ${cs.borderBottomStyle} ${cs.borderBottomColor}`, backdrop: cs.backdropFilter || (cs as any).webkitBackdropFilter,
-    logo: size('body > header svg'), explore: size('#exploreBtn'), theme: size('#themeBtn'), themeRadius: getComputedStyle(theme).borderRadius,
-  };
-}); };
-
-test.describe('compared with the home page', () => {
-  // Pro wording, so Explore reads "Explore" as on the home page (Explorer and Challenger read "Star map")
-  test.use({ seedMode: 'pro' });
-  test('the header has the same parts, in the same order and look, as the home page of sbmadhav.com', async ({ page }, testInfo) => {
-    chromiumOnly(testInfo, 'compares with the live home page once');
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto('/');
-    await expect(page.locator('#themeBtn')).toBeVisible();
-    const site = await kinds(page), siteLook = await look(page);
-    await open(page);
-    const vm = await kinds(page), vmLook = await look(page);
-    // Same order of the shared parts; the home page's kid mode switch is the only part Vedic Math leaves out (CLAUDE.md),
-    // and the Player chip is the only part it adds, in the same last place
-    expect(vm.filter(k => k !== 'player')).toEqual(site.filter(k => k !== 'kid-mode'));
-    expect(vm.at(-1)).toBe('player');
-    expect(site.at(-1)).toBe('kid-mode');
-    expect(vmLook).toEqual(siteLook);
   });
 });
 
 test.describe('wide screen', () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
-  test('one sticky row: brand, nav, Explore, color scheme, music, Player chip', async ({ page }) => {
+  test('one sticky row: brand, nav, color scheme, music, Player chip, and no Explore', async ({ page }) => {
     await open(page);
-    expect(await kinds(page)).toEqual(['brand', 'nav', 'explore', 'theme', 'music', 'player']);
-    const header = page.locator('header.top');
+    expect(await kinds(page)).toEqual(['brand', 'nav', 'theme', 'music', 'player']);
+    await expect(page.locator('#exploreBtn, .xp-btn')).toHaveCount(0);
+    const header = page.locator('body > header.md-header');
     await expect(header).toHaveCSS('position', 'sticky');
-    const tops = await page.evaluate(() => ['.home', '.mq-nav', '#exploreBtn', '#themeBtn', '#vmMBtn', '#mqChip a']
+    const tops = await page.evaluate(() => ['.md-brand', '.mq-nav', '#themeBtn', '#vmMBtn', '#mqChip a']
       .map(s => { const r = document.querySelector(s)!.getBoundingClientRect(); return Math.round(r.top + r.height / 2); }));
     for (const t of tops) expect(Math.abs(t - tops[0])).toBeLessThanOrEqual(2);
     expect((await header.boundingBox())!.height).toBeLessThanOrEqual(68);
-    // The music control is a pill with its label, like the home page's
     await expect(page.locator('#vmMBtn .lbl')).toHaveText('Music');
     await expect(page.locator('#vmMBtn .lbl')).toBeVisible();
     // Stays at the top while the page scrolls
     await page.mouse.wheel(0, 1200);
     await expect.poll(() => header.evaluate(e => Math.round(e.getBoundingClientRect().top))).toBe(0);
   });
-});
 
-test('Explore opens the site menu from the header', async ({ page }) => {
-  await open(page);
-  const dlg = await openExplore(page);
-  await expect(dlg.locator('a[href="/vedic-math/"]').first()).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(dlg).toBeHidden();
+  test('the brand says Learn Vedic Math and opens the landing page, which stays', async ({ page }) => {
+    await open(page);
+    const brand = page.locator('body > header .md-brand');
+    await expect(brand).toHaveAttribute('aria-label', 'Learn Vedic Math, home');
+    await expect(brand).toHaveAttribute('href', '/?home');
+    await expect(brand).toContainText('Learn Vedic Math');
+    await brand.click();
+    await expect(page).toHaveURL(/\/\?home$/);
+    await expect(page.locator('main h1')).toBeVisible();
+    await page.waitForTimeout(300);
+    await expect(page).toHaveURL(/\/\?home$/);
+  });
+
+  test('the landing page has the same header with Play and the grown-up pages, and no Explore', async ({ page }) => {
+    await page.goto('/?home');
+    expect(await kinds(page)).toEqual(['brand', 'nav', 'theme']);
+    const nav = page.locator('body > header nav');
+    for (const [name, href] of [['Play', '/play/'], ['For parents', '/parents/'], ['For teachers', '/teachers/']])
+      await expect(nav.getByRole('link', { name, exact: true })).toHaveAttribute('href', href);
+    await expect(page.locator('#exploreBtn, .xp-btn')).toHaveCount(0);
+    await expect(page.locator('body > header.md-header')).toHaveCSS('position', 'sticky');
+  });
 });
 
 test.describe('color scheme button', () => {
@@ -92,19 +74,19 @@ test.describe('color scheme button', () => {
     await open(page);
     const btn = page.locator('#themeBtn');
     await expect(page.locator('html')).not.toHaveAttribute('data-theme', /./);
-    await expect(btn.locator('.sun')).toBeVisible();
-    await expect(btn.locator('.moon')).toBeHidden();
+    await expect(btn.locator('.md-theme-sun')).toBeVisible();
+    await expect(btn.locator('.md-theme-moon')).toBeHidden();
     await expect(btn).toHaveAttribute('aria-label', 'Switch to Deep Space (dark) scheme');
     const light = await bg(page);
     await btn.click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-    await expect(btn.locator('.moon')).toBeVisible();
+    await expect(btn.locator('.md-theme-moon')).toBeVisible();
     await expect(btn).toHaveAttribute('aria-label', 'Switch to Daybreak (light) scheme');
     expect(await bg(page)).not.toBe(light);
     expect(await page.evaluate(() => localStorage.getItem('theme'))).toBe('dark');
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-    await expect(page.locator('#themeBtn .moon')).toBeVisible();
+    await expect(page.locator('#themeBtn .md-theme-moon')).toBeVisible();
     // The browser bar color follows the scheme
     const meta = await page.locator('meta[name="theme-color"]').getAttribute('content');
     expect(meta?.toLowerCase()).toBe((await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--bg').trim())).toLowerCase());
@@ -119,11 +101,11 @@ test.describe('color scheme button', () => {
     await page.emulateMedia({ colorScheme: 'dark' });
     await open(page);
     const btn = page.locator('#themeBtn');
-    await expect(btn.locator('.moon')).toBeVisible();
+    await expect(btn.locator('.md-theme-moon')).toBeVisible();
     await expect(btn).toHaveAttribute('title', /following your system/);
     const darkSys = await bg(page);
     await page.emulateMedia({ colorScheme: 'light' });
-    await expect(btn.locator('.sun')).toBeVisible();
+    await expect(btn.locator('.md-theme-sun')).toBeVisible();
     const lightSys = await bg(page);
     expect(darkSys).not.toBe(lightSys);
     await btn.click();
@@ -132,12 +114,12 @@ test.describe('color scheme button', () => {
     expect(await page.evaluate(() => localStorage.getItem('theme'))).toBe('dark');
   });
 
-  test('the choice is the same one the rest of sbmadhav.com saves', async ({ page }) => {
+  test('the choice is saved under theme and applied before the page paints', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'light' });
     await page.addInitScript(() => { try { if (!sessionStorage.getItem('seeded')) { localStorage.setItem('theme', 'dark'); sessionStorage.setItem('seeded', '1'); } } catch (e) { /* storage blocked */ } });
     await open(page);
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-    await expect(page.locator('#themeBtn .moon')).toBeVisible();
+    await expect(page.locator('#themeBtn .md-theme-moon')).toBeVisible();
   });
 });
 
@@ -173,15 +155,15 @@ for (const width of [320, 375, 768]) {
         await page.emulateMedia({ colorScheme: scheme });
         await open(page);
         expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
-        for (const sel of ['.home', '#exploreBtn', '#themeBtn', '#vmMBtn', '#mqChip a']) {
+        for (const sel of ['.md-brand', '#themeBtn', '#vmMBtn', '#mqChip a']) {
           const b = (await page.locator(sel).boundingBox())!;
           expect(b.x, sel).toBeGreaterThanOrEqual(0);
           expect(b.x + b.width, sel).toBeLessThanOrEqual(width);
         }
         // The nav sits below the controls and wraps: every tab is on screen with no scrolling (a sideways-scrolling
         // row hid Sutras, Watch and Guide off the right edge of a phone)
-        const nav = (await page.locator('header .mq-nav').boundingBox())!, xp = (await page.locator('#exploreBtn').boundingBox())!;
-        expect(nav.y).toBeGreaterThanOrEqual(xp.y + xp.height);
+        const nav = (await page.locator('header .mq-nav').boundingBox())!, theme = (await page.locator('#themeBtn').boundingBox())!;
+        expect(nav.y).toBeGreaterThanOrEqual(theme.y + theme.height);
         const tabs = page.locator('header .mq-nav a:visible');
         expect(await tabs.count()).toBeGreaterThanOrEqual(8);
         for (const tab of await tabs.all()) {
@@ -192,7 +174,6 @@ for (const width of [320, 375, 768]) {
         expect(await page.locator('header .mq-nav').evaluate(n => n.scrollWidth <= n.clientWidth)).toBe(true);
         if (width < 600) {
           // Labels give way to icons on phones, and each icon keeps its name
-          await expect(page.locator('#exploreBtn')).toHaveAccessibleName('Star map of all pages'); // Challenger wording
           await expect(page.locator('#vmMBtn .lbl')).toBeHidden();
           await expect(page.locator('#vmMBtn')).toHaveAttribute('aria-label', 'Calm music');
         }

@@ -1,10 +1,14 @@
 name: E2E (live site)
 
-# Playwright end-to-end tests against the LIVE https://sbmadhav.com/vedic-math/ and its real
-# dependencies (main-site design system, fonts, Explore menu, Firebase reads, and on the daily and manual
-# runs every Watch shelf video on YouTube). Production Firestore
-# is never written to: the suite aborts and fails on any write-shaped request (e2e/tests/fixtures.ts).
-# No pull_request trigger: a PR is not live yet. No secrets.
+# Playwright end-to-end tests against the LIVE https://learnvedicmath.com/ (openspec change learnvedicmath, design
+# D12): after each deploy (once the live files match this commit's build), daily, and on demand with any base URL
+# (a preview, or a local tunnel). Production Firestore is never written to: the suite aborts and fails on any
+# write-shaped request (e2e/tests/fixtures.ts). No pull_request trigger here: pull requests run the suite against their
+# own preview (preview.yml). No secrets.
+#
+# The move from sbmadhav.com (design D13) is watched by the daily run too, by the repository variable MOVE_PHASE:
+#   B: the moved page at https://sbmadhav.com/vedic-math/ (tests/moved.live.spec.ts);
+#   C: https://sbmadhav.com/vedic-math/x?y=1 answers 301 to learnvedicmath.com/x?y=1.
 
 on:
   schedule:
@@ -12,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       base_url:
-        description: 'Site to test (default https://sbmadhav.com)'
+        description: 'Site to test (default https://learnvedicmath.com)'
         required: false
         default: ''
   push:
@@ -27,31 +31,35 @@ concurrency:
 
 jobs:
   e2e:
+    # Nothing is live on learnvedicmath.com until the owner's Cloudflare setup (repository variable CLOUDFLARE_ACCOUNT_ID)
+    if: vars.CLOUDFLARE_ACCOUNT_ID != '' || inputs.base_url != ''
     runs-on: ubuntu-latest
     timeout-minutes: 50
     defaults:
       run:
         working-directory: e2e
     env:
-      BASE_URL: ${{ inputs.base_url || 'https://sbmadhav.com' }}
+      BASE_URL: ${{ inputs.base_url || 'https://learnvedicmath.com' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      # On a push, the CI deploy publishes a stamped build in the background. Wait until the live files
-      # match this commit's build (index.html pins every module hash, sw.js carries the cache VERSION).
-      - name: Wait for the Pages deploy
+      # On a push, CI deploys the stamped build. Wait until the live game shell, worker and entry module match this
+      # commit's build (the shell pins every module hash, sw.js carries the cache VERSION).
+      - name: Wait for the deploy
         if: github.event_name == 'push'
         run: |
-          # The deploy publishes python3 build.py --out, so compare against the same build of this commit
           python3 "$GITHUB_WORKSPACE/build.py" --out "$GITHUB_WORKSPACE/_site" >/dev/null
           for i in $(seq 1 45); do
             ok=1
-            for f in index.html sw.js js/app.js; do
+            for f in play/index.html sw.js js/app.js; do
               want=$(sha256sum "$GITHUB_WORKSPACE/_site/$f" | cut -d' ' -f1)
-              got=$(curl -fsSL "https://sbmadhav.com/vedic-math/$f?deploy-check=${GITHUB_SHA}-${i}" | sha256sum | cut -d' ' -f1) || got=none
-              [ "$got" = "$want" ] || { ok=0; echo "Try $i: live $f is not this commit yet."; }
+              path=${f%index.html}
+              got=$(curl -fsSL "https://learnvedicmath.com/$path?deploy-check=${GITHUB_SHA}-${i}" | sha256sum | cut -d' ' -f1) || got=none
+              [ "$got" = "$want" ] || { ok=0; echo "Try $i: live /$path is not this commit yet."; }
             done
-            if [ $ok = 1 ]; then echo "Live Vedic Math matches this commit (try $i)."; exit 0; fi
+            if [ $ok = 1 ]; then echo "Live learnvedicmath.com matches this commit (try $i)."; exit 0; fi
             sleep 20
           done
           echo "::warning::The live site still differs from this commit after about 15 minutes. Testing what is live."
@@ -80,3 +88,43 @@ jobs:
           name: playwright-report
           path: e2e/playwright-report
           retention-days: 14
+
+  # Phase B (design D13): the moved page at https://sbmadhav.com/vedic-math/ hands progress over (task 16.4)
+  moved-page:
+    if: vars.MOVE_PHASE == 'B' && github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: e2e
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: The moved page on sbmadhav.com
+        env:
+          MOVED_URL: https://sbmadhav.com/vedic-math/
+        run: npx playwright test --project=chromium tests/moved.live.spec.ts
+
+  # Phase C (design D13, task 18.5): GitHub's custom-domain redirect sends every old URL to learnvedicmath.com with a
+  # 301. Undocumented GitHub behaviour, so it is checked every day.
+  redirect-301:
+    if: vars.MOVE_PHASE == 'C' && github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: sbmadhav.com/vedic-math/ answers 301 to learnvedicmath.com
+        run: |
+          set -e
+          for u in "https://sbmadhav.com/vedic-math/x?y=1" "https://sbmadhav.github.io/vedic-math/x?y=1"; do
+            head=$(curl -sI "$u")
+            echo "$head" | head -1 | grep -q ' 301' || { echo "::error::$u does not answer 301"; echo "$head"; exit 1; }
+            printf '%s\n' "$head" | tr -d '\r' | grep -iExq 'location: https://learnvedicmath\.com/x\?y=1' || { echo "::error::$u does not redirect to learnvedicmath.com/x?y=1"; echo "$head"; exit 1; }
+          done

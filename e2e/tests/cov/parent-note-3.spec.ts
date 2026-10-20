@@ -22,9 +22,9 @@ const REMOVAL: Record<Mode, RegExp> = {
 
 /* Usage is counted anonymously, without cookies or IDs, separately from World boards */
 const USAGE: Record<Mode, string> = {
-  explorer: 'Separately from World boards, the site counts visits and things done in the app (pages opened, questions answered, rounds finished) to make it better, with GoatCounter, anonymously: no cookies, no IDs and no names.',
-  challenger: 'Separately from World boards, the site counts visits and actions in the app (pages opened, questions answered, rounds finished) to improve it, with GoatCounter, anonymously: no cookies, no IDs and no names.',
-  pro: 'Separately from World boards, the site counts visits and actions in the app (pages opened, questions answered, rounds finished) to improve it, with GoatCounter, anonymously: no cookies, no IDs and no names.',
+  explorer: 'Separately from World boards, the site counts visits and things done in the app (pages opened, questions answered, rounds finished) to make it better, with GoatCounter and Cloudflare Web Analytics, anonymously: no cookies, no IDs and no names.',
+  challenger: 'Separately from World boards, the site counts visits and actions in the app (pages opened, questions answered, rounds finished) to improve it, with GoatCounter and Cloudflare Web Analytics, anonymously: no cookies, no IDs and no names.',
+  pro: 'Separately from World boards, the site counts visits and actions in the app (pages opened, questions answered, rounds finished) to improve it, with GoatCounter and Cloudflare Web Analytics, anonymously: no cookies, no IDs and no names.',
 };
 
 async function openNote(page: Page, mode: Mode) {
@@ -47,9 +47,9 @@ for (const mode of ['explorer', 'challenger', 'pro'] as Mode[]) {
         // The ID is the Player's own, not the browser's
         await expect(note).toContainText('Firebase gives that player their own random ID on this browser');
         await expect(note).not.toContainText('gives this browser');
-        // Entries are kept until removal is asked for, and the note says how to ask
-        await expect(note).toContainText('Entries are not deleted automatically.');
-        await expect(note).toContainText('To have an entry removed, message Madhav on LinkedIn with the nickname, color and date.');
+        // Entries stop being shown after 30 days and are deleted automatically; earlier removal by email (change learnvedicmath)
+        await expect(note).toContainText('Each entry stops being shown 30 days after its last update, and is then deleted by an automatic clean-up that usually finishes within a few days.');
+        await expect(note).toContainText('To have an entry removed sooner, write to privacy@learnvedicmath.com with the nickname, color and date.');
       });
 
       test(`note on ${route} says usage is counted anonymously, separately from World boards`, async ({ page }) => {

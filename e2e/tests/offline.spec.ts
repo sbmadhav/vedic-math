@@ -1,8 +1,8 @@
 import type { BrowserContext, Page, Route } from '@playwright/test';
-import { test, expect, APP, open, cloudLog, openExplore, chromiumOnly, FIREBASE_SDK, FIREBASE_AUTH, FIRESTORE, showWorld } from './fixtures';
+import { test, expect, APP, open, cloudLog, chromiumOnly, FIREBASE_SDK, FIREBASE_AUTH, FIRESTORE, showWorld, needsWorldBoards } from './fixtures';
 import { fakeAudio, audioLog } from './audio-fake';
 
-/* Offline: /vedic-math/sw.js (scope /vedic-math/) saves the app after one visit, so every route, the
+/* Offline: /sw.js (scope /play/) saves the app after one visit, so every route, the
    Dojo and the games keep working without a connection, and the leaderboards fall back to this device.
    These are the only specs that let the service worker run (the config blocks it everywhere else).
    The same rules hold: the Firebase SDK is still the fake, and while "offline" every Google request is
@@ -27,19 +27,18 @@ test.afterEach(async ({ context }) => {
   }
 });
 
-const OWN_PREFIX = 'vedic-math-';
+const OWN_PREFIX = 'lvm-';
 
 /** Waits until this app's worker has installed (precache done), activated and controls the page. */
 async function workerReady(page: Page) {
-  // Polls rather than using navigator.serviceWorker.ready: a page first controlled by the root worker
-  // (scope /) would resolve that with the root registration.
+  // Polls rather than using navigator.serviceWorker.ready, so a registration still installing is not taken for ready.
   await expect.poll(() => page.evaluate(async () => {
-    const reg = await navigator.serviceWorker.getRegistration('/vedic-math/');
-    const ours = reg && new URL(reg.scope).pathname === '/vedic-math/' && reg.active?.state === 'activated';
+    const reg = await navigator.serviceWorker.getRegistration('/play/');
+    const ours = reg && new URL(reg.scope).pathname === '/play/' && reg.active?.state === 'activated';
     return !!ours && navigator.serviceWorker.controller?.scriptURL === reg!.active!.scriptURL;
-  }), { message: 'the Vedic Math worker installs and controls the page', timeout: 30_000 }).toBe(true);
+  }), { message: 'the game worker installs and controls the page', timeout: 30_000 }).toBe(true);
   return page.evaluate(async () => {
-    const reg = (await navigator.serviceWorker.getRegistration('/vedic-math/'))!;
+    const reg = (await navigator.serviceWorker.getRegistration('/play/'))!;
     return { scope: reg.scope, script: reg.active!.scriptURL, controller: navigator.serviceWorker.controller!.scriptURL, caches: await caches.keys() };
   });
 }
@@ -58,35 +57,35 @@ async function goOnline(context: BrowserContext) {
 
 /** Proves the connection is really gone: a network-first URL the worker never saved cannot load. */
 async function expectOffline(page: Page) {
-  const got = await page.evaluate(() => fetch(`/vedic-math/offline-probe-${Date.now()}.txt`).then(r => `HTTP ${r.status}`, () => 'failed'));
+  const got = await page.evaluate(() => fetch(`/play/offline-probe-${Date.now()}.txt`).then(r => `HTTP ${r.status}`, () => 'failed'));
   expect(got, 'a file that was never saved must fail offline').toBe('failed');
 }
 
-test('the worker registers with scope /vedic-math/ and caches under vedic-math-, never madhav-', async ({ page, baseURL }) => {
+test('the worker registers with scope /play/, caches under lvm-, and every precached file is this site\'s', async ({ page, baseURL }) => {
   await open(page);
   const sw = await workerReady(page);
-  expect(sw.scope).toBe(`${baseURL}/vedic-math/`);
-  expect(sw.script).toBe(`${baseURL}/vedic-math/sw.js`);
-  expect(sw.controller).toBe(`${baseURL}/vedic-math/sw.js`);
+  expect(sw.scope).toBe(`${baseURL}/play/`);
+  expect(sw.script).toBe(`${baseURL}/sw.js`);
+  expect(sw.controller).toBe(`${baseURL}/sw.js`);
   expect(sw.caches.length).toBeGreaterThanOrEqual(1);
   for (const name of sw.caches) {
-    expect(name).toMatch(/^vedic-math-[\w]+$/);
-    expect(name.startsWith('madhav-')).toBe(false);
+    expect(name).toMatch(/^lvm-[\w]+$/);
   }
-  // The precache holds the shell, every module at its import-map URL, the styles and the shared files
+  // The precache holds the shell, every module at its import-map URL, the styles, the design system, fonts and icons
   const saved = await page.evaluate(async prefix => {
     const name = (await caches.keys()).filter(k => k.startsWith(prefix) && k !== prefix + 'voice').pop()!;
     return (await (await caches.open(name)).keys()).map(r => new URL(r.url).pathname + new URL(r.url).search);
   }, OWN_PREFIX);
-  expect(saved).toContain('/vedic-math/');
-  expect(saved).toContain('/vedic-math/manifest.webmanifest');
-  expect(saved.some(u => /^\/vedic-math\/math\.css\?v=\w+$/.test(u))).toBe(true);
+  expect(saved).toContain('/play/');
+  expect(saved).toContain('/manifest.webmanifest');
+  expect(saved.some(u => /^\/math\.css\?v=\w+$/.test(u))).toBe(true);
+  for (const re of [/^\/ds\/2\.1\.0\/tokens\.css\?v=\w+$/, /^\/ds\/2\.1\.0\/components\.css\?v=\w+$/, /^\/theme\/learnvedicmath\.css\?v=\w+$/, /^\/js\/analytics\.js\?v=\w+$/,
+    /^\/fonts\/nunito-sans-latin-wght-normal\.woff2$/, /^\/icons\/icon-192\.png$/]) expect(saved.some(u => re.test(u)), String(re)).toBe(true);
+  expect(saved.filter(u => /^\/(assets|design-system)\//.test(u)), 'nothing from another site').toEqual([]);
   const map = await page.evaluate(() => JSON.parse(document.querySelector('script[type="importmap"]')?.textContent || '{"imports":{}}').imports as Record<string, string>);
   const modules = Object.values(map);
   expect(modules.length).toBeGreaterThan(20);
   for (const u of modules) expect(saved, `${u} is saved for offline use`).toContain(u);
-  for (const u of ['/assets/explore.js', '/assets/analytics.js', '/design-system/tokens.css', '/design-system/components.css'])
-    expect(saved, `${u} is saved for offline use`).toContain(u);
 });
 
 test.describe('first visit', () => {
@@ -102,11 +101,11 @@ test.describe('first visit', () => {
     await expectOffline(page);
 
     const ROUTES: [string, RegExp][] = [
-      ['#/', /^Vedic Math for Everyone/], ['#/learn', /^Skill map/], ['#/dojo', /^Vedic Dojo/], ['#/arena', /^Arena/],
-      ['#/games', /^Games/], ['#/sutras', /^The sutras:/], ['#/watch', /^Watch and learn/], ['#/me', /^Me:/],
+      ['#/', /^Learn Vedic Math/], ['#/learn', /^Skill map/], ['#/dojo', /^Vedic Dojo/], ['#/arena', /^Arena/],
+      ['#/games', /^Games/], ['#/sutras', /^The sutras · Learn Vedic Math/], ['#/watch', /^Watch and learn/], ['#/me', /^Me · /],
       ['#/grade/3', /./], ['#/skill/v-sq5', /./], ['#/katas/sq5', /./], ['#/kata/sq5/1', /./], ['#/tower', /./], ['#/tower/1', /./],
       ['#/challenge/1', /./], ['#/game/times-sprint', /^Times sprint/], ['#/game/times-sprint/1', /^Times sprint level 1/],
-      ['#/arena/party', /^Party Mode/], ['#/games/tala', /^Tala Lab/], ['#/mix/3', /./], ['#/sutras/s1', /: Vedic Math · Madhav$/],
+      ['#/arena/party', /^Party Mode/], ['#/games/tala', /^Tala Lab/], ['#/mix/3', /./], ['#/sutras/s1', / · Learn Vedic Math$/],
     ];
     for (const [hash, title] of ROUTES) {
       // A fresh tab per route: a real page load, answered by the worker
@@ -127,7 +126,7 @@ test.describe('first visit', () => {
 
     // The Sky home and All places (sky-home 5.1): the Player turns the Sky on, and both render offline
     await page.evaluate(() => { const k = 'vm.players', P = JSON.parse(localStorage.getItem(k)!); P.list[0].sky = true; localStorage.setItem(k, JSON.stringify(P)); });
-    for (const [hash, title, sel] of [['#/', /^Vedic Math for Everyone/, '.sky-star'], ['#/places', /^All places/, 'a.places-star']] as const) {
+    for (const [hash, title, sel] of [['#/', /^Learn Vedic Math/, '.sky-star'], ['#/places', /^All places/, 'a.places-star']] as const) {
       const tab = await context.newPage();
       const res = await tab.goto(`${APP}${hash === '#/' ? '' : hash}`);
       expect(res?.fromServiceWorker(), `${hash}: the page came from the worker`).toBe(true);
@@ -151,7 +150,7 @@ test('a Dojo kata and a game play offline, and the progress persists', async ({ 
   // Kata 1 of the squares-ending-in-5 trick, all right (answers from the app's own seeded module)
   await page.goto(`${APP}#/kata/sq5/1`);
   await expect(page.locator('#view h1')).toContainText('Kata 1');
-  const answers = await page.evaluate(async () => (await import('/vedic-math/js/levels.js' as string)).kata('sq5', 1).problems.map((p: { answer: unknown }) => String(p.answer)));
+  const answers = await page.evaluate(async () => (await import('/js/levels.js' as string)).kata('sq5', 1).problems.map((p: { answer: unknown }) => String(p.answer)));
   for (const a of answers) {
     await page.locator('#kata .ans-in').fill(a);
     await page.locator('#kGo').click();
@@ -192,6 +191,7 @@ test.describe('a Player who may post', () => {
 // A grown-up's Sparks would post when online, so this checks that nothing earned offline is saved up to send later
 test.use({ seedConsent: { age: 'adult' } });
 test('offline, the leaderboards fall back to this device, and nothing is queued or written', async ({ page, context }) => {
+  await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
   test.setTimeout(90_000);
   await open(page);
   await workerReady(page);
@@ -233,7 +233,7 @@ test('offline, the leaderboards fall back to this device, and nothing is queued 
 });
 });
 
-test('the shared main-site files are served offline', async ({ page, context }) => {
+test('the design system, theme, fonts, icons and analytics script are served offline', async ({ page, context }) => {
   await open(page);
   await workerReady(page);
   await goOffline(context);
@@ -252,52 +252,31 @@ test('the shared main-site files are served offline', async ({ page, context }) 
   });
   for (const fam of ['Fredoka 600', 'Fredoka 700', 'Nunito Sans', 'Space Grotesk', 'JetBrains Mono'])
     expect(faces.find(f => f.startsWith(fam)), `${fam}: ${faces.join(', ')}`).toMatch(/loaded$/);
-  // Explore menu (explore.js)
-  const dlg = await openExplore(page);
-  await expect(dlg.locator('a.xp-page[aria-current="page"]')).toHaveAttribute('href', '/vedic-math/');
-  await page.keyboard.press('Escape');
-  // Analytics script, the manifest and its icons
+  // The theme switch (the design system's header.js), the manifest and its icons
+  await page.locator('#themeBtn').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', /light|dark/);
   const files = await page.evaluate(async () => {
-    const urls = ['/assets/analytics.js', '/assets/explore.js', '/design-system/tokens.css', '/design-system/components.css', '/vedic-math/manifest.webmanifest', '/assets/icons/apple-touch-icon.png', '/assets/icons/icon-192.png', '/assets/icons/icon-512.png', '/assets/icons/maskable-512.png'];
+    const urls = ['/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/maskable-512.png', '/icons/favicon.svg', '/fonts/fredoka-latin-600-normal.woff2'];
     return Promise.all(urls.map(u => fetch(u).then(r => `${u} ${r.status}`, () => `${u} failed`)));
   });
   for (const f of files) expect(f).toMatch(/ 200$/);
 });
 
-test('the main site\'s root worker leaves /vedic-math/ alone', async ({ page, baseURL }) => {
-  test.skip(!baseURL!.startsWith('https:'), 'the main site registers its worker over https only');
-  // Visit the home page first so the root worker (scope /) is installed and active
-  await page.goto('/');
-  await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.getRegistration('/'))?.active?.state || 'none'), { timeout: 30_000 }).toBe('activated');
-  const root = await page.evaluate(async () => { const r = (await navigator.serviceWorker.getRegistration('/'))!; return { scope: r.scope, script: r.active!.scriptURL }; });
-  expect(root).toEqual({ scope: `${baseURL}/`, script: `${baseURL}/sw.js` });
-
-  // The first Vedic Math page load falls under the root worker, which must pass it to the network
-  const res = await page.goto(APP);
-  expect(res?.fromServiceWorker(), 'the root worker did not answer the /vedic-math/ page').toBe(false);
-  await expect(page.locator('h1.home-h')).toBeVisible();
-  const sw = await workerReady(page);
-  expect(sw.controller).toBe(`${baseURL}/vedic-math/sw.js`);
-  const regs = await page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).map(r => r.scope).sort());
-  expect(regs).toEqual([`${baseURL}/`, `${baseURL}/vedic-math/`]);
-
-  // Neither worker keeps the other's files: madhav-* holds nothing of /vedic-math/, and both cache families exist
-  const caches_ = await page.evaluate(async () => {
-    const out: Record<string, string[]> = {};
-    for (const k of await caches.keys()) out[k] = (await (await caches.open(k)).keys()).map(r => new URL(r.url).pathname);
-    return out;
-  });
-  const names = Object.keys(caches_);
-  expect(names.some(n => n.startsWith('madhav-')), names.join(', ')).toBe(true);
-  expect(names.some(n => n.startsWith(OWN_PREFIX)), names.join(', ')).toBe(true);
-  for (const [name, paths] of Object.entries(caches_))
-    if (name.startsWith('madhav-')) expect(paths.filter(p => p.startsWith('/vedic-math')), `${name} holds Vedic Math files`).toEqual([]);
+test('the landing and grown-up pages are never controlled by the game worker', async ({ page, baseURL }) => {
+  await open(page);
+  await workerReady(page);
+  const regs = await page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).map(r => r.scope));
+  expect(regs).toEqual([`${baseURL}/play/`]);
+  for (const url of ['/?home', '/parents/']) {
+    const res = await page.goto(url);
+    expect(res?.fromServiceWorker(), `${url} comes from the network`).toBe(false);
+    expect(await page.evaluate(() => !!navigator.serviceWorker.controller), `${url} is not controlled`).toBe(false);
+  }
 });
 
-/* Studio voice (openspec better-voice): audio under /vedic-math/voice/ is cache first in vedic-math-voice, a cache every
-   deploy keeps, so a line heard once plays offline. Needs a built site with the recordings in _site/voice/ (the CI
-   deploy unpacks the release archive there; locally, unpack it with tools/voice/ci-fetch.mjs _site). Skipped when the
-   build has none. The built-in voice is replaced by a recorder, so "builtin" in the log means the device would speak. */
+/* Studio voice (openspec better-voice; design D17): audio from the voice host (https://voice.learnvedicmath.com/) is
+   cache first in lvm-voice, a cache every deploy keeps, so a line heard once plays offline. Needs the recordings on
+   the voice host (the CI voice-upload job puts them there). Skipped when the host does not have them. The built-in voice is replaced by a recorder, so "builtin" in the log means the device would speak. */
 test.describe('studio voice offline', () => {
   test.use({ seedMode: 'explorer' });
 
@@ -311,9 +290,9 @@ test.describe('studio voice offline', () => {
     await workerReady(page);
     await page.reload(); // the first load was not controlled by the worker; from here every voice file goes through it
     await expect(page.locator('#practice')).toBeVisible();
-    const studio = await page.evaluate(async () => (await import('/vedic-math/js/voice-index.js')).STUDIO);
+    const studio = await page.evaluate(async () => (await import('/js/voice-index.js')).STUDIO);
     const probe = await page.evaluate(u => fetch(u, { method: 'HEAD' }).then(r => r.status, () => 0), studio.base + (studio.lineSet || 'none'));
-    test.skip(!studio.tag || probe !== 200, 'no studio voice recordings in this build (_site/voice/ is filled by the deploy)');
+    test.skip(!studio.tag || probe !== 200, 'no studio voice recordings on the voice host yet (the CI voice-upload job fills it)');
     const log = () => page.evaluate(() => (window as any).__voiceLog as string[]);
     const hear = async () => {
       await page.evaluate(() => { (window as any).__voiceLog.length = 0; });
@@ -323,7 +302,7 @@ test.describe('studio voice offline', () => {
     };
     await expect.poll(async () => (await hear())[0], { timeout: 15_000 }).toBe('studio:line'); // online, the whole line plays (and is saved)
     const heardQ = await page.locator('#practice').innerText();
-    expect(await page.evaluate(() => caches.keys())).toContain('vedic-math-voice');
+    expect(await page.evaluate(() => caches.keys())).toContain('lvm-voice');
     await goOffline(context);
     await expectOffline(page);
     await page.reload();
@@ -333,7 +312,7 @@ test.describe('studio voice offline', () => {
     expect(['studio:line', 'studio:clips', 'builtin']).toContain(next);
     if ((await page.locator('#practice').innerText()) === heardQ) expect(next).toBe('studio:line');
     /* The line set, clip directory and core pack were saved, so the app knows what it has offline */
-    const saved = await page.evaluate(async () => (await (await caches.open('vedic-math-voice')).keys()).map(r => new URL(r.url).pathname));
+    const saved = await page.evaluate(async () => (await (await caches.open('lvm-voice')).keys()).map(r => new URL(r.url).pathname));
     expect(saved.some(p => /\/l\/set\.[0-9a-f]{10}\.bin$/.test(p))).toBe(true);
     expect(saved.some(p => /\/l\/[0-9a-f]{14}\.m4a$/.test(p))).toBe(true);
     await goOnline(context);
@@ -341,7 +320,7 @@ test.describe('studio voice offline', () => {
 });
 
 /* Say it (openspec sutra-pronunciation 2.3): after one tap online, the other name clips are saved while the browser
-   is idle (sounds/ is cache first in vedic-math-sounds), so another name plays offline from the cache. */
+   is idle (sounds/ is cache first in lvm-sounds), so another name plays offline from the cache. */
 test('a Sutra name heard once online lets every other name play offline', async ({ page, context }, testInfo) => {
   chromiumOnly(testInfo, 'one engine is enough for the cache rule');
   await page.addInitScript(() => { try { localStorage.setItem('vm.sutraAmb', '0'); } catch (e) { /* storage blocked */ } });
@@ -360,7 +339,7 @@ test('a Sutra name heard once online lets every other name play offline', async 
   await expect(page.locator('dialog .say-btn')).toBeVisible();
   await page.locator('dialog .say-btn').click();
   await expect.poll(() => audioLog(page).then(l => l.decoded)).toBe(1);
-  await expect.poll(() => page.evaluate(async () => (await (await caches.open('vedic-math-sounds')).keys()).length), { message: 'the idle prefetch saves all 29 clips', timeout: 30_000 }).toBe(29);
+  await expect.poll(() => page.evaluate(async () => (await (await caches.open('lvm-sounds')).keys()).length), { message: 'the idle prefetch saves all 29 clips', timeout: 30_000 }).toBe(29);
   await goOffline(context);
   try {
     await expectOffline(page);

@@ -20,7 +20,7 @@ test('Longer videos: "8 to 12 min" shows only videos from 8 up to 12 minutes, or
 
 test('A long video: the shipped list has no entry of 12 minutes or more (the node tests fail the build on one)', async ({ page }) => {
   await open(page, '#/watch');
-  const durations: number[] = await page.evaluate(async () => { const m: any = await import('/vedic-math/js/videos.js' as string); return m.VIDEOS.map((v: any) => v.duration); });
+  const durations: number[] = await page.evaluate(async () => { const m: any = await import('/js/videos.js' as string); return m.VIDEOS.map((v: any) => v.duration); });
   expect(durations.length).toBeGreaterThan(50);
   for (const d of durations) expect(d).toBeLessThan(720);
 });
@@ -31,7 +31,7 @@ test.describe('Explorer', () => {
     await open(page, '#/watch');
     await expect(cards(page).first()).toBeVisible();
     const yts = await cards(page).evaluateAll(els => els.map(e => (e as HTMLElement).dataset.watch!));
-    const kinds: Record<string, { kids: boolean; duration: number }> = await page.evaluate(async () => { const m: any = await import('/vedic-math/js/videos.js' as string); return Object.fromEntries(m.VIDEOS.map((v: any) => [v.yt, { kids: !!v.madeForKids, duration: v.duration }])); });
+    const kinds: Record<string, { kids: boolean; duration: number }> = await page.evaluate(async () => { const m: any = await import('/js/videos.js' as string); return Object.fromEntries(m.VIDEOS.map((v: any) => [v.yt, { kids: !!v.madeForKids, duration: v.duration }])); });
     const unknown = yts.filter(y => !kinds[y]);
     expect(unknown, 'every card resolves to a VIDEOS entry').toEqual([]);
     const seq = yts.map(y => kinds[y]);

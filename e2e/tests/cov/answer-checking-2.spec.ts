@@ -26,7 +26,7 @@ async function untilMixed(page: Page) {
 }
 /* Grades an input against a number answer with the app's own checker (the one every Practice view uses) */
 const check = (page: Page, spec: Record<string, unknown>, input: string) =>
-  page.evaluate(async ([s, i]) => (await import('/vedic-math/js/check.js' as string)).checkOne(s, i), [spec, input] as const);
+  page.evaluate(async ([s, i]) => (await import('/js/check.js' as string)).checkOne(s, i), [spec, input] as const);
 
 test.describe('Mixed numbers are numbers', () => {
   test('Extra spaces: the answer 7/4 typed as " 1  3/4 " is right', async ({ page }) => {

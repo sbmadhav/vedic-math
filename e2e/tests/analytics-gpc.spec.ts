@@ -1,7 +1,7 @@
 import { test, expect, APP, ANALYTICS, chromiumOnly } from './fixtures';
 import { BASE_URL } from '../playwright.config';
 
-/* Global Privacy Control turns analytics off (analytics spec). This loads the real shared /assets/analytics.js.
+/* Global Privacy Control turns analytics off (analytics spec). This loads the real /js/analytics.js.
    The fixtures answer GoatCounter locally, so even the control run counts no visit. analytics.js is off on
    localhost anyway, so this only means something against a real host (the live site). */
 test.skip(/localhost|127\.0\.0\.1/.test(BASE_URL), 'analytics.js is off on localhost');

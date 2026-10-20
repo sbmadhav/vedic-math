@@ -58,7 +58,7 @@
 .gh-runner--you.is-trip .gh-runner-svg { animation: gh-trip .4s ease; }
 .gh-flag { position: absolute; right: 10px; top: 8px; bottom: 8px; width: 8px; border-radius: 2px; background: repeating-linear-gradient(180deg, var(--ink) 0 6px, var(--card) 6px 12px); opacity: .55; }
 .gh-hud { display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; margin: var(--space-3) 2px; }
-.gh-clock { font: 700 1.6rem/1 var(--font-mono); color: var(--ink); min-width: 6ch; }
+.gh-clock { font: 500 1.6rem/1 var(--font-mono); color: var(--ink); min-width: 6ch; }
 .gh-count { font-weight: 800; color: var(--ink-muted); }
 .gh-gap { margin-left: auto; font-weight: 800; font-size: .9rem; padding: 4px 10px; border-radius: var(--radius-pill); background: var(--bg-alt); color: var(--ink-muted); }
 .gh-gap.is-ahead { color: var(--teal-strong); }
@@ -86,7 +86,7 @@
 .gh-stats { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); }
 .gh-stats div { display: flex; flex-direction: column; padding: var(--space-3); border-radius: var(--radius-md); background: var(--bg-alt); }
 .gh-stats span { font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-muted); }
-.gh-stats b { font: 700 1.6rem/1.2 var(--font-mono); }
+.gh-stats b { font: 500 1.6rem/1.2 var(--font-mono); }
 .gh-stats small { color: var(--ink-muted); }
 .gh-newbest { margin: 0; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); border: 2px dashed var(--sun-strong); background: color-mix(in srgb, var(--sun) 14%, var(--card)); font-weight: 700; }
 

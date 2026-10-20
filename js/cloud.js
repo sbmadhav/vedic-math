@@ -8,7 +8,8 @@
 import { FIREBASE, appCheckSiteKey, appCheckProvider } from './cloud-config.js';
 import * as store from './store.js';
 
-const V = '10.12.2', CDN = `https://www.gstatic.com/firebasejs/${V}`;
+/* The Firebase SDK is served from this site (vendor/firebase/<V>/, made by tools/vendor-firebase.mjs), never from Google's CDN */
+const V = '13.0.0', CDN = `/vendor/firebase/${V}`;
 /* Score caps and the entry lifetime, mirrored from cloud/firestore.rules (the rules are the authority):
    Arena boards per league, Ranked game boards (g_...) and weekly Sparks boards (xp-week-...) one cap each. */
 export const MAX_SCORE = { explorer: 2000, challenger: 1600, pro: 1200 };
@@ -156,10 +157,12 @@ export function boardScore(board, raw) {
 }
 
 /* The one place anything is posted. Keeps one entry per Player's identity per board; a lower score never replaces a
-   higher one (enforced by the rules too). Returns { posted, reason }: reason 'needs-age' or 'device-only'
-   when that Player may not post (then nothing is loaded or sent), 'low' when the board takes no such
-   score, 'not-higher' when the board already holds a higher one. Only the nickname and color of `entry` are sent. */
+   higher one (enforced by the rules too). Returns { posted, reason }: reason 'off' when World boards are not
+   configured (js/cloud-config.js), 'needs-age' or 'device-only' when that Player may not post (in both cases nothing
+   is loaded or sent), 'low' when the board takes no such score, 'not-higher' when the board already holds a higher
+   one. Only the nickname and color of `entry` are sent. */
 export async function submit(board, entry, p = store.player()) {
+  if (!enabled()) return { posted: false, reason: 'off' };
   const score = boardScore(board, entry.score);
   if (!score) return { posted: false, reason: 'low' };
   const gate = canPost(p);

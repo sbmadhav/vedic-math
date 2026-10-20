@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog, type Mode, typeAnswer, FIREBASE_SDK } from '../fixtures';
+import { test, expect, open, cloudLog, type Mode, typeAnswer, FIREBASE_SDK, needsWorldBoards } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* posting-consent spec (change learnvedicmath), Requirement "Players under 13 use Device boards only":
@@ -26,7 +26,7 @@ function isoWeek(d = new Date()) {
 async function arenaRound(page: Page, mode: Mode) {
   await open(page, '#/arena');
   const answer = await page.evaluate(async m => {
-    const cloud = await import('/vedic-math/js/cloud.js' as string), arena = await import('/vedic-math/js/arena.js' as string);
+    const cloud = await import('/js/cloud.js' as string), arena = await import('/js/arena.js' as string);
     return String(arena.dailySet(m, cloud.dayId())[0].answer);
   }, mode);
   await page.locator('#arGo').click();
@@ -46,6 +46,7 @@ const sdkRequests = (page: Page) => { const seen: string[] = []; page.on('reques
 test.describe('Under-13 Player in Pro mode', () => {
   test.use({ seedMode: 'pro', seedConsent: { age: 11 }, seedProgress: { v: 3, sparks: 40, weekSparks: { [isoWeek()]: 40 } } });
   test('a Ranked round posts nothing, Score or Sparks, loads no Firebase file, and ranks on the Device board', async ({ page, browserName }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     test.skip(browserName === 'webkit', ROUNDS_OFF_WEBKIT);
     test.setTimeout(120_000);
     const sdk = sdkRequests(page);
@@ -64,6 +65,7 @@ test.describe('No switch for grown-ups', () => {
     test.describe(mode, () => {
       test.use({ seedMode: mode, seedConsent: { age: 9 } });
       test(`${mode}: the Me page has no control that would let an under-13 Player post`, async ({ page }) => {
+        await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
         await open(page, '#/me');
         const card = page.locator('#worldBoards .wb-body');
         await expect(card).toContainText(/scores stay on this device/);
@@ -92,6 +94,7 @@ test.describe('Players 13 and over', () => {
     test.describe(`${mode}, age ${age}`, () => {
       test.use({ seedMode: mode, seedConsent: { age } });
       test(`${mode}: age ${age} posts a Ranked round's Score`, async ({ page, browserName }) => {
+        await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
         test.skip(browserName === 'webkit', ROUNDS_OFF_WEBKIT);
         test.setTimeout(90_000);
         await page.clock.install();
@@ -112,6 +115,7 @@ test.describe('Players 13 and over', () => {
   test.describe('answered 13 on the age sheet', () => {
     test.use({ seedMode: 'challenger', seedConsent: null });
     test('the round posts as soon as 13 is picked', async ({ page, browserName }) => {
+      await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
       test.skip(browserName === 'webkit', ROUNDS_OFF_WEBKIT);
       test.setTimeout(90_000);
       await page.clock.install();

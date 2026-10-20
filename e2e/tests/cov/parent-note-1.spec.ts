@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog, chromiumOnly, type Mode, typeAnswer } from '../fixtures';
+import { test, expect, open, cloudLog, chromiumOnly, type Mode, typeAnswer, needsWorldBoards } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* openspec parent-note: "Note beside a World board" and "Note matches what is sent". Every Board (the Device board for
@@ -47,7 +47,7 @@ for (const mode of MODES) {
     test('every game page\'s boards', async ({ page }) => {
       test.setTimeout(120_000);
       await open(page, '#/games');
-      const ids: string[] = await page.evaluate(async () => (await import('/vedic-math/js/games.js' as string)).GAMES.map((g: { id: string }) => g.id));
+      const ids: string[] = await page.evaluate(async () => (await import('/js/games.js' as string)).GAMES.map((g: { id: string }) => g.id));
       expect(ids.length).toBeGreaterThan(0);
       for (const id of ids) {
         await open(page, `#/game/${id}`);
@@ -75,17 +75,18 @@ test.describe('the note matches what is sent', () => {
   test.use({ seedConsent: { age: 'adult' } });
 
   test('each kind of post the app sends is named in the note, and the note names no other', async ({ page }, testInfo) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     chromiumOnly(testInfo, 'app logic, the same in every engine');
     test.setTimeout(90_000);
     await page.clock.install();
     await open(page, '#/arena');
     const { day, wk } = await page.evaluate(async () => {
-      const cloud = await import('/vedic-math/js/cloud.js' as string);
+      const cloud = await import('/js/cloud.js' as string);
       return { day: cloud.dayId() as string, wk: cloud.weekId() as string };
     });
 
     // Arena Daily challenge
-    const answer = await page.evaluate(async d => (await import('/vedic-math/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
+    const answer = await page.evaluate(async d => (await import('/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
     await page.locator('#arGo').click();
     await page.clock.runFor(2_500);
     await typeAnswer(page, String(answer));

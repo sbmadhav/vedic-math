@@ -12,21 +12,39 @@ import { test as base, expect, type Page, type BrowserContext, type TestInfo } f
      Requests to identitytoolkit / securetoken are aborted and recorded as violations in those tests.
    - Only tests that opt in with test.use({ liveFirebase: true }) load the real SDK (world leaderboard
      read). They still go through the write guard.
-   - GoatCounter is answered locally so test runs do not count as visits. Its count.js is served from the main
-     site (/assets/count.js); gc.zgo.at stays in the pattern for a main site that still loads it from there. */
+   - Analytics is answered locally so test runs never count as visits: GoatCounter's count.js (served from this site,
+     /vendor/goatcounter/count.js), its endpoint, and Cloudflare Web Analytics.
+   - The Firebase SDK is served from this site (/vendor/firebase/<version>/); FIREBASE_SDK matches it there. */
 
-export const ANALYTICS = /(^https:\/\/[^/]*goatcounter\.com\/)|(^https:\/\/gc\.zgo\.at\/)|(^https?:\/\/[^/]+\/assets\/count\.js(\?|$))/;
-export const FIREBASE_SDK = /^https:\/\/www\.gstatic\.com\/firebasejs\//;
+export const ANALYTICS = /(^https:\/\/[^/]*goatcounter\.com\/)|(^https:\/\/gc\.zgo\.at\/)|(^https?:\/\/[^/]+\/vendor\/goatcounter\/count\.js(\?|$))|(^https:\/\/(static\.)?cloudflareinsights\.com\/)/;
+export const FIREBASE_SDK = /^https?:\/\/[^/]+\/vendor\/firebase\/[\d.]+\//;
 export const FIREBASE_AUTH = /^https:\/\/(identitytoolkit|securetoken)\.googleapis\.com\//;
 export const FIRESTORE = /^https:\/\/firestore\.googleapis\.com\//;
 
-/* GoatCounter's count.js defines window.goatcounter.count, and the shared /assets/analytics.js flushes its
+/* GoatCounter's count.js defines window.goatcounter.count, and /js/analytics.js flushes its
    queue through it once count.js loads. The local answer has to define it too (as a no-op), or that flush
    throws on the live site: as a page error, and inside page.clock.runFor under a fake clock. Nothing is sent. */
 const NO_OP_COUNTER = '/* analytics blocked in tests */ window.goatcounter = window.goatcounter || {}; if (typeof window.goatcounter.count !== "function") window.goatcounter.count = function () {};';
 export async function blockAnalytics(ctx: BrowserContext | Page) {
   await ctx.route(ANALYTICS, route =>
     route.fulfill({ status: 200, contentType: 'text/javascript', body: NO_OP_COUNTER }));
+}
+
+/* The Studio voice host (R2 on voice.learnvedicmath.com, design D17). Until it serves the files (owner task 7.8), or
+   for a run that should not depend on it, E2E_VOICE_ORIGIN names another copy of the same files and the tests are
+   answered from there, with the CORS header the host sends. For example, until Phase B replaces the old site:
+     E2E_VOICE_ORIGIN=https://sbmadhav.com/vedic-math/voice BASE_URL=http://localhost:8124 npx playwright test
+   A spec that routes the voice host itself (voice.spec.ts, listen.spec.ts) takes precedence: page routes come first. */
+export const VOICE_HOST = 'https://voice.learnvedicmath.com';
+async function voiceFrom(ctx: BrowserContext) {
+  const from = (process.env.E2E_VOICE_ORIGIN || '').replace(/\/$/, '');
+  if (!from) return;
+  await ctx.route(`${VOICE_HOST}/**`, async route => {
+    try {
+      const res = await route.fetch({ url: from + new URL(route.request().url()).pathname });
+      await route.fulfill({ response: res, headers: { ...res.headers(), 'access-control-allow-origin': '*' } });
+    } catch (e) { await route.abort('failed').catch(() => {}); /* the test ended while the copy was on its way */ }
+  });
 }
 
 /** True for a request that could change production Firestore data. */
@@ -39,7 +57,7 @@ export function isFirestoreWrite(method: string, url: string) {
   return false;
 }
 
-/* Fake Firebase modules served in place of https://www.gstatic.com/firebasejs/<v>/firebase-*.js.
+/* Fake Firebase modules served in place of /vendor/firebase/<v>/firebase-*.js.
    They implement exactly the calls js/cloud.js makes. Each Firebase app (one per Player who posts) has its
    own fake Auth session, kept in localStorage under e2e.fakeAuth like the real SDK keeps one per app name,
    so it survives a reload. Sign-in gives the default app (the first Player) the uid 'e2e-fake-uid' and a
@@ -116,6 +134,9 @@ export const test = base.extend<Fixtures>({
 
   context: async ({ context, seedMode, seedConsent, seedProgress, seedPlayer, tourSeen }, use) => {
     await blockAnalytics(context);
+    await voiceFrom(context);
+    // Policy reports from test runs never reach a /_csp endpoint (production's monthly review would count them)
+    await context.route(/^https?:\/\/[^/]+\/_csp(\?|$)/, route => route.fulfill({ status: 204 }));
     // The same no-op counter from the start, for pages whose queue flushes before the local count.js answer runs
     await context.addInitScript(() => { const w = window as any; w.goatcounter ||= {}; if (typeof w.goatcounter.count !== 'function') w.goatcounter.count = () => {}; });
     // A returning player with a mode, sound off. Only on an empty profile, so reloads keep progress.
@@ -166,7 +187,8 @@ export const test = base.extend<Fixtures>({
 
   issues: async ({ page }, use) => {
     const issues: Issues = { console: [], failed: [] };
-    page.on('console', m => { if (m.type() === 'error') issues.console.push(`${m.text()} (${m.location().url || 'inline'})`); });
+    // WebKit logs the stricter Report-Only policy's reports (style="" and Trusted Types) as console errors; they block nothing
+    page.on('console', m => { if (m.type() === 'error' && !/^\[Report Only\]/.test(m.text())) issues.console.push(`${m.text()} (${m.location().url || 'inline'})`); });
     page.on('pageerror', e => issues.console.push(`pageerror: ${e.message}`));
     page.on('requestfailed', r => {
       const err = r.failure()?.errorText || '';
@@ -181,17 +203,17 @@ export const test = base.extend<Fixtures>({
 
 export { expect };
 
-export const APP = '/vedic-math/';
+export const APP = '/play/';
 
 /** Opens the app at a hash route (for example '#/dojo') and waits for the view to render. */
 /** Serves the app a transformed video list. `transform` is JavaScript source for a function (list) => list, run in
     the page over the real js/videos.js (every other export passes through), so a scenario can hold its premise
     (a Skill with no hand-matched video, exactly one, a planted counting video) whatever the catalog grows into.
-    Call before open(); the test's own import('/vedic-math/js/videos.js') in page.evaluate gets the same list. */
+    Call before open(); the test's own import('/js/videos.js') in page.evaluate gets the same list. */
 export async function withVideos(page: Page, transform: string) {
-  const REAL = `${APP}js/videos.js?e2e-real`;
+  const REAL = `/js/videos.js?e2e-real`;
   const body = `export * from '${REAL}';\nimport { VIDEOS as REAL } from '${REAL}';\nexport const VIDEOS = (${transform})(REAL);\n`;
-  await page.route(/\/vedic-math\/js\/videos\.js(\?(?!e2e-real).*)?$/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body }));
+  await page.route(/\/js\/videos\.js(\?(?!e2e-real).*)?$/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body }));
 }
 
 export async function open(page: Page, hash = '#/') {
@@ -226,20 +248,51 @@ export function chromiumOnly(testInfo: TestInfo, why = 'chromium only: other eng
   base.skip(testInfo.project.name !== 'chromium', why);
 }
 
-/** Opens the site-wide Explore menu and returns the dialog locator. */
-export async function openExplore(page: Page) {
-  await page.locator('#exploreBtn').click();
-  const dlg = page.locator('dialog.xpm');
-  await expect(dlg).toBeVisible();
-  return dlg;
+/** The Content-Security-Policy a page is served with (its response header; build.py writes it into _headers). Skips
+    the test on a plain http server that sends none; on https the policy must be there. */
+export async function policyOf(page: Page, baseURL?: string, path?: string) {
+  const res = await page.request.get(path || new URL(page.url()).pathname);
+  const csp = res.headers()['content-security-policy'];
+  if (!csp && !/^https:/.test(baseURL || '')) base.skip(true, 'This server sends no policy: serve a build with its _headers (node e2e/local-server.mjs 8124 _site)');
+  expect(csp, `${path || page.url()} is sent with a Content-Security-Policy header`).toBeTruthy();
+  return csp!;
 }
 
 /** Shows the World board in a Board (only a Player whose Age answer is 13 or over has the button; openspec board-identity,
     change learnvedicmath): taps Show World board, then waits until the World tab is selected. */
+/** Whether the served js/cloud-config.js configures Firebase (World boards on). The launch ships with FIREBASE = null
+    (Device boards only, change learnvedicmath tasks 1.8 and 8.5); task 8.5 pastes the new project's config. */
+export async function worldBoardsOn(page: Page) {
+  const res = await page.request.get('/js/cloud-config.js');
+  expect(res.ok(), '/js/cloud-config.js is served').toBe(true);
+  return !/export const FIREBASE\s*=\s*null\s*;/.test(await res.text());
+}
+
+/** Skips a test that is about the World board while the served config has none (the device-only launch). Each such
+    spec keeps a device-only counterpart (boards-off.spec.ts) that runs in that state instead. */
+export async function needsWorldBoards(page: Page) {
+  base.skip(!(await worldBoardsOn(page)), 'World boards are off: js/cloud-config.js has FIREBASE = null until task 8.5 (device-only launch)');
+}
+
 export async function showWorld(page: Page, board: string) {
   const wrap = page.locator(board);
   await wrap.locator('[data-show-world]').click();
   await expect(wrap.locator('[data-src="world"]')).toHaveAttribute('aria-selected', 'true');
+}
+
+/** Turns Pause motion on or off from the music panel in the header (openspec accessibility: the switch is on the Me
+    page and in the music panel; the site has no Explore menu). Returns the switch's new aria-checked value. */
+export async function togglePauseMotion(page: Page) {
+  await page.locator('#vmMBtn').click();
+  const sw = page.locator('#vmMotion');
+  await expect(sw).toBeVisible();
+  const before = await sw.getAttribute('aria-checked');
+  await sw.click();
+  await expect(sw).toHaveAttribute('aria-checked', before === 'true' ? 'false' : 'true');
+  const after = (await sw.getAttribute('aria-checked')) === 'true';
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#vmMPanel')).toBeHidden();
+  return after;
 }
 
 /** Types an answer into the Arena's hidden entry. On touch screens it is read-only (no system keyboard over the

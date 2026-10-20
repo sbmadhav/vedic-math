@@ -97,6 +97,8 @@ Then the production token:
 
 ## 8b. R2 for the Studio voice (task 7.8, only if decision L8 stays R2)
 
+**Needed before the first deploy.** The deploy waits for the voice step, and the voice step is skipped until `R2_ACCOUNT_ID` is set, so with Cloudflare set up but R2 not, nothing deploys (deploy-pipeline spec).
+
 The Studio voice (about 23,700 files, 414 MB) is too many files for Workers static assets on the Free plan (20,000 per version), so it lives in an R2 bucket on its own subdomain (design D17).
 
 1. Cloudflare > **R2 Object Storage** > Enable R2. It asks for a payment method even for the free tier (10 GB-month, no egress fees); 414 MB costs nothing.

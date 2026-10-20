@@ -1,15 +1,8 @@
-# Repo-only files: the single list read by build.py --out (the CI deploy, see .github/workflows/ci.yml)
-# and by Jekyll if Pages ever deploys the main branch directly. One "- item" per line. Paths starting
-# with . or _ are always left out. Published at https://sbmadhav.com/vedic-math/.
+# Repo-only files: the single list read by build.py (the CI deploy, see .github/workflows/ci.yml). One "- item" per
+# line. Paths starting with . or _ are always left out. Published at https://learnvedicmath.com/ (Cloudflare Workers
+# static assets, wrangler.jsonc). site/ holds page sources the build renders into their places; the design system is
+# published from vendor/design-system/ at /ds/.
 exclude:
-  # Pinned files for learnvedicmath.com (openspec change learnvedicmath); published there, not on sbmadhav.com
-  - vendor/design-system/
-  - vendor/firebase/
-  - vendor/goatcounter/
-  - fonts/
-  - icons/
-  - theme/
-  - THIRD-PARTY-NOTICES.md
   - CLAUDE.md
   - README.md
   - GLOSSARY.md
@@ -17,11 +10,16 @@ exclude:
   - SECURITY.md
   - LICENSE
   - LICENSE-CONTENT.md
+  - THIRD-PARTY-NOTICES.md
   - build.py
-  # The learnvedicmath.com Worker and its deploy tool (openspec change learnvedicmath)
   - wrangler.jsonc
   - worker/
   - deploy/
+  - site/
+  - moved/
+  - theme/header.html
+  - vendor/design-system/
+  - vendor/**/SHA256SUMS
   - cloud/
   - test/
   - docs/
@@ -29,5 +27,3 @@ exclude:
   - tools/
   - e2e/
   - node_modules/
-  # Saved for learnvedicmath.com (openspec change learnvedicmath); published there, not on sbmadhav.com
-  - thumbs/

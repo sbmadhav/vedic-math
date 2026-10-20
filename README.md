@@ -1,40 +1,43 @@
-# Vedic Math for Everyone
+# Learn Vedic Math
 
-Speed tricks from the sutras, a counting-to-calculus skill map, games, daily quests, an Arena with leaderboards and duels. Three play modes for every age. Live at [sbmadhav.com/vedic-math](https://sbmadhav.com/vedic-math/).
+Speed tricks from the sutras, a counting-to-calculus skill map, games, daily quests, an Arena with Boards. Three play modes for every age. Served at [learnvedicmath.com](https://learnvedicmath.com/) from Cloudflare Workers static assets (`wrangler.jsonc`, ADR 0004): the landing page at `/`, the game at `/play/`, pages for grown-ups at `/parents/`, `/teachers/`, `/privacy/` and `/terms/`. Until the move is launched (openspec change `learnvedicmath`), the previous app keeps serving at sbmadhav.com/vedic-math/ from this repo's GitHub Pages.
 
-Part of [sbmadhav.com](https://sbmadhav.com). GitHub Pages publishes this repo (branch `main`) as a project site, and the user site's custom domain puts it at `/vedic-math/`. The design system (`/design-system/`, from [sbmadhav/design-system](https://github.com/sbmadhav/design-system)) and the fonts, Explore menu and analytics (`/assets/`, from [sbmadhav/sbmadhav.github.io](https://github.com/sbmadhav/sbmadhav.github.io)) are loaded by absolute URL.
+The site is self-contained: the design system is a pinned copy (`vendor/design-system/2.1.0/`, published at `/ds/2.1.0/`) with its own theme (`theme/learnvedicmath.css`), and the fonts, icons, GoatCounter script and Firebase SDK are served from this site too.
 
 ## Layout
 
 | Path | What it is |
 |---|---|
-| `index.html`, `math.css` | The page and its styles |
+| `play/index.html`, `math.css` | The game page and its styles |
+| `site/` | The landing page and the pages for grown-ups (rendered into place by the build; the legal pages include `docs/legal/`) |
+| `theme/` | The brand theme, the fonts stylesheet, the site header partial and the styles of the static pages |
+| `vendor/`, `fonts/`, `icons/`, `thumbs/` | Pinned third-party files (listed in `THIRD-PARTY-NOTICES.md`), fonts, icons and video thumbnails |
+| `worker/` | The Content-Security-Policy report endpoint (`/_csp`), the only Worker code |
 | `js/` | ES modules (`app.js` is the entry; `skills/` holds the skill map; `play/` holds the play experiences) |
 | `css/play/` | Styles of the play experiences, loaded with their pages |
 | `test/` | Unit tests (`node --test`) |
 | `e2e/` | Playwright end-to-end tests against the live site |
 | `cloud/` | Firebase setup, Firestore rules and the rules tests |
-| `build.py` | Builds the published copy (`_site/`) with the import map and cache versions |
+| `build.py` | Builds the published copy (`_site/`) with the import map, cache versions, `_headers` and `_redirects` |
+| `wrangler.jsonc`, `deploy/` | The Cloudflare Worker configuration and the pinned wrangler that deploys it |
 | `docs/PLAN.md` | Product plan: phases, gates, metrics (not published) |
 
 History before the split comes from `vedic-math/` in `sbmadhav.github.io` (`git subtree split`). The first versions, from when the app lived at `math/`, stay in that repo (commits `2c5b256` and `7933aee`).
 
 ## Run locally
 
-Pages use absolute paths (`/vedic-math/...` and the main site's `/design-system/...`, `/assets/...`), so serve them all from one root. With the three repos cloned side by side:
+Build the site and serve it the way Cloudflare does (`_headers` and `_redirects` applied):
 
 ```sh
-cd ../sbmadhav.github.io
-ln -s ../vedic-math vedic-math         # both links are ignored by that repo's .gitignore
-ln -s ../design-system design-system   # clone sbmadhav/design-system next to it first
-python3 -m http.server 8000
+python3 build.py --dev                  # _dev/: the published layout without stamps, and a worker that caches nothing
+node e2e/local-server.mjs 8124 _dev     # http://localhost:8124/ and http://localhost:8124/play/
 ```
 
-Then open http://localhost:8000/vedic-math/.
+`python3 build.py && node e2e/local-server.mjs 8124 _site` serves exactly what the deploy publishes (stamped, with the real worker). `cd deploy && npm ci && npx wrangler dev --config ../wrangler.jsonc` runs the same `_site` in Cloudflare's own runtime.
 
 ## Offline
 
-After one visit online, the app works offline: `sw.js` (scope `/vedic-math/`) saves the page, its modules, styles and fonts. The deploy build stamps its version and file list. Leaderboards need a connection and fall back to this device. The source in git has a `'dev'` worker that caches nothing, so a local server of the checkout always shows your edits. To test offline locally, build and serve the published copy: `python3 build.py --out _site && node e2e/local-server.mjs 8124 _site`.
+After one visit online, the game works offline: `/sw.js` (scope `/play/`) saves the page, its modules, styles, the design system, fonts and icons, each checked against the hash the build recorded. The deploy build stamps its version and file list. Leaderboards need a connection and fall back to this device. The source in git has a `'dev'` worker that caches nothing. To test offline locally, build and serve the published copy: `python3 build.py && node e2e/local-server.mjs 8124 _site`.
 
 ## Checks
 
@@ -43,7 +46,7 @@ After one visit online, the app works offline: `sw.js` (scope `/vedic-math/`) sa
 | The app builds, and the source has no cache stamps | `python3 build.py --out _site` |
 | Unit tests | `node --test 'test/**/*.test.{js,mjs}'` |
 | Firestore rules tests (emulator, needs Java) | `cd cloud/test && npm install && npm test` |
-| End-to-end tests (live site) | `cd e2e && npm ci && npx playwright install chromium webkit && npx playwright test` |
+| End-to-end tests (live site, or `BASE_URL=http://localhost:8124` for a local build) | `cd e2e && npm ci && npx playwright install chromium webkit && npx playwright test` |
 
 The pre-commit hook in `.githooks/` runs the first two. Enable it once per clone:
 
@@ -51,17 +54,19 @@ The pre-commit hook in `.githooks/` runs the first two. Enable it once per clone
 git config core.hooksPath .githooks
 ```
 
-CI (`.github/workflows/ci.yml`) runs the same on every push and pull request to `main`. `.github/workflows/e2e.yml` runs the end-to-end suite against https://sbmadhav.com daily, on demand and after each push to `main` once Pages has deployed it.
+CI (`.github/workflows/ci.yml`) runs the same on every push and pull request to `main`. Pull requests from branches of this repo get a preview on workers.dev (`.github/workflows/preview.yml`) and the end-to-end suite runs against it. `.github/workflows/e2e.yml` runs the suite against https://learnvedicmath.com daily, on demand and after each deploy.
 
-The end-to-end tests never write to production Firestore: the Firebase SDK is faked in all but one read-only leaderboard test, and any write-shaped Firestore request fails the run. The service worker is blocked in every spec except `e2e/tests/offline.spec.ts` (chromium and mobile only). To test this checkout before pushing, run `node e2e/local-server.mjs 8124` and then `BASE_URL=http://localhost:8124 npx playwright test` in `e2e/`.
+The end-to-end tests never write to production Firestore: the Firebase SDK is faked in all but one read-only leaderboard test, and any write-shaped Firestore request fails the run. The service worker is blocked in every spec except `e2e/tests/offline.spec.ts` (chromium and mobile only). To test this checkout before pushing, run `python3 build.py && node e2e/local-server.mjs 8124 _site` and then `BASE_URL=http://localhost:8124 npx playwright test` in `e2e/` (with `E2E_VOICE_ORIGIN` set while the voice host is not live yet; see `docs/agent/e2e.md`).
 
 ## Deploy
 
-On a push to `main`, CI (`.github/workflows/ci.yml`) builds `_site/` with `python3 build.py --out _site`, checks it, and its `deploy` job publishes it to GitHub Pages. That needs two settings in this repo: **Settings > Pages > Source** set to "GitHub Actions", and the repository variable `PAGES_VIA_ACTIONS` set to `true` (Settings > Secrets and variables > Actions > Variables). Without them Pages deploys the `main` branch with Jekyll, which publishes the unstamped source: the app still works, but modules are not pinned and the service worker runs in its no-cache `'dev'` mode (no offline).
+On a push to `main`, CI (`.github/workflows/ci.yml`) builds `_site/` with `python3 build.py --out _site` and checks it; its `voice-upload` job copies any new Studio voice files to the voice host, and then its `deploy` job publishes the checked `_site/` with `wrangler deploy`, using the Cloudflare API token held in the `production` environment (main only). Both run only once the owner's setup is done (the repository variables `CLOUDFLARE_ACCOUNT_ID` and `R2_ACCOUNT_ID`; `docs/owner-setup-learnvedicmath.md`).
+
+Phase B of the move publishes the "Vedic Math has moved" page at sbmadhav.com/vedic-math/ once, by hand: `.github/workflows/moved.yml` (`python3 build.py --target moved`).
 
 ### Studio voice audio
 
-Read aloud plays the Studio voice (Google Chirp 3 HD, Aoede), recorded ahead of time. The audio is not in git: it lives in a GitHub Release of this repo (tag `voice-<hash>`, one `.tar`), and `js/voice-index.js` (generated, committed) names that release and the archive's SHA-256. The CI deploy runs `node tools/voice/ci-fetch.mjs _site`, which downloads the archive, checks the hash and unpacks it into `_site/voice/` (served at `/vedic-math/voice/`). A line with no recording is read by the device's own voice. The site never calls a speech service, and `build.py` fails if a provider address or anything shaped like a key appears in a published file.
+Read aloud plays the Studio voice (Google Chirp 3 HD, Aoede), recorded ahead of time. The audio is not in git: it lives in a GitHub Release of this repo (tag `voice-<hash>`, one `.tar`), and `js/voice-index.js` (generated, committed) names that release, the archive's SHA-256 and the voice host. The CI `voice-upload` job runs `node tools/voice/r2-upload.mjs`, which downloads the archive, checks the hash, uploads any file the R2 bucket does not have yet (never overwriting or deleting) and checks that every file the index names is there; the files are served from https://voice.learnvedicmath.com/ (design D17). A line with no recording is read by the device's own voice. The site never calls a speech service, and `build.py` fails if a provider address or anything shaped like a key appears in a published file.
 
 After changing anything that is read aloud, re-record and publish (only new or changed lines are paid for; caps of $300 a month and $50 a run at list price, 300 requests a minute, in `tools/voice/voice-lib.mjs`):
 

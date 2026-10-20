@@ -1,4 +1,4 @@
-import { test, expect, open, heldClock, cloudLog, chromiumOnly, APP } from '../fixtures';
+import { test, expect, open, heldClock, cloudLog, chromiumOnly, APP, needsWorldBoards } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* ratings spec, "A Rating per game, Arena League and Skill":
@@ -8,7 +8,7 @@ import type { Page } from '@playwright/test';
      (privacy.spec.ts covers Arena and Skill Ratings; this adds the game Rating, raised by a Ranked round.) */
 
 const SEEDED = { 'game:times-sprint': 5, 'arena:challenger': 7, 'arena:pro': 12, 'skill:3-mult': 11, 'skill:v-sq5': 6 };
-const ratings = (page: Page) => page.evaluate(async () => ((await import('/vedic-math/js/store.js' as string)).load().ratings) as Record<string, number>);
+const ratings = (page: Page) => page.evaluate(async () => ((await import('/js/store.js' as string)).load().ratings) as Record<string, number>);
 
 /** Answers n Times sprint questions right, reading each question from the page. */
 async function rightAnswers(page: Page, n: number) {
@@ -53,6 +53,7 @@ test.describe('Ratings stay on the device', () => {
   test.use({ seedMode: 'challenger', seedConsent: { age: 'adult' }, seedProgress: { ratings: { ...SEEDED } } });
 
   test('a Ranked Times sprint round raises the game Rating and no request leaving the device contains it', async ({ page }, testInfo) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     chromiumOnly(testInfo, 'app logic, the same in every engine');
     const out: string[] = [];
     page.on('request', r => out.push(`${r.method()} ${r.url()}\n${r.postData() || ''}`));

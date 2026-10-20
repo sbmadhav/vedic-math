@@ -14,11 +14,15 @@ Every response SHALL carry `Strict-Transport-Security: max-age=63072000; include
 - **THEN** the response carries each of these headers with these values
 
 ### Requirement: Powerful features are off
-Every response SHALL carry a `Permissions-Policy` that turns off camera, microphone, geolocation, payment, USB, serial, Bluetooth and interest-based ad topics, and allows fullscreen, autoplay, encrypted media and picture-in-picture only for this site and `https://www.youtube-nocookie.com`.
+Every response SHALL carry a `Permissions-Policy` that turns off geolocation, payment, USB, serial, Bluetooth and interest-based ad topics, and allows fullscreen, autoplay, encrypted media and picture-in-picture only for this site and `https://www.youtube-nocookie.com`. Every page except the game SHALL also turn off camera and microphone; the game page (`/play/`) SHALL allow them for this site only, for Math Lens (camera) and Tala Lab (microphone).
 
-#### Scenario: Camera
-- **WHEN** a script on the page asks for the camera
+#### Scenario: Camera on a grown-up page
+- **WHEN** a script on `/parents/` asks for the camera
 - **THEN** the browser refuses without asking the Player
+
+#### Scenario: Camera in the game
+- **WHEN** the Player taps Turn on the camera in Math Lens on `/play/`
+- **THEN** the browser asks the Player for the camera, and a frame from another origin cannot use it
 
 ### Requirement: Opener isolation
 Every page SHALL send `Cross-Origin-Opener-Policy: same-origin`, except `/import/`, which SHALL send `same-origin-allow-popups` so the export popup can answer it.
@@ -31,8 +35,15 @@ Every page SHALL send `Cross-Origin-Opener-Policy: same-origin`, except `/import
 - **WHEN** `/import/` opens the export popup and the popup posts its message
 - **THEN** the import page receives it
 
-### Requirement: Policy violations are reported and kept small
-Every HTML response SHALL send `Reporting-Endpoints: csp="https://learnvedicmath.com/_csp"`, and its policies SHALL name `report-to csp` and `report-uri /_csp`. The `/_csp` endpoint SHALL accept only POSTs of CSP reports up to 8 KB and answer 204, SHALL log only the directive, the blocked origin (or `inline` or `eval`), the page path without query or fragment, the disposition and the browser family, and SHALL NOT log the IP address, full URLs, the referrer or the script sample.
+### Requirement: Policy violations are reported
+Every HTML response SHALL send `Reporting-Endpoints: csp="/_csp"`; its enforced policy SHALL name `report-to csp` and `report-uri /_csp`, and its Report-Only policy `report-to csp` only.
+
+#### Scenario: A preview reports to itself
+- **WHEN** a page of a branch preview on `workers.dev` blocks a script
+- **THEN** the report goes to that preview's `/_csp`, not to learnvedicmath.com
+
+### Requirement: The report endpoint keeps nothing personal
+The `/_csp` endpoint SHALL accept only POSTs of CSP reports up to 8 KB and answer 204, SHALL log only the directive, the blocked origin (or `inline` or `eval`), the page path without query or fragment, the disposition and the browser family, and SHALL NOT log the IP address, full URLs, the referrer or the script sample.
 
 #### Scenario: A blocked script
 - **WHEN** a script from a host the policy does not allow is blocked on `/play/`
@@ -43,7 +54,7 @@ Every HTML response SHALL send `Reporting-Endpoints: csp="https://learnvedicmath
 - **THEN** it is refused and nothing is logged
 
 ### Requirement: A stricter policy is tried before it is enforced
-Every HTML page SHALL also send a `Content-Security-Policy-Report-Only` policy with `style-src 'self'` and `require-trusted-types-for 'script'`, reporting to the same endpoint, so its reports can be reviewed before it is enforced in a later change.
+Every HTML page SHALL also send a `Content-Security-Policy-Report-Only` policy with `style-src 'self'` and `require-trusted-types-for 'script'`, reporting to the same endpoint through `report-to`, so its reports can be reviewed before it is enforced in a later change.
 
 #### Scenario: Report-only violation
 - **WHEN** a view sets a `style=""` attribute

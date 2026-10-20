@@ -3,7 +3,7 @@ import { test, expect, open } from './fixtures';
 /* Math Lens camera (openspec play-experiences, "Camera and microphone only while in use"): the camera is asked
    for only after a tap next to a line saying what it is for, and every track stops on a hidden tab and on a route
    change. The camera is a fake: a MediaStream from a canvas, so no real device is used and nothing is recorded.
-   The digit reader (Tesseract.js) is served from this site, /vedic-math/vendor/tesseract/ (owner decision P1). The
+   The digit reader (Tesseract.js) is served from this site, /vendor/tesseract/ (owner decision P1). The
    camera tests refuse it so nothing large downloads; one test lets it load and read a frame, and checks that every
    reader file came from that folder and the page's policy blocked nothing. */
 
@@ -48,7 +48,7 @@ async function hide(page: import('@playwright/test').Page, hidden: boolean) {
 test.beforeEach(async ({ page }) => {
   await fakeCamera(page);
   // The reader is refused unless a test lets it load (see the last tests)
-  await page.route(/\/vedic-math\/vendor\/tesseract\//, r => r.abort());
+  await page.route(/\/vendor\/tesseract\//, r => r.abort());
 });
 
 test('the camera is asked for only after Turn on the camera, next to what it is for', async ({ page, issues }) => {
@@ -136,12 +136,12 @@ test('a sent link with a kind that is not one of Math Lens\'s (constructor) play
 
 test('Read the digits loads the reader from this site only and reads the frozen frame', async ({ page, baseURL }) => {
   test.setTimeout(120_000);
-  await page.unroute(/\/vedic-math\/vendor\/tesseract\//);
+  await page.unroute(/\/vendor\/tesseract\//);
   const asked: string[] = [];
   page.on('request', r => { if (/tesseract|traineddata/i.test(r.url())) asked.push(r.url()); });
   await page.addInitScript(() => {
     const w = window as any; w.__csp = [];
-    document.addEventListener('securitypolicyviolation', (e: SecurityPolicyViolationEvent) => { w.__csp.push(`${e.effectiveDirective} ${e.blockedURI}`); });
+    document.addEventListener('securitypolicyviolation', (e: SecurityPolicyViolationEvent) => { if (e.disposition === 'report') return; w.__csp.push(`${e.effectiveDirective} ${e.blockedURI}`); });
   });
   await open(page, '#/games/lens');
   await expect(page.locator('[data-way="camera"]')).toBeEnabled();
@@ -157,6 +157,6 @@ test('Read the digits loads the reader from this site only and reads the frozen 
   await expect(page.locator('#lnDigits')).toHaveValue(/4721/);
   const origin = new URL(baseURL!).origin;
   expect(asked.length).toBeGreaterThan(0);
-  for (const u of asked) expect(u.startsWith(`${origin}/vedic-math/vendor/tesseract/`), u).toBe(true);
+  for (const u of asked) expect(u.startsWith(`${origin}/vendor/tesseract/`), u).toBe(true);
   expect(await page.evaluate(() => (window as any).__csp)).toEqual([]);
 });

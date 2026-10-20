@@ -9,15 +9,15 @@ for (const scheme of ['light', 'dark'] as const) {
     test(`A 320px phone: controls on the first row, nav below, nothing sideways, every tab on screen, chip with avatar and bar (${scheme})`, async ({ page }) => {
       await open(page);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
-      const row = await Promise.all(['.home', '#exploreBtn', '#themeBtn', '#vmMBtn', '#mqChip a'].map(async sel => ({ sel, b: (await page.locator(sel).boundingBox())! })));
+      const row = await Promise.all(['.md-brand', '#themeBtn', '#vmMBtn', '#mqChip a'].map(async sel => ({ sel, b: (await page.locator(sel).boundingBox())! })));
       const first = row[0].b;
       for (const { sel, b } of row) {
         expect(b.x, sel).toBeGreaterThanOrEqual(0);
         expect(b.x + b.width, sel).toBeLessThanOrEqual(320);
         expect(Math.abs(b.y + b.height / 2 - (first.y + first.height / 2)), sel).toBeLessThanOrEqual(first.height);
       }
-      const nav = (await page.locator('header .mq-nav').boundingBox())!, xp = (await page.locator('#exploreBtn').boundingBox())!;
-      expect(nav.y).toBeGreaterThanOrEqual(xp.y + xp.height);
+      const nav = (await page.locator('header .mq-nav').boundingBox())!, theme = (await page.locator('#themeBtn').boundingBox())!;
+      expect(nav.y).toBeGreaterThanOrEqual(theme.y + theme.height);
       const tabs = page.locator('header .mq-nav a:visible');
       expect(await tabs.count()).toBeGreaterThanOrEqual(8);
       for (const tab of await tabs.all()) {

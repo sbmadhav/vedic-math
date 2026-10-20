@@ -48,7 +48,7 @@ test('the shipped HTML, manifest and every app script make no Vedic-source claim
 
   // Entry scripts on the page, then every module they reach
   const entries = [...html.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)].map(m => new URL(m[1], `${origin}${APP}`).href)
-    .filter(u => new URL(u).pathname.startsWith(`${APP}js/`));
+    .filter(u => new URL(u).pathname.startsWith(`/js/`));
   expect(entries.length, 'index.html loads the app entry script').toBeGreaterThan(0);
   const seen = new Set<string>();
   const queue = entries.map(u => u.split('?')[0]);
@@ -60,13 +60,13 @@ test('the shipped HTML, manifest and every app script make no Vedic-source claim
     hits.push(...scan(new URL(url).pathname, src));
     for (const m of src.matchAll(SPECIFIER)) {
       const next = new URL(m[1], url).href.split('?')[0];
-      if (new URL(next).pathname.startsWith(`${APP}js/`) && !seen.has(next)) queue.push(next);
+      if (new URL(next).pathname.startsWith(`/js/`) && !seen.has(next)) queue.push(next);
     }
   }
   const paths = [...seen].map(u => new URL(u).pathname);
   // The crawl really reached the app: the entry, lazy modules, the skills and the voice worker
   for (const f of ['app.js', 'sutras.js', 'videos.js', 'skills/index.js', 'voice-worker.js']) {
-    expect(paths, `scanned ${f}`).toContain(`${APP}js/${f}`);
+    expect(paths, `scanned ${f}`).toContain(`/js/${f}`);
   }
   expect(hits).toEqual([]);
 });

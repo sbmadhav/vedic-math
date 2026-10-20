@@ -11,7 +11,7 @@ import { on, onAbort, child } from '../life.js';
    @tesseract.js-data/eng@1.0.0 (test/play/lens-reader.test.mjs pins their hashes). The worker starts from its URL,
    never a blob: (the policy's worker-src is 'self'), and compiles WebAssembly, which is what the 'wasm-unsafe-eval'
    in build.py's script-src is for. */
-const VENDOR = '/vedic-math/vendor/tesseract/';
+const VENDOR = '/vendor/tesseract/';
 export const TESS = {
   lib: VENDOR + 'tesseract.esm.min.js',
   workerPath: VENDOR + 'worker.min.js',

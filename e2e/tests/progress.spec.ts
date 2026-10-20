@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog } from './fixtures';
+import { test, expect, APP, open, cloudLog, needsWorldBoards } from './fixtures';
 
 /* Progress lives in localStorage (vm.players, mathquest.v1.<player>) and survives a reload. */
 
@@ -109,7 +109,7 @@ test('Video learner: closing a video after 5 seconds earns nothing, a minute in 
   await dlg.locator('.vp-x').click();
   await expect(dlg).toBeHidden();
   await page.clock.runFor(70_000);
-  const badges = () => page.evaluate(async () => (await import('/vedic-math/js/store.js' as string)).badges());
+  const badges = () => page.evaluate(async () => (await import('/js/store.js' as string)).badges());
   expect((await badges()).watch).toBeUndefined();
   // Opening a video the Player never opened before earns no Sparks
   const sparks = () => page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1') || '{}').sparks || 0);
@@ -128,6 +128,7 @@ test('Video learner: closing a video after 5 seconds earns nothing, a minute in 
 test.describe('removing a Player who posted', () => {
   test.use({ seedConsent: { age: 'adult' } });
   test('signs them out here and sends nothing; the next new Player gets a new identity', async ({ page }) => {
+    await needsWorldBoards(page); // World boards off at launch (task 8.5): boards-off.spec.ts runs instead
     const PB = 'pbgone1', UID_B = `e2e-fake-vm-${PB}`;
     await page.addInitScript(([pb, uid]) => {
       if (localStorage.getItem('e2e.seeded2')) return;
@@ -150,7 +151,7 @@ test.describe('removing a Player who posted', () => {
     expect(log.writes).toEqual([]);
     // A new Player posts for the first time: a new identity, not the removed Player's
     const path = await page.evaluate(async () => {
-      const store = await import('/vedic-math/js/store.js' as string), cloud = await import('/vedic-math/js/cloud.js' as string);
+      const store = await import('/js/store.js' as string), cloud = await import('/js/cloud.js' as string);
       const c = store.addPlayer(); store.setAge('adult');
       await cloud.submit(`daily-${cloud.dayId()}-challenger`, { name: c.name, avatar: c.avatar, score: 120 });
       return { id: c.id as string };
@@ -174,7 +175,7 @@ test.describe('badges in Explorer', () => {
     expect(n).toBeGreaterThan(10);
     for (const name of ['White belt', 'Green belt', 'Black belt', 'Sutra scholar']) await expect(badge(page, name)).toHaveCount(0);
     await expect(page.locator('.mq-strand', { hasText: 'Badges' })).toContainText(`0 of ${n}`);
-    const all = await page.evaluate(async () => (await import('/vedic-math/js/gamify.js' as string)).BADGES.length);
+    const all = await page.evaluate(async () => (await import('/js/gamify.js' as string)).BADGES.length);
     expect(n).toBe(all - 4);
   });
   test.describe('with the White belt earned before switching from Challenger', () => {
@@ -192,7 +193,7 @@ test.describe('badges in Explorer', () => {
 
 test('badges in Challenger: every badge is listed, belts included', async ({ page }) => {
   await open(page, '#/me');
-  const all = await page.evaluate(async () => (await import('/vedic-math/js/gamify.js' as string)).BADGES.length);
+  const all = await page.evaluate(async () => (await import('/js/gamify.js' as string)).BADGES.length);
   await expect(page.locator('.badge-grid .badge')).toHaveCount(all);
   await expect(badge(page, 'White belt')).toHaveCount(1);
 });

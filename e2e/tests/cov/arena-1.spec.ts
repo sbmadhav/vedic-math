@@ -72,7 +72,7 @@ test.describe('Pro Arena is mental arithmetic', () => {
     const days = ['2026-10-19', '2026-10-20', '2026-10-25', '2026-11-30', '2026-12-31', '2027-01-01', '2027-06-15', '2028-02-29'];
     for (let d = 1; d <= 30; d++) days.push(`2026-11-${String(d).padStart(2, '0')}`);
     const sets = await page.evaluate(async ds => {
-      const A = await import('/vedic-math/js/arena.js' as string);
+      const A = await import('/js/arena.js' as string);
       const div = document.createElement('div');
       return ds.map((day: string) => [day, A.dailySet('pro', day).map((q: any) => { div.innerHTML = q.q; return { q: div.innerHTML, answer: q.answer, family: q.family, d: q.d }; })]);
     }, days) as [string, { q: string; answer: number; family: string; d: number }[]][];
@@ -89,7 +89,7 @@ test.describe('Pro Arena is mental arithmetic', () => {
     await open(page, '#/arena');
     await expect(page.locator('[data-t="daily"]')).toHaveAttribute('aria-pressed', 'true');
     const expected = await page.evaluate(async () => {
-      const A = await import('/vedic-math/js/arena.js' as string);
+      const A = await import('/js/arena.js' as string);
       const div = document.createElement('div');
       return A.dailySet('pro', '2026-10-19').map((q: any) => { div.innerHTML = q.q; return { q: div.innerHTML, answer: q.answer, family: q.family }; });
     }) as { q: string; answer: number; family: string }[];
@@ -122,7 +122,7 @@ test.describe('Pro Arena is mental arithmetic', () => {
     await open(page, '#/arena');
     // The generator at every difficulty step, many times
     const items = await page.evaluate(async () => {
-      const A = await import('/vedic-math/js/arena.js' as string);
+      const A = await import('/js/arena.js' as string);
       const div = document.createElement('div'), out: any[] = [];
       for (let d = 1; d <= 20; d++) for (let k = 0; k < 40; k++) { const q = A.practiceItem('pro', d); div.innerHTML = q.q; out.push({ q: div.innerHTML, answer: q.answer, family: q.family, d }); }
       return out;

@@ -30,7 +30,7 @@ test.describe('a Player who may post, with 120 Sparks (40 this week), opens a vi
     await open(page, '#/watch');
     // Record every Sparks gain, whatever its reason
     await page.evaluate(async () => {
-      const store = await import('/vedic-math/js/store.js' as string);
+      const store = await import('/js/store.js' as string);
       (window as any).__gains = [];
       store.on((type: string, d: any) => { if (type === 'sparks') (window as any).__gains.push(d); });
     });
@@ -58,7 +58,7 @@ test.describe('a Player who may post, with 120 Sparks (40 this week), opens a vi
     // Nothing new to post, so no weekly Sparks Board write either
     expect((await cloudLog(page)).writes.filter(w => /^boards\/xp-week-/.test(w.path))).toEqual([]);
     // The Me page still shows 120 Sparks
-    await page.goto('/vedic-math/#/me');
+    await page.goto('/play/#/me');
     await expect(page.locator('.me-head')).toContainText('120 Sparks');
   });
 });

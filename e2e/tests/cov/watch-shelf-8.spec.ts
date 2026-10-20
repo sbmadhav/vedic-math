@@ -10,16 +10,15 @@ const PLAYLIST_OR_CHANNEL = /youtube(-nocookie)?\.com\/(playlist|channel\/|c\/|u
 
 async function noYouTube(page: Page) {
   await page.route(/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>video</title>' }));
-  await page.route(/^https:\/\/i\.ytimg\.com\//, r => r.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg"/>' }));
 }
 test.beforeEach(async ({ page }) => { await noYouTube(page); });
 
 test('the shelf data has no playlist or channel entry: every video is one 11-character YouTube id', async ({ page }) => {
   await open(page, '#/');
-  const data = await page.evaluate(async (app) => {
-    const m = await import(`${app}js/videos.js`);
+  const data = await page.evaluate(async () => {
+    const m = await import('/js/videos.js' as string);
     return { videos: m.VIDEOS, links: m.LINKS };
-  }, APP);
+  });
   expect(data.videos.length).toBeGreaterThan(0);
   for (const v of data.videos) {
     expect(v.yt, `${v.id}: yt is a single video id, not a playlist or channel`).toMatch(/^[A-Za-z0-9_-]{11}$/);

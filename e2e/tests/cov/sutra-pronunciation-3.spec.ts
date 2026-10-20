@@ -6,7 +6,7 @@ import type { Page, Request } from '@playwright/test';
    clip cannot play": one test per scenario. "Offline after first use" needs the service worker and runs in
    e2e/tests/offline.spec.ts ("a Sutra name heard once online lets every other name play offline"); here the cache
    rule it relies on is asserted: the first tap fetches only its clip and the other 28 follow while idle. */
-const SOUNDS = /\/vedic-math\/sounds\//;
+const SOUNDS = /\/sounds\//;
 function soundRequests(page: Page) {
   const urls: string[] = [];
   page.on('request', (r: Request) => { if (SOUNDS.test(r.url())) urls.push(new URL(r.url()).pathname); });
@@ -20,7 +20,7 @@ test.beforeEach(async ({ page }) => {
 test('Size: 29 clips, each under 30 KB and all together under 500 KB', async ({ page }, testInfo) => {
   chromiumOnly(testInfo, 'fetches the 29 files once');
   await open(page, '#/sutras');
-  const urls: string[] = await page.evaluate(async () => { const m: any = await import('/vedic-math/js/say.js' as string); return Object.keys(m.NAMES).map((id: string) => m.clipUrl(id)); });
+  const urls: string[] = await page.evaluate(async () => { const m: any = await import('/js/say.js' as string); return Object.keys(m.NAMES).map((id: string) => m.clipUrl(id)); });
   expect(urls).toHaveLength(29);
   let total = 0;
   for (const u of urls) {
@@ -39,7 +39,7 @@ test('First tap: only the tapped clip is fetched before it plays, then the other
   await open(page, '#/sutras/s3');
   await page.locator('dialog .say-btn').click();
   await expect.poll(() => audioLog(page).then(l => l.decoded)).toBe(1);
-  expect(urls[0]).toBe('/vedic-math/sounds/sutras/s3.m4a');
+  expect(urls[0]).toBe('/sounds/sutras/s3.m4a');
   await expect.poll(() => new Set(urls).size, { timeout: 40_000 }).toBe(29);
   expect(urls.filter(u => u.endsWith('/s3.m4a'))).toHaveLength(1);
 });
@@ -52,18 +52,18 @@ test('Save-Data: with Save-Data on only the tapped clip is fetched', async ({ pa
   await page.locator('dialog .say-btn').click();
   await expect.poll(() => audioLog(page).then(l => l.decoded)).toBe(1);
   await page.waitForTimeout(3500);
-  expect(new Set(urls)).toEqual(new Set(['/vedic-math/sounds/sutras/s3.m4a']));
+  expect(new Set(urls)).toEqual(new Set(['/sounds/sutras/s3.m4a']));
 });
 
 test('Offline after first use: the clips are served cache first by the worker (asserted end to end in offline.spec.ts); the shipped index pins every clip URL', async ({ page }) => {
   await open(page, '#/sutras');
-  const pinned: boolean = await page.evaluate(async () => { const m: any = await import('/vedic-math/js/say.js' as string); return Object.keys(m.NAMES).every((id: string) => /\/sounds\/sutras\/[su]\d+\.m4a\?v=[0-9a-f]{10}$/.test(m.clipUrl(id))); });
+  const pinned: boolean = await page.evaluate(async () => { const m: any = await import('/js/say.js' as string); return Object.keys(m.NAMES).every((id: string) => /\/sounds\/sutras\/[su]\d+\.m4a\?v=[0-9a-f]{10}$/.test(m.clipUrl(id))); });
   expect(pinned).toBe(true);
 });
 
 test('Offline before any clip is cached: the built-in voice reads the Respelling and the status says so', async ({ page }) => {
   await fakeAudio(page);
-  await page.route(/\/vedic-math\/sounds\/sutras\//, route => route.abort('failed'));
+  await page.route(/\/sounds\/sutras\//, route => route.abort('failed'));
   await open(page, '#/sutras/s1');
   const btn = page.locator('dialog .say-btn');
   await btn.click();

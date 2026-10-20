@@ -118,7 +118,7 @@ test.describe('tower in Calm', () => {
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1')!).medals['a:1'])).toBe(1);
 
     // Challenge 2 is a Sharpshooter: no clock anyway, so its Medal stays
-    const answers = await page.evaluate(async () => { const L = await import('/vedic-math/js/levels.js' as string); const ch = L.challenge(2); return L.challengeSet(ch).slice(0, ch.total).map((p: { answer: unknown }) => String(p.answer)); });
+    const answers = await page.evaluate(async () => { const L = await import('/js/levels.js' as string); const ch = L.challenge(2); return L.challengeSet(ch).slice(0, ch.total).map((p: { answer: unknown }) => String(p.answer)); });
     await page.goto(`${APP}#/challenge/2`);
     await page.locator('#chGo').click();
     await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
@@ -183,7 +183,8 @@ test('Calm turned on in a game header shows on in Me and after a reload, and is 
   await expect(page.locator('body')).toHaveClass(/\bcalm\b/);
   await page.goto(`${APP}#/me`);
   await expect(page.locator('#setCalm')).toHaveAttribute('aria-checked', 'true');
-  await expect(page.locator('.me-calm')).toContainText('Pause motion in the Explore menu stops motion on every page of sbmadhav.com.');
+  await expect(page.locator('#setMotion')).toHaveAttribute('aria-checked', 'false');
+  await expect(page.locator('#motionNote')).toHaveText('Stops every animation on every page of this site, also after a reload. Saved on this device.');
   await page.reload();
   await expect(page.locator('#setCalm')).toHaveAttribute('aria-checked', 'true');
   await expect(page.locator('body')).toHaveClass(/\bcalm\b/);

@@ -4,14 +4,14 @@ import { test, expect, APP, open } from '../fixtures';
    - Second Arena round: already asserted by e2e/tests/analytics.spec.ts:83.
    - Stopped round: Stop is asserted by e2e/tests/analytics.spec.ts:103; these tests cover "leaves the page
      before it ends" (a route change and a reload mid-round), for a game round and an Arena round.
-   The shared /assets/analytics.js is replaced by a stub whose window.siteTrack reports each path to the test
+   This site's /js/analytics.js is replaced by a stub whose window.siteTrack reports each path to the test
    through an exposed function, so events survive reloads and no GoatCounter request is made. */
 type Page = import('@playwright/test').Page;
 
 async function record(page: Page) {
   const sent: string[] = [];
   await page.exposeFunction('__e2eTrack', (p: string) => { sent.push(p); });
-  await page.route(/\/assets\/analytics\.js(\?.*)?$/, route => route.fulfill({
+  await page.route(/\/js\/analytics\.js(\?.*)?$/, route => route.fulfill({
     status: 200, contentType: 'text/javascript',
     body: 'window.siteTrack = (path, title) => { window.__e2eTrack(path); };',
   }));

@@ -6,7 +6,7 @@ import { test, expect, open } from '../fixtures';
 const STUB = `window.__events = window.__events || []; window.siteTrack = (path, title) => { window.__events.push(path); };`;
 
 test('Listen sends exactly math/sloka/listen once', async ({ page }) => {
-  await page.route(/\/assets\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
+  await page.route(/\/js\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
   await page.addInitScript(() => {
     const voices = [{ name: 'Lekha', lang: 'hi-IN', default: false, localService: true, voiceURI: 'hi' }];
     Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: {

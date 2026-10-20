@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Play · Learn Vedic Math</title>
+<meta name="description" content="Learn Vedic Math: speed tricks from the sutras, a counting-to-calculus skill map, games, daily quests and an Arena with Boards. Three play modes for every age.">
+<link rel="canonical" href="https://learnvedicmath.com/play/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Learn Vedic Math">
+<meta property="og:title" content="Play · Learn Vedic Math">
+<meta property="og:description" content="Learn Vedic Math: speed tricks from the sutras, a counting-to-calculus skill map, games, daily quests and an Arena with Boards. Three play modes for every age.">
+<meta property="og:url" content="https://learnvedicmath.com/play/">
+<meta property="og:image" content="https://learnvedicmath.com/icons/icon-512.png">
+<!-- Before paint: the saved color scheme and Pause motion, so there is no flash and nothing moves -->
+<script>try{var d=document.documentElement,t=localStorage.getItem('theme');if(t==='light'||t==='dark')d.dataset.theme=t;if(localStorage.getItem('motion-paused')==='1')d.classList.add('motion-paused');}catch(e){}</script>
+<meta name="theme-color" content="#F6F7F9">
+<link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="preload" href="/fonts/nunito-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fredoka-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/ds/2.1.0/tokens.css">
+<link rel="stylesheet" href="/theme/learnvedicmath.css">
+<link rel="stylesheet" href="/theme/fonts.css">
+<link rel="stylesheet" href="/ds/2.1.0/components.css">
+<link rel="stylesheet" href="/math.css">
+</head>
+<body class="md-page md-root">
+<a class="skip" href="#view">Skip to content</a>
+<!-- md-header -->
+<!-- Learn Vedic Math header, derived from design system 2.1.0 header.html (/ds/2.1.0/): no Explore button, the Learn Vedic Math brand linking to /?home, and every nav wrapping below 1180px. -->
+<header class="md-header md-header--tabs">
+  <div class="md-wrap md-header-in">
+    <a class="md-brand" href="/?home" aria-label="Learn Vedic Math, home"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="8" y="14" width="48" height="40" rx="14" fill="var(--bolt-body)" stroke="var(--bolt-line)" stroke-width="3"/><circle cx="24" cy="34" r="7" fill="var(--bolt-eye)"/><circle cx="40" cy="34" r="7" fill="var(--bolt-eye)"/><circle cx="25" cy="35" r="3" fill="var(--bolt-line)"/><circle cx="41" cy="35" r="3" fill="var(--bolt-line)"/><path d="M32 14V9" stroke="var(--bolt-line)" stroke-width="3"/><circle cx="32" cy="7" r="5" fill="var(--bolt-accent)" stroke="var(--bolt-line)" stroke-width="3"/></svg><span class="md-brand-t"><!-- slot:brand -->Learn Vedic Math<!-- /slot:brand --></span></a>
+    <!-- slot:nav --><nav class="md-nav mq-nav" aria-label="Vedic Math">
+      <a href="#/" data-match="^#?/?$">Home</a>
+      <a href="#/learn" data-match="^#/(learn|grade|skill|mix)">Learn</a>
+      <a href="#/dojo" class="hide-explorer" data-match="^#/(dojo|tricks)(/|$)">Dojo</a>
+      <a href="#/arena" data-match="^#/(arena|duel)(/|$)">Arena</a>
+      <a href="#/games" data-match="^#/games?">Games</a>
+      <a href="#/sutras" class="hide-explorer" data-match="^#/sutras(/|$)">Sutras</a>
+      <a href="#/watch">Watch</a>
+      <a href="#/guide" data-match="^#/guide">Guide</a>
+      <a href="#/find" class="nav-find" data-match="^#/find"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Find</a>
+    </nav><!-- /slot:nav -->
+    <button type="button" class="md-icon-btn md-theme" id="themeBtn" data-track="math" aria-label="Switch color scheme" title="Switch color scheme"><svg class="md-theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="var(--sun)" stroke="currentColor" stroke-width="2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg class="md-theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="var(--plum)" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="17" cy="5" r="1.2" fill="currentColor"/><circle cx="20.5" cy="9" r=".9" fill="currentColor"/></svg></button>
+    <div class="md-header-end"><!-- slot:music --><span id="mqMusic"></span><!-- /slot:music --><!-- slot:end --><span id="mqChip"></span><!-- /slot:end --></div>
+  </div>
+</header>
+<!-- /md-header -->
+
+<main id="view" tabindex="-1">
+  <noscript><section class="md-section"><div class="md-wrap"><h1 class="md-heading">Learn Vedic Math</h1><p class="md-lede">The game needs JavaScript to generate lessons and practice problems.</p></div></section></noscript>
+</main>
+
+<div id="vmLive" class="vm-live" role="status" aria-live="polite"></div>
+
+<footer class="mq-foot">
+  <div class="md-wrap">
+    <p>Learn Vedic Math is a free place to learn and play. Speed tricks use sutras from Bharati Krishna Tirtha's 1965 book; lessons, problems and visuals are original. Progress stays in this browser, and World boards only see a made-up Nickname. <a class="mq-guide" href="#/guide">How to use this app</a> · <a class="mq-grownups" href="/parents/?home">For grown-ups</a> · <a class="mq-privacy" href="/privacy/?home">Privacy</a> · <button type="button" class="linkbtn mq-reset" id="resetMode">Reset play mode</button></p>
+  </div>
+</footer>
+
+<script type="module" src="/js/app.js"></script>
+<script src="/ds/2.1.0/header.js" defer></script>
+<script src="/js/analytics.js" defer></script>
+</body>
+</html>

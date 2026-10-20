@@ -38,7 +38,7 @@ test.describe('Daily rounds are identical for a League: Ramp', () => {
     await page.clock.runFor(2200); // the 3, 2, 1 countdown
     const q = page.locator('#arQ');
     await expect(q).not.toBeEmpty();
-    const n = await page.evaluate(async () => (await import('/vedic-math/js/arena.js' as string)).dailySet('pro', '2026-10-21').length as number);
+    const n = await page.evaluate(async () => (await import('/js/arena.js' as string)).dailySet('pro', '2026-10-21').length as number);
     expect(n, 'a daily set has questions').toBeGreaterThan(1);
     const steps: number[] = [];
     let prevHtml = '';

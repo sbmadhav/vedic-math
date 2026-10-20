@@ -7,7 +7,7 @@ import type { Page } from '@playwright/test';
    Scenario "Offline" is covered by e2e/tests/offline.spec.ts (every route renders offline, #/watch branch), which
    needs the built site and the service worker. */
 
-const VIDEO_LIST = /\/vedic-math\/js\/videos\.js(\?|$)/;
+const VIDEO_LIST = /\/js\/videos\.js(\?|$)/;
 
 /** Answers the Times sprint question on screen with its product */
 async function answerSprint(page: Page) {

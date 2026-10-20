@@ -155,7 +155,7 @@ a.sc-ch:hover, a.sc-ch:focus-visible { transform: translateY(-3px); border-color
 .sc-st.is-sum rect { fill: color-mix(in srgb, var(--teal) 25%, var(--card)); stroke: var(--teal-strong); }
 
 .sc-meter { display: inline-flex; gap: 4px; }
-.sc-meter i { font-style: normal; display: grid; place-items: center; min-width: 30px; height: 30px; border-radius: 8px; font: 800 .85rem/1 var(--font-mono); border: 2px solid var(--edge); }
+.sc-meter i { font-style: normal; display: grid; place-items: center; min-width: 30px; height: 30px; border-radius: 8px; font: 500 .85rem/1 var(--font-mono); border: 2px solid var(--edge); }
 .sc-meter .sc-m-G { background: var(--sun); color: var(--on-accent); min-width: 46px; }
 .sc-meter .sc-m-L { background: var(--card); color: var(--ink); }
 .sc-meter.is-small i { height: 22px; min-width: 22px; font-size: .72rem; border-width: 1.5px; } .sc-meter.is-small .sc-m-G { min-width: 34px; }
@@ -163,7 +163,7 @@ a.sc-ch:hover, a.sc-ch:focus-visible { transform: translateY(-3px); border-color
 @media (min-width: 640px) { .sc-pr { grid-template-columns: auto minmax(0, 1fr); align-items: start; } }
 .sc-pr-list { list-style: none; margin: 0; padding: var(--space-2) var(--space-3); display: grid; gap: 4px; border-radius: var(--radius-md); background: var(--sc-parch); border: 2px solid var(--sc-parch-edge); }
 .sc-pr-list li { display: flex; align-items: center; gap: 10px; }
-.sc-pr-list li > span { width: 1.8em; text-align: right; font: 700 .9rem/1 var(--font-mono); color: var(--ink-muted); }
+.sc-pr-list li > span { width: 1.8em; text-align: right; font: 500 .9rem/1 var(--font-mono); color: var(--ink-muted); }
 .sc-pr-ask { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-weight: 800; padding: var(--space-3); border-radius: var(--radius-md); border: 2px dashed var(--sun-strong); }
 .sc-beats { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-3); }
 .sc-beats li { display: flex; flex-direction: column; gap: 4px; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--bg-alt); }
@@ -196,7 +196,7 @@ span.sc-chip { cursor: default; }
 .sc-dials { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: var(--space-3); padding: var(--space-3); border-radius: var(--radius-lg); background: var(--sc-wood); width: fit-content; max-width: 100%; box-sizing: border-box; }
 .sc-dial { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 52px; height: 64px; border-radius: var(--radius-sm); border: 2px solid var(--on-accent); background: var(--card); color: var(--ink); cursor: pointer; transition: transform .15s; }
 .sc-dial span { font: 700 1.6rem/1 var(--font-display); }
-.sc-dial small { font: 800 .7rem/1 var(--font-mono); color: var(--ink-muted); }
+.sc-dial small { font: 500 .7rem/1 var(--font-mono); color: var(--ink-muted); }
 .sc-dial.sc-m-G { background: var(--sun); color: var(--on-accent); } .sc-dial.sc-m-G small { color: var(--on-accent); }
 .sc-dial:active { transform: rotateX(40deg); }
 @media (max-width: 420px) { .sc-dial { width: 44px; height: 56px; } }
@@ -209,7 +209,7 @@ span.sc-chip { cursor: default; }
 .sc-strip-seg { stroke-width: 7; stroke-linecap: round; fill: none; }
 .sc-strip-base { stroke: var(--line); stroke-width: 7; stroke-linecap: round; }
 .sc-strip-knot { fill: var(--sc-wood); }
-.sc-strip-n { font: 700 10px/1 var(--font-mono); fill: var(--ink-muted); text-anchor: middle; }
+.sc-strip-n { font: 500 10px/1 var(--font-mono); fill: var(--ink-muted); text-anchor: middle; }
 .sc-strip-peg { cursor: grab; outline: none; }
 .sc-strip-peg circle, .sc-peg circle { fill: var(--card); stroke: var(--edge); stroke-width: 2.5; }
 .sc-strip-peg text, .sc-peg text { font: 800 12px/1 var(--font-sans); fill: var(--ink); text-anchor: middle; pointer-events: none; }
@@ -218,7 +218,7 @@ span.sc-chip { cursor: default; }
 .sc-strip-peg:not(.is-fixed) circle { fill: var(--sun); stroke: var(--on-accent); }
 .sc-strip-peg:not(.is-fixed) text { fill: var(--on-accent); }
 .sc-right { fill: none; stroke: var(--ink); stroke-width: 2.5; }
-.sc-ang { font: 700 11px/1 var(--font-mono); fill: var(--ink-muted); text-anchor: middle; }
+.sc-ang { font: 500 11px/1 var(--font-mono); fill: var(--ink-muted); text-anchor: middle; }
 .sc-slack { fill: none; stroke: var(--ink-muted); stroke-width: 2; stroke-dasharray: 4 4; }
 .sc-rope-read, .sc-sq-read { text-align: center; margin: 0; font-weight: 700; }
 .sc-t-a { color: var(--coral-strong); } .sc-t-b { color: var(--teal-strong); } .sc-t-c { color: var(--sun-strong); }

@@ -4,13 +4,13 @@ import { test, expect, APP, open, cloudLog, heldClock } from './fixtures';
    and Back / Forward move between views. */
 
 const ROUTES = [
-  { hash: '#/learn', nav: 'Learn', h1: 'Pick a level', title: /^Skill map: Vedic Math/ },
+  { hash: '#/learn', nav: 'Learn', h1: 'Pick a level', title: /^Skill map · Learn Vedic Math/ },
   { hash: '#/dojo', nav: 'Dojo', h1: 'From white belt to black belt', title: /^Vedic Dojo/ },
   { hash: '#/arena', nav: 'Arena', h1: '60 seconds. Same questions for everyone.', title: /^Arena/ },
   { hash: '#/games', nav: 'Games', h1: 'Games that build number sense', title: /^Games/ },
-  { hash: '#/sutras', nav: 'Sutras', h1: 'The 16 sutras and 13 sub-sutras', title: /^The sutras:/ },
+  { hash: '#/sutras', nav: 'Sutras', h1: 'The 16 sutras and 13 sub-sutras', title: /^The sutras · Learn Vedic Math/ },
   { hash: '#/watch', nav: 'Watch', h1: 'Short videos that show how', title: /^Watch and learn/ },
-  { hash: '#/me', nav: null, h1: 'Swift Tiger 42', title: /^Me: Vedic Math/ },
+  { hash: '#/me', nav: null, h1: 'Swift Tiger 42', title: /^Me · Learn Vedic Math/ },
 ];
 
 for (const r of ROUTES) {

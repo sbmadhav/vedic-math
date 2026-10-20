@@ -28,15 +28,15 @@ const hide = (page: Page, hidden: boolean) => page.evaluate(h => {
   document.dispatchEvent(new Event('visibilitychange'));
 }, hidden);
 
-test('Reading a captured picture on the published site: the reader files are served from /vedic-math/vendor/tesseract/ and the page allows them', async ({ page }) => {
+test('Reading a captured picture on the published site: the reader files are served from /vendor/tesseract/ and the page allows them', async ({ page }) => {
   await open(page, '#/games/lens');
   for (const f of ['tesseract.esm.min.js', 'worker.min.js', 'tesseract-core-simd-lstm.wasm.js', 'eng.traineddata.gz']) {
-    const r = await page.request.head(`${APP}vendor/tesseract/${f}`);
+    const r = await page.request.head(`/vendor/tesseract/${f}`);
     expect(r.ok(), f).toBeTruthy();
   }
   // The module names only this site's folder for the reader
-  const src = await (await page.request.get(`${APP}js/play/exp/lens-cam.js`)).text();
-  expect(src).toContain("'/vedic-math/vendor/tesseract/'");
+  const src = await (await page.request.get(`/js/play/exp/lens-cam.js`)).text();
+  expect(src).toContain("'/vendor/tesseract/'");
   expect(src).not.toMatch(/jsdelivr|unpkg|cdnjs/);
   // The page's policy allows the reader's compiled code and names no outside script host
   const csp = await page.evaluate(() => document.querySelector('meta[http-equiv="Content-Security-Policy"]')?.getAttribute('content') || '');
@@ -45,7 +45,7 @@ test('Reading a captured picture on the published site: the reader files are ser
 
 test('Camera left on in a hidden tab: every camera track stops, and one tap turns it on again', async ({ page }) => {
   await fakeCamera(page);
-  await page.route(/\/vedic-math\/vendor\/tesseract\//, r => r.abort());
+  await page.route(/\/vendor\/tesseract\//, r => r.abort());
   await open(page, '#/games/lens');
   await page.locator('[data-way="camera"]').click();
   await page.locator('.ln-on').click();
@@ -109,12 +109,12 @@ test("Removing a child's Player: their Daily Number, Pattern Wall and other expe
 test('Tala Lab offline: its module and styles are pinned for the worker, and the page opens from the app shell (offline run in offline.spec.ts)', async ({ page }) => {
   await open(page, '#/games/tala');
   await expect(page.locator('#view h1').first()).toHaveText('Tala Lab');
-  // Every file the page loaded for Tala Lab is same-origin and under /vedic-math/ (so the worker can keep it); on the
+  // Every file the page loaded for Tala Lab is same-origin (so the worker can keep it); on the
   // published site each one carries its ?v= stamp, so the precache lists it
   const files = await page.evaluate(() => performance.getEntriesByType('resource').map(e => e.name).filter(u => /\/js\/play\/|\/css\/play\//.test(u)));
   expect(files.length).toBeGreaterThan(0);
   const origin = new URL(page.url()).origin;
-  for (const u of files) expect(u.startsWith(`${origin}/vedic-math/`), u).toBe(true);
+  for (const u of files) expect(u.startsWith(`${origin}/`), u).toBe(true);
   const stamped = files.filter(u => /\?v=[0-9a-f]{8,}/.test(u));
   const published = await page.evaluate(() => !!document.querySelector('script[type="importmap"]'));
   if (published) expect(stamped.length, 'published files are stamped').toBe(files.length);

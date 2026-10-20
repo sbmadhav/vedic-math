@@ -6,7 +6,7 @@ import { test, expect, open, APP } from './fixtures';
 type Page = import('@playwright/test').Page;
 const star = (page: Page, k: string) => page.locator(`.sky-star[data-star="${k}"]`);
 /** The 63 Stars in path order, from the app's own module */
-const pathOf = (page: Page): Promise<string[]> => page.evaluate(() => import('/vedic-math/js/sky.js').then(m => m.PATH));
+const pathOf = (page: Page): Promise<string[]> => page.evaluate(() => import('/js/sky.js').then(m => m.PATH));
 /** The answer to the from9 question on screen: 1,000 − 637 = ? */
 async function from9Answer(page: Page) {
   const [a, b] = (await page.locator('#stQ').innerText()).match(/[\d,]+/g)!.map(x => Number(x.replace(/,/g, '')));
@@ -80,7 +80,7 @@ test('the race track Landmark opens the Arena', async ({ page }) => {
 test.describe('the site-wide motion pause', () => {
   test.use({ reducedMotion: 'no-preference' });
   test('with html.motion-paused set before load, nothing on the Sky animates and every Star is shown', async ({ page }) => {
-    await page.route(/\/vedic-math\/(index\.html)?(\?.*)?$/, async route => {
+    await page.route(/\/play\/(index\.html)?(\?.*)?$/, async route => {
       const res = await route.fetch();
       await route.fulfill({ response: res, body: (await res.text()).replace('<html lang="en">', '<html lang="en" class="motion-paused">') });
     });
@@ -125,7 +125,7 @@ test.describe('All places', () => {
     await page.locator('#skyPlaces').click();
     await expect(page).toHaveURL(/#\/places$/);
     await expect(page.locator('#view h1')).toHaveText('All places');
-    await expect(page).toHaveTitle(/^All places: Vedic Math/);
+    await expect(page).toHaveTitle(/^All places · Learn Vedic Math/);
     await expect(page.locator('.places-c h2')).toHaveCount(17);
     const links = page.locator('a.places-star');
     await expect(links).toHaveCount(63);
