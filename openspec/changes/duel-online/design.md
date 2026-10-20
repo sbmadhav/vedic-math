@@ -51,7 +51,7 @@ Browser (/play/)                                    Cloudflare (learnvedicmath.c
 | `js/duel/protocol.js` | Protocol version, message types, `parseClient(raw)` and `parseServer(raw)` (size cap, JSON in try, exact keys, types, ranges), constants (goal, time limits, Reactions, report reasons, close codes). | client, Worker |
 | `js/duel/rules.js` | The pure referee: `start(league, seed)`, `step(state, event, now) -> { state, out }` for every event (seat joined, ready, answer, timeout, disconnect, resume, rematch, leave). No I/O and no clock of its own, so it is tested exhaustively in node. | `DuelRoom`, node tests |
 
-- All four are plain ES modules with `// @ts-check` and JSDoc types, so the browser runs them as they are and the Worker's `tsc --noEmit` type-checks them (`allowJs`, `checkJs`). `build.py` already publishes and stamps them like any module.
+- All four are plain ES modules with `// @ts-check` and JSDoc types, so the browser runs them as they are and the Worker's `tsc --noEmit` type-checks them (`allowJs`, `checkJs`). `build.py` already publishes and stamps them like any module. (Superseded by `react-typescript` and ADR 0012, owner 2026-10-19: these become TypeScript in `shared/src/`, and `worker/` becomes `workers/`.)
 - The Worker imports them by relative path (`../../js/duel/rules.js`); wrangler's bundler packs them into the Worker.
 - `withSeed` swaps `Math.random` only for the length of one synchronous `makeSet` call. A Durable Object runs one event at a time and `makeSet` never awaits, so no other code can observe the swap. A later refactor may pass the random function explicitly; it is not needed for correctness.
 - The seed is `duel:<32 random hex>`, made by the room with `crypto.getRandomValues` and never sent to a client.

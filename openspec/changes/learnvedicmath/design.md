@@ -15,7 +15,7 @@
 
 ## Non-goals
 
-See the proposal's Out of scope. Also: no framework, no bundler (the house rule stands; vendored files are copied, not bundled).
+See the proposal's Out of scope. Also: no framework, no bundler (the house rule stands for this move; vendored files are copied, not bundled). After the move, `react-typescript` (ADR 0012, owner 2026-10-19) supersedes this rule for the game at `/play/`: React, Vite and TypeScript, with path routes in `/play/` and the hash shim forever.
 
 ## Decisions
 

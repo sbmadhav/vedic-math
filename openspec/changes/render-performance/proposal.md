@@ -2,7 +2,7 @@
 
 Status: plan only, not yet approved for implementation. The owner decisions it cites answer design questions; they do not approve this change, and merging this plan is not that approval.
 
-Since this plan was written, the `react-typescript` change (also a plan, not yet approved) proposes moving the game to React and TypeScript first and re-planning this change for React before it is built (its task group 11 and open questions). This text is not revised for that yet; which plan goes first is the owner's call.
+Superseded in part (owner, 2026-10-19): the game moves to React and TypeScript first (`react-typescript`, ADR 0012), which supersedes this plan's "no bundler, no framework, no path routing" and its esbuild, import-map and `js/views/` approach. This change is re-planned for Vite and React before it is built (`react-typescript` task 11.1), third of the follow-on changes, and its size budgets measure Brotli. This text is not revised for that yet.
 
 ## Why
 
@@ -26,7 +26,7 @@ The owner's decisions M5, M6 and P5 (2026-10-17) set the goal: measure Core Web 
 ## Out of scope
 
 - WebGL and moving drawing work off the main thread: the `gpu-effects` change.
-- A bundler, a framework or path routing (hash routes stay; `_handoff/architecture-microfrontends-prerender.md` "Do not").
+- A bundler, a framework or path routing (hash routes stay; `_handoff/architecture-microfrontends-prerender.md` "Do not"). (Superseded by `react-typescript` and ADR 0012, owner 2026-10-19.)
 - Static content pages for Sutras, Tricks and Skills (SEO); a separate change.
 - Content-hashed file names and year-long `Cache-Control: immutable` (see design, "Considered").
 - Image work beyond what exists (Watch thumbnails are handled by the move).
