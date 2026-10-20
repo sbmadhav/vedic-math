@@ -18,10 +18,10 @@ The landing page (`/`) and the grown-up pages (`/parents/`, `/teachers/`, `/priv
 - **THEN** no request is made for `/js/app.js`, any Firebase file or any YouTube host
 
 ### Requirement: The landing page
-The landing page SHALL show Bolt, say in plain words what Vedic Math is (Tricks from Bharati Krishna Tirtha's 1965 book, practice, games and Boards for ages 4 to adult), show the three Modes, offer one main "Play" button to `/play/`, and link to the grown-up pages. It SHALL NOT claim the methods come from the Vedas.
+The landing page SHALL show Bolt, say in plain words what Vedic Math is (Tricks from Bharati Krishna Tirtha's 1965 book, practice, games and Boards for ages 4 to adult), show the three Modes, offer one main "Start learning" button to `/play/` under the heading "Three ways to learn" for the Modes, and frame the site as a place to learn, with games as one way among several, and link to the grown-up pages. It SHALL NOT claim the methods come from the Vedas.
 
-#### Scenario: Play
-- **WHEN** a first-time visitor taps Play on the landing page
+#### Scenario: Start learning
+- **WHEN** a first-time visitor taps Start learning on the landing page
 - **THEN** `/play/` opens and the Mode picker is shown
 
 #### Scenario: Honest framing

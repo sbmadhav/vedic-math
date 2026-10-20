@@ -315,7 +315,7 @@ _Avoid_: target, goal (a budget fails the build)
 Proposed in the `learnvedicmath` change (`openspec/changes/learnvedicmath/`, ADRs 0004 to 0006).
 
 **Landing page**:
-The static page at `https://learnvedicmath.com/` that says what Vedic Math is and leads to the game at `/play/`. A device that already has Players goes straight past it into the game.
+The static page at `https://learnvedicmath.com/` that says what Vedic Math is and leads into the app at `/play/` (its Start learning button; the header and footer link is Learn). A device that already has Players goes straight past it into the game.
 _Avoid_: home (Home is the game's first view), splash, homepage
 
 **Hand-off**:

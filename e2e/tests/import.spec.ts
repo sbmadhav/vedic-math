@@ -74,6 +74,7 @@ test.describe('a device with no progress here', () => {
     await expect(page.locator('main img')).toHaveCount(0);
     expect(dialogs).toBe(0);
     expect(Object.keys(await stored(page)).filter(k => !['vm.sound', 'vm.tour'].includes(k))).toEqual([]);
+    await expect(page.locator('#ho-bad a.lv-play')).toHaveText('Go to Learn Vedic Math');
     await page.locator('#ho-bad a.lv-play').click();
     await expect(page).toHaveURL(new RegExp(`${APP}$`));
   });

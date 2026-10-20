@@ -60,11 +60,11 @@ test.describe('wide screen', () => {
     await expect(page).toHaveURL(/\/\?home$/);
   });
 
-  test('the landing page has the same header with Play and the grown-up pages, and no Explore', async ({ page }) => {
+  test('the landing page has the same header with Learn and the grown-up pages, and no Explore', async ({ page }) => {
     await page.goto('/?home');
     expect(await kinds(page)).toEqual(['brand', 'nav', 'theme']);
     const nav = page.locator('body > header nav');
-    for (const [name, href] of [['Play', '/play/'], ['For parents', '/parents/'], ['For teachers', '/teachers/']])
+    for (const [name, href] of [['Learn', '/play/'], ['For parents', '/parents/'], ['For teachers', '/teachers/']])
       await expect(nav.getByRole('link', { name, exact: true })).toHaveAttribute('href', href);
     await expect(page.locator('#exploreBtn, .xp-btn')).toHaveCount(0);
     await expect(page.locator('body > header.md-header')).toHaveCSS('position', 'sticky');
