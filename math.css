@@ -381,13 +381,14 @@ a.door .play-ic { width: 44px; height: 44px; } .door--coral .play-ic { backgroun
 .history { margin-bottom: 8px; } .history p { color: var(--ink); font-size: 15.5px; margin: 6px 0; }
 .history a { color: var(--sky-strong); font-weight: 700; }
 .sutra-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
-.sutra-card { position: relative; min-height: 220px; border: 2px solid var(--edge); border-radius: var(--radius-lg); background: var(--card); color: var(--ink); box-shadow: var(--shadow-ledge); overflow: hidden; transition: transform .2s; }
+.sutra-card { position: relative; display: grid; min-height: 220px; border: 2px solid var(--edge); border-radius: var(--radius-lg); background: var(--card); color: var(--ink); box-shadow: var(--shadow-ledge); overflow: hidden; transition: transform .2s; }
 .sutra-card:hover { transform: translateY(-3px) rotate(-.4deg); }
 .sutra-card.got { background: linear-gradient(160deg, color-mix(in srgb, var(--plum) 22%, var(--card)), var(--card) 60%); }
-.sutra-face, .sutra-back { position: absolute; inset: 0; padding: 16px; display: flex; flex-direction: column; gap: 6px; transition: transform .45s, opacity .3s; backface-visibility: hidden; }
+/* Both sides share one grid cell, so the card is as tall as its taller side and nothing on the back is cut off */
+.sutra-face, .sutra-back { grid-area: 1 / 1; position: relative; min-width: 0; padding: 16px; display: flex; flex-direction: column; gap: 6px; transition: transform .45s, opacity .3s; backface-visibility: hidden; }
 .sutra-face { border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; width: 100%; }
 /* The face sits in the flow, so the card grows with its text (WCAG 1.4.12) instead of clipping it; the back scrolls */
-.sutra-face { position: relative; inset: auto; min-height: 220px; box-sizing: border-box; overflow-wrap: anywhere; }
+.sutra-face { min-height: 220px; box-sizing: border-box; overflow-wrap: anywhere; }
 .sutra-back { transform: rotateY(180deg); opacity: 0; pointer-events: none; font-size: 14.5px; line-height: 1.45; overflow: auto; }
 .sutra-card.flipped .sutra-face { transform: rotateY(-180deg); opacity: 0; pointer-events: none; }
 .sutra-card.flipped .sutra-back { transform: none; opacity: 1; pointer-events: auto; }
@@ -397,7 +398,10 @@ a.door .play-ic { width: 44px; height: 44px; } .door--coral .play-ic { backgroun
 .sutra-got, .sutra-tap { margin-top: auto; align-self: flex-start; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 99px; }
 .sutra-got { background: var(--teal); color: var(--on-accent); } .sutra-tap { border: 1px dashed var(--ink-muted); color: var(--ink-muted); }
 .sutra-back code { font: 500 13px/1.4 var(--font-mono); background: color-mix(in srgb, var(--sun) 20%, var(--card)); padding: 6px 8px; border-radius: 8px; }
-.sutra-acts { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 6px; }
+/* Learn more is the main action: a full-width row of its own, then Listen and flip back (DOM order matches, so focus does too) */
+.sutra-acts { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; margin-top: auto; padding-top: 6px; }
+.sutra-acts .sutra-more { grid-column: 1 / -1; justify-content: center; white-space: nowrap; }
+.sutra-acts .listen-btn { justify-self: start; }
 .sutra-more { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 99px; background: var(--plum); color: var(--on-accent); font-weight: 700; font-size: 14px; text-decoration: none; border: 2px solid var(--edge); box-shadow: 0 2px 0 var(--ledge); }
 .sutra-more svg { width: 18px; height: 18px; }
 .sutra-flipback { margin-left: auto; width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--edge); background: var(--card); color: var(--ink); display: grid; place-items: center; cursor: pointer; }
