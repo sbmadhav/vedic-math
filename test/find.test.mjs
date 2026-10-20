@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { sectionLines, buildIndex, rank, score, normalize, tokenize, countOf, KINDS, SYNONYMS, kindLabel } from '../js/find.js';
+import { sectionLines, buildIndex, rank, score, share, normalize, tokenize, countOf, KINDS, SYNONYMS, INTENTS, MODE_LINES, intentsOf, kindLabel } from '../js/find.js';
 import { SKILLS, GRADES, byId, gradeOf } from '../js/skills/index.js';
 import { TRICKS } from '../js/vedic.js';
 import { SUTRAS, SUBSUTRAS } from '../js/sutras.js';
@@ -53,6 +53,7 @@ test('buildIndex (Pro): every catalog entry once, with a real routed page', () =
   assert.equal(new Set(ids).size, ids.length, 'no duplicate ids');
   const n = k => idx.filter(e => e.kind === k).length;
   assert.equal(n('section'), 10);
+  assert.equal(n('mode'), 3);
   assert.equal(n('trick'), TRICKS.length);
   assert.equal(n('skill'), SKILLS.filter(s => !String(s.id).startsWith('v-')).length);
   assert.equal(n('sutra'), SUTRAS.length + SUBSUTRAS.length);
@@ -101,7 +102,7 @@ test('a Sutra is found by its Devanagari name too', () => {
   assert.equal(normalize('Śūnyam \u2014 x'), 'sunyam x', 'Latin diacritics and punctuation still go');
 });
 
-test('rank: titles over synonyms over descriptions, every token must match, prefixes count, kinds in order', () => {
+test('rank: titles over synonyms over descriptions, prefixes count, kinds in order', () => {
   const idx = buildIndex({ mode: 'challenger', videos: VIDEOS });
   assert.deepEqual(kind(rank(idx, 'urdhva'), 'sutra')[0], 'Ūrdhva-Tiryagbhyām');
   assert.ok(kind(rank(idx, 'take away'), 'trick').slice(0, 3).includes('Subtract from 100, 1000, 10000'));
@@ -124,17 +125,96 @@ test('rank: titles over synonyms over descriptions, every token must match, pref
   assert.ok(kind(rank(idx, 'sq'), 'trick').length >= 2, 'a two-letter prefix matches');
   assert.equal(kind(rank(idx, 'q'), 'trick').length, 0, 'one letter is not a prefix');
   assert.ok(kind(rank(idx, 'arena race'), 'section').includes('Arena'), 'two tokens both matching');
-  assert.deepEqual(rank(idx, 'arena zzzz'), [], 'a token that matches nothing empties the result');
+  assert.equal(titles(rank(idx, 'arena zzzz'))[0], 'Arena', 'one stray word does not empty the result');
+  assert.deepEqual(rank(idx, 'zzzz qqqq'), []);
 });
 
-test('score: a title hit is 10, a synonym 8, a description 3, a prefix 70 percent', () => {
-  const e = { t: ['square', 'numbers'], s: ['squares'], d: ['any', 'number', 'that', 'ends'] };
+/* The live audit of 2026-10-20 (openspec change find-and-home-polish): phrases, questions and plain words */
+test('rank: a share of the words is enough, and more words matched ranks higher', () => {
+  const idx = buildIndex({ mode: 'challenger', videos: VIDEOS });
+  const big = rank(idx, 'multiply big numbers');
+  assert.equal(big[0].kind, 'trick', 'the Tricks come first: their best entry matches every word');
+  assert.equal(kind(big, 'trick')[0], 'Multiply any two numbers in one line');
+  assert.ok(countOf(big) > 2);
+  assert.ok(kind(rank(idx, 'multiply'), 'trick').includes('Multiply any two numbers in one line'));
+  assert.ok(kind(rank(idx, 'multiplication'), 'trick').includes('Multiply any two numbers in one line'), 'a plain word for the Trick');
+  assert.ok(kind(rank(idx, 'divide'), 'trick').includes('Divide by 9 with running sums'));
+  // A word found only in a description does not list an entry when other words miss
+  for (const g of rank(idx, 'squares zzzz')) for (const e of g.items) assert.ok(share(e, ['squares', 'zzzz']) === 0.5);
+  // Kind words: "games" lists the games, "tricks" the Tricks
+  assert.ok(kind(rank(idx, 'games'), 'game').length >= 4);
+  assert.ok(kind(rank(idx, 'tricks'), 'trick').length >= 4);
+});
+
+test('rank: questions about the app and who it is for come first as the Best match', () => {
+  const idx = buildIndex({ mode: 'challenger', videos: VIDEOS });
+  for (const q of ['how does it work', 'How it works?', 'help', 'how', 'what is this', 'where do I start']) {
+    const g = rank(idx, q);
+    assert.equal(g[0].kind, 'top', q);
+    assert.equal(g[0].items[0].title, 'Guide', q);
+  }
+  const vedic = rank(idx, 'what is vedic math');
+  assert.deepEqual(vedic[0].items.map(e => e.id).slice(0, 2), ['section-sutras', 'guide-sutras']);
+  for (const q of ['for kids', 'kids', 'my child', 'children']) {
+    const g = rank(idx, q);
+    assert.equal(g[0].kind, 'top', q);
+    assert.equal(g[0].items[0].title, 'Explorer Mode', q);
+    assert.equal(g[0].items[0].href, '#/me');
+  }
+  assert.equal(rank(idx, 'for adults')[0].items[0].title, 'Pro Mode');
+  // "how" inside a real search is not a question about the app
+  assert.deepEqual(intentsOf('how many dots'), []);
+  assert.notEqual(rank(idx, 'how many dots')[0].kind, 'top');
+  assert.ok(titles(rank(buildIndex({ mode: 'explorer' }), 'how many dots')).includes('How many dots?'));
+  // A pinned entry is not listed twice
+  const ids = rank(idx, 'help').flatMap(g => g.items.map(e => e.id));
+  assert.equal(new Set(ids).size, ids.length);
+});
+
+test('intents and modes: every intent names entries that exist; the Mode lines match fx.MODES', () => {
+  const ids = new Set(['pro', 'explorer'].flatMap(m => buildIndex({ mode: m }).map(e => e.id)));
+  for (const it of INTENTS) {
+    for (const id of it.ids) assert.ok(ids.has(id), `${id} is in the index`);
+    for (const p of it.phrases) assert.equal(normalize(p), p, `${p} is written normalized`);
+  }
+  const fx = readFileSync(new URL('../js/fx.js', import.meta.url), 'utf8');
+  for (const x of MODE_LINES) {
+    assert.ok(fx.includes(`${x.id}: { name: '${x.name}', ages: '${x.ages}', blurb: '${x.blurb}'`), `${x.id} matches fx.MODES`);
+  }
+  const ex = buildIndex({ mode: 'explorer' });
+  assert.match(ex.find(e => e.id === 'mode-explorer').sub, /Your Mode now/);
+  assert.equal(kindLabel('top', 'pro'), 'Best match');
+  assert.equal(kindLabel('mode', 'explorer'), 'Play modes');
+});
+
+test('score: a title hit is 10, a synonym 8, a kind word 6, a description 3, a prefix 70 percent; share counts the words that match', () => {
+  const e = { t: ['square', 'numbers'], s: ['squares'], k: ['trick'], d: ['any', 'number', 'that', 'ends'] };
   assert.equal(score(e, ['square']), 10);
   assert.equal(score(e, ['squares']), 8);
   assert.equal(score(e, ['ends']), 3);
   assert.equal(score(e, ['squ']), 7);
   assert.equal(score(e, ['square', 'ends']), 13);
-  assert.equal(score(e, ['square', 'zzz']), 0);
+  assert.equal(score(e, ['trick']), 6);
+  assert.equal(score(e, ['square', 'zzz']), 10, 'a word that matches nothing adds nothing');
+  assert.equal(share(e, ['square', 'zzz']), 0.5);
+  assert.equal(share(e, ['square', 'ends']), 1);
+});
+
+test('review: a section named by an ignored word is still found, and a title prefix beats a whole synonym', () => {
+  const idx = buildIndex({ mode: 'challenger', videos: VIDEOS });
+  assert.equal(titles(rank(idx, 'Me'))[0], 'Me');
+  assert.equal(titles(rank(idx, 'me'))[0], 'Me');
+  assert.deepEqual(rank(idx, 'the'), [], 'an ignored word that names nothing still gives nothing');
+  const a = { kind: 'trick', title: 'Squares', t: ['squares'], s: [], k: [], d: [] }, b = { kind: 'trick', title: 'Other', t: ['other'], s: ['squ'], k: [], d: ['squ', 'squad'] };
+  const g = rank([b, a], 'squ');
+  assert.deepEqual(g[0].items.map(e => e.title), ['Squares', 'Other'], 'title prefix (7) above a whole synonym plus a description (11)');
+});
+
+test('tokenize drops question and size words', () => {
+  assert.deepEqual(tokenize('how does it work'), []);
+  assert.deepEqual(tokenize('multiply big numbers'), ['multiply', 'numbers']);
+  assert.deepEqual(tokenize('What is Vedic math?'), ['vedic']);
+  assert.deepEqual(tokenize('for kids'), ['kids']);
 });
 
 test('Explorer ranking: Dojo experiences and Challenger games are not findable, Explorer titles are', () => {

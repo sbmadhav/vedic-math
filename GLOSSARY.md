@@ -119,7 +119,7 @@ The robot co-pilot who shows each Trick and reacts to the Player's answers. A te
 _Avoid_: mascot, buddy, pet, avatar
 
 **Nikhilam Family**:
-The brand mark: the Devanagari digits 1, 0 and 9 drawn as a family (a tall One, a baby Zero and a Nine), in the header, the favicon (the baby Zero's face) and the app icons. Sources in `brand/nikhilam-family/`. Bolt teaches in the game; the Nikhilam Family is the site's name in pictures.
+The brand mark: the Devanagari digits 1, 0 and 9 drawn as a family (a tall One, a baby Zero and a Nine), in the header, the landing page's hero picture, the favicon (the baby Zero's face) and the app icons. Sources in `brand/nikhilam-family/`. Bolt teaches in the game and appears only there; the Nikhilam Family is the site's name in pictures.
 _Avoid_: logo Bolt, mascot
 
 **Magic moment**:
@@ -139,8 +139,12 @@ One of the three cards at the top of Challenger and Pro Home (Challenger: the ne
 _Avoid_: tile (that is what is under More ways to play), hero, CTA
 
 **Find**:
-The page at `#/find` (menu bar, after Guide; the `/` key) with one box over every named thing: sections, grades, Skills, Tricks, Sutras, games, play experiences, guide sections and videos, by name or a plain word. Built in the page from the catalogs (`js/find.js`); nothing typed is stored or sent. Its browse list gives each section's one-line description, the same line the menu shows as a tooltip.
+The page at `#/find` (menu bar, after Guide; the `/` key) with one box over every named thing: sections, Play modes, grades, Skills, Tricks, Sutras, games, play experiences, guide sections and videos, by name or a plain word. Results match a share of the words typed (question words like how and what are ignored), more words matched first. Built in the page from the catalogs (`js/find.js`); nothing typed is stored or sent. Its browse list gives each section's one-line description, the same line the menu shows as a tooltip.
 _Avoid_: search engine, site search, lookup
+
+**Best match**:
+The first group of Find results when the query is a known question or phrase ("how does it work", "for kids", "what is vedic math"): the entries that answer it, listed before every kind and not repeated below. The phrases are `INTENTS` in `js/find.js`.
+_Avoid_: top hit, featured result
 
 **Watch shelf**:
 The checked list of videos, Shorts and (for Pro) Links in `js/videos.js`, shown on the Watch page and in each Skill or Trick's "Watch it explained". Every video plays in the page.

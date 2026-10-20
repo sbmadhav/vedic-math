@@ -2,7 +2,7 @@
 
 Status: plan only, not yet approved for implementation. The owner decisions it cites answer design questions; they do not approve this change, and merging this plan is not that approval.
 
-Superseded in part (owner, 2026-10-19): three.js through React Three Fiber (`react-typescript`, ADR 0013) supersedes this plan's "no three.js", its 20 KB budget (now 170 KB Brotli for the 3D code) and its OffscreenCanvas worker (3D renders on the main thread and pauses when the tab is hidden). The Sky ships in `react-typescript` as the first 3D scene. This change is re-planned for React before it is built (`react-typescript` task 11.4), last of the follow-on changes. This text is not revised for that yet.
+Superseded in part (owner, 2026-10-19): three.js through React Three Fiber (`react-typescript`, ADR 0013) supersedes this plan's "no three.js", its 20 KB budget (now 170 KB Brotli for the 3D code) and its OffscreenCanvas worker (3D renders on the main thread and pauses when the tab is hidden). The Sky ships in `react-typescript` as the first 3D scene. This change is re-planned for React before it is built (`react-typescript` task 12.5), last of the follow-on changes. This text is not revised for that yet.
 
 ## Why
 
