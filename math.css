@@ -16,6 +16,7 @@ h1:focus, h2:focus, [tabindex="-1"]:focus-visible { outline: none !important; }
 #mqMusic, #mqChip { display: flex; flex: none; }
 .md-header .mq-chip { margin: 0; height: 40px; box-sizing: border-box; padding: 0 10px 0 3px; }
 @media (max-width: 420px) { .md-header .mq-sparkbar { width: 36px; } .md-header .mq-chip { padding-right: 8px; } } /* the bar to the next Title stays, shorter */
+.md-brand svg.lv-mark { width: 48px; height: 32px; } /* the Nikhilam Family brand mark is 3:2, not square */
 html.motion-paused .md-brand svg, body.calm .md-brand svg, html.motion-paused .md-theme, body.calm .md-theme { transition: none; }
 html.motion-paused .md-brand:hover svg, body.calm .md-brand:hover svg, html.motion-paused .md-theme:hover, body.calm .md-theme:hover { transform: none; }
 

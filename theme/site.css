@@ -1,5 +1,6 @@
 /* Learn Vedic Math: the landing page and the pages for grown-ups (site/). Tokens only, both color schemes.
    The game has its own styles (math.css). */
+.md-brand svg.lv-mark { width: 48px; height: 32px; } /* the Nikhilam Family brand mark is 3:2, not square */
 .lv-kicker { margin: 0; font: var(--text-kicker); letter-spacing: var(--text-kicker-tracking); text-transform: uppercase; color: var(--coral-strong); }
 .lv-title { font-size: clamp(2rem, 5vw, 3.2rem); max-width: 16em; margin-top: var(--space-2) !important; }
 .lv-hero-in { display: grid; grid-template-columns: 1fr auto; gap: var(--space-6); align-items: center; }

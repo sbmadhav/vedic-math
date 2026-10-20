@@ -127,6 +127,18 @@ test('the landing and grown-up pages have no serious or critical axe violations'
   }
 });
 
+/* The brand link's accessible name comes from its label, not from the mark (which is hidden), on the game and the landing page */
+test('the brand link is named "Learn Vedic Math, home" and its mark is decorative', async ({ page }, testInfo) => {
+  chromiumOnly(testInfo);
+  for (const url of ['/?home', APP]) {
+    await page.goto(url);
+    const brand = page.locator('body > header').getByRole('link', { name: 'Learn Vedic Math, home', exact: true });
+    await expect(brand, url).toHaveCount(1);
+    await expect(brand.locator('svg.lv-mark'), url).toHaveAttribute('aria-hidden', 'true');
+    expect(await brand.getByRole('img').count(), url).toBe(0);
+  }
+});
+
 /* The site header (site-header spec): wide and on a 320px phone, in both schemes, with the music panel open */
 for (const scheme of ['light', 'dark'] as const) {
   for (const width of [1280, 320]) {

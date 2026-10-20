@@ -110,7 +110,8 @@ test('the precache list holds every import-map module, the shell, the styles, fo
   assert.equal(urls.get(importMap()['/js/app.js']), sha('js/app.js'));
   const tokens = read('play/index.html').match(/href="(\/ds\/2\.1\.0\/tokens\.css\?v=\w+)"/)[1];
   assert.equal(urls.get(tokens), sha('ds/2.1.0/tokens.css'), 'the published tokens.css, as served');
-  for (const u of ['/fonts/nunito-sans-latin-wght-normal.woff2', '/fonts/jetbrains-mono-latin-500-normal.woff2', '/icons/icon-192.png', '/icons/maskable-512.png', '/manifest.webmanifest'])
+  for (const u of ['/fonts/nunito-sans-latin-wght-normal.woff2', '/fonts/jetbrains-mono-latin-500-normal.woff2', '/icons/icon-192.png', '/icons/maskable-512.png',
+    '/icons/favicon-16.png', '/icons/favicon-32.png', '/icons/favicon-48.png', '/icons/favicon.svg', '/icons/apple-touch-icon.png', '/manifest.webmanifest'])
     assert.equal(urls.get(u), sha(u.slice(1)), `${u} is precached with its hash`);
   for (const [u, hash] of precache) {
     assert.ok(u.startsWith('/'), `${u} is not an absolute path`);
@@ -420,7 +421,7 @@ test('every static page has a canonical link and Open Graph tags with the site i
     assert.match(html, new RegExp(`<link rel="canonical" href="https://learnvedicmath\\.com${url.replace(/\//g, '\\/')}">`), page);
     assert.match(html, new RegExp(`<meta property="og:url" content="https://learnvedicmath\\.com${url.replace(/\//g, '\\/')}">`), page);
     for (const p of ['og:title', 'og:description', 'og:type', 'og:site_name']) assert.match(html, new RegExp(`<meta property="${p}" content="[^"]+">`), `${page} ${p}`);
-    assert.match(html, /<meta property="og:image" content="https:\/\/learnvedicmath\.com\/icons\/icon-512\.png">/, page);
+    assert.match(html, /<meta property="og:image" content="https:\/\/learnvedicmath\.com\/icons\/og\.png">/, page);
   }
 });
 
