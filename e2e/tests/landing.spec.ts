@@ -124,7 +124,9 @@ test.describe('pages for grown-ups', () => {
       await expect(page.locator('body')).not.toContainText(/Made by Madhav|built by Madhav|by Madhav Srinivasan/i);
       expect(await page.locator('a[href*="sbmadhav.com"]').count(), url).toBe(0);
     }
-    expect([...hosts].filter(h => /sbmadhav/.test(h))).toEqual([]);
+    // The site's own host is allowed: a pull request preview is served from <name>.sbmadhav.workers.dev
+    const own = new URL(page.url()).host;
+    expect([...hosts].filter(h => h !== own && /sbmadhav/.test(h))).toEqual([]);
   });
 });
 
