@@ -37,3 +37,8 @@ html.motion-paused .lv-bolt { animation: none; }
 .lv-page th { background: var(--bg-alt); }
 .lv-draft { margin: var(--space-4) 0; padding: var(--space-3) var(--space-4); border: 2px solid var(--edge); border-radius: var(--radius-md); background: color-mix(in srgb, var(--sun) 30%, var(--card)); color: var(--ink); font-weight: 700; }
 .lv-page code { font-family: var(--font-mono); font-size: .9em; }
+
+/* The hand-off import page (/import/) */
+.lv-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: var(--space-5) 0; }
+.lv-note { color: var(--ink-muted); }
+#handoff [hidden] { display: none; }

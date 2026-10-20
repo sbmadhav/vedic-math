@@ -29,7 +29,7 @@ The moved page SHALL keep a visible link to the new site, carry `<link rel="cano
 - **THEN** it requests no file under `/vedic-math/js/` other than its own packer, nothing from Firebase, and sends one hand-off count
 
 ### Requirement: Only listed data moves
-The payload SHALL hold only what the shared hand-off schema lists: each Player's id, Nickname, avatar color, Mode, created time and Age answer; each listed Player's progress record; and the listed device settings. It SHALL NOT hold World board identities, Firebase data, the Parent step, Device board entries or analytics milestones. A test SHALL fail when a `vm.*` key used in the app is in neither the moved nor the excluded list.
+The payload SHALL hold only what the shared hand-off schema lists: each Player's id, Nickname, avatar color, Mode, created time and Age answer; their progress record; optionally their play-experience records (plain data only); and the listed device settings. It SHALL NOT hold World board identities, Firebase data, the Parent step, Device board entries or analytics milestones. A test SHALL fail when a `vm.*` key used in the app is in neither the moved nor the excluded list.
 
 #### Scenario: A device still on the oldest saved format
 - **WHEN** the moved page runs on a device that has a bare `mathquest.v1` record with progress and no `vm.players`
@@ -40,14 +40,18 @@ The payload SHALL hold only what the shared hand-off schema lists: each Player's
 - **THEN** the payload holds no Firebase id and no `parentOk`
 
 ### Requirement: The payload is small
-The payload SHALL be gzip-compressed and base64url-encoded, and SHALL be at most 32 KB. Over that, the moved page SHALL show the all-Players backup code and a link to the new site instead of redirecting with data.
+The payload SHALL be gzip-compressed and base64url-encoded, SHALL travel only in the URL fragment (never a query string), and SHALL be at most 32 KB. Over that, the moved page SHALL leave out optional parts, the biggest first, until it fits, and the import page SHALL name them. Still over 32 KB, the moved page SHALL NOT redirect with data; it SHALL say the progress stays on the old site and link to the new one.
+
+#### Scenario: Big extras
+- **WHEN** a device's play-experience records make the payload over 32 KB
+- **THEN** the redirect carries the Players and their progress without those records, and the import page says the game extras stay on the old site
 
 #### Scenario: A very large record
-- **WHEN** the packed payload would be over 32 KB
-- **THEN** no redirect with data happens, and the page shows a backup code to copy and a "Go to the new site" link
+- **WHEN** the packed payload would be over 32 KB even without the optional parts
+- **THEN** no redirect with data happens, and the page says the progress stays here and shows a "Go to learnvedicmath.com" link
 
 ### Requirement: The fragment is removed first
-The import page SHALL copy and remove the fragment from the address bar (with `history.replaceState`) before any other script, analytics included, runs. The fragment SHALL never be sent anywhere.
+The import page SHALL copy and remove the fragment from the address bar (with `history.replaceState`) in its first inline script, before any other script, analytics included, runs. The fragment SHALL never be sent anywhere.
 
 #### Scenario: Analytics never sees the payload
 - **WHEN** the import page opens with a payload in its fragment
@@ -65,19 +69,26 @@ The import page SHALL decompress at most 256 KB, parse inside a guard, and accep
 - **THEN** decompression stops and nothing is written
 
 ### Requirement: Ask before importing
-A valid payload SHALL be imported only after the person chooses "Bring it" on a prompt ("Bring your progress from sbmadhav.com?") that shows how many Players, their Nicknames and their Sparks. If this device already has Players here, the prompt SHALL offer "Replace it with the one from sbmadhav.com" or "Keep what is here", and SHALL never overwrite without that choice. "Not now" SHALL write nothing. After importing it SHALL record `vm.migratedAt` and open `/play/` with the original route.
+A valid payload SHALL be imported only after the person chooses on a prompt ("Bring your progress from the old site?") that lists each Player's Nickname and Sparks. With no progress here, it SHALL offer "Bring it" and "Not now"; with progress here, "Keep this device's", "Use the old site's" and "Keep both", never overwriting without that choice. "Not now" and "Keep this device's" SHALL write nothing. After importing it SHALL record `vm.migratedAt` and open `/play/` with the original route.
 
 #### Scenario: A first hand-off
 - **WHEN** a valid payload with two Players arrives on a device with no Players here, and the Player chooses Bring it
 - **THEN** both Players, their progress and settings are saved, and the game opens on the original route
 
 #### Scenario: Existing progress here
-- **WHEN** a valid payload arrives on a device that already has Players here, and the person chooses Keep what is here
+- **WHEN** a valid payload arrives on a device that already has progress here, and the person chooses Keep this device's
 - **THEN** nothing on this device changes
 
 #### Scenario: Age answer under 13
 - **WHEN** a Player whose Age answer is 10 and who had the Parent step on sbmadhav.com is imported
 - **THEN** their Age answer is kept, the Parent step is not, and their Scores stay on the Device board
+
+### Requirement: Keep both keeps Players whole
+"Keep both" SHALL add the old site's Players next to this device's as separate Players, never merging one Player's progress into another's. An id already used here, or one with a World board identity on this device, SHALL get a new id. This device's settings SHALL win. It SHALL be offered only while the total stays within the Player cap. "Use the old site's" SHALL remove this device's Players, their progress and the Device board, as the Me page's remove does.
+
+#### Scenario: Keep both
+- **WHEN** a valid payload whose Player is p1 arrives on a device whose p1 has progress, and the person chooses Keep both
+- **THEN** this device's p1 is unchanged, and the old site's Player is added under a new id with their own progress
 
 ### Requirement: The export page
 `https://sbmadhav.com/vm-export/` SHALL exist permanently in the user-site repo. Opened as a popup by a click on the import page, it SHALL answer only a request message whose origin is `https://learnvedicmath.com`, post the same payload with that exact target origin, and close. Opened any other way it SHALL send nothing and link to the new site. It SHALL keep working after the Phase C redirect.

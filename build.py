@@ -699,7 +699,8 @@ def build_moved(out):
     """https://sbmadhav.com/vedic-math/ during Phase B. index.html and 404.html are the moved page; its packer and the
     hand-off schema are pinned with ?v=; sw.js ships with KILL = true, the old cache prefix and a built VERSION, so every
     browser that still has the old worker retires it. Paths stay under /vedic-math/, because that is where this is
-    served. GitHub Pages cannot send headers, so this page keeps its policy in a <meta>, as the old app did."""
+    served, except the main site's design system (/design-system/), which styles it. GitHub Pages cannot send headers, so
+    this page keeps its policy in a <meta>, as the old app did."""
     page_src, pack_src, schema_src = "moved/index.html", "moved/handoff-pack.js", "js/handoff-schema.js"
     for f in (page_src, pack_src, schema_src, "sw.js"):
         if not (ROOT / f).is_file():
@@ -715,7 +716,7 @@ def build_moved(out):
     html = html.replace(entry, '<script type="importmap">\n' + json.dumps({"imports": imports}, indent=1) + "\n</script>\n"
                         + f'<script type="module" src="{pack_url}?v={v_pack}"></script>')
     policy = ("default-src 'none'; script-src 'self' " + " ".join(csp_hashes(html)) + "; style-src 'self' 'unsafe-inline'; "
-              "img-src 'self' data: https://sbmadhav.goatcounter.com; connect-src https://sbmadhav.goatcounter.com; "
+              "font-src 'self'; img-src 'self' data: https://sbmadhav.goatcounter.com; connect-src https://sbmadhav.goatcounter.com; "
               "base-uri 'none'; form-action 'none'; object-src 'none'")
     charset = re.search(r'<meta charset="utf-8">\n?', html)
     if not charset:
@@ -737,7 +738,7 @@ def build_moved(out):
     (out / "sw.js").write_text(sw)
     (out / ".nojekyll").write_bytes(b"")
     for m in re.finditer(r'(?:src|href)="(/[^"]*)"', html):
-        if not m.group(1).startswith((OLD_BASE, "/assets/analytics.js")):
+        if not m.group(1).startswith((OLD_BASE, "/design-system/")):
             fail(f"{page_src}: {m.group(1)} is outside {OLD_BASE}")
     rel = out.relative_to(ROOT) if out.is_relative_to(ROOT) else out
     print(f"{rel}/: moved page for {OLD_BASE}, handoff-pack.js v={v_pack}, KILL sw.js VERSION={sw_version}")
