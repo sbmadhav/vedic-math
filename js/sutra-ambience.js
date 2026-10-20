@@ -17,6 +17,10 @@ import { soundOn, calmOn, onMotionChange } from './fx.js';
 import { on, every, onAbort, child } from './life.js';
 import { OM } from './say-clips.js';
 
+/* The Om's absolute path: the built module is served from /play/assets/, the sounds from /sounds/ (a variable base, so
+   the bundler leaves the URL alone) */
+const HERE = import.meta.url;
+
 export const OM_NOTE = 'Om is a sacred syllable added here for atmosphere. It is not part of the 1965 book.';
 const KEYS = { amb: ['sutraAmb', '1'], hum: ['sutraHum', '0'], om: ['sutraOm', '0'] };
 const get = k => { try { const v = localStorage.getItem('vm.' + KEYS[k][0]); return (v === null ? KEYS[k][1] : v) === '1'; } catch (e) { return KEYS[k][1] === '1'; } };
@@ -35,7 +39,7 @@ export const deps = {
   paused: () => { try { return document.documentElement.classList.contains('motion-paused'); } catch (e) { return false; } },
   gestured: () => { try { return !!(navigator.userActivation && navigator.userActivation.hasBeenActive); } catch (e) { return false; } },
   now: () => Date.now(),
-  omUrl: () => new URL(`../sounds/om.m4a?v=${OM.v}`, import.meta.url).href, // content hash: a changed Om is a new URL
+  omUrl: () => new URL(`/sounds/om.m4a?v=${OM.v}`, HERE).href, // content hash: a changed Om is a new URL
 };
 export const silencedBySettings = () => !ambienceOn() || !soundOn() || calmOn() || deps.paused();
 

@@ -9,7 +9,7 @@ let busy = false;
 
 async function load() {
   try {
-    const { KokoroTTS } = await import(LIB);
+    const { KokoroTTS } = await import(/* @vite-ignore */ LIB);
     tts = await KokoroTTS.from_pretrained(MODEL, {
       dtype: 'q8', // model_quantized.onnx, about 92 MB
       device: 'wasm',

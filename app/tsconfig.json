@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.base.json",
+  "//": "allowJs: the legacy modules in js/ are imported as they are until they move (design B3); they are not type checked.",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker.ImportScripts"],
+    "types": ["node", "vite/client"],
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": ["src", "vite.config.ts", "vite.sw.config.ts"],
+  "exclude": ["src/sw"]
+}

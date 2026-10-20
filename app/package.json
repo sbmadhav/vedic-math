@@ -1,0 +1,17 @@
+{
+  "name": "app",
+  "private": true,
+  "type": "module",
+  "description": "The game at /play/, built by Vite (openspec change react-typescript). Phase 1: today's js/ modules, bundled.",
+  "scripts": {
+    "build": "vite build",
+    "build:sw": "vite build --config vite.sw.config.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "tools": "workspace:*",
+    "typescript": "6.0.3",
+    "vite": "8.3.4"
+  }
+}
