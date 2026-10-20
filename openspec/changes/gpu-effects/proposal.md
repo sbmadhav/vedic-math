@@ -2,7 +2,7 @@
 
 Status: plan only, not yet approved for implementation. The owner decisions it cites answer design questions; they do not approve this change, and merging this plan is not that approval.
 
-Since this plan was written, the `react-typescript` change (also a plan, not yet approved) proposes moving the game to React and TypeScript first and re-planning this change for React before it is built (its task group 11 and open questions). This text is not revised for that yet; which plan goes first is the owner's call.
+Superseded in part (owner, 2026-10-19): three.js through React Three Fiber (`react-typescript`, ADR 0013) supersedes this plan's "no three.js", its 20 KB budget (now 170 KB Brotli for the 3D code) and its OffscreenCanvas worker (3D renders on the main thread and pauses when the tab is hidden). The Sky ships in `react-typescript` as the first 3D scene. This change is re-planned for React before it is built (`react-typescript` task 11.4), last of the follow-on changes. This text is not revised for that yet.
 
 ## Why
 
@@ -32,7 +32,7 @@ This is the last of the three changes after the learnvedicmath.com move (M6), bu
 
 - Any UI, text, button, question or game drawn in WebGL (ADR 0011).
 - WebGPU (a later change may add it behind the same engine if measured worthwhile).
-- 3D, physics, or a library such as three.js or PixiJS.
+- 3D, physics, or a library such as three.js or PixiJS. (Superseded by `react-typescript` and ADR 0013, owner 2026-10-19: three.js through React Three Fiber, 170 KB Brotli, main thread.)
 - Changing what Mandala Studio teaches or saves.
 - Sound.
 
