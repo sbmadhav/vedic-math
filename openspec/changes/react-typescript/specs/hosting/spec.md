@@ -87,8 +87,8 @@ Every request for a published file SHALL be served as that file without running 
 - **THEN** the prerendered file is served and no server code runs
 
 ### Requirement: Server-rendered pages carry the site's headers
-A page the server renders SHALL carry the same security headers as a published page of the game (the content security policy, the Report-Only stricter policy, `frame-ancestors 'none'`, reporting, HSTS, content-type, referrer and permissions policies), except that its inline scripts SHALL be allowed by a nonce made for that one response instead of by hashes. It SHALL NOT be stored by a shared cache.
+A page the server renders SHALL carry the same security headers as a published page of the game (the content security policy, the Report-Only stricter policy, `frame-ancestors 'none'`, reporting, HSTS, content-type, referrer and permissions policies), except that its inline scripts SHALL be allowed by a nonce made for that one response instead of by hashes. It SHALL NOT be stored or revalidated by any cache: it is sent with `no-store` and without validators.
 
 #### Scenario: Two loads of the same path
 - **WHEN** a visitor opens `/learn/arena` twice
-- **THEN** each response has a different nonce, no policy violation is reported, and `Cache-Control` is `private, no-cache`
+- **THEN** each response has a different nonce, no policy violation is reported, `Cache-Control` is `no-store`, and neither response has an `ETag` or `Last-Modified` header

@@ -268,7 +268,7 @@ e2e/, cloud/               unchanged places
 **Shape.**
 - `workers/src/render.ts` makes 128 bits from `crypto.getRandomValues` per request, passes it to React Router through the load context, and sets the whole header set on the response: CSP with `script-src 'self' 'nonce-<n>'` (plus the move's other sources), the Report-Only stricter policy, `frame-ancestors 'none'`, `report-to`, HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` and the COOP rules. `_headers` rules do not apply to responses the Worker makes, so the Worker must set them all.
 - The policy text lives once, in `shared/src/policy.json` (sources per directive and the third-party list), read by `build.py` for `_headers` and imported by the Worker. A test compares the Worker's headers with `_headers` for `/learn/` and fails on any difference other than the script source.
-- Server-rendered HTML is sent with `Cache-Control: private, no-cache`, so no shared cache stores a page with its nonce, and the service worker never stores it (D9).
+- Server-rendered HTML is sent with `Cache-Control: no-store` and with no `ETag` or `Last-Modified`, and the Worker never answers it with 304, so neither the browser nor a shared cache can reuse a body whose nonce belongs to another response, and the service worker never stores it (D9). (A `no-cache` page with a validator could be revalidated to a 304 that reuses the old body under a new header's nonce.)
 - `style-src` stays as the move set it: React adds no inline styles (D7), and dynamic values use `element.style.setProperty`.
 - `require-trusted-types-for 'script'` stays Report-Only (task 9.5); React writes no HTML strings, which is what makes enforcing it possible later.
 
