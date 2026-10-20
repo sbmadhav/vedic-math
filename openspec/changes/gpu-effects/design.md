@@ -16,7 +16,7 @@
 - Decoration that looks better and costs the main thread almost nothing during play.
 - One engine, two renderers (WebGL 2 in a worker, canvas 2D), the same scene parameters for both.
 - Motion settings, pausing and lifecycle rules exactly as strict as today.
-- Small: no library, the whole engine within 20 KB compressed.
+- Small: no library, the whole engine within 20 KB compressed. (Superseded by `react-typescript` and ADR 0013, owner 2026-10-19: three.js through React Three Fiber, 170 KB Brotli, main thread.)
 
 ## Non-goals
 

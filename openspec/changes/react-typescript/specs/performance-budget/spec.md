@@ -14,14 +14,21 @@ The repo SHALL keep `docs/perf/baseline.md` with the numbers of the live site af
 - **THEN** `docs/perf/baseline.md` already holds the numbers for the post-move site
 
 ### Requirement: What the baseline measures
-The baseline SHALL hold Lighthouse mobile preset results (simulated slow 4G, 4x CPU slowdown, median of 5 runs) for `/play/` first visit and repeat visit, the Arena, Games and one Sutra's Deep dive; the compressed size of the JS and CSS a first visit to `/play/` loads before the first tap; and interaction timings for opening the Arena, answering one Arena question, opening a Deep dive and lighting a Star.
+The baseline SHALL hold Lighthouse mobile preset results (simulated slow 4G, 4x CPU slowdown, median of 5 runs) for `/play/` first visit and repeat visit, the Arena, Games and one Sutra's Deep dive; the Brotli-compressed size of the JS and CSS a first visit to `/play/` loads before the first tap; and interaction timings for opening the Arena, answering one Arena question, opening a Deep dive and lighting a Star.
 
 #### Scenario: The report
 - **WHEN** `docs/perf/baseline.md` is read
 - **THEN** it has a value for every page, size and interaction listed here
 
+### Requirement: Size budgets measure Brotli
+Every size budget in this change (first load and the 3D code) SHALL be measured as Brotli-compressed bytes, and the baseline's sizes SHALL be recorded the same way.
+
+#### Scenario: The budget table
+- **WHEN** the build prints its budget table
+- **THEN** every budget line gives its limit and its measurement in Brotli bytes
+
 ### Requirement: First load does not grow
-The build SHALL measure the compressed size of the JS and CSS a first visit to `/play/` loads before the first tap and SHALL fail when either is larger than the baseline. It SHALL print the measurement on every build.
+The build SHALL measure the Brotli-compressed size of the JS and CSS a first visit to `/play/` loads before the first tap and SHALL fail when either is larger than the baseline. It SHALL print the measurement on every build.
 
 #### Scenario: A heavy import in the shell
 - **WHEN** a change makes the shell import a module that brings JS before the first tap above the baseline
@@ -39,10 +46,10 @@ Every pull request with a preview SHALL measure the pages and interactions of th
 - **THEN** an issue is opened with the numbers, and the deploy stays
 
 ### Requirement: The 3D chunk has its own budget
-The 3D code SHALL stay under 200 KB gzip in total, measured by the build, and SHALL NOT be reachable from the static imports of any page's entry.
+The 3D code SHALL stay under 170 KB Brotli (about 200 KB gzip) in total, measured by the build, and SHALL NOT be reachable from the static imports of any page's entry.
 
 #### Scenario: A large drei import
-- **WHEN** a change imports a drei helper that brings the 3D code to 215 KB gzip
+- **WHEN** a change imports a drei helper that brings the 3D code to 180 KB Brotli
 - **THEN** the build fails and names the 3D budget
 
 #### Scenario: 3D in the entry

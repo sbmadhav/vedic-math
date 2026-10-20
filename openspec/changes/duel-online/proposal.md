@@ -2,7 +2,7 @@
 
 Status: plan only, not yet approved for implementation. The owner decisions it cites answer design questions; they do not approve this change, and merging this plan is not that approval.
 
-Since this plan was written, the `react-typescript` change (also a plan, not yet approved) proposes moving the game to React and TypeScript first and re-planning this change for React before it is built (its task group 11 and open questions). This text is not revised for that yet; which plan goes first is the owner's call.
+Kept (owner, 2026-10-19): the owner asked for true online multiplayer Duels between any two Players or two friends and approved this change; the 2026-10 retirement of the same-screen Duel (now Party Mode) does not change that. Superseded in part: the game moves to React and TypeScript first (`react-typescript`, ADR 0012), so this change is re-planned before it is built (`react-typescript` task 11.3), fourth of the follow-on changes: `worker/` becomes `workers/`, the shared modules become TypeScript in `shared/` (not JS with `// @ts-check`), `js/duel/safe-html.js` becomes the `Markup` component, and the views are React. This text is not revised for that yet.
 
 ## Why
 

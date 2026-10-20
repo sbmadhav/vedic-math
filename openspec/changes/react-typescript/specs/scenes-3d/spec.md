@@ -40,18 +40,22 @@ With Calm, Pause motion or the device's reduced-motion setting on, a 3D scene SH
 - **THEN** the Sky holds a still frame at once
 
 ### Requirement: 2D when the device cannot draw 3D well
-When WebGL is not available, or the scene draws fewer than 30 frames a second (the median over its first 2 seconds, or later when the frame rate falls), the route SHALL show today's 2D canvas or SVG instead, and SHALL stay on it until the page is reloaded. The view SHALL keep working through the switch.
+When WebGL is not available, or the scene stays under 30 frames a second for 3 seconds at any time while it is drawing, the route SHALL show today's 2D canvas or SVG instead, and SHALL stay on it until the page is reloaded. The view SHALL keep working through the switch.
 
 #### Scenario: No WebGL
 - **WHEN** the Sky opens in a browser where a WebGL context cannot be created
 - **THEN** the 2D Sky is shown, no 3D file is requested, and no error is reported
 
+#### Scenario: A short stutter
+- **WHEN** the 3D Sky drops to 20 frames a second for 1 second and then draws 60 frames a second again
+- **THEN** the 3D scene stays
+
 #### Scenario: A slow device
-- **WHEN** the 3D Sky draws 20 frames a second for its first 2 seconds
+- **WHEN** the 3D Sky draws 20 frames a second for 3 seconds
 - **THEN** it is replaced by the 2D Sky, and Stars and Landmarks stay usable throughout
 
 ### Requirement: Paused when not seen
-A 3D scene SHALL render no frames while the tab is hidden or the scene is off screen, and SHALL resume when it is seen again. Leaving the route SHALL stop the scene and release its GPU resources.
+A 3D scene SHALL render on the main thread, and SHALL render no frames while the tab is hidden or the scene is off screen, and SHALL resume when it is seen again. Leaving the route SHALL stop the scene and release its GPU resources.
 
 #### Scenario: Hidden tab
 - **WHEN** a Player switches to another tab with the 3D Sky open
@@ -69,7 +73,7 @@ A 3D scene SHALL take its colors from the design tokens of the current color sch
 - **THEN** the scene's colors change to the Deep Space tokens without a reload
 
 ### Requirement: Every fallback is tested
-The Playwright suite SHALL cover each path: 3D with motion, the still frame under Calm, Pause motion and reduced motion, the 2D fallback without WebGL and under 30 frames a second, and the pause in a hidden tab.
+The Playwright suite SHALL cover each path: 3D with motion, the still frame under Calm, Pause motion and reduced motion, the 2D fallback without WebGL and when the scene stays under 30 frames a second for 3 seconds, and the pause in a hidden tab.
 
 #### Scenario: The suite
 - **WHEN** `e2e/tests/scenes-3d.spec.ts` runs on chromium

@@ -22,7 +22,7 @@
 ## Non-goals
 
 - WebGL, OffscreenCanvas workers (the `gpu-effects` change).
-- A bundler or framework; path routes; SEO content pages.
+- A bundler or framework; path routes; SEO content pages. (Superseded by `react-typescript` and ADR 0012, owner 2026-10-19.)
 
 ## Decisions
 

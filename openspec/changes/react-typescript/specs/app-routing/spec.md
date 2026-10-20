@@ -62,17 +62,31 @@ After a route change, the game SHALL move focus to the new screen's main heading
 - **WHEN** a keyboard Player activates the Games link
 - **THEN** focus is on the Games heading and the page is scrolled to the top
 
-### Requirement: Public Sutra pages are prerendered
-The build SHALL write complete HTML for `/play/sutras/` and for every Sutra and sub-sutra's Deep dive (`/play/sutras/<id>/`), with the page title, a description, a canonical link to its production URL and the Deep dive's text, readable with JavaScript off. With JavaScript on, the page SHALL become the full game without a second document load, and SHALL NOT write storage, count a visit or start sound before the app has started as on any other load. `sitemap.xml` SHALL list each page.
+### Requirement: Public pages are prerendered
+The build SHALL write complete HTML for `/play/sutras/`, every Sutra and sub-sutra's Deep dive (`/play/sutras/<id>/`), the Guide (`/play/guide/` and `/play/guide/<section>/`) and `/play/` (the first-visit Mode picker), each with the page title, a description, a canonical link to its production URL and its text, readable with JavaScript off. `sitemap.xml` SHALL list each page.
 
 #### Scenario: A crawler
 - **WHEN** a crawler requests `https://learnvedicmath.com/play/sutras/ekadhikena/` without running scripts
 - **THEN** the response is 200 and its HTML holds the Sutra's name, its English meaning and its Worked examples
 
+#### Scenario: Sitemap
+- **WHEN** `sitemap.xml` is fetched
+- **THEN** it lists `/play/sutras/`, one URL per Sutra and sub-sutra, and the Guide and each of its sections
+
+### Requirement: Prerendered pages start like any other load
+With JavaScript on, a prerendered page SHALL become the full game without a second document load, and SHALL NOT write storage, count a visit or start sound before the app has started as on any other load.
+
 #### Scenario: A Player opens a prerendered page
 - **WHEN** a Player opens `/play/sutras/ekadhikena/`
 - **THEN** the Deep dive is shown, the nav works, and one route-view event is counted after start-up
 
-#### Scenario: Sitemap
-- **WHEN** `sitemap.xml` is fetched
-- **THEN** it lists `/play/sutras/` and one URL per Sutra and sub-sutra
+### Requirement: The prerendered Mode picker is for first visits
+The prerendered `/play/` SHALL show the first-visit Mode picker. A returning Player opening `/play/` SHALL see Home, and the prerendered Mode picker SHALL NOT be painted for them.
+
+#### Scenario: A first visit
+- **WHEN** a first-time visitor opens `/play/` with JavaScript off
+- **THEN** the HTML shows the Mode picker with the three Modes and the Guide link
+
+#### Scenario: A returning Player
+- **WHEN** a Player who has already picked a Mode opens `/play/`
+- **THEN** Home is shown and the Mode picker is never painted

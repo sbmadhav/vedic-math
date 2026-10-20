@@ -25,7 +25,7 @@
 
 ## Decisions
 
-D1 to D13 are the owner's decisions (2026-10-17, all approved; D5 is pending as Q18). B1 to B9 after them are builder choices that follow from them; review can change those without going back to the owner.
+D1 to D13 are the owner's decisions (2026-10-17, all approved; D5 approved 2026-10-19 as the answer to Q18). The owner's answers to Q18 to Q26 (2026-10-19) are folded in below and listed under Open questions. B1 to B9 after them are builder choices that follow from them; review can change those without going back to the owner.
 
 ### D1. Goal and budget
 
@@ -58,7 +58,9 @@ D1 to D13 are the owner's decisions (2026-10-17, all approved; D5 is pending as 
 **Decision.**
 1. The learnvedicmath.com move ships unchanged.
 2. Next, this migration.
-3. Last, `placement`, `age-bands`, `render-performance` and `gpu-effects`, built in React, and `duel-online` too only if the owner keeps it (Q26).
+3. Last, in this order (owner, 2026-10-19): `placement`, `age-bands`, `render-performance`, `duel-online`, `gpu-effects`, each built in React and re-planned first (task group 11).
+
+**When to start (owner, 2026-10-19).** Implementation starts the day the `learnvedicmath` move is live, not before.
 
 Content work (videos, voice, verses) continues throughout. Star Quest's mobile layout is redone when its view moves (the owner reports it looks bad on mobile).
 
@@ -81,18 +83,18 @@ Content work (videos, voice, verses) continues throughout. Star Quest's mobile l
 - TanStack Router: good types, but React Router v7's SPA-mode prerender is what we need for public pages, and its route model matches today's table.
 - Plain JS with JSDoc (`checkJs`), as ADR 0010 chose for the browser: workable for shared modules, but not for a component codebase; ADR 0012 supersedes that part of ADR 0010.
 
-### D5. URLs: path routes in `/play/` (pending owner, Q18)
+### D5. URLs: path routes in `/play/` (approved 2026-10-19, Q18)
 
 **Conflict.** The move keeps hash routes under `/play/` (`/play/#/arena`) with `not_found_handling: "404-page"`, plus a static prerendered landing page and grown-up pages. The owner's answer to Q5 asked for path URLs.
 
-**Recommended reconciliation (pending owner, Q18).**
+**Decision (owner, 2026-10-19, Q18).**
 - The move ships hash routes as planned. Nothing in `learnvedicmath` changes.
 - This change switches `/play/` to path routes (`/play/arena`, `/play/sutras/ekadhikena`, `/play/game/times-sprint/12`) in phase 2, with an SPA fallback for `/play/*` only. Every other path keeps the move's 404 page.
 - A tiny pre-paint shim turns every `#/...` into its path, forever: an inline script in the `/play/` shell (allowed by its hash in the CSP) runs before anything paints: if `location.hash` starts with `#/`, it calls `history.replaceState` to `/play/<rest>` and keeps the query. It also runs on `hashchange`, so legacy code that sets `location.hash` and old in-page links keep working. Old `/vedic-math/#/...` links arrive through the move's redirects (`/vedic-math/* /play/ 301`, the landing page's `#/` forward) and end in the same shim. Hashes that do not start with `#/` (such as a skip link's `#view`) are left alone.
 - A Playwright test (`e2e/tests/old-routes.spec.ts`) opens every old route form and checks the screen and the final URL.
-- Public Sutra pages are prerendered for search: `/play/sutras/` and one page per Sutra and sub-sutra (`/play/sutras/<id>/index.html`), with real titles, descriptions, canonical links and the Deep dive's text in the HTML.
+- Public pages are prerendered (Q20): `/play/sutras/` and one page per Sutra and sub-sutra (`/play/sutras/<id>/index.html`), with real titles, descriptions, canonical links and the Deep dive's text in the HTML; the Guide (`/play/guide/` and each section, `/play/guide/<section>/`); and `/play/` itself with the first-visit Mode picker (the static first screen `render-performance` D7 asked for). A returning Player's start-up replaces the prerendered Mode picker with Home; the pre-paint script marks a returning Player before paint so the picker is not flashed (as `render-performance` D7 planned, re-planned for React in task 11.1).
 
-**SPA fallback for `/play/*` only.** Workers static assets apply `not_found_handling` to the whole site, so the fallback is a `_redirects` rewrite instead: `/play/* /play/index.html 200`, listed after the prerendered files (a file that exists is always served first). The target is the file React Router writes: with `ssr: false` and the root not in the prerender list (the default, Q20), the SPA fallback is `index.html`; if Q20 adds `/play/` to the prerender list, React Router writes `/play/index.html` as the prerendered root and the fallback as `__spa-fallback.html`, and the rewrite and the Worker fallback point there instead. Task 3.4 checks that the target file exists in `_site/play/`. Whether Workers static assets honour a 200 rewrite in `_redirects` is unverified (task 3.4). If they do not, `not_found_handling` becomes `"none"`, so a request that matches no asset goes to the Worker script the move already has; the script answers `/play/*` with the SPA fallback (status 200) and everything else with `/404.html` (status 404), both read from `env.ASSETS`. That costs one Worker request per miss (a deep link that is not prerendered, a typo) and none for files that exist.
+**SPA fallback for `/play/*` only.** Workers static assets apply `not_found_handling` to the whole site, so the fallback is a `_redirects` rewrite instead: `/play/* /play/__spa-fallback.html 200`, listed after the prerendered files (a file that exists is always served first). The target is the file React Router writes: since `/play/` itself is prerendered (the first-visit Mode picker, Q20), React Router writes `/play/index.html` as the prerendered root and the SPA fallback as `__spa-fallback.html`, so the rewrite is `/play/* /play/__spa-fallback.html 200` and the Worker fallback serves that file too. Task 3.4 checks that the target file exists in `_site/play/`. Whether Workers static assets honour a 200 rewrite in `_redirects` is unverified (task 3.4). If they do not, `not_found_handling` becomes `"none"`, so a request that matches no asset goes to the Worker script the move already has; the script answers `/play/*` with the SPA fallback (status 200) and everything else with `/404.html` (status 404), both read from `env.ASSETS`. That costs one Worker request per miss (a deep link that is not prerendered, a typo) and none for files that exist.
 
 **Rationale.** Path URLs are what the owner asked for, they let Sutra pages be prerendered and indexed (a hash is never sent to the server, so `/play/#/sutras/x` cannot have its own HTML), and they read better when shared. Doing it after the move keeps the move's plan intact; the shim makes the change invisible to old links.
 
@@ -200,22 +202,23 @@ e2e/, cloud/               unchanged places
 **Decision.**
 - React Three Fiber plus drei, bundled from our own origin (no CDN, inside the CSP, no `eval`), with tree-shaken `three` imports.
 - 3D loads late, only on routes that use it and after the page is usable. The home Sky first shows the 2D Sky, then fades into 3D.
-- CI size budget: the 3D chunk stays under 200 KB gzip, and first load does not grow.
-- Fallbacks: Calm or reduced motion get a still frame; no WebGL, or a frame rate under 30, gets the 2D canvas or SVG; a hidden tab pauses rendering. Playwright covers each.
+- CI size budget: the 3D chunk stays under 170 KB Brotli (about 200 KB gzip; owner, 2026-10-19, Q21), and first load does not grow. Every size budget in this change measures Brotli.
+- Fallbacks: Calm, Pause motion or reduced motion get a still frame; no WebGL, or a scene that stays under 30 frames a second for 3 seconds (Q25), gets the 2D canvas or SVG; a hidden tab pauses rendering. Playwright covers each.
+- 3D renders on the main thread (Q22), never during a round, and pauses when the tab is hidden.
 - Three.js replaces the raw-WebGL plan in `gpu-effects`.
-- Order: the Sky, then Sutra deep-dive illustrations, then game effects and Mandala.
+- Order: the Sky (the first 3D scene, shipped inside this change, Q23), then Sutra deep-dive illustrations, then game effects and Mandala.
 
 **Rationale.** A hand-written engine (the `gpu-effects` plan) is small but is code nobody else knows, and real 3D (depth, camera, lighting) is far more work by hand. React Three Fiber makes a scene a component with the same lifecycle as the rest of the app (it unmounts and disposes with the route), and drei has the pieces the Sky needs (points, instancing, `AdaptiveDpr`, `PerformanceMonitor`). Bundling it ourselves keeps the CSP as it is (`script-src 'self'`) and the files in the worker's precache. Loading it late, behind the 2D Sky, means a Player never waits for 3D.
 
-**Pause motion.** The accessibility spec treats Pause motion like reduced motion, so the still frame applies to Calm, Pause motion and reduced motion alike.
+**Pause motion.** The accessibility spec treats Pause motion like reduced motion, so the still frame applies to Calm, Pause motion and reduced motion alike (confirmed by the owner, 2026-10-19).
 
-**How `gpu-effects` must be revised** (task 11.4): drop `js/gfx/` (`gfx.js`, `gl.js`, the hand-written shaders and the two-renderer scene format) for `app/src/scenes-3d/`; replace the 20 KB decoration budget with this change's 200 KB 3D budget (scenes-3d spec) and "never in first load"; replace ADR 0011's "no library" with ADR 0013 (ADR 0011's other rule stays: 3D is decoration only, never interface); decide whether rendering moves off the main thread (R3F renders on the main thread by default; `@react-three/offscreen` is experimental; Q22); move its Sky backdrop requirement here (the Sky ships in this change's phase 6) and keep Sutra deep-dive illustrations, celebrations, the Moving background and Mandala glow in `gpu-effects`; keep its tests (still frame, context loss, hidden tab, token colors, no flashes) as scenes-3d scenarios.
+**How `gpu-effects` must be revised** (task 11.4): drop `js/gfx/` (`gfx.js`, `gl.js`, the hand-written shaders and the two-renderer scene format) for `app/src/scenes-3d/`; replace the 20 KB decoration budget with this change's 170 KB Brotli 3D budget (performance-budget spec) and "never in first load"; replace ADR 0011's "no library" and its OffscreenCanvas worker with ADR 0013 (ADR 0011's other rule stays: 3D is decoration only, never interface); render on the main thread, paused when the tab is hidden (Q22, decided 2026-10-19); move its Sky backdrop requirement here (the Sky ships in this change's phase 6) and keep Sutra deep-dive illustrations, celebrations, the Moving background and Mandala glow in `gpu-effects`; keep its tests (still frame, context loss, hidden tab, token colors, no flashes) as scenes-3d scenarios.
 
 **Alternatives rejected.** The hand-written WebGL 2 engine (more code to own, no 3D); PixiJS (2D only); Babylon.js (larger, not React-first); loading three from a CDN (new CSP origin, third-party request on a children's site, not precached); 3D in the first load (the budget forbids it).
 
 ### B1. Markup from content stays behind one component
 
-Generators and content modules return HTML strings (`<sup>` in questions, `<b>` in Trick steps, SVG from `js/viz.js`). Converting them to typed node trees is a large content change, so phase 1 keeps them as strings, and React renders them only through `app/src/components/Markup.tsx`: it parses the string with `DOMParser` (inert, no scripts run), walks it against an allow-list (the same list `duel-online` planned for `safe-html.js`: `b`, `i`, `sup`, `sub`, `span`, `br`, `small`, `em`, `strong`, and the SVG elements `svg`, `g`, `circle`, `rect`, `line`, `path`, `text`, `tspan`, `polygon`, `polyline` with geometry, `viewBox`, `class` and `aria-*` attributes only), and builds React elements. Nothing is assigned to `innerHTML` and `dangerouslySetInnerHTML` is banned by lint everywhere (`react/no-danger` as an error, no exceptions). The allow-list is in `shared/src/markup.ts`, so the Duel client uses the same one. Whether generators later move to typed nodes is Q19.
+Generators and content modules return HTML strings (`<sup>` in questions, `<b>` in Trick steps, SVG from `js/viz.js`). Converting them to typed node trees is a large content change, so phase 1 keeps them as strings, and React renders them only through `app/src/components/Markup.tsx`: it parses the string with `DOMParser` (inert, no scripts run), walks it against an allow-list (the same list `duel-online` planned for `safe-html.js`: `b`, `i`, `sup`, `sub`, `span`, `br`, `small`, `em`, `strong`, and the SVG elements `svg`, `g`, `circle`, `rect`, `line`, `path`, `text`, `tspan`, `polygon`, `polyline` with geometry, `viewBox`, `class` and `aria-*` attributes only), and builds React elements. Nothing is assigned to `innerHTML` and `dangerouslySetInnerHTML` is banned by lint everywhere else (`react/no-danger` as an error, no exceptions outside `Markup`, which builds elements and does not need it). The allow-list is in `shared/src/markup.ts`, so the online Duel client uses the same one. A typed content format can wait (Q19, decided 2026-10-19).
 
 ### B2. Build: Vite builds the game, `build.py` keeps the site steps
 
@@ -257,7 +260,7 @@ The app runs under `<StrictMode>` in development, so effects that do not clean u
 - **Hash shim misses a form.** Mitigation: `old-routes.spec.ts` lists every form (D5) and runs on every PR and daily against production.
 - **SPA fallback on Workers static assets is unverified.** Mitigation: task 3.4 tries the `_redirects` rewrite on a preview; the Worker-script fallback is ready.
 - **CSP and prerendering.** React Router inlines a hydration script in prerendered HTML. Mitigation: `build.py` hashes every inline script in every built page (it already does this for the import map); `csp.spec.ts` runs on prerendered pages.
-- **Three.js size.** React Three Fiber's default catalogue imports all of `three`; full `three` is about 170 KB gzip, so R3F plus drei could pass 200 KB. Mitigation: task 10.1 is a measured spike with a go or no-go before any scene work; `extend()` with only the classes used; import drei pieces by path. If it cannot fit, the owner decides (raise the budget or drop drei).
+- **Three.js size.** React Three Fiber's default catalogue imports all of `three`; full `three` is about 170 KB gzip, so R3F plus drei could pass the 170 KB Brotli budget. Mitigation: task 10.1 is a measured spike with a go or no-go before any scene work; `extend()` with only the classes used; import drei pieces by path. If it cannot fit, the owner decides (raise the budget or drop drei).
 - **drei helpers that fetch from CDNs** (`Environment` presets, default fonts for `Text`). Mitigation: ESLint `no-restricted-imports` for those helpers; the CSP blocks them anyway; `third-party.spec.ts` covers 3D routes.
 - **Merge pain with feature and content branches.** Mitigation: D12 locks, short-lived migration PRs, B6 for content files, and phase 1 PRs that rename and convert in separate commits so `git` follows renames.
 - **The Playwright suite drifting to fit the code.** Mitigation: D10's rule that a migration PR changes selectors and URL forms only, listed in the PR description and checked in review.
@@ -276,7 +279,7 @@ Phases, with rough PR counts. Every PR ships alone, keeps the Playwright suite g
 | 4 | The most interactive: games (2 PRs), Arena and Boards, Party Mode (`#/duel` now redirects to it; the same-screen Duel is retired), Play experiences (2 or 3 PRs) | about 6 | each PR its own views |
 | 5 | Retire legacy: delete `js/life.js`, LegacyRoute, the lifecycle scan, `math.css` remnants, `js/` | 1 | none |
 | 6 | 3D: measured spike, then the Sky scene with its fallbacks | 2 | Home and the Sky |
-| 7 | Re-plan the follow-on changes for React (docs only; can start after phase 2) | 1 or 2 | none |
+| 7 | Re-plan the follow-on changes for React, in the order `placement`, `age-bands`, `render-performance`, `duel-online`, `gpu-effects` (docs only; can start after phase 2) | 1 or 2 | none |
 
 About 27 to 30 PRs in all: 2 to 3 for TypeScript logic, 2 for the shell, about 17 for views (Play and Party Mode last), and the rest for setup, retirement, 3D and plans.
 
@@ -284,12 +287,20 @@ Rollback: any PR is a revert. A route that moved to React can go back to its Leg
 
 ## Open questions
 
-- **Q18 (pending owner).** Path URLs in `/play/` with the hash shim forever, as recommended in D5, or keep hash routes. This plan assumes paths from phase 2.
-- **Q19.** Generators keep returning HTML strings rendered through `Markup` (B1, default), or move to typed nodes in a later change. Default: strings now, decide after phase 5.
-- **Q20.** Which `/play/` routes are prerendered besides the Sutra pages. Default: `/play/sutras/` and each Sutra and sub-sutra only. Candidates: `/play/guide`, `/play/watch`, the first-visit Mode picker at `/play/` (`render-performance` D7 wants it).
-- **Q21.** The 3D chunk budget is 200 KB gzip while `render-performance` measures Brotli. Default: the 3D gate measures gzip (as the owner set), the other gates Brotli; both are printed.
-- **Q22.** Main thread or worker for 3D: ADR 0011 and `gpu-effects` chose an OffscreenCanvas worker; React Three Fiber renders on the main thread. Default: main thread, with the frame-rate fallback, since the Sky is never on screen during a round; revisit in `gpu-effects`.
-- **Q23.** Does the Sky's 3D scene ship in this change (phase 6, default) or in the revised `gpu-effects`?
-- **Q24.** Star Quest mobile layout: who signs off the new design? Default: the owner reviews phone screenshots on the PR before merge.
-- **Q25.** The "frame rate under 30" fallback: measured how long? Default: the median frame time over the first 2 seconds after the fade starts, and again whenever drei's `PerformanceMonitor` reports a decline; once on 2D, the page stays on 2D until reload.
-- **Q26 (open, owner).** Since this plan was written, `main` retired the Duel: the same-screen Duel became Party Mode, the `duel` spec was removed (archived `play-experiences`), and `GLOSSARY.md` lists Duel as retired. `duel-online` (PR #54, not merged) would bring the Duel back as an online game next to Party Mode; this plan names it as a follow-on (D3, D11, task 11.3) and reserves `workers/` and `shared/` for its server. Whether `duel-online` goes ahead, in what form, and what the word Duel then means is not decided here. The workspace layout does not depend on the answer; task 11.3 waits for it.
+All answered by the owner on 2026-10-19 ("yes to all"); none is pending. Each answer is folded into the decisions above, the spec deltas and the tasks.
+
+- **Q18 (answered 2026-10-19).** Path URLs in `/play/` with the hash shim forever, as in D5: the move ships hash routes under `/play/`, and this change switches `/play/` to path routes in phase 2. The hash shim is never removed.
+- **Q19 (answered 2026-10-19).** Content HTML strings render only through the one allow-list `Markup` component (B1), and `dangerouslySetInnerHTML` is banned everywhere else. A typed content format can wait for a later change.
+- **Q20 (answered 2026-10-19).** Prerendered: the Sutra pages (`/play/sutras/` and each Sutra and sub-sutra), the Guide (`/play/guide/` and each section) and the first-visit Mode picker at `/play/`. The SPA fallback file is therefore `__spa-fallback.html` (D5).
+- **Q21 (answered 2026-10-19).** Every size budget measures Brotli. The 3D chunk budget is 170 KB Brotli (about 200 KB gzip).
+- **Q22 (answered 2026-10-19).** 3D renders on the main thread and pauses when the tab is hidden. This supersedes ADR 0011's OffscreenCanvas worker (ADR 0013).
+- **Q23 (answered 2026-10-19).** The Sky's 3D scene ships inside this change (phase 6) as the first 3D scene.
+- **Q24 (answered 2026-10-19).** The owner signs off Star Quest's new mobile layout from phone screenshots on its PR (task 7.2).
+- **Q25 (answered 2026-10-19).** The 2D fallback triggers when a scene stays under 30 frames a second for 3 seconds, at any time while it is drawing. Once on 2D, the page stays on 2D until reload. Pause motion gets the still frame, like Calm and reduced motion.
+- **Q26 (answered 2026-10-19).** `duel-online` is kept. The owner asked for true online multiplayer Duels between any two Players or two friends and approved `duel-online`; the 2026-10 retirement of the same-screen Duel (now Party Mode) does not change that. `duel-online` is re-planned on `workers/`, `shared/` and TypeScript (task 11.3) and built fourth of the follow-on changes (D3).
+
+Other owner answers of 2026-10-19, not numbered here:
+- **When to start.** Implementation starts the day the `learnvedicmath` move is live, not before (D3, task 0.0).
+- **Superseded rules.** React and TypeScript supersede "no framework, no bundler, no TypeScript in the browser" in the `learnvedicmath` design, `openspec/config.yaml`, ADR 0010 and `render-performance`; ADR 0012 supersedes those parts. `render-performance` is re-planned for Vite and React before it is built (task 11.1).
+- **Three.js.** Three.js supersedes `gpu-effects`' "no three.js, 20 KB, OffscreenCanvas worker"; ADR 0013 supersedes ADR 0011 in those parts.
+- **Follow-on order.** `placement`, `age-bands`, `render-performance`, `duel-online`, `gpu-effects` (D3).
