@@ -25,6 +25,7 @@ import { initAmbient, bgOn, setBg, BG_NOTES, stop as stopMusic, isPlaying as mus
 import { on, later, every, child, onAbort } from './life.js';
 import * as metrics from './metrics.js';
 import { boltHTML } from './bolt.js';
+import { FAMILY_SVG } from './family.js';
 import { runStar } from './star.js';
 import * as SKY from './sky.js';
 import { skyView, placesHTML } from './sky-view.js';
@@ -159,17 +160,30 @@ function titleBar(T, cls = 'mq-sparkbar mq-sparkbar--big') {
 function modePicker({ signal } = {}) {
   document.title = `Learn Vedic Math`;
   const p = store.player();
+  /* The hero says as little as it can (openspec first-visit): one headline, one short line, Try a trick as the one big
+     first action, and the Nikhilam Family beside it (js/family.js). The Mode cards follow. */
   view.innerHTML = `<section class="md-section mq-hero"><div class="md-wrap">
-    <span class="md-tag md-tag--plum">Vedic Math for Everyone</span>
-    <h1 class="md-heading">Fast, fun math for <span class="hl-word">every</span> brain</h1>
-    <p class="md-lede">Learn a mental math trick in a minute, then race the clock with it.</p>
-    <p class="try-it"><button type="button" class="md-btn md-btn--primary" id="tryBtn">${icon('bolt')} Try a trick</button><small>About two minutes. No sign-up, no choices to make.</small></p>
+    <div class="mq-hero-in"><div class="mq-hero-t">
+      <h1 class="md-heading">Fast, fun math for <span class="hl-word">every</span> brain</h1>
+      <p class="md-lede mq-hero-sub">One trick, two minutes, no sign-up.</p>
+      <p class="try-it"><button type="button" class="md-btn md-btn--primary mq-try" id="tryBtn">Try a trick<svg class="mq-try-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></p>
+    </div>${FAMILY_SVG}</div>
     <h2 class="mq-h3 pick-h">Or pick who is playing</h2>
     <div class="mode-pick">${Object.entries(fx.MODES).map(([id, m]) => `<button class="mode-card mode-card--${m.color}" data-mode="${id}"><span class="mode-ic" aria-hidden="true">${modeIcon(id)}</span><b>${m.name}</b><small>${m.ages}</small><span>${m.blurb}</span></button>`).join('')}</div>
     <p class="mq-note">Playing as <b>${esc(p.name)}</b>. Nicknames are made up for you, so no real names are ever needed. You can change who is playing any time.</p>
     <p class="mq-note gd-pickhelp">Not sure where to start? <a href="#/guide">See how it works</a> or <a href="#/find">find something by name</a>.</p>
   </div></section>`;
-  view.querySelectorAll('[data-mode]').forEach(b => on(b, 'click', () => { fx.sfx('level'); fx.setMode(b.dataset.mode); gm.startDay(); fx.confetti(60); location.hash = afterPick(b.dataset.mode); render(); }, signal));
+  /* Picking a Mode is an everyday moment, not a win (openspec celebrations): the card pops, a few sparkles fly and the
+     family cheers, then Home opens. Under no motion Home opens at once. */
+  let picked = false;
+  view.querySelectorAll('[data-mode]').forEach(b => on(b, 'click', () => {
+    if (picked) return; picked = true;
+    fx.sfx('pop'); fx.setMode(b.dataset.mode); gm.startDay();
+    const go = () => { location.hash = afterPick(b.dataset.mode); render(); };
+    if (fx.noMotion()) return go();
+    fx.pop(b, signal); fx.sparkle(b, { n: 10 }); fx.cheer(view.querySelector('.lv-family'), signal);
+    later(go, 560, signal);
+  }, signal));
   /* Try a trick (openspec first-visit): Challenger as a guess, then the first Star of Bolt's path, the one Home offers */
   /* The trial Star teaches before it asks (openspec try-trick-teaches): starView shows the worked example once for this route */
   on($('#tryBtn'), 'click', () => { fx.setMode('challenger', { guess: true }); gm.startDay(); metrics.tryStart(); location.hash = starView.introFor = firstStarHref(); }, signal);
@@ -410,9 +424,10 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
     const dial = dialFor(s.id); dial.hit(ok && tries === 1 && !hints); if (dial.n >= 10) saveDial(s.id);
     metrics.answered(lives ? 'run' : 'practice', ok); /* untimed play only: no per-answer events in timed rounds */
     if (r.justMastered) track('mastered/' + s.id, 'Mastered: ' + s.title);
-    if (run === 3 || run === 7 || (run && run % 10 === 0)) fx.confetti(40);
     $('#prPct', root).textContent = `${pct(store.mastery(s.id))}% mastery`; root.querySelector('.pr-meter .ring').outerHTML = ring(store.mastery(s.id), 36);
     const sc = root.querySelector('.pr-score'); sc.textContent = `${right}/${total}`; sc.setAttribute('aria-label', `${right} of ${total} right this session`); $('#prRun', root).innerHTML = run >= 2 ? `<b>${run}</b> in a row` : '';
+    /* A streak is an everyday moment (openspec celebrations): the number ticks, and at 3, 7 and every 10 a few sparkles */
+    if (run >= 2) fx.tick($('#prRun b', root), question.signal); if (run === 3 || run === 7 || (run && run % 10 === 0)) fx.sparkle($('#prRun', root), { signal: question.signal });
     const btn = $('#prCheck', root); btn.textContent = 'Next'; btn.dataset.next = '1';
     root.querySelectorAll('#prHint, #prShow').forEach(b => (b.hidden = true));
     btn.focus({ preventScroll: true });
@@ -431,8 +446,8 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
       const res = grade(); if (res.empty) { say('Type an answer first.'); return; }
       if (res.notAnswer) { say(notAnswerMsg()); return; }
       tries++;
-      if (res.ok) { fx.sfx('ok'); const first = tries === 1 && !hints; const msg = first ? pick(PRAISE[fx.mode()] || PRAISE.challenger) : 'You got it!'; say(msg + (first ? ` <span class="pr-sparks">+${10 + Math.min(store.skill(s.id).streak + 1, 5)} Sparks</span>` : ''), 'ok'); if (explorer) fx.speak(msg, true); finish(true); return; }
-      fx.sfx('no');
+      if (res.ok) { fx.sfx('ok'); const first = tries === 1 && !hints; const msg = first ? pick(PRAISE[fx.mode()] || PRAISE.challenger) : 'You got it!'; say(msg + (first ? ` <span class="pr-sparks">+${10 + Math.min(store.skill(s.id).streak + 1, 5)} Sparks</span>` : ''), 'ok'); fx.bounce($('#prSay .md-bubble', root), qs); fx.twinkle($('#prSay .pr-sparks', root), qs); if (explorer) fx.speak(msg, true); finish(true); return; }
+      fx.sfx('no'); fx.wiggle(root.querySelector('.pr-in, .pr-choices, .pr-fields'), qs);
       if (lives) { life--; reveal(); say(life ? `Oops! ${life} ${life === 1 ? 'life' : 'lives'} left. See how it works, then keep going.` : 'Out of lives!', 'no'); finish(false); const lv = root.querySelector('.pr-lives'); lv.innerHTML = '<i class="on"></i>'.repeat(life) + '<i></i>'.repeat(lives - life); lv.setAttribute('aria-label', `${life} lives left`); if (!life && onOver) { const b = $('#prCheck', root); b.textContent = 'See my score'; b.onclick = e => { e.preventDefault(); onOver(right); }; } return; }
       if (tries === 1) { say((res.msg ? res.msg + ' ' : '') + 'Not quite. Try once more.' + (p.hints[0] && !hints ? ' <button type="button" class="linkbtn" data-hint>Want a hint?</button>' : ''), 'no'); if (explorer) fx.speak('Not quite. Try again!', true); }
       else if (tries === 2) { hints = Math.max(hints, 1); const h = p.hints[Math.min(1, p.hints.length - 1)] || p.hints[0]; say((res.msg ? res.msg + ' ' : '') + `Hint: ${h}`, 'no'); if (explorer && h) fx.speak(h, true); } // read the hint that is shown
@@ -475,6 +490,7 @@ function mixView(g, isRun = false, { signal } = {}) {
     store.bump('runs'); const isBest = store.setBest('run-' + g, right), sp = 10 + right * 3; store.addSparks(sp, 'run'); if (isBest && right) fx.confetti(90);
     $('#practice').innerHTML = `<div class="ar-result"><div class="md-stat"><div class="md-kicker">You reached</div><div class="md-value">${right}</div><p>${isBest && right ? 'New best run!' : `Best: ${store.best('run-' + g)}`} <span class="fx-sparks">+${sp} Sparks</span></p></div></div><p><button class="md-btn md-btn--primary" id="again">${icon('bolt')} Run again</button> <a class="md-btn" href="#/grade/${g}">Back to ${gradeLabel(g)}</a></p>`;
     $('#again').onclick = () => mount(ctx => mixView(g, true, ctx));
+    fx.rollSparks($('#practice'), signal);
   }, signal });
 }
 
@@ -577,15 +593,17 @@ function kataView(trickId, n, { signal } = {}) {
       $('#kSay').innerHTML = `${boltFor(ok ? 'ok' : 'no')}<div class="md-bubble">${ok ? pick(['Correct!', 'Clean!', 'Nailed it!', 'Yes!']) : `Not this time. Answer: <b>${answerText(p, byId['v-' + trickId])}</b><br><small>${p.steps.slice(0, 3).join(' ')}</small>`}</div>`;
       $('#kGo').textContent = i + 1 < K.problems.length ? 'Next' : 'Finish'; $('#kGo').focus({ preventScroll: true });
       box.querySelector('.pr-score').textContent = `${right}/${K.problems.length}`;
+      if (ok) fx.bounce($('#kSay .md-bubble'), qs); else fx.wiggle(box.querySelector('.pr-in, .pr-choices, .pr-fields'), qs); /* everyday moments (openspec celebrations) */
     }, qs);
   };
   const done = () => {
     question.abort();
     const secs = Math.round((performance.now() - t0) / 1000), done = LV.kataDoneFor(right, K.problems.length), key = LV.kataKey(trickId, n), first = done && store.setKataDone(key);
     const sp = LV.kataSparks(right, K.problems.length); if (sp) store.addSparks(sp, 'kata'); store.bump('katas'); store.touchDay(); track('kata/' + trickId, 'Kata ' + n);
-    if (done) fx.confetti(right === K.problems.length ? 90 : 40);
+    if (done) fx.confetti(right === K.problems.length ? 90 : 40); /* a kata cleared is a true win (openspec celebrations) */
     box.innerHTML = resultHTML({ done }, [`${right} of ${K.problems.length} right in ${secs} seconds${hints ? `, ${hints} hint${hints > 1 ? 's' : ''}` : ''}.`, `<span class="fx-sparks">+${sp} Sparks</span>${first ? ` Kata ${n} is done.` : ''}`], n < LV.KATAS_PER_TRICK ? `#/kata/${trickId}/${n + 1}` : null, `#/kata/${trickId}/${n}`, `#/katas/${trickId}`, 'All katas');
     const rt = box.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); mount(ctx => kataView(trickId, n, ctx)); };
+    fx.rollSparks(box, signal);
   };
   show();
 }
@@ -683,6 +701,7 @@ function challengeView(id, { signal } = {}) {
       const nextId = id % LV.PER_CHAPTER ? id + 1 : null;
       area.innerHTML = resultHTML({ medal, noClock }, [`${r.right} right, ${r.wrong} missed${ch.goal === 'points' ? `, ${r.score} points` : ''}${ch.goal === 'seconds' && !noClock ? `, ${r.secs} seconds` : ''}.`, `<span class="fx-sparks">+${sp} Sparks</span>${improved ? ' New best.' : ''}`, ...(noClock ? [`<span class="lv-noclock">Medals for ${F.name} need the clock. Turn Calm off to play for one.</span>`] : [])], nextId ? `#/challenge/${nextId}` : `#/tower/${ch.chapter + 2 <= LV.TOPICS.length ? ch.chapter + 2 : 1}`, `#/challenge/${id}`, `#/tower/${ch.chapter + 1}`, 'Chapter map');
       const rt = area.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); mount(ctx => challengeView(id, ctx)); };
+      fx.rollSparks(area, rsig);
       if (play) play.setExit('Back');
       const h = area.querySelector('h2'); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
     } });
@@ -793,7 +812,8 @@ function wireVerses(root, signal) {
   on(root, 'click', e => { const b = e.target.closest('.verse-listen'); if (!b) return; const v = SLOKAS.find(x => x.id === b.dataset.verse); if (v) sayVerse(v, b, signal); }, signal);
   onAbort(signal, () => { try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {} });
 }
-function collect(name) { if (store.markSeen('sutra:' + name)) store.addSparks(5, 'sutra'); }
+/* A Sutra card collected for the first time is a true win (openspec celebrations); opening it again is not */
+function collect(name) { if (store.markSeen('sutra:' + name)) { store.addSparks(5, 'sutra'); fx.confetti(60); } }
 
 /* ---------- Sutra deep-dive modal: the card grows into it ---------- */
 let sutraDlg = null, sutraScene = null, sutraFrom = null, openedInPage = false; /* sutraScene: the open scene's controller */
@@ -1038,6 +1058,7 @@ function arenaView({ signal } = {}) {
       area.innerHTML = `${res}<p class="lv-acts"><button type="button" class="md-btn md-btn--primary" id="arDone">Back to the Arena</button></p>`;
       play.setExit('Back', back);
       const done = $('#arDone', area); done.onclick = back; done.focus({ preventScroll: true });
+      fx.rollSparks(area, rsig);
     } });
   };
   lobby();
@@ -1181,6 +1202,7 @@ function gameView(id, lvl = 0, { signal } = {}) {
         if (medal === 3) fx.confetti(100); else if (medal) fx.confetti(40);
         showResult(resultHTML({ medal, noClock }, [`${score.toLocaleString('en-US')} points.${noClock ? '' : ` Goals: ${L.goal.map(v => v.toLocaleString('en-US')).join(', ')}.`}`, skillLine + skillMove, `<span class="fx-sparks">+${sp} Sparks</span>${improved ? ' New best.' : ''}`, ...(noClock ? ['<span class="lv-noclock">Medals for this game need the clock. Turn Calm off to play for one.</span>'] : [])], lvl < LEVELS_PER_GAME ? `#/game/${g.id}/${lvl + 1}` : null, `#/game/${g.id}/${lvl}`, `#/game/${g.id}`, 'Game home'), close);
         const rt = area.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); mount(ctx => gameView(g.id, lvl, ctx)); };
+        fx.rollSparks(area, signal);
         return;
       }
       const sp = 10 + Math.min(80, Math.round(score / 30)); store.addSparks(sp, 'game');
@@ -1189,7 +1211,7 @@ function gameView(id, lvl = 0, { signal } = {}) {
       const res = `<div class="g-result"><div class="md-stat"><div class="md-kicker">${mode === 'ranked' ? 'Ranked score' : 'Practice score'}</div><div class="md-value">${score.toLocaleString('en-US')}</div><p>${note} <span class="fx-sparks">+${sp} Sparks</span></p></div><p class="mq-small">${skillLine}${skillMove}</p></div>`;
       const back = () => { lobby(res); close(); };
       showResult(`${res}<p class="lv-acts"><button type="button" class="md-btn md-btn--primary" id="gDone">Back to ${esc(g.title)}</button></p>`, back);
-      $('#gDone', area).onclick = back;
+      $('#gDone', area).onclick = back; fx.rollSparks(area, signal);
       if (mode === 'ranked') later(() => { loadBoard($('#gbDay'), bDay); loadBoard($('#gbWeek'), bWeek); }, 1500, signal);
     };
     /* The exit button: Finish ends an endless round with its result; Stop leaves any other round with nothing saved */

@@ -103,14 +103,10 @@ export function toast(text, ms = 2600) {
   let el = document.querySelector('.px-toast'); if (!el) { el = document.createElement('div'); el.className = 'px-toast'; el.setAttribute('role', 'status'); document.body.append(el); }
   el.textContent = text; el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), ms);
 }
-/* A short burst of confetti in token colors */
-export function confetti(n = 60) {
-  if (typeof document === 'undefined' || reducedMotion()) return;
-  const box = document.createElement('div'); box.className = 'px-confetti'; box.setAttribute('aria-hidden', 'true');
-  const cols = ['--coral', '--sun', '--teal', '--sky', '--plum'];
-  for (let i = 0; i < n; i++) { const p = document.createElement('i'); p.style.left = Math.random() * 100 + 'vw'; p.style.background = `var(${cols[i % 5]})`; p.style.animationDelay = Math.random() * 0.3 + 's'; p.style.setProperty('--dx', (Math.random() * 2 - 1) * 30 + 'vw'); box.append(p); }
-  document.body.append(box); setTimeout(() => box.remove(), 2200);
-}
+/* Celebrations come from one place (js/celebrate.js, openspec celebrations): confetti(n) is the big burst for true
+   wins only (a lock cracked, a Belt, a best, a puzzle solved); sparkle(el) and the other small ones are for everyday
+   moments. All of them hold still under reduced motion, Pause motion and Calm. */
+export { confetti, sparkle, pop, bounce, twinkle, wiggle, tick } from '../celebrate.js';
 
 /* ---------- Analytics (openspec analytics spec): math/play/<experience>/<action>, fixed words only ----------
    The second argument is ignored on purpose: titles and paths never carry scores, counts, seeds or typed text. */
