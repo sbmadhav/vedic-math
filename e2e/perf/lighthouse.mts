@@ -97,6 +97,18 @@ async function once(url: string, port: number, keepStorage: boolean): Promise<Me
   return out;
 }
 
+/* Lighthouse now and then fails to record a trace (NO_NAVSTART, NO_FCP); such a run is made again, at most twice,
+   in a fresh profile like the first one */
+async function retried<T>(what: string, run: () => Promise<T>): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try { return await run(); }
+    catch (e) {
+      if (attempt === 3) throw e;
+      console.warn(`${what}: attempt ${attempt} failed (${(e as Error).message}); running it again`);
+    }
+  }
+}
+
 export async function page(base: string, path: string, visit: 'first' | 'returning' | 'repeat', runs: number): Promise<Metrics[]> {
   const url = base + path;
   const all: Metrics[] = [];
@@ -105,17 +117,19 @@ export async function page(base: string, path: string, visit: 'first' | 'returni
     try {
       await seedPlayer(b.ctx, base);
       await workerReady(b.ctx, base);
-      await once(url, b.port, true); // warm-up, not measured
-      for (let i = 0; i < runs; i++) all.push(await once(url, b.port, true));
+      await retried(url, () => once(url, b.port, true)); // warm-up, not measured
+      for (let i = 0; i < runs; i++) all.push(await retried(url, () => once(url, b.port, true)));
     } finally { await b.ctx.close(); rmSync(b.dir, { recursive: true, force: true }); }
     return all;
   }
   for (let i = 0; i < runs; i++) {
-    const b = await browser();
-    try {
-      if (visit === 'returning') await seedPlayer(b.ctx, base);
-      all.push(await once(url, b.port, visit === 'returning'));
-    } finally { await b.ctx.close(); rmSync(b.dir, { recursive: true, force: true }); }
+    all.push(await retried(url, async () => {
+      const b = await browser();
+      try {
+        if (visit === 'returning') await seedPlayer(b.ctx, base);
+        return await once(url, b.port, visit === 'returning');
+      } finally { await b.ctx.close(); rmSync(b.dir, { recursive: true, force: true }); }
+    }));
   }
   return all;
 }
