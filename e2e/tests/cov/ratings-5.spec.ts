@@ -14,7 +14,7 @@ async function seedProgress(page: Page, id: string, data: Record<string, unknown
 }
 /** Problems (with key and numbers) of Katas a to b of sq5, from the app's own seeded Katas */
 const katasProblems = (page: Page, a: number, b: number) => page.evaluate(async ([a, b]) => {
-  const LV = await import('/js/levels.js' as string);
+  const LV = await e2eMod('levels');
   const out: { key: string; n: number }[] = [];
   for (let n = a; n <= b; n++) LV.kata('sq5', n).problems.forEach((p: { vals: number[] }, i: number) => out.push({ key: `${n}:${i}`, n: p.vals[0] }));
   return out;
@@ -76,7 +76,7 @@ test('Shared with Practice: a Star round that raises the Rating starts that Tric
   await page.evaluate(() => { location.hash = '#/skill/v-sq5'; });
   await expect(page.locator('#practice #prQ')).toHaveAttribute('data-level', '2');
   const fromStore = await page.evaluate(async () => {
-    const AD = await import('/js/adapt.js' as string);
+    const AD = await e2eMod('adapt');
     return AD.levelFor(Math.round(AD.skillRating('v-sq5', 'challenger')));
   });
   expect(fromStore).toBe(2);

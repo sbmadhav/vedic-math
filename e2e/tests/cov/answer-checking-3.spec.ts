@@ -4,9 +4,9 @@ import { test, expect, open, type Page } from '../fixtures';
    - Typing the question back: refused with "type just the answer", try count, mastery and Sparks unchanged.
    - Plain forms are accepted: for an answer of 1225, `1225`, `1,225` and `1225.0` are each right. */
 
-const sparks = (page: Page) => page.evaluate(async () => (await import('/js/store.js' as string)).sparks() as number);
+const sparks = (page: Page) => page.evaluate(async () => (await e2eMod('store')).sparks() as number);
 const skillRec = (page: Page, id: string) => page.evaluate(async k => {
-  const st = await import('/js/store.js' as string);
+  const st = await e2eMod('store');
   return JSON.parse(JSON.stringify(st.skill(k))) as { n: number; c: number; m: number; streak: number; last: number };
 }, id);
 

@@ -39,7 +39,7 @@ async function arenaRound(page: Page, mode: Mode) {
   // The last round's result is still in the play shell: Back to the Arena
   if (await page.locator('#arDone').isVisible()) await page.locator('#arDone').click();
   const answer = await page.evaluate(async m => {
-    const cloud = await import('/js/cloud.js' as string), arena = await import('/js/arena.js' as string);
+    const cloud = await e2eMod('cloud'), arena = await e2eMod('arena');
     return String(arena.dailySet(m, cloud.dayId())[0].answer);
   }, mode);
   await page.locator('#arGo').click();

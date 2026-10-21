@@ -44,8 +44,8 @@ test.describe('a Player 13 or over', () => {
     const seen = firebaseRequests(page);
     await page.clock.install();
     await open(page, '#/arena');
-    const day = await page.evaluate(async () => (await import('/js/cloud.js' as string)).dayId() as string);
-    const answer = await page.evaluate(async d => (await import('/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
+    const day = await page.evaluate(async () => (await e2eMod('cloud')).dayId() as string);
+    const answer = await page.evaluate(async d => (await e2eMod('arena')).dailySet('challenger', d)[0].answer, day);
     await page.locator('#arGo').click();
     await page.clock.runFor(2_500); // 3, 2, 1
     await typeAnswer(page, String(answer));
@@ -54,7 +54,7 @@ test.describe('a Player 13 or over', () => {
     await page.clock.fastForward(61_000);
     await expect(page.locator('.ar-result')).toBeVisible();
     // The Score is on this device's boards (today's and this week's), and nothing was asked or sent
-    const wk = await page.evaluate(async () => (await import('/js/cloud.js' as string)).weekId() as string);
+    const wk = await page.evaluate(async () => (await e2eMod('cloud')).weekId() as string);
     await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('vm.board') || '[]').map((e: any) => `${e.board}:${e.score}`).sort()))
       .toEqual([`daily-${day}-challenger:10`, `week-${wk}-challenger:10`]);
     await expect(page.locator('dialog[open]')).toHaveCount(0);

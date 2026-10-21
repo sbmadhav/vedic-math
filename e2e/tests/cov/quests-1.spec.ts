@@ -1,4 +1,4 @@
-import { test, expect, open, blockAnalytics, type Page } from '../fixtures';
+import { test, expect, open, blockAnalytics, installModules, mod, type Page } from '../fixtures';
 
 /* quests spec, Requirement: Progress counts from zero each day.
    Quests are drawn per local date, so each test fixes the date with page.clock. Questions are random:
@@ -27,10 +27,11 @@ test.describe('First day, first action', () => {
     // Find a local date whose Challenger draw includes "Answer 15 questions" (the draw is seeded on the date)
     const ctx = await browser.newContext({ baseURL: testInfo.project.use.baseURL, serviceWorkers: 'block' });
     await blockAnalytics(ctx);
+    await installModules(ctx, testInfo.project.use.baseURL);
     const probe = await ctx.newPage();
-    await probe.goto('/js/gamify.js').catch(() => {});
+    await probe.goto(await mod(probe, 'gamify')).catch(() => {});
     const day = await probe.evaluate(async () => {
-      const gm = await import('/js/gamify.js' as string);
+      const gm = await e2eMod('gamify');
       for (let i = 0; i < 60; i++) {
         const d = new Date(2026, 2, 1 + i);
         const s = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
