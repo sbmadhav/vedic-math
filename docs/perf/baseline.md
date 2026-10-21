@@ -7,7 +7,7 @@ The numbers of the live game before the migration to React (openspec change `rea
 - **Site:** https://learnvedicmath.com, the game at `/play/`, measured on 2026-10-21 at 01:17 UTC.
 - **Commit:** `1401890` on `main` (Merge pull request #109). The live `sw.js` had `VERSION = '1730cf8552'`, the same as the job's `python3 build.py --voice off` of this pull request merged into that commit (the pull request publishes nothing), so the live files were that commit's.
 - **Machine:** a GitHub-hosted `ubuntu-latest` runner, through `.github/workflows/perf.yml` (run 39526007402). The gates of task 1.8 run on the same kind of runner, so like is compared with like. Lighthouse 13.5.0, with the Chromium of Playwright 1.64.1.
-- **Re-measuring:** run `perf.yml` by hand (Actions, "Perf baseline", optional `base_url`). Locally, from the repository root: `python3 build.py --out _site`, then `node tools/budget.ts _site`. From `e2e/`: `node perf/lighthouse.mts` and `npx playwright test -c perf/playwright.config.ts`.
+- **Re-measuring:** run `perf.yml` by hand (Actions, "Perf baseline", optional `base_url`). Locally, from the repository root: `python3 build.py --out _site`, then `node tools/budget.ts _site`. From `e2e/`: `node perf/lighthouse.mts` and `pnpm exec playwright test -c perf/playwright.config.ts`.
 
 ## First load: 744,827 bytes (Brotli)
 

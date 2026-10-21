@@ -22,7 +22,7 @@ on:
     paths:
       - e2e/perf/**
       - e2e/package.json
-      - e2e/package-lock.json
+      - pnpm-lock.yaml
       - tools/budget.ts
       - tools/lighthouserc.json
       - .github/workflows/perf.yml
