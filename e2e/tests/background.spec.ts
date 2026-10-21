@@ -101,6 +101,17 @@ test.describe('motion', () => {
     expect(seen[second - 1], 'an empty sky between two stories').toBe(':gap');
   });
 
+  test('the rope-and-peg story (circling the square) is the first drawn on the landing page', async ({ page }, testInfo) => {
+    chromiumOnly(testInfo, 'a fake clock over a story: chromium');
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await heldClock(page);
+    await page.goto('/?home');
+    await page.clock.runFor(2000);
+    await expect(sky(page)).toBeAttached();
+    const s = await untilHeld(page);
+    expect([s.story, s.phase]).toEqual(['sulba', 'hold']);
+  });
+
   test('a hidden tab stops the frame loop; showing it again restarts it', async ({ page }) => {
     await open(page);
     await expect(sky(page)).toHaveAttribute('data-running', '1', { timeout: 10_000 });
