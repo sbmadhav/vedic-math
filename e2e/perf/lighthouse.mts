@@ -26,12 +26,17 @@ const RC = JSON.parse(readFileSync(join(HERE, '..', '..', 'tools', 'lighthouserc
   pages: { name: string; path: string; visit: 'first' | 'returning' | 'repeat' }[];
 };
 
-export type Metrics = { fcp: number; lcp: number; tbt: number; cls: number; si: number; ttfb: number };
-export const METRICS: (keyof Metrics)[] = ['fcp', 'lcp', 'tbt', 'cls', 'si', 'ttfb'];
-const AUDIT: Record<keyof Metrics, string> = {
+/* ttfb: time to first byte of the page as Lighthouse's throttled run models it (DNS, connection, TLS and the server's
+   answer: the metrics audit's timeToFirstByte); srt: the server's own response time (the server-response-time audit) */
+export type Metrics = { fcp: number; lcp: number; tbt: number; cls: number; si: number; ttfb: number; srt: number };
+export const METRICS: (keyof Metrics)[] = ['fcp', 'lcp', 'tbt', 'cls', 'si', 'ttfb', 'srt'];
+const AUDIT: Record<Exclude<keyof Metrics, 'ttfb'>, string> = {
   fcp: 'first-contentful-paint', lcp: 'largest-contentful-paint', tbt: 'total-blocking-time',
-  cls: 'cumulative-layout-shift', si: 'speed-index', ttfb: 'server-response-time',
+  cls: 'cumulative-layout-shift', si: 'speed-index', srt: 'server-response-time',
 };
+/* Analytics never counts a run: Lighthouse blocks these patterns, and the setup visits abort the same requests */
+const ANALYTICS_PATTERNS = ['*goatcounter.com*', '*gc.zgo.at*', '*/vendor/goatcounter/count.js*', '*cloudflareinsights.com*'];
+const ANALYTICS = /goatcounter\.com|gc\.zgo\.at|\/vendor\/goatcounter\/count\.js|cloudflareinsights\.com/;
 
 export const median = (xs: number[]) => {
   const s = [...xs].sort((a, b) => a - b);
@@ -65,6 +70,7 @@ async function browser(): Promise<{ ctx: BrowserContext; port: number; dir: stri
 
 async function seedPlayer(ctx: BrowserContext, base: string) {
   const page = await ctx.newPage();
+  await page.route(ANALYTICS, r => r.abort());
   await page.goto(`${base}/robots.txt`);
   await page.evaluate(p => { localStorage.setItem('vm.players', p); localStorage.setItem('vm.sound', '0'); localStorage.setItem('vm.tour', 'done'); }, PLAYER);
   await page.close();
@@ -72,6 +78,7 @@ async function seedPlayer(ctx: BrowserContext, base: string) {
 
 async function workerReady(ctx: BrowserContext, base: string) {
   const page = await ctx.newPage();
+  await page.route(ANALYTICS, r => r.abort());
   await page.goto(`${base}/play/`);
   // Throws when no worker controls the page within a minute, so a "repeat" median always means a controlled page
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, undefined, { timeout: 60_000 });
@@ -81,7 +88,7 @@ async function workerReady(ctx: BrowserContext, base: string) {
 async function once(url: string, port: number, keepStorage: boolean): Promise<Metrics> {
   const flags = {
     port, output: 'json' as const, logLevel: 'error' as const, onlyCategories: ['performance'],
-    disableStorageReset: keepStorage, blockedUrlPatterns: ['*goatcounter.com*', '*gc.zgo.at*', '*/vendor/goatcounter/count.js*', '*cloudflareinsights.com*'],
+    disableStorageReset: keepStorage, blockedUrlPatterns: ANALYTICS_PATTERNS,
     ...RC.ci.collect.settings,
   };
   const res = await lighthouse(url, flags as Parameters<typeof lighthouse>[1]);
@@ -89,11 +96,15 @@ async function once(url: string, port: number, keepStorage: boolean): Promise<Me
   const lhr = res.lhr;
   if (lhr.runtimeError) throw new Error(`${url}: ${lhr.runtimeError.code} ${lhr.runtimeError.message}`);
   const out = {} as Metrics;
-  for (const k of METRICS) {
-    const v = lhr.audits[AUDIT[k]]?.numericValue;
-    if (typeof v !== 'number') throw new Error(`${url}: no ${AUDIT[k]} in the report`);
+  for (const [k, audit] of Object.entries(AUDIT) as [keyof typeof AUDIT, string][]) {
+    const v = lhr.audits[audit]?.numericValue;
+    if (typeof v !== 'number') throw new Error(`${url}: no ${audit} in the report`);
     out[k] = v;
   }
+  const items = (lhr.audits.metrics?.details as { items?: { timeToFirstByte?: number }[] } | undefined)?.items;
+  const ttfb = items?.[0]?.timeToFirstByte;
+  if (typeof ttfb !== 'number') throw new Error(`${url}: no timeToFirstByte in the metrics audit`);
+  out.ttfb = ttfb;
   return out;
 }
 

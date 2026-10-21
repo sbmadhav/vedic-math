@@ -1,6 +1,6 @@
 # Performance baseline
 
-The numbers of the live game before the migration to React (openspec change `react-typescript`, task 0.4, design D1, performance-budget spec). The gates of task 1.8 compare every pull request's preview with them, and the build compares its first-load bytes with them. The machine-readable copy is `docs/perf/baseline.json`. A change to either file says why in its pull request.
+The numbers of the live game before the migration to React (openspec change `react-typescript`, task 0.4, design D1, performance-budget spec). Task 1.8 adds the gates that use them: the build compares its first-load bytes with them, and each pull request's preview is measured the same way and compared. The machine-readable copy is `docs/perf/baseline.json`. A change to either file says why in its pull request.
 
 ## What was measured
 

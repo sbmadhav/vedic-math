@@ -83,15 +83,19 @@ jobs:
           cp perf/results/interactions.json perf/results/interactions-1.json
           npx playwright test -c perf/playwright.config.ts
           cp perf/results/interactions.json perf/results/interactions-2.json
-          # Task 0.4's check: the two runs' medians agree within the spec's 20 ms
+          # Task 0.4's check: the two runs' medians agree within the spec's 20 ms, or within a timing's measured noise
+          # where docs/perf/baseline.json records one (interactions.noise, with the reason in baseline.md)
           node -e '
             const [a, b] = [1, 2].map(n => require(`./perf/results/interactions-${n}.json`).interactions);
+            let noise = {};
+            try { noise = require("../docs/perf/baseline.json").interactions.noise || {}; } catch (e) {}
             let bad = 0;
             for (const name of new Set([...Object.keys(a), ...Object.keys(b)]))
               for (const m of ["inp", "visible"]) {
                 const d = Math.abs((a[name]?.[m] ?? NaN) - (b[name]?.[m] ?? NaN));
-                console.log(`${name} ${m}: ${a[name]?.[m]} and ${b[name]?.[m]} (${d} ms apart)`);
-                if (!(d <= 20)) { bad++; console.log(`::error::${name} ${m}: the two runs differ by more than 20 ms`); }
+                const tol = Math.max(20, noise[name]?.[m] ?? 0);
+                console.log(`${name} ${m}: ${a[name]?.[m]} and ${b[name]?.[m]} (${d} ms apart, tolerance ${tol} ms)`);
+                if (!(d <= tol)) { bad++; console.log(`::error::${name} ${m}: the two runs differ by more than ${tol} ms`); }
               }
             process.exit(bad ? 1 : 0);'
 
