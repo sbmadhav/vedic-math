@@ -326,6 +326,17 @@ Proposed in the `learnvedicmath` change (`openspec/changes/learnvedicmath/`, ADR
 The static page at `https://learnvedicmath.com/` that says what Vedic Math is and leads into the app at `/play/` (its Start learning button; the header and footer link is Learn). A device that already has Players goes straight past it into the game.
 _Avoid_: home (Home is the game's first view), splash, homepage
 
+**Mode card** (landing page):
+One of the three links under "Pick how you learn" on the Landing page, one per Mode, each with its call to action ("Start as Explorer"). It is a Mode link. (`landing-modes-and-return` change.)
+_Avoid_: tile (tiles are on the game's Home)
+
+**Mode link**:
+`/play/?mode=<id>`: opens the game with that Mode set as if it were picked on the Mode picker, then drops `mode` from the address. An unknown id changes nothing.
+
+**Welcome back** (landing page):
+The Landing page's version for a device that already has Players, seen only through `/?home` (the brand link in the game): the hero greets the active Player by Nickname, its button reads Keep playing, and the Player's Mode card is marked Your Mode. It only reads storage; the first-visit version is the page's HTML.
+_Avoid_: returning user page, logged-in view
+
 **Hand-off**:
 Moving one device's Players, progress and settings from sbmadhav.com/vedic-math/ to learnvedicmath.com, once, on the device, after the Player says yes. World board identities and the Parent step never move.
 _Avoid_: migration (that is a schema upgrade), sync, transfer, import (the import page is where a Hand-off lands)

@@ -8,6 +8,7 @@ type Page = import('@playwright/test').Page;
 
 const HEROES = [
   { name: 'landing page', url: '/?home', text: '.lv-hero-t', h1: 'Math tricks you can do in your head', line: 'Free, for ages 4 to adult.', cta: 'main a.lv-play', label: 'Start learning', mode: null },
+  { name: 'welcome back landing page', url: '/?home', text: '.lv-hero-t', h1: 'Welcome back, Swift Tiger 42', line: 'Pick up where you left off.', cta: 'main a.lv-play', label: 'Keep playing', mode: 'challenger' },
   { name: 'app home', url: APP, text: '.mq-hero-t', h1: 'Fast, fun math for every brain', line: 'One trick, two minutes, no sign-up.', cta: '#tryBtn', label: 'Try a trick', mode: null },
 ] as const;
 const words = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;

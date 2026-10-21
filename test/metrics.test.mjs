@@ -89,6 +89,11 @@ test('tryStart and findGo send one fixed event each, with no text in path or tit
   assert.deepEqual(paths(), ['math/try/start', 'math/find/go', 'math/find/go']);
   assert.ok(sent.every(([p, t]) => PATH.test(p) && /^Vedic Math: /.test(t)));
 });
+test('modeLink sends math/landing/mode/<Mode> for a Mode only, with a fixed title', () => {
+  clear(); M.modeLink('pro'); M.modeLink('explorer'); M.modeLink('wizard'); M.modeLink('Swift Tiger 42'); M.modeLink(undefined);
+  assert.deepEqual(paths(), ['math/landing/mode/pro', 'math/landing/mode/explorer']);
+  assert.ok(sent.every(([p, t]) => PATH.test(p) && t === 'Vedic Math: landing mode card'));
+});
 test('app.js calls tryStart and findGo with no arguments', () => {
   const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
   assert.deepEqual(callSites(app).filter(c => c.fn === 'metrics.tryStart' || c.fn === 'metrics.findGo').map(c => c.args.trim()), ['', '']);
