@@ -10,7 +10,7 @@
  },
  "firstLoad": {
   "page": "/play/",
-  "total": 756123,
+  "total": 758072,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -112,8 +112,8 @@
    "/js/skills/index.js": 1084,
    "/js/skills/middle.js": 6258,
    "/js/skills/upper.js": 7871,
-   "/js/sky-bg.js": 9321,
-   "/js/sky-scene.js": 5438,
+   "/js/sky-bg.js": 10568,
+   "/js/sky-scene.js": 6164,
    "/js/sky-view.js": 4458,
    "/js/sky.js": 3762,
    "/js/slokas.js": 16068,
@@ -133,8 +133,8 @@
    "/js/watch.js": 2065,
    "/manifest.webmanifest": 313,
    "/math.css": 21305,
-   "/play/": 3564,
-   "/sw.js": 6073,
+   "/play/": 3566,
+   "/sw.js": 6047,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -148,9 +148,16 @@
    },
    {
     "date": "2026-10-21",
-    "pr": 115,
+    "pr": 111,
     "from": 755652,
-    "to": 756123,
+    "to": 757612,
+    "why": "merged on main after #110: the sky background's second part (bg-sky-ab, js/sky-bg.js), a feature outside this change"
+   },
+   {
+    "date": "2026-10-21",
+    "pr": 115,
+    "from": 757612,
+    "to": 758072,
     "why": "react-typescript phase 1 (#114, #115): the three js/ edits (comments and absolute /sounds/ URLs) and sw.js published from sw.ts (its new header comment, the /api/ rule and lint fixes); no new file"
    }
   ]
