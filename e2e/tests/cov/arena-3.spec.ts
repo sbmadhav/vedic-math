@@ -71,7 +71,7 @@ test.describe('Pro Arena: no algebra', () => {
 
   test('the check catches the old Pro pool (solve for x, powers, logarithms), so it can tell', async ({ page }) => {
     await open(page, '#/arena');
-    const old = await page.evaluate(async () => (await import('/js/arena.js' as string)).dailySet('pro', '2026-10-15').map((q: any) => q.q as string)) as string[];
+    const old = await page.evaluate(async () => (await e2eMod('arena')).dailySet('pro', '2026-10-15').map((q: any) => q.q as string)) as string[];
     const kinds = new Set(old.map(algebra).filter(Boolean));
     expect([...kinds]).toEqual(expect.arrayContaining(['an unknown (solve for x)', 'a logarithm', 'a power other than a square']));
   });
@@ -87,7 +87,7 @@ test.describe('Pro Arena: no algebra', () => {
     await page.goto(`${APP}#/learn`); // leave before the round ends: nothing is posted
     // Every daily set for the eight weeks from the switch day
     const sets = await page.evaluate(async () => {
-      const A = await import('/js/arena.js' as string);
+      const A = await e2eMod('arena');
       const out: [string, string[]][] = [];
       for (let t = new Date(2026, 9, 19); t < new Date(2026, 11, 14); t.setDate(t.getDate() + 1)) {
         const day = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
@@ -110,7 +110,7 @@ test.describe('Pro Arena: no algebra', () => {
       await expect(page.locator('#arRating')).toHaveAttribute('data-rating', String(rating));
       // The Practice generator at every difficulty step
       const items = await page.evaluate(async () => {
-        const A = await import('/js/arena.js' as string);
+        const A = await e2eMod('arena');
         const out: [number, string][] = [];
         for (let d = 1; d <= 20; d++) for (let k = 0; k < 50; k++) out.push([d, A.practiceItem('pro', d).q]);
         return out;
@@ -159,7 +159,7 @@ test.describe('Daily rounds are identical for a League', () => {
     expect(two).toEqual(one);
     // And it is that date's daily set for the League, in its order
     const expected = await page.evaluate(async () => {
-      const A = await import('/js/arena.js' as string);
+      const A = await e2eMod('arena');
       const div = document.createElement('div');
       return A.dailySet('pro', '2026-10-22').map((q: any) => { div.innerHTML = q.q; return `${q.d}|${div.innerHTML}`; });
     }) as string[];

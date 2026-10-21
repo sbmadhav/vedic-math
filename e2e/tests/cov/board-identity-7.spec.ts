@@ -19,7 +19,7 @@ async function seedLegacy(page: Page, second: boolean) {
     if (b) { const P = JSON.parse(localStorage.getItem('vm.players')!); P.list.push(b); localStorage.setItem('vm.players', JSON.stringify(P)); }
   }, [LEGACY, second ? B : null] as const);
 }
-const weekId = (page: Page) => page.evaluate(async () => (await import('/js/cloud.js' as string)).weekId() as string);
+const weekId = (page: Page) => page.evaluate(async () => (await e2eMod('cloud')).weekId() as string);
 const stored = (page: Page) => page.evaluate(() => ({
   uids: JSON.parse(localStorage.getItem('vm.cloudUids') || '{}') as Record<string, string>,
   legacy: localStorage.getItem('vm.cloudUid'),
@@ -58,7 +58,7 @@ test.describe('existing shared identity stays with the first Player', () => {
     await page.clock.install();
     await open(page, '#/sutras');
     const wk = await weekId(page);
-    await page.evaluate(async id => (await import('/js/store.js' as string)).switchPlayer(id), PB);
+    await page.evaluate(async id => (await e2eMod('store')).switchPlayer(id), PB);
     await open(page, '#/sutras');
     await earnAndPost(page);
     await expect.poll(async () => (await cloudLog(page)).writes.length).toBe(1);
@@ -74,7 +74,7 @@ test.describe('existing shared identity stays with the first Player', () => {
     expect(s.legacy).toBe(LEGACY); // the shared identity still belongs to the first Player
     expect(s.auth['[DEFAULT]']).toBe(LEGACY);
     expect(await page.evaluate(async () => {
-      const [cloud, store] = await Promise.all([import('/js/cloud.js' as string), import('/js/store.js' as string)]);
+      const [cloud, store] = await Promise.all([e2eMod('cloud'), e2eMod('store')]);
       return cloud.savedUid(store.allPlayers().find((p: { id: string }) => p.id === 'p1'));
     })).toBe(LEGACY);
   });

@@ -49,7 +49,7 @@ test('the eleven Titles start at their Sparks thresholds', async ({ page }) => {
 test('the Title table in the app is exactly the eleven Titles', async ({ page }) => {
   await open(page, '#/');
   const got = await page.evaluate(async () => {
-    const gm = await import('/js/gamify.js' as string);
+    const gm = await e2eMod('gamify');
     return { table: gm.TITLES as [number, string][], at: (gm.TITLES as [number, string][]).map(([n]) => gm.titleInfo(n).title) };
   });
   expect(got.table).toEqual(TITLES);

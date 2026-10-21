@@ -109,7 +109,7 @@ test('Video learner: closing a video after 5 seconds earns nothing, a minute in 
   await dlg.locator('.vp-x').click();
   await expect(dlg).toBeHidden();
   await page.clock.runFor(70_000);
-  const badges = () => page.evaluate(async () => (await import('/js/store.js' as string)).badges());
+  const badges = () => page.evaluate(async () => (await e2eMod('store')).badges());
   expect((await badges()).watch).toBeUndefined();
   // Opening a video the Player never opened before earns no Sparks
   const sparks = () => page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1') || '{}').sparks || 0);
@@ -151,7 +151,7 @@ test.describe('removing a Player who posted', () => {
     expect(log.writes).toEqual([]);
     // A new Player posts for the first time: a new identity, not the removed Player's
     const path = await page.evaluate(async () => {
-      const store = await import('/js/store.js' as string), cloud = await import('/js/cloud.js' as string);
+      const store = await e2eMod('store'), cloud = await e2eMod('cloud');
       const c = store.addPlayer(); store.setAge('adult');
       await cloud.submit(`daily-${cloud.dayId()}-challenger`, { name: c.name, avatar: c.avatar, score: 120 });
       return { id: c.id as string };
@@ -175,7 +175,7 @@ test.describe('badges in Explorer', () => {
     expect(n).toBeGreaterThan(10);
     for (const name of ['White belt', 'Green belt', 'Black belt', 'Sutra scholar']) await expect(badge(page, name)).toHaveCount(0);
     await expect(page.locator('.mq-strand', { hasText: 'Badges' })).toContainText(`0 of ${n}`);
-    const all = await page.evaluate(async () => (await import('/js/gamify.js' as string)).BADGES.length);
+    const all = await page.evaluate(async () => (await e2eMod('gamify')).BADGES.length);
     expect(n).toBe(all - 4);
   });
   test.describe('with the White belt earned before switching from Challenger', () => {
@@ -193,7 +193,7 @@ test.describe('badges in Explorer', () => {
 
 test('badges in Challenger: every badge is listed, belts included', async ({ page }) => {
   await open(page, '#/me');
-  const all = await page.evaluate(async () => (await import('/js/gamify.js' as string)).BADGES.length);
+  const all = await page.evaluate(async () => (await e2eMod('gamify')).BADGES.length);
   await expect(page.locator('.badge-grid .badge')).toHaveCount(all);
   await expect(badge(page, 'White belt')).toHaveCount(1);
 });

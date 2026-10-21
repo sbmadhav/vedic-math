@@ -9,7 +9,7 @@ import { test, expect, open, withVideos, type Page } from '../fixtures';
 
 async function fixNextQuestion(page: Page, file: string, skillId: string, randoms: number[]) {
   await page.evaluate(async ({ file, skillId, randoms }) => {
-    const mod = await import(`/js/skills/${file}` as string);
+    const mod = await e2eMod(`skills/${file.replace(/\.js$/, '')}`);
     const s = (mod.default as any[]).find(x => x.id === skillId);
     const orig = s.gen;
     s.gen = function (...args: unknown[]) {
@@ -58,7 +58,7 @@ const NUMBERBLOCKS = `{ id: 'e2e-numberblocks', title: 'Numberblocks: Let us Cou
 async function settleWatch(page: Page) {
   // fillWatch fills the box once js/videos.js has loaded; let that promise chain run before checking for absence
   await page.evaluate(async () => {
-    await import('/js/videos.js' as string);
+    await e2eMod('videos');
     await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   });
 }
@@ -77,7 +77,7 @@ for (const mode of ['explorer', 'challenger', 'pro'] as const) {
       await settleWatch(page);
       // The injected counting video really is in the list the app reads
       const { ids, counting } = await page.evaluate(async () => {
-        const { VIDEOS } = await import('/js/videos.js' as string);
+        const { VIDEOS } = await e2eMod('videos');
         return {
           ids: (VIDEOS as any[]).map(v => v.id),
           counting: (VIDEOS as any[]).filter(v => v.yt && (v.skills.some((s: string) => /^k-(count|teens)$/.test(s)) || /numberblocks/i.test(v.title))).map(v => v.yt),
