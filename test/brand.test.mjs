@@ -49,6 +49,19 @@ test('the landing hero is the Nikhilam Family, drawn with tokens, named for scre
   assert.ok(!/lv-bolt|--bolt-(body|accent|belly|screen|line)|aria-label="Bolt/.test(html), 'Bolt is not on the landing page');
 });
 
+test('the app home hero draws the same Nikhilam Family as the landing page, and it holds still under no motion', async () => {
+  const landing = src('site/index.html').match(/<svg class="lv-family"[^>]*>[\s\S]*?<\/svg>/)[0];
+  const { FAMILY_SVG } = await import('../js/family.js');
+  assert.equal(FAMILY_SVG, landing, 'js/family.js is the landing hero, drawing for drawing');
+  const app = src('js/app.js');
+  assert.match(app, /<\/div>\$\{FAMILY_SVG\}<\/div>/, 'the Mode picker hero shows the family');
+  const picker = app.slice(app.indexOf('function modePicker('), app.indexOf('function afterPick('));
+  assert.doesNotMatch(picker, /icon\('bolt'\)|boltHTML/, 'no Bolt in the app home hero');
+  const css = src('math.css');
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{ \.lv-family \*, \.mq-try::after, \.mq-try svg \{ animation: none !important; \} \}/);
+  assert.match(css, /html\.motion-paused \.lv-family \*, body\.calm \.lv-family \*, html\.motion-paused \.mq-try::after, body\.calm \.mq-try::after/);
+});
+
 test('every grown-up page is free of Bolt art: Bolt stays inside the game', () => {
   for (const p of pages.filter(f => f.startsWith('site'))) {
     assert.ok(!/lv-bolt|--bolt-(body|accent|belly|screen|line)|Bolt, the friendly robot/.test(src(p)), p);

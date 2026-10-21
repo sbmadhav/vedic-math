@@ -24,7 +24,7 @@ test.describe('Calm on', () => {
     await expect(page.locator('#stSay')).toContainText('Comeback');
     await expect(page.locator('#stSay')).toContainText('Sparks');
     expect(await stageAnimations(page)).toBe(0);
-    expect(await page.locator('.star-burst').count()).toBe(0);
+    expect(await page.locator('.fx-sparkles, .fx-confetti').count()).toBe(0);
   });
 });
 

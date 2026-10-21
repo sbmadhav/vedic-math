@@ -50,16 +50,18 @@
 <main id="main" tabindex="-1">
   <section class="md-section lv-hero">
     <div class="md-wrap lv-hero-in">
-      <div>
-        <p class="lv-kicker">Free, for ages 4 to adult</p>
-        <h1 class="lv-title">Math tricks you can do in your head, and games to practise them</h1>
-        <p class="md-lede">Learn Vedic Math teaches the speed tricks from Bharati Krishna Tirtha's 1965 book <i>Vedic Mathematics</i>, with practice from counting to calculus, games, daily Stars and Boards. Lessons, problems and pictures are our own. Your progress stays on your device.</p>
-        <p><a class="lv-play" href="/play/">Start learning</a></p>
+      <!-- The hero says as little as it can (openspec landing-pages "The landing page"): one headline, one short line
+           and one big Start learning button. Everything else is below it. -->
+      <div class="lv-hero-t">
+        <h1 class="lv-title">Math tricks you can do in your head</h1>
+        <p class="lv-sub">Free, for ages 4 to adult.</p>
+        <p class="lv-cta-row"><a class="lv-play" href="/play/">Start learning<svg class="lv-play-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a></p>
       </div>
       <!-- The Nikhilam Family (brand/nikhilam-family/): the header mark's drawings, larger, with a halo, cheeks and
            sparkles. Tokens only, so it follows Daybreak and Deep Space. Each pose is a transform attribute on an outer
-           group; the gentle motion is CSS on the inner group (theme/site.css) and stops with reduced motion, Pause
-           motion and Calm. -->
+           group; the gentle motion is CSS on the inner group (theme/site.css): the nine nods toward Start learning
+           each time it glows, and the family hops when it is hovered or focused. All of it stops with reduced motion,
+           Pause motion and Calm. The app home draws the same family (js/family.js). -->
       <svg class="lv-family" viewBox="-6 -14 108 86" role="img" aria-label="The Nikhilam Family: the Devanagari digits one, zero and nine">
         <circle class="lv-f-halo" cx="48" cy="32" r="38" fill="var(--sun)" opacity=".16"/>
         <ellipse class="lv-f-shadow" cx="22" cy="63" rx="9" ry="2.2" fill="var(--ink)" opacity=".1"/>
@@ -95,6 +97,7 @@
     <div class="md-wrap">
       <h2 class="md-heading">Three ways to learn</h2>
       <p class="md-lede">Pick the one that fits. You can change it any time, and every Mode has the same tricks at its own pace.</p>
+      <p class="lv-what">Learn Vedic Math teaches the speed tricks from Bharati Krishna Tirtha's 1965 book <i>Vedic Mathematics</i>, with practice from counting to calculus, games, daily Stars and Boards. Lessons, problems and pictures are our own. Your progress stays on your device.</p>
       <ul class="lv-modes">
         <li class="lv-mode lv-mode--sun"><h3>Explorer</h3><p class="lv-ages">About 4 to 7</p><p>Big buttons, pictures, counting and read aloud.</p></li>
         <li class="lv-mode lv-mode--sky"><h3>Challenger</h3><p class="lv-ages">About 8 to 12</p><p>Speed tricks, Belts and daily challenges.</p></li>

@@ -73,7 +73,7 @@ test.describe('reduced motion', () => {
     const steps = page.locator('.star-step');
     for (let i = 0; i < count; i++) await expect(steps.nth(i)).toBeVisible();
     await expect(steps.first()).toContainText(String((n - 5) / 10));
-    expect(await page.locator('.star-burst').count()).toBe(0);
+    expect(await page.locator('.fx-sparkles, .fx-confetti').count()).toBe(0);
     await page.locator('#stRGo').click();
     await expect(tag(page)).toHaveText('Rematch');
     expect(await moving(page)).toBe(0);
