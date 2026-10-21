@@ -81,15 +81,19 @@ Every pull request with a preview SHALL run the baseline's Lighthouse pages and 
 - **THEN** the perf check fails and shows the number
 
 ### Requirement: A limit not met yet is reported until it is met
-A byte or timing limit of this spec that a page's start measurement already missed SHALL be reported on each pull request without failing it, until a pull request first meets it on that page; that pull request SHALL make it fail from then on.
+A byte or timing limit that the start measurement already missed for a page, visit and metric SHALL be reported on each pull request without failing it, until a pull request meets it there in both perf measurements by a margin (100 ms on paints and time to first byte, 25 ms on blocking time, 0.02 on layout shift, none on bytes). That pull request SHALL make it fail for that page, visit and metric from then on.
 
 #### Scenario: A limit not met yet
 - **WHEN** the Arena's largest contentful paint has never been under 2.5 s and a pull request measures 3.1 s, no worse than the baseline
 - **THEN** the perf comment shows the limit as missed, and the check does not fail for it
 
 #### Scenario: A limit just met
-- **WHEN** a pull request brings the Arena's largest contentful paint to 2.3 s
+- **WHEN** a pull request brings the Arena's largest contentful paint to 2.3 s and 2.35 s in the perf check's two measurements
 - **THEN** the same pull request makes that limit fail for the Arena, and a later pull request measuring 2.6 s fails
+
+#### Scenario: Only one visit meets it
+- **WHEN** the repeat visit of `/learn/` meets the first contentful paint limit and the first visit does not
+- **THEN** the limit fails pull requests for the repeat visit only, and stays reported for the first visit
 
 ### Requirement: Growth is reported
 The perf check SHALL compare the byte measurements of a pull request with `main` and comment on the pull request when JS or CSS before play grows by more than 5 KB, even within budget.

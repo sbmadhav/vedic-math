@@ -7,14 +7,18 @@ Load the game in as few round trips and bytes as possible, fetch what the Player
 ## ADDED Requirements
 
 ### Requirement: Compressed and immutable delivery
-Text responses (JS, CSS, HTML, JSON, SVG), whether static files or pages the server rendered, SHALL be served with Brotli to clients that accept it. Files under `/learn/assets/` whose name carries a content hash SHALL be served with `Cache-Control: public, max-age=31536000, immutable`; no other path SHALL be marked immutable.
+Text responses (JS, CSS, HTML, JSON, SVG), whether static files or pages the server rendered, SHALL be served with Brotli to clients that accept it, with `Vary: Accept-Encoding`, and uncompressed or in another encoding to clients that do not. Files under `/learn/assets/` whose name carries a content hash SHALL be served with `Cache-Control: public, max-age=31536000, immutable`; no other path SHALL be marked immutable.
 
 #### Scenario: Compressed response
 - **WHEN** a browser that sends `Accept-Encoding: br` requests the entry chunk under `/learn/assets/`, the prerendered `/learn/` or the server-rendered `/learn/arena`
-- **THEN** each response has `content-encoding: br`
+- **THEN** each response has `content-encoding: br` and `Vary: Accept-Encoding`
+
+#### Scenario: No Brotli asked for
+- **WHEN** a client that does not send `br` in `Accept-Encoding` requests the same entry chunk after a Brotli client did
+- **THEN** the response is not Brotli-encoded
 
 #### Scenario: A hashed file
-- **WHEN** a browser requests a chunk under `/learn/assets/`
+- **WHEN** a browser requests a chunk under `/learn/assets/` whose name carries its content hash
 - **THEN** the response has `Cache-Control: public, max-age=31536000, immutable`, and `/learn/`, `/learn/__shell.html` and `/sw.js` do not
 
 ### Requirement: Each route loads its own code
@@ -26,14 +30,14 @@ The game SHALL load the code of each route only when that route is opened or pre
 
 #### Scenario: The build knows
 - **WHEN** `python3 build.py --out _site` runs
-- **THEN** the budget table lists each route's own chunks, and none of them is in the `modulepreload` links of the prerendered `/learn/`
+- **THEN** the budget table lists each route's own chunks, and none but the Home route's is in the `modulepreload` links of the prerendered `/learn/`
 
 ### Requirement: Waiting for a route's code
 While the next route's code is loading, the current screen SHALL stay on screen, and a quiet loading line SHALL appear only after 300 ms without moving the layout. If the code fails to load, the route SHALL show a message that the part did not load with a Retry button, and Retry SHALL load it again. If the Player starts another navigation before the code arrives, the first route SHALL never appear. Offline, the failure SHALL show the message without reloading the page again and again.
 
 #### Scenario: The Arena's code fails to load
 - **WHEN** a Player opens the Arena and its route module request fails
-- **THEN** the view says the part did not load and offers Retry, and Retry loads it again
+- **THEN** the view says the part did not load and offers Retry, and Retry reloads the page at the Arena's path, which requests the module again
 
 #### Scenario: Leaving while it loads
 - **WHEN** a Player opens Games and taps Home before the Games route module arrives
@@ -52,7 +56,7 @@ Every game document, prerendered or server-rendered, SHALL name every chunk of t
 
 #### Scenario: Streamed head
 - **WHEN** a browser requests the server-rendered `/learn/arena`
-- **THEN** the first part of the response it receives holds the complete `<head>` with the Arena route's `modulepreload` links
+- **THEN** the response, read up to `</head>`, holds the Arena route's `modulepreload` links, and the server started sending it without waiting for the whole render to finish
 
 #### Scenario: A crawler
 - **WHEN** a crawler requests `/learn/arena`
