@@ -66,7 +66,7 @@ details.vp-panel summary { cursor: pointer; font-weight: 700; }
   </div>
   <h1>Voice listening test</h1>
   <p class="vp-lede">Twelve real lines from the game, each in four ways. Listen on a phone and a laptop, then pick. Nothing here is sent anywhere: every clip was made ahead of time and is a plain audio file.</p>
-  <div class="vp-warn">The voice is picked (Google Chirp 3 HD Aoede) and the Studio voice has shipped, so the 65 sample clips for rows 3 and 4 were deleted from the repo (change better-voice, task 5.2). Rows 1 and 2 still play with this device's voice. To hear rows 3 and 4 again, make the free Kokoro clips locally with <code>cd tools/voice &amp;&amp; npm install &amp;&amp; node make-clips.mjs</code> (they are git-ignored), or restore the old ones from history: <code>git checkout "$(git log -1 --format=%H --diff-filter=D -- docs/prototypes/voice/audio)^" -- docs/prototypes/voice/audio</code>.</div>
+  <div class="vp-warn">The voice is picked (Google Chirp 3 HD Aoede) and the Studio voice has shipped, so the 65 sample clips for rows 3 and 4 were deleted from the repo (change better-voice, task 5.2). Rows 1 and 2 still play with this device's voice. To hear rows 3 and 4 again, make the free Kokoro clips locally with <code>cd tools/voice &amp;&amp; npm install &amp;&amp; node make-clips.mjs</code> (they are git-ignored) and pick Kokoro Heart under "Clip voice for rows 3 and 4", or restore the old ones from history: <code>git checkout "$(git log -1 --format=%H --diff-filter=D -- docs/prototypes/voice/audio)^" -- docs/prototypes/voice/audio</code>.</div>
 
   <section class="vp-panel" aria-labelledby="keyH">
     <h2 id="keyH">The four voices</h2>
