@@ -1,0 +1,2 @@
+/* Expect: nothing */
+.card { color: var(--coral); background: var(--surface); }

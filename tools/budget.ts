@@ -26,6 +26,9 @@ export type Baseline = { firstLoad: Measure };
 
 const STATIC_IMPORT = /(?:^|[;\n}])\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|[;\n}])\s*import\s*['"]([^'"]+)['"]/g;
 
+/** A URL without its query string or fragment */
+const bare = (url: string): string => url.replace(/[?#].*$/, '');
+
 /** The file a published URL is served from */
 export function fileOf(site: string, url: string): string {
   const path = decodeURIComponent(new URL(url, 'https://x.invalid').pathname);
@@ -43,28 +46,26 @@ export function firstLoadUrls(site: string): string[] {
   for (const m of html.matchAll(/<(?:script|link)\b[^>]*?\b(?:src|href)="(\/[^"]*)"[^>]*>/g)) {
     const tag = m[0];
     if (/\brel="canonical"/.test(tag)) continue;
-    urls.add(m[1]!.split(/[?#]/)[0]!);
+    if (m[1]) urls.add(bare(m[1]));
   }
   // The static module graph from the entry (dynamic imports wait for a tap or a route)
   const queue = [ENTRY];
-  while (queue.length) {
-    const url = queue.pop()!;
+  for (let url = queue.pop(); url !== undefined; url = queue.pop()) {
     if (urls.has(url) && url !== ENTRY) continue;
     urls.add(url);
     const src = readFileSync(fileOf(site, url), 'utf8');
     for (const m of src.matchAll(STATIC_IMPORT)) {
-      const spec = (m[1] || m[2])!;
-      if (/^[a-z]+:/i.test(spec)) continue;
+      const spec = m[1] || m[2];
+      if (!spec || /^[a-z]+:/i.test(spec)) continue;
       const next = spec.startsWith('/') ? spec : posix.normalize(posix.join(posix.dirname(url), spec));
       if (!urls.has(next)) queue.push(next);
     }
   }
-  // CSS the page links: the files its url() names (fonts, pictures) are fetched when used; the precache has the fonts
-  // The service worker's install downloads
+  // The service worker's install downloads (the fonts the CSS names are in it)
   const sw = readFileSync(join(site, 'sw.js'), 'utf8');
   const block = sw.match(/const PRECACHE = (\[[\s\S]*?\]);\n/);
-  if (!block) throw new Error(`${site}/sw.js: no PRECACHE list (build it with python3 build.py, not --dev)`);
-  for (const [url] of JSON.parse(block[1]!) as [string, string][]) urls.add(url.split(/[?#]/)[0]!);
+  if (!block?.[1]) throw new Error(`${site}/sw.js: no PRECACHE list (build it with python3 build.py, not --dev)`);
+  for (const [url] of JSON.parse(block[1]) as [string, string][]) urls.add(bare(url));
   return [...urls].sort();
 }
 

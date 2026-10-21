@@ -21,6 +21,8 @@ exclude:
   - pnpm-workspace.yaml
   - tsconfig.base.json
   - vitest.config.ts
+  - eslint.config.js
+  - stylelint.config.js
   - deploy/
   - site/
   - moved/

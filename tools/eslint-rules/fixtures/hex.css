@@ -1,0 +1,2 @@
+/* Expect: color-no-hex */
+.card { color: #ff6b5b; }

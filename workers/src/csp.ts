@@ -18,7 +18,7 @@ export function blockedOrigin(raw: unknown): string {
   const s = String(raw || '').trim().toLowerCase();
   if (!s) return 'none';
   if (KEYWORDS.has(s)) return s;
-  if (/^(data|blob|filesystem|about|chrome-extension|moz-extension|safari-extension|safari-web-extension):/.test(s)) return s.split(':')[0]!;
+  if (/^(data|blob|filesystem|about|chrome-extension|moz-extension|safari-extension|safari-web-extension):/.test(s)) return s.slice(0, s.indexOf(':'));
   try {
     const u = new URL(s);
     return /^https?:$/.test(u.protocol) ? u.origin : u.protocol.replace(':', '');
@@ -67,7 +67,7 @@ export function summarize(report: unknown, ua: unknown): Summary {
 
 export async function handle(request: Request, log: (line: string) => void = console.log): Promise<Response> {
   if (request.method !== 'POST') return new Response(null, { status: 405, headers: { allow: 'POST' } });
-  const type = (request.headers.get('content-type') || '').split(';')[0]!.trim().toLowerCase();
+  const type = ((request.headers.get('content-type') || '').split(';')[0] ?? '').trim().toLowerCase();
   if (!TYPES.includes(type)) return new Response(null, { status: 415 });
   const declared = +(request.headers.get('content-length') || 0);
   if (declared > MAX_BYTES) return new Response(null, { status: 413 });

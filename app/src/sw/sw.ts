@@ -150,7 +150,7 @@ async function page(req: Request): Promise<Response> {
       fetch(req),
       new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), NAV_TIMEOUT))
     ]);
-  } catch (e) {
+  } catch {
     const cache = await caches.open(CACHE);
     return (await cache.match(SHELL)) || offlinePage();
   }
@@ -192,8 +192,8 @@ async function voiceFile(req: Request): Promise<Response> {
          never re-saved, so an oldest-first trim over everything would drop them first and leave offline read aloud
          with nothing to look lines up in */
       const lines = (await cache.keys()).filter(k => VOICE_LINE.test(new URL(k.url).pathname));
-      for (let i = 0; i < lines.length - VOICE_MAX; i++) await cache.delete(lines[i]!);
-    } catch (e) { /* quota: play it without saving */ }
+      for (const k of lines.slice(0, Math.max(0, lines.length - VOICE_MAX))) await cache.delete(k);
+    } catch { /* quota: play it without saving */ }
   }
   return res;
 }
@@ -209,10 +209,10 @@ async function soundFile(req: Request): Promise<Response> {
   let res: Response;
   try { res = await fetch(req); } catch (e) { const hit = !pinned && await cache.match(req); if (hit) return hit; throw e; }
   if (cacheable(res)) {
-    try { await cache.put(req, res.clone()); } catch (e) { return res; /* quota: play it without saving */ }
+    try { await cache.put(req, res.clone()); } catch { return res; /* quota: play it without saving */ }
     soundTrim = soundTrim.then(async () => {
       const keys = await cache.keys();
-      for (let i = 0; i < keys.length - SOUNDS_MAX; i++) await cache.delete(keys[i]!);
+      for (const k of keys.slice(0, Math.max(0, keys.length - SOUNDS_MAX))) await cache.delete(k);
     }).catch(() => {});
     await soundTrim;
   }
@@ -225,7 +225,7 @@ async function networkFirst(req: Request): Promise<Response> {
     const res = await fetch(req);
     if (cacheable(res)) void put(cache, req, res.clone());
     return res;
-  } catch (e) {
+  } catch {
     return (await cache.match(req)) || Response.error();
   }
 }
@@ -238,8 +238,8 @@ async function put(cache: Cache, req: Request, res: Response): Promise<void> {
   try {
     await cache.put(req, res);
     const extra = (await cache.keys()).filter(k => !PRECACHED.has(k.url));
-    for (let i = 0; i < extra.length - RUNTIME_MAX; i++) await cache.delete(extra[i]!);
-  } catch (e) { /* quota or a locked cache: skip caching */ }
+    for (const k of extra.slice(0, Math.max(0, extra.length - RUNTIME_MAX))) await cache.delete(k);
+  } catch { /* quota or a locked cache: skip caching */ }
 }
 
 /* Only if the saved shell is gone (storage cleared while the worker stayed) */

@@ -37,13 +37,16 @@ What the build does (target site):
 - _headers: the security headers on every response, and per page a Content-Security-Policy and a stricter
   Report-Only one, built from that page's inline script hashes and THIRD_PARTIES. No page carries a CSP <meta>.
 - _redirects (old /vedic-math/ links to /play/), robots.txt, sitemap.xml, /.well-known/security.txt.
+- The first-load budget (tools/budget.ts): the Brotli size of everything a first visit to /play/ requests before the
+  first tap, printed on every build and failing above docs/perf/baseline.json (not for --dev).
 
 It fails on: stamps in the source; a CSP <meta>, an inline event handler or a javascript: URL in a page; a module
 import it cannot pin (bare, outside /js/, or https://); a header that differs from theme/header.html; a vendored file
 that does not match its SHA256SUMS; a vendored or font file without an entry in THIRD-PARTY-NOTICES.md; a /vedic-math/
 path outside _redirects; a reference to sbmadhav.com other than the export page; a third-party host in neither
 THIRD_PARTIES nor LINKS; committed audio, a speech provider host or a key-shaped string; security.txt expiring within
-30 days; more or bigger files than Cloudflare serves; a _headers file Cloudflare would refuse.
+30 days; more or bigger files than Cloudflare serves; a _headers file Cloudflare would refuse; a first load above the
+byte budget.
 """
 import argparse, base64, datetime, fnmatch, hashlib, html as htmllib, importlib.util, json, os, pathlib, posixpath, re, shutil, subprocess, sys
 
@@ -58,6 +61,7 @@ EXPORT_PAGE = "https://sbmadhav.com/vm-export/"   # the one sbmadhav.com URL a p
 MAP_START, MAP_END = "<!-- build.py: import map (generated, do not edit) -->", "<!-- /build.py: import map -->"
 SW_START, SW_END = "/* build.py: precache (generated, do not edit) */", "/* /build.py: precache */"
 SW_DEV = "const VERSION = 'dev';\nconst PRECACHE = [];"
+BASELINE = "docs/perf/baseline.json"   # the first-load budget (check_budget)
 SW_SRC = "app/src/sw/sw.ts"   # published as /sw.js with its types taken out (worker_source)
 MARKERS = (".assetsignore", ".nojekyll")  # an earlier build: safe to empty
 GENERATED = ("robots.txt", "sitemap.xml", ".well-known/security.txt", "sw.js", "_headers", "_redirects")
@@ -223,6 +227,23 @@ def worker_source():
     if r.returncode != 0:
         fail(f"{SW_SRC}: tools/build-sw.mjs failed:\n{r.stderr.strip()}")
     return r.stdout
+
+
+def check_budget(out):
+    """The first-load byte budget (openspec change react-typescript, performance-budget spec, task 1.8): tools/budget.ts
+    measures the Brotli size of everything a first visit to /play/ requests before the first tap (the page, what it
+    loads, the entry's static imports, sw.js and every file in PRECACHE), prints the table, and fails when the total is
+    above docs/perf/baseline.json. A pull request that grows first load on purpose updates the baseline and says why."""
+    node = shutil.which("node")
+    if not node:
+        fail("node is not installed: it measures the first-load budget (tools/budget.ts, Node 22.18 or newer)")
+    if not (ROOT / BASELINE).is_file():
+        fail(f"{BASELINE} is missing: the first-load budget is measured against it")
+    r = subprocess.run([node, "--no-warnings", str(ROOT / "tools/budget.ts"), str(out), "--check", str(ROOT / BASELINE)],
+                       capture_output=True, text=True)
+    sys.stdout.write(r.stdout)
+    if r.returncode != 0:
+        fail(r.stderr.strip().replace("::error::", "") or "tools/budget.ts failed")
 
 
 def voice_off_sw(sw):
@@ -549,7 +570,7 @@ def build_site(args, out):
     dev = args.dev
     today = datetime.date.fromisoformat(os.environ["BUILD_TODAY"]) if os.environ.get("BUILD_TODAY") else datetime.date.today()
     all_files = git_files(out)
-    for required in ["play/index.html", SW_SRC, "tools/build-sw.mjs", "math.css", "manifest.webmanifest", "js/app.js", HEADER, "site/index.html",
+    for required in ["play/index.html", SW_SRC, "tools/build-sw.mjs", "tools/budget.ts", "math.css", "manifest.webmanifest", "js/app.js", HEADER, "site/index.html",
                      "site/404.html", "site/.well-known/security.txt", "THIRD-PARTY-NOTICES.md"]:
         if required not in all_files:
             fail(f"{required} is missing")
@@ -690,6 +711,8 @@ def build_site(args, out):
         (out / f).parent.mkdir(parents=True, exist_ok=True)
         (out / f).write_text(text)
     check_published(out, args.voice)
+    if not dev:
+        check_budget(out)
 
     rel = out.relative_to(ROOT) if out.is_relative_to(ROOT) else out
     n = sum(1 for p in out.rglob("*") if p.is_file())

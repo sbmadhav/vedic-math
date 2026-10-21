@@ -96,3 +96,8 @@ The baseline is run 1. Task 0.4's repeatability check: the same job runs the scr
 - **Bytes:** a pull request that grows first load on purpose updates `firstLoad` in `baseline.json` (`node tools/budget.ts _site --json <file>`) and says why. Phase 2 measures `/learn/` and reads the client build's manifest (task 2.7). That pull request records the new page's first measurement next to this one.
 - **Timings:** they are re-measured with `perf.yml` and replaced only with a reason, such as a runner image change that moves every number.
 
+## Changes to the baseline
+
+| Date | Pull request | First load (Brotli) | Why |
+|---|---|---|---|
+| 2026-10-20 | #115 | 739,463 to 739,939 bytes | Phase 1's own edits from #114: the three `js/` edits (comments and absolute `/sounds/` URLs) and `sw.js` published from `sw.ts` (its new header comment and the `/api/` rule). No new file. |
