@@ -149,7 +149,8 @@ jobs:
   # is posted on the pull request (one comment, updated on each push). The first-load byte gate is in build.py.
   perf:
     needs: preview
-    if: needs.preview.outputs.url != ''
+    # Runs whenever a preview was uploaded, even when a Playwright test failed: the two checks report on their own
+    if: always() && needs.preview.outputs.url != ''
     runs-on: ubuntu-latest
     timeout-minutes: 40
     permissions:

@@ -10,7 +10,7 @@
  },
  "firstLoad": {
   "page": "/play/",
-  "total": 758072,
+  "total": 758499,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -45,7 +45,7 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 42720,
+   "/js/app.js": 43015,
    "/js/arena.js": 5327,
    "/js/bolt.js": 1088,
    "/js/celebrate.js": 3080,
@@ -68,7 +68,7 @@
    "/js/life.js": 838,
    "/js/listen.js": 1335,
    "/js/mental.js": 1729,
-   "/js/metrics.js": 3457,
+   "/js/metrics.js": 3566,
    "/js/play/catalog.js": 1756,
    "/js/play/exp/apprentice-core.js": 7279,
    "/js/play/exp/apprentice.js": 3914,
@@ -133,8 +133,8 @@
    "/js/watch.js": 2065,
    "/manifest.webmanifest": 313,
    "/math.css": 21305,
-   "/play/": 3566,
-   "/sw.js": 6047,
+   "/play/": 3557,
+   "/sw.js": 6079,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -155,10 +155,17 @@
    },
    {
     "date": "2026-10-21",
-    "pr": 115,
+    "pr": "114, 116",
     "from": 757612,
-    "to": 758072,
-    "why": "react-typescript phase 1 (#114, #115): the three js/ edits (comments and absolute /sounds/ URLs) and sw.js published from sw.ts (its new header comment, the /api/ rule and lint fixes); no new file"
+    "to": 758466,
+    "why": "merged on main: react-typescript phase 1 (#114: the three js/ edits, comments and absolute /sounds/ URLs, and sw.js published from sw.ts with its header comment and the /api/ rule) and the Home redo (#116)"
+   },
+   {
+    "date": "2026-10-21",
+    "pr": 115,
+    "from": 758466,
+    "to": 758499,
+    "why": "react-typescript task 1.7: the lint fixes in sw.ts (optional catch bindings, no non-null assertions); no new file"
    }
   ]
  },
