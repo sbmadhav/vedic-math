@@ -1,8 +1,7 @@
 /* Learn Vedic Math: the landing page and the pages for grown-ups (site/). Tokens only, both color schemes.
    The game has its own styles (math.css). */
 .md-brand svg.lv-mark { width: 48px; height: 32px; } /* the Nikhilam Family brand mark is 3:2, not square */
-.lv-kicker { margin: 0; font: var(--text-kicker); letter-spacing: var(--text-kicker-tracking); text-transform: uppercase; color: var(--coral-strong); }
-.lv-title { font-size: clamp(2rem, 5vw, 3.2rem); max-width: 16em; margin-top: var(--space-2) !important; }
+.lv-title { font-size: clamp(2rem, 5vw, 3.2rem); max-width: 16em; text-wrap: balance; margin-top: var(--space-2) !important; }
 .lv-hero-in { display: grid; grid-template-columns: 1fr auto; gap: var(--space-6); align-items: center; }
 /* The landing hero: the Nikhilam Family (site/index.html). Same width rules Bolt had, so the layout is unchanged; the
    inline SVG takes its height from its viewBox, so nothing shifts while it loads. Gentle motion, off with reduced
@@ -11,21 +10,38 @@
 .lv-family .lv-f-one, .lv-family .lv-f-zero, .lv-family .lv-f-nine { transform-box: fill-box; transform-origin: 50% 100%; }
 .lv-family .lv-f-one { animation: lv-sway 6s ease-in-out infinite; }
 .lv-family .lv-f-zero { animation: lv-hop 3s ease-in-out infinite; }
-.lv-family .lv-f-nine { animation: lv-nod 6s ease-in-out -2s infinite; }
+.lv-family .lv-f-nine { animation: lv-nod 4s ease-in-out infinite; } /* in step with the button's glow: a nod toward Start learning */
 .lv-family .lv-f-shadow--zero { transform-box: fill-box; transform-origin: center; animation: lv-shrink 3s ease-in-out infinite; }
 .lv-family .lv-spark { transform-box: fill-box; transform-origin: center; animation: lv-twinkle 3.2s ease-in-out infinite; }
 .lv-family .lv-spark--b { animation-delay: -.8s; } .lv-family .lv-spark--c { animation-delay: -1.6s; } .lv-family .lv-spark--d { animation-delay: -2.4s; }
 @keyframes lv-sway { 50% { transform: rotate(-2.5deg); } }
-@keyframes lv-nod { 50% { transform: rotate(3deg); } }
+@keyframes lv-nod { 0%, 45%, 100% { transform: none; } 15% { transform: rotate(-7deg); } 28% { transform: rotate(2deg); } }
 @keyframes lv-hop { 0%, 55%, 100% { transform: none; } 25% { transform: translateY(-5px); } }
 @keyframes lv-shrink { 0%, 55%, 100% { transform: none; } 25% { transform: scale(.7); } }
 @keyframes lv-twinkle { 50% { opacity: .3; transform: scale(.6); } }
 @media (prefers-reduced-motion: reduce) { .lv-family * { animation: none !important; } }
 html.motion-paused .lv-family *, html.calm .lv-family * { animation: none !important; }
 @media (max-width: 700px) { .lv-hero-in { grid-template-columns: 1fr; } .lv-family { order: -1; width: 120px; } }
-.lv-play { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 var(--space-7); border: 2px solid var(--primary-border); border-radius: var(--radius-pill); background: var(--primary-bg); color: var(--on-accent); font: 700 1.2rem/1 var(--font-sans); text-decoration: none; box-shadow: var(--shadow-ledge); }
+.lv-sub { margin: var(--space-3) 0 0; font-size: clamp(1.1rem, 2.6vw, 1.4rem); font-weight: 700; color: var(--ink-muted); }
+.lv-cta-row { margin: var(--space-6) 0 0; }
+/* Start learning: the one big call to action. Coral fill with --on-accent text, a soft ring that glows out every four
+   seconds and an arrow that nudges with it (transform and opacity only). Hover or focus makes the family hop. */
+.lv-play { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2-5); min-height: 64px; padding: 0 var(--space-7); border: 2px solid var(--primary-border); border-radius: var(--radius-pill); background: var(--primary-bg); color: var(--on-accent); font: 800 clamp(1.25rem, 3vw, 1.45rem)/1 var(--font-sans); text-decoration: none; box-shadow: var(--shadow-ledge); }
 .lv-play:hover { box-shadow: var(--shadow-ledge-hover); transform: translateY(-1px); }
-.lv-play:active { box-shadow: var(--shadow-ledge-press); transform: translateY(2px); }
+.lv-play:active { box-shadow: var(--shadow-ledge-press); transform: translateY(2px) scale(.97); }
+.lv-play:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+.lv-play::after { content: ""; position: absolute; inset: -3px; border-radius: inherit; border: 3px solid var(--coral); opacity: 0; pointer-events: none; animation: lv-ring 4s ease-out infinite; }
+.lv-play-go { width: 1.1em; height: 1.1em; animation: lv-go 4s ease-in-out infinite; }
+@keyframes lv-ring { 0% { opacity: .75; transform: scale(1); } 32%, 100% { opacity: 0; transform: scale(1.1, 1.45); } }
+@keyframes lv-go { 0%, 30%, 100% { transform: none; } 12% { transform: translateX(5px); } }
+.lv-hero-in:has(.lv-play:hover, .lv-play:focus-visible) :is(.lv-f-one, .lv-f-zero, .lv-f-nine) { animation: lv-cheer .5s ease-out 2; }
+.lv-hero-in:has(.lv-play:hover, .lv-play:focus-visible) .lv-f-zero { animation-delay: .08s; }
+.lv-hero-in:has(.lv-play:hover, .lv-play:focus-visible) .lv-f-nine { animation-delay: .16s; }
+@keyframes lv-cheer { 50% { transform: translateY(-6px); } }
+@media (prefers-reduced-motion: reduce) { .lv-play::after, .lv-play-go { animation: none; } .lv-play:hover, .lv-play:active { transform: none; } }
+html.motion-paused .lv-play::after, html.calm .lv-play::after, html.motion-paused .lv-play-go, html.calm .lv-play-go { animation: none; }
+html.motion-paused .lv-play:hover, html.calm .lv-play:hover, html.motion-paused .lv-play:active, html.calm .lv-play:active { transform: none; }
+.lv-what { max-width: 46em; margin-top: var(--space-5); }
 .lv-modes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4-5); }
 @media (max-width: 800px) { .lv-modes { grid-template-columns: 1fr; } }
 .lv-mode { padding: var(--space-5); border: 2px solid var(--edge); border-radius: var(--radius-lg); background: var(--card); box-shadow: var(--shadow-ledge); border-top-width: 10px; }
@@ -57,3 +73,16 @@ html.motion-paused .lv-family *, html.calm .lv-family * { animation: none !impor
 .lv-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: var(--space-5) 0; }
 .lv-note { color: var(--ink-muted); }
 #handoff [hidden] { display: none; }
+
+/* The background sky (js/sky-bg.js; the same rules are in math.css for the game): a fixed canvas behind
+   the page. Its wash is a soft dawn glow on the horizon in Daybreak and a night glow in Deep Space, from tokens. */
+.vm-bg { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;
+  background: radial-gradient(140% 55% at 50% 108%, color-mix(in srgb, var(--sun) 24%, transparent), transparent 70%),
+    radial-gradient(90% 36% at 50% 104%, color-mix(in srgb, var(--coral) 12%, transparent), transparent 75%); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .vm-bg { background: radial-gradient(140% 50% at 50% 110%, color-mix(in srgb, var(--plum) 16%, transparent), transparent 72%),
+    linear-gradient(180deg, color-mix(in srgb, var(--sky) 5%, transparent), transparent 45%); }
+}
+:root[data-theme="dark"] .vm-bg { background: radial-gradient(140% 50% at 50% 110%, color-mix(in srgb, var(--plum) 16%, transparent), transparent 72%),
+  linear-gradient(180deg, color-mix(in srgb, var(--sky) 5%, transparent), transparent 45%); }
+.lv-landing main, .lv-landing .lv-foot { position: relative; z-index: 1; }

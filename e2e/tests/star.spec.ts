@@ -204,7 +204,7 @@ async function missAndComeback(page: Page) {
   await enter(page, await sq(page));
   await expect(page.locator('#stSay')).toContainText('Comeback');
   expect(await stageAnimations(page)).toBe(0);
-  expect(await page.locator('.star-burst').count()).toBe(0);
+  expect(await page.locator('.fx-sparkles, .fx-confetti').count()).toBe(0);
 }
 test.describe('reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });

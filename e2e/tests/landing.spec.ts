@@ -13,7 +13,7 @@ test.describe('a first visit', () => {
     page.on('request', r => asked.push(r.url()));
     await page.goto('/');
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.locator('main h1')).toHaveText('Math tricks you can do in your head, and games to practise them');
+    await expect(page.locator('main h1')).toHaveText('Math tricks you can do in your head');
     await expect(page.getByRole('img', { name: 'The Nikhilam Family: the Devanagari digits one, zero and nine' })).toBeVisible();
     await expect(page.locator('.lv-bolt')).toHaveCount(0);
     for (const m of ['Explorer', 'Challenger', 'Pro']) await expect(page.locator('.lv-modes')).toContainText(m);

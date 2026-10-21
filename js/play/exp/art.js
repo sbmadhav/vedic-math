@@ -2,7 +2,7 @@
    Routes: #/games/art (times-table mandala), #/games/art/meru, #/games/art/square, #/games/art/rope, #/games/art/gallery, and each piece
    with its parameters: #/games/art/<tab>/<code>. Math in art-core.js, drawing in art-draw.js, sound in art-sound.js.
    Canvas colors are read from design tokens and redrawn when the theme changes. */
-import { head, level, t, store, say, confetti, toast, track, reducedMotion, isDark, token, esc, share, shareUrl, b64url, downloadCanvas, rng, seedOf, dayKey } from '../kit.js';
+import { head, level, t, store, say, sparkle, toast, track, reducedMotion, isDark, token, esc, share, shareUrl, b64url, downloadCanvas, rng, seedOf, dayKey } from '../kit.js';
 import { on, loop, onAbort, later } from '../life.js';
 import * as A from './art-core.js';
 import * as D from './art-draw.js';
@@ -505,7 +505,7 @@ export function mount({ root, signal, params }) {
     const doubleIt = () => {
       st.end = [0.5, 0.5]; st.doubled = 0.001; pluckChord([Math.SQRT2 * 3]);
       const t0 = globalThis.performance.now();
-      view.animate(now => { st.doubled = reducedMotion() ? 1 : Math.min(1, (now - t0) / 1400); if (st.doubled >= 1) { read.innerHTML = `<p class="ms-yes"><b>The square on the diagonal is double the first square.</b> The first square is 2 triangles; the new one is 4 of the same triangles.</p>`; say('The square on the diagonal is double.'); confetti(30); return false; } });
+      view.animate(now => { st.doubled = reducedMotion() ? 1 : Math.min(1, (now - t0) / 1400); if (st.doubled >= 1) { read.innerHTML = `<p class="ms-yes"><b>The square on the diagonal is double the first square.</b> The first square is 2 triangles; the new one is 4 of the same triangles.</p>`; say('The square on the diagonal is double.'); sparkle(read.querySelector('.ms-yes'), { signal }); return false; } });
       track('art/rope-double', 'double');
     };
     /* dragging */
@@ -561,7 +561,7 @@ export function mount({ root, signal, params }) {
         view.animate(now => { const x = reducedMotion() ? 1 : Math.min(1, (now - t0) / 900); st.len = from + (to - from) * (1 - (1 - x) ** 3); if (strings) strings.set(330, A.ropePitch(st.len)); if (x >= 1) { rootRead(); return false; } });
         const e2 = ensemble(); e2.pluck(A.ropePitch(to) / 2, 0, 0.12, 1.4);
         say(`${A.SQRT2_STEPS[k].add}: ${to.toFixed(6)}`);
-        if (k === 3) { confetti(40); track('art/rope-root2', 'done'); }
+        if (k === 3) { sparkle(add, { signal }); track('art/rope-root2', 'done'); } /* everyday: a demonstration done (openspec celebrations) */
       }
       if (b.closest('.ms-reset')) setScene('root2');
       const beat = b.closest('.ms-beat');
