@@ -141,6 +141,32 @@ html.motion-paused .lv-family *, body.calm .lv-family *, html.motion-paused .mq-
 .mq-sutra b { font: 600 1.1rem/1.3 var(--display); color: var(--plum-strong); }
 .mq-sutra .mq-sutra-mean { font-size: 14px; color: var(--ink-muted); font-style: italic; }
 .mq-sutra-name { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0; }
+/* ---------- Sutra tags (openspec change sutras-first, js/sutra-tag.js): the Sutra a method uses, linking to its Deep
+   dive. Tokens only, so they read in Daybreak and Deep Space; every part wraps at 320 px. ---------- */
+.sutra-tag { margin: var(--space-2) 0; font-size: .95rem; line-height: 1.35; overflow-wrap: anywhere; }
+.sutra-tag-a { display: inline; color: var(--ink); text-decoration: none; }
+a.sutra-tag-a { border-radius: var(--radius-sm); }
+a.sutra-tag-a:hover .sutra-tag-n, a.sutra-tag-a:focus-visible .sutra-tag-n { text-decoration: underline; text-underline-offset: 3px; }
+.sutra-tag-k { display: inline-block; margin-right: var(--space-1); padding: 1px var(--space-2); border-radius: 99px; background: color-mix(in srgb, var(--plum) 16%, var(--card)); color: var(--plum-strong); font-size: .8rem; font-weight: 700; }
+.sutra-tag-n { font: 600 1em/1.3 var(--display); color: var(--plum-strong); }
+.sutra-tag-m { color: var(--ink-muted); font-style: italic; }
+.sutra-tag--line .sutra-tag-m::before { content: ': '; font-style: normal; }
+.sutra-tag-x { margin-left: var(--space-1); color: var(--ink); font-weight: 700; white-space: nowrap; }
+.sutra-tag--full { display: flex; flex-direction: column; gap: var(--space-1); padding: 10px 14px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--plum) 14%, var(--card)); }
+.sutra-tag--full .sutra-tag-row, .sutra-tag--full .sutra-tag-say { margin: 0; }
+.sutra-tag--full .sutra-tag-n { display: block; font-size: 1.1rem; }
+.sutra-tag--full .sutra-tag-m { display: block; font-size: 14px; }
+.sutra-tag-say { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.sutra-tag-note { margin: var(--space-1) 0 0; font-size: 14px; color: var(--ink); }
+.sutra-tag--mini { display: inline-block; margin: 0; font-size: 13px; }
+.sutra-tag--mini .sutra-tag-k { font-size: 11px; }
+.dojo-cell .sutra-tag--mini { text-align: center; }
+.star-sutra { margin: var(--space-1) 0 0; font-size: .9rem; }
+.star-intro .sutra-tag--full, .star-end .sutra-tag { text-align: left; margin: var(--space-3) 0; }
+.ar-sutras { margin: var(--space-2) 0 0; } .ar-sutras .mq-h3 { margin-top: var(--space-2) !important; }
+.vp-foot .sutra-tag { margin: 0 0 var(--space-2); } .vp-foot .sutra-tag-a { color: var(--ink); font-weight: 400; }
+.watch-tags .tagv--sutra { font-weight: 600; }
+.mq-game .sutra-tag--mini { margin: 0 0 var(--space-1); }
 .mq-method { margin: 0; padding-left: 1.3em; }
 .mq-method li { margin: 4px 0; }
 .mq-example { margin-top: 6px; }
@@ -1218,6 +1244,7 @@ html.play-open #view { z-index: 70; }
 .play-shell .star-key--fn, .play-shell .star-key--go { font-size: calc(var(--play-scale) * 1.1rem); }
 @media (max-width: 760px) {
   .play-shell .star-top .md-tag { display: none; }
+  .play-shell .star-sutra .sutra-tag-m { display: none; } /* the name only above the pad; the meaning is on the worked example and the end screen */
   .play-shell .star-h { font-size: 1.15rem; }
   .play-shell .star-bolt { width: 38px; }
   .play-shell .star-key { height: clamp(38px, 6.4cqh, 50px); }

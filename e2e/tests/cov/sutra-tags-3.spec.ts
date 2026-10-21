@@ -1,0 +1,22 @@
+import { test, expect, open } from '../fixtures';
+
+/* sutra-tags spec (openspec change sutras-first), Requirement "Tags in a Star round": one test per scenario. */
+
+test('A Star names its Sutra: Star 1 of Multiply by 11 shows "A special case of Ūrdhva-Tiryagbhyām" as text, and the replay after a miss names it', async ({ page }) => {
+  await open(page, '#/star/by11/1');
+  const head = page.locator('.star-top .star-sutra');
+  await expect(head.locator('.sutra-tag-k')).toHaveText('A special case of');
+  await expect(head.locator('b[lang="sa-Latn"]')).toHaveText('Ūrdhva-Tiryagbhyām');
+  await expect(head.locator('.sutra-tag-m')).toHaveText('Vertically and crosswise');
+  await expect(head.locator('a')).toHaveCount(0);
+  await page.locator('.star-key[data-k="0"]').click();
+  await page.locator('.star-key[data-k="go"]').click();
+  await expect(page.locator('.star-replay .star-tag--trick')).toHaveText('The Trick · Ūrdhva-Tiryagbhyām');
+});
+
+test('The end screen links: when the round ends, its tag is a link to #/sutras/s3', async ({ page }) => {
+  await open(page, '#/star/by11/1');
+  await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
+  await page.locator('#stSkip').click();
+  await expect(page.locator('.star-end a.sutra-tag-a')).toHaveAttribute('href', '#/sutras/s3');
+});

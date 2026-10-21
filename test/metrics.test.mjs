@@ -227,6 +227,7 @@ const ALLOWED = new Set([
   'h', 'knownId', 'picker',    // route views: the hash goes through metrics.routePath and the catalog check
   'asSky',                     // route views: true when home showed the Sky (a fixed word, sky)
   'ok', "lives ? '' : ''", 'fx.MODES[fx.mode()].league', // right or miss; 'run' or 'practice'; the League
+  'surface',                   // a followed Sutra tag's surface: one of the fixed words in js/sutra-tag.js SURFACES
 ]);
 /* Every call of track(, siteTrack( and metrics.<fn>( with its argument text */
 export function callSites(src) {
