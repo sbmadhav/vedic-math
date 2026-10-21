@@ -3,18 +3,18 @@
  "measured": {
   "date": "2026-10-21",
   "site": "https://learnvedicmath.com",
-  "commit": "01dee2f",
-  "swVersion": "2e01da18cd",
-  "runner": "GitHub Actions ubuntu-latest (perf.yml, run 39522196711)",
+  "commit": "1401890",
+  "swVersion": "1730cf8552",
+  "runner": "GitHub Actions ubuntu-latest (perf.yml, run 39526007402)",
   "lighthouse": "13.5.0"
  },
  "firstLoad": {
   "page": "/play/",
-  "total": 739463,
+  "total": 744827,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
-   "/css/play/base.css": 1198,
+   "/css/play/base.css": 1121,
    "/css/play/bets.css": 2311,
    "/css/play/daily.css": 2127,
    "/css/play/ghosts.css": 2516,
@@ -45,17 +45,19 @@
    "/js/ambient.js": 8163,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 42170,
-   "/js/arena.js": 5151,
+   "/js/app.js": 42666,
+   "/js/arena.js": 5327,
    "/js/bolt.js": 1088,
+   "/js/celebrate.js": 3080,
    "/js/check.js": 2946,
    "/js/cloud-config.js": 588,
    "/js/cloud.js": 4423,
    "/js/explain-lines.js": 2176,
+   "/js/family.js": 946,
    "/js/find.js": 6645,
-   "/js/fx.js": 4265,
+   "/js/fx.js": 3986,
    "/js/games.js": 12325,
-   "/js/gamify.js": 3739,
+   "/js/gamify.js": 3843,
    "/js/guide-art.js": 2484,
    "/js/guide.js": 10346,
    "/js/handoff-schema.js": 6402,
@@ -72,11 +74,11 @@
    "/js/play/exp/art-core.js": 5199,
    "/js/play/exp/art-draw.js": 3620,
    "/js/play/exp/art-sound.js": 1298,
-   "/js/play/exp/art.js": 15865,
+   "/js/play/exp/art.js": 15903,
    "/js/play/exp/bets-core.js": 8496,
    "/js/play/exp/bets.js": 5782,
    "/js/play/exp/daily-core.js": 4854,
-   "/js/play/exp/daily.js": 6383,
+   "/js/play/exp/daily.js": 6431,
    "/js/play/exp/ghosts-core.js": 3200,
    "/js/play/exp/ghosts.js": 6687,
    "/js/play/exp/lens-cam.js": 4666,
@@ -90,14 +92,14 @@
    "/js/play/exp/scroll-core.js": 12555,
    "/js/play/exp/scroll.js": 10543,
    "/js/play/exp/spells-core.js": 6602,
-   "/js/play/exp/spells.js": 9255,
+   "/js/play/exp/spells.js": 9308,
    "/js/play/exp/tala-audio.js": 3561,
    "/js/play/exp/tala-core.js": 5945,
-   "/js/play/exp/tala.js": 14979,
+   "/js/play/exp/tala.js": 15019,
    "/js/play/exp/wall-core.js": 9208,
-   "/js/play/exp/wall.js": 9151,
+   "/js/play/exp/wall.js": 9189,
    "/js/play/icons.js": 721,
-   "/js/play/kit.js": 3810,
+   "/js/play/kit.js": 3754,
    "/js/play/life.js": 61,
    "/js/related.js": 516,
    "/js/say-clips.js": 677,
@@ -112,7 +114,7 @@
    "/js/sky-view.js": 4458,
    "/js/sky.js": 3762,
    "/js/slokas.js": 16068,
-   "/js/star.js": 8585,
+   "/js/star.js": 8312,
    "/js/store.js": 5886,
    "/js/sutra-ambience.js": 4087,
    "/js/sutra-details.js": 13423,
@@ -127,9 +129,9 @@
    "/js/voice.js": 14355,
    "/js/watch.js": 2065,
    "/manifest.webmanifest": 313,
-   "/math.css": 20129,
-   "/play/": 3495,
-   "/sw.js": 5773,
+   "/math.css": 21108,
+   "/play/": 3523,
+   "/sw.js": 5796,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   }
@@ -141,60 +143,65 @@
     "path": "/play/",
     "visit": "first",
     "median": {
-     "fcp": 1865,
-     "lcp": 5163,
-     "tbt": 25,
+     "fcp": 1923,
+     "lcp": 5420,
+     "tbt": 46,
      "cls": 0.001,
-     "si": 1865,
-     "ttfb": 53
+     "si": 1923,
+     "ttfb": 479,
+     "srt": 70
     }
    },
    "play-repeat": {
     "path": "/play/",
     "visit": "repeat",
     "median": {
-     "fcp": 826,
+     "fcp": 831,
      "lcp": 1260,
-     "tbt": 2,
+     "tbt": 42,
      "cls": 0.007,
-     "si": 826,
-     "ttfb": 37
+     "si": 831,
+     "ttfb": 50,
+     "srt": 50
     }
    },
    "arena": {
     "path": "/play/#/arena",
     "visit": "returning",
     "median": {
-     "fcp": 1994,
-     "lcp": 5496,
-     "tbt": 28,
+     "fcp": 2096,
+     "lcp": 5544,
+     "tbt": 57,
      "cls": 0.007,
-     "si": 1994,
-     "ttfb": 68
+     "si": 2096,
+     "ttfb": 500,
+     "srt": 58
     }
    },
    "games": {
     "path": "/play/#/games",
     "visit": "returning",
     "median": {
-     "fcp": 1913,
-     "lcp": 5346,
-     "tbt": 27,
+     "fcp": 1952,
+     "lcp": 5647,
+     "tbt": 61,
      "cls": 0.007,
-     "si": 1913,
-     "ttfb": 49
+     "si": 1952,
+     "ttfb": 508,
+     "srt": 77
     }
    },
    "deep-dive": {
     "path": "/play/#/sutras/s1",
     "visit": "returning",
     "median": {
-     "fcp": 1923,
-     "lcp": 5323,
-     "tbt": 98,
+     "fcp": 2258,
+     "lcp": 5667,
+     "tbt": 159,
      "cls": 0.007,
-     "si": 2168,
-     "ttfb": 39
+     "si": 2640,
+     "ttfb": 498,
+     "srt": 43
     }
    }
   }
@@ -205,16 +212,16 @@
   "reducedMotion": true,
   "interactions": {
    "arena-open": {
-    "inp": 48,
-    "visible": 24
+    "inp": 64,
+    "visible": 38
    },
    "arena-answer": {
-    "inp": 32,
-    "visible": 4
+    "inp": 40,
+    "visible": 1
    },
    "deep-dive-open": {
-    "inp": 144,
-    "visible": 12
+    "inp": 200,
+    "visible": 4
    },
    "star-light": {
     "inp": 32,
