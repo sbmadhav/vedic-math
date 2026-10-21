@@ -1,11 +1,11 @@
 schema: spec-driven
 
 context: |
-  Vedic Math for Everyone: a mental math game for ages 4 to adult, served at https://sbmadhav.com/vedic-math/ from this repo by GitHub Pages. Many players are children.
+  Learn Vedic Math: a mental math game for ages 4 to adult, served at https://learnvedicmath.com/ from Cloudflare Workers (wrangler.jsonc, deployed by CI from main; ADR 0004). Many players are children.
   Use the terms in GLOSSARY.md exactly (Player, Mode, League, Age answer, Parent step, Rating, Ranked round, Practice, Score, Sparks, Title, Medal, Board, World board, Device board). Respect the decisions in docs/adr/. The product plan is docs/PLAN.md.
   Privacy is a hard constraint: nothing typed by a player is ever stored or sent; Nicknames are generated; under-13 Players post nothing to World boards without the Parent step; no anonymous identity exists until the first post; parentNote() in js/app.js and cloud/README.md must always describe exactly what is sent and kept.
-  Plain vanilla ES modules, no framework, no bundler (superseded for the game by the react-typescript change and ADR 0012, owner 2026-10-19: React, Vite and TypeScript once that change is built; until then today's code keeps this rule). Firebase loads lazily from the CDN only when needed. Firestore rules live in cloud/firestore.rules and change together with their emulator tests in cloud/test/.
-  Every behavior change ships with tests in the same change: node tests in test/ and Playwright specs in e2e/. E2E tests run against the live site and must never write to production Firestore or count analytics visits.
+  Stack (react-typescript change, ADRs 0012 to 0014): React 19 with React Router v7 in framework mode, server-rendered on Cloudflare Workers; TypeScript (strict) in pnpm workspaces (app, workers, shared, e2e, tools). The migration is step by step: until a view moves, it is a Legacy view in plain ES modules under js/ (no framework there, no bundler for it until phase 2), mounted by the router; a view a migration pull request is moving is a Locked view. Firebase loads lazily from this site's vendor/ copy only when needed. Firestore rules live in cloud/firestore.rules and change together with their emulator tests in cloud/test/.
+  Every behavior change ships with tests in the same change: unit tests (test/, and next to each TypeScript module; Vitest, `pnpm test`, from react-typescript task 1.6) and Playwright specs in e2e/. E2E tests run against each pull request's preview, and against the live site after a deploy, daily and on demand; they must never write to production Firestore or count analytics visits.
   Copy rules: no em dashes; wording for every Mode (Explorer, Challenger, Pro) via fx.t(); honest framing of the sutras (from Bharati Krishna Tirtha's 1965 book, never "from the Vedas").
 
 rules:

@@ -1,0 +1,107 @@
+name: Perf baseline
+
+# Measures the performance baseline of the live game (openspec change react-typescript, task 0.4; performance-budget
+# spec) on a GitHub-hosted runner, the machine the preview gates of task 1.8 run on, so the gates compare like with
+# like. Three numbers, each written to an artifact that docs/perf/baseline.md and docs/perf/baseline.json are made from:
+# - Lighthouse load timings (e2e/perf/lighthouse.mts, pages and settings in tools/lighthouserc.json): mobile preset,
+#   the median of 5 runs per page;
+# - interaction timings (e2e/perf/interactions.ts): chromium with 4x CPU slowdown, 5 runs, medians;
+# - first-load bytes (tools/budget.ts): the Brotli size of everything a first visit to /play/ requests before the
+#   first tap, read from a build of this commit (the same files as the live site when this commit publishes nothing new).
+# Run it by hand (optional base_url), or on a pull request that changes the measuring scripts. Nothing is posted or
+# counted: the e2e fixtures answer analytics locally and guard Firestore, and Lighthouse blocks the analytics hosts.
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Site to measure (default https://learnvedicmath.com)"
+        required: false
+  pull_request:
+    branches: [main]
+    paths:
+      - e2e/perf/**
+      - e2e/package.json
+      - e2e/package-lock.json
+      - tools/budget.ts
+      - tools/lighthouserc.json
+      - .github/workflows/perf.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: perf-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      BASE_URL: ${{ inputs.base_url || 'https://learnvedicmath.com' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.x"
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: First-load bytes (Brotli) of this commit's build
+        env:
+          VOICE: ${{ vars.R2_ACCOUNT_ID != '' && 'r2' || 'off' }}
+        run: |
+          python3 build.py --out _site --voice "$VOICE"
+          mkdir -p e2e/perf/results
+          node tools/budget.ts _site --json e2e/perf/results/first-load.json
+
+      - name: Install Playwright
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Lighthouse (mobile preset, 5 runs a page)
+        working-directory: e2e
+        run: node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json
+
+      - name: Interaction timings (4x CPU, 5 runs)
+        working-directory: e2e
+        run: npx playwright test -c perf/playwright.config.ts
+
+      - name: Interaction timings, second run (the medians must agree within the spec's tolerances)
+        working-directory: e2e
+        run: |
+          cp perf/results/interactions.json perf/results/interactions-1.json
+          npx playwright test -c perf/playwright.config.ts
+          cp perf/results/interactions.json perf/results/interactions-2.json
+          # Task 0.4's check: the two runs' medians agree within the spec's 20 ms, or within a timing's measured noise
+          # where docs/perf/baseline.json records one (interactions.noise, with the reason in baseline.md)
+          node -e '
+            const [a, b] = [1, 2].map(n => require(`./perf/results/interactions-${n}.json`).interactions);
+            let noise = {};
+            try { noise = require("../docs/perf/baseline.json").interactions.noise || {}; } catch (e) {}
+            let bad = 0;
+            for (const name of new Set([...Object.keys(a), ...Object.keys(b)]))
+              for (const m of ["inp", "visible"]) {
+                const d = Math.abs((a[name]?.[m] ?? NaN) - (b[name]?.[m] ?? NaN));
+                const tol = Math.max(20, noise[name]?.[m] ?? 0);
+                console.log(`${name} ${m}: ${a[name]?.[m]} and ${b[name]?.[m]} (${d} ms apart, tolerance ${tol} ms)`);
+                if (!(d <= tol)) { bad++; console.log(`::error::${name} ${m}: the two runs differ by more than ${tol} ms`); }
+              }
+            process.exit(bad ? 1 : 0);'
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: perf-baseline
+          path: e2e/perf/results
+          retention-days: 30
