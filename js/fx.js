@@ -1,4 +1,4 @@
-/* The fun layer: play modes, sound effects, read-aloud, confetti and toasts.
+/* The fun layer: play modes, sound effects, read-aloud, celebrations (js/celebrate.js) and toasts.
    Sounds are generated in the browser and only follow a tap. Motion respects reduced-motion settings. */
 import * as store from './store.js';
 import * as voice from './voice.js';
@@ -71,7 +71,6 @@ export function setCalm(on) {
 /* No motion at all: reduced motion on the device, Pause motion, or Calm. The same steps and messages
    appear, without movement. This is the one check every moving thing in the app asks. */
 export const noMotion = () => motionOff() || calmOn();
-const reduced = noMotion;
 /* Calls fn whenever any source of noMotion() may have changed: the reduced-motion media query, Pause motion (its
    sitemotion event, setMotionPaused) and Calm (vmcalm). Stops when signal aborts. */
 export function onMotionChange(fn, signal) {
@@ -140,19 +139,35 @@ export const stopSpeaking = () => voice.stop();
 export const loadVoices = () => voice.loadVoices();
 export { settingsHTML as voiceSettingsHTML, wireSettings as wireVoiceSettings } from './voice.js';
 
-/* ---------- Confetti ---------- */
-export function confetti(n = 70) {
-  if (reduced()) return;
-  const c = document.createElement('canvas'); c.className = 'fx-confetti'; c.width = innerWidth; c.height = innerHeight; document.body.append(c);
-  const g = c.getContext('2d'), css = getComputedStyle(document.body), cols = ['--coral', '--teal', '--sun', '--sky', '--plum'].map(v => css.getPropertyValue(v).trim() || '#F2B544');
-  const ps = Array.from({ length: n }, () => ({ x: innerWidth / 2 + (Math.random() - .5) * 200, y: innerHeight * .35, vx: (Math.random() - .5) * 12, vy: -Math.random() * 12 - 4, r: Math.random() * 6 + 4, c: cols[Math.floor(Math.random() * cols.length)], a: Math.random() * 6, s: Math.random() * .3 - .15 }));
-  let f = 0; const step = () => { g.clearRect(0, 0, c.width, c.height); ps.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += .35; p.vx *= .99; p.a += p.s; g.save(); g.translate(p.x, p.y); g.rotate(p.a); g.fillStyle = p.c; g.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * .6); g.restore(); }); if (++f < 110) requestAnimationFrame(step); else c.remove(); };
-  requestAnimationFrame(step);
-}
+/* ---------- Celebrations (openspec celebrations): js/celebrate.js ----------
+   confetti(n) is the big burst, for true wins only; the small ones are for everyday moments. All are no-ops
+   under no motion (noMotion() above uses the same rule). */
+export { confetti, sparkle, pop, bounce, twinkle, wiggle, tick, cheer, rollUp, rollSparks } from './celebrate.js';
 
 /* ---------- Toasts ---------- */
+/* Which edge the toasts sit on (openspec find-and-home-polish): the bottom, unless a primary action is there. A round's
+   number pad or answer choices (PADS) hold the lower part of the screen and move as feedback shows, so while one is on
+   screen the toasts go to the top; another primary action (PRIMARY) sends them up when it is in the bottom band they
+   would cover, with 12 px to spare, and the top band is clearer. Pure: H the viewport height, boxH the toasts' height,
+   rects the primary actions' { top, bottom, pad } in viewport pixels. */
+export const PADS = '.star-pad, .ar-pad, .star-choices, .ar-choices';
+export const PRIMARY = '.md-btn--primary';
+export function toastSide(H, boxH, rects, { edge = 20, top = 8, clear = 12 } = {}) {
+  if (rects.some(r => r.pad)) return 'top';
+  const cover = (a, b) => rects.reduce((n, r) => n + Math.max(0, Math.min(b, r.bottom) - Math.max(a, r.top)), 0);
+  const low = cover(H - edge - boxH - clear, H);
+  if (!low) return 'bottom';
+  return cover(0, top + boxH + clear) < low ? 'top' : 'bottom';
+}
+function placeToasts(box) {
+  try {
+    const H = innerHeight, seen = (sel, pad) => [...document.querySelectorAll(sel)].filter(e => !e.closest('[hidden]')).map(e => { const r = e.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, w: r.width, h: r.height, pad }; }).filter(r => r.w > 0 && r.h > 0 && r.bottom > 0 && r.top < H);
+    box.classList.toggle('at-top', toastSide(H, box.getBoundingClientRect().height, [...seen(PADS, true), ...seen(PRIMARY, false)]) === 'top');
+  } catch (e) { /* no layout (tests): the toasts stay at the bottom */ }
+}
 export function toast(html, tone = '') {
   let box = document.querySelector('.fx-toasts'); if (!box) { box = document.createElement('div'); box.className = 'fx-toasts'; box.setAttribute('role', 'status'); box.setAttribute('aria-live', 'polite'); document.body.append(box); }
   const el = document.createElement('div'); el.className = 'fx-toast ' + tone; el.innerHTML = html; box.append(el);
+  placeToasts(box); setTimeout(() => placeToasts(box), 300); /* again once the answer's feedback has moved the page */
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 3200);
 }

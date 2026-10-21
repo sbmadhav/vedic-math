@@ -155,15 +155,15 @@ test.describe('explorer, toast over the choices', () => {
     await open(page, '#/arena');
     await practiceRound(page);
     await page.evaluate(async () => {
-      const fx = await import('/js/fx.js' as string);
+      const fx = await e2eMod('fx');
       fx.toast('<b>Badge earned:</b> a long toast that covers the bottom of a small screen', 'win');
     });
     const toast = page.locator('.fx-toast');
     await expect(toast).toBeVisible();
-    /* Where the toast lands depends on the screen and the round's layout, so pin it over the first choice */
+    /* Where the toast lands depends on the screen and the round's layout (toastSide moves it up off the choices), so pin it over the first choice */
     const choice = page.locator('.ar-choice').first();
     const c = (await choice.boundingBox())!;
-    await page.evaluate(y => { (document.querySelector('.fx-toasts') as HTMLElement).style.bottom = `${innerHeight - y}px`; }, c.y + c.height);
+    await page.evaluate(y => { const box = document.querySelector('.fx-toasts') as HTMLElement; box.style.top = 'auto'; box.style.bottom = `${innerHeight - y}px`; }, c.y + c.height);
     const t = (await toast.boundingBox())!;
     expect(t.y < c.y + c.height / 2 && t.y + t.height > c.y + c.height / 2, 'the toast covers the choice').toBe(true);
     await choice.click();
@@ -205,7 +205,7 @@ async function seedProgress(page: import('@playwright/test').Page, id: string, d
   await page.addInitScript(([k, v]) => { if (!localStorage.getItem(k)) localStorage.setItem(k, v); }, [`mathquest.v1.${id}`, JSON.stringify(data)] as const);
 }
 const savedRating = (page: import('@playwright/test').Page, key: string) =>
-  page.evaluate(async k => (await import('/js/store.js' as string)).rating(k) as number, key);
+  page.evaluate(async k => (await e2eMod('store')).rating(k) as number, key);
 
 test.describe('pro', () => {
   test.use({ seedMode: 'pro' });
@@ -294,7 +294,7 @@ test.describe('pro', () => {
     await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
     // Old Pro daily items are skill questions with no difficulty step
     await expect(page.locator('#arQ')).not.toHaveAttribute('data-d', /.*/);
-    const expected = await page.evaluate(async () => (await import('/js/arena.js' as string)).dailySet('pro', '2026-10-15')[0].q as string);
+    const expected = await page.evaluate(async () => (await e2eMod('arena')).dailySet('pro', '2026-10-15')[0].q as string);
     const html = await page.evaluate(h => { const d = document.createElement('div'); d.innerHTML = h; return d.innerHTML; }, expected);
     expect(await page.locator('#arQ').innerHTML()).toBe(html);
     await page.goto(`${APP}#/learn`);

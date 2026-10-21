@@ -60,11 +60,11 @@ test.describe('wide screen', () => {
     await expect(page).toHaveURL(/\/\?home$/);
   });
 
-  test('the landing page has the same header with Play and the grown-up pages, and no Explore', async ({ page }) => {
+  test('the landing page has the same header with Learn and the grown-up pages, and no Explore', async ({ page }) => {
     await page.goto('/?home');
     expect(await kinds(page)).toEqual(['brand', 'nav', 'theme']);
     const nav = page.locator('body > header nav');
-    for (const [name, href] of [['Play', '/play/'], ['For parents', '/parents/'], ['For teachers', '/teachers/']])
+    for (const [name, href] of [['Learn', '/play/'], ['For parents', '/parents/'], ['For teachers', '/teachers/']])
       await expect(nav.getByRole('link', { name, exact: true })).toHaveAttribute('href', href);
     await expect(page.locator('#exploreBtn, .xp-btn')).toHaveCount(0);
     await expect(page.locator('body > header.md-header')).toHaveCSS('position', 'sticky');
@@ -209,5 +209,41 @@ test.describe('tabs wait for a Mode', () => {
     await nav.getByRole('link', { name: 'Learn' }).click();
     await expect(page).toHaveURL(/#\/learn$/);
     await expect(nav.getByRole('link', { name: 'Learn' })).toHaveAttribute('aria-current', 'true');
+  });
+});
+
+/* A phone keeps the header short (openspec change find-and-home-polish): the same controls and links, tighter rows */
+test.describe('390px wide', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+  test('the header is at most 132 px tall, with every control and link on screen and each link at least 24 px tall', async ({ page }) => {
+    await open(page);
+    const h = (await page.locator('body > header.md-header').boundingBox())!;
+    expect(h.height).toBeLessThanOrEqual(132);
+    // Under 420 px the brand shows its mark only and keeps its name as its accessible name, so every control shares its row
+    await expect(page.locator('body > header .md-brand-t')).toBeHidden();
+    await expect(page.locator('body > header .md-brand')).toHaveAccessibleName('Learn Vedic Math, home');
+    const mid = (b: { y: number; height: number }) => b.y + b.height / 2, row = mid((await page.locator('.md-brand').boundingBox())!);
+    for (const sel of ['.md-brand', '#themeBtn', '#vmMBtn', '#mqChip a']) {
+      const b = (await page.locator(sel).boundingBox())!;
+      expect(b.x + b.width, sel).toBeLessThanOrEqual(390);
+      expect(b.y + b.height, sel).toBeLessThanOrEqual(h.y + h.height);
+      expect(Math.abs(mid(b) - row), sel).toBeLessThanOrEqual(4);
+    }
+    const tabs = page.locator('header .mq-nav a:visible');
+    expect(await tabs.count()).toBe(9);
+    for (const tab of await tabs.all()) {
+      const b = (await tab.boundingBox())!;
+      expect(b.height, await tab.innerText()).toBeGreaterThanOrEqual(24);
+      expect(b.x + b.width, await tab.innerText()).toBeLessThanOrEqual(390);
+      expect(b.y + b.height, await tab.innerText()).toBeLessThanOrEqual(h.y + h.height);
+    }
+  });
+});
+
+test.describe('390px wide, landing', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+  test('the landing page keeps the brand name (only the game shows the mark alone)', async ({ page }) => {
+    await page.goto('/?home');
+    await expect(page.locator('body > header .md-brand-t')).toBeVisible();
   });
 });

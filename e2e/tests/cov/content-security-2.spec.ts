@@ -92,7 +92,7 @@ test('World boards: the Arena World board loads through the Firebase SDK with no
 test('Leaderboards off: the policy lists the Firebase hosts only while js/cloud-config.js configures them', async ({ page, baseURL }) => {
   await open(page);
   const csp = await policy(page, baseURL);
-  const configured = await page.evaluate(async () => { const m: any = await import('/js/cloud-config.js' as string); return !!m.FIREBASE; });
+  const configured = await page.evaluate(async () => { const m: any = await e2eMod('cloud-config'); return !!m.FIREBASE; });
   const names = /firestore\.googleapis\.com|identitytoolkit\.googleapis\.com|securetoken\.googleapis\.com/;
   // test/build.test.mjs builds with FIREBASE = null and checks the policy then lists no Firebase or Google host
   expect(names.test(csp)).toBe(configured);

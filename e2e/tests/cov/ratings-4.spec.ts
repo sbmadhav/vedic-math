@@ -10,7 +10,7 @@ import { test, expect, open, type Page } from '../fixtures';
      did before Ratings were added. practice.spec.ts checks the stored mastery value; these check the ring itself (its
      fill and the % label) after every answer, and that the Player's Rating does not change it. */
 
-const progress = (page: Page) => page.evaluate(async () => (await import('/js/store.js' as string)).load());
+const progress = (page: Page) => page.evaluate(async () => (await e2eMod('store')).load());
 const box = (page: Page) => page.locator('#practice');
 
 /** Answers the times-table question on screen: right on the first try, or wrong (ok false). */

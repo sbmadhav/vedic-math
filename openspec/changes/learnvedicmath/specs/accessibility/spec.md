@@ -11,4 +11,4 @@ The system SHALL offer a Pause motion switch on the Me page and in the music pan
 
 #### Scenario: Landing page
 - **WHEN** Pause motion is on and the Player opens the landing page
-- **THEN** Bolt and the page hold still
+- **THEN** the Nikhilam Family and the page hold still, as they do with reduced motion on the device or Calm on

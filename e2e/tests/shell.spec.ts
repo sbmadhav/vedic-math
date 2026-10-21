@@ -118,7 +118,7 @@ test.describe('tower in Calm', () => {
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1')!).medals['a:1'])).toBe(1);
 
     // Challenge 2 is a Sharpshooter: no clock anyway, so its Medal stays
-    const answers = await page.evaluate(async () => { const L = await import('/js/levels.js' as string); const ch = L.challenge(2); return L.challengeSet(ch).slice(0, ch.total).map((p: { answer: unknown }) => String(p.answer)); });
+    const answers = await page.evaluate(async () => { const L = await e2eMod('levels'); const ch = L.challenge(2); return L.challengeSet(ch).slice(0, ch.total).map((p: { answer: unknown }) => String(p.answer)); });
     await page.goto(`${APP}#/challenge/2`);
     await page.locator('#chGo').click();
     await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });

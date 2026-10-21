@@ -11,7 +11,7 @@ const frame = (page: Page) => sky(page).evaluate(c => (c as HTMLCanvasElement).t
 const moving = async (page: Page, ms = 600) => { const a = await frame(page); await page.waitForTimeout(ms); return a !== (await frame(page)); };
 /* Hides or shows the tab as far as the page can tell (document.hidden and visibilitychange) */
 /* The story list, read from the page's own module (the same one the scene draws) */
-const storyIds = (page: Page) => page.evaluate(async () => (await import('/js/sky-scene.js')).STORIES.map((s: { id: string }) => s.id) as string[]);
+const storyIds = (page: Page) => page.evaluate(async () => (await e2eMod('sky-scene')).STORIES.map((s: { id: string }) => s.id) as string[]);
 /* Under a held clock: moves on until the first story is complete and held (or found no room, on a full phone screen) */
 async function untilHeld(page: Page) {
   for (let i = 0; i < 60; i++) {
@@ -45,6 +45,22 @@ test.describe('levels', () => {
     expect((await state(page)).story, 'no featured story on a quiet screen').toBe('');
     await page.evaluate(() => { location.hash = '#/'; });
     await expect(sky(page)).toHaveAttribute('data-level', 'full');
+  });
+
+  test('a story held on home is dropped when a quiet screen opens', async ({ page }, testInfo) => {
+    chromiumOnly(testInfo, 'a fake clock over a story: chromium');
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await heldClock(page);
+    await open(page);
+    await page.clock.runFor(2000);
+    await expect(sky(page)).toHaveAttribute('data-level', 'full');
+    const held = await untilHeld(page);
+    expect(held.story, 'a story is up on home first').not.toBe('');
+    await page.evaluate(() => { location.hash = '#/learn'; });
+    await expect(sky(page)).toHaveAttribute('data-level', 'quiet');
+    await page.clock.runFor(1000);
+    const s = await state(page);
+    expect([s.story, s.phase, s.place]).toEqual(['', 'gap', 'none']);
   });
 
   test.describe('a first visit', () => {
@@ -117,6 +133,24 @@ test.describe('motion', () => {
   });
 });
 
+test('computed colours of every form count: color-mix() boxes show, transparent ones do not', async ({ page }) => {
+  await open(page);
+  const r = await page.evaluate(async () => {
+    const m = await e2eMod('sky-bg');
+    const el = document.createElement('div'); document.body.append(el);
+    const computed = (bg: string) => { el.style.background = bg; return getComputedStyle(el).backgroundColor; };
+    const mixed = computed('color-mix(in srgb, red 40%, transparent)');
+    const out = { mixed, mixedShows: m.shows(mixed), clear: m.shows('rgba(0, 0, 0, 0)'), none: m.shows(''), srgb: m.shows('color(srgb 0 0.5 1 / 0.5)'), parsed: m.parseColor('color(srgb 1 0 0)'), fallback: m.parseColor('') };
+    el.remove(); return out;
+  });
+  expect(r.mixedShows, `a box with ${r.mixed} shows`).toBe(true);
+  expect(r.srgb).toBe(true);
+  expect(r.clear).toBe(false);
+  expect(r.none).toBe(false);
+  expect(r.parsed).toEqual([255, 0, 0, 1]);
+  expect(r.fallback).toEqual([128, 128, 128, 1]);
+});
+
 test.describe('still frame', () => {
   /* The suite's default is reduced motion */
   test('reduced motion: one composed frame on the landing page and home, with the day\'s story complete on a wide screen', async ({ page }) => {
@@ -131,6 +165,31 @@ test.describe('still frame', () => {
       expect(s.phase, url).toBe('still');
       expect(s.story, url).not.toBe('');
     }
+  });
+
+  test('after a scroll the still frame is clear behind the text where it is now', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 700 });
+    await open(page, '#/learn');
+    await expect(sky(page)).toHaveAttribute('data-level', 'quiet', { timeout: 10_000 });
+    await expect(sky(page)).toHaveAttribute('data-still', '1');
+    await page.waitForTimeout(400);
+    await page.evaluate(() => window.scrollBy(0, 260));
+    await page.waitForTimeout(800);
+    const under = await sky(page).evaluate(cv => {
+      const c = cv as HTMLCanvasElement, g = c.getContext('2d')!, k = c.width / innerWidth, range = document.createRange();
+      const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let worst = 0, runs = 0;
+      for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+        if (!n.nodeValue!.trim() || /SCRIPT|STYLE/.test(n.parentNode!.nodeName)) continue;
+        range.selectNodeContents(n); const r = range.getBoundingClientRect();
+        if (r.width < 4 || r.height < 4 || r.top < 0 || r.bottom > innerHeight || r.left < 0 || r.right > innerWidth) continue;
+        const d = g.getImageData(Math.round(r.left * k), Math.round(r.top * k), Math.max(1, Math.floor(r.width * k)), Math.max(1, Math.floor(r.height * k))).data;
+        for (let i = 3; i < d.length; i += 4) if (d[i] > worst) worst = d[i];
+        runs++;
+      }
+      return { worst, runs };
+    });
+    expect(under.runs).toBeGreaterThan(3);
+    expect(under.worst, 'no sky pixel is left under text after the scroll').toBe(0);
   });
 
   test.describe('motion allowed', () => {

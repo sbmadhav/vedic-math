@@ -131,9 +131,11 @@ let busy = false;
 function checkBadges() { if (busy) return; busy = true; BADGES.forEach(b => { if (!store.badges()[b.id] && b.test()) store.award(b.id); }); busy = false; }
 
 export function init() {
+  /* Celebrations (openspec celebrations): a new Title, a badge and a mastered skill are true wins, so they get the big confetti.
+     First step (any first answer) is the exception: it comes with an everyday moment, so it gets its toast only. */
   store.on((type, d) => {
     if (type === 'sparks') { const a = titleInfo(d.before).title, b = titleInfo(d.after).title; if (a !== b) { sfx('level'); confetti(110); toast(`<b>New Title: ${b}</b>`, 'win'); } checkBadges(); }
-    if (type === 'badge') { const b = BADGES.find(x => x.id === d); if (b) { sfx('badge'); toast(`<span class="fx-badge"></span><b>Badge earned:</b> ${b.name}`, 'win'); } }
+    if (type === 'badge') { const b = BADGES.find(x => x.id === d); if (b) { sfx('badge'); if (b.id !== 'first') confetti(90); toast(`<span class="fx-badge"></span><b>Badge earned:</b> ${b.name}`, 'win'); } }
     if (type === 'mastered') { confetti(); toast('<b>Skill mastered!</b> A new ring is full.', 'win'); }
     if (type === 'answer' || type === 'count' || type === 'seen') { checkBadges(); if (type !== 'seen') checkQuests(); }
     if (type === 'star' || type === 'belt') { if (type === 'star') keepBelts(); checkBadges(); }

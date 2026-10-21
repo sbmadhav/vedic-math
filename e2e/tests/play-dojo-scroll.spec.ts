@@ -19,8 +19,8 @@ test('Spellbook: a keyboard cast keeps focus on the digits after each key press'
   await expect(page.locator('.sp-board .sp-node').first()).toBeVisible();
   /* The first lesson's problem, recomputed with the same seed the page uses */
   const edges: string[] = await page.evaluate(async () => {
-    const C = await import('/js/play/exp/spells-core.js' as string);
-    const K = await import('/js/play/kit.js' as string);
+    const C = await e2eMod('play/exp/spells-core');
+    const K = await e2eMod('play/kit');
     const id = C.ORDER.challenger[0], s = C.spellById(id);
     const b = s.board(s.gen(K.rng(`learn:${id}:0`), 0, 'challenger'));
     return C.solution(b).flatMap((x: { edges: string[] }) => x.edges);
@@ -47,11 +47,11 @@ test('Spellbook: a keyboard cast keeps focus on the digits after each key press'
 });
 
 test('Spellbook: a learn link cannot skip ahead to a spell not yet unlocked', async ({ page }) => {
-  const later: string = await page.goto('/play/').then(() => page.evaluate(async () => (await import('/js/play/exp/spells-core.js' as string)).ORDER.challenger[2]));
+  const later: string = await page.goto('/play/').then(() => page.evaluate(async () => (await e2eMod('play/exp/spells-core')).ORDER.challenger[2]));
   await open(page, `#/dojo/spells/learn/${later}`);
   /* a fresh Player gets the first lesson instead */
-  const first: string = await page.evaluate(async () => (await import('/js/play/exp/spells-core.js' as string)).ORDER.challenger[0]);
-  const want: string = await page.evaluate(async id => (await import('/js/play/exp/spells-core.js' as string)).spellById(id).sutra, first);
+  const first: string = await page.evaluate(async () => (await e2eMod('play/exp/spells-core')).ORDER.challenger[0]);
+  const want: string = await page.evaluate(async id => (await e2eMod('play/exp/spells-core')).spellById(id).sutra, first);
   await expect(page.locator('.sp-sutra')).toHaveText(want);
 });
 
@@ -235,7 +235,7 @@ test.describe('the scroll with two pieces found', () => {
 });
 
 test('Lost Scroll: a chapter 1 puzzle is solved and saved; in preview nothing is saved or counted', async ({ page, issues }) => {
-  const answer: number = await page.goto('/play/').then(() => page.evaluate(async () => (await import('/js/play/exp/scroll-core.js' as string)).puzzlesFor(1, 'challenger')[0].answer));
+  const answer: number = await page.goto('/play/').then(() => page.evaluate(async () => (await e2eMod('play/exp/scroll-core')).puzzlesFor(1, 'challenger')[0].answer));
   await open(page, '#/sutras/lost-scroll/preview/1');
   await expect(page.locator('.sc-preview')).toContainText('nothing solved here is saved');
   await page.locator('#scAns').fill(String(answer));
@@ -260,7 +260,7 @@ test('Lost Scroll: a chapter 1 puzzle is solved and saved; in preview nothing is
 test('Lost Scroll: solved rope, square and meter puzzles reopen showing their answer, and stay put', async ({ page, issues }) => {
   await page.goto('/play/');
   const want = await page.evaluate(async () => {
-    const S = await import('/js/play/exp/scroll-core.js' as string);
+    const S = await e2eMod('play/exp/scroll-core');
     const solved: Record<string, boolean> = {}, at: Record<string, [number, number, unknown]> = {};
     for (const n of [2, 4]) S.puzzlesFor(n, 'challenger').forEach((p: { id: string, kind: string, answer: unknown }, i: number) => { solved[`challenger:${p.id}`] = true; if (['rope', 'square', 'meter'].includes(p.kind)) at[p.kind] = [n, i, p.answer]; });
     localStorage.setItem('vm.play.p1.scroll', JSON.stringify({ solved, pieces: [] }));

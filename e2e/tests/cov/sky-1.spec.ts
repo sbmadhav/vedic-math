@@ -18,7 +18,7 @@ test.describe('the Sky on', () => {
   test('Ekādhikena Pūrvena: its Constellation holds six Stars, three for sq5 and three for the recurring-decimal Trick', async ({ page }) => {
     await open(page);
     await expect(page.locator('.sky-names')).toContainText('Ekādhikena');
-    const ids: string[] = await page.evaluate(() => import('/js/sky.js' as string).then((m: any) => {
+    const ids: string[] = await page.evaluate(() => e2eMod('sky').then((m: any) => {
       const c = m.CONSTELLATIONS.find((x: any) => /Ek[āa]dhikena/.test(x.sutra));
       return [...c.tricks];
     }));

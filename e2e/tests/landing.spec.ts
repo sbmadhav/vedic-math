@@ -13,8 +13,9 @@ test.describe('a first visit', () => {
     page.on('request', r => asked.push(r.url()));
     await page.goto('/');
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.locator('main h1')).toHaveText('Math tricks you can do in your head, and games to practise them');
-    await expect(page.locator('.lv-bolt')).toBeVisible();
+    await expect(page.locator('main h1')).toHaveText('Math tricks you can do in your head');
+    await expect(page.getByRole('img', { name: 'The Nikhilam Family: the Devanagari digits one, zero and nine' })).toBeVisible();
+    await expect(page.locator('.lv-bolt')).toHaveCount(0);
     for (const m of ['Explorer', 'Challenger', 'Pro']) await expect(page.locator('.lv-modes')).toContainText(m);
     await expect(page.locator('main')).toContainText("Bharati Krishna Tirtha's 1965 book");
     await expect(page.locator('main')).toContainText('They are not found in the Vedas.');
@@ -26,9 +27,12 @@ test.describe('a first visit', () => {
     expect(issues.failed).toEqual([]);
   });
 
-  test('Play opens the game and its Mode picker', async ({ page }) => {
+  test('Start learning opens the app and its Mode picker', async ({ page }) => {
     await page.goto('/');
-    await page.locator('main a.lv-play').click();
+    const start = page.locator('main a.lv-play');
+    await expect(start).toHaveText('Start learning');
+    await expect(page.locator('main h2').first()).toHaveText('Three ways to learn');
+    await start.click();
     await expect(page).toHaveURL(/\/play\/$/);
     await expect(page.locator('.mode-pick .mode-card')).toHaveCount(3);
   });
@@ -87,7 +91,8 @@ test.describe('a returning Player', () => {
 test('an unknown path answers 404 with a page that links to the landing page and the game', async ({ page }) => {
   const res = await page.goto('/plya/');
   expect(res!.status()).toBe(404);
-  await expect(page.locator('main a[href="/play/"]')).toBeVisible();
+  await expect(page.locator('main a[href="/play/"]')).toHaveText('Start learning');
+  await expect(page.locator('footer a[href="/play/"]')).toHaveText('Learn');
   await expect(page.locator('main a[href="/?home"]')).toBeVisible();
 });
 
@@ -146,14 +151,63 @@ for (const mode of ['explorer', 'challenger', 'pro'] as const) {
   });
 }
 
-/* Pause motion before paint on the landing page (accessibility spec "Landing page") */
+/* The hero is the Nikhilam Family (landing-pages "The landing page"): the same width rules Bolt had at every
+   width, no layout shift, no horizontal scroll */
+for (const [width, w] of [[320, 120], [375, 120], [768, 768 * 0.22], [1280, 220]] as const) {
+  test(`at ${width}px the family hero is ${Math.round(w)}px wide, does not shift and does not scroll sideways`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto('/?home');
+    const hero = page.locator('svg.lv-family');
+    await expect(hero).toBeVisible();
+    const box = (await hero.boundingBox())!;
+    expect(Math.abs(box.width - w)).toBeLessThan(1);
+    expect(box.height / box.width).toBeCloseTo(86 / 108, 2);
+    // On a phone the family sits above the heading; wider, beside it
+    const h1 = (await page.locator('main h1').boundingBox())!;
+    if (width <= 700) expect(box.y + box.height).toBeLessThanOrEqual(h1.y); else expect(box.x).toBeGreaterThan(h1.x);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    const shift = await page.evaluate(() => new Promise<number>(done => {
+      if (!PerformanceObserver.supportedEntryTypes?.includes('layout-shift')) return done(0);
+      let sum = 0;
+      new PerformanceObserver(l => { for (const e of l.getEntries() as any[]) if (!e.hadRecentInput) sum += e.value; })
+        .observe({ type: 'layout-shift', buffered: true });
+      setTimeout(() => done(sum), 500);
+    }));
+    expect(shift).toBe(0);
+  });
+}
+
+/* Motion on the landing page (accessibility spec "Landing page", calm "Calm stops motion") */
+const running = (page: import('@playwright/test').Page) =>
+  page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running').length);
+
 test.describe('motion allowed', () => {
   test.use({ reducedMotion: 'no-preference' });
-  test('with Pause motion on, Bolt and the landing page hold still', async ({ page }) => {
+  test('the family moves gently', async ({ page }) => {
+    await page.goto('/?home');
+    await expect.poll(() => running(page)).toBeGreaterThan(0);
+  });
+
+  test('with Pause motion on, the family and the landing page hold still', async ({ page }) => {
     await page.addInitScript(() => { try { localStorage.setItem('motion-paused', '1'); } catch (e) { /* storage blocked */ } });
     await page.goto('/?home');
     await expect(page.locator('html')).toHaveClass(/motion-paused/);
-    const running = await page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running').length);
-    expect(running).toBe(0);
+    expect(await running(page)).toBe(0);
+  });
+
+  test('with Calm on, the family and the landing page hold still', async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('vm.calm', '1'); } catch (e) { /* storage blocked */ } });
+    await page.goto('/?home');
+    await expect(page.locator('html')).toHaveClass(/(^|\s)calm(\s|$)/);
+    expect(await running(page)).toBe(0);
+  });
+});
+
+test.describe('reduced motion', () => {
+  test.use({ reducedMotion: 'reduce' });
+  test('the family holds still', async ({ page }) => {
+    await page.goto('/?home');
+    await expect(page.locator('svg.lv-family')).toBeVisible();
+    expect(await running(page)).toBe(0);
   });
 });

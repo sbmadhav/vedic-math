@@ -15,6 +15,14 @@ h1:focus, h2:focus, [tabindex="-1"]:focus-visible { outline: none !important; }
 .nav-find { display: inline-flex; align-items: center; gap: 5px; } .nav-find svg { width: 15px; height: 15px; flex: none; }
 #mqMusic, #mqChip { display: flex; flex: none; }
 .md-header .mq-chip { margin: 0; height: 40px; box-sizing: border-box; padding: 0 10px 0 3px; }
+/* A phone keeps the game's header short (openspec find-and-home-polish): tighter rows, the same controls and links.
+   Below 420px the brand shows its mark only (its name stays its accessible name), so the controls share its row. */
+@media (max-width: 600px) {
+  .md-header--tabs:has(.mq-nav) .md-header-in { padding-top: var(--space-2); padding-bottom: var(--space-1-5); row-gap: var(--space-1-5); }
+  .md-header--tabs .mq-nav { row-gap: 2px; gap: 0; }
+  .md-header--tabs .mq-nav a { padding: 5px var(--space-2); }
+}
+@media (max-width: 420px) { .md-header:has(.mq-nav) .md-brand-t { display: none; } }
 @media (max-width: 420px) { .md-header .mq-sparkbar { width: 36px; } .md-header .mq-chip { padding-right: 8px; } } /* the bar to the next Title stays, shorter */
 .md-brand svg.lv-mark { width: 48px; height: 32px; } /* the Nikhilam Family brand mark is 3:2, not square */
 html.motion-paused .md-brand svg, body.calm .md-brand svg, html.motion-paused .md-theme, body.calm .md-theme { transition: none; }
@@ -22,10 +30,55 @@ html.motion-paused .md-brand:hover svg, body.calm .md-brand:hover svg, html.moti
 
 .mq-tight { padding-top: 36px; }
 .mq-narrow { max-width: 820px; }
-.mq-hero .md-heading { font-size: clamp(2.1rem, 5vw, 3.3rem); max-width: 16em; }
+.mq-hero .md-heading { font-size: clamp(2.1rem, 5vw, 3.3rem); max-width: 16em; text-wrap: balance; }
 .hl-word { background: linear-gradient(transparent 62%, color-mix(in srgb, var(--sun) 70%, transparent) 62%); padding: 0 .08em; }
 :root[data-theme="dark"] .hl-word { background: linear-gradient(90deg, var(--coral), var(--teal)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hl-word { background: linear-gradient(90deg, var(--coral), var(--teal)); -webkit-background-clip: text; background-clip: text; color: transparent; } }
+
+/* The app home's hero (Mode picker, openspec first-visit): one headline, one short line, Try a trick, and the Nikhilam
+   Family (js/family.js, the landing page's drawing). Same rules as the landing hero (theme/site.css): the family moves
+   gently, the nine nods toward Try a trick each time its ring glows, and everything holds still under no motion. */
+.mq-hero-in { display: grid; grid-template-columns: 1fr auto; gap: var(--space-6); align-items: center; margin-bottom: var(--space-7); }
+.mq-hero .md-lede.mq-hero-sub { margin: var(--space-3) 0 0; font-weight: 700; }
+.mq-hero .try-it { margin: var(--space-6) 0 0; }
+.mq-hero .lv-family { width: clamp(120px, 22vw, 220px); height: auto; overflow: visible; }
+@media (max-width: 700px) { .mq-hero-in { grid-template-columns: 1fr; gap: var(--space-3); } .mq-hero .lv-family { order: -1; width: 104px; } }
+.lv-family .lv-f-one, .lv-family .lv-f-zero, .lv-family .lv-f-nine { transform-box: fill-box; transform-origin: 50% 100%; }
+.lv-family .lv-f-one { animation: lv-sway 6s ease-in-out infinite; }
+.lv-family .lv-f-zero { animation: lv-hop 3s ease-in-out infinite; }
+.lv-family .lv-f-nine { animation: lv-nod 4s ease-in-out infinite; }
+.lv-family .lv-f-shadow--zero { transform-box: fill-box; transform-origin: center; animation: lv-shrink 3s ease-in-out infinite; }
+.lv-family .lv-spark { transform-box: fill-box; transform-origin: center; animation: lv-twinkle 3.2s ease-in-out infinite; }
+.lv-family .lv-spark--b { animation-delay: -.8s; } .lv-family .lv-spark--c { animation-delay: -1.6s; } .lv-family .lv-spark--d { animation-delay: -2.4s; }
+@keyframes lv-sway { 50% { transform: rotate(-2.5deg); } }
+@keyframes lv-nod { 0%, 45%, 100% { transform: none; } 15% { transform: rotate(-7deg); } 28% { transform: rotate(2deg); } }
+@keyframes lv-hop { 0%, 55%, 100% { transform: none; } 25% { transform: translateY(-5px); } }
+@keyframes lv-shrink { 0%, 55%, 100% { transform: none; } 25% { transform: scale(.7); } }
+@keyframes lv-twinkle { 50% { opacity: .3; transform: scale(.6); } }
+.mq-hero-in:has(.mq-try:hover, .mq-try:focus-visible) :is(.lv-f-one, .lv-f-zero, .lv-f-nine) { animation: lv-cheer .5s ease-out 2; }
+.mq-hero-in:has(.mq-try:hover, .mq-try:focus-visible) .lv-f-zero { animation-delay: .08s; }
+.mq-hero-in:has(.mq-try:hover, .mq-try:focus-visible) .lv-f-nine { animation-delay: .16s; }
+@keyframes lv-cheer { 50% { transform: translateY(-6px); } }
+/* Try a trick: the one big first action. A ring glows out every four seconds and the arrow nudges with it. */
+.try-it .md-btn.mq-try { position: relative; margin: 0; min-height: 60px; padding: 0 var(--space-7); font-size: clamp(1.25rem, 3vw, 1.4rem); font-weight: 800; gap: var(--space-2-5); }
+.try-it .md-btn.mq-try svg.mq-try-go { width: 1.1em; height: 1.1em; animation: lv-go 4s ease-in-out infinite; }
+.mq-try::after { content: ""; position: absolute; inset: -3px; border-radius: inherit; border: 3px solid var(--coral); opacity: 0; pointer-events: none; animation: lv-ring 4s ease-out infinite; }
+.mq-try:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+@keyframes lv-ring { 0% { opacity: .75; transform: scale(1); } 32%, 100% { opacity: 0; transform: scale(1.1, 1.45); } }
+@keyframes lv-go { 0%, 30%, 100% { transform: none; } 12% { transform: translateX(5px); } }
+@media (prefers-reduced-motion: reduce) { .lv-family *, .mq-try::after, .mq-try svg { animation: none !important; } }
+html.motion-paused .lv-family *, body.calm .lv-family *, html.motion-paused .mq-try::after, body.calm .mq-try::after, html.motion-paused .mq-try svg, body.calm .mq-try svg { animation: none !important; }
+
+/* Small celebrations (js/celebrate.js, openspec celebrations): sparkles on a fixed layer, token colours, transform and
+   opacity only. The script never starts them under no motion. */
+.fx-sparkles { position: fixed; width: 0; height: 0; pointer-events: none; z-index: 115; }
+.fx-spark { position: absolute; left: -8px; top: -8px; width: 16px; height: 16px; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); opacity: 0; }
+.fx-spark--sun { background: var(--sun); } .fx-spark--coral { background: var(--coral); } .fx-spark--sky { background: var(--sky); } .fx-spark--teal { background: var(--teal); } .fx-spark--plum { background: var(--plum); }
+.fx-roll { display: inline-block; font-variant-numeric: tabular-nums; }
+/* Buttons squish a little on press (the scale property, so each button's own transform is untouched); none under no motion */
+@media (prefers-reduced-motion: no-preference) {
+  html:not(.motion-paused) body:not(.calm) :is(.md-btn, .mode-card, .play-tile, .pr-choice, .pr-key, .ar-key, .ar-choice, .star-key, .star-choice):active { scale: .95; }
+}
 
 /* Stats and continue */
 .mq-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; max-width: 640px; }
@@ -302,6 +355,21 @@ html.motion-paused .mq-grade, body.calm .mq-grade, html.motion-paused .mq-skill,
 .me-nums small { color: var(--ink-muted); font-size: 12px; }
 .home-h { margin-top: 26px !important; }
 .mode-line { color: var(--ink-muted); font-size: 14px; margin: 4px 0 16px; }
+/* A compact Player strip on a phone (openspec find-and-home-polish): one row with the avatar, name, Title and bar, and
+   the three numbers on one short line under it, so the first door is near the top of the screen */
+@media (max-width: 600px) {
+  .me-strip { display: grid; grid-template-columns: auto 1fr; gap: 4px var(--space-3); padding: 10px 14px; border-radius: var(--radius-lg); }
+  .me-strip > .av { width: 40px !important; height: 40px !important; font-size: 17px !important; }
+  .me-strip-t { min-width: 0; }
+  .me-strip-t b { font-size: 1.1rem; }
+  .me-strip-t span { font-size: 13px; }
+  .me-strip .mq-sparkbar--big { height: 8px; margin-top: 4px; }
+  .me-nums { grid-column: 1 / -1; gap: var(--space-4); }
+  .me-nums div { display: flex; align-items: baseline; gap: 4px; }
+  .me-nums b { font-size: 1rem; }
+  .home-h { margin-top: 16px !important; }
+  .mode-line { margin-bottom: 10px; }
+}
 .mode-line a { color: var(--sky-strong); font-weight: 700; }
 .play-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; margin-top: 18px; }
 .play-grid--big { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
@@ -381,13 +449,14 @@ a.door .play-ic { width: 44px; height: 44px; } .door--coral .play-ic { backgroun
 .history { margin-bottom: 8px; } .history p { color: var(--ink); font-size: 15.5px; margin: 6px 0; }
 .history a { color: var(--sky-strong); font-weight: 700; }
 .sutra-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
-.sutra-card { position: relative; min-height: 220px; border: 2px solid var(--edge); border-radius: var(--radius-lg); background: var(--card); color: var(--ink); box-shadow: var(--shadow-ledge); overflow: hidden; transition: transform .2s; }
+.sutra-card { position: relative; display: grid; min-height: 220px; border: 2px solid var(--edge); border-radius: var(--radius-lg); background: var(--card); color: var(--ink); box-shadow: var(--shadow-ledge); overflow: hidden; transition: transform .2s; }
 .sutra-card:hover { transform: translateY(-3px) rotate(-.4deg); }
 .sutra-card.got { background: linear-gradient(160deg, color-mix(in srgb, var(--plum) 22%, var(--card)), var(--card) 60%); }
-.sutra-face, .sutra-back { position: absolute; inset: 0; padding: 16px; display: flex; flex-direction: column; gap: 6px; transition: transform .45s, opacity .3s; backface-visibility: hidden; }
+/* Both sides share one grid cell, so the card is as tall as its taller side and nothing on the back is cut off */
+.sutra-face, .sutra-back { grid-area: 1 / 1; position: relative; min-width: 0; padding: 16px; display: flex; flex-direction: column; gap: 6px; transition: transform .45s, opacity .3s; backface-visibility: hidden; }
 .sutra-face { border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; width: 100%; }
 /* The face sits in the flow, so the card grows with its text (WCAG 1.4.12) instead of clipping it; the back scrolls */
-.sutra-face { position: relative; inset: auto; min-height: 220px; box-sizing: border-box; overflow-wrap: anywhere; }
+.sutra-face { min-height: 220px; box-sizing: border-box; overflow-wrap: anywhere; }
 .sutra-back { transform: rotateY(180deg); opacity: 0; pointer-events: none; font-size: 14.5px; line-height: 1.45; overflow: auto; }
 .sutra-card.flipped .sutra-face { transform: rotateY(-180deg); opacity: 0; pointer-events: none; }
 .sutra-card.flipped .sutra-back { transform: none; opacity: 1; pointer-events: auto; }
@@ -397,7 +466,10 @@ a.door .play-ic { width: 44px; height: 44px; } .door--coral .play-ic { backgroun
 .sutra-got, .sutra-tap { margin-top: auto; align-self: flex-start; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 99px; }
 .sutra-got { background: var(--teal); color: var(--on-accent); } .sutra-tap { border: 1px dashed var(--ink-muted); color: var(--ink-muted); }
 .sutra-back code { font: 500 13px/1.4 var(--font-mono); background: color-mix(in srgb, var(--sun) 20%, var(--card)); padding: 6px 8px; border-radius: 8px; }
-.sutra-acts { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 6px; }
+/* Learn more is the main action: a full-width row of its own, then Listen and flip back (DOM order matches, so focus does too) */
+.sutra-acts { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; margin-top: auto; padding-top: 6px; }
+.sutra-acts .sutra-more { grid-column: 1 / -1; justify-content: center; white-space: nowrap; }
+.sutra-acts .listen-btn { justify-self: start; }
 .sutra-more { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 99px; background: var(--plum); color: var(--on-accent); font-weight: 700; font-size: 14px; text-decoration: none; border: 2px solid var(--edge); box-shadow: 0 2px 0 var(--ledge); }
 .sutra-more svg { width: 18px; height: 18px; }
 .sutra-flipback { margin-left: auto; width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--edge); background: var(--card); color: var(--ink); display: grid; place-items: center; cursor: pointer; }
@@ -526,6 +598,7 @@ a.door .play-ic { width: 44px; height: 44px; } .door--coral .play-ic { backgroun
 /* Fun layer */
 .fx-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 120; }
 .fx-toasts { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); display: grid; gap: 8px; z-index: 110; width: min(92vw, 420px); pointer-events: none; } /* toasts only tell; a tap goes through to the game under them */
+.fx-toasts.at-top { bottom: auto; top: calc(env(safe-area-inset-top, 0px) + 8px); } /* toastSide() moves them up when the bottom holds the primary action (a number pad, a primary button) */
 .fx-toast { padding: 12px 16px; border-radius: var(--radius-lg); border: 2px solid var(--edge); background: var(--card); color: var(--ink); box-shadow: var(--shadow-ledge); font-size: 15px; animation: toastIn .35s cubic-bezier(.5,1.6,.5,1); }
 .fx-toast.win { background: color-mix(in srgb, var(--sun) 30%, var(--card)); } .fx-toast.ok { background: color-mix(in srgb, var(--teal) 18%, var(--card)); }
 .fx-toast.out { opacity: 0; transform: translateY(10px); transition: .35s; }
@@ -560,6 +633,7 @@ html.motion-paused .sutra-face, body.calm .sutra-face, html.motion-paused .sutra
 }
 :root[data-theme="dark"] .vm-bg { background: radial-gradient(140% 50% at 50% 110%, color-mix(in srgb, var(--plum) 16%, transparent), transparent 72%),
   linear-gradient(180deg, color-mix(in srgb, var(--sky) 5%, transparent), transparent 45%); }
+@media (max-width: 600px) { .vm-bg { opacity: .45; } } /* on a phone the text boxes cover most of the screen: the drawing stays further back */
 #view, .mq-foot { position: relative; z-index: 1; }
 /* Reserve the screen before the view renders, so the footer does not jump on first load */
 #view { min-height: 100svh; }
@@ -884,7 +958,6 @@ html.motion-paused .wb-card .md-switch .md-knob, body.calm .wb-card .md-switch .
 @media (max-width: 760px) { .star-arena { grid-template-columns: minmax(0, 1fr); gap: var(--space-3); } }
 .star-stage { position: relative; display: grid; gap: var(--space-3); min-height: 360px; padding: var(--space-5); overflow: hidden; }
 @media (max-width: 760px) { .star-stage { min-height: 0; padding: var(--space-4); } }
-.star-burst { position: absolute; inset: 0; pointer-events: none; }
 .star-talk { display: flex; align-items: center; gap: var(--space-3); min-height: 64px; }
 .star-bolt { flex: none; width: clamp(54px, 10vw, 84px); }
 .star-bolt .bolt { width: 100%; height: auto; display: block; }
@@ -1159,7 +1232,7 @@ html.play-open #view { z-index: 70; }
 html.motion-paused .md-switch .md-track, body.calm .md-switch .md-track, html.motion-paused .md-switch .md-knob, body.calm .md-switch .md-knob { transition: none; }
 
 /* ---------- Guide (openspec in-app-guide): the guide page, its pictures and the first-visit tour. Tokens only. ---------- */
-.gd-new { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-3) 0; padding: var(--space-2) var(--space-3); border: 2px dashed var(--edge); border-radius: var(--radius-md); font-size: .95rem; color: var(--ink-muted); }
+.gd-new { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-3) 0; padding: var(--space-2) var(--space-3); border: 2px dashed var(--edge); border-radius: var(--radius-md); font-size: .95rem; color: var(--ink-muted); background: var(--card); } /* a solid box: the background drawing never shows through its words */
 .gd-new a, .gd-new .linkbtn { font-weight: 700; }
 .gd-new-ic { display: inline-flex; color: var(--teal-strong); }
 .gd-new-ic svg { width: 22px; height: 22px; }
@@ -1330,4 +1403,4 @@ html.motion-paused .play-card, body.calm .play-card { transition: none; } html.m
 .find-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
 .find-hit { display: grid; gap: 2px; width: 100%; box-sizing: border-box; text-align: left; font: inherit; padding: 10px 14px; border: 2px solid var(--line); border-radius: var(--radius-lg); background: var(--card); color: var(--ink); text-decoration: none; cursor: pointer; }
 .find-hit:hover, .find-hit:focus-visible { border-color: var(--sky); } .find-hit b { font: 600 1.05rem/1.25 var(--display); } .find-hit small { color: var(--ink-muted); font-size: 13.5px; line-height: 1.35; }
-.find-group .mq-strand { margin: 22px 0 10px !important; } .find-none { margin: var(--space-4) 0; }
+.find-group .mq-strand { margin: 22px 0 10px !important; } .find-group--top .find-hit { border-color: var(--teal-strong); } /* the Best match: an answer to a question, before the kinds */ .find-none { margin: var(--space-4) 0; }

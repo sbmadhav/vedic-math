@@ -119,6 +119,41 @@ test('keyboard: Enter opens the first result, Down moves to it, Escape clears th
   expect(await page.evaluate(() => Object.entries(localStorage).some(([, v]) => /squares/.test(String(v))))).toBe(false);
 });
 
+/* The live audit of 2026-10-20 (openspec change find-and-home-polish): phrases, questions and plain words */
+const group = (page: Page, name: string) => page.locator('#findOut .find-group', { has: page.locator('h2', { hasText: name }) }).locator('.find-hit');
+test('questions and phrases: a share of the words, Best match for questions, Play modes, kind words; one math/find/go', async ({ page }) => {
+  const urls: string[] = [];
+  page.on('request', r => urls.push(r.url()));
+  await open(page, '#/find');
+  const box = page.locator('#findIn');
+  await expect(page.locator('.find-hint')).toHaveText('Try: squares, multiply, take away, leaderboard, for kids, how it works');
+  await box.fill('multiply big numbers');
+  expect((await groups(page))[0]).toBe('Tricks');
+  await expect(group(page, 'Tricks').first().locator('b')).toHaveText('Multiply any two numbers in one line');
+  await box.fill('how does it work');
+  expect(await groups(page)).toEqual(['Best match']);
+  await expect(page.locator('#findOut .find-group--top .find-hit').first()).toHaveAttribute('href', '#/guide');
+  await box.fill('what is vedic math');
+  expect((await groups(page))[0]).toBe('Best match');
+  await expect(group(page, 'Best match').first()).toHaveAttribute('href', '#/sutras');
+  await box.fill('games');
+  expect(await group(page, 'Games').count()).toBeGreaterThanOrEqual(4);
+  await box.fill('arena zzzz');
+  await expect(hits(page).first().locator('b')).toHaveText('Arena');
+  await box.fill('for kids');
+  expect((await groups(page))[0]).toBe('Best match');
+  const kids = group(page, 'Best match').first();
+  await expect(kids.locator('b')).toHaveText('Explorer Mode');
+  await expect(kids).toHaveAttribute('href', '#/me');
+  // Every result keeps its title as its name, and the Best match group has its own border in the theme's tokens
+  await expect(kids).toHaveAccessibleName(/^Explorer Mode/);
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/#\/me$/);
+  await expect(page.locator('.mode-pick--sm .mode-card[data-mode="explorer"]')).toBeVisible();
+  expect((await events(page)).filter(e => e.startsWith('math/find/'))).toEqual(['math/find/go']);
+  expect(urls.some(u => /zzzz|big(%20|\+| )numbers|for(%20|\+| )kids|does(%20|\+| )it/i.test(u))).toBe(false);
+});
+
 test.describe('Explorer', () => {
   test.use({ seedMode: 'explorer' });
   test('sees Explorer words and only what it can open: no Dojo experience, no Challenger game, no Dojo or Sutras in the browse list', async ({ page }) => {
@@ -131,6 +166,10 @@ test.describe('Explorer', () => {
     await expect(page.locator('#findCount')).toHaveText('Nothing matched');
     await page.locator('#findIn').fill('fives');
     await expect(page.locator('#findOut .find-group', { has: page.locator('h2', { hasText: 'Speed tricks' }) }).locator('.find-hit b').first()).toHaveText('Fives squared in one breath');
+    // "how" among other words is a search, not a question about the app
+    await page.locator('#findIn').fill('how many dots');
+    expect(await groups(page)).not.toContain('Best match');
+    await expect(hits(page).locator('b', { hasText: 'How many dots?' }).first()).toBeVisible();
   });
 });
 
@@ -170,10 +209,12 @@ for (const scheme of ['light', 'dark'] as const) {
   test(`accessible with results showing (${scheme}), and nothing scrolls sideways at 320 px`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: scheme });
     await open(page, '#/find');
-    await page.locator('#findIn').fill('squares');
-    await expect(hits(page).first()).toBeVisible();
-    const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
-    expect(r.violations.filter(v => v.impact === 'serious' || v.impact === 'critical')).toEqual([]);
+    for (const q of ['squares', 'how does it work']) { /* a Best match group too */
+      await page.locator('#findIn').fill(q);
+      await expect(hits(page).first()).toBeVisible();
+      const r = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
+      expect(r.violations.filter(v => v.impact === 'serious' || v.impact === 'critical'), q).toEqual([]);
+    }
     await page.setViewportSize({ width: 320, height: 640 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
   });

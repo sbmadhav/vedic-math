@@ -75,7 +75,7 @@ test('Stored text matches the generator: the shipped names module carries a Resp
   // the shipped module must carry exactly those 29 entries, and the s1 entry the spec quotes
   await open(page, '#/sutras');
   const names: Record<string, { say: string; deva: string }> = await page.evaluate(async () => {
-    const m: any = await import('/js/say.js' as string);
+    const m: any = await e2eMod('say');
     const out: Record<string, { say: string; deva: string }> = {};
     for (const [id, n] of Object.entries(m.NAMES as Record<string, any>)) out[id] = { say: n.say, deva: n.deva };
     return out;
