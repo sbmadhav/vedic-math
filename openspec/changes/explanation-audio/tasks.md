@@ -29,11 +29,15 @@ Prerequisites:
 
 ## 4. Deferred
 
-- [ ] 4.1 Star round replay steps (`js/star.js` `replay()`): the steps already appear one by one with Bolt; a Listen button there needs its own design with the round's timing.
+- [x] 4.1 Star round replay steps (`js/star.js` `replay()`): the steps already appear one by one with Bolt; a Listen button there needs its own design with the round's timing.
+  - Done 2026-10-21 (PR #PRNUM): design decision 8; the button appears once every step is shown and reads them from the page (clips, else the device's voice); the replay ending stops it. Verify: `listen.spec.ts` "a Star replay reads its steps once they are all shown, and Escape stops it" (chromium, webkit, mobile); `star.spec.ts` unchanged.
 - [ ] 4.2 Page introductions (`md-lede` in `js/app.js`: Learn, grade, Dojo, Katas, tower, Arena, Games, Sutras, Watch, Guide): most hold live counts, so the fixed sentences need splitting into data first to be recorded.
 - [ ] 4.3 Watch descriptions: each sits inside a card button, and a button cannot hold another. They are recorded already.
+  - 2026-10-21: only 56 of 298 descriptions match the `voice-53224c8ddd` recording (the wording moved on), so no button until the 4.6 re-record, and the card layout still needs its own design.
 - [ ] 4.4 Badge rules, quest labels, format rules and Mode blurbs: short labels; recorded already, no buttons yet.
+  - Quest labels and format rules done 2026-10-21 (PR #PRNUM): design decision 8; one button on the Daily quests card (`from:.q-l`) and one under the tower chapter's format legend (key `formats`), every line recorded. Verify: `listen.spec.ts` "Home's daily quests are read, each label in turn" and the two tower chapter cases; `test/explain-lines.test.mjs`. Open: badge rules (the Party Mode badge's rule is not recorded; 24 rules in one block) and Mode blurbs (inside the Mode card buttons; the Mode names are not recorded).
 - [ ] 4.5 "Older roots" notes (`BG_NOTES`): move them out of `js/ambient.js` (not importable in Node) so they can be recorded, then add a button.
+  - 2026-10-21 (PR #PRNUM): the notes already live in `js/sky-scene.js` (Node imports it); the intro (`ROOTS_INTRO`) moved there too, and `rootsLines()` puts both in the recording list, as the page shows them (`test/explain-lines.test.mjs`). Open: none of them is recorded yet, so the button follows the 4.6 re-record.
 - [ ] 4.6 Re-record after `sutra-examples` (#44) merges: its new worked examples are Sutra deep dive lines. Then remove the `todo` from "every explanation line is recorded whole" in `test/voice-coverage.test.mjs` (about 390 lines were missing on 2026-10-19) so it gates. Some of them can never match: the `method` of the Vedic Skills (`v-sq5`, `v-near-base`, `v-crosswise`, `v-from9`, `v-by9s` and others) holds a worked example with numbers drawn per page load, so `skillLines()` changes between runs; fix them first (fixed example numbers, or leave them out like other worked steps).
 
 ## 5. Release check

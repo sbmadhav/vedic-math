@@ -8,11 +8,12 @@ import { byId } from './skills/index.js';
 import { checkOne } from './check.js';
 import { answerText } from './answers.js';
 import { boltHTML, pose } from './bolt.js';
-import { on, later, child } from './life.js';
+import { on, later, child, onAbort } from './life.js';
 import * as store from './store.js';
 import * as fx from './fx.js';
 import * as AD from './adapt.js';
 import * as metrics from './metrics.js';
+import { listenBtn, stopListen } from './listen.js';
 
 export const ROUND = 4;
 export const SPARK = { right: 10, comeback: 15, dare: 20 };
@@ -295,7 +296,12 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     const list = $('#stSteps'), done = () => {
       replaySkip = null; const b = $('#stRSkip');
       b.textContent = of === 'dare' ? 'Back to the question' : 'Try one like it'; b.className = 'md-btn md-btn--primary'; b.id = 'stRGo';
-      replaySkip = next; b.focus({ preventScroll: true });
+      replaySkip = next;
+      /* Once every step is shown, a Listen button reads them again (openspec explanation-audio 4.1): never while they
+         are still appearing, so it cannot race the 2.5 s step timer. The view's wireListen() plays it (the shell sits
+         inside the view); this replay's phase ending (Skip, Go, Escape) stops it, and leaving stops it with the view. */
+      b.insertAdjacentHTML('beforebegin', listenBtn('from:.star-step > p', 'the steps'));
+      b.focus({ preventScroll: true });
     };
     const next = () => { if (ps.aborted) return; const r = starNext(st, { videoAvailable: videoAvailable() }); st = r.state; if (r.events.some(e => e.type === 'offer')) offer(); else ask(); };
     const add = () => {
@@ -304,6 +310,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
       if (i < steps.length) later(add, 2500, ps); else done();
     };
     replaySkip = next; on($('#stRSkip'), 'click', () => replaySkip && replaySkip(), ps);
+    onAbort(ps, () => { if (main.querySelector('.listen-btn[aria-pressed="true"]')) stopListen(); });
     add();
   }
 
