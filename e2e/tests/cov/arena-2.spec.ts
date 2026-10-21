@@ -30,8 +30,8 @@ async function startDaily(page: Page) {
    generator level 2, and the same seeded random. */
 async function oldProDaily(page: Page, day: string) {
   return page.evaluate(async d => {
-    const { byId } = await import('/js/skills/index.js' as string);
-    const { shuffle } = await import('/js/lib.js' as string);
+    const { byId } = await e2eMod('skills/index');
+    const { shuffle } = await e2eMod('lib');
     const pool = ['v-near-base', 'v-duplex', '6-percent', '7-twostep', '8-exprules', 'v-sqroot', '6-exp', '8-multistep', '11-logs', 'v-square-near'];
     const mulberry32 = (a: number) => () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
     const hash = (s: string) => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; };
@@ -124,8 +124,8 @@ test.describe('pro switch-over', () => {
     }
     // The whole 80 question round, as dealt for that date, comes from the five mental families
     const fams = await page.evaluate(async () => {
-      const { dailySet } = await import('/js/arena.js' as string);
-      const { FAMILIES } = await import('/js/mental.js' as string);
+      const { dailySet } = await e2eMod('arena');
+      const { FAMILIES } = await e2eMod('mental');
       const set = dailySet('pro', '2026-10-19') as { family?: string; skill?: string }[];
       return { n: set.length, bad: set.filter(it => !FAMILIES.includes(it.family) || it.skill).length, families: FAMILIES as string[] };
     });

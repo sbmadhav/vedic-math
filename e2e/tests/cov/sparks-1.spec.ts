@@ -18,7 +18,7 @@ test('a right first-try Practice answer with a streak of 2 earns 12 Sparks and s
   await open(page, '#/skill/3-mult');
   // Record every Sparks gain with its reason, so a quest bonus cannot blur the answer's own gain
   await page.evaluate(async () => {
-    const store = await import('/js/store.js' as string);
+    const store = await e2eMod('store');
     (window as any).__gains = [];
     store.on((type: string, d: any) => { if (type === 'sparks') (window as any).__gains.push({ n: d.n, why: d.why }); });
   });
@@ -37,7 +37,7 @@ test('a right first-try Practice answer with a streak of 2 earns 12 Sparks and s
   await expect(box.locator('#prSay')).not.toContainText(/\bXP\b/);
   const gains = await page.evaluate(() => (window as any).__gains as { n: number; why: string }[]);
   expect(gains.filter(g => g.why === 'answer').map(g => g.n)).toEqual([11, 12]);
-  const streak = await page.evaluate(async () => (await import('/js/store.js' as string)).skill('3-mult').streak as number);
+  const streak = await page.evaluate(async () => (await e2eMod('store')).skill('3-mult').streak as number);
   expect(streak).toBe(2);
 });
 

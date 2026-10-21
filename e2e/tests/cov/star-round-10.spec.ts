@@ -1,4 +1,4 @@
-import { test, expect, open, blockAnalytics, cloudLog, type Page } from '../fixtures';
+import { test, expect, open, blockAnalytics, installModules, mod, cloudLog, type Page } from '../fixtures';
 
 /* openspec star-round:
    - Requirement: Stars are Practice / Scenario: Quest progress
@@ -19,10 +19,11 @@ test.describe('Quest progress', () => {
     // The day's quests are a seeded draw on the local date: find a date whose Challenger draw has "Answer 15 questions"
     const ctx = await browser.newContext({ baseURL: testInfo.project.use.baseURL, serviceWorkers: 'block' });
     await blockAnalytics(ctx);
+    await installModules(ctx, testInfo.project.use.baseURL);
     const probe = await ctx.newPage();
-    await probe.goto('/js/gamify.js').catch(() => {});
+    await probe.goto(await mod(probe, 'gamify')).catch(() => {});
     const day = await probe.evaluate(async () => {
-      const gm = await import('/js/gamify.js' as string);
+      const gm = await e2eMod('gamify');
       for (let i = 0; i < 90; i++) {
         const d = new Date(2026, 2, 1 + i);
         const s = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

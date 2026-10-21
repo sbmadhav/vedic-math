@@ -6,7 +6,7 @@ import { test, expect, open, APP } from './fixtures';
 type Page = import('@playwright/test').Page;
 const star = (page: Page, k: string) => page.locator(`.sky-star[data-star="${k}"]`);
 /** The 63 Stars in path order, from the app's own module */
-const pathOf = (page: Page): Promise<string[]> => page.evaluate(() => import('/js/sky.js').then(m => m.PATH));
+const pathOf = (page: Page): Promise<string[]> => page.evaluate(() => e2eMod('sky').then(m => m.PATH));
 /** The answer to the from9 question on screen: 1,000 − 637 = ? */
 async function from9Answer(page: Page) {
   const [a, b] = (await page.locator('#stQ').innerText()).match(/[\d,]+/g)!.map(x => Number(x.replace(/,/g, '')));

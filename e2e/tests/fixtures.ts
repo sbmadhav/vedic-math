@@ -1,4 +1,11 @@
 import { test as base, expect, type Page, type BrowserContext, type TestInfo } from '@playwright/test';
+import { BASE_URL as BASE } from '../playwright.config';
+
+/* e2eMod(name): a module of the game, inside page.evaluate (see installModules below) */
+declare global {
+  // eslint-disable-next-line no-var
+  var e2eMod: (name: string) => Promise<any>;
+}
 
 /* Shared fixtures for the Vedic Math end-to-end suite.
 
@@ -104,6 +111,52 @@ export const serverTimestamp = () => ({ serverTimestamp: true });
 export const Timestamp = { fromMillis: ms => ({ millis: ms }) };`,
 };
 
+/* The game's own modules, reached from a test (openspec change react-typescript, design D10, task 1.2). Specs never
+   import a module by its URL: inside page.evaluate they call e2eMod('<name>') for /js/<name>.js ('store',
+   'play/kit', 'skills/middle'), and from Node mod(page, '<name>') gives its URL. Today every module is served at
+   /js/<name>.js, so the map is the identity. Once the framework build bundles the modules (phase 2), preview and test
+   builds publish MODULE_MAP, a JSON object from '/js/<name>.js' to the built file, and both helpers read it; production
+   never publishes it, and a server without it (404) means the identity. The map is read once per base URL from Node, so
+   a page never requests it (a 404 there would count as a failed request). e2eMod goes through the page's own module
+   loader (and its import map), so a test gets the same module instance the app uses; it is plain code, no eval, so the
+   pages' Content-Security-Policy is satisfied. */
+export const MODULE_MAP = '/learn/assets/modules.json';
+type ModuleMap = Record<string, string>;
+const moduleMaps = new Map<string, Promise<ModuleMap>>();
+function moduleMap(ctx: BrowserContext | Page, baseURL: string): Promise<ModuleMap> {
+  const origin = new URL(baseURL).origin;
+  let map = moduleMaps.get(origin);
+  if (!map) {
+    // A 404 means no map (the identity). Any other failure is not cached, so the next call asks again instead of
+    // every e2eMod of this worker falling back to /js/<name>.js
+    map = ctx.request.get(new URL(MODULE_MAP, origin).href)
+      .then(async res => {
+        if (res.status() === 404) return {} as ModuleMap;
+        if (!res.ok()) throw new Error(`${MODULE_MAP}: HTTP ${res.status()}`);
+        return (await res.json()) as ModuleMap;
+      })
+      .catch((e: unknown) => { moduleMaps.delete(origin); throw e; });
+    moduleMaps.set(origin, map);
+  }
+  return map;
+}
+const moduleUrl = (map: ModuleMap, name: string) => map[`/js/${name}.js`] || `/js/${name}.js`;
+
+/** The URL a module of the game is served at, for a test that needs it outside page.evaluate. */
+export async function mod(page: Page, name: string): Promise<string> {
+  return moduleUrl(await moduleMap(page, page.url().startsWith('http') ? page.url() : BASE), name);
+}
+
+/** Installs e2eMod in every page of a context. The context fixture does it for the test's own context; a spec that
+    makes another context (browser.newContext) calls it there too. */
+export async function installModules(ctx: BrowserContext, baseURL?: string) {
+  const map = await moduleMap(ctx, baseURL || BASE);
+  await ctx.addInitScript((m: ModuleMap) => {
+    // A full URL: WebKit cannot resolve a path from an init script, which has no base URL of its own
+    globalThis.e2eMod = (name: string) => import(new URL(m[`/js/${name}.js`] || `/js/${name}.js`, location.href).href);
+  }, map);
+}
+
 export type Issues = { console: string[]; failed: string[] };
 export type Mode = 'explorer' | 'challenger' | 'pro';
 export type CloudLog = { signIns: number; signOuts: string[]; apps: string[]; authLoaded: boolean; reads: string[]; writes: { path: string; app: string; data: Record<string, unknown> }[] };
@@ -140,8 +193,9 @@ export const test = base.extend<Fixtures>({
   seedPlayer: [null, { option: true }],
   tourSeen: [true, { option: true }],
 
-  context: async ({ context, seedMode, seedConsent, seedProgress, seedPlayer, tourSeen }, use) => {
+  context: async ({ context, baseURL, seedMode, seedConsent, seedProgress, seedPlayer, tourSeen }, use) => {
     await blockAnalytics(context);
+    await installModules(context, baseURL);
     await voiceFrom(context);
     // Policy reports from test runs never reach a /_csp endpoint (production's monthly review would count them)
     await context.route(/^https?:\/\/[^/]+\/_csp(\?|$)/, route => route.fulfill({ status: 204 }));
@@ -217,7 +271,7 @@ export const APP = '/play/';
 /** Serves the app a transformed video list. `transform` is JavaScript source for a function (list) => list, run in
     the page over the real js/videos.js (every other export passes through), so a scenario can hold its premise
     (a Skill with no hand-matched video, exactly one, a planted counting video) whatever the catalog grows into.
-    Call before open(); the test's own import('/js/videos.js') in page.evaluate gets the same list. */
+    Call before open(); the test's own e2eMod('videos') in page.evaluate gets the same list. */
 export async function withVideos(page: Page, transform: string) {
   const REAL = `/js/videos.js?e2e-real`;
   const body = `export * from '${REAL}';\nimport { VIDEOS as REAL } from '${REAL}';\nexport const VIDEOS = (${transform})(REAL);\n`;

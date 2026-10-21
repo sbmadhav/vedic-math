@@ -52,9 +52,9 @@ async function setup(page: Page, { endAfter = 0 } = {}) {
     /* Marks the lines of a Listen key as recorded (hash computed in the page, as js/voice.js does) */
     async recordKey(key: string) {
       const hs: string[] = await page.evaluate(async ([k, v]) => {
-        const { lineHash } = await import('/js/voice-plan.js' as string);
-        const { normalize } = await import('/js/voice.js' as string);
-        const { linesForKey } = await import('/js/explain-lines.js' as string);
+        const { lineHash } = await e2eMod('voice-plan');
+        const { normalize } = await e2eMod('voice');
+        const { linesForKey } = await e2eMod('explain-lines');
         return linesForKey(k).map((t: string) => lineHash(v, normalize(t)));
       }, [key, VOICE]);
       hs.forEach(h => recorded.add(h));
@@ -88,8 +88,8 @@ test.describe('Listen', () => {
     await setup(page);
     await open(page, '#/skill/3-mult');
     const want = await page.evaluate(async () => {
-      const { normalize } = await import('/js/voice.js' as string);
-      const { linesForKey } = await import('/js/explain-lines.js' as string);
+      const { normalize } = await e2eMod('voice');
+      const { linesForKey } = await e2eMod('explain-lines');
       return linesForKey('skill:3-mult').map((t: string) => normalize(t));
     });
     await page.getByRole('button', { name: 'Listen: the idea and how it works' }).click();
@@ -111,7 +111,7 @@ test.describe('Listen', () => {
     page.on('request', req => { if (req.url().startsWith('https://voice.learnvedicmath.com/')) asked.push(req.url()); });
     await open(page, '#/skill/3-mult');
     const n = await page.evaluate(async () => {
-      const { linesForKey } = await import('/js/explain-lines.js' as string);
+      const { linesForKey } = await e2eMod('explain-lines');
       return linesForKey('skill:3-mult').length;
     });
     const btn = page.getByRole('button', { name: 'Listen: the idea and how it works' });

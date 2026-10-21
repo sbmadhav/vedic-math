@@ -21,7 +21,7 @@ test.beforeEach(async ({ page }) => {
 type V = { yt: string; title: string; why: string; modes: string[]; skills: string[]; tricks: string[]; madeForKids: boolean; duration: number; critique?: boolean };
 const SEES: Record<Mode, string[]> = { explorer: ['explorer'], challenger: ['challenger', 'explorer'], pro: ['pro', 'challenger'] };
 const visible = (v: V, mode: Mode) => v.modes.some(m => SEES[mode].includes(m)) && (!v.critique || mode === 'pro');
-const videos = (page: Page) => page.evaluate(async () => (await import('/js/videos.js' as string)).VIDEOS) as Promise<V[]>;
+const videos = (page: Page) => page.evaluate(async () => (await e2eMod('videos')).VIDEOS) as Promise<V[]>;
 
 /* ---------- No hand match ---------- */
 // "Multiply by multiples of ten" (3-multtens), served with no hand-matched video; its words include "multiply"
@@ -72,9 +72,9 @@ test('a Skill with neither a hand match nor a keyword match shows no Watch secti
   await open(page, '#/skill/7-pctchange');
   await expect(page.locator('#practice')).toBeVisible();
   const premise = await page.evaluate(async () => {
-    const { VIDEOS } = await import('/js/videos.js' as string);
-    const { relatedTo } = await import('/js/related.js' as string);
-    const { byId } = await import('/js/skills/index.js' as string);
+    const { VIDEOS } = await e2eMod('videos');
+    const { relatedTo } = await e2eMod('related');
+    const { byId } = await e2eMod('skills/index');
     const s = byId['7-pctchange'];
     return { hand: VIDEOS.filter((v: any) => v.skills.includes('7-pctchange')).length, keyword: relatedTo(`${s.title} ${s.strand}`.toLowerCase(), VIDEOS, 999).length, total: VIDEOS.length };
   });

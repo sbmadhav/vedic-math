@@ -166,7 +166,7 @@ test('the footer says progress stays in this browser', async ({ page }) => {
 const NO_ARENA_QUEST = new Date(2026, 9, 18, 12); // Challenger's quests: Get 10 right, Watch a speed trick, Finish an Endless run
 const ARENA_QUEST = new Date(2026, 9, 19, 12); // Challenger's quests: Get 10 right, Finish an Endless run, Finish an Arena round
 const questIds = (page: import('@playwright/test').Page) => page.evaluate(async () =>
-  (await import('/js/gamify.js' as string)).pickQuests(undefined, 'challenger').map((q: { id: string }) => q.id) as string[]);
+  (await e2eMod('gamify')).pickQuests(undefined, 'challenger').map((q: { id: string }) => q.id) as string[]);
 
 test.describe('a Player who may post (a grown-up)', () => {
 test.use({ seedConsent: { age: 'adult' } });
@@ -176,7 +176,7 @@ test('an Arena score entry holds only the nickname, avatar color, score and two 
   // Calls the app's own cloud.submit (what the Arena daily round uses) against the fake SDK
   await open(page, '#/arena');
   const writes = await page.evaluate(async () => {
-    const cloud = await import('/js/cloud.js' as string);
+    const cloud = await e2eMod('cloud');
     const day = `daily-${cloud.dayId()}-challenger`;
     await cloud.submit(day, { id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode: 'challenger', created: 1, score: 121 });
     return (globalThis as any).__e2eCloud.writes;
@@ -194,7 +194,7 @@ test('an Arena score entry holds only the nickname, avatar color, score and two 
 const UID = 'e2e-fake-uid';
 const ENTRY_KEYS = ['avatar', 'exp', 'name', 'score', 'ts'];
 const ids = (page: import('@playwright/test').Page) => page.evaluate(async () => {
-  const cloud = await import('/js/cloud.js' as string);
+  const cloud = await e2eMod('cloud');
   return { day: cloud.dayId() as string, wk: cloud.weekId() as string };
 });
 const writes = async (page: import('@playwright/test').Page) => (await cloudLog(page)).writes;
@@ -229,7 +229,7 @@ test('an Arena Daily challenge sends its score to today\'s and this week\'s Aren
   const { day, wk } = await ids(page);
   expect(await questIds(page)).not.toContain('arena-1');
   // The daily round is seeded, so the first question's answer comes from the app's own module
-  const answer = await page.evaluate(async d => (await import('/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
+  const answer = await page.evaluate(async d => (await e2eMod('arena')).dailySet('challenger', d)[0].answer, day);
   await page.locator('#arGo').click();
   await page.clock.runFor(2_500); // 3, 2, 1
   await typeAnswer(page, String(answer));
@@ -257,7 +257,7 @@ test('on a day with the Arena quest, the round\'s quest Sparks follow the Arena 
   await open(page, '#/arena');
   const { day, wk } = await ids(page);
   expect(await questIds(page)).toContain('arena-1');
-  const answer = await page.evaluate(async d => (await import('/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
+  const answer = await page.evaluate(async d => (await e2eMod('arena')).dailySet('challenger', d)[0].answer, day);
   await page.locator('#arGo').click();
   await page.clock.runFor(2_500); // 3, 2, 1
   await typeAnswer(page, String(answer));
@@ -364,7 +364,7 @@ test.describe('a Player who may not post', () => {
    'e2e-fake-vm-<id>' for any other. */
 const PB = 'pbtest1', UID_A = 'e2e-fake-uid', UID_B = `e2e-fake-vm-${PB}`;
 const boardIds = (page: import('@playwright/test').Page) => page.evaluate(async () => {
-  const cloud = await import('/js/cloud.js' as string);
+  const cloud = await e2eMod('cloud');
   return { day: cloud.dayId() as string, wk: cloud.weekId() as string };
 });
 const sent = async (page: import('@playwright/test').Page) => (await cloudLog(page)).writes;
@@ -380,7 +380,7 @@ async function seedSecondPlayer(page: import('@playwright/test').Page, extra: Re
   }, [{ ...B, ...extra }, more] as const);
 }
 const switchTo = (page: import('@playwright/test').Page, id: string) => page.evaluate(async id => {
-  (await import('/js/store.js' as string)).switchPlayer(id);
+  (await e2eMod('store')).switchPlayer(id);
 }, id);
 
 test.describe('two Players on one device', () => {
@@ -395,7 +395,7 @@ test.describe('two Players on one device', () => {
     await open(page, '#/arena');
     const { day, wk } = await boardIds(page);
     expect(await questIds(page)).not.toContain('arena-1');
-    const answer = await page.evaluate(async d => (await import('/js/arena.js' as string)).dailySet('challenger', d)[0].answer, day);
+    const answer = await page.evaluate(async d => (await e2eMod('arena')).dailySet('challenger', d)[0].answer, day);
     const play = async () => {
       await page.locator('#arGo').click();
       await page.clock.runFor(2_500);
@@ -537,7 +537,7 @@ test.describe('Ratings', () => {
     await open(page, '#/arena');
     const { day } = await boardIds(page);
     // A finished daily round: it posts, and its entries hold no Rating
-    const answer = await page.evaluate(async d => (await import('/js/arena.js' as string)).dailySet('pro', d)[0].answer, day);
+    const answer = await page.evaluate(async d => (await e2eMod('arena')).dailySet('pro', d)[0].answer, day);
     await page.locator('#arGo').click();
     await page.clock.runFor(2_500);
     await typeAnswer(page, String(answer));
@@ -560,7 +560,7 @@ test.describe('Ratings', () => {
     for (let k = 0; k < 10; k++) { await box.locator('#prShow').click(); await box.locator('#prCheck').click(); }
     await page.goto(`${APP}#/learn`);
     await page.clock.runFor(70_000); // past the weekly Sparks post's wait
-    const ratings = await page.evaluate(async () => (await import('/js/store.js' as string)).load().ratings);
+    const ratings = await page.evaluate(async () => (await e2eMod('store')).load().ratings);
     expect(Object.keys(ratings)).toEqual(expect.arrayContaining(['arena:pro', 'skill:3-mult']));
     for (const r of out) { expect(r).not.toMatch(/rating/i); expect(r).not.toContain('arena:'); }
     for (const w of await sent(page)) { expect(JSON.stringify(w)).not.toMatch(/rating|arena:/i); expect(Object.keys(w.data).sort()).toEqual(['avatar', 'exp', 'name', 'score', 'ts']); }
