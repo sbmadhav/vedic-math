@@ -22,7 +22,10 @@ export const NAMES = Object.fromEntries([...SUTRAS.map(c => ['s' + c.n, c]), ...
   .map(([id, c]) => [id, { name: c.name, say: c.say, deva: c.deva }]));
 /* A clip URL is only ever built from the generated index: an id that is not one of its own keys gives no URL */
 export const hasClip = id => typeof id === 'string' && Object.prototype.hasOwnProperty.call(CLIPS, id);
-export const clipUrl = id => (hasClip(id) ? new URL(`../sounds/sutras/${id}.m4a?v=${CLIPS[id].v}`, import.meta.url).href : null);
+/* An absolute path, so the URL does not depend on where this module is served from (a bundled build moves it; the
+   clips stay at /sounds/). The base is a variable so a bundler leaves the URL alone instead of copying the clips. */
+const HERE = import.meta.url;
+export const clipUrl = id => (hasClip(id) ? new URL(`/sounds/sutras/${id}.m4a?v=${CLIPS[id].v}`, HERE).href : null);
 /* What the built-in voice reads when the clip cannot play: the Respelling, hyphens as spaces, lower case */
 export const fallbackWords = id => NAMES[id].say.replace(/-/g, ' ').toLowerCase();
 export const DEVICE_VOICE_NOTE = "Played with this device's voice, which may not be exact.";

@@ -1,5 +1,5 @@
 /* Bolt (js/bolt.js): one inline SVG, six poses, token colors only, hidden from assistive technology */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { BOLT_SVG, POSES, boltHTML, pose } from '../js/bolt.js';

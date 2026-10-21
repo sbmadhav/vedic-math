@@ -13,7 +13,14 @@ exclude:
   - THIRD-PARTY-NOTICES.md
   - build.py
   - wrangler.jsonc
-  - worker/
+  - workers/
+  - app/
+  - shared/
+  - package.json
+  - pnpm-lock.yaml
+  - pnpm-workspace.yaml
+  - tsconfig.base.json
+  - vitest.config.ts
   - deploy/
   - site/
   - moved/

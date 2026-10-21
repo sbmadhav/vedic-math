@@ -19,12 +19,12 @@ export const enabled = () => !!(FIREBASE && FIREBASE.projectId);
 export const appCheckOn = () => enabled() && !!appCheckSiteKey;
 
 /* How the SDK files load. Tests swap it for stubs (see test/cloud.test.mjs). */
-let load = url => import(url);
+let load = url => import(/* @vite-ignore */ url);
 let read = null;
 const writes = new Map(); /* app name -> Promise of that Player's { uid, db, fs } */
 const apps = new Map();   /* app name -> Firebase app, for the named apps made in this page */
 let cleared = null;       /* the one clearForgotten run of this page */
-export function _setLoader(fn) { load = fn || (url => import(url)); read = null; cleared = null; writes.clear(); apps.clear(); }
+export function _setLoader(fn) { load = fn || (url => import(/* @vite-ignore */ url)); read = null; cleared = null; writes.clear(); apps.clear(); }
 
 /* One identity per Player (openspec board-identity). Each Player who posts gets their own Firebase app, so
    their own Auth session: Firebase saves it under a key holding the app name. The first Player (p1) keeps

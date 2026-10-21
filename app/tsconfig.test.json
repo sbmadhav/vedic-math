@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.base.json",
+  "//": "The service worker's tests and their harness run in Node (Vitest).",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"]
+  },
+  "include": ["src/sw/*.test.ts", "src/sw/harness.ts"]
+}

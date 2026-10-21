@@ -1,6 +1,6 @@
 /* fx.noMotion(): no motion when the device asks for reduced motion, when the site-wide motion pause is on
    (html.motion-paused), or when Calm is on (vm.calm). Each source is stubbed on its own. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 
 const mem = {};

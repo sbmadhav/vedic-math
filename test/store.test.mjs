@@ -1,6 +1,6 @@
 /* Posting consent lives on each Player's record on this device: the Age answer (age). Set, read, kept apart per
    Player, and removed with the Player. The Parent step is retired (ADR 0006): nothing writes parentOk any more. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 
 const mem = {};

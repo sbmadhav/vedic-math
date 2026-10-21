@@ -1,6 +1,6 @@
 /* Sutra Spellbook: every spell's generator, board and judge produce correct math for thousands of seeds,
    stroke recognition is forgiving but exact, and wrong strokes fizzle with what they computed. */
-import test from 'node:test';
+import test from '../support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { rng } from '../../js/play/kit.js';
 import {

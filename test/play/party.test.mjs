@@ -1,7 +1,7 @@
 /* Party Mode: question generators are correct and fit each level, scoring and the handicap are fair,
    and the round state machine (buzz, lockout, steal, timeouts, secret turns, relay, wagers) is a pure
    reducer that always reaches the podium. */
-import test from 'node:test';
+import test from '../support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { rng } from '../../js/play/kit.js';
 import {

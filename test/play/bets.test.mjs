@@ -1,6 +1,6 @@
 /* Estimation Bets: the scoring rule rewards catching the answer, tighter ranges and honest chips; the bank
    is large, varied, sane and spoiler free; slider and number parsing behave. */
-import test from 'node:test';
+import test from '../support/node-test.mjs';
 import assert from 'node:assert/strict';
 import * as B from '../../js/play/exp/bets-core.js';
 

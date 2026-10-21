@@ -1,7 +1,7 @@
 /* What the read-aloud voice says (openspec voice-wording): js/voice.js normalize() turns question HTML into words.
    The table covers every class of fix and the lines that were already right, so neither regresses. The sweep runs
    every generator (seeded) through normalize() and fails on anything a voice would read badly. */
-import { test } from 'node:test';
+import { test } from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { normalize, sentences, ordinalWord, denomWord } from '../js/voice.js';
 import { SKILLS } from '../js/skills/index.js';

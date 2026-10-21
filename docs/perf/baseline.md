@@ -7,7 +7,7 @@ The numbers of the live game before the migration to React (openspec change `rea
 - **Site:** https://learnvedicmath.com, the game at `/play/`, measured on 2026-10-21 at 01:17 UTC.
 - **Commit:** `1401890` on `main` (Merge pull request #109). The live `sw.js` had `VERSION = '1730cf8552'`, the same as the job's `python3 build.py --voice off` of this pull request merged into that commit (the pull request publishes nothing), so the live files were that commit's.
 - **Machine:** a GitHub-hosted `ubuntu-latest` runner, through `.github/workflows/perf.yml` (run 39526007402). The gates of task 1.8 run on the same kind of runner, so like is compared with like. Lighthouse 13.5.0, with the Chromium of Playwright 1.64.1.
-- **Re-measuring:** run `perf.yml` by hand (Actions, "Perf baseline", optional `base_url`). Locally, from the repository root: `python3 build.py --out _site`, then `node tools/budget.ts _site`. From `e2e/`: `node perf/lighthouse.mts` and `npx playwright test -c perf/playwright.config.ts`.
+- **Re-measuring:** run `perf.yml` by hand (Actions, "Perf baseline", optional `base_url`). Locally, from the repository root: `python3 build.py --out _site`, then `node tools/budget.ts _site`. From `e2e/`: `node perf/lighthouse.mts` and `pnpm exec playwright test -c perf/playwright.config.ts`.
 
 ## First load: 744,827 bytes (Brotli)
 
@@ -87,7 +87,7 @@ The baseline is run 1. Task 0.4's repeatability check: the same job runs the scr
 - **The Deep dive INP's noise allowance:** this INP is the one timing that will not hold still on a GitHub runner. Its median moved between 136 and 264 ms across six runs of the job. Within one job, the two runs differed by up to 104 ms.
   - The cause: Learn more is a hash link. The heavy dialog is built in the `hashchange` task that follows the click, and whether that task lands before or after the tap's next paint varies.
   - The fix for the measurement: `baseline.json` records `interactions.noise` with 120 ms for this INP. The repeat check and the gate (task 1.8) then allow that much instead of 20 ms.
-  - Its "visible" number stays at 20 ms, so a slower dialog still fails. The router of phase 2 removes the hash change, and the allowance goes with it.
+  - Its "visible" number moves with it (the dialog is drawn in the click's frame or the next one, 4 or about 30 ms), so it gets 40 ms; a slower dialog still fails. The router of phase 2 removes the hash change, and the allowance goes with it.
 - **Light a Star:** "Visible" includes the round's own pause of about 1.1 s before the end screen. It is a fixed delay, not work, and it is stable across runs.
 - **Why motion is reduced:** with the background animating, the Deep dive's tap came out at about 35 ms or about 200 ms run by run. A tap sometimes shared its frame with a heavy background frame, and two runs of one job were 104 ms apart. With motion reduced the background draws once, and every interaction's five runs are within 24 ms of each other. Earlier versions of the script also tapped during a card flip and during the screen's idle work; the waits above fixed that.
 

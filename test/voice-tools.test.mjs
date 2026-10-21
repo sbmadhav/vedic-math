@@ -1,7 +1,7 @@
 /* Spend guard of the recording tools (openspec better-voice, task 2.5): every paid request is counted in a ledger by
    month at list price, and refused before it is sent when it would pass the monthly cap ($300 by default) or the
    per-run cap. Runs on a temp ledger with no network. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, rmSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { execFileSync, spawnSync } from 'node:child_process';

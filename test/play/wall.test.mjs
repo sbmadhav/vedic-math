@@ -1,7 +1,7 @@
 /* Pattern Wall: every catalog pattern's generator matches its own predicate and canonical rule, near
    misses do not match, rule tiles evaluate honestly (with counterexamples), names come only from the word
    lists, and share codes round trip. */
-import test from 'node:test';
+import test from '../support/node-test.mjs';
 import assert from 'node:assert/strict';
 import * as W from '../../js/play/exp/wall-core.js';
 import { rng, b64url } from '../../js/play/kit.js';

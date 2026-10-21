@@ -1,7 +1,7 @@
 /* The Respelling and Devanagari of every Sutra name (openspec sutra-pronunciation): js/sutras.js stores what
    tools/sutra-voice/sanskrit.mjs makes from the IAST in tools/sutra-voice/names.mjs, so a change to one is a change
    to both. Spot checks pin the rules the research doc describes (docs/sutra-pronunciation.md). */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { SUTRAS, SUBSUTRAS } from '../js/sutras.js';
 import { NAMES, appId } from '../tools/sutra-voice/names.mjs';

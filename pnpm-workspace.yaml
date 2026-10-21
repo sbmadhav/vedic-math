@@ -1,0 +1,14 @@
+# One repo, five packages (openspec change react-typescript, design D11): the game (app), the Cloudflare Worker
+# (workers), code both use (shared), the Playwright suite (e2e) and the build and lint tools (tools).
+# tools/voice, tools/sutra-voice, cloud/test and deploy keep their own npm installs.
+packages:
+  - app
+  - shared
+  - workers
+  - e2e
+  - tools
+
+# Install scripts allowed to run (pnpm runs none by default): esbuild and workerd fetch their platform binaries
+onlyBuiltDependencies:
+  - esbuild
+  - workerd

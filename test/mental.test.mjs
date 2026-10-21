@@ -1,7 +1,7 @@
 /* Mental arithmetic families for the Pro Arena (openspec arena spec): every answer is a whole number of at most
    7 digits, worked out again from the question text by the independent checker, and questions get bigger as
    the difficulty rises. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { FAMILIES, mentalQ } from '../js/mental.js';
 import { verifyQuestion, plain } from './support/verify.mjs';

@@ -1,6 +1,6 @@
 /* Daily quests and badges (gamify.js): progress from a true 0 each day, whole numbers, stable ids,
    a seeded daily pick per Mode, and badges only for finishing or doing something. */
-import test, { mock } from 'node:test';
+import test, { mock } from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 
 const mem = { 'vm.sound': '0' };

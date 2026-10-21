@@ -2,7 +2,7 @@
    brand/nikhilam-family/, PNGs made by tools/brand/render.mjs). Bolt stays the in-game teacher (inside /play/ only),
    never the brand; the landing hero is the Nikhilam Family too: the header shows the family drawn with tokens, every page links the favicon set, and the icons
    have the sizes the manifest and the pages name. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';

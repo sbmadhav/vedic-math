@@ -1,7 +1,7 @@
 /* Arena: the 1,000-challenge tower (40 chapters of 25) and the daily seeded rounds.
    Every question is worked out again from its text with exact arithmetic where the text holds
    all the numbers; questions whose numbers live only in a picture get structural checks. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { TOPICS, PER_CHAPTER, CHALLENGE_COUNT, challenge, challengeSet, challengeKey, challengeMedal } from '../js/levels.js';
 import { makeSet, dailySet, practiceItem, MENTAL_FROM, PRO_RAMP } from '../js/arena.js';

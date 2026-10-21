@@ -1,0 +1,9 @@
+{
+  "extends": "../tsconfig.base.json",
+  "//": "Phase 1: the service worker (a worker global scope, no DOM) and its tests (Node). Phase 2 adds the React Router app with its own DOM settings.",
+  "compilerOptions": {
+    "lib": ["ES2022", "WebWorker"],
+    "types": []
+  },
+  "include": ["src/sw/sw.ts"]
+}

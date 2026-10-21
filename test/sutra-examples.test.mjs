@@ -1,7 +1,7 @@
 /* Worked examples in the sutra deep dives (js/sutra-details.js, openspec change sutra-examples).
    Every sutra and sub-sutra has at least three examples, and every example's result (the text in hl())
    is checked here with exact arithmetic: BigInt, exact fractions, or polynomials evaluated at many points. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { DETAILS } from '../js/sutra-details.js';
 import { SUTRAS, SUBSUTRAS } from '../js/sutras.js';

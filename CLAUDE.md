@@ -17,14 +17,14 @@ Nothing is loaded from sbmadhav.com or another repo. The design system is a pinn
 - Never use em dashes in copy.
 - Every listener, timer and animation-frame loop in a view or round goes through `js/life.js` (`on`, `later`, `every`, `loop`, `child`) with the view's `signal`; `test/lifecycle-scan.test.mjs` fails on bare ones.
 - Module imports are relative or absolute paths inside `/js/`; the game is at `/play/` (`build.py` fails on anything else, on any `/vedic-math/` path outside `_redirects`, and on any reference to sbmadhav.com except the export page).
-- Never commit cache stamps: `play/index.html` loads plain `/js/app.js` and `/math.css` with no import map, and `sw.js` keeps `const VERSION = 'dev';` and `const PRECACHE = [];`. The build stamps the published copy and writes `_headers` (a Content-Security-Policy per page; no policy `<meta>` in any page).
+- Never commit cache stamps: `play/index.html` loads plain `/js/app.js` and `/math.css` with no import map, and the worker source `app/src/sw/sw.ts` keeps `const VERSION: string = 'dev';` and `const PRECACHE: [string, string][] = [];`. The build stamps the published copy and writes `_headers` (a Content-Security-Policy per page; no policy `<meta>` in any page).
 - Players whose Age answer is under 13 use Device boards only; nothing for them loads Firebase (ADR 0006).
 - Every change that affects behavior updates or adds the matching Playwright test in `e2e/` in the same commit, and `e2e/tests/cov/` holds one spec per live OpenSpec scenario.
 - Never write to production Firestore from a test, and never submit an Arena or game score against the live backend.
 - Every non-trivial behavior change starts as an OpenSpec change in `openspec/changes/<name>/`, is implemented after the owner approves it, and is archived after release. Run `openspec validate --strict` before committing a change.
 - Use the words defined in `GLOSSARY.md` in code comments, docs and plans; read `docs/adr/` before changing who can post, what is sent, or when an identity is created.
 - Never commit studio voice audio or a speech service key, and a change to any spoken line needs a re-record and publish in the same PR (`docs/agent/studio-voice.md`).
-- Repo-only files (`cloud/`, `test/`, `docs/`, `tools/`, `e2e/`, `site/` sources, `worker/`, `deploy/`, `wrangler.jsonc`, this file, the README, `build.py`) are listed in `exclude` in `_config.yml`; add new ones there.
+- Repo-only files (`cloud/`, `test/`, `docs/`, `tools/`, `e2e/`, `site/` sources, `app/`, `shared/`, `workers/`, `deploy/`, the workspace files, `wrangler.jsonc`, this file, the README, `build.py`) are listed in `exclude` in `_config.yml`; add new ones there.
 
 ## Migration in progress (openspec change `react-typescript`)
 
@@ -38,7 +38,7 @@ The game is moving to React Router v7 (framework mode, server-rendered on Cloudf
 
 ## Checks before a push
 
-`python3 build.py --out /tmp/vm-site` and `node --test 'test/**/*.test.{js,mjs}'`; then `python3 build.py && node e2e/local-server.mjs 8124 _site` and `cd e2e && BASE_URL=http://localhost:8124 npx playwright test` (details in `docs/agent/e2e.md`; `npx wrangler dev` from `deploy/` serves the same with Cloudflare's runtime). Enable the pre-commit hook once per clone: `git config core.hooksPath .githooks`.
+`corepack enable && pnpm install` once, then `pnpm typecheck`, `pnpm lint`, `pnpm test` (Vitest) and `python3 build.py --out /tmp/vm-site`; then `python3 build.py && node e2e/local-server.mjs 8124 _site` and `cd e2e && BASE_URL=http://localhost:8124 pnpm exec playwright test` (details in `docs/agent/e2e.md`; `npx wrangler dev` from `deploy/` serves the same with Cloudflare's runtime). Enable the pre-commit hook once per clone: `git config core.hooksPath .githooks`.
 
 ## Where the details are
 

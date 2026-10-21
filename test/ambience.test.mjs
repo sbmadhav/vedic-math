@@ -1,6 +1,6 @@
 /* Sutra ambience (openspec sutra-ambience): js/sutra-ambience.js with a fake AudioContext that records every node
    and gain ramp. The page's gesture, the Calm music, Pause motion and the clock are stubbed through its deps. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 
 const mem = {};

@@ -1,7 +1,7 @@
 /* Revealed answers (answers.js) and a sweep over every skill generator: each arithmetic problem's own
    shown answer must pass the plain-number rule, fraction skills reveal fractions, and algebra keys
    are written with real signs. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { answerText, exprText } from '../js/answers.js';
 import { SKILLS, byId, withPlain, isArithmetic } from '../js/skills/index.js';

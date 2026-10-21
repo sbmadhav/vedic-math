@@ -1,6 +1,6 @@
 /* The Sky's data and rules (js/sky.js, openspec sky-home): Constellations, the path in Belt order, Bolt's suggestion,
    the opt-in switch, the layout, and the one-time migration of Kata progress to lit Stars. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 
 const mem = { 'vm.sound': '0' };

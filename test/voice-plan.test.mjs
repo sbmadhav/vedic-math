@@ -1,6 +1,6 @@
 /* Studio voice planning (openspec better-voice, task 3.1): line hashes name the recorded files and must be the same in
    Node (tools/voice/record.mjs) and the browser (js/voice.js); plans turn a line into clips. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { lineHash, lineKey, inLineSet, planLine, numClips, clipText, NUMBER_CLIPS } from '../js/voice-plan.js';
 import { normalize } from '../js/voice.js';

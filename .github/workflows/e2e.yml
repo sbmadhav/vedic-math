@@ -47,6 +47,11 @@ jobs:
         with:
           persist-credentials: false
 
+      # Node before the deploy wait: build.py turns app/src/sw/sw.ts into sw.js with Node's type stripper (22.13+)
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
       # On a push, CI deploys the stamped build. Wait until the live game shell, worker and entry module match this
       # commit's build (the shell pins every module hash, sw.js carries the cache VERSION).
       - name: Wait for the deploy
@@ -66,15 +71,13 @@ jobs:
           done
           echo "::warning::The live site still differs from this commit after about 15 minutes. Testing what is live."
 
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: e2e/package-lock.json
+      # pnpm workspaces (openspec change react-typescript, task 1.1): corepack runs the pnpm version package.json pins
+      - name: Install the e2e package
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile --filter e2e
 
-      - run: npm ci
-
-      - run: npx playwright install --with-deps chromium webkit
+      - run: pnpm exec playwright install --with-deps chromium webkit
 
       # The daily run and a manual run also check every Watch shelf video on YouTube (tests/videos.live.spec.ts,
       # tagged @live-videos, chromium only) and run the scenario coverage specs in tests/cov (chromium only, see
@@ -82,7 +85,7 @@ jobs:
       - name: Playwright tests
         env:
           E2E_SKIP_COV: ${{ github.event_name == 'push' && '1' || '' }}
-        run: npx playwright test ${{ github.event_name == 'push' && '--grep-invert @live-videos' || '' }}
+        run: pnpm exec playwright test ${{ github.event_name == 'push' && '--grep-invert @live-videos' || '' }}
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
@@ -106,14 +109,14 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: e2e/package-lock.json
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: |
+          corepack enable
+          pnpm install --frozen-lockfile --filter e2e
+      - run: pnpm exec playwright install --with-deps chromium
       - name: The moved page on sbmadhav.com
         env:
           MOVED_URL: https://sbmadhav.com/vedic-math/
-        run: npx playwright test --project=chromium tests/moved.live.spec.ts
+        run: pnpm exec playwright test --project=chromium tests/moved.live.spec.ts
 
   # Phase C (design D13, task 18.5): GitHub's custom-domain redirect sends every old URL to learnvedicmath.com with a
   # 301. Undocumented GitHub behaviour, so it is checked every day.

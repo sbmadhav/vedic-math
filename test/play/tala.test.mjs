@@ -1,7 +1,7 @@
 /* Tala Lab: the rhythm arithmetic is exact. Meeting points are least common multiples, every tihai the
    solver offers lands on sam (and it finds them all), phrases land by remainders, and the look-ahead
    scheduler plays every note exactly once, on time, however unevenly its timer runs. */
-import test from 'node:test';
+import test from '../support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { rng, b64url } from '../../js/play/kit.js';
 import * as C from '../../js/play/exp/tala-core.js';

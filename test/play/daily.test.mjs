@@ -1,6 +1,6 @@
 /* Daily Number: a year of puzzles at every level is solvable, the solver's paths are valid and as short as
    the tier promises, puzzles depend only on the date and level, and the share grid never spoils numbers. */
-import test from 'node:test';
+import test from '../support/node-test.mjs';
 import assert from 'node:assert/strict';
 import * as D from '../../js/play/exp/daily-core.js';
 

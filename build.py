@@ -19,7 +19,7 @@ from the root of learnvedicmath.com: the landing page at /, the game at /play/, 
 from this site, and every same-origin script and stylesheet a page loads is pinned with ?v=<hash>.
 
 The source in git is never stamped: play/index.html has no import map and loads plain /js/app.js and /math.css, and
-sw.js says VERSION = 'dev' with an empty PRECACHE. Stamps exist only in the build output. CI runs this script and
+the worker source (app/src/sw/sw.ts) says VERSION = 'dev' with an empty PRECACHE. Stamps exist only in the build output. CI runs this script and
 deploys the output (.github/workflows/ci.yml).
 
 What the build does (target site):
@@ -30,7 +30,8 @@ What the build does (target site):
   <!-- include-md: PATH -->, rendered here (the legal pages and /licenses/).
 - In play/index.html: an import map that pins every module under /js/ to ?v=<hash of that file>, and the #vm-css map
   for the play stylesheets. In every page: each same-origin .js and .css it loads gets ?v=<hash>.
-- sw.js: VERSION and the PRECACHE list between the "build.py: precache" markers. Every entry has the hash the worker
+- sw.js: app/src/sw/sw.ts with its types taken out (tools/build-sw.mjs, run with the system node, 22.13 or newer),
+  then VERSION and the PRECACHE list between the "build.py: precache" markers. Every entry has the hash the worker
   checks on install: the game shell /play/, every file it loads, every module at its import-map URL, the play
   stylesheets, the fonts, the icons and the manifest.
 - _headers: the security headers on every response, and per page a Content-Security-Policy and a stricter
@@ -57,6 +58,7 @@ EXPORT_PAGE = "https://sbmadhav.com/vm-export/"   # the one sbmadhav.com URL a p
 MAP_START, MAP_END = "<!-- build.py: import map (generated, do not edit) -->", "<!-- /build.py: import map -->"
 SW_START, SW_END = "/* build.py: precache (generated, do not edit) */", "/* /build.py: precache */"
 SW_DEV = "const VERSION = 'dev';\nconst PRECACHE = [];"
+SW_SRC = "app/src/sw/sw.ts"   # published as /sw.js with its types taken out (worker_source)
 MARKERS = (".assetsignore", ".nojekyll")  # an earlier build: safe to empty
 GENERATED = ("robots.txt", "sitemap.xml", ".well-known/security.txt", "sw.js", "_headers", "_redirects")
 
@@ -208,6 +210,19 @@ VOICE_OFF_INDEX = """/* Studio voice index: written by build.py --voice off. Thi
 export const STUDIO = {"voice": null, "speed": null, "base": null, "tag": null, "sha256": null, "lineSet": null, "dir": null, "packs": [], "coveredSkills": [], "counts": {"lines": 0, "clips": 0}};
 """
 SW_VOICE_ORIGIN = re.compile(r"^const VOICE_ORIGIN = '[^']*';.*$", re.M)
+
+
+def worker_source():
+    """The service worker as published: app/src/sw/sw.ts with its types taken out by tools/build-sw.mjs (Node's own type
+    stripper, so nothing needs installing). Every line stays where it is, so the markers and the lines this script
+    rewrites read the same as in the source."""
+    node = shutil.which("node")
+    if not node:
+        fail(f"node is not installed: it turns {SW_SRC} into sw.js (Node 22.13 or newer)")
+    r = subprocess.run([node, "--no-warnings", str(ROOT / "tools/build-sw.mjs"), str(ROOT / SW_SRC)], capture_output=True, text=True)
+    if r.returncode != 0:
+        fail(f"{SW_SRC}: tools/build-sw.mjs failed:\n{r.stderr.strip()}")
+    return r.stdout
 
 
 def voice_off_sw(sw):
@@ -534,7 +549,7 @@ def build_site(args, out):
     dev = args.dev
     today = datetime.date.fromisoformat(os.environ["BUILD_TODAY"]) if os.environ.get("BUILD_TODAY") else datetime.date.today()
     all_files = git_files(out)
-    for required in ["play/index.html", "sw.js", "math.css", "manifest.webmanifest", "js/app.js", HEADER, "site/index.html",
+    for required in ["play/index.html", SW_SRC, "tools/build-sw.mjs", "math.css", "manifest.webmanifest", "js/app.js", HEADER, "site/index.html",
                      "site/404.html", "site/.well-known/security.txt", "THIRD-PARTY-NOTICES.md"]:
         if required not in all_files:
             fail(f"{required} is missing")
@@ -551,12 +566,12 @@ def build_site(args, out):
     # Published path -> bytes that replace the source file's in the output
     overrides = {VOICE_INDEX: VOICE_OFF_INDEX.encode()} if voice_off else {}
     src = lambda p: overrides[p] if p in overrides else (ROOT / p).read_bytes()
-    sw = (ROOT / "sw.js").read_text()
+    sw = worker_source()
     blocks = re.findall(re.escape(SW_START) + r"\n?(.*?)\n?" + re.escape(SW_END), sw, re.S)
     if len(blocks) != 1:
         fail("sw.js: precache markers not found")
     if blocks[0].strip() != SW_DEV:
-        fail(f"sw.js is stamped; the source must keep\n{SW_DEV}\nbetween the precache markers (the build stamps the copy)")
+        fail(f"{SW_SRC} is stamped; the source must keep\n{SW_DEV}\nbetween the precache markers (the build stamps the copy)")
     if voice_off:
         sw = voice_off_sw(sw)
 
@@ -702,7 +717,7 @@ def build_moved(out):
     served, except the main site's design system (/design-system/), which styles it. GitHub Pages cannot send headers, so
     this page keeps its policy in a <meta>, as the old app did."""
     page_src, pack_src, schema_src = "moved/index.html", "moved/handoff-pack.js", "js/handoff-schema.js"
-    for f in (page_src, pack_src, schema_src, "sw.js"):
+    for f in (page_src, pack_src, schema_src, SW_SRC, "tools/build-sw.mjs"):
         if not (ROOT / f).is_file():
             fail(f"{f} is missing (target moved)")
     html = (ROOT / page_src).read_text()
@@ -722,7 +737,7 @@ def build_moved(out):
     if not charset:
         fail(f'{page_src} has no <meta charset="utf-8"> to put the policy after')
     html = html[:charset.end()] + f'<meta http-equiv="Content-Security-Policy" content="{policy}">\n' + html[charset.end():]
-    sw = (ROOT / "sw.js").read_text()
+    sw = worker_source()
     block = re.compile(re.escape(SW_START) + r".*?" + re.escape(SW_END), re.S)
     if not block.search(sw) or "const KILL = false;" not in sw or not re.search(r"const PREFIX = '[\w-]+';", sw):
         fail("sw.js: the precache markers, the KILL switch or PREFIX not found")

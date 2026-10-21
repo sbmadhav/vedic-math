@@ -1,7 +1,7 @@
 /* tools/check-workflow-secrets.mjs (openspec change learnvedicmath, deploy-pipeline spec; task 11.6): the production
    token only in ci.yml's deploy job (environment production), the R2 keys only in voice-upload, the preview token only
    in preview.yml's preview job on pull_request. The real workflows pass; a workflow naming a token elsewhere fails. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { check } from '../tools/check-workflow-secrets.mjs';

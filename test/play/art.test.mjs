@@ -1,7 +1,7 @@
 /* Mandala Studio: the math under every piece is right. Chords follow k to m k mod n, Meru-prastāra matches
    the binomial numbers (and its remainders are exact far past floating point), shallow diagonals are
    Fibonacci, digital roots and walks close, Baudhāyana's diagonal is 577/408, and links round trip. */
-import test from 'node:test';
+import test from '../support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { rng, b64url } from '../../js/play/kit.js';
 import * as A from '../../js/play/exp/art-core.js';

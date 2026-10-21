@@ -51,17 +51,17 @@ Then open http://localhost:8124/ (the landing page) or http://localhost:8124/pla
 | Check | Command |
 |---|---|
 | The app builds (and the source has no cache stamps) | `python3 build.py --out /tmp/vm-site` |
-| Unit tests | `node --test 'test/**/*.test.{js,mjs}'` |
-| End-to-end tests | `cd e2e && npm ci && npx playwright test` |
+| Unit tests | `pnpm test` (after `corepack enable` and `pnpm install`) |
+| End-to-end tests | `cd e2e && pnpm exec playwright test` (after `corepack enable` and `pnpm install`) |
 | Firestore rules tests (only when you change `cloud/`; needs Java) | `cd cloud/test && npm install && npm test` |
 
 The pre-commit hook runs the first two. CI runs them on every pull request and checks that the build holds no repo-only files. Cache stamps are added only by the CI deploy, never in git, so there is nothing to run or commit after editing `play/index.html`, `site/`, `math.css` or `js/`.
 
 ## Tests
 
-Every change that affects behavior updates or adds the matching Playwright test in `e2e/` in the same commit. Run `cd e2e && npx playwright test` before pushing (first run: `npm ci && npx playwright install chromium webkit`).
+Every change that affects behavior updates or adds the matching Playwright test in `e2e/` in the same commit. Run `cd e2e && pnpm exec playwright test` before pushing (first run: `corepack enable && pnpm install` at the repository root, then `pnpm exec playwright install chromium webkit` in `e2e/`).
 
-The suite runs against the live site by default. To test your checkout before it is live, run `python3 build.py && node e2e/local-server.mjs 8124 _site`, then `BASE_URL=http://localhost:8124 npx playwright test` in `e2e/`. Tests never write to the production leaderboards: keep using the fake Firebase SDK in `e2e/tests/fixtures.ts`.
+The suite runs against the live site by default. To test your checkout before it is live, run `python3 build.py && node e2e/local-server.mjs 8124 _site`, then `BASE_URL=http://localhost:8124 pnpm exec playwright test` in `e2e/`. Tests never write to the production leaderboards: keep using the fake Firebase SDK in `e2e/tests/fixtures.ts`.
 
 ## Style rules
 

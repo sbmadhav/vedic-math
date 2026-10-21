@@ -3,7 +3,7 @@
    clip. Every Explorer line must be recorded whole or fully covered by clips, and overall coverage stays at or above
    99%, so a wording change cannot quietly fall back to the device voice. Before the first recording there is no
    manifest and the coverage checks are skipped. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { STUDIO } from '../js/voice-index.js';

@@ -1,0 +1,32 @@
+{
+  "//": "A Vite client manifest in the shape .vite/manifest.json has: the entry, a route reached by a dynamic import, a chunk the entry and a 3D scene both import, and the 3D scene with three.js. Read by vite-plugin-precache.test.ts.",
+  "app/src/entry.client.tsx": {
+    "file": "assets/entry-a1.js",
+    "src": "app/src/entry.client.tsx",
+    "isEntry": true,
+    "imports": ["_shared-b2.js"],
+    "dynamicImports": ["app/src/views/games/Games.tsx", "app/src/scenes-3d/Sky.tsx"],
+    "css": ["assets/entry-c3.css"]
+  },
+  "_shared-b2.js": {
+    "file": "assets/shared-b2.js"
+  },
+  "app/src/views/games/Games.tsx": {
+    "file": "assets/games-d4.js",
+    "src": "app/src/views/games/Games.tsx",
+    "isDynamicEntry": true,
+    "imports": ["_shared-b2.js"],
+    "assets": ["assets/games-art-e5.svg"]
+  },
+  "app/src/scenes-3d/Sky.tsx": {
+    "file": "assets/sky-f6.js",
+    "src": "app/src/scenes-3d/Sky.tsx",
+    "isDynamicEntry": true,
+    "imports": ["_shared-b2.js", "node_modules/.pnpm/three@0.180.0/node_modules/three/build/three.module.js"],
+    "css": ["assets/sky-g7.css"]
+  },
+  "node_modules/.pnpm/three@0.180.0/node_modules/three/build/three.module.js": {
+    "file": "assets/three-h8.js",
+    "src": "node_modules/.pnpm/three@0.180.0/node_modules/three/build/three.module.js"
+  }
+}

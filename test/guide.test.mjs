@@ -1,7 +1,7 @@
 /* The in-app guide and the first-visit tour (openspec in-app-guide): the guide's sections cover every route in
    js/app.js, every Try it link opens a real route with a real catalog id, every section is complete in every Mode,
    the pictures use tokens only, and the tour's steps and state behave. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { GROUPS, sections, sectionsFor, tryFor, say, w, TOUR_STEPS, resolveStep, resolveTour, tourDue, tourState, setTourState, TOUR_KEY, MODES } from '../js/guide.js';

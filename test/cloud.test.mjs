@@ -1,22 +1,19 @@
 /* cloud.boardScore must send what cloud/firestore.rules accept: Arena boards take an even score up to
    the league cap, Ranked game boards up to 12000 and weekly Sparks boards (id xp-week-...) up to 60000 (any integer). */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { register } from 'node:module';
+import { vi } from 'vitest';
 
 /* The launch ships js/cloud-config.js with FIREBASE = null (Device boards only, change learnvedicmath tasks 1.8 and
    8.5), and with that config every post and read stops at enabled(). These tests are about what happens once World
-   boards are on, so js/cloud.js gets a sample config here (the real one is checked in test/cloud-off.test.mjs). */
-const SAMPLE = `export const FIREBASE = { apiKey: "k", authDomain: "learnvedicmath.firebaseapp.com", projectId: "learnvedicmath", appId: "a" };
-export const appCheckSiteKey = "sample-site-key";
-export const appCheckProvider = "enterprise";`;
-register('data:text/javascript,' + encodeURIComponent(`
-export async function resolve(specifier, context, next) {
-  if (/(^|\\/)cloud-config\\.js$/.test(specifier) && /\\/js\\/cloud\\.js$/.test(context.parentURL || ''))
-    return { url: 'data:text/javascript,' + encodeURIComponent(${JSON.stringify(SAMPLE)}), shortCircuit: true };
-  return next(specifier, context);
-}`));
+   boards are on, so js/cloud.js gets a sample config here (the real one is checked in test/cloud-off.test.mjs).
+   vi.mock replaces the module for this file only (under node --test this was a module loader hook). */
+vi.mock('../js/cloud-config.js', () => ({
+  FIREBASE: { apiKey: 'k', authDomain: 'learnvedicmath.firebaseapp.com', projectId: 'learnvedicmath', appId: 'a' },
+  appCheckSiteKey: 'sample-site-key',
+  appCheckProvider: 'enterprise',
+}));
 const { boardScore, MAX_SCORE, MAX_GAME_SCORE, MAX_WEEK_SPARKS, weekSparksBoard } = await import('../js/cloud.js');
 
 const rules = readFileSync(new URL('../cloud/firestore.rules', import.meta.url), 'utf8');

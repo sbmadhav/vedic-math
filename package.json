@@ -1,0 +1,21 @@
+{
+  "name": "learnvedicmath",
+  "private": true,
+  "type": "module",
+  "description": "Learn Vedic Math (https://learnvedicmath.com/): the workspace root. python3 build.py builds the site.",
+  "packageManager": "pnpm@10.34.7",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "scripts": {
+    "typecheck": "pnpm -r --parallel typecheck",
+    "lint": "echo 'ESLint and stylelint arrive with task 1.7'",
+    "test": "vitest run",
+    "build": "python3 build.py"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "typescript": "6.0.3",
+    "vitest": "4.1.12"
+  }
+}

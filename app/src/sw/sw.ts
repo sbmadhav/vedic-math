@@ -1,6 +1,11 @@
 /* Learn Vedic Math service worker: lets the game work offline. Published at /sw.js and registered by js/app.js with
    scope /play/, so it controls the game only; the landing and grown-up pages are never controlled.
 
+   TypeScript (openspec change react-typescript, design D9, task 1.5). python3 build.py publishes it as /sw.js with
+   its types taken out (tools/build-sw.mjs, which keeps every line where it is), so the worker stays one classic
+   script with no imports. The lines build.py rewrites (KILL, the precache block, PREFIX, VOICE_ORIGIN) publish
+   exactly as they read before the worker was TypeScript, because only their type annotations are taken out.
+
    VERSION stays 'dev' in git, with an empty PRECACHE. The deploy (python3 build.py, run by CI) writes the real VERSION
    and PRECACHE into the published copy, between the markers below. VERSION is a hash of every file it precaches plus
    the rest of this file, so any change to the game installs a fresh cache. A 'dev' worker caches nothing and leaves
@@ -34,19 +39,20 @@
    new worker deletes every lvm-* cache and unregisters itself, and open tabs keep working from the network. Leave it
    deployed for a few weeks, then remove the register call in js/app.js and delete this file. build.py --target moved
    publishes this file with KILL = true and the old prefix vedic-math- to retire the old sbmadhav.com worker. */
-const KILL = false;
+const KILL: boolean = false;
 /* build.py: precache (generated, do not edit) */
-const VERSION = 'dev';
-const PRECACHE = [];
+const VERSION: string = 'dev';
+const PRECACHE: [string, string][] = [];
 /* /build.py: precache */
-const PREFIX = 'lvm-';
+const PREFIX: string = 'lvm-';
+const sw = self as unknown as ServiceWorkerGlobalScope;
 const CACHE = PREFIX + VERSION;
 const SCOPE = '/play/';
 const SHELL = SCOPE;
 const RUNTIME_MAX = 60; // entries kept beyond the precache list; the oldest go first
 const NAV_TIMEOUT = 3500; // ms before a page load falls back to the saved shell
 const PRECACHED = new Set(PRECACHE.map(([u]) => new URL(u, location.origin).href));
-const VOICE_ORIGIN = 'https://voice.learnvedicmath.com'; // the R2 voice host (design D17); /voice/ when the voice is static assets; null with build.py --voice off
+const VOICE_ORIGIN: string | null = 'https://voice.learnvedicmath.com'; // the R2 voice host (design D17); /voice/ when the voice is static assets; null with build.py --voice off
 const VOICE = '/voice/';
 const VOICE_CACHE = PREFIX + 'voice'; // kept across deploys (not a version cache)
 const VOICE_MAX = 4000; // whole lines kept (about 10 KB each); the index and pack files are not counted
@@ -56,30 +62,31 @@ const THUMBS = '/thumbs/'; // never cached (fetch handler)
 const SOUNDS = '/sounds/';
 const SOUNDS_CACHE = PREFIX + 'sounds'; // kept across deploys (not a version cache)
 const SOUNDS_MAX = 120; // 29 name clips and the Om, with room for remade ones
+const API = '/api/'; // the Worker's own endpoints (none yet): never cached
 
 if (VERSION === 'dev') {
   /* Unbuilt source: no fetch handler, so the browser goes to the network. Take over at once and drop
      any saved stamped version, so a stale one does not linger. */
-  self.addEventListener('install', () => self.skipWaiting());
-  self.addEventListener('activate', event => {
+  sw.addEventListener('install', () => { void sw.skipWaiting(); });
+  sw.addEventListener('activate', event => {
     event.waitUntil((async () => {
       const keys = await caches.keys();
       await Promise.all(keys.filter(k => k.startsWith(PREFIX)).map(k => caches.delete(k)));
-      await self.clients.claim();
+      await sw.clients.claim();
     })());
   });
 } else if (KILL) {
-  self.addEventListener('install', () => self.skipWaiting());
-  self.addEventListener('activate', event => {
+  sw.addEventListener('install', () => { void sw.skipWaiting(); });
+  sw.addEventListener('activate', event => {
     event.waitUntil((async () => {
       const keys = await caches.keys();
       await Promise.all(keys.filter(k => k.startsWith(PREFIX)).map(k => caches.delete(k)));
-      await self.registration.unregister();
+      await sw.registration.unregister();
       /* No reload of open tabs: the app registers this file on every visit, so a reload would loop */
     })());
   });
 } else {
-  self.addEventListener('install', event => {
+  sw.addEventListener('install', event => {
     event.waitUntil((async () => {
       const cache = await caches.open(CACHE);
       try {
@@ -88,26 +95,27 @@ if (VERSION === 'dev') {
         await caches.delete(CACHE); // never leave a half-filled version behind
         throw e;
       }
-      await self.skipWaiting();
+      await sw.skipWaiting();
     })());
   });
 
-  self.addEventListener('activate', event => {
+  sw.addEventListener('activate', event => {
     event.waitUntil((async () => {
       /* Keep this version and the one before it (a tab opened on it may still load a module); delete older ones.
          CacheStorage lists caches in the order they were created. */
       const ours = (await caches.keys()).filter(k => k.startsWith(PREFIX) && k !== CACHE && k !== VOICE_CACHE && k !== SOUNDS_CACHE);
       await Promise.all(ours.slice(0, -1).map(k => caches.delete(k)));
-      await self.clients.claim();
+      await sw.clients.claim();
     })());
   });
 
-  self.addEventListener('fetch', event => {
+  sw.addEventListener('fetch', (event: FetchEvent) => {
     const req = event.request;
     if (req.method !== 'GET') return;
     const url = new URL(req.url);
     if (url.origin === VOICE_ORIGIN) return event.respondWith(voiceFile(req));
     if (url.origin !== location.origin) return;
+    if (url.pathname.startsWith(API)) return;
 
     if (req.mode === 'navigate') return url.pathname.startsWith(SCOPE) ? event.respondWith(page(req)) : undefined;
     if (url.pathname.startsWith(VOICE)) return event.respondWith(voiceFile(req));
@@ -122,7 +130,7 @@ if (VERSION === 'dev') {
 
 /* Fetch one precache entry and check it against the hash build.py recorded. Every file belongs to this site, so a
    missing or different one fails the install (the previous version keeps serving). */
-async function precache(cache, url, hash) {
+async function precache(cache: Cache, url: string, hash: string): Promise<void> {
   /* The shell and plain URLs skip the HTTP cache (they must be this deploy's); ?v= files may come from it */
   const res = await fetch(new Request(url, { cache: url.includes('?v=') ? 'default' : 'reload' }));
   if (!cacheable(res)) throw new Error(`${url}: HTTP ${res.status}`);
@@ -130,17 +138,17 @@ async function precache(cache, url, hash) {
   await cache.put(url, res);
 }
 
-async function digest(res) {
+async function digest(res: Response): Promise<string> {
   const buf = await crypto.subtle.digest('SHA-256', await res.arrayBuffer());
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 10);
 }
 
 /* Pages: network first; the precached shell of this version when offline or slow */
-async function page(req) {
+async function page(req: Request): Promise<Response> {
   try {
     return await Promise.race([
       fetch(req),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), NAV_TIMEOUT))
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), NAV_TIMEOUT))
     ]);
   } catch (e) {
     const cache = await caches.open(CACHE);
@@ -149,15 +157,15 @@ async function page(req) {
 }
 
 /* ?v= files: the same URL always holds the same bytes, so any of our caches can answer */
-async function versioned(req) {
+async function versioned(req: Request): Promise<Response> {
   const cache = await caches.open(CACHE);
   const hit = await cache.match(req) || await matchOlder(req);
   if (hit) return hit;
   const res = await fetch(req);
-  if (cacheable(res)) put(cache, req, res.clone());
+  if (cacheable(res)) void put(cache, req, res.clone());
   return res;
 }
-async function matchOlder(req) {
+async function matchOlder(req: Request): Promise<Response | null> {
   for (const k of (await caches.keys()).filter(k => k.startsWith(PREFIX) && k !== CACHE && k !== VOICE_CACHE && k !== SOUNDS_CACHE).reverse()) {
     const hit = await (await caches.open(k)).match(req);
     if (hit) return hit;
@@ -166,7 +174,7 @@ async function matchOlder(req) {
 }
 
 /* Studio voice files: cache first; a miss goes to the network and is kept */
-async function voiceFile(req) {
+async function voiceFile(req: Request): Promise<Response> {
   const cache = await caches.open(VOICE_CACHE);
   const hit = await cache.match(req);
   if (hit) return hit;
@@ -184,7 +192,7 @@ async function voiceFile(req) {
          never re-saved, so an oldest-first trim over everything would drop them first and leave offline read aloud
          with nothing to look lines up in */
       const lines = (await cache.keys()).filter(k => VOICE_LINE.test(new URL(k.url).pathname));
-      for (let i = 0; i < lines.length - VOICE_MAX; i++) await cache.delete(lines[i]);
+      for (let i = 0; i < lines.length - VOICE_MAX; i++) await cache.delete(lines[i]!);
     } catch (e) { /* quota: play it without saving */ }
   }
   return res;
@@ -193,29 +201,29 @@ async function voiceFile(req) {
 /* Sounds: a ?v= URL is cache first (its bytes never change); a miss goes to the network and is kept. A URL without
    ?v= is network first with the cache as the offline fallback. The trim (oldest dropped past SOUNDS_MAX) runs one at a
    time on a chain, so the idle prefetch and a tap that miss together never delete each other's new entries. */
-let soundTrim = Promise.resolve();
-async function soundFile(req) {
+let soundTrim: Promise<void> = Promise.resolve();
+async function soundFile(req: Request): Promise<Response> {
   const cache = await caches.open(SOUNDS_CACHE);
   const pinned = new URL(req.url).searchParams.has('v');
   if (pinned) { const hit = await cache.match(req); if (hit) return hit; }
-  let res;
+  let res: Response;
   try { res = await fetch(req); } catch (e) { const hit = !pinned && await cache.match(req); if (hit) return hit; throw e; }
   if (cacheable(res)) {
     try { await cache.put(req, res.clone()); } catch (e) { return res; /* quota: play it without saving */ }
     soundTrim = soundTrim.then(async () => {
       const keys = await cache.keys();
-      for (let i = 0; i < keys.length - SOUNDS_MAX; i++) await cache.delete(keys[i]);
+      for (let i = 0; i < keys.length - SOUNDS_MAX; i++) await cache.delete(keys[i]!);
     }).catch(() => {});
     await soundTrim;
   }
   return res;
 }
 
-async function networkFirst(req) {
+async function networkFirst(req: Request): Promise<Response> {
   const cache = await caches.open(CACHE);
   try {
     const res = await fetch(req);
-    if (cacheable(res)) put(cache, req, res.clone());
+    if (cacheable(res)) void put(cache, req, res.clone());
     return res;
   } catch (e) {
     return (await cache.match(req)) || Response.error();
@@ -223,19 +231,19 @@ async function networkFirst(req) {
 }
 
 /* Only successful responses go in the cache: same-origin, or CORS from the voice host (no errors, redirects or opaque responses) */
-function cacheable(res) { return !!res && res.ok && (res.type === 'basic' || res.type === 'cors'); }
+function cacheable(res: Response | undefined): boolean { return !!res && res.ok && (res.type === 'basic' || res.type === 'cors'); }
 
 /* Store a response, then trim runtime entries (anything not in the precache list) to RUNTIME_MAX, oldest first */
-async function put(cache, req, res) {
+async function put(cache: Cache, req: Request, res: Response): Promise<void> {
   try {
     await cache.put(req, res);
     const extra = (await cache.keys()).filter(k => !PRECACHED.has(k.url));
-    for (let i = 0; i < extra.length - RUNTIME_MAX; i++) await cache.delete(extra[i]);
+    for (let i = 0; i < extra.length - RUNTIME_MAX; i++) await cache.delete(extra[i]!);
   } catch (e) { /* quota or a locked cache: skip caching */ }
 }
 
 /* Only if the saved shell is gone (storage cleared while the worker stayed) */
-function offlinePage() {
+function offlinePage(): Response {
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark"><title>Offline · Learn Vedic Math</title>
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;padding:24px;box-sizing:border-box;text-align:center}</style></head>

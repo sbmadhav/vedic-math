@@ -12,10 +12,10 @@ The site is self-contained: the design system is a pinned copy (`vendor/design-s
 | `site/` | The landing page and the pages for grown-ups (rendered into place by the build; the legal pages include `docs/legal/`) |
 | `theme/` | The brand theme, the fonts stylesheet, the site header partial and the styles of the static pages |
 | `vendor/`, `fonts/`, `icons/`, `thumbs/` | Pinned third-party files (listed in `THIRD-PARTY-NOTICES.md`), fonts, icons and video thumbnails |
-| `worker/` | The Content-Security-Policy report endpoint (`/_csp`), the only Worker code |
+| `workers/src/` | The Worker (`index.ts`): today only the Content-Security-Policy report endpoint (`/_csp`, `csp.ts`) |
 | `js/` | ES modules (`app.js` is the entry; `skills/` holds the skill map; `play/` holds the play experiences) |
 | `css/play/` | Styles of the play experiences, loaded with their pages |
-| `test/` | Unit tests (`node --test`) |
+| `test/` | Unit tests (Vitest, `pnpm test`) |
 | `e2e/` | Playwright end-to-end tests against the live site |
 | `cloud/` | Firebase setup, Firestore rules and the rules tests |
 | `build.py` | Builds the published copy (`_site/`) with the import map, cache versions, `_headers` and `_redirects` |
@@ -33,7 +33,7 @@ python3 build.py --dev                  # _dev/: the published layout without st
 node e2e/local-server.mjs 8124 _dev     # http://localhost:8124/ and http://localhost:8124/play/
 ```
 
-`python3 build.py && node e2e/local-server.mjs 8124 _site` serves exactly what the deploy publishes (stamped, with the real worker). `cd deploy && npm ci && npx wrangler dev --config ../wrangler.jsonc` runs the same `_site` in Cloudflare's own runtime.
+`python3 build.py && node e2e/local-server.mjs 8124 _site` serves exactly what the deploy publishes (stamped, with the real worker). `pnpm --filter workers exec wrangler dev --config ../wrangler.jsonc` runs the same `_site` in Cloudflare's own runtime.
 
 ## Offline
 
@@ -44,9 +44,9 @@ After one visit online, the game works offline: `/sw.js` (scope `/play/`) saves 
 | Check | Command |
 |---|---|
 | The app builds, and the source has no cache stamps | `python3 build.py --out _site` |
-| Unit tests | `node --test 'test/**/*.test.{js,mjs}'` |
+| Unit tests | `pnpm test` (after `pnpm install`) |
 | Firestore rules tests (emulator, needs Java) | `cd cloud/test && npm install && npm test` |
-| End-to-end tests (live site, or `BASE_URL=http://localhost:8124` for a local build) | `cd e2e && npm ci && npx playwright install chromium webkit && npx playwright test` |
+| End-to-end tests (live site, or `BASE_URL=http://localhost:8124` for a local build) | `corepack enable && pnpm install`, then `cd e2e && pnpm exec playwright install chromium webkit && pnpm exec playwright test` |
 
 The pre-commit hook in `.githooks/` runs the first two. Enable it once per clone:
 
@@ -56,7 +56,7 @@ git config core.hooksPath .githooks
 
 CI (`.github/workflows/ci.yml`) runs the same on every push and pull request to `main`. Pull requests from branches of this repo get a preview on workers.dev (`.github/workflows/preview.yml`) and the end-to-end suite runs against it. `.github/workflows/e2e.yml` runs the suite against https://learnvedicmath.com daily, on demand and after each deploy.
 
-The end-to-end tests never write to production Firestore: the Firebase SDK is faked in all but one read-only leaderboard test, and any write-shaped Firestore request fails the run. The service worker is blocked in every spec except `e2e/tests/offline.spec.ts` (chromium and mobile only). To test this checkout before pushing, run `python3 build.py && node e2e/local-server.mjs 8124 _site` and then `BASE_URL=http://localhost:8124 npx playwright test` in `e2e/` (with `E2E_VOICE_ORIGIN` set while the voice host is not live yet; see `docs/agent/e2e.md`).
+The end-to-end tests never write to production Firestore: the Firebase SDK is faked in all but one read-only leaderboard test, and any write-shaped Firestore request fails the run. The service worker is blocked in every spec except `e2e/tests/offline.spec.ts` (chromium and mobile only). To test this checkout before pushing, run `python3 build.py && node e2e/local-server.mjs 8124 _site` and then `BASE_URL=http://localhost:8124 pnpm exec playwright test` in `e2e/` (with `E2E_VOICE_ORIGIN` set while the voice host is not live yet; see `docs/agent/e2e.md`).
 
 ## Deploy
 

@@ -1,5 +1,5 @@
 /* Answer checking (check.js): what learners can type, and near misses it must refuse. */
-import test from 'node:test';
+import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { checkOne, evalNum } from '../js/check.js';
 

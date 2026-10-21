@@ -1,6 +1,6 @@
 /* Discovery Locks: generators feed the machine sensible inputs, the intended rule matches the machine on
    thousands of inputs, every other combination of tiles is caught, and wrong predictions explain themselves. */
-import test from 'node:test';
+import test from '../support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { rng } from '../../js/play/kit.js';
 import { CHAPTERS, levelsFor, runRule, checkRule, testInputs, allPicks, compare, chapterById, clearLevel, discover, counts } from '../../js/play/exp/locks-core.js';
