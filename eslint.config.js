@@ -48,13 +48,14 @@ export default tseslint.config(
     files: ['workers/src/**/*.ts'],
     languageOptions: { globals: { ...globals.worker } },
   },
+  // Two objects, so flat config merges them: spread into one, jsx-runtime's rules would replace the recommended ones
   {
     files: APP,
     ...react.configs.flat.recommended,
-    ...react.configs.flat['jsx-runtime'],
     languageOptions: { ...react.configs.flat.recommended.languageOptions, globals: { ...globals.browser } },
     settings: { react: { version: '19.2' } },
   },
+  { files: APP, ...react.configs.flat['jsx-runtime'] },
   {
     files: APP,
     plugins: { 'react-hooks': reactHooks },

@@ -41,6 +41,10 @@ jobs:
       - name: Type check
         run: pnpm typecheck
 
+      # ESLint and stylelint (task 1.7): the same command the pre-commit hook runs
+      - name: Lint
+        run: pnpm lint
+
       # Vitest (task 1.6): the legacy tests in test/, the tools, the service worker, and the Worker in the Workers runtime
       - name: Unit tests
         run: pnpm test

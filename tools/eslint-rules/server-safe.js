@@ -3,9 +3,11 @@
    `Date.now()` (a render must give the server's HTML and the browser's first render the same output), are refused
    where a render reaches them: at module level, and directly in the body of a component (a function whose name
    starts with a capital letter, or an arrow or function expression assigned to such a name).
-   Allowed: inside any nested function (an effect, an event handler, a callback a hook runs later), inside a custom
-   hook (a function named use...), as the operand of `typeof` (the usual guard), and inside the children of
-   <ClientOnly>, which only render in the browser. */
+   A custom hook's body (a function named use...) runs during the render too, and so do the callbacks a render calls
+   at once: useState, useReducer and useMemo initializers and array callbacks (map, filter and the like).
+   Allowed: inside any other nested function (an effect, an event handler, a store's snapshot callbacks, a callback a
+   hook runs later), as the operand of `typeof`, and inside the children of <ClientOnly>, which only render in the
+   browser. */
 const BANNED = new Set(['window', 'document', 'localStorage', 'sessionStorage']);
 
 const isComponentName = name => typeof name === 'string' && /^[A-Z]/.test(name);
@@ -35,15 +37,27 @@ function inClientOnly(node) {
   return false;
 }
 
-/* Where a render reaches `node`: 'module', 'component <Name>', or null when it runs later or only in the browser */
+/* Calls that run the function passed to them during the render itself */
+const RENDER_CALLS = new Set(['useState', 'useReducer', 'useMemo', 'map', 'filter', 'reduce', 'reduceRight', 'forEach', 'some', 'every', 'find',
+  'findIndex', 'findLast', 'findLastIndex', 'flatMap', 'sort', 'toSorted', 'from']);
+const calleeName = c => (c.type === 'Identifier' ? c.name : c.type === 'MemberExpression' && !c.computed && c.property.type === 'Identifier' ? c.property.name : null);
+const runsNow = fn => fn.parent && fn.parent.type === 'CallExpression' && fn.parent.arguments.includes(fn) && RENDER_CALLS.has(calleeName(fn.parent.callee));
+
+/* Where a render reaches `node`: 'module level', 'the render of <Name>', or null when it runs later or only in the
+   browser */
 function renderScope(node) {
   let fn = null;
-  for (let n = node.parent; n; n = n.parent) if (FUNCTION.has(n.type)) { fn = n; break; }
+  for (let n = node.parent; n; n = n.parent) {
+    if (!FUNCTION.has(n.type)) continue;
+    if (runsNow(n)) continue; // called during the render: look at the function around the call
+    fn = n;
+    break;
+  }
   if (!fn) return 'module level';
   const name = nameOf(fn);
-  if (isHookName(name)) return null;
+  if (isHookName(name)) return `the body of the hook ${name}`;
   if (isComponentName(name)) return `the render of ${name}`;
-  return null; // a nested function: an effect, a handler or a callback
+  return null; // a nested function: an effect, a handler or a callback that runs later
 }
 
 export default {

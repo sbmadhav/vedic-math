@@ -50,5 +50,5 @@ for (const file of files.filter(f => f.endsWith('.css'))) {
 test('every rule of task 1.7 has a fixture', () => {
   const all = files.flatMap(f => expected(readFileSync(join(FIXTURES, f), 'utf8')));
   for (const rule of ['react/no-danger', 'no-restricted-properties', 'lvm/server-safe', 'lvm/legacy-imports', 'react-hooks/rules-of-hooks',
-    '@typescript-eslint/no-explicit-any', 'color-no-hex', 'function-disallowed-list']) expect(all, rule).toContain(rule);
+    '@typescript-eslint/no-explicit-any', 'color-no-hex', 'function-disallowed-list', 'react/jsx-key']) expect(all, rule).toContain(rule);
 });
