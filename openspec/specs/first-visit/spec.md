@@ -128,3 +128,14 @@ The Start the Star button SHALL take keyboard focus when the card opens, so Ente
 #### Scenario: Calm
 - **WHEN** a new visitor with Calm on presses Try a trick and waits
 - **THEN** every step of the worked example is shown at once without animation, and the card stays until Start the Star is pressed
+
+### Requirement: The app's hero says little
+The landing's hero SHALL say as little as it can: one short headline, the one short line about two minutes and no sign-up, Try a trick as the big first action (at least 56 px tall, in the accent colour, with a gentle glow every few seconds that stops under reduced motion, Pause motion and Calm), and the Nikhilam Family beside it as the mascot, with no Bolt.
+
+#### Scenario: The hero says little
+- **WHEN** a new visitor opens the app
+- **THEN** the hero shows "Fast, fun math for every brain", the line "One trick, two minutes, no sign-up." and Try a trick, at most 14 words before the button, with the Nikhilam Family beside it
+
+#### Scenario: Try a trick draws the eye and works every way
+- **WHEN** a new visitor opens the app at 320, 375, 768 or 1280 px wide
+- **THEN** Try a trick is on screen without scrolling, works by click, tap and Enter, glows every few seconds while the family's nine nods toward it, and holds still with reduced motion, Pause motion or Calm
