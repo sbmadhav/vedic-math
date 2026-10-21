@@ -14,7 +14,7 @@
    Analytics never counts a run: GoatCounter and Cloudflare Web Analytics are blocked by URL pattern. */
 import lighthouse from 'lighthouse';
 import { chromium, type BrowserContext } from '@playwright/test';
-import { mkdtempSync, rmSync, writeFileSync, readFileSync, realpathSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -139,7 +139,9 @@ const round = (k: keyof Metrics, v: number) => (k === 'cls' ? Math.round(v * 100
 async function main(argv: string[]) {
   const args = [...argv];
   const opt = (name: string) => { const i = args.indexOf(name); if (i < 0) return undefined; const v = args[i + 1]; args.splice(i, 2); return v; };
-  const runs = Number(opt('--runs') || RC.ci.collect.numberOfRuns);
+  const runOption = opt('--runs');
+  const runs = runOption === undefined ? RC.ci.collect.numberOfRuns : Number(runOption);
+  if (!Number.isSafeInteger(runs) || runs < 1) throw new Error('--runs must be a positive integer');
   const json = opt('--json');
   const base = (args[0] || process.env.BASE_URL || 'https://learnvedicmath.com').replace(/\/$/, '');
   const result: Record<string, { path: string; visit: string; median: Metrics; runs: Metrics[] }> = {};
@@ -151,7 +153,10 @@ async function main(argv: string[]) {
     console.log(`${p.name.padEnd(16)} ${p.visit.padEnd(9)} ${METRICS.map(k => `${k} ${med[k]}`).join('  ')}`);
   }
   const out = { base, date: new Date().toISOString(), runs, lighthouse: (await import('lighthouse/package.json', { with: { type: 'json' } })).default.version, pages: result };
-  if (json) writeFileSync(json, JSON.stringify(out, null, 1) + '\n');
+  if (json) {
+    mkdirSync(dirname(json), { recursive: true });
+    writeFileSync(json, JSON.stringify(out, null, 1) + '\n');
+  }
 }
 
 /* Run as a script; real paths, as import.meta.url is resolved through symlinks and percent-encoded */

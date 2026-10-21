@@ -1,11 +1,11 @@
 {
  "//": "The performance baseline of the live game before the migration (openspec change react-typescript, task 0.4; performance-budget spec). docs/perf/baseline.md explains it. Read by build.py (firstLoad, through tools/budget.ts) and by the perf gates (lighthouse and interactions, through tools/perf-compare.ts). A change to it says why in its pull request.",
  "measured": {
-  "date": "2026-10-20",
+  "date": "2026-10-21",
   "site": "https://learnvedicmath.com",
   "commit": "01dee2f",
   "swVersion": "2e01da18cd",
-  "runner": "GitHub Actions ubuntu-latest (perf.yml, run 39517664770)",
+  "runner": "GitHub Actions ubuntu-latest (perf.yml, run 39522196711)",
   "lighthouse": "13.5.0"
  },
  "firstLoad": {
@@ -141,60 +141,60 @@
     "path": "/play/",
     "visit": "first",
     "median": {
-     "fcp": 1873,
-     "lcp": 5190,
-     "tbt": 27,
+     "fcp": 1865,
+     "lcp": 5163,
+     "tbt": 25,
      "cls": 0.001,
-     "si": 1873,
-     "ttfb": 78
+     "si": 1865,
+     "ttfb": 53
     }
    },
    "play-repeat": {
     "path": "/play/",
     "visit": "repeat",
     "median": {
-     "fcp": 823,
+     "fcp": 826,
      "lcp": 1260,
-     "tbt": 17,
+     "tbt": 2,
      "cls": 0.007,
-     "si": 823,
-     "ttfb": 47
+     "si": 826,
+     "ttfb": 37
     }
    },
    "arena": {
     "path": "/play/#/arena",
     "visit": "returning",
     "median": {
-     "fcp": 1947,
-     "lcp": 5540,
-     "tbt": 35,
+     "fcp": 1994,
+     "lcp": 5496,
+     "tbt": 28,
      "cls": 0.007,
-     "si": 1947,
-     "ttfb": 70
+     "si": 1994,
+     "ttfb": 68
     }
    },
    "games": {
     "path": "/play/#/games",
     "visit": "returning",
     "median": {
-     "fcp": 1948,
-     "lcp": 5520,
-     "tbt": 36,
+     "fcp": 1913,
+     "lcp": 5346,
+     "tbt": 27,
      "cls": 0.007,
-     "si": 1948,
-     "ttfb": 70
+     "si": 1913,
+     "ttfb": 49
     }
    },
    "deep-dive": {
     "path": "/play/#/sutras/s1",
     "visit": "returning",
     "median": {
-     "fcp": 1938,
-     "lcp": 5561,
-     "tbt": 106,
+     "fcp": 1923,
+     "lcp": 5323,
+     "tbt": 98,
      "cls": 0.007,
-     "si": 2362,
-     "ttfb": 71
+     "si": 2168,
+     "ttfb": 39
     }
    }
   }
@@ -202,22 +202,23 @@
  "interactions": {
   "cpuSlowdown": 4,
   "runs": 5,
+  "reducedMotion": true,
   "interactions": {
    "arena-open": {
     "inp": 48,
-    "visible": 33
+    "visible": 24
    },
    "arena-answer": {
     "inp": 32,
-    "visible": 2
+    "visible": 4
    },
    "deep-dive-open": {
-    "inp": 208,
-    "visible": 32
+    "inp": 144,
+    "visible": 12
    },
    "star-light": {
-    "inp": 48,
-    "visible": 1132
+    "inp": 32,
+    "visible": 1125
    }
   }
  }
