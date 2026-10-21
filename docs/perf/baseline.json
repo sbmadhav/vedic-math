@@ -10,7 +10,7 @@
  },
  "firstLoad": {
   "page": "/play/",
-  "total": 744827,
+  "total": 745286,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -51,7 +51,7 @@
    "/js/celebrate.js": 3080,
    "/js/check.js": 2946,
    "/js/cloud-config.js": 588,
-   "/js/cloud.js": 4423,
+   "/js/cloud.js": 4437,
    "/js/explain-lines.js": 2176,
    "/js/family.js": 946,
    "/js/find.js": 6645,
@@ -81,7 +81,7 @@
    "/js/play/exp/daily.js": 6431,
    "/js/play/exp/ghosts-core.js": 3200,
    "/js/play/exp/ghosts.js": 6687,
-   "/js/play/exp/lens-cam.js": 4666,
+   "/js/play/exp/lens-cam.js": 4676,
    "/js/play/exp/lens-core.js": 9184,
    "/js/play/exp/lens.js": 7556,
    "/js/play/exp/locks-core.js": 5208,
@@ -103,7 +103,7 @@
    "/js/play/life.js": 61,
    "/js/related.js": 516,
    "/js/say-clips.js": 677,
-   "/js/say.js": 3539,
+   "/js/say.js": 3629,
    "/js/scenes.js": 1392,
    "/js/shell.js": 1671,
    "/js/skills/early.js": 5459,
@@ -116,7 +116,7 @@
    "/js/slokas.js": 16068,
    "/js/star.js": 8312,
    "/js/store.js": 5886,
-   "/js/sutra-ambience.js": 4087,
+   "/js/sutra-ambience.js": 4169,
    "/js/sutra-details.js": 13423,
    "/js/sutras.js": 3866,
    "/js/tour.js": 2215,
@@ -125,16 +125,25 @@
    "/js/viz.js": 5745,
    "/js/voice-index.js": 213,
    "/js/voice-plan.js": 2458,
-   "/js/voice-worker.js": 846,
-   "/js/voice.js": 14355,
+   "/js/voice-worker.js": 877,
+   "/js/voice.js": 14365,
    "/js/watch.js": 2065,
    "/manifest.webmanifest": 313,
    "/math.css": 21108,
-   "/play/": 3523,
-   "/sw.js": 5796,
+   "/play/": 3525,
+   "/sw.js": 6016,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
-  }
+  },
+  "changes": [
+   {
+    "date": "2026-10-21",
+    "pr": 115,
+    "from": 744827,
+    "to": 745286,
+    "why": "react-typescript phase 1 (#114): the three js/ edits (comments and absolute /sounds/ URLs) and sw.js published from sw.ts (its new header comment, the /api/ rule and lint fixes); no new file"
+   }
+  ]
  },
  "lighthouse": {
   "preset": "mobile (simulated slow 4G, 4x CPU), median of 5 runs",

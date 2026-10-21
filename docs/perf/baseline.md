@@ -9,9 +9,9 @@ The numbers of the live game before the migration to React (openspec change `rea
 - **Machine:** a GitHub-hosted `ubuntu-latest` runner, through `.github/workflows/perf.yml` (run 39526007402). The gates of task 1.8 run on the same kind of runner, so like is compared with like. Lighthouse 13.5.0, with the Chromium of Playwright 1.64.1.
 - **Re-measuring:** run `perf.yml` by hand (Actions, "Perf baseline", optional `base_url`). Locally, from the repository root: `python3 build.py --out _site`, then `node tools/budget.ts _site`. From `e2e/`: `node perf/lighthouse.mts` and `pnpm exec playwright test -c perf/playwright.config.ts`.
 
-## First load: 744,827 bytes (Brotli)
+## First load: 745,286 bytes (Brotli)
 
-The Brotli-compressed size (quality 11) of everything a first visit to `/play/` requests before the first tap, counting each unique file once: 727.4 KB in 122 files. `tools/budget.ts` reads it from a build:
+The Brotli-compressed size (quality 11) of everything a first visit to `/play/` requests before the first tap, counting each unique file once: 727.8 KB in 122 files, the budget since #115. The live site measured 744,827 bytes (727.4 KB); phase 1's own edits added 459 bytes (see the table at the end). `tools/budget.ts` reads it from a build:
 - the page itself;
 - every file the page links or loads (styles, the design system, the header script, fonts it preloads, icons, the manifest);
 - the static module graph of `/js/app.js`;
@@ -100,4 +100,4 @@ The baseline is run 1. Task 0.4's repeatability check: the same job runs the scr
 
 | Date | Pull request | First load (Brotli) | Why |
 |---|---|---|---|
-| 2026-10-20 | #115 | 739,463 to 739,939 bytes | Phase 1's own edits from #114: the three `js/` edits (comments and absolute `/sounds/` URLs) and `sw.js` published from `sw.ts` (its new header comment and the `/api/` rule). No new file. |
+| 2026-10-21 | #115 | 744,827 to 745,286 bytes | Phase 1's own edits from #114 and #115: the three `js/` edits (comments and absolute `/sounds/` URLs) and `sw.js` published from `sw.ts` (its new header comment, the `/api/` rule and the lint fixes). No new file. |
