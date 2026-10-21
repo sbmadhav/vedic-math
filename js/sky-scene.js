@@ -78,6 +78,13 @@ export const FALCON_BRICKS = (() => {
   return out.map(b => b.map(r2));
 })();
 
+/* ---------- Circling the square (Baudhāyana's Śulba rule) ----------
+   A square of half-side a around a peg; the rope from the peg to a corner (a√2) is swung down to the east-west line;
+   a third of the part beyond the square is added to the half-side: r = a + (a√2 − a) / 3. The circle of radius r has
+   nearly the area of the square (about 1.7 per cent more). Steps of the drawing, as fractions of its time. */
+export const SULBA = { a: 0.6, steps: { peg: [0, 0.08], line: [0.08, 0.2], corners: [0.2, 0.28], sides: [0.28, 0.48], swing: [0.48, 0.62], third: [0.62, 0.74], circle: [0.74, 1] } };
+export const sulbaRadius = a => a + (a * Math.SQRT2 - a) / 3;
+
 /* ---------- Meru-prastāra rows ---------- */
 export const meruRows = n => { const rows = [[1]]; while (rows.length < n) { const p = rows[rows.length - 1]; rows.push([1, ...p.slice(1).map((x, i) => x + p[i]), 1]); } return rows; };
 
@@ -88,6 +95,7 @@ export const meruRows = n => { const rows = [[1]]; while (rows.length < n) { con
    "27 nakshatras · Vedāṅga Jyotiṣa"). */
 const story = (id, art, aspect, draw, title, line, source = '') => ({ id, art, aspect, draw, title, line, source });
 export const STORIES = [
+  story('sulba', 'sulba', 1, 12, 'Circling the square', 'The Śulba rule for a circle with nearly the same area as a square, laid out with a rope and pegs.', 'Baudhāyana, about 800 to 500 BCE'),
   story('falcon', 'falcon', 1.6, 7, 'Falcon altar', 'The śyenaciti, a fire altar shaped like a falcon, laid in bricks by exact rules.', 'Śulba Sūtras, about 800 to 500 BCE'),
   story('powers', 'powers', 1.5, 6, 'Powers of ten', 'The Taittirīya Saṃhitā names every power of ten from eka (1) to parārdha (one trillion).'),
   story('meru', 'meru', 1.15, 7, 'Meru-prastāra', 'Piṅgala\'s triangle for counting poetic meters, the pattern later called Pascal\'s triangle.', 'Piṅgala, about 200 BCE'),
@@ -96,7 +104,7 @@ export const STORIES = [
 ];
 
 /* What the background shows, for "What is in the background?" (music panel) and the history page */
-export const BG_NOTES = [NOTES.devanagari, NOTES.falcon, NOTES.powers, NOTES.meru, NOTES.brahmi, NOTES.nakshatras];
+export const BG_NOTES = [NOTES.devanagari, NOTES.sulba, NOTES.falcon, NOTES.powers, NOTES.meru, NOTES.brahmi, NOTES.nakshatras];
 
 /* ---------- Levels: the layer config ----------
    fps: frame cap. stars: background stars per 100,000 square px. constellations: how many (phone, wide), their height
@@ -110,9 +118,24 @@ export const levelFor = (hash, { picker = false, sky = false } = {}) => (!sky &&
 
 /* Token names per color scheme (sky-bg reads their values from the page, so colors are the design system's) */
 export const PALETTE = {
-  dark: { star: '--ink', line: '--sky', node: '--sun', horizon: '--plum', art: '--sun', art2: '--sky', ink: '--ink', muted: '--ink-muted', plaque: '--bg', edge: '--line' },
-  light: { star: '--sun-strong', line: '--sky-strong', node: '--coral-strong', horizon: '--plum-strong', art: '--coral-strong', art2: '--sky-strong', ink: '--ink', muted: '--ink-muted', plaque: '--bg', edge: '--line' }
+  dark: { star: '--ink', line: '--sky', node: '--sun', horizon: '--plum', art: '--sun', art2: '--sky', ink: '--ink', muted: '--ink-muted', plaque: '--bg', edge: '--line', one: '--sky', zero: '--bolt-eye', sun: '--sun', nine: '--coral', face: '--on-accent' },
+  light: { star: '--sun-strong', line: '--sky-strong', node: '--coral-strong', horizon: '--plum-strong', art: '--coral-strong', art2: '--sky-strong', ink: '--ink', muted: '--ink-muted', plaque: '--bg', edge: '--line', one: '--sky', zero: '--bolt-eye', sun: '--sun', nine: '--coral', face: '--on-accent' }
 };
+/* The Nikhilam Family (brand/nikhilam-family/, the header mark in a 96 by 64 box): each part is [path, fill, stroke,
+   width] with token keys from PALETTE. It peeks over a story's caption for a moment when the story is complete. */
+export const FAMILY = [
+  ['M6 21C5 11 13 6 18 6C24 6 28 11 27 17C26 23 20 27 13 27C20 33 26 44 27 56', null, 'one', 6.5],
+  ['M12.7 16.5a1.8 2.2 0 1 0 3.6 0a1.8 2.2 0 1 0 -3.6 0M18.7 16.5a1.8 2.2 0 1 0 3.6 0a1.8 2.2 0 1 0 -3.6 0', 'ink', null, 0],
+  ['M35 42a11 11 0 1 0 22 0a11 11 0 1 0 -22 0', 'zero', 'sun', 7],
+  ['M40.7 41a1.8 2.2 0 1 0 3.6 0a1.8 2.2 0 1 0 -3.6 0M47.7 41a1.8 2.2 0 1 0 3.6 0a1.8 2.2 0 1 0 -3.6 0', 'face', null, 0],
+  ['M43 45.5Q46 48.5 49 45.5', null, 'face', 1.9],
+  ['M66.8 31.2C72 42 85 44 88 58', null, 'nine', 7],
+  ['M63 22a13 13 0 1 0 26 0a13 13 0 1 0 -26 0', 'sun', 'nine', 7],
+  ['M70 21a2 2.5 0 1 0 4 0a2 2.5 0 1 0 -4 0M78 21a2 2.5 0 1 0 4 0a2 2.5 0 1 0 -4 0', 'face', null, 0],
+  ['M72.5 26Q76 29.5 79.5 26', null, 'face', 2.1]
+];
+/* When the family peeks: seconds into a story's hold, and for how long */
+export const CAMEO = { at: 0.3, for: 3.6 };
 /* Opacity per layer (dark, light): faint enough that text on top keeps its contrast (e2e/tests/background.spec.ts) */
 export const ALPHA = { star: [0.5, 0.35], line: [0.14, 0.12], node: [0.42, 0.32], horizon: [0.3, 0.26], art: [0.75, 0.7] };
 
