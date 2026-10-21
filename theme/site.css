@@ -105,3 +105,6 @@ html.motion-paused .lv-mode:is(:hover, :focus-visible) .lv-mode-go, html.calm .l
 :root[data-theme="dark"] .vm-bg { background: radial-gradient(140% 50% at 50% 110%, color-mix(in srgb, var(--plum) 16%, transparent), transparent 72%),
   linear-gradient(180deg, color-mix(in srgb, var(--sky) 5%, transparent), transparent 45%); }
 .lv-landing main, .lv-landing .lv-foot { position: relative; z-index: 1; }
+/* Welcome back: main stays unseen while the script after the Modes sets its words (site/index.html), so nothing shifts */
+html[data-lv-wait] .lv-landing main { visibility: hidden; animation: lv-show 0s 1.5s forwards; } /* shown anyway after 1.5 s */
+@keyframes lv-show { to { visibility: visible; } }

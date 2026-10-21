@@ -50,11 +50,11 @@ The site SHALL present itself as a place to learn, with games as one way to lear
 ## ADDED Requirements
 
 ### Requirement: The Mode cards are links
-Each of the landing page's three Mode cards (Explorer, Challenger, Pro) SHALL be one link to `/play/?mode=<id>` (`explorer`, `challenger`, `pro`) whose accessible name is its call to action, with its ages and blurb as its description. The call to action SHALL be visible at the card's foot ("Start as Explorer", "Start as Challenger", "Start as Pro") with an arrow. The lede SHALL say that a tap starts in that Mode and that the Mode can be changed any time.
+Each of the landing page's three Mode cards (Explorer, Challenger, Pro) SHALL be one link to `/play/?mode=<id>` (`explorer`, `challenger`, `pro`) whose accessible name holds all its visible words (the Mode, its ages and blurb) and ends in its call to action. The call to action SHALL be visible at the card's foot ("Start as Explorer", "Start as Challenger", "Start as Pro") with an arrow. The lede SHALL say that a tap starts in that Mode and that the Mode can be changed any time.
 
 #### Scenario: A card is a link
 - **WHEN** a first-time visitor opens the landing page
-- **THEN** there are three links named "Start as Explorer", "Start as Challenger" and "Start as Pro", to `/play/?mode=explorer`, `/play/?mode=challenger` and `/play/?mode=pro`, each showing its call to action
+- **THEN** there are three links whose names end in "Start as Explorer", "Start as Challenger" and "Start as Pro", to `/play/?mode=explorer`, `/play/?mode=challenger` and `/play/?mode=pro`, each showing its call to action
 
 #### Scenario: Tapping a card
 - **WHEN** a first-time visitor taps the Explorer card
@@ -105,7 +105,7 @@ On the welcome back version, when the active Player has a Mode, that Mode's card
 - **THEN** the game opens on the Pro Home
 
 ### Requirement: Welcome back only reads
-The welcome back version SHALL change only the page's own text and attributes: it SHALL write nothing to storage and send nothing about the Player. The first-visit version SHALL be the page's HTML, so with JavaScript off or storage blocked the first-visit version is shown.
+The welcome back version SHALL set its words before the page's main content is first shown, so nothing shifts, and SHALL change only the page's own text and attributes: it SHALL write nothing to storage and send nothing about the Player. The first-visit version SHALL be the page's HTML, so with JavaScript off or storage blocked the first-visit version is shown.
 
 #### Scenario: Nothing written or sent
 - **WHEN** a returning Player opens `/?home`
