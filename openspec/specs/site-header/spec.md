@@ -65,7 +65,7 @@ Below 1180px the nav SHALL move below the controls and wrap onto as many rows as
 - **THEN** it finds no serious or critical violation
 
 ### Requirement: One header row on a phone
-Under 420px the game's brand SHALL show its mark only, keeping "Learn Vedic Math" as its accessible name, so the brand and every control share one row: at 390px wide the header SHALL be at most 132px tall.
+Under 420px the game's brand SHALL show its mark only, keeping "Learn Vedic Math, home" as its accessible name, so the brand and every control share one row: at 390px wide the header SHALL be at most 132px tall.
 
 #### Scenario: A 390px phone
 - **WHEN** a Challenger Player opens Home on a 390px wide screen

@@ -126,9 +126,13 @@ test.describe('motion allowed', () => {
   test('Pause motion during a burst: the confetti is gone at once', async ({ page }) => {
     await watchFx(page);
     await lightStar(page);
+    // The Pause motion switch in the header's music panel, pressed while the burst is still falling
+    await page.locator('#vmMBtn').click();
+    const sw = page.locator('#vmMotion');
+    await expect(sw).toBeVisible();
     await expect(page.locator('canvas.fx-confetti')).toHaveCount(1);
-    // What the Pause motion switch does (fx.setMotionPaused): the class on <html> and the sitemotion event
-    await page.evaluate(() => { document.documentElement.classList.add('motion-paused'); document.dispatchEvent(new CustomEvent('sitemotion', { detail: { paused: true } })); });
+    await sw.click();
+    await expect(sw).toHaveAttribute('aria-checked', 'true');
     await expect(page.locator('canvas.fx-confetti')).toHaveCount(0, { timeout: 500 });
   });
 });
