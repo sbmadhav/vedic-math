@@ -21,6 +21,8 @@ on:
     branches: [main]
     paths:
       - e2e/perf/**
+      - e2e/package.json
+      - e2e/package-lock.json
       - tools/budget.ts
       - tools/lighthouserc.json
       - .github/workflows/perf.yml
@@ -81,6 +83,17 @@ jobs:
           cp perf/results/interactions.json perf/results/interactions-1.json
           npx playwright test -c perf/playwright.config.ts
           cp perf/results/interactions.json perf/results/interactions-2.json
+          # Task 0.4's check: the two runs' medians agree within the spec's 20 ms
+          node -e '
+            const [a, b] = [1, 2].map(n => require(`./perf/results/interactions-${n}.json`).interactions);
+            let bad = 0;
+            for (const name of new Set([...Object.keys(a), ...Object.keys(b)]))
+              for (const m of ["inp", "visible"]) {
+                const d = Math.abs((a[name]?.[m] ?? NaN) - (b[name]?.[m] ?? NaN));
+                console.log(`${name} ${m}: ${a[name]?.[m]} and ${b[name]?.[m]} (${d} ms apart)`);
+                if (!(d <= 20)) { bad++; console.log(`::error::${name} ${m}: the two runs differ by more than 20 ms`); }
+              }
+            process.exit(bad ? 1 : 0);'
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()

@@ -14,7 +14,7 @@
    Analytics never counts a run: GoatCounter and Cloudflare Web Analytics are blocked by URL pattern. */
 import lighthouse from 'lighthouse';
 import { chromium, type BrowserContext } from '@playwright/test';
-import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, realpathSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -154,4 +154,6 @@ async function main(argv: string[]) {
   if (json) writeFileSync(json, JSON.stringify(out, null, 1) + '\n');
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) await main(process.argv.slice(2));
+/* Run as a script; real paths, as import.meta.url is resolved through symlinks and percent-encoded */
+const isMain = () => { try { return !!process.argv[1] && realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]); } catch { return false; } };
+if (isMain()) await main(process.argv.slice(2));

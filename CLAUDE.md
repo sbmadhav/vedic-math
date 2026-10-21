@@ -32,9 +32,9 @@ The game is moving to React Router v7 (framework mode, server-rendered on Cloudf
 
 - A Locked view is one a migration pull request is moving (its description starts with `Locks:`). A feature pull request that touches a Locked view waits for that pull request; content changes never wait.
 - A migration pull request changes no behavior. In `e2e/` it may change selectors, waits and URL forms, never what a test expects a Player to see or what is stored or sent, and its description lists every changed spec line.
-- New code is TypeScript, and React for views. Nothing a server render reaches may read `window`, `document`, `localStorage`, `sessionStorage` or `Date.now()` (read them in an effect, a handler, a hook or `<ClientOnly>`). Markup from content goes through the one `Markup` component, never `innerHTML`.
+- New code is TypeScript, and React for views. Nothing a server render reaches may read `window`, `document`, `localStorage`, `sessionStorage` or `Date.now()`: a component and a custom hook's body run on the server too, so read them in an effect or an event handler, through a store hook that gives a server snapshot (`useSyncExternalStore`), or inside `<ClientOnly>`. Markup from content goes through the one `Markup` component, never `innerHTML`.
 - Specs reach the game's modules through `e2eMod()` and `mod()` from `e2e/tests/fixtures.ts`, never by a `/js/` URL.
-- Nothing that changes what Players download merges unless the performance gates pass against `docs/perf/baseline.md`.
+- What Players download is measured against `docs/perf/baseline.md`: from task 1.8 the build fails when first-load bytes grow past `docs/perf/baseline.json`, and each pull request's preview runs the load and interaction checks. A pull request that grows first load on purpose updates the baseline and says why.
 
 ## Checks before a push
 

@@ -13,7 +13,8 @@
 
    Brotli at quality 11 on each file's bytes as published, so the number does not depend on a server's settings.
    Requests made after an idle timer (GoatCounter's count.js) and on a tap are not first load. */
-import { readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, statSync, realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { join, posix } from 'node:path';
 import { brotliCompressSync, constants } from 'node:zlib';
 
@@ -134,4 +135,7 @@ function main(argv: string[]) {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main(process.argv.slice(2));
+/* Run as a script, not imported by a test. Real paths: import.meta.url is resolved through symlinks and
+   percent-encoded, process.argv[1] is neither (a temp directory under /var on macOS, a space in the path) */
+const isMain = () => { try { return !!process.argv[1] && realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1]); } catch { return false; } };
+if (isMain()) main(process.argv.slice(2));

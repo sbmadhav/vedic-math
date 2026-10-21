@@ -2,8 +2,12 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { BASE_URL } from '../playwright.config';
 
-/* The medians of perf/interactions.ts: a table on the console and perf/results/interactions.json */
+/* The medians of perf/interactions.ts: a table on the console and perf/results/interactions.json. A run that is
+   missing an interaction or a repeat writes no report and fails, so a failed test never leaves medians that look
+   complete. PERF_PARTIAL=1 allows a partial run (one interaction picked with -g, while working on the script). */
 type Sample = { name: string; inp: number; visible: number };
+const NAMES = ['arena-open', 'arena-answer', 'deep-dive-open', 'star-light']; // the record() names in interactions.ts
+const RUNS = 5; // repeatEach in perf/playwright.config.ts
 
 const median = (xs: number[]) => {
   const s = [...xs].sort((a, b) => a - b);
@@ -13,9 +17,10 @@ const median = (xs: number[]) => {
 
 export default function report() {
   const file = join(__dirname, 'results', 'interactions.jsonl');
-  if (!existsSync(file)) return;
-  const samples = readFileSync(file, 'utf8').trim().split('\n').filter(Boolean).map(l => JSON.parse(l) as Sample);
+  const samples = existsSync(file) ? readFileSync(file, 'utf8').trim().split('\n').filter(Boolean).map(l => JSON.parse(l) as Sample) : [];
   const names = [...new Set(samples.map(s => s.name))];
+  const short = (process.env.PERF_PARTIAL ? names : NAMES).filter(n => samples.filter(s => s.name === n).length !== RUNS);
+  if (short.length) throw new Error(`no interaction report: ${short.map(n => `${n} has ${samples.filter(s => s.name === n).length} of ${RUNS} runs`).join(', ')}`);
   const out: Record<string, { runs: number; inp: number; visible: number; samples: { inp: number; visible: number }[] }> = {};
   for (const n of names) {
     const mine = samples.filter(s => s.name === n);

@@ -6,7 +6,8 @@ import { join } from 'node:path';
    perf job of task 1.8 runs it too). Run from e2e/:
      npx playwright test -c perf/playwright.config.ts            (BASE_URL as for the suite; the live site by default)
    Chromium with 4x CPU slowdown through the DevTools protocol, each interaction 5 times in a fresh context (the
-   config's repeatEach), the median printed and written to perf/results/interactions.json by perf/report.ts.
+   config's repeatEach), the median printed and written to perf/results/interactions.json by perf/report.ts (which
+   refuses a run missing an interaction or a repeat; PERF_PARTIAL=1 allows one picked with -g).
 
    Two numbers per interaction, both in ms:
    - inp: the Event Timing API's duration of the tap (pointerdown to the next paint after its handlers), the longest
