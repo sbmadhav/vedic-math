@@ -19,6 +19,7 @@ export default function report() {
   const file = join(__dirname, 'results', 'interactions.jsonl');
   const samples = existsSync(file) ? readFileSync(file, 'utf8').trim().split('\n').filter(Boolean).map(l => JSON.parse(l) as Sample) : [];
   const names = [...new Set(samples.map(s => s.name))];
+  if (!names.length) throw new Error('no interaction report: no interaction recorded a sample');
   const short = (process.env.PERF_PARTIAL ? names : NAMES).filter(n => samples.filter(s => s.name === n).length !== RUNS);
   if (short.length) throw new Error(`no interaction report: ${short.map(n => `${n} has ${samples.filter(s => s.name === n).length} of ${RUNS} runs`).join(', ')}`);
   const out: Record<string, { runs: number; inp: number; visible: number; samples: { inp: number; visible: number }[] }> = {};
