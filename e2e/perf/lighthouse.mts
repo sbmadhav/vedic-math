@@ -27,7 +27,8 @@ const RC = JSON.parse(readFileSync(join(HERE, '..', '..', 'tools', 'lighthouserc
 };
 
 /* ttfb: time to first byte of the page as Lighthouse's throttled run models it (DNS, connection, TLS and the server's
-   answer: the metrics audit's timeToFirstByte); srt: the server's own response time (the server-response-time audit) */
+   answer: the metrics audit's timeToFirstByte; the server's response time when the worker answers the page);
+   srt: the server's own response time (the server-response-time audit) */
 export type Metrics = { fcp: number; lcp: number; tbt: number; cls: number; si: number; ttfb: number; srt: number };
 export const METRICS: (keyof Metrics)[] = ['fcp', 'lcp', 'tbt', 'cls', 'si', 'ttfb', 'srt'];
 const AUDIT: Record<Exclude<keyof Metrics, 'ttfb'>, string> = {
@@ -101,10 +102,11 @@ async function once(url: string, port: number, keepStorage: boolean): Promise<Me
     if (typeof v !== 'number') throw new Error(`${url}: no ${audit} in the report`);
     out[k] = v;
   }
+  // A page the service worker answers (the repeat visit) has no network time to first byte: the server-response-time
+  // audit's value stands in for it there
   const items = (lhr.audits.metrics?.details as { items?: { timeToFirstByte?: number }[] } | undefined)?.items;
   const ttfb = items?.[0]?.timeToFirstByte;
-  if (typeof ttfb !== 'number') throw new Error(`${url}: no timeToFirstByte in the metrics audit`);
-  out.ttfb = ttfb;
+  out.ttfb = typeof ttfb === 'number' ? ttfb : out.srt;
   return out;
 }
 
