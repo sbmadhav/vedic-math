@@ -4,8 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Before paint: an old game link (#/route) goes on to /play/ with its route, and a device that already has Players
-     goes straight into the game unless the URL has ?home (links from the game carry it). Reads storage, writes nothing. -->
-<script>(function(){var l=location;try{if(/^#\//.test(l.hash)){l.replace('/play/'+l.hash);return;}if(/(^|[?&])home(=|&|$)/.test(l.search.slice(1)))return;var p=JSON.parse(localStorage.getItem('vm.players')||'null');if(p&&p.list&&p.list.length)l.replace('/play/');}catch(e){}})();</script>
+     goes straight into the game unless the URL has ?home (links from the game carry it). With ?home on such a device,
+     main waits unseen (html[data-lv-wait]) until the welcome back script after the Modes has set its words, so nothing
+     shifts. Reads storage, writes nothing. -->
+<script>(function(){var l=location;try{if(/^#\//.test(l.hash)){l.replace('/play/'+l.hash);return;}var p=JSON.parse(localStorage.getItem('vm.players')||'null'),b=p&&Array.isArray(p.list)&&p.list.length;if(/(^|[?&])home(=|&|$)/.test(l.search.slice(1))){if(b)document.documentElement.setAttribute('data-lv-wait','');return;}if(b)l.replace('/play/');}catch(e){}})();</script>
 <title>Learn Vedic Math: speed tricks, practice and games for every age</title>
 <meta name="description" content="Learn Vedic Math is a free way to learn math for ages 4 to adult: speed tricks from Bharati Krishna Tirtha's 1965 book, practice from counting to calculus, games, daily Stars and Boards.">
 <link rel="canonical" href="https://learnvedicmath.com/">
@@ -93,35 +95,61 @@
     </div>
   </section>
 
-  <section class="md-section md-band">
+  <!-- The Modes (openspec change landing-modes-and-return): each card is one link that opens the game in its Mode
+       (/play/?mode=<id>, read by js/app.js at boot). Its name is its whole text, ending in its call to action, so the
+       visible words are all in it (WCAG 2.5.3). -->
+  <section class="md-section md-band" aria-labelledby="lv-modes-h">
     <div class="md-wrap">
-      <h2 class="md-heading">Three ways to learn</h2>
-      <p class="md-lede">Pick the one that fits. You can change it any time, and every Mode has the same tricks at its own pace.</p>
-      <p class="lv-what">Learn Vedic Math teaches the speed tricks from Bharati Krishna Tirtha's 1965 book <i>Vedic Mathematics</i>, with practice from counting to calculus, games, daily Stars and Boards. Lessons, problems and pictures are our own. Your progress stays on your device.</p>
+      <h2 class="md-heading" id="lv-modes-h">Pick how you learn</h2>
+      <p class="md-lede">Tap one to start in that Mode. You can change it any time, and every Mode has the same tricks at its own pace.</p>
       <ul class="lv-modes">
-        <li class="lv-mode lv-mode--sun"><h3>Explorer</h3><p class="lv-ages">About 4 to 7</p><p>Big buttons, pictures, counting and read aloud.</p></li>
-        <li class="lv-mode lv-mode--sky"><h3>Challenger</h3><p class="lv-ages">About 8 to 12</p><p>Speed tricks, Belts and daily challenges.</p></li>
-        <li class="lv-mode lv-mode--plum"><h3>Pro</h3><p class="lv-ages">13 to adult</p><p>Algebra to calculus, sutra deep dives and Boards.</p></li>
+        <li><a class="lv-mode lv-mode--sun" data-mode="explorer" href="/play/?mode=explorer">
+          <div class="lv-mode-top"><span class="lv-mode-ic" aria-hidden="true"><svg viewBox="0 0 32 32" width="30" height="30"><circle cx="16" cy="18" r="9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 9V4M12 5l4-1 4 1M12.5 17h.01M19.5 17h.01M13 21c2 1.5 4 1.5 6 0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><h3>Explorer</h3></div>
+          <span class="lv-mode-about"><span class="lv-ages">About 4 to 7.</span> <span>Big buttons, pictures, counting and read aloud.</span></span>
+          <span class="lv-mode-cta"><span id="lv-go-explorer">Start as Explorer</span><svg class="lv-mode-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </a></li>
+        <li><a class="lv-mode lv-mode--sky" data-mode="challenger" href="/play/?mode=challenger">
+          <div class="lv-mode-top"><span class="lv-mode-ic" aria-hidden="true"><svg viewBox="0 0 32 32" width="30" height="30"><path d="M17 3L7 18h8l-1 11 11-16h-8z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><h3>Challenger</h3></div>
+          <span class="lv-mode-about"><span class="lv-ages">About 8 to 12.</span> <span>Speed tricks, Belts and daily challenges.</span></span>
+          <span class="lv-mode-cta"><span id="lv-go-challenger">Start as Challenger</span><svg class="lv-mode-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </a></li>
+        <li><a class="lv-mode lv-mode--plum" data-mode="pro" href="/play/?mode=pro">
+          <div class="lv-mode-top"><span class="lv-mode-ic" aria-hidden="true"><svg viewBox="0 0 32 32" width="30" height="30"><path d="M5 26L13 8l5 10 3-5 6 13z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="7" r="2.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><h3>Pro</h3></div>
+          <span class="lv-mode-about"><span class="lv-ages">13 to adult.</span> <span>Algebra to calculus, sutra deep dives and Boards.</span></span>
+          <span class="lv-mode-cta"><span id="lv-go-pro">Start as Pro</span><svg class="lv-mode-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </a></li>
       </ul>
     </div>
   </section>
+  <!-- Welcome back (landing-modes-and-return): on a device with Players (here only with ?home, since the bare / has
+       already gone on to the game) the hero greets the active Player by Nickname and their Mode's card is marked.
+       It reads storage and changes this page's text only: nothing is written or sent. Without JavaScript or storage the
+       first-visit HTML above stays. The build allows this script by its hash in the page's policy (_headers). -->
+  <script>(function(){try{var P=JSON.parse(localStorage.getItem('vm.players')||'null');if(!P||!Array.isArray(P.list)||!P.list.length)return;var d=document,p=P.list.filter(function(x){return x&&x.id===P.active;})[0]||P.list[0]||{},M={explorer:'Explorer',challenger:'Challenger',pro:'Pro'},m=Object.prototype.hasOwnProperty.call(M,p.mode)?p.mode:'',n=typeof p.name==='string'?p.name.trim().slice(0,40):'';d.body.setAttribute('data-visit','back');d.querySelector('.lv-title').textContent=n?'Welcome back, '+n:'Welcome back';d.querySelector('.lv-sub').textContent='Pick up where you left off.';d.querySelector('.lv-play').firstChild.nodeValue='Keep playing';if(!m)return;[].forEach.call(d.querySelectorAll('.lv-mode[data-mode]'),function(a){var id=a.getAttribute('data-mode'),t=d.getElementById('lv-go-'+id);if(id===m){a.setAttribute('aria-current','true');a.setAttribute('href','/play/');t.textContent='Keep playing as '+M[id];var b=d.createElement('span');b.className='lv-mode-badge';b.textContent='Your Mode';a.querySelector('.lv-mode-top').appendChild(b);}else t.textContent='Switch to '+M[id];});}catch(e){}finally{document.documentElement.removeAttribute('data-lv-wait');}})();</script>
 
   <section class="md-section">
     <div class="md-wrap lv-cols">
       <div>
+        <h2 class="md-heading">What you learn</h2>
+        <p>Learn Vedic Math teaches the speed tricks from Bharati Krishna Tirtha's 1965 book <i>Vedic Mathematics</i>, with practice from counting to calculus, games, daily Stars and Boards. Lessons, problems and pictures are our own. Your progress stays on your device.</p>
+      </div>
+      <div>
         <h2 class="md-heading">Where the tricks come from</h2>
         <p>The sixteen sutras are short rules from Bharati Krishna Tirtha's book, published in 1965. They are not found in the Vedas. We teach them because they are quick and fun, and we name the older Indian mathematicians where their work comes up.</p>
       </div>
-      <div>
-        <h2 class="md-heading">For grown-ups</h2>
-        <p>Nobody types a name or an email. Players under 13 never post anything online, and nothing reaches Google or YouTube until a Player chooses a video or a World board.</p>
-        <ul class="lv-links">
-          <li><a href="/parents/">For parents</a></li>
-          <li><a href="/teachers/">For teachers</a></li>
-          <li><a href="/privacy/">Privacy policy</a></li>
-          <li><a href="/terms/">Terms of use</a></li>
-        </ul>
-      </div>
+    </div>
+  </section>
+
+  <section class="md-section md-band">
+    <div class="md-wrap lv-grown">
+      <h2 class="md-heading">For grown-ups</h2>
+      <p>Nobody types a name or an email. Players under 13 never post anything online, and nothing reaches Google or YouTube until a Player chooses a video or a World board.</p>
+      <ul class="lv-links">
+        <li><a href="/parents/">For parents</a></li>
+        <li><a href="/teachers/">For teachers</a></li>
+        <li><a href="/privacy/">Privacy policy</a></li>
+        <li><a href="/terms/">Terms of use</a></li>
+      </ul>
     </div>
   </section>
 </main>

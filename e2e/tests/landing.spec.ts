@@ -31,7 +31,7 @@ test.describe('a first visit', () => {
     await page.goto('/');
     const start = page.locator('main a.lv-play');
     await expect(start).toHaveText('Start learning');
-    await expect(page.locator('main h2').first()).toHaveText('Three ways to learn');
+    await expect(page.locator('main h2').first()).toHaveText('Pick how you learn');
     await start.click();
     await expect(page).toHaveURL(/\/play\/$/);
     await expect(page.locator('.mode-pick .mode-card')).toHaveCount(3);
@@ -209,5 +209,103 @@ test.describe('reduced motion', () => {
     await page.goto('/?home');
     await expect(page.locator('svg.lv-family')).toBeVisible();
     expect(await running(page)).toBe(0);
+  });
+});
+
+/* The Mode cards (openspec change landing-modes-and-return): each card is a link into the game in its Mode, named by
+   its call to action, and the game drops the query once it has set the Mode. */
+const CARDS = [['explorer', 'Explorer', 'What do you want to play?'], ['challenger', 'Challenger', 'Ready to get faster?'], ['pro', 'Pro', 'Train your mental math']] as const;
+const activeMode = (page: import('@playwright/test').Page) => page.evaluate(() => { const p = JSON.parse(localStorage.getItem('vm.players') || '{}'); return ((p.list || []).find((x: any) => x.id === p.active) || {}).mode ?? null; });
+
+test.describe('Mode cards on a first visit', () => {
+  test.use({ seedMode: null });
+  for (const [id, name, heading] of CARDS) {
+    test(`"Start as ${name}" is a link that opens the game on the ${name} Home, with no query left`, async ({ page }, info) => {
+      await page.goto('/');
+      const card = page.getByRole('link', { name: `Start as ${name}` });
+      await expect(card).toHaveAttribute('href', `/play/?mode=${id}`);
+      await expect(card).toBeVisible();
+      await expect(card.locator('.lv-mode-cta')).toHaveText(`Start as ${name}`);
+      if (info.project.use.hasTouch) await card.tap(); else await card.click();
+      await expect(page.locator('h1.home-h')).toHaveText(heading);
+      await expect(page).toHaveURL(/\/play\/(#\/)?$/);
+      expect(await activeMode(page)).toBe(id);
+    });
+  }
+
+  test('the lede says a tap starts in that Mode, and a card rings on keyboard focus and opens by Enter', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('main .md-band .md-lede').first()).toContainText('Tap one to start in that Mode. You can change it any time');
+    const card = page.locator('a.lv-mode[data-mode="pro"]');
+    await card.focus();
+    await expect(card).toBeFocused();
+    expect(await card.evaluate(el => getComputedStyle(el).outlineStyle)).toBe('solid');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('h1.home-h')).toHaveText('Train your mental math');
+  });
+});
+
+/* Hover lifts a card when motion is allowed; reduced motion, Pause motion and Calm keep it still */
+const lift = async (page: import('@playwright/test').Page) => {
+  const card = page.locator('a.lv-mode[data-mode="explorer"]');
+  await card.hover();
+  await page.waitForTimeout(250);
+  return card.evaluate(el => getComputedStyle(el).transform);
+};
+test.describe('Mode card motion', () => {
+  test.use({ seedMode: null, reducedMotion: 'no-preference' });
+  test('hover lifts the card', async ({ page }, info) => {
+    test.skip(!!info.project.use.hasTouch, 'no hover on a touch screen');
+    await page.goto('/');
+    expect(await lift(page)).not.toBe('none');
+  });
+  for (const [what, key] of [['Pause motion', 'motion-paused'], ['Calm', 'vm.calm']] as const) {
+    test(`with ${what} on, hover leaves the card still`, async ({ page }, info) => {
+      test.skip(!!info.project.use.hasTouch, 'no hover on a touch screen');
+      await page.addInitScript(k => { try { localStorage.setItem(k, '1'); } catch (e) { /* storage blocked */ } }, key);
+      await page.goto('/');
+      expect(await lift(page)).toBe('none');
+    });
+  }
+});
+test.describe('Mode card, reduced motion', () => {
+  test.use({ seedMode: null });
+  test('hover leaves the card still', async ({ page }, info) => {
+    test.skip(!!info.project.use.hasTouch, 'no hover on a touch screen');
+    await page.goto('/');
+    expect(await lift(page)).toBe('none');
+  });
+});
+
+test.describe('welcome back', () => {
+  test('the hero greets the Player and their Mode card is marked; nothing is written', async ({ page }) => {
+    await page.goto('/?home');
+    const before = await page.evaluate(() => JSON.stringify(Object.entries(localStorage).sort()));
+    await expect(page.locator('body')).toHaveAttribute('data-visit', 'back');
+    await expect(page.locator('main h1')).toHaveText('Welcome back, Swift Tiger 42');
+    await expect(page.locator('main a.lv-play')).toHaveText('Keep playing');
+    const mine = page.getByRole('link', { name: 'Keep playing as Challenger' });
+    await expect(mine).toHaveAttribute('aria-current', 'true');
+    await expect(mine).toHaveAttribute('href', '/play/');
+    await expect(mine.locator('.lv-mode-badge')).toHaveText('Your Mode');
+    await expect(page.getByRole('link', { name: 'Switch to Explorer' })).toHaveAttribute('href', '/play/?mode=explorer');
+    await expect(page.getByRole('link', { name: 'Switch to Pro' })).toHaveAttribute('href', '/play/?mode=pro');
+    await expect(page.locator('.lv-mode-badge')).toHaveCount(1);
+    expect(await page.evaluate(() => JSON.stringify(Object.entries(localStorage).sort()))).toBe(before);
+  });
+
+  test('a Player with no Mode yet is welcomed, and every card still reads "Start as"', async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('vm.players', JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Calm Otter 7', avatar: 'teal', mode: null, created: 1 }] })); } catch (e) { /* storage blocked */ } });
+    await page.goto('/?home');
+    await expect(page.locator('main h1')).toHaveText('Welcome back, Calm Otter 7');
+    for (const [, name] of CARDS) await expect(page.getByRole('link', { name: `Start as ${name}` })).toBeVisible();
+    await expect(page.locator('[aria-current="true"].lv-mode')).toHaveCount(0);
+  });
+
+  test('a Nickname is shown as text, never as markup', async ({ page }) => {
+    await page.addInitScript(() => { try { localStorage.setItem('vm.players', JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: '<img src=x onerror=alert(1)>', avatar: 'teal', mode: 'pro', created: 1 }] })); } catch (e) { /* storage blocked */ } });
+    await page.goto('/?home');
+    await expect(page.locator('main h1 img')).toHaveCount(0);
+    await expect(page.locator('main h1')).toContainText('Welcome back, <img');
   });
 });
