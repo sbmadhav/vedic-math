@@ -52,7 +52,7 @@ Built in React after the `react-typescript` migration and after `placement`, whi
 
 1. `learnvedicmath` archived: the retired Parent step and under-13 device-only Boards, the new privacy policy in `docs/legal/` (which gains the Grade answer sentence), and its changes to `analytics` and `posting-consent`.
 2. `react-typescript` through phase 6 (Legacy retired, its task group 9): the game at `/learn/` with path routes, every screen in the design's map a React route module or component, the logic in `app/src/logic/` and `shared/src/`, `ClientOnly`, the store's server snapshot, the lifecycle hooks and their lint rule, and the pre-paint scripts. This change never adds code to a Legacy view. Its phases 7 (3D) and 8 (server voice) are not waited for; Early lines with a count use the server voice once phase 8 is on.
-3. `better-voice` Part B merged: Early's automatic read aloud uses Studio voice whole lines; every Early copy variant is a fixed line and is recorded whole.
+3. `better-voice` Part B merged: Early's automatic read aloud uses Studio voice whole lines; every fixed Early variant is recorded whole, while an Early variant with a `{n}` count is said from its matching server voice sentence template (design decision 6), never recorded once per number.
 4. `placement` archived: this change modifies its `placement` and `analytics` requirements. Archive `placement` first or the archive of this change will refuse the delta.
 5. `star-round` archived (it is), for the modified "Answer boxes by Mode".
 
