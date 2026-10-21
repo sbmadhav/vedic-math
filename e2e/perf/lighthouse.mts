@@ -73,8 +73,8 @@ async function seedPlayer(ctx: BrowserContext, base: string) {
 async function workerReady(ctx: BrowserContext, base: string) {
   const page = await ctx.newPage();
   await page.goto(`${base}/play/`);
-  await page.evaluate(() => navigator.serviceWorker.ready.then(() => undefined));
-  await page.waitForFunction(() => !!navigator.serviceWorker.controller, undefined, { timeout: 60_000 }).catch(() => {});
+  // Throws when no worker controls the page within a minute, so a "repeat" median always means a controlled page
+  await page.waitForFunction(() => !!navigator.serviceWorker.controller, undefined, { timeout: 60_000 });
   await page.close();
 }
 
