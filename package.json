@@ -9,13 +9,20 @@
   },
   "scripts": {
     "typecheck": "pnpm -r --parallel typecheck",
-    "lint": "echo 'ESLint and stylelint arrive with task 1.7'",
+    "lint": "eslint . && stylelint --allow-empty-input \"app/src/**/*.css\"",
     "test": "vitest run",
     "build": "python3 build.py"
   },
   "devDependencies": {
+    "@eslint/js": "9.39.5",
     "@types/node": "22.20.5",
+    "eslint": "9.39.5",
+    "eslint-plugin-react": "7.37.5",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.13.0",
+    "stylelint": "17.16.0",
     "typescript": "6.0.3",
+    "typescript-eslint": "8.72.0",
     "vitest": "4.1.12"
   }
 }

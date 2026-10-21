@@ -31,6 +31,8 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+    outputs:
+      url: ${{ steps.upload.outputs.url }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -139,4 +141,89 @@ jobs:
         with:
           name: playwright-report-preview
           path: e2e/playwright-report
+          retention-days: 14
+
+  # The load and interaction gate (openspec change react-typescript, performance-budget spec, task 1.8): the pages of
+  # tools/lighthouserc.json through Lighthouse's mobile preset and e2e/perf/interactions.ts (chromium, 4x CPU), each
+  # median compared with docs/perf/baseline.json by tools/perf-compare.ts, which fails beyond the tolerances. The table
+  # is posted on the pull request (one comment, updated on each push). The first-load byte gate is in build.py.
+  perf:
+    needs: preview
+    # Runs whenever a preview was uploaded, even when a Playwright test failed: the two checks report on their own
+    if: always() && needs.preview.outputs.url != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      BASE_URL: ${{ needs.preview.outputs.url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+
+      - name: Install the e2e package and chromium
+        working-directory: e2e
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile --filter e2e
+          pnpm exec playwright install --with-deps chromium
+
+      - name: Lighthouse (mobile preset, 5 runs a page)
+        working-directory: e2e
+        run: node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json
+
+      - name: Interaction timings (4x CPU, 5 runs)
+        working-directory: e2e
+        env:
+          E2E_SKIP_COV: "1"
+        run: pnpm exec playwright test -c perf/playwright.config.ts
+
+      # A runner's load can move a Lighthouse median by a few hundred ms (docs/perf/baseline.md), more than the 100 ms
+      # tolerance, so a miss is measured once more and only a miss in both runs fails the pull request
+      - name: Compare with the baseline
+        id: compare
+        run: |
+          set +e
+          node tools/perf-compare.ts docs/perf/baseline.json e2e/perf/results/lighthouse.json e2e/perf/results/interactions.json --out perf-table.md
+          code=$?
+          if [ "$code" != 0 ]; then
+            echo "::warning::a median missed its tolerance; measuring again to confirm"
+            mkdir -p e2e/perf/first && cp e2e/perf/results/*.json e2e/perf/first/
+            (cd e2e && node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json && pnpm exec playwright test -c perf/playwright.config.ts)
+            node tools/perf-compare.ts docs/perf/baseline.json e2e/perf/results/lighthouse.json e2e/perf/results/interactions.json --out perf-table.md
+            code=$?
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          cat perf-table.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post the table on the pull request
+        if: always() && steps.compare.outputs.code != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          marker='<!-- perf-table -->'
+          body=$(printf '%s\nPerformance of %s against docs/perf/baseline.json (median of 5 runs, the preview on workers.dev):\n\n%s\n\n---\n_Posted by the preview workflow (perf job)_' "$marker" "$SHA" "$(cat perf-table.md)")
+          id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate --jq ".[] | select(.body | startswith(\"$marker\")) | .id" | tail -1)
+          if [ -n "$id" ]; then gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -f body="$body" >/dev/null
+          else gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "$body"; fi
+
+      - name: Fail beyond the tolerances
+        if: steps.compare.outputs.code != '0'
+        run: |
+          echo "::error::a load or interaction median is beyond its tolerance (see the table above)"
+          exit 1
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: perf-preview
+          path: e2e/perf/results
           retention-days: 14

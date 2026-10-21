@@ -65,7 +65,7 @@ export function reach(manifest: Manifest): { precached: Set<string>; threeD: Set
     for (const k of c.dynamicImports || []) if (!isThreeD(manifest[k]?.src || k)) visit(k);
   };
   for (const [key, c] of Object.entries(manifest)) if (c.isEntry) visit(key);
-  const precached = new Set([...seen].flatMap(k => files(manifest[k]!)));
+  const precached = new Set([...seen].flatMap(k => { const c = manifest[k]; return c ? files(c) : []; }));
   const threeD = new Set<string>();
   for (const [key, c] of Object.entries(manifest)) if (!seen.has(key)) for (const f of files(c)) if (!precached.has(f)) threeD.add(f);
   return { precached, threeD };

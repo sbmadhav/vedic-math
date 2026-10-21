@@ -41,6 +41,10 @@ jobs:
       - name: Type check
         run: pnpm typecheck
 
+      # ESLint and stylelint (task 1.7): the same command the pre-commit hook runs
+      - name: Lint
+        run: pnpm lint
+
       # Vitest (task 1.6): the legacy tests in test/, the tools, the service worker, and the Worker in the Workers runtime
       - name: Unit tests
         run: pnpm test
@@ -76,7 +80,7 @@ jobs:
           grep -q '"/play/", "' _site/sw.js || err "_site/sw.js does not precache the game shell"
           grep -q "^const VERSION: string = 'dev';" app/src/sw/sw.ts || err "app/src/sw/sw.ts in git must keep VERSION = 'dev'"
           for f in index.html _redirects robots.txt sitemap.xml .well-known/security.txt 404.html; do test -f "_site/$f" || err "_site/$f is missing"; done
-          for f in CLAUDE.md README.md GLOSSARY.md CONTRIBUTING.md SECURITY.md LICENSE LICENSE-CONTENT.md THIRD-PARTY-NOTICES.md build.py _config.yml wrangler.jsonc cloud test e2e docs tools site moved workers app shared deploy node_modules package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json vitest.config.ts .npmrc .github .githooks; do
+          for f in CLAUDE.md README.md GLOSSARY.md CONTRIBUTING.md SECURITY.md LICENSE LICENSE-CONTENT.md THIRD-PARTY-NOTICES.md build.py _config.yml wrangler.jsonc cloud test e2e docs tools site moved workers app shared deploy node_modules package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json vitest.config.ts eslint.config.js stylelint.config.js .npmrc .github .githooks; do
             test ! -e "_site/$f" || err "_site/$f is a repo-only file and must not be published"
           done
           find _site -type f | sort

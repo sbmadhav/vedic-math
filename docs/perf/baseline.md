@@ -7,11 +7,11 @@ The numbers of the live game before the migration to React (openspec change `rea
 - **Site:** https://learnvedicmath.com, the game at `/play/`, measured on 2026-10-21 at 01:17 UTC.
 - **Commit:** `1401890` on `main` (Merge pull request #109). The live `sw.js` had `VERSION = '1730cf8552'`, the same as the job's `python3 build.py --voice off` of this pull request merged into that commit (the pull request publishes nothing), so the live files were that commit's.
 - **Machine:** a GitHub-hosted `ubuntu-latest` runner, through `.github/workflows/perf.yml` (run 39526007402). The gates of task 1.8 run on the same kind of runner, so like is compared with like. Lighthouse 13.5.0, with the Chromium of Playwright 1.64.1.
-- **Re-measuring:** run `perf.yml` by hand (Actions, "Perf baseline", optional `base_url`). Locally, from the repository root: `python3 build.py --out _site`, then `node tools/budget.ts _site`. From `e2e/`: `node perf/lighthouse.mts` and `pnpm exec playwright test -c perf/playwright.config.ts`.
+- **Re-measuring:** run `perf.yml` by hand (Actions, "Perf baseline", optional `base_url`). Locally, from the repository root: `python3 build.py --out _site --voice off` (the mode production builds in while R2 is not set up), then `node tools/budget.ts _site`. From `e2e/`: `node perf/lighthouse.mts` and `pnpm exec playwright test -c perf/playwright.config.ts`.
 
-## First load: 744,827 bytes (Brotli)
+## First load: 758,499 bytes (Brotli)
 
-The Brotli-compressed size (quality 11) of everything a first visit to `/play/` requests before the first tap, counting each unique file once: 727.4 KB in 122 files. `tools/budget.ts` reads it from a build:
+The Brotli-compressed size (quality 11) of everything a first visit to `/play/` requests before the first tap, counting each unique file once: 740.7 KB in 125 files, the budget since #115. The live site measured 744,827 bytes (727.4 KB) in 122 files; what merged since (the sky background #110 and #111, phase 1's #114, the Home redo #116) and #115's own edits brought it here (see the table at the end). `tools/budget.ts` reads it from a build:
 - the page itself;
 - every file the page links or loads (styles, the design system, the header script, fonts it preloads, icons, the manifest);
 - the static module graph of `/js/app.js`;
@@ -96,3 +96,11 @@ The baseline is run 1. Task 0.4's repeatability check: the same job runs the scr
 - **Bytes:** a pull request that grows first load on purpose updates `firstLoad` in `baseline.json` (`node tools/budget.ts _site --json <file>`) and says why. Phase 2 measures `/learn/` and reads the client build's manifest (task 2.7). That pull request records the new page's first measurement next to this one.
 - **Timings:** they are re-measured with `perf.yml` and replaced only with a reason, such as a runner image change that moves every number.
 
+## Changes to the baseline
+
+| Date | Pull request | First load (Brotli) | Why |
+|---|---|---|---|
+| 2026-10-21 | #110 | 744,827 to 755,652 bytes | Merged on `main` after the baseline was measured: the animated sky background (`js/sky-bg.js` and its styles), a feature outside this change. Counted here because the gate starts after it. |
+| 2026-10-21 | #111 | 755,652 to 757,612 bytes | Merged on `main` after #110: the sky background's second part (`js/sky-bg.js`), a feature outside this change. |
+| 2026-10-21 | #114, #116 | 757,612 to 758,466 bytes | Merged on `main`: phase 1's #114 (the three `js/` edits, comments and absolute `/sounds/` URLs, and `sw.js` published from `sw.ts` with its header comment and the `/api/` rule) and the Home redo (#116). |
+| 2026-10-21 | #115 | 758,466 to 758,499 bytes | Task 1.7's lint fixes in `sw.ts` (optional catch bindings, no non-null assertions). No new file. |

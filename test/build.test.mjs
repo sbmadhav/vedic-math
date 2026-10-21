@@ -7,7 +7,7 @@ import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { cpSync, mkdtempSync, readFileSync, writeFileSync, appendFileSync, rmSync, existsSync, readdirSync, statSync, mkdirSync } from 'node:fs';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,11 +15,16 @@ import { fileURLToPath } from 'node:url';
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dir = mkdtempSync(join(tmpdir(), 'lvm-build-'));
 for (const f of ['build.py', '_config.yml', '.gitignore', 'play', 'site', 'theme', 'vendor', 'fonts', 'icons', 'thumbs', 'math.css', 'css', 'app/src/sw',
-  'tools/build-sw.mjs', 'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'CLAUDE.md', 'README.md',
+  'tools/build-sw.mjs', 'tools/budget.ts', 'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'CLAUDE.md', 'README.md',
   'wrangler.jsonc', 'workers/src', 'package.json', 'pnpm-workspace.yaml', 'tsconfig.base.json', 'vitest.config.ts',
   'cloud/firestore.rules', 'test/support/verify.mjs', '.github', 'tools/voice/ci-fetch.mjs', 'tools/sutra-voice/names.mjs'])
   if (existsSync(join(repo, f))) cpSync(join(repo, f), join(dir, f), { recursive: true });
 writeFileSync(join(dir, '_notes.txt'), 'starts with _');
+/* The first-load budget (tools/budget.ts, task 1.8): every test but the budget's own builds against a roomy limit, so an
+   edit made to test something else never trips it; the budget tests set the limit to a real build's total */
+const BUDGET = join(dir, 'docs/perf/baseline.json');
+const setBudget = (total, files = {}) => { mkdirSync(dirname(BUDGET), { recursive: true }); writeFileSync(BUDGET, JSON.stringify({ firstLoad: { total, files } })); };
+setBudget(1e9);
 /* Run git and the build in the temp copy only. A pre-commit hook exports GIT_DIR, GIT_INDEX_FILE and friends;
    inherited, they would point `git init` at the real repository (which marks it core.bare = true) and make
    build.py list the real repository's files. */
@@ -475,4 +480,27 @@ test('--target moved builds the moved page, its pinned packer and the KILL worke
   // The packer never puts progress in a query string
   assert.match(m('js/handoff-pack.js'), /\/import\/\$\{fragment\(/);
   assert.match(m('js/handoff-schema.js'), /`#v=\$\{VERSION\}&d=\$\{data\}`/);
+});
+
+/* The first-load byte gate (openspec change react-typescript, performance-budget spec, task 1.8): 20 KB more in the
+   entry fails the build, and so does a 20 KB file that only the worker's install downloads */
+test('the build prints the first-load table and fails above the budget: 20 KB in the entry, or 20 KB only in PRECACHE', () => {
+  build();
+  const json = join(dir, '_measured.json');
+  execFileSync('node', ['--no-warnings', join(dir, 'tools/budget.ts'), out, '--json', json], { cwd: dir, env, encoding: 'utf8' });
+  const measured = JSON.parse(readFileSync(json, 'utf8'));
+  try {
+    setBudget(measured.total, measured.files);
+    assert.match(build(), /First load of \/play\/ \(Brotli, \d+ files\): \d+ bytes/);
+    const noise = randomBytes(20 * 1024);
+    withEdit('js/app.js', src => `${src}\n/* ${noise.toString('base64')} */\n`, () =>
+      fails(tryBuild(), /first-load budget: \d+ bytes Brotli is above the baseline's \d+ bytes \(docs\/perf\/baseline\.json\); largest new or grown file: \/js\/app\.js/));
+    withFile('icons/budget-test.png', noise, () => withEdit('manifest.webmanifest',
+      m => m.replace('"icons": [', '"icons": [\n    { "src": "/icons/budget-test.png", "sizes": "96x96", "type": "image/png" },'),
+      () => {
+        const r = tryBuild();
+        fails(r, /largest new or grown file: \/icons\/budget-test\.png \(\+\d+ bytes, new\)/);
+      }));
+    assert.doesNotThrow(() => build('--dev'), 'a --dev build has no PRECACHE and is not measured');
+  } finally { setBudget(1e9); }
 });

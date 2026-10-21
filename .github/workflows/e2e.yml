@@ -94,6 +94,75 @@ jobs:
           path: e2e/playwright-report
           retention-days: 14
 
+  # The load and interaction checks on production after each deploy (openspec change react-typescript,
+  # performance-budget spec, task 1.8): the same measurements as the preview's perf job, against
+  # https://learnvedicmath.com once the e2e job has seen the deploy go live. A miss opens an issue with the numbers;
+  # the deploy stays.
+  perf:
+    needs: e2e
+    if: always() && github.event_name == 'push' && vars.CLOUDFLARE_ACCOUNT_ID != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      issues: write
+    env:
+      BASE_URL: https://learnvedicmath.com
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      - name: Install the e2e package and chromium
+        working-directory: e2e
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile --filter e2e
+          pnpm exec playwright install --with-deps chromium
+
+      - name: Lighthouse (mobile preset, 5 runs a page)
+        working-directory: e2e
+        run: node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json
+
+      - name: Interaction timings (4x CPU, 5 runs)
+        working-directory: e2e
+        run: pnpm exec playwright test -c perf/playwright.config.ts
+
+      - name: Compare with the baseline; open an issue on a miss
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          node tools/perf-compare.ts docs/perf/baseline.json e2e/perf/results/lighthouse.json e2e/perf/results/interactions.json --out perf-table.md
+          code=$?
+          # One more run before an issue: a runner's load alone can move a Lighthouse median past the tolerance
+          if [ "$code" != 0 ]; then
+            (cd e2e && node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json && pnpm exec playwright test -c perf/playwright.config.ts)
+            node tools/perf-compare.ts docs/perf/baseline.json e2e/perf/results/lighthouse.json e2e/perf/results/interactions.json --out perf-table.md
+            code=$?
+          fi
+          set -e
+          cat perf-table.md >> "$GITHUB_STEP_SUMMARY"
+          if [ "$code" != 0 ]; then
+            body=$(printf 'Production (%s, after the deploy of %s) misses the performance baseline (docs/perf/baseline.json). The deploy stays.\n\n%s\n\nRun: %s/%s/actions/runs/%s' "$BASE_URL" "$GITHUB_SHA" "$(cat perf-table.md)" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")
+            # One open issue while a miss lasts: later misses comment on it
+            title="Performance budget missed on production"
+            open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number,title --jq "[.[] | select(.title | startswith(\"$title\"))][0].number // empty")
+            if [ -n "$open" ]; then gh issue comment "$open" --repo "$GITHUB_REPOSITORY" --body "$body"
+            else gh issue create --repo "$GITHUB_REPOSITORY" --title "$title (${GITHUB_SHA::7})" --body "$body"; fi
+          fi
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: perf-production
+          path: e2e/perf/results
+          retention-days: 30
+
   # Phase B (design D13): the moved page at https://sbmadhav.com/vedic-math/ hands progress over (task 16.4)
   moved-page:
     if: vars.MOVE_PHASE == 'B' && github.event_name != 'push'
