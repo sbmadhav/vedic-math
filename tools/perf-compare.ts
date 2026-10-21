@@ -2,18 +2,20 @@
    do not regress", task 1.8). Compares a run of e2e/perf/lighthouse.mts and e2e/perf/interactions.ts with the
    baseline in docs/perf/baseline.json, prints a Markdown table with both numbers, and fails beyond the tolerances:
    first or largest contentful paint more than 100 ms slower, total blocking time more than 25 ms longer, layout shift
-   above the larger of the baseline and 0.1, any interaction timing more than 20 ms slower.
+   above the larger of the baseline and 0.1, any interaction timing more than 20 ms slower (or more than the noise the
+   baseline records for that timing, when it records one: interactions.noise).
 
    Usage: node tools/perf-compare.ts <baseline.json> <lighthouse.json> <interactions.json> [--out table.md]
-   Exit code 1 when a median misses its tolerance. Time to first byte and Speed Index are shown for information. */
+   Exit code 1 when a median misses its tolerance. Time to first byte, the server's response time and Speed Index are
+   shown for information. */
 import { readFileSync, writeFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-export type Lh = { fcp: number; lcp: number; tbt: number; cls: number; si: number; ttfb: number };
+export type Lh = { fcp: number; lcp: number; tbt: number; cls: number; si: number; ttfb: number; srt?: number };
 export type Ix = { inp: number; visible: number };
 export type PerfBaseline = {
   lighthouse: { pages: Record<string, { path: string; visit: string; median: Lh }> };
-  interactions: { interactions: Record<string, Ix> };
+  interactions: { interactions: Record<string, Ix>; noise?: Record<string, Partial<Ix> | string> };
 };
 export type Row = { what: string; metric: string; base: number; now: number; limit: number | null; ok: boolean };
 
@@ -29,18 +31,24 @@ export const LIMITS: Partial<Record<keyof Lh | keyof Ix, (base: number) => numbe
 
 export function compare(base: PerfBaseline, lh: { pages: Record<string, { median: Lh }> }, ix: { interactions: Record<string, Ix> }): Row[] {
   const rows: Row[] = [];
+  const noise = base.interactions.noise ?? {};
+  const allowance = (what: string, metric: keyof Lh | keyof Ix) => {
+    const n = noise[what];
+    return typeof n === 'object' ? n[metric as keyof Ix] : undefined;
+  };
   const add = (what: string, metric: keyof Lh | keyof Ix, b: number | undefined, n: number | undefined) => {
     if (b === undefined || n === undefined) {
       rows.push({ what, metric, base: b ?? NaN, now: n ?? NaN, limit: null, ok: false });
       return;
     }
     const lim = LIMITS[metric];
-    const limit = lim ? lim(b) : null;
+    const extra = allowance(what, metric);
+    const limit = lim ? Math.max(lim(b), extra === undefined ? -Infinity : b + extra) : null;
     rows.push({ what, metric, base: b, now: n, limit, ok: limit === null || n <= limit });
   };
   for (const [page, { median }] of Object.entries(base.lighthouse.pages)) {
     const now = lh.pages[page]?.median;
-    for (const m of ['fcp', 'lcp', 'tbt', 'cls', 'si', 'ttfb'] as const) add(page, m, median[m], now?.[m]);
+    for (const m of ['fcp', 'lcp', 'tbt', 'cls', 'si', 'ttfb', 'srt'] as const) if (median[m] !== undefined) add(page, m, median[m], now?.[m]);
   }
   for (const [name, b] of Object.entries(base.interactions.interactions)) {
     const now = ix.interactions[name];

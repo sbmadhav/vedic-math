@@ -26,6 +26,14 @@ test('layout shift may rise to 0.1 even from a smaller baseline; TTFB and Speed 
   expect(over(lh({ cls: 0.09, ttfb: 900, si: 9000 }), ix())).toEqual([]);
 });
 
+test('a timing with recorded noise may move by that much, never less than the 20 ms tolerance', () => {
+  const noisy: PerfBaseline = { ...base, interactions: { ...base.interactions, noise: { '//': 'why', 'arena-answer': { inp: 120 } } } };
+  const over2 = (i: Ix) => compare(noisy, { pages: { arena: { median: lh() } } }, { interactions: { 'arena-answer': i } }).filter(r => !r.ok).map(r => r.metric);
+  expect(over2(ix({ inp: 48 + 120 }))).toEqual([]);
+  expect(over2(ix({ inp: 48 + 121 }))).toEqual(['inp']);
+  expect(over2(ix({ visible: 33 + 21 }))).toEqual(['visible']);
+});
+
 test('a page or interaction missing from the run fails', () => {
   expect(compare(base, { pages: {} }, { interactions: {} }).every(r => !r.ok)).toBe(true);
 });
