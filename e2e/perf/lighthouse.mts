@@ -86,7 +86,7 @@ async function workerReady(ctx: BrowserContext, base: string) {
   await page.close();
 }
 
-async function once(url: string, port: number, keepStorage: boolean): Promise<Metrics> {
+async function once(url: string, port: number, keepStorage: boolean, visit: 'first' | 'returning' | 'repeat'): Promise<Metrics> {
   const flags = {
     port, output: 'json' as const, logLevel: 'error' as const, onlyCategories: ['performance'],
     disableStorageReset: keepStorage, blockedUrlPatterns: ANALYTICS_PATTERNS,
@@ -102,11 +102,14 @@ async function once(url: string, port: number, keepStorage: boolean): Promise<Me
     if (typeof v !== 'number') throw new Error(`${url}: no ${audit} in the report`);
     out[k] = v;
   }
-  // A page the service worker answers (the repeat visit) has no network time to first byte: the server-response-time
-  // audit's value stands in for it there
+  // The repeat visit's page is answered by the service worker, so Lighthouse has no network time to first byte for it
+  // (timeToFirstByte is missing): the worker's answer time, the server-response-time audit, stands in there and only
+  // there. A first or returning visit always has one; a run without it fails and is made again (retried)
   const items = (lhr.audits.metrics?.details as { items?: { timeToFirstByte?: number }[] } | undefined)?.items;
   const ttfb = items?.[0]?.timeToFirstByte;
-  out.ttfb = typeof ttfb === 'number' ? ttfb : out.srt;
+  if (typeof ttfb === 'number') out.ttfb = ttfb;
+  else if (visit === 'repeat') out.ttfb = out.srt;
+  else throw new Error(`${url}: no timeToFirstByte in the metrics audit`);
   return out;
 }
 
@@ -130,8 +133,8 @@ export async function page(base: string, path: string, visit: 'first' | 'returni
     try {
       await seedPlayer(b.ctx, base);
       await workerReady(b.ctx, base);
-      await retried(url, () => once(url, b.port, true)); // warm-up, not measured
-      for (let i = 0; i < runs; i++) all.push(await retried(url, () => once(url, b.port, true)));
+      await retried(url, () => once(url, b.port, true, 'repeat')); // warm-up, not measured
+      for (let i = 0; i < runs; i++) all.push(await retried(url, () => once(url, b.port, true, 'repeat')));
     } finally { await b.ctx.close(); rmSync(b.dir, { recursive: true, force: true }); }
     return all;
   }
@@ -140,7 +143,7 @@ export async function page(base: string, path: string, visit: 'first' | 'returni
       const b = await browser();
       try {
         if (visit === 'returning') await seedPlayer(b.ctx, base);
-        return await once(url, b.port, visit === 'returning');
+        return await once(url, b.port, visit === 'returning', visit);
       } finally { await b.ctx.close(); rmSync(b.dir, { recursive: true, force: true }); }
     }));
   }

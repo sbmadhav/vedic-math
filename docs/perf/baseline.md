@@ -55,7 +55,7 @@ The four kinds of visit:
 
 - **TTFB:** time to first byte as Lighthouse's throttled run models it, with DNS, connection, TLS and the server's answer (the metrics audit's `timeToFirstByte`).
 - **Server response:** the server's own response time (the `server-response-time` audit).
-- **The repeat visit:** the worker answers the page, so there is no network time to first byte; the server response time stands in for it.
+- **The repeat visit:** the worker answers the page, so Lighthouse has no network time to first byte for it; the worker's answer time (the server response audit) stands in, for that visit only.
 
 **How much it varies.** Earlier runs of the same workflow (20 and 21 October) gave first contentful paint medians within about 150 ms of these on most pages, but up to 450 ms away on some: Arena 2,395 ms in run 39516318621, whose single runs spread from 1,404 to 3,164 ms. A runner's load decides how far a run strays. That is more than the 100 ms tolerance for first and largest contentful paint, so the gate (task 1.8) has to allow for it.
 
