@@ -150,7 +150,7 @@ test('a Dojo kata and a game play offline, and the progress persists', async ({ 
   // Kata 1 of the squares-ending-in-5 trick, all right (answers from the app's own seeded module)
   await page.goto(`${APP}#/kata/sq5/1`);
   await expect(page.locator('#view h1')).toContainText('Kata 1');
-  const answers = await page.evaluate(async () => (await import('/js/levels.js' as string)).kata('sq5', 1).problems.map((p: { answer: unknown }) => String(p.answer)));
+  const answers = await page.evaluate(async () => (await e2eMod('levels')).kata('sq5', 1).problems.map((p: { answer: unknown }) => String(p.answer)));
   for (const a of answers) {
     await page.locator('#kata .ans-in').fill(a);
     await page.locator('#kGo').click();
@@ -290,7 +290,7 @@ test.describe('studio voice offline', () => {
     await workerReady(page);
     await page.reload(); // the first load was not controlled by the worker; from here every voice file goes through it
     await expect(page.locator('#practice')).toBeVisible();
-    const studio = await page.evaluate(async () => (await import('/js/voice-index.js')).STUDIO);
+    const studio = await page.evaluate(async () => (await e2eMod('voice-index')).STUDIO);
     const probe = await page.evaluate(u => fetch(u, { method: 'HEAD' }).then(r => r.status, () => 0), studio.base + (studio.lineSet || 'none'));
     test.skip(!studio.tag || probe !== 200, 'no studio voice recordings on the voice host yet (the CI voice-upload job fills it)');
     const log = () => page.evaluate(() => (window as any).__voiceLog as string[]);

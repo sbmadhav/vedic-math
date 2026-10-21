@@ -87,10 +87,10 @@ test.describe('Share clicks: Share button', () => {
 
     // The share hook the app's share actions call: one tap, one event, with a documented surface only
     const ev0 = (await events(page)).length;
-    await page.evaluate(async () => { const m = await import('/js/metrics.js'); m.shareClick('result'); });
+    await page.evaluate(async () => { const m = await e2eMod('metrics'); m.shareClick('result'); });
     let added = (await events(page)).slice(ev0);
     expect(added.map(e => e[0])).toEqual(['math/share_click/result']);
-    await page.evaluate(async () => { const m = await import('/js/metrics.js'); m.shareClick('challenge-link'); m.shareClick('Swift Tiger 42'); m.shareClick('result?id=p1'); });
+    await page.evaluate(async () => { const m = await e2eMod('metrics'); m.shareClick('challenge-link'); m.shareClick('Swift Tiger 42'); m.shareClick('result?id=p1'); });
     added = (await events(page)).slice(ev0 + 1);
     expect(added.map(e => e[0])).toEqual(['math/share_click/challenge-link']);
     checkContents(await events(page), await playerSecrets(page));

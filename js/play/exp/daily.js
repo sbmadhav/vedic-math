@@ -1,7 +1,7 @@
 /* Daily Number (#/arena/daily-number): six numbers, a target, combine two at a time. One puzzle set per local day.
    Routes: #/arena/daily-number (today), #/arena/daily-number/<YYYY-MM-DD> (a past day, played as practice), #/arena/daily-number/archive.
    Logic lives in daily-core.js; this file is the board, the results and the archive. */
-import { head, level, t, store, dayKey, dayNumber, LAUNCH, tone, sfx, PENTA, say, confetti, toast, track, share, shareUrl, reducedMotion, esc } from '../kit.js';
+import { head, level, t, store, dayKey, dayNumber, LAUNCH, tone, sfx, PENTA, say, confetti, sparkle, toast, track, share, shareUrl, reducedMotion, esc } from '../kit.js';
 import { on, later, every } from '../life.js';
 import * as D from './daily-core.js';
 
@@ -151,7 +151,7 @@ export function mount({ root, signal, params }) {
         track(fa.action, `${D.LEVEL_NAME[lv]} ${tr.name}`);
       }
       sel = null; op = null;
-      if (stars === 3) { sfx('win'); confetti(official && !fun[cur] ? 70 : 30); } else sfx('ok');
+      if (stars === 3) { sfx('win'); if (official && !fun[cur]) confetti(70); else sparkle(wrap.querySelector('.dn-board') || wrap, { signal }); } else sfx('ok'); /* openspec celebrations: the day's own puzzle is a win */
       say(stars === 3 ? `Exactly ${tr.target}! Three stars.` : `You finished with ${value}, ${Math.abs(value - tr.target)} away. ${stars} star${stars === 1 ? '' : 's'}.`);
       wrap.querySelector('.dn-streak').textContent = D.streak(S.played, today);
       draw();

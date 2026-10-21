@@ -19,7 +19,16 @@ const CONTROL = new Set(['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA', 'SUMMARY'
 const PICTURE = new Set(['IMG', 'SVG', 'VIDEO', 'IFRAME', 'CANVAS', 'PICTURE']);
 const SKIP = new Set(['SCRIPT', 'STYLE', 'TEMPLATE', 'NOSCRIPT', 'BR']);
 const BAND = new Set(['HEADER', 'NAV', 'FOOTER', 'DIALOG', 'TABLE', 'FIGURE']);
-const shows = v => { const m = /rgba?\(([^)]+)\)/.exec(v || ''); if (!m) return false; const p = m[1].split(/[ ,/]+/).filter(Boolean); return p.length < 4 || +p[3] > 0.05; };
+/* A CSS colour as its [r, g, b, a] pixel (a from 0 to 255), resolved by a 1 px canvas so every computed form works
+   (hex, rgb(), color(srgb ...) from color-mix(), oklch()). fallback is used where the value is not a colour. */
+let probe = null;
+function pixelFor(v, fallback) {
+  if (!probe) { const cv = document.createElement('canvas'); cv.width = cv.height = 1; probe = cv.getContext('2d', { willReadFrequently: true }); }
+  probe.clearRect(0, 0, 1, 1); probe.fillStyle = fallback; probe.fillStyle = (v || '').trim() || fallback; probe.fillRect(0, 0, 1, 1);
+  return probe.getImageData(0, 0, 1, 1).data;
+}
+const seen = new Map(); /* a page has few distinct colours, and measure() asks for each box's */
+export const shows = v => { let r = seen.get(v); if (r === undefined) { r = pixelFor(v, 'rgba(0, 0, 0, 0)')[3] > 0.05 * 255; if (seen.size < 256) seen.set(v, r); } return r; };
 const TAU = Math.PI * 2;
 
 /* No motion: the device asks for reduced motion, Pause motion is on (html.motion-paused), or Calm (vm.calm) */
@@ -29,13 +38,10 @@ export function stillWanted() {
   return reduce || document.documentElement.classList.contains('motion-paused') || calm;
 }
 const darkScheme = () => { const th = document.documentElement.dataset.theme; return th === 'dark' || (th !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches); };
-/* A token's value as [r, g, b, a] ("#rrggbb", "#rgb", "rgb()" or "rgba()") */
-function parseColor(v) {
-  v = (v || '').trim();
-  let m = v.match(/^#([0-9a-f]{3})$/i); if (m) return m[1].split('').map(x => parseInt(x + x, 16)).concat(1);
-  m = v.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})?$/i); if (m) return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), m[4] ? parseInt(m[4], 16) / 255 : 1];
-  m = v.match(/rgba?\(([^)]+)\)/); if (m) { const p = m[1].split(/[ ,/]+/).filter(Boolean).map(Number); return [p[0], p[1], p[2], p[3] ?? 1]; }
-  return [128, 128, 128, 1];
+/* A token's value as [r, g, b, a] (a from 0 to 1); mid grey where it is not a colour */
+export function parseColor(v) {
+  const [r, g, b, a] = pixelFor(v, '#808080');
+  return [r, g, b, a / 255];
 }
 
 /* Runs fn once the page has loaded and the browser is idle (or after a short wait where there is no idle callback) */
@@ -475,6 +481,7 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, cameo = 
         if (stillStory) { clearUnder(stillStory); drawStory(stillStory, 'hold', 1); }
         set('story', stillStory ? stillStory.story.id : ''); set('phase', stillStory ? 'still' : 'gap'); set('place', stillStory ? stillStory.where : 'none');
       } else { set('story', ''); set('phase', 'gap'); }
+      if (pageDirty) measure(); /* the page may have scrolled or a new route drawn since the last measure: knockout() clears behind what is there now */
       knockout();
       t = keepT;
     }
@@ -506,7 +513,8 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, cameo = 
     return {
       setLevel(l) {
         if (!LEVELS[l] || l === level) { if (l === level) later(recheck, 60, signal); return; }
-        level = l; L = LEVELS[l]; set('level', l); cur = null; stillStory = undefined; build();
+        level = l; L = LEVELS[l]; set('level', l); cur = null; pending = null; stillStory = undefined; build();
+        if (!L.stories) { set('story', ''); set('phase', 'gap'); set('place', 'none'); }
         if (stillWanted()) drawStill();
       }
     };

@@ -2,7 +2,7 @@
    Routes: #/games/tala (gati), #/games/tala/necklace, #/games/tala/cycle, #/games/tala/tihai, #/games/tala/compose[/<code>].
    Konnakol and Carnatic tala are living South Indian traditions; the math is counting.
    Logic in tala-core.js, sound and the look-ahead scheduler in tala-audio.js. */
-import { head, level, t, store, say, confetti, toast, track, reducedMotion, esc, muted, setMuted, share, shareUrl, b64url } from '../kit.js';
+import { head, level, t, store, say, confetti, sparkle, toast, track, reducedMotion, esc, muted, setMuted, share, shareUrl, b64url } from '../kit.js';
 import { on, later, loop, child } from '../life.js';
 import * as C from './tala-core.js';
 import { hit, makeClock, schedule, listen } from './tala-audio.js';
@@ -313,7 +313,7 @@ export function mount({ root, signal, params }) {
       result.innerHTML = `<p class="tl-meet"><b>${list.join(' and ')} meet at ${Lv}.</b> ${guess ? (right ? 'You called it.' : `You guessed ${guess}.`) : ''}</p><p>${esc(C.meetWhy(list))}</p>
         <p class="px-note">${C.gcd(list[0], list[1]) === 1 ? 'Now try 4 and 6. Do they wait until 24?' : 'Pairs you have heard meet: ' + S.meets.length + '.'}</p>`;
       /* a right call is tracked (and so earns Sparks) only the first time for each pair */
-      if (right) { confetti(40); if (!S.called.includes(key)) { S.called.push(key); save(); track('tala/meet-right', key); } }
+      if (right) { sparkle(result.querySelector('.tl-meet'), { signal }); if (!S.called.includes(key)) { S.called.push(key); save(); track('tala/meet-right', key); } }
       say(`They meet at ${Lv}. ${right ? 'You called it.' : ''} ${C.meetWhy(list)}`);
     };
     const start = async () => {
@@ -429,7 +429,7 @@ export function mount({ root, signal, params }) {
         result.innerHTML = `<p class="tl-meet"><b>Back on sam after ${m} phrase${m > 1 ? 's' : ''}.</b> ${m} × ${p} = ${m * p} counts = ${m * p / tala.beats} cycle${m * p / tala.beats > 1 ? 's' : ''} of ${tala.beats}.</p>
           <p>${st.points === 1 ? `The phrase is exactly one cycle of ${tala.beats}, so every phrase starts on sam.` : st.points > 2 ? `The starts drew a ${st.points}-pointed ${st.step > 1 && st.step < st.points - 1 ? 'star' : 'shape'}${st.polygons > 1 ? ` (${tala.beats} and ${p} share ${st.polygons}, so only ${st.points} beats get a turn)` : ''}.` : 'The phrase fits the cycle evenly, so it just bounces between sam and the middle.'} Try another phrase length.</p>`;
         say(`Back on sam after ${m} phrase${m > 1 ? 's' : ''}. That is ${m * p} counts.`);
-        if (!reducedMotion()) confetti(24);
+        sparkle(result.querySelector('.tl-meet'), { signal }); /* everyday: back on sam (openspec celebrations) */
         track('tala/cycle-home', key);
       } else { result.innerHTML = right ? `<p class="tl-ok">Yes, beat ${b}.</p>` : `<p>It started on beat ${b}. ${lv === 'explorer' ? 'Count on ' + p + ' from the last start.' : wrapText(starts[starts.length - 2], p, tala.beats, b)}</p>`; say(`Beat ${b}`); }
       prompt();

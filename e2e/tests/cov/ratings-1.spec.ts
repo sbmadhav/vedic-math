@@ -8,7 +8,7 @@ import type { Page } from '@playwright/test';
      (privacy.spec.ts covers Arena and Skill Ratings; this adds the game Rating, raised by a Ranked round.) */
 
 const SEEDED = { 'game:times-sprint': 5, 'arena:challenger': 7, 'arena:pro': 12, 'skill:3-mult': 11, 'skill:v-sq5': 6 };
-const ratings = (page: Page) => page.evaluate(async () => ((await import('/js/store.js' as string)).load().ratings) as Record<string, number>);
+const ratings = (page: Page) => page.evaluate(async () => ((await e2eMod('store')).load().ratings) as Record<string, number>);
 
 /** Answers n Times sprint questions right, reading each question from the page. */
 async function rightAnswers(page: Page, n: number) {

@@ -35,8 +35,8 @@ for (const which of ['first', 'last'] as const) {
   test(`no video for the Trick (the ${which} such Trick): two misses show no offer and the rematch follows the replay`, async ({ page }) => {
     await open(page, '#/');
     const none: string[] = await page.evaluate(async () => {
-      const V = await import('/js/videos.js' as string), W = await import('/js/watch.js' as string);
-      const { TRICKS } = await import('/js/vedic.js' as string), LV = await import('/js/levels.js' as string);
+      const V = await e2eMod('videos'), W = await e2eMod('watch');
+      const { TRICKS } = await e2eMod('vedic'), LV = await e2eMod('levels');
       // Tricks answered with one number, so a typed '1' is one whole (wrong) answer
       const oneNumber = (id: string) => LV.kata(id, 1).problems.every((p: { kind: string }) => p.kind === 'num');
       return TRICKS.map((t: { id: string }) => t.id).filter((id: string) => oneNumber(id) && !W.pickForTrick(V.VIDEOS, id, 'challenger'));

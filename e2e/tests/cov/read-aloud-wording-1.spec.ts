@@ -3,7 +3,7 @@ import { test, expect, open, type Page } from '../fixtures';
 /* read-aloud-wording spec, Requirements "Question marks and blanks", "Ordinals and fractions as words", "Brackets keep
    their grouping", "Speed trick steps in clean form", "Negative numbers" and "Nothing unreadable is spoken": one test
    per scenario, through the shipped normalize() of js/voice.js (the words the voice is given). */
-const words = (page: Page, html: string) => page.evaluate(async h => (await import('/js/voice.js' as string)).normalize(h) as string, html);
+const words = (page: Page, html: string) => page.evaluate(async h => (await e2eMod('voice')).normalize(h) as string, html);
 
 test.beforeEach(async ({ page }) => { await open(page, '#/learn'); });
 
@@ -44,7 +44,7 @@ test('A number times a sum: "2(<i>x</i> + 3)" and "(<i>x</i> &minus; 7)(<i>x</i>
 });
 
 test('Transpose: the step for a = 6, b = 2, c = −1, d = −12 reads "Equation: 6x + 2 = −x − 12."', async ({ page }) => {
-  const step = await page.evaluate(async () => { const m: any = await import('/js/vedic.js' as string); const t = m.TRICKS.find((x: any) => x.id === 'transpose'); return t.steps([6, 2, -1, -12])[0].say as string; });
+  const step = await page.evaluate(async () => { const m: any = await e2eMod('vedic'); const t = m.TRICKS.find((x: any) => x.id === 'transpose'); return t.steps([6, 2, -1, -12])[0].say as string; });
   expect(step).toBe('Equation: 6x + 2 = −x − 12.');
 });
 
@@ -56,12 +56,12 @@ test('Every generated line: a seeded sample of every Skill, Kata, Arena League, 
   // test/voice-normalize.test.mjs samples over 50,000 lines in node; here a smaller seeded sample of the shipped modules
   test.setTimeout(90_000);
   const fails: string[] = await page.evaluate(async () => {
-    const V: any = await import('/js/voice.js' as string);
-    const { SKILLS }: any = await import('/js/skills/index.js' as string);
-    const { TRICKS }: any = await import('/js/vedic.js' as string);
-    const L: any = await import('/js/levels.js' as string);
-    const A: any = await import('/js/arena.js' as string);
-    const M: any = await import('/js/mental.js' as string);
+    const V: any = await e2eMod('voice');
+    const { SKILLS }: any = await e2eMod('skills/index');
+    const { TRICKS }: any = await e2eMod('vedic');
+    const L: any = await e2eMod('levels');
+    const A: any = await e2eMod('arena');
+    const M: any = await e2eMod('mental');
     const lines: [string, string][] = [];
     const add = (src: string, t: string) => { if (t) lines.push([src, t]); };
     const spoken = (p: any) => p && (p.say || p.q);

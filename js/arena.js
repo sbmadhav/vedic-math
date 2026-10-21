@@ -6,7 +6,7 @@ import { answerText } from './answers.js';
 import { shuffle } from './lib.js';
 import { mentalQ, FAMILIES } from './mental.js';
 import { levelFor } from './adapt.js';
-import { sfx, speakQuestion, confetti, t } from './fx.js';
+import { sfx, speakQuestion, sparkle, tick, wiggle, t } from './fx.js';
 import { on, later, loop, child } from './life.js';
 import { keypadOnly } from './shell.js';
 
@@ -128,15 +128,19 @@ export function runArena(root, { league, day = null, dial, signal, onEnd, untime
     }
   };
   const pop = (txt, ok) => { const el = $('#arPop'); el.textContent = txt; el.className = 'ar-pop show ' + (ok ? 'ok' : 'no'); later(() => (el.className = 'ar-pop'), 600, rs); };
+  /* Everyday moments (openspec celebrations): the combo ticks, every fifth sparkles; a miss wiggles the answer it shows
+     (#arPop stays up while the next question is drawn, so the wiggle stays on the miss) */
+  const celebrate = ok => { if (!ok) { wiggle($('#arPop'), rs); return; } if (combo >= 2) tick($('#arCombo b'), rs); if (combo % 5 === 0) sparkle($('#arCombo'), { n: 10, signal: rs }); };
   const answer = v => {
     if (over) return;
     const p = at(), ok = checkOne({ kind: 'num', answer: p.answer }, String(v)).ok;
     if (dial) dial.hit(ok);
-    if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); const gain = 10 + Math.min(combo - 1, 10) * 2; score += gain; right++; sfx('ok'); pop('+' + gain, true); if (combo % 5 === 0) confetti(30); }
+    if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); const gain = 10 + Math.min(combo - 1, 10) * 2; score += gain; right++; sfx('ok'); pop('+' + gain, true); }
     else { combo = 0; wrong++; sfx('no'); pop(String(p.answer), false); }
     /* The pop is visual only; screen readers get one short status message per answer (WCAG 4.1.3) */
     $('#arSay').textContent = ok ? `Right, plus ${10 + Math.min(combo - 1, 10) * 2}. Score ${score}.` : `Not quite. It was ${p.answer}.`;
     $('#arScore').textContent = score; $('#arCombo').innerHTML = combo >= 2 ? `<b>${combo}x</b> combo` : '';
+    celebrate(ok);
     i++;
     if (untimed && i >= UNTIMED_QS) return end();
     if (untimed) $('#arNum').textContent = `${i + 1}/${UNTIMED_QS}`;
@@ -196,14 +200,18 @@ export function runChallenge(root, ch, set, { onEnd, tap = false, signal, untime
     }
   };
   const pop = (txt, ok) => { const el = $('#arPop'); el.textContent = txt; el.className = 'ar-pop show ' + (ok ? 'ok' : 'no'); later(() => (el.className = 'ar-pop'), 600, rs); };
+  /* Everyday moments (openspec celebrations): the combo ticks, every fifth sparkles; a miss wiggles its answer line
+     (#arFix keeps the missed answer while the next question is drawn, so the wiggle stays on the miss) */
+  const celebrate = ok => { if (!ok) { wiggle($('#arFix'), rs); return; } if (combo >= 2) tick($('#arCombo b'), rs); if (combo % 5 === 0) sparkle($('#arCombo'), { n: 10, signal: rs }); };
   const answer = v => {
     if (over) return;
     const p = set[i], ok = p.kind === 'choice' ? String(v) === String(p.answer) : checkOne({ kind: 'num', answer: p.answer, tol: 1e-6 }, String(v)).ok;
-    if (ok) { combo++; right++; const gain = 10 + Math.min(combo - 1, 10) * 2; score += gain; sfx('ok'); pop('+' + gain, true); $('#arFix').textContent = ''; if (combo % 5 === 0) confetti(30); }
+    if (ok) { combo++; right++; const gain = 10 + Math.min(combo - 1, 10) * 2; score += gain; sfx('ok'); pop('+' + gain, true); $('#arFix').textContent = ''; }
     else { combo = 0; wrong++; sfx('no'); pop('', false); $('#arFix').innerHTML = `Answer: <b>${p.kind === 'choice' ? p.answer : answerText(p, byId[p.skill])}</b>${p.steps && p.steps[0] ? ` · ${p.steps[0]}` : ''}`; if (ch.lives) lives--; }
     /* One short status message per answer (WCAG 4.1.3); a miss is read from the answer line (#arFix) instead */
     $('#arSay').textContent = ok ? `Right, plus ${10 + Math.min(combo - 1, 10) * 2}. Score ${score}.` : '';
     $('#arScore').textContent = ch.goal === 'points' ? score : right; $('#arCombo').innerHTML = combo >= 2 ? `<b>${combo}x</b> combo` : '';
+    celebrate(ok);
     if (ch.lives) $('#arTime').innerHTML = lives > 0 ? '&#9679;'.repeat(lives) : '0';
     i++;
     if ((ch.lives && lives <= 0) || i >= total) return finish();

@@ -7,14 +7,14 @@ Make sure moving the game to React never makes it slower than it was before the 
 ## ADDED Requirements
 
 ### Requirement: A baseline from before the migration
-The repo SHALL keep `docs/perf/baseline.md` with the numbers of the live site after the move and before the migration, each with its date and the commit measured. A change to the baseline SHALL say why in its pull request.
+The repo SHALL keep `docs/perf/baseline.md` with the numbers of the live site after the move and before the migration, each with its date and the commit measured, measured and merged before the first pull request that changes what a Player downloads, and at the latest before the first pull request of the server-rendered shell. A change to the baseline SHALL say why in its pull request.
 
 #### Scenario: Before the first migration PR
-- **WHEN** the first code PR of this change is opened
-- **THEN** `docs/perf/baseline.md` already holds the numbers for the post-move site
+- **WHEN** the first pull request of the server-rendered shell is opened
+- **THEN** `docs/perf/baseline.md` is already on `main` with the numbers for the post-move site
 
 ### Requirement: What the baseline measures
-The baseline SHALL hold Lighthouse mobile preset results (simulated slow 4G, 4x CPU slowdown, median of 5 runs) for `/play/` first visit and repeat visit, the Arena, Games and one Sutra's Deep dive; the Brotli-compressed size of everything a first visit to `/play/` requests before the first tap, including every file the service worker's install downloads; and interaction timings for opening the Arena, answering one Arena question, opening a Deep dive and lighting a Star.
+The baseline SHALL hold Lighthouse mobile preset results (simulated slow 4G, 4x CPU slowdown, median of 5 runs) for `/learn/` first and repeat visit, the Arena, Games and one Deep dive, with time to first byte; the Brotli-compressed size of everything a first visit to `/learn/` requests before the first tap, including every file the service worker's install downloads; and interaction timings for opening the Arena, answering one Arena question, opening a Deep dive and lighting a Star.
 
 #### Scenario: The report
 - **WHEN** `docs/perf/baseline.md` is read
@@ -28,7 +28,7 @@ Every size budget in this change (first load and the 3D code) SHALL be measured 
 - **THEN** every budget line gives its limit and its measurement in Brotli bytes
 
 ### Requirement: First load does not grow
-The build SHALL measure the Brotli-compressed size of everything a first visit to `/play/` requests before the first tap: the page, its JS and CSS, fonts, icons and other files, and every file the service worker's install downloads (counted even when install ends after the tap), each unique file once. It SHALL fail when the total is larger than the baseline, and SHALL print the measurement on every build.
+The build SHALL measure the Brotli-compressed size of everything a first visit to `/learn/` requests before the first tap: the page, its JS and CSS, fonts, icons and other files, and every file the service worker's install downloads (counted even when install ends after the tap), each unique file once. It SHALL fail when the total is larger than the baseline, and SHALL print the measurement on every build.
 
 #### Scenario: A heavy import in the shell
 - **WHEN** a change makes the shell import a module that brings JS before the first tap above the baseline
@@ -63,3 +63,24 @@ The 3D code SHALL stay under 170 KB Brotli (about 200 KB gzip) in total, measure
 #### Scenario: 3D in the entry
 - **WHEN** a change imports a 3D scene statically from the Home view
 - **THEN** the build fails because 3D code is in the first load
+
+### Requirement: First load is read from the client manifest
+From the server-rendered shell on, the build SHALL read the first visit's JS and CSS from the client build's manifest (the entry, the root route and the first route, with their static imports). The server's own code SHALL NOT count toward first load, because a browser never downloads it.
+
+#### Scenario: A server-only dependency
+- **WHEN** a change adds a library used only by the Worker
+- **THEN** the first-load line of the budget table does not change, and the Worker line does
+
+### Requirement: The server code stays within the Worker's limits
+The build SHALL measure the uncompressed size of the Worker bundle (the server render, the API and the Durable Objects), the measure Cloudflare's Worker size limit uses, and SHALL fail when it is above 75% of that limit. It SHALL print the compressed size for information only. No 3D module and no client-only module SHALL be in it.
+
+#### Scenario: A large dependency on the server
+- **WHEN** a change makes a route module import a library that brings the Worker bundle above 75% of the limit
+- **THEN** `python3 build.py --out _site` fails and names the Worker budget and the size
+
+### Requirement: Server-rendered pages are measured too
+The performance checks SHALL measure at least one server-rendered page (the Arena at its path) with the same Lighthouse settings and tolerances as the other pages, including time to first byte, and SHALL print the server's CPU time per render.
+
+#### Scenario: A slow server render
+- **WHEN** a pull request makes the first contentful paint of the server-rendered Arena 150 ms slower than the baseline's Arena on its preview
+- **THEN** the perf check fails on that pull request and shows both numbers

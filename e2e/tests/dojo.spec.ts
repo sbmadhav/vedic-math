@@ -6,7 +6,7 @@ import { test, expect, APP, open } from './fixtures';
 type P = { kind: string; answer: unknown; q: string };
 const kataProblems = (page: import('@playwright/test').Page, trick: string, n: number) =>
   page.evaluate(async ([t, k]) => {
-    const LV = await import('/js/levels.js' as string);
+    const LV = await e2eMod('levels');
     return LV.kata(t, k).problems.map((p: P) => ({ kind: p.kind, answer: p.answer, q: p.q }));
   }, [trick, n] as const);
 

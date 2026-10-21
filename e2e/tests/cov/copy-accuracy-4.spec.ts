@@ -24,10 +24,10 @@ for (const [mode, skill, yt] of [['challenger', '2-sub100', 'Qf_45zM68R4'], ['ch
       const box = page.locator('[data-watch-for]');
       await expect(box.locator('button[data-watch]').first()).toBeVisible();
       const pre = await page.evaluate(async ({ skill, mode, yt }) => {
-        const { VIDEOS } = await import('/js/videos.js' as string);
-        const W = await import('/js/watch.js' as string);
-        const { relatedTo } = await import('/js/related.js' as string);
-        const { byId } = await import('/js/skills/index.js' as string);
+        const { VIDEOS } = await e2eMod('videos');
+        const W = await e2eMod('watch');
+        const { relatedTo } = await e2eMod('related');
+        const { byId } = await e2eMod('skills/index');
         const s = byId[skill];
         const visible = VIDEOS.filter((v: any) => W.visibleTo(v, mode));
         const hand = visible.filter((v: any) => v.skills.includes(skill)).map((v: any) => v.yt);

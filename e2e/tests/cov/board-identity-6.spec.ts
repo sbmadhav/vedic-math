@@ -58,12 +58,12 @@ async function seedPlayerB(page: Page) {
 }
 
 const dayBoard = (page: Page) => page.evaluate(async () =>
-  `daily-${(await import('/js/cloud.js' as string)).dayId()}-challenger`);
+  `daily-${(await e2eMod('cloud')).dayId()}-challenger`);
 
 /** Switches the device to a Player and posts a Score as them, the way app.js sendScore does. */
 const postAs = (page: Page, id: string, board: string, score: number) => page.evaluate(async ([id, board, score]) => {
-  const store = await import('/js/store.js' as string);
-  const cloud = await import('/js/cloud.js' as string);
+  const store = await e2eMod('store');
+  const cloud = await e2eMod('cloud');
   store.switchPlayer(id);
   const p = store.playerById ? store.playerById(id) : store.allPlayers().find((q: any) => q.id === id);
   return cloud.submit(board, { name: p.name, avatar: p.avatar, score }, p);
@@ -107,7 +107,7 @@ async function addPlayerOnMePage(page: Page) {
   await open(page, '#/me');
   await page.locator('#meAdd').click();
   return page.evaluate(async () => {
-    const store = await import('/js/store.js' as string);
+    const store = await e2eMod('store');
     store.updatePlayer({ mode: 'challenger', age: 'adult' });
     const p = store.player();
     return { id: p.id as string, name: p.name as string };
@@ -186,7 +186,7 @@ test.describe('Removing a Player forgets their identity', () => {
     expect(Object.keys(before)).toEqual([UID_A]);
 
     // B takes over the device and removes A
-    await page.evaluate(async id => (await import('/js/store.js' as string)).switchPlayer(id), PB);
+    await page.evaluate(async id => (await e2eMod('store')).switchPlayer(id), PB);
     await removeOnMePage(page, PA);
     await expect.poll(async () => (await cloudLog(page)).signOuts).toContain('[DEFAULT]');
     expect(await fakeSessions(page)).not.toHaveProperty('[DEFAULT]');

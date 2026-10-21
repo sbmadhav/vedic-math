@@ -16,7 +16,7 @@ test.beforeEach(async ({ page }) => { await noYouTube(page); });
 test('the shelf data has no playlist or channel entry: every video is one 11-character YouTube id', async ({ page }) => {
   await open(page, '#/');
   const data = await page.evaluate(async () => {
-    const m = await import('/js/videos.js' as string);
+    const m = await e2eMod('videos');
     return { videos: m.VIDEOS, links: m.LINKS };
   });
   expect(data.videos.length).toBeGreaterThan(0);

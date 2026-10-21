@@ -1,7 +1,7 @@
 /* Sutra Spellbook (#/dojo/spells): every speed trick is a spell you cast by tracing its method on the digits.
    Routes: #/dojo/spells (the arena), #/dojo/spells/book (your spellbook), #/dojo/spells/learn/<id> (a guided first cast).
    Logic lives in spells-core.js; this file is the board, the monsters and the pages. */
-import { head, level, t, store, rng, int, pick, tone, sfx, PENTA, say, confetti, toast, track, reducedMotion, esc } from '../kit.js';
+import { head, level, t, store, rng, int, pick, tone, sfx, PENTA, say, sparkle, toast, track, reducedMotion, esc } from '../kit.js';
 import { on, later, loop, child } from '../life.js';
 import * as C from './spells-core.js';
 
@@ -257,7 +257,6 @@ export function mount({ root, signal, params }) {
         onDone(value) {
           const first = !S.learned.includes(id);
           if (first) { S.learned.push(id); S.focus = id; save(); track('spells/learn', spell.title); }
-          confetti(30);
           after.hidden = false;
           after.innerHTML = `<p class="sp-done-big">${esc(C.show(problem))} = <b>${value}</b></p>
             <p><b>Why it works.</b> ${esc(spell.why)}</p>
@@ -265,6 +264,7 @@ export function mount({ root, signal, params }) {
             <div class="px-row"><a class="md-btn md-btn--primary" href="#/dojo/spells">${first ? 'Cast it on a monster' : 'Back to the monsters'}</a><button type="button" class="md-btn sp-again">Slow motion again</button></div>`;
           say(`Spell cast. ${C.show(problem)} is ${value}. ${first ? 'You learned ' + spell.sutra + '.' : ''}`);
           after.querySelector('.md-btn--primary').focus({ preventScroll: true });
+          sparkle(after.querySelector('.sp-done-big'), { signal }); /* everyday: a spell cast in the lesson (openspec celebrations) */
           after.scrollIntoView({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
         }
       });
@@ -414,7 +414,7 @@ export function mount({ root, signal, params }) {
       m.state = 'gone'; m.el.classList.add('is-won'); m.el.disabled = true;
       if (target === m) target = null;
       loop(now => { const k = Math.min(1, (now - t0) / dur); hp.textContent = `HP ${Math.round(value * (1 - k))}`; return k < 1; }, signal);
-      if (combo > 0 && combo % 5 === 0) confetti(40);
+      if (combo > 0 && combo % 5 === 0) sparkle(m.el, { n: 10, signal }); /* everyday: a combo tick (openspec celebrations) */
       say(`${C.show(m.problem)} is ${value}. The monster turns into ${gain} sparkle${gain > 1 ? 's' : ''}.${inked ? ' A new page is inked in your spellbook.' : ''}`);
       host.insertAdjacentHTML('beforeend', `<p class="sp-win">${esc(C.show(m.problem))} = <b>${value}</b>. ${good ? `+${gain} sparkle${gain > 1 ? 's' : ''}` : 'Cast with help: no combo this time'}${inked ? `. <b>New page inked:</b> ${esc(spell.sutra)}` : ''}</p>`);
       if (inked) { toast(`Spellbook: ${spell.sutra} inked`); [0, 2, 4, 7, 9].forEach((n, i) => tone(PENTA[n], { dur: 0.3, when: i * 0.08, gain: 0.1 })); }

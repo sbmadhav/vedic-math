@@ -11,7 +11,7 @@ Every page of the site, the game included, SHALL use the same sticky header from
 
 #### Scenario: Landing header
 - **WHEN** a visitor opens `/`
-- **THEN** the header shows the brand, links to Play and the grown-up pages, and the color scheme button
+- **THEN** the header shows the brand, links to Learn (to `/play/`) and the grown-up pages, and the color scheme button
 
 #### Scenario: Stays on top
 - **WHEN** a Player scrolls down a long view
