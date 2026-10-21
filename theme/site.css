@@ -41,19 +41,38 @@ html.motion-paused .lv-family *, html.calm .lv-family * { animation: none !impor
 @media (prefers-reduced-motion: reduce) { .lv-play::after, .lv-play-go { animation: none; } .lv-play:hover, .lv-play:active { transform: none; } }
 html.motion-paused .lv-play::after, html.calm .lv-play::after, html.motion-paused .lv-play-go, html.calm .lv-play-go { animation: none; }
 html.motion-paused .lv-play:hover, html.calm .lv-play:hover, html.motion-paused .lv-play:active, html.calm .lv-play:active { transform: none; }
-.lv-what { max-width: 46em; margin-top: var(--space-5); }
+/* The Mode cards (openspec change landing-modes-and-return): each card is one link into the game in its Mode, with its
+   call to action as a pill in the Mode's colour at its foot. Hover lifts it, press drops it and keyboard focus rings
+   it, like Start learning; still under reduced motion, Pause motion and Calm. Welcome back marks the Player's Mode. */
 .lv-modes { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4-5); }
 @media (max-width: 800px) { .lv-modes { grid-template-columns: 1fr; } }
-.lv-mode { padding: var(--space-5); border: 2px solid var(--edge); border-radius: var(--radius-lg); background: var(--card); box-shadow: var(--shadow-ledge); border-top-width: 10px; }
+.lv-modes > li { display: flex; min-width: 0; }
+.lv-mode { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-5); border: 2px solid var(--edge); border-top-width: 10px; border-radius: var(--radius-lg); background: var(--card); color: var(--ink); text-decoration: none; box-shadow: var(--shadow-ledge); transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out); }
 .lv-mode--sun { border-top-color: var(--sun); } .lv-mode--sky { border-top-color: var(--sky); } .lv-mode--plum { border-top-color: var(--plum); }
-.lv-mode h3 { font-size: var(--text-h3-size); }
-.lv-mode p { margin: var(--space-2) 0 0; }
-.lv-ages { color: var(--ink-muted); font-weight: 700; }
+.lv-mode:hover { box-shadow: var(--shadow-ledge-hover); transform: translateY(-2px); }
+.lv-mode:active { box-shadow: var(--shadow-ledge-press); transform: translateY(2px) scale(.98); }
+.lv-mode:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+.lv-mode-top { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
+.lv-mode-ic { display: grid; place-items: center; width: 48px; height: 48px; flex: none; border-radius: var(--radius-round); color: var(--on-accent); }
+.lv-mode h3 { margin: 0 !important; font-size: var(--text-h3-size); }
+.lv-mode-about { display: block; color: var(--ink-muted); }
+.lv-ages { color: var(--ink); font-weight: 700; }
+.lv-mode-cta { margin-top: auto; align-self: flex-start; display: inline-flex; align-items: center; gap: var(--space-2); min-height: 44px; padding: 0 var(--space-4); border: 2px solid var(--edge); border-radius: var(--radius-pill); color: var(--on-accent); font-weight: 800; }
+.lv-mode--sun :is(.lv-mode-ic, .lv-mode-cta) { background: var(--sun); }
+.lv-mode--sky :is(.lv-mode-ic, .lv-mode-cta) { background: var(--sky); }
+.lv-mode--plum :is(.lv-mode-ic, .lv-mode-cta) { background: var(--plum); }
+.lv-mode-go { width: 1.1em; height: 1.1em; flex: none; transition: transform var(--duration-fast) var(--ease-out); }
+.lv-mode:is(:hover, :focus-visible) .lv-mode-go { transform: translateX(4px); }
+.lv-mode[aria-current="true"] { border-right-color: var(--ink); border-bottom-color: var(--ink); border-left-color: var(--ink); }
+.lv-mode-badge { margin-left: auto; padding: var(--space-1) var(--space-2-5); border-radius: var(--radius-pill); background: var(--ink); color: var(--card); font-size: var(--text-small-size); font-weight: 800; }
+@media (prefers-reduced-motion: reduce) { .lv-mode, .lv-mode-go { transition: none; } .lv-mode:is(:hover, :active), .lv-mode:is(:hover, :focus-visible) .lv-mode-go { transform: none; } }
+html.motion-paused .lv-mode:is(:hover, :active), html.calm .lv-mode:is(:hover, :active),
+html.motion-paused .lv-mode:is(:hover, :focus-visible) .lv-mode-go, html.calm .lv-mode:is(:hover, :focus-visible) .lv-mode-go { transform: none; }
 .lv-cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-7); }
 @media (max-width: 800px) { .lv-cols { grid-template-columns: 1fr; } }
 .lv-links { padding-left: 1.2em; }
 .lv-foot { border-top: 1px solid var(--line); padding: var(--space-7) 0 var(--space-7); color: var(--ink-muted); font-size: 14px; }
-.lv-page a, .lv-foot a, .lv-cols a { color: var(--sky-strong); font-weight: 700; }
+.lv-page a, .lv-foot a, .lv-cols a, .lv-grown a { color: var(--sky-strong); font-weight: 700; }
 
 /* Grown-up pages: readable text */
 .lv-page { max-width: 760px; }

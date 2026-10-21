@@ -182,6 +182,9 @@ export function shareClick(surface) {
 /* Fixed words only: never the Find text, the result's name or the number of results */
 export function tryStart() { send('try/start', 'Vedic Math: try a trick'); }
 export function findGo() { send('find/go', 'Vedic Math: find result followed'); }
+/* A Mode link from a landing page Mode card (openspec change landing-modes-and-return): the Mode, a fixed word, only.
+   It waits in the early queue, since the game reads the link before js/analytics.js has run. */
+export function modeLink(mode) { if (LEAGUES.includes(mode)) send('landing/mode/' + mode, 'Vedic Math: landing mode card'); }
 
 /* ---------- Say it (openspec sutra-pronunciation) ---------- */
 /* A tap on a Say it button that starts a name clip. Fixed path and title: never the Sutra, the voice or the Mode.

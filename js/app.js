@@ -1607,6 +1607,19 @@ function icon(n) {
   return `<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">${I[n] || ''}</svg>`;
 }
 
+/* A Mode link from the landing page's Mode cards (openspec change landing-modes-and-return): /play/?mode=<id> with a
+   known Mode sets it exactly as tapping that card on the Mode picker does, so Home opens instead of the picker. An
+   unknown value changes nothing. Either way mode leaves the address, keeping the rest of the query and the route. */
+function modeFromLink() {
+  let q; try { q = new URLSearchParams(location.search); } catch (e) { return; }
+  if (!q.has('mode')) return;
+  const m = q.get('mode');
+  if (Object.hasOwn(fx.MODES, m)) { fx.setMode(m); gm.startDay(); metrics.modeLink(m); } /* setMode's own event is sent only once analytics has loaded, so the link counts it */
+  q.delete('mode');
+  const rest = q.toString();
+  try { history.replaceState(history.state, '', location.pathname + (rest ? '?' + rest : '') + location.hash); } catch (e) {}
+}
+
 /* ---------- Boot ---------- */
 const rm = $('#resetMode'); if (rm) rm.onclick = () => { store.setPlayerMode(null); fx.applyMode(); location.hash = '#/'; render(); window.scrollTo({ top: 0 }); };
 fx.applyMode();
@@ -1614,6 +1627,7 @@ fx.applyPrefs(); /* body.calm and body.text-plus from this device's Calm and tex
 fx.warmVoice(); /* the studio voice's core pack, while idle, when read aloud is on */
 gm.init();
 metrics.returnCheck(); /* before the first route view: remembers this device's first visit */
+modeFromLink();
 render();
 initAmbient();
 /* Offline: /sw.js (scope /play/, the game only) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */
