@@ -30,10 +30,55 @@ html.motion-paused .md-brand:hover svg, body.calm .md-brand:hover svg, html.moti
 
 .mq-tight { padding-top: 36px; }
 .mq-narrow { max-width: 820px; }
-.mq-hero .md-heading { font-size: clamp(2.1rem, 5vw, 3.3rem); max-width: 16em; }
+.mq-hero .md-heading { font-size: clamp(2.1rem, 5vw, 3.3rem); max-width: 16em; text-wrap: balance; }
 .hl-word { background: linear-gradient(transparent 62%, color-mix(in srgb, var(--sun) 70%, transparent) 62%); padding: 0 .08em; }
 :root[data-theme="dark"] .hl-word { background: linear-gradient(90deg, var(--coral), var(--teal)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hl-word { background: linear-gradient(90deg, var(--coral), var(--teal)); -webkit-background-clip: text; background-clip: text; color: transparent; } }
+
+/* The app home's hero (Mode picker, openspec first-visit): one headline, one short line, Try a trick, and the Nikhilam
+   Family (js/family.js, the landing page's drawing). Same rules as the landing hero (theme/site.css): the family moves
+   gently, the nine nods toward Try a trick each time its ring glows, and everything holds still under no motion. */
+.mq-hero-in { display: grid; grid-template-columns: 1fr auto; gap: var(--space-6); align-items: center; margin-bottom: var(--space-7); }
+.mq-hero .md-lede.mq-hero-sub { margin: var(--space-3) 0 0; font-weight: 700; }
+.mq-hero .try-it { margin: var(--space-6) 0 0; }
+.mq-hero .lv-family { width: clamp(120px, 22vw, 220px); height: auto; overflow: visible; }
+@media (max-width: 700px) { .mq-hero-in { grid-template-columns: 1fr; gap: var(--space-3); } .mq-hero .lv-family { order: -1; width: 104px; } }
+.lv-family .lv-f-one, .lv-family .lv-f-zero, .lv-family .lv-f-nine { transform-box: fill-box; transform-origin: 50% 100%; }
+.lv-family .lv-f-one { animation: lv-sway 6s ease-in-out infinite; }
+.lv-family .lv-f-zero { animation: lv-hop 3s ease-in-out infinite; }
+.lv-family .lv-f-nine { animation: lv-nod 4s ease-in-out infinite; }
+.lv-family .lv-f-shadow--zero { transform-box: fill-box; transform-origin: center; animation: lv-shrink 3s ease-in-out infinite; }
+.lv-family .lv-spark { transform-box: fill-box; transform-origin: center; animation: lv-twinkle 3.2s ease-in-out infinite; }
+.lv-family .lv-spark--b { animation-delay: -.8s; } .lv-family .lv-spark--c { animation-delay: -1.6s; } .lv-family .lv-spark--d { animation-delay: -2.4s; }
+@keyframes lv-sway { 50% { transform: rotate(-2.5deg); } }
+@keyframes lv-nod { 0%, 45%, 100% { transform: none; } 15% { transform: rotate(-7deg); } 28% { transform: rotate(2deg); } }
+@keyframes lv-hop { 0%, 55%, 100% { transform: none; } 25% { transform: translateY(-5px); } }
+@keyframes lv-shrink { 0%, 55%, 100% { transform: none; } 25% { transform: scale(.7); } }
+@keyframes lv-twinkle { 50% { opacity: .3; transform: scale(.6); } }
+.mq-hero-in:has(.mq-try:hover, .mq-try:focus-visible) :is(.lv-f-one, .lv-f-zero, .lv-f-nine) { animation: lv-cheer .5s ease-out 2; }
+.mq-hero-in:has(.mq-try:hover, .mq-try:focus-visible) .lv-f-zero { animation-delay: .08s; }
+.mq-hero-in:has(.mq-try:hover, .mq-try:focus-visible) .lv-f-nine { animation-delay: .16s; }
+@keyframes lv-cheer { 50% { transform: translateY(-6px); } }
+/* Try a trick: the one big first action. A ring glows out every four seconds and the arrow nudges with it. */
+.try-it .md-btn.mq-try { position: relative; margin: 0; min-height: 60px; padding: 0 var(--space-7); font-size: clamp(1.25rem, 3vw, 1.4rem); font-weight: 800; gap: var(--space-2-5); }
+.try-it .md-btn.mq-try svg.mq-try-go { width: 1.1em; height: 1.1em; animation: lv-go 4s ease-in-out infinite; }
+.mq-try::after { content: ""; position: absolute; inset: -3px; border-radius: inherit; border: 3px solid var(--coral); opacity: 0; pointer-events: none; animation: lv-ring 4s ease-out infinite; }
+.mq-try:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+@keyframes lv-ring { 0% { opacity: .75; transform: scale(1); } 32%, 100% { opacity: 0; transform: scale(1.1, 1.45); } }
+@keyframes lv-go { 0%, 30%, 100% { transform: none; } 12% { transform: translateX(5px); } }
+@media (prefers-reduced-motion: reduce) { .lv-family *, .mq-try::after, .mq-try svg { animation: none !important; } }
+html.motion-paused .lv-family *, body.calm .lv-family *, html.motion-paused .mq-try::after, body.calm .mq-try::after, html.motion-paused .mq-try svg, body.calm .mq-try svg { animation: none !important; }
+
+/* Small celebrations (js/celebrate.js, openspec celebrations): sparkles on a fixed layer, token colours, transform and
+   opacity only. The script never starts them under no motion. */
+.fx-sparkles { position: fixed; width: 0; height: 0; pointer-events: none; z-index: 115; }
+.fx-spark { position: absolute; left: -8px; top: -8px; width: 16px; height: 16px; clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); opacity: 0; }
+.fx-spark--sun { background: var(--sun); } .fx-spark--coral { background: var(--coral); } .fx-spark--sky { background: var(--sky); } .fx-spark--teal { background: var(--teal); } .fx-spark--plum { background: var(--plum); }
+.fx-roll { display: inline-block; font-variant-numeric: tabular-nums; }
+/* Buttons squish a little on press (the scale property, so each button's own transform is untouched); none under no motion */
+@media (prefers-reduced-motion: no-preference) {
+  html:not(.motion-paused) body:not(.calm) :is(.md-btn, .mode-card, .play-tile, .pr-choice, .pr-key, .ar-key, .ar-choice, .star-key, .star-choice):active { scale: .95; }
+}
 
 /* Stats and continue */
 .mq-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; max-width: 640px; }
@@ -576,8 +621,18 @@ html.motion-paused .sutra-face, body.calm .sutra-face, html.motion-paused .sutra
 .pr-lives i.on { background: var(--coral); }
 .mq-gradebar { flex-wrap: wrap; }
 
-/* Calm atmosphere: Vedic background and music */
-.vm-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+/* Calm atmosphere: the background sky and music */
+/* The background sky (js/sky-bg.js; the same rules are in theme/site.css for the landing page): a fixed canvas behind
+   the page. Its wash is a soft dawn glow on the horizon in Daybreak and a night glow in Deep Space, from tokens. */
+.vm-bg { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;
+  background: radial-gradient(140% 55% at 50% 108%, color-mix(in srgb, var(--sun) 24%, transparent), transparent 70%),
+    radial-gradient(90% 36% at 50% 104%, color-mix(in srgb, var(--coral) 12%, transparent), transparent 75%); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .vm-bg { background: radial-gradient(140% 50% at 50% 110%, color-mix(in srgb, var(--plum) 16%, transparent), transparent 72%),
+    linear-gradient(180deg, color-mix(in srgb, var(--sky) 5%, transparent), transparent 45%); }
+}
+:root[data-theme="dark"] .vm-bg { background: radial-gradient(140% 50% at 50% 110%, color-mix(in srgb, var(--plum) 16%, transparent), transparent 72%),
+  linear-gradient(180deg, color-mix(in srgb, var(--sky) 5%, transparent), transparent 45%); }
 @media (max-width: 600px) { .vm-bg { opacity: .45; } } /* on a phone the text boxes cover most of the screen: the drawing stays further back */
 #view, .mq-foot { position: relative; z-index: 1; }
 /* Reserve the screen before the view renders, so the footer does not jump on first load */
@@ -903,7 +958,6 @@ html.motion-paused .wb-card .md-switch .md-knob, body.calm .wb-card .md-switch .
 @media (max-width: 760px) { .star-arena { grid-template-columns: minmax(0, 1fr); gap: var(--space-3); } }
 .star-stage { position: relative; display: grid; gap: var(--space-3); min-height: 360px; padding: var(--space-5); overflow: hidden; }
 @media (max-width: 760px) { .star-stage { min-height: 0; padding: var(--space-4); } }
-.star-burst { position: absolute; inset: 0; pointer-events: none; }
 .star-talk { display: flex; align-items: center; gap: var(--space-3); min-height: 64px; }
 .star-bolt { flex: none; width: clamp(54px, 10vw, 84px); }
 .star-bolt .bolt { width: 100%; height: auto; display: block; }

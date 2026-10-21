@@ -3,6 +3,11 @@
    module converts and the test moves next to it), the build tools, the service worker, and the Worker, whose tests
    run inside the Workers runtime (workers/vitest.config.ts). `pnpm test` runs them all. */
 import { defineConfig } from 'vitest/config';
+import { fileURLToPath } from 'node:url';
+
+/* The legacy tests' node:test API on Vitest. Aliased too, so a test written against node:test (as on branches made
+   before the move) runs unchanged */
+const NODE_TEST = fileURLToPath(new URL('./test/support/node-test.mjs', import.meta.url));
 
 export default defineConfig({
   test: {
@@ -11,6 +16,7 @@ export default defineConfig({
         test: {
           name: 'legacy',
           root: '.',
+          alias: { 'node:test': NODE_TEST },
           include: ['test/**/*.test.{js,mjs}'],
           environment: 'node',
           // Each file in its own process, as node --test ran them: many install globals (localStorage, document)

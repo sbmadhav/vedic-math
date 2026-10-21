@@ -2,7 +2,7 @@
    from tiles and pin it to your own wall. Patterns that are not in the catalog can be saved as a
    conjecture after testing them on more numbers. Routes: #/games/wall, #/games/wall/wall, #/games/wall/famous,
    #/games/wall/card/<code> (a shared card). Logic in wall-core.js. */
-import { level, store, rng, shuffle, tone, sfx, PENTA, say, confetti, toast, track, esc, token, b64url, shareUrl, share, downloadCanvas, dayKey, reducedMotion, backLink } from '../kit.js';
+import { level, store, rng, shuffle, tone, sfx, PENTA, say, confetti, sparkle, toast, track, esc, token, b64url, shareUrl, share, downloadCanvas, dayKey, reducedMotion, backLink } from '../kit.js';
 import { on, child } from '../life.js';
 import * as W from './wall-core.js';
 
@@ -211,7 +211,7 @@ export function mount({ root, signal, params }) {
         const card = { p: fl.kind === 'found' ? fl.p.id : null, k: fl.kind === 'found' ? fl.v.key : '', g: S.g, gp: S.g === 'calendar' ? grid.params : null, cells: [...S.painted].sort((a, b) => a - b), name: B.name.slice(), rule: { s: B.s, c: B.c }, test: fl.kind === 'conj' ? { ok: B.result.ok, counter: B.result.counter ?? null, tested: B.result.tested } : null, t: dayKey() };
         D.cards.unshift(card); save();
         wrap.querySelector('.wl-count').textContent = D.cards.length;
-        sfx('win'); confetti(70);
+        sfx('win'); sparkle(wrap.querySelector('.wl-count'), { signal }); /* everyday: a card saved (openspec celebrations) */
         track(fl.kind === 'found' ? 'wall/pin' : 'wall/conjecture', fl.kind === 'found' ? fl.p.id : `${B.s} ${B.c}`);
         status.innerHTML = `<div class="wl-found"><p class="wl-found-k">Pinned to your wall</p><h3 class="wl-found-t">${esc(W.nameOf(card.name))}</h3><p>${esc(W.ruleText(card.rule))}</p><div class="px-row"><a class="md-btn md-btn--primary" href="#/games/wall/wall">See my wall</a><button type="button" class="md-btn wl-again">Keep exploring</button></div></div>`;
         S.flow = { kind: 'saved' };

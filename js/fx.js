@@ -1,4 +1,4 @@
-/* The fun layer: play modes, sound effects, read-aloud, confetti and toasts.
+/* The fun layer: play modes, sound effects, read-aloud, celebrations (js/celebrate.js) and toasts.
    Sounds are generated in the browser and only follow a tap. Motion respects reduced-motion settings. */
 import * as store from './store.js';
 import * as voice from './voice.js';
@@ -71,7 +71,6 @@ export function setCalm(on) {
 /* No motion at all: reduced motion on the device, Pause motion, or Calm. The same steps and messages
    appear, without movement. This is the one check every moving thing in the app asks. */
 export const noMotion = () => motionOff() || calmOn();
-const reduced = noMotion;
 /* Calls fn whenever any source of noMotion() may have changed: the reduced-motion media query, Pause motion (its
    sitemotion event, setMotionPaused) and Calm (vmcalm). Stops when signal aborts. */
 export function onMotionChange(fn, signal) {
@@ -140,15 +139,10 @@ export const stopSpeaking = () => voice.stop();
 export const loadVoices = () => voice.loadVoices();
 export { settingsHTML as voiceSettingsHTML, wireSettings as wireVoiceSettings } from './voice.js';
 
-/* ---------- Confetti ---------- */
-export function confetti(n = 70) {
-  if (reduced()) return;
-  const c = document.createElement('canvas'); c.className = 'fx-confetti'; c.width = innerWidth; c.height = innerHeight; document.body.append(c);
-  const g = c.getContext('2d'), css = getComputedStyle(document.body), cols = ['--coral', '--teal', '--sun', '--sky', '--plum'].map(v => css.getPropertyValue(v).trim() || '#F2B544');
-  const ps = Array.from({ length: n }, () => ({ x: innerWidth / 2 + (Math.random() - .5) * 200, y: innerHeight * .35, vx: (Math.random() - .5) * 12, vy: -Math.random() * 12 - 4, r: Math.random() * 6 + 4, c: cols[Math.floor(Math.random() * cols.length)], a: Math.random() * 6, s: Math.random() * .3 - .15 }));
-  let f = 0; const step = () => { g.clearRect(0, 0, c.width, c.height); ps.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += .35; p.vx *= .99; p.a += p.s; g.save(); g.translate(p.x, p.y); g.rotate(p.a); g.fillStyle = p.c; g.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * .6); g.restore(); }); if (++f < 110) requestAnimationFrame(step); else c.remove(); };
-  requestAnimationFrame(step);
-}
+/* ---------- Celebrations (openspec celebrations): js/celebrate.js ----------
+   confetti(n) is the big burst, for true wins only; the small ones are for everyday moments. All are no-ops
+   under no motion (noMotion() above uses the same rule). */
+export { confetti, sparkle, pop, bounce, twinkle, wiggle, tick, cheer, rollUp, rollSparks } from './celebrate.js';
 
 /* ---------- Toasts ---------- */
 /* Which edge the toasts sit on (openspec find-and-home-polish): the bottom, unless a primary action is there. A round's

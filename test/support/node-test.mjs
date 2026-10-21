@@ -1,6 +1,7 @@
 /* The node:test API these tests were written against, on Vitest (openspec change react-typescript, task 1.6). Vitest
    replaces `node --test`; the test files keep their bodies and import `test` (and `mock`) from here instead of
-   node:test, until their module moves to TypeScript and the test moves next to it as *.test.ts.
+   node:test, until their module moves to TypeScript and the test moves next to it as *.test.ts. vitest.config.ts also
+   aliases node:test to this file, so a test written against node:test runs as it is.
 
    What is covered, because these files use it:
    - test(name, fn) and test(name, { skip, todo }, fn). skip: the test is skipped with its reason. todo: the test runs;

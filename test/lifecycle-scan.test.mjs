@@ -83,3 +83,12 @@ test('the Mode picker and the Home More toggle bind through life.on on the view 
   assert.ok((picker.match(/\bon\(/g) || []).length >= 2 && (picker.match(/\}, signal\)/g) || []).length >= 2, 'Mode cards and Try a trick on the view signal');
   assert.match(app, /if \(ctx\.signal\) on\(hm, 'toggle', keepMore, ctx\.signal\); else hm\.ontoggle = keepMore;/, 'More ways to play: the property only without a view signal');
 });
+
+test('the background sky (js/sky-bg.js): no bare listeners, timers or frame loops; they go through life.js on the scene signal', () => {
+  assert.deepEqual(hits('sky-bg.js', /\.?addEventListener\(/), []);
+  assert.deepEqual(hits('sky-bg.js', TIMERS), []);
+  const src = readFileSync(new URL('../js/sky-bg.js', import.meta.url), 'utf8');
+  assert.match(src, /import \{[^}]*\bon\b[^}]*\bloop\b[^}]*\} from '\.\/life\.js'/);
+  assert.match(src, /loop\(frame, loopCtl\.signal\)/, 'the frame loop runs on a child signal, aborted when the tab hides or motion stops');
+  assert.match(src, /on\(document, 'visibilitychange', sync, signal\)/);
+});

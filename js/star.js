@@ -8,7 +8,7 @@ import { byId } from './skills/index.js';
 import { checkOne } from './check.js';
 import { answerText } from './answers.js';
 import { boltHTML, pose } from './bolt.js';
-import { on, later, loop, child, onAbort } from './life.js';
+import { on, later, child } from './life.js';
 import * as store from './store.js';
 import * as fx from './fx.js';
 import * as AD from './adapt.js';
@@ -169,16 +169,8 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
   const newPhase = () => { if (phase) phase.abort(); phase = child(rs); replaySkip = null; input = false; return phase.signal; };
   const ansOf = p => answerText(p, skill);
 
-  /* ---------- Particles: a small canvas over the stage, never under no motion ---------- */
-  function burst(n = 26) {
-    if (fx.noMotion()) return;
-    const c = document.createElement('canvas'), w = stage.clientWidth, h = stage.clientHeight; c.className = 'star-burst'; c.setAttribute('aria-hidden', 'true'); c.width = w; c.height = h; stage.append(c);
-    const g = c.getContext('2d'); if (!g) { c.remove(); return; }
-    const css = getComputedStyle(root), cols = ['--sun', '--coral', '--teal'].map(v => css.getPropertyValue(v).trim()).filter(Boolean);
-    const ps = Array.from({ length: n }, () => ({ x: w / 2, y: h * .45, vx: (Math.random() - .5) * 9, vy: -Math.random() * 7 - 2, r: Math.random() * 4 + 2, c: cols[Math.floor(Math.random() * cols.length)] || 'currentColor' }));
-    let f = 0; onAbort(rs, () => c.remove());
-    loop(() => { g.clearRect(0, 0, w, h); for (const p of ps) { p.x += p.vx; p.y += p.vy; p.vy += .3; g.fillStyle = p.c; g.beginPath(); g.arc(p.x, p.y, p.r, 0, 7); g.fill(); } if (++f > 45) { c.remove(); return false; } }, rs);
-  }
+  /* ---------- Celebrations (openspec celebrations): a right answer twinkles; only a lit Star gets the big confetti ---------- */
+  const small = (n = 8) => { const at = $('#stBoxes') || $('#stPop') || stage; fx.sparkle(at, { n, signal: rs }); fx.bounce(at, rs); fx.twinkle($('#stPop'), rs); };
 
   /* ---------- Answer entry ---------- */
   const maxLen = p => (boxes && p.kind === 'num' ? String(p.answer).length : 12);
@@ -271,13 +263,13 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     const after = () => (st.mode === 'end' ? end() : ask());
     if (ty.includes('comeback')) {
       say('Comeback! That is how you use a mistake. <span class="fx-sparks">+15 Sparks</span>', 'wink'); pop.textContent = '+15';
-      fx.announce(`Right, ${said(ans)}. Comeback! 15 Sparks.`); burst(40); then(1400, after);
+      fx.announce(`Right, ${said(ans)}. Comeback! 15 Sparks.`); small(12); then(1400, after);
     } else if (ty.includes('dare-won')) {
       say(`Dare crushed! <span class="fx-sparks">+20 Sparks</span>`, 'cheer'); pop.textContent = '+20';
-      fx.announce(`Right, ${said(ans)}. Dare won. 20 Sparks.`); burst(40); then(1300, after);
+      fx.announce(`Right, ${said(ans)}. Dare won. 20 Sparks.`); small(12); then(1300, after);
     } else if (ty.includes('right')) {
       say(`${pickOne(PRAISE)} <span class="fx-sparks">+10 Sparks</span>`, 'cheer'); pop.textContent = '+10';
-      fx.announce(`Right, ${said(ans)}. 10 Sparks.`); burst(); then(1100, after);
+      fx.announce(`Right, ${said(ans)}. 10 Sparks.`); small(); then(1100, after);
     } else if (ty.includes('reveal')) {
       say(`Close! It is <b>${ans}</b>. Onward.`, 'think');
       fx.announce(`Not quite. It is ${said(ans)}.`);
@@ -353,7 +345,8 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
       <p class="star-acts"><button type="button" class="md-btn md-btn--primary" id="stAgain">Play again</button><a class="md-btn" href="${esc(back.href)}" id="stBack">${esc(back.label)}</a></p></div>`;
     say(lit ? 'You did it!' : skipped ? 'Okay. On to the next one when you are ready.' : 'Good practice. Every miss teaches.', lit ? 'cheer' : 'idle');
     if (!skipped) fx.announce(`${head}. ${st.sparks} Sparks earned. ${line}`);
-    if (lit) { burst(60); fx.sfx('level'); }
+    fx.rollSparks(main, rs);
+    if (lit) { fx.confetti(110); fx.sfx('level'); } /* a Star lit is a true win: the big confetti */
     on($('#stAgain'), 'click', () => { if (again) again(); }, rs);
     $('#stQ').focus({ preventScroll: true });
   }
