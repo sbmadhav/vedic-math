@@ -1,6 +1,7 @@
 /* Progress lives in this browser (localStorage), one record per player so a family can share a device.
    Mastery is a running score from 0 to 1: first tries count fully, a try after a hint counts half.
    Nothing here leaves the device except what cloud.js posts to World boards (nickname, color, score). */
+import { AVATARS, makeName } from '../shared/src/names.ts';
 const LEGACY = 'mathquest.v1', PKEY = 'vm.players', BOARD = 'vm.board';
 let S = null, P = null;
 const blank = () => ({ v: 3, skills: {}, sparks: 0, days: {}, best: {}, last: null, grade: null, badges: {}, counts: {}, seen: {}, medals: {}, katasDone: {}, ratings: {}, weekSparks: {}, questDay: null });
@@ -11,12 +12,9 @@ export const on = fn => (listeners.add(fn), () => listeners.delete(fn));
 const emit = (type, data) => listeners.forEach(fn => { try { fn(type, data); } catch (e) {} });
 
 /* ---------- Players ---------- */
-const ADJ = ['Swift', 'Clever', 'Mighty', 'Cosmic', 'Brave', 'Lucky', 'Sunny', 'Zippy', 'Witty', 'Bold', 'Jolly', 'Turbo', 'Nimble', 'Sparky', 'Quiet', 'Rapid'];
-const NOUN = ['Tiger', 'Falcon', 'Otter', 'Panda', 'Comet', 'Rocket', 'Koala', 'Dolphin', 'Phoenix', 'Lynx', 'Gecko', 'Orca', 'Yak', 'Robin', 'Badger', 'Narwhal'];
-export const AVATARS = ['coral', 'teal', 'sun', 'sky', 'plum'];
-/* Nicknames are generated from fixed word lists, never typed, so no personal information is ever collected. */
-export const makeName = () => `${ADJ[Math.floor(Math.random() * ADJ.length)]} ${NOUN[Math.floor(Math.random() * NOUN.length)]} ${String(Math.floor(Math.random() * 90) + 10)}`;
-export const NAME_RE = /^[A-Z][a-z]+ [A-Z][a-z]+ \d{2}$/;
+/* Nicknames are generated from fixed word lists, never typed, so no personal information is ever collected. The lists,
+   makeName and the avatar colors moved to shared/src/names.ts (openspec change react-typescript, task 3.1). */
+export { AVATARS, makeName, NAME_RE } from '../shared/src/names.ts';
 
 function players() {
   if (P) return P;

@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dir = mkdtempSync(join(tmpdir(), 'lvm-build-'));
 for (const f of ['build.py', '_config.yml', '.gitignore', 'play', 'site', 'theme', 'vendor', 'fonts', 'icons', 'thumbs', 'math.css', 'css', 'app/src/sw',
-  'tools/build-sw.mjs', 'tools/budget.ts', 'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'CLAUDE.md', 'README.md',
+  'tools/build-sw.mjs', 'tools/build-ts.mjs', 'shared/src', 'tools/budget.ts', 'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'CLAUDE.md', 'README.md',
   'wrangler.jsonc', 'workers/src', 'package.json', 'pnpm-workspace.yaml', 'tsconfig.base.json', 'vitest.config.ts',
   'cloud/firestore.rules', 'test/support/verify.mjs', '.github', 'tools/voice/ci-fetch.mjs', 'tools/sutra-voice/names.mjs'])
   if (existsSync(join(repo, f))) cpSync(join(repo, f), join(dir, f), { recursive: true });
