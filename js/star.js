@@ -297,9 +297,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
       replaySkip = null; const b = $('#stRSkip');
       b.textContent = of === 'dare' ? 'Back to the question' : 'Try one like it'; b.className = 'md-btn md-btn--primary'; b.id = 'stRGo';
       replaySkip = next;
-      /* Once every step is shown, a Listen button reads them again (openspec explanation-audio 4.1): never while they
-         are still appearing, so it cannot race the 2.5 s step timer. The view's wireListen() plays it (the shell sits
-         inside the view); this replay's phase ending (Skip, Go, Escape) stops it, and leaving stops it with the view. */
+      /* Listen once every step is shown (explanation-audio design 8); the view's wireListen() plays it */
       b.insertAdjacentHTML('beforebegin', listenBtn('from:.star-step > p', 'the steps'));
       b.focus({ preventScroll: true });
     };
