@@ -5,7 +5,8 @@ import { test, expect, open, APP } from '../fixtures';
    (outside the history text that says they are not), "traditional Vedic mathematics sutras" or "Vedic sutras".
    test/copy.test.mjs scans the source files on disk; these tests scan what the server actually ships: the page,
    the manifest and every module reachable from js/app.js (static imports, dynamic import() and
-   import.meta.resolve workers), plus the text a Player sees on every top-level route. */
+   workers started from new URL(..., import.meta.url) or import.meta.resolve), plus the text a Player sees on every
+   top-level route. */
 
 const BANNED = [/vedic sutras?\b/i, /traditional vedic mathematics sutras/i, /from the vedas/i];
 /* The history text may name the Vedas to say the sutras are NOT in them */
@@ -27,7 +28,7 @@ function scan(label: string, text: string): string[] {
   return hits;
 }
 
-const SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+|import\.meta\.resolve\(\s*)['"]([^'"]+\.js)['"]/g;
+const SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+|import\.meta\.resolve\(\s*|\bnew\s+URL\(\s*)['"]([^'"]+\.js)['"]/g;
 
 test('the shipped HTML, manifest and every app script make no Vedic-source claim', async ({ page, baseURL }) => {
   const origin = new URL(baseURL!).origin;
