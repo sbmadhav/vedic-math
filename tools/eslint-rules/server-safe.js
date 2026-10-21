@@ -29,10 +29,17 @@ function nameOf(fn) {
 
 const FUNCTION = new Set(['FunctionDeclaration', 'FunctionExpression', 'ArrowFunctionExpression']);
 
-/* Whether `node` sits in the children of a <ClientOnly> element */
+const isClientOnly = n => n && n.type === 'JSXElement' && n.openingElement.name.type === 'JSXIdentifier' && n.openingElement.name.name === 'ClientOnly';
+
+/* Whether `node` only runs in the browser because <ClientOnly> calls it: it is inside a function written in that
+   element's children ({() => window.innerWidth}). A plain expression child ({window.innerWidth}) or an attribute
+   (fallback={...}) is evaluated by the parent's render, on the server too, so it does not count. */
 function inClientOnly(node) {
+  let inFunction = false;
   for (let n = node.parent; n; n = n.parent) {
-    if (n.type === 'JSXElement' && n.openingElement.name.type === 'JSXIdentifier' && n.openingElement.name.name === 'ClientOnly') return true;
+    if (FUNCTION.has(n.type)) inFunction = true;
+    if (n.type === 'JSXExpressionContainer' && isClientOnly(n.parent) && n.parent.children.includes(n)) return inFunction;
+    if (n.type === 'JSXOpeningElement' && isClientOnly(n.parent)) return false;
   }
   return false;
 }
