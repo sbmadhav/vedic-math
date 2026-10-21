@@ -311,7 +311,7 @@ Getting the rematch right after a mistake in a Star. It pays more Sparks than a 
 _Avoid_: retry, second chance, redemption
 
 **Decoration**:
-Moving pictures that carry no information and take no input: the Sky backdrop, the Moving background, celebrations and Mandala Studio's glow. The only thing WebGL may draw (ADR 0011). Off with reduced motion, Pause motion and Calm. (Proposed in the `gpu-effects` change.)
+Moving pictures that carry no information and take no input: the Sky in 3D, Sutra deep-dive illustrations, the Moving background, celebrations and Mandala Studio's glow. The only thing WebGL may draw (ADR 0011), as 3D scenes (ADR 0013). Off with reduced motion, Pause motion and Calm. (The Sky in `react-typescript`; the rest proposed in the `gpu-effects` change.)
 _Avoid_: effects, animations (too broad), graphics
 
 **Performance budget**:
