@@ -30,6 +30,7 @@ Prerequisites (owner Q15: build after the move): `learnvedicmath` is archived (t
 - [ ] 4.2 `js/hook.js`: `HOOK_DARES`, `calcKeys`, `isNewPlayer()`, `S.hookSeen` (hook-first-star tasks 1.1 and 1.2). Verify: new `test/hook.test.mjs` as written there, plus: `isNewPlayer()` is still true after a finished Placement.
 - [ ] 4.3 `runHook()` and `runStar(..., { hook })` with the easiest-first round (hook-first-star tasks 2.1 and 2.2). Verify: new `e2e/tests/hook.spec.ts`, every case listed in hook-first-star task 2.1, plus: a new Challenger placed at grade 5 opening the suggested Star gets the dare; a new Pro placed at grade 8 gets no Hook, then none on `from9` either. `test/star.test.mjs`: `starRound({ easiestFirst: true })`.
 - [ ] 4.4 The Hook in Calm, motion and for screen readers (hook-first-star task 3.1 and 3.2). Verify: as written there, in `hook.spec.ts` and `a11y.spec.ts`.
+- [ ] 4.5 Try a trick's worked example card and the Hook (decision 14, from `try-trick-teaches`): `starView` passes `intro` only when the Hook does not play. Verify: `hook.spec.ts`: a new visitor who presses Try a trick on a Trick with a dare gets the dare and the reveal and no worked example card; on a Trick with no dare, the card shows as today (`e2e/tests/try-trick-teaches.spec.ts`, `e2e/tests/cov/first-visit-3.spec.ts` unchanged).
 
 ## 5. Privacy and analytics
 

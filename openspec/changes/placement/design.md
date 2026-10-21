@@ -98,6 +98,12 @@ Every step has at least 2 Skills, so the second try at a step is a different Ski
 
 **13. Calm and screen readers.** The climb has no clock in any setting. The staircase picture moves only when `fx.noMotion()` is false. Each question's heading takes focus; the step ("Step 3") and the result are announced through `fx.announce()`; the 3 choices are buttons named by their values. The result screen and the offer are checked by `a11y.spec.ts` in both color schemes.
 
+**14. Try a trick's worked example card (from `try-trick-teaches`, its decision 4).** Try a trick on the mode picker opens Star 1 of a Trick with a card that shows the Trick worked once before the first question (`starIntro()` in `js/star.js` and `runStar(..., { intro })`, set once by `starView.introFor`). A visitor from Try a trick is a new Player, so the Hook would play on that same Star. The Hook absorbs the card:
+- When the Hook plays (the Trick has a dare and the Player is new), the Hook's reveal is the teaching and the card is not shown, so the visitor is never taught twice.
+- When the Hook does not play (a Trick with no dare, or a Player who saw or skipped it), the card stays as the Try a trick path's way to teach first.
+- If the owner decides that the Hook's dare must come before any teaching, the Hook replaces the card on the Try path; `starIntro()` and the `intro` option are then removed with their tests (`test/star.test.mjs`, `e2e/tests/try-trick-teaches.spec.ts`, `e2e/tests/cov/first-visit-3.spec.ts`).
+The card reads and writes no Placement or Hook state.
+
 ## Risks / Trade-offs
 
 - **A lucky guess places a child high** (Explorer's 3 choices give a 1 in 3 chance each). Mitigation: Ratings move with answers, and Practice drops after misses within a round; raise-only applies only to saved Ratings. A child placed too high meets easier questions within a few answers.
