@@ -10,7 +10,7 @@
  },
  "firstLoad": {
   "page": "/play/",
-  "total": 745286,
+  "total": 756123,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -42,10 +42,10 @@
    "/icons/icon-512.png": 20841,
    "/icons/maskable-512.png": 11879,
    "/js/adapt.js": 1695,
-   "/js/ambient.js": 8163,
+   "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 42666,
+   "/js/app.js": 42720,
    "/js/arena.js": 5327,
    "/js/bolt.js": 1088,
    "/js/celebrate.js": 3080,
@@ -62,6 +62,7 @@
    "/js/guide.js": 10346,
    "/js/handoff-schema.js": 6402,
    "/js/handoff.js": 3129,
+   "/js/landing-sky.js": 261,
    "/js/levels.js": 4935,
    "/js/lib.js": 1707,
    "/js/life.js": 838,
@@ -111,6 +112,8 @@
    "/js/skills/index.js": 1084,
    "/js/skills/middle.js": 6258,
    "/js/skills/upper.js": 7871,
+   "/js/sky-bg.js": 9321,
+   "/js/sky-scene.js": 5438,
    "/js/sky-view.js": 4458,
    "/js/sky.js": 3762,
    "/js/slokas.js": 16068,
@@ -129,19 +132,26 @@
    "/js/voice.js": 14365,
    "/js/watch.js": 2065,
    "/manifest.webmanifest": 313,
-   "/math.css": 21108,
-   "/play/": 3525,
-   "/sw.js": 6016,
+   "/math.css": 21305,
+   "/play/": 3564,
+   "/sw.js": 6073,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
   "changes": [
    {
     "date": "2026-10-21",
-    "pr": 115,
+    "pr": 110,
     "from": 744827,
-    "to": 745286,
-    "why": "react-typescript phase 1 (#114): the three js/ edits (comments and absolute /sounds/ URLs) and sw.js published from sw.ts (its new header comment, the /api/ rule and lint fixes); no new file"
+    "to": 755652,
+    "why": "merged on main after the baseline was measured: the animated sky background (bg-sky-a, js/sky-bg.js and its styles), a feature outside this change"
+   },
+   {
+    "date": "2026-10-21",
+    "pr": 115,
+    "from": 755652,
+    "to": 756123,
+    "why": "react-typescript phase 1 (#114, #115): the three js/ edits (comments and absolute /sounds/ URLs) and sw.js published from sw.ts (its new header comment, the /api/ rule and lint fixes); no new file"
    }
   ]
  },
