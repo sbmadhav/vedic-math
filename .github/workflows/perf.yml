@@ -59,7 +59,8 @@ jobs:
         run: |
           python3 build.py --out _site --voice "$VOICE"
           mkdir -p e2e/perf/results
-          node tools/budget.ts _site --json e2e/perf/results/first-load.json
+          # The same byte gate as the build (task 1.8): above docs/perf/baseline.json fails, naming the largest new file
+          node tools/budget.ts _site --json e2e/perf/results/first-load.json --check docs/perf/baseline.json
 
       - name: Install Playwright
         working-directory: e2e
