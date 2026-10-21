@@ -1,0 +1,224 @@
+{
+ "//": "The performance baseline of the live game before the migration (openspec change react-typescript, task 0.4; performance-budget spec). docs/perf/baseline.md explains it. Read by build.py (firstLoad, through tools/budget.ts) and by the perf gates (lighthouse and interactions, through tools/perf-compare.ts). A change to it says why in its pull request.",
+ "measured": {
+  "date": "2026-10-20",
+  "site": "https://learnvedicmath.com",
+  "commit": "01dee2f",
+  "swVersion": "2e01da18cd",
+  "runner": "GitHub Actions ubuntu-latest (perf.yml, run 39517664770)",
+  "lighthouse": "13.5.0"
+ },
+ "firstLoad": {
+  "page": "/play/",
+  "total": 739463,
+  "files": {
+   "/css/play/apprentice.css": 2196,
+   "/css/play/art.css": 2398,
+   "/css/play/base.css": 1198,
+   "/css/play/bets.css": 2311,
+   "/css/play/daily.css": 2127,
+   "/css/play/ghosts.css": 2516,
+   "/css/play/lens.css": 3144,
+   "/css/play/locks.css": 3535,
+   "/css/play/party.css": 3713,
+   "/css/play/scroll.css": 4414,
+   "/css/play/spells.css": 3900,
+   "/css/play/tala.css": 4312,
+   "/css/play/wall.css": 2194,
+   "/ds/2.1.0/components.css": 4869,
+   "/ds/2.1.0/header.js": 1166,
+   "/ds/2.1.0/tokens.css": 2448,
+   "/fonts/fredoka-latin-600-normal.woff2": 16454,
+   "/fonts/fredoka-latin-700-normal.woff2": 15898,
+   "/fonts/jetbrains-mono-latin-500-normal.woff2": 21833,
+   "/fonts/nunito-sans-latin-wght-normal.woff2": 31073,
+   "/fonts/space-grotesk-latin-wght-normal.woff2": 22282,
+   "/icons/apple-touch-icon.png": 5919,
+   "/icons/favicon-16.png": 482,
+   "/icons/favicon-32.png": 915,
+   "/icons/favicon-48.png": 1321,
+   "/icons/favicon.svg": 247,
+   "/icons/icon-192.png": 7835,
+   "/icons/icon-512.png": 20841,
+   "/icons/maskable-512.png": 11879,
+   "/js/adapt.js": 1695,
+   "/js/ambient.js": 8163,
+   "/js/analytics.js": 1385,
+   "/js/answers.js": 912,
+   "/js/app.js": 42170,
+   "/js/arena.js": 5151,
+   "/js/bolt.js": 1088,
+   "/js/check.js": 2946,
+   "/js/cloud-config.js": 588,
+   "/js/cloud.js": 4423,
+   "/js/explain-lines.js": 2176,
+   "/js/find.js": 6645,
+   "/js/fx.js": 4265,
+   "/js/games.js": 12325,
+   "/js/gamify.js": 3739,
+   "/js/guide-art.js": 2484,
+   "/js/guide.js": 10346,
+   "/js/handoff-schema.js": 6402,
+   "/js/handoff.js": 3129,
+   "/js/levels.js": 4935,
+   "/js/lib.js": 1707,
+   "/js/life.js": 838,
+   "/js/listen.js": 1335,
+   "/js/mental.js": 1729,
+   "/js/metrics.js": 3457,
+   "/js/play/catalog.js": 1756,
+   "/js/play/exp/apprentice-core.js": 7279,
+   "/js/play/exp/apprentice.js": 3914,
+   "/js/play/exp/art-core.js": 5199,
+   "/js/play/exp/art-draw.js": 3620,
+   "/js/play/exp/art-sound.js": 1298,
+   "/js/play/exp/art.js": 15865,
+   "/js/play/exp/bets-core.js": 8496,
+   "/js/play/exp/bets.js": 5782,
+   "/js/play/exp/daily-core.js": 4854,
+   "/js/play/exp/daily.js": 6383,
+   "/js/play/exp/ghosts-core.js": 3200,
+   "/js/play/exp/ghosts.js": 6687,
+   "/js/play/exp/lens-cam.js": 4666,
+   "/js/play/exp/lens-core.js": 9184,
+   "/js/play/exp/lens.js": 7556,
+   "/js/play/exp/locks-core.js": 5208,
+   "/js/play/exp/locks.js": 8010,
+   "/js/play/exp/party-core.js": 6683,
+   "/js/play/exp/party.js": 10020,
+   "/js/play/exp/scroll-art.js": 3098,
+   "/js/play/exp/scroll-core.js": 12555,
+   "/js/play/exp/scroll.js": 10543,
+   "/js/play/exp/spells-core.js": 6602,
+   "/js/play/exp/spells.js": 9255,
+   "/js/play/exp/tala-audio.js": 3561,
+   "/js/play/exp/tala-core.js": 5945,
+   "/js/play/exp/tala.js": 14979,
+   "/js/play/exp/wall-core.js": 9208,
+   "/js/play/exp/wall.js": 9151,
+   "/js/play/icons.js": 721,
+   "/js/play/kit.js": 3810,
+   "/js/play/life.js": 61,
+   "/js/related.js": 516,
+   "/js/say-clips.js": 677,
+   "/js/say.js": 3539,
+   "/js/scenes.js": 1392,
+   "/js/shell.js": 1671,
+   "/js/skills/early.js": 5459,
+   "/js/skills/high.js": 9385,
+   "/js/skills/index.js": 1084,
+   "/js/skills/middle.js": 6258,
+   "/js/skills/upper.js": 7871,
+   "/js/sky-view.js": 4458,
+   "/js/sky.js": 3762,
+   "/js/slokas.js": 16068,
+   "/js/star.js": 8585,
+   "/js/store.js": 5886,
+   "/js/sutra-ambience.js": 4087,
+   "/js/sutra-details.js": 13423,
+   "/js/sutras.js": 3866,
+   "/js/tour.js": 2215,
+   "/js/vedic.js": 9820,
+   "/js/videos.js": 20516,
+   "/js/viz.js": 5745,
+   "/js/voice-index.js": 213,
+   "/js/voice-plan.js": 2458,
+   "/js/voice-worker.js": 846,
+   "/js/voice.js": 14355,
+   "/js/watch.js": 2065,
+   "/manifest.webmanifest": 313,
+   "/math.css": 20129,
+   "/play/": 3495,
+   "/sw.js": 5773,
+   "/theme/fonts.css": 384,
+   "/theme/learnvedicmath.css": 547
+  }
+ },
+ "lighthouse": {
+  "preset": "mobile (simulated slow 4G, 4x CPU), median of 5 runs",
+  "pages": {
+   "play-first": {
+    "path": "/play/",
+    "visit": "first",
+    "median": {
+     "fcp": 1873,
+     "lcp": 5190,
+     "tbt": 27,
+     "cls": 0.001,
+     "si": 1873,
+     "ttfb": 78
+    }
+   },
+   "play-repeat": {
+    "path": "/play/",
+    "visit": "repeat",
+    "median": {
+     "fcp": 823,
+     "lcp": 1260,
+     "tbt": 17,
+     "cls": 0.007,
+     "si": 823,
+     "ttfb": 47
+    }
+   },
+   "arena": {
+    "path": "/play/#/arena",
+    "visit": "returning",
+    "median": {
+     "fcp": 1947,
+     "lcp": 5540,
+     "tbt": 35,
+     "cls": 0.007,
+     "si": 1947,
+     "ttfb": 70
+    }
+   },
+   "games": {
+    "path": "/play/#/games",
+    "visit": "returning",
+    "median": {
+     "fcp": 1948,
+     "lcp": 5520,
+     "tbt": 36,
+     "cls": 0.007,
+     "si": 1948,
+     "ttfb": 70
+    }
+   },
+   "deep-dive": {
+    "path": "/play/#/sutras/s1",
+    "visit": "returning",
+    "median": {
+     "fcp": 1938,
+     "lcp": 5561,
+     "tbt": 106,
+     "cls": 0.007,
+     "si": 2362,
+     "ttfb": 71
+    }
+   }
+  }
+ },
+ "interactions": {
+  "cpuSlowdown": 4,
+  "runs": 5,
+  "interactions": {
+   "arena-open": {
+    "inp": 48,
+    "visible": 33
+   },
+   "arena-answer": {
+    "inp": 32,
+    "visible": 2
+   },
+   "deep-dive-open": {
+    "inp": 208,
+    "visible": 32
+   },
+   "star-light": {
+    "inp": 48,
+    "visible": 1132
+   }
+  }
+ }
+}

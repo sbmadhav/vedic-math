@@ -336,7 +336,7 @@ _Avoid_: backup page, old site
 
 ## The React migration
 
-Proposed in the `react-typescript` change (`openspec/changes/react-typescript/`, ADRs 0012 and 0013).
+Proposed in the `react-typescript` change (`openspec/changes/react-typescript/`, ADRs 0012, 0013 and 0014).
 
 **Legacy view**:
 A screen still drawn by the old template-string code, mounted by the router through the adapter that gives it its root element and signal. Every Legacy view becomes a React view during the migration.
@@ -349,4 +349,12 @@ _Avoid_: frozen view, blocked view
 **3D scene**:
 A decoration drawn with three.js behind the interface, such as the Sky in 3D. It carries no information, takes no input, and falls back to a still frame or the 2D drawing.
 _Avoid_: 3D mode, WebGL view
+
+**Server line**:
+A spoken sentence that holds a question's own numbers ("What is 47 plus 38?"), built from one of the game's sentence templates, voiced once by the server and kept in a cache, so every later Player hears the same file. Lines whose words never change keep their Studio voice recordings. A Server line never holds a name, a Nickname or anything typed.
+_Avoid_: TTS line, dynamic clip, live audio
+
+**Live session**:
+Reserved for a follow-on change after Duels: a grown-up host starts a quiz, Players join by code with their generated Nicknames, and scores update live for everyone in the room. Not built in `react-typescript`.
+_Avoid_: classroom mode, multiplayer, live game
 
