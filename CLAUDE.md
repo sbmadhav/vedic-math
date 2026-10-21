@@ -38,7 +38,7 @@ The game is moving to React Router v7 (framework mode, server-rendered on Cloudf
 
 ## Checks before a push
 
-`corepack enable && pnpm install` once, then `pnpm typecheck`, `pnpm lint`, `pnpm test` (Vitest) and `python3 build.py --out /tmp/vm-site`; then `python3 build.py && node e2e/local-server.mjs 8124 _site` and `cd e2e && BASE_URL=http://localhost:8124 pnpm exec playwright test` (details in `docs/agent/e2e.md`; `npx wrangler dev` from `deploy/` serves the same with Cloudflare's runtime). Enable the pre-commit hook once per clone: `git config core.hooksPath .githooks`.
+`corepack enable && pnpm install` once, then `pnpm typecheck`, `pnpm lint`, `pnpm test` (Vitest) and `python3 build.py --out /tmp/vm-site`; then `python3 build.py && node e2e/local-server.mjs 8124 _site` (it keeps running: use a second terminal) and, in another terminal, `cd e2e && BASE_URL=http://localhost:8124 pnpm exec playwright test` (details in `docs/agent/e2e.md`; `npx wrangler dev` from `deploy/` serves the same with Cloudflare's runtime). Enable the pre-commit hook once per clone: `git config core.hooksPath .githooks`.
 
 ## Where the details are
 

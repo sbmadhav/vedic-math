@@ -10,6 +10,7 @@
  },
  "firstLoad": {
   "page": "/play/",
+  "voice": "off",
   "total": 758499,
   "files": {
    "/css/play/apprentice.css": 2196,

@@ -149,7 +149,11 @@ jobs:
           cat perf-table.md >> "$GITHUB_STEP_SUMMARY"
           if [ "$code" != 0 ]; then
             body=$(printf 'Production (%s, after the deploy of %s) misses the performance baseline (docs/perf/baseline.json). The deploy stays.\n\n%s\n\nRun: %s/%s/actions/runs/%s' "$BASE_URL" "$GITHUB_SHA" "$(cat perf-table.md)" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")
-            gh issue create --repo "$GITHUB_REPOSITORY" --title "Performance budget missed on production (${GITHUB_SHA::7})" --body "$body"
+            # One open issue while a miss lasts: later misses comment on it
+            title="Performance budget missed on production"
+            open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number,title --jq "[.[] | select(.title | startswith(\"$title\"))][0].number // empty")
+            if [ -n "$open" ]; then gh issue comment "$open" --repo "$GITHUB_REPOSITORY" --body "$body"
+            else gh issue create --repo "$GITHUB_REPOSITORY" --title "$title (${GITHUB_SHA::7})" --body "$body"; fi
           fi
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

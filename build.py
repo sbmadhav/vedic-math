@@ -229,16 +229,24 @@ def worker_source():
     return r.stdout
 
 
-def check_budget(out):
+def check_budget(out, voice):
     """The first-load byte budget (openspec change react-typescript, performance-budget spec, task 1.8): tools/budget.ts
     measures the Brotli size of everything a first visit to /play/ requests before the first tap (the page, what it
     loads, the entry's static imports, sw.js and every file in PRECACHE), prints the table, and fails when the total is
-    above docs/perf/baseline.json. A pull request that grows first load on purpose updates the baseline and says why."""
+    above docs/perf/baseline.json. A pull request that grows first load on purpose updates the baseline and says why.
+    The baseline names the voice mode it was measured in (firstLoad.voice): js/voice-index.js and sw.js differ by mode,
+    so a build in another mode prints the table without failing, until a baseline for that mode is recorded."""
     node = shutil.which("node")
     if not node:
         fail("node is not installed: it measures the first-load budget (tools/budget.ts, Node 22.18 or newer)")
     if not (ROOT / BASELINE).is_file():
         fail(f"{BASELINE} is missing: the first-load budget is measured against it")
+    mode = json.loads((ROOT / BASELINE).read_text()).get("firstLoad", {}).get("voice")
+    if mode and mode != voice:
+        r = subprocess.run([node, "--no-warnings", str(ROOT / "tools/budget.ts"), str(out)], capture_output=True, text=True)
+        sys.stdout.write(r.stdout)
+        print(f"  budget not checked: {BASELINE} was measured with --voice {mode}, this build is --voice {voice}")
+        return
     r = subprocess.run([node, "--no-warnings", str(ROOT / "tools/budget.ts"), str(out), "--check", str(ROOT / BASELINE)],
                        capture_output=True, text=True)
     sys.stdout.write(r.stdout)
@@ -712,7 +720,7 @@ def build_site(args, out):
         (out / f).write_text(text)
     check_published(out, args.voice)
     if not dev:
-        check_budget(out)
+        check_budget(out, args.voice)
 
     rel = out.relative_to(ROOT) if out.is_relative_to(ROOT) else out
     n = sum(1 for p in out.rglob("*") if p.is_file())
