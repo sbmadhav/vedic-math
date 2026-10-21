@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 /* Interaction timings of the game (openspec change react-typescript, performance-budget spec, task 0.4; the preview
    perf job of task 1.8 runs it too). Run from e2e/:
-     npx playwright test -c perf/playwright.config.ts            (BASE_URL as for the suite; the live site by default)
+     pnpm exec playwright test -c perf/playwright.config.ts      (BASE_URL as for the suite; the live site by default)
    Chromium with 4x CPU slowdown through the DevTools protocol, each interaction 5 times in a fresh context (the
    config's repeatEach), the median printed and written to perf/results/interactions.json by perf/report.ts (which
    refuses a run missing an interaction or a repeat; PERF_PARTIAL=1 allows one picked with -g).
