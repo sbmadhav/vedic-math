@@ -87,7 +87,7 @@ The baseline is run 1. Task 0.4's repeatability check: the same job runs the scr
 - **The Deep dive INP's noise allowance:** this INP is the one timing that will not hold still on a GitHub runner. Its median moved between 136 and 264 ms across six runs of the job. Within one job, the two runs differed by up to 104 ms.
   - The cause: Learn more is a hash link. The heavy dialog is built in the `hashchange` task that follows the click, and whether that task lands before or after the tap's next paint varies.
   - The fix for the measurement: `baseline.json` records `interactions.noise` with 120 ms for this INP. The repeat check and the gate (task 1.8) then allow that much instead of 20 ms.
-  - Its "visible" number stays at 20 ms, so a slower dialog still fails. The router of phase 2 removes the hash change, and the allowance goes with it.
+  - Its "visible" number moves with it (the dialog is drawn in the click's frame or the next one, 4 or about 30 ms), so it gets 40 ms; a slower dialog still fails. The router of phase 2 removes the hash change, and the allowance goes with it.
 - **Light a Star:** "Visible" includes the round's own pause of about 1.1 s before the end screen. It is a fixed delay, not work, and it is stable across runs.
 - **Why motion is reduced:** with the background animating, the Deep dive's tap came out at about 35 ms or about 200 ms run by run. A tap sometimes shared its frame with a heavy background frame, and two runs of one job were 104 ms apart. With motion reduced the background draws once, and every interaction's five runs are within 24 ms of each other. Earlier versions of the script also tapped during a card flip and during the screen's idle work; the waits above fixed that.
 

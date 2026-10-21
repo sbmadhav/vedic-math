@@ -257,7 +257,8 @@
   "noise": {
    "//": "Timings whose medians move more than 20 ms between runs on the GitHub runner, and how far; the repeat check and the gate allow this much instead of 20 ms (docs/perf/baseline.md, Interactions)",
    "deep-dive-open": {
-    "inp": 120
+    "inp": 120,
+    "visible": 40
    }
   }
  }
