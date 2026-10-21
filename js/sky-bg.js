@@ -10,7 +10,7 @@
    - Every listener, timer and frame loop is tied to the signal through js/life.js; aborting it removes the canvas.
    It imports nothing from the game (no store, no fx), so the landing page can run it on its own (js/landing-sky.js). */
 import { on, later, every, loop, child, onAbort } from './life.js';
-import { LEVELS, STORIES, DIGITS, DIGIT_ORDER, FALCON_BRICKS, BRAHMI, POWER_PICKS, POWERS, powerNumber, superscript, meruRows, PALETTE, ALPHA, TIMING, storyAt, placeStory, storySizes, artSizes, horizon, seeded } from './sky-scene.js';
+import { LEVELS, STORIES, SULBA, sulbaRadius, FAMILY, CAMEO, DIGITS, DIGIT_ORDER, FALCON_BRICKS, BRAHMI, POWER_PICKS, POWERS, powerNumber, superscript, meruRows, PALETTE, ALPHA, TIMING, storyAt, placeStory, storySizes, artSizes, horizon, seeded } from './sky-scene.js';
 
 /* What a story must not sit on, and what the sky is kept clear behind (sky-bg measures the page, never a list of
    class names): every run of text (measured to its words) and every control is cleared; pictures and any box that
@@ -66,8 +66,9 @@ function whenSettled(fn, signal) {
   if (document.readyState === 'complete') painted(); else on(window, 'load', painted, signal, { once: true });
 }
 
-/* Mounts the sky behind the page until signal aborts. stories: the featured stories in order. Returns { setLevel }. */
-export function mountSkyBg({ signal, level = 'full', stories = STORIES, parent = document.body, defer = true } = {}) {
+/* Mounts the sky behind the page until signal aborts. stories: the featured stories in order; cameo: the Nikhilam
+   Family peeks over a caption when its story is complete. Returns { setLevel }. */
+export function mountSkyBg({ signal, level = 'full', stories = STORIES, cameo = true, parent = document.body, defer = true } = {}) {
   let api = { setLevel: l => { level = l; } };
   const start = () => { api = run(); };
   if (defer) whenSettled(start, signal); else start();
@@ -330,6 +331,53 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, parent =
           g.fillStyle = rgba('muted', a * f); g.fillText(String(i + 1), x, y + cell * 0.42);
         });
       },
+      /* Circling the square, as with a rope and pegs: the peg, the east-west line, the corner pegs, the square drawn
+         true side by side, the rope from the peg to a corner swung down to the line, a third of the part beyond the
+         square marked, then the circle drawn round with the rope */
+      sulba(b, p, a) {
+        const { a: half, steps } = SULBA, R = Math.min(b.w, b.h) / 2 - 6, cx = b.x + b.w / 2, cy = b.y + b.h / 2, k = R / 0.95;
+        const X = u => cx + u * k, Y = v => cy + v * k, step = n => clamp((p - steps[n][0]) / (steps[n][1] - steps[n][0]));
+        const peg = (u, v, f) => { if (f <= 0) return; g.fillStyle = rgba('muted', a * f); g.fillRect(X(u) - 1.5, Y(v) - 9 + (1 - f) * -10, 3, 10); g.beginPath(); g.arc(X(u), Y(v) - 9 + (1 - f) * -10, 3, 0, TAU); g.fill(); };
+        const rope = (x1, y1, x2, y2, f = 1) => { if (f <= 0) return; g.save(); g.setLineDash([4, 4]); g.strokeStyle = rgba('muted', a * 0.9); g.lineWidth = 1.2; g.beginPath(); g.moveTo(X(x1), Y(y1)); g.lineTo(X(x1 + (x2 - x1) * f), Y(y1 + (y2 - y1) * f)); g.stroke(); g.restore(); };
+        const diag = half * Math.SQRT2, r = sulbaRadius(half);
+        /* east-west line through the peg */
+        const fl = step('line');
+        if (fl > 0) { g.strokeStyle = rgba('art2', a * 0.35); g.lineWidth = 1; g.beginPath(); g.moveTo(X(-0.95 * fl), cy); g.lineTo(X(0.95 * fl), cy); g.stroke(); }
+        /* the square, side by side, each as a taut rope that turns into a line */
+        const C = [[-half, -half], [half, -half], [half, half], [-half, half]];
+        const fs = step('sides') * 4;
+        g.strokeStyle = rgba('art', a); g.lineWidth = 1.8;
+        for (let i = 0; i < 4; i++) {
+          const f = clamp(fs - i); if (f <= 0) break;
+          const [x1, y1] = C[i], [x2, y2] = C[(i + 1) % 4];
+          g.beginPath(); g.moveTo(X(x1), Y(y1)); g.lineTo(X(x1 + (x2 - x1) * f), Y(y1 + (y2 - y1) * f)); g.stroke();
+          if (f < 1) rope(x1, y1, x2, y2, 1);
+        }
+        /* the rope from the peg to a corner, swung down to the east-west line */
+        const fw = step('swing');
+        if (fw > 0 && p < steps.circle[0] + 0.02) {
+          const ang = -Math.PI / 4 * (1 - fw);
+          rope(0, 0, diag * Math.cos(ang), diag * Math.sin(ang));
+          g.strokeStyle = rgba('art2', a * 0.6); g.lineWidth = 1; g.beginPath(); g.arc(cx, cy, diag * k, -Math.PI / 4, ang); g.stroke();
+        }
+        /* the part beyond the square, in thirds; the first third is added */
+        const ft = step('third');
+        if (ft > 0) {
+          g.strokeStyle = rgba('art2', a * ft); g.lineWidth = 3; g.beginPath(); g.moveTo(X(half), cy); g.lineTo(X(diag), cy); g.stroke();
+          g.lineWidth = 1.2; for (let i = 1; i < 3; i++) { const u = half + (diag - half) * i / 3; g.beginPath(); g.moveTo(X(u), cy - 6); g.lineTo(X(u), cy + 6); g.stroke(); }
+          g.strokeStyle = rgba('art', a * ft); g.lineWidth = 4; g.beginPath(); g.moveTo(X(half), cy); g.lineTo(X(r), cy); g.stroke();
+        }
+        /* the circle, drawn round with the rope */
+        const fc = step('circle');
+        if (fc > 0) {
+          const end = TAU * fc;
+          g.strokeStyle = rgba('art2', a); g.lineWidth = 1.8; g.beginPath(); g.arc(cx, cy, r * k, 0, end); g.stroke();
+          if (fc < 1) rope(0, 0, r * Math.cos(end), r * Math.sin(end));
+        }
+        /* pegs: the centre first, then the corners */
+        peg(0, 0, step('peg'));
+        C.forEach(([u, v], i) => peg(u, v, clamp(step('corners') * 4 - i)));
+      },
       nakshatras(b, p, a) {
         const cx = b.x + b.w / 2, cy = b.y + b.h / 2, R = Math.min(b.w, b.h) / 2 - 4, r1 = R * 0.62;
         g.lineWidth = 1.2; g.strokeStyle = rgba('art2', a);
@@ -355,8 +403,24 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, parent =
       ART[st.art] && ART[st.art](s.art, drawn, a, s);
       if (s.cap) {
         const capA = (phase === 'in' ? clamp((p - 0.55) / 0.45) : 1) * out * cut * fade;
+        if (cameo && phase === 'hold' && s.cut == null) family(s.cap, p * TIMING.hold - CAMEO.at);
         if (capA > 0.001) { const cp = caption(st, s.cap.w, s.cap.compact); g.globalAlpha = capA; g.drawImage(cp.cv, s.cap.x, s.cap.y, cp.w, cp.h); g.globalAlpha = 1; }
       }
+    }
+    /* The Nikhilam Family peeks over the top right of the caption for a moment when a story is complete: up from
+       behind it, a small bob, and down again. Small (36 px high), drawn from the brand mark's paths in its tokens. */
+    const famPaths = FAMILY.map(([d, fill, stroke, w]) => [new Path2D(d), fill, stroke, w]);
+    function family(cap, s) {
+      if (s <= 0 || s >= CAMEO.for) return;
+      const up = Math.min(clamp(s / 0.5), clamp((CAMEO.for - s) / 0.5)), ease = up * up * (3 - 2 * up), H0 = 36, sc = H0 / 64;
+      const x = cap.x + cap.w - 96 * sc - 14, y = cap.y - H0 * ease + 8 + Math.sin(s * 4) * 1.5 * ease;
+      g.save(); g.beginPath(); g.rect(x - 8, cap.y - H0 - 12, 96 * sc + 16, H0 + 13); g.clip(); /* only what is above the plaque */
+      g.translate(x, y); g.scale(sc, sc); g.lineCap = 'round'; g.lineJoin = 'round';
+      for (const [path, fill, stroke, w] of famPaths) {
+        if (fill) { g.fillStyle = rgba(fill, 1); g.fill(path); }
+        if (stroke) { g.strokeStyle = rgba(stroke, 1); g.lineWidth = w; g.stroke(path); }
+      }
+      g.restore();
     }
     function nextPick() { const name = POWER_PICKS[powerTurn++ % POWER_PICKS.length]; return POWERS.find(([n]) => n === name); }
     /* The next story's place is worked out while the browser is idle during the empty sky before it */

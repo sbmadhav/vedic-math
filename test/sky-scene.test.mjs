@@ -83,3 +83,17 @@ test('drawing data stays in its boxes', () => {
   assert.equal(powerNumber(3), '1,000'); assert.equal(powerNumber(12), '1,000,000,000,000');
   assert.equal(superscript(12), '¹²');
 });
+
+test('circling the square: Baudhayana\'s rule gives a circle of nearly the square\'s area, and the drawing fits its box', async () => {
+  const { SULBA, sulbaRadius, FAMILY, CAMEO, PALETTE } = await import('../js/sky-scene.js');
+  const a = SULBA.a, r = sulbaRadius(a);
+  assert.ok(Math.abs(r - (a + (a * Math.SQRT2 - a) / 3)) < 1e-12);
+  const ratio = (Math.PI * r * r) / ((2 * a) ** 2);
+  assert.ok(ratio > 1 && ratio < 1.02, `circle over square area: ${ratio}`);
+  assert.ok(a * Math.SQRT2 <= 0.95 && r <= 0.95, 'the rope and the circle stay in the box');
+  const steps = Object.values(SULBA.steps);
+  for (let i = 1; i < steps.length; i++) assert.ok(steps[i][0] >= steps[i - 1][0] && steps[i][1] <= 1);
+  assert.equal(STORIES[0].id, 'sulba', 'the rope-and-peg story comes first');
+  for (const [, fill, stroke] of FAMILY) for (const k of [fill, stroke].filter(Boolean)) for (const s of ['dark', 'light']) assert.ok(PALETTE[s][k], `${k} is a token in ${s}`);
+  assert.ok(CAMEO.at + CAMEO.for < TIMING.hold, 'the family has gone again before the story fades');
+});
