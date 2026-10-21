@@ -245,6 +245,8 @@ def check_budget(out, voice):
     if mode and mode != voice:
         r = subprocess.run([node, "--no-warnings", str(ROOT / "tools/budget.ts"), str(out)], capture_output=True, text=True)
         sys.stdout.write(r.stdout)
+        if r.returncode != 0:
+            fail(r.stderr.strip() or "tools/budget.ts could not measure the first load")
         print(f"  budget not checked: {BASELINE} was measured with --voice {mode}, this build is --voice {voice}")
         return
     r = subprocess.run([node, "--no-warnings", str(ROOT / "tools/budget.ts"), str(out), "--check", str(ROOT / BASELINE)],
