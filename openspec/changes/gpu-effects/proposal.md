@@ -46,7 +46,7 @@ None. The scenes are requirements on `scenes-3d`, which `react-typescript` adds.
 
 ### Modified Capabilities
 
-- `scenes-3d` (added by `react-typescript`): ADDED "Sutra deep-dive illustrations", "The Deep dive illustration appears without a shift", "Celebrations in 3D", "The Moving background in 3D", "Mandala glow never changes the wallpaper", "No 3D during a round", "A lost context falls back to 2D" and "Every scene follows the 3D rules".
+- `scenes-3d` (added by `react-typescript`): ADDED "Sutra deep-dive illustrations", "The Deep dive illustration appears without a shift", "Celebrations in 3D", "No celebration when motion is off", "The Moving background in 3D", "Mandala glow never changes the wallpaper", "No 3D during a round", "A lost context falls back to 2D" and "Every scene follows the 3D rules".
 - `view-lifecycle`: ADDED "A celebration stops with its page".
 - `accessibility`: ADDED "Decoration never flashes or hides content".
 - `performance-budget` (added by `react-typescript`): ADDED "Every scene loads on its own inside the 3D budget".

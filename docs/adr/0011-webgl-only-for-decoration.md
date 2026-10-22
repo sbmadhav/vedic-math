@@ -17,4 +17,4 @@ Status: proposed 2026-10-17 in the `gpu-effects` change (owner decision M4, acce
 - Decoration is a 3D scene in `app/src/scenes-3d/` (ADR 0013). A scene that cannot run well drops to the 2D drawing or a still frame by itself.
 - Any future proposal to draw interface in WebGL needs a new ADR that supersedes this one.
 - Mandala Studio's saved wallpapers keep coming from the 2D drawing, so they look the same on every device.
-- The decoration code counts toward the 170 KB Brotli 3D budget and never enters a first load (ADR 0013, `react-typescript` performance-budget spec).
+- The 3D decoration code counts toward the 170 KB Brotli 3D budget and never enters a first load (ADR 0013, `react-typescript` performance-budget spec).

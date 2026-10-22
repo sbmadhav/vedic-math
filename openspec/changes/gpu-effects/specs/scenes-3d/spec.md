@@ -25,7 +25,7 @@ The prerendered Deep dive SHALL hold only the illustration's host, with its spac
 - **THEN** its HTML holds the illustration's host with its space reserved and no canvas, and the Worked examples are readable
 
 ### Requirement: Celebrations in 3D
-The big confetti burst (for true wins only, one at a time), the Star burst, and the Belt and gold Medal bursts SHALL be drawn as a 3D scene when it is loaded and the page is on the `3d` path, and with today's 2D drawing otherwise. A celebration SHALL last at most 2 seconds, SHALL remove its canvas when it ends, and SHALL NOT run under Calm, Pause motion or reduced motion; the message or announcement that goes with the win SHALL be shown as before.
+The big confetti burst (for true wins only, one at a time), the Star burst, and the Belt and gold Medal bursts SHALL be drawn as a 3D scene when it is loaded and the page is on the `3d` path, and with today's 2D drawing when the scene is not loaded yet or the page is on the `2d` path. A celebration SHALL last at most 2 seconds and SHALL remove its canvas when it ends.
 
 #### Scenario: A Belt earned
 - **WHEN** a Player with WebGL and motion allowed earns a Belt
@@ -42,6 +42,13 @@ The big confetti burst (for true wins only, one at a time), the Star burst, and 
 #### Scenario: Pause motion during a celebration
 - **WHEN** a Player turns on Pause motion while confetti is falling
 - **THEN** the confetti disappears at once
+
+### Requirement: No celebration when motion is off
+Under Calm, Pause motion or reduced motion no celebration SHALL run, in 3D or 2D, and one in flight SHALL be removed at once when any of them turns on. The message or announcement that goes with the win SHALL be shown as before.
+
+#### Scenario: A gold Medal with Calm on
+- **WHEN** a Player with Calm on earns a gold Medal
+- **THEN** no burst is drawn and the Medal message is shown and announced as before
 
 ### Requirement: The Moving background in 3D
 When the Moving background setting is on, its drawings (Śulba ropes, Meru-prastāra, the nakshatra wheel, drifting numerals) SHALL be drawn as a 3D scene on the `3d` path and with today's 2D canvas otherwise, both from the same line lists. Turning the setting off SHALL remove the scene.
