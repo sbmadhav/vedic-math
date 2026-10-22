@@ -164,19 +164,20 @@ test.describe('removing a Player who posted', () => {
   });
 });
 
-/* Badges listed per Mode (openspec explorer-belts): Explorer is not offered Belts or Sutra cards, so their badges are
-   listed only once earned, and the count is earned of listed. */
+/* Badges listed per Mode (openspec explorer-belts, sutras-first): Explorer is not offered Belts, so their badges are
+   listed only once earned, and the count is earned of listed. Sutra cards are in every Mode, and so is Sutra scholar. */
 test.describe('badges in Explorer', () => {
   test.use({ seedMode: 'explorer' });
-  test('no belt or Sutra scholar badge is listed, and the total counts the listed badges', async ({ page }) => {
+  test('no belt badge is listed, Sutra scholar is, and the total counts the listed badges', async ({ page }) => {
     await open(page, '#/me');
     const grid = page.locator('.badge-grid');
     const n = await grid.locator('.badge').count();
     expect(n).toBeGreaterThan(10);
-    for (const name of ['White belt', 'Green belt', 'Black belt', 'Sutra scholar']) await expect(badge(page, name)).toHaveCount(0);
+    for (const name of ['White belt', 'Green belt', 'Black belt']) await expect(badge(page, name)).toHaveCount(0);
+    await expect(badge(page, 'Sutra scholar')).toHaveCount(1);
     await expect(page.locator('.mq-strand', { hasText: 'Badges' })).toContainText(`0 of ${n}`);
     const all = await page.evaluate(async () => (await e2eMod('gamify')).BADGES.length);
-    expect(n).toBe(all - 4);
+    expect(n).toBe(all - 3);
   });
   test.describe('with the White belt earned before switching from Challenger', () => {
     test.use({ seedProgress: { v: 3, skills: {}, sparks: 0, days: {}, best: {}, last: null, grade: null, badges: { 'belt-white': 1700000000000 }, counts: {}, seen: {}, belts: { white: 1700000000000 } } });

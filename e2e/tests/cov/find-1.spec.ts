@@ -111,7 +111,7 @@ test.describe('Explorer', () => {
 
 test('Empty box: the browse list names every section with one line each', async ({ page }) => {
   await open(page, '#/find');
-  await expect(hits(page).locator('b')).toHaveText(['Home', 'Learn', 'Dojo', 'Arena', 'Games', 'Sutras', 'Watch', 'Me', 'Guide']);
+  await expect(hits(page).locator('b')).toHaveText(['Home', 'Sutras', 'Learn', 'Dojo', 'Arena', 'Games', 'Watch', 'Me', 'Guide']);
   for (const h of await hits(page).all()) expect((await h.locator('small').innerText()).length).toBeGreaterThan(20);
 });
 

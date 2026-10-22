@@ -2,8 +2,8 @@ import { test, expect, open } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* badges spec, Requirement "Badges listed per Mode":
-   - Scenario "Explorer Me page": an Explorer with no belt sees no belt badge and no Sutra scholar, and the count's
-     total is the number of badges listed.
+   - Scenario "Explorer Me page": an Explorer with no belt sees no belt badge, sees Sutra scholar (every Mode has
+     Sutra cards since the sutras-first change), and the count's total is the number of badges listed.
    - Scenario "A belt kept from Challenger": the White belt earned in Challenger is listed as earned in Explorer; the
      Green and Black belt badges are not listed. */
 const badge = (page: Page, name: string) => page.locator('.badge-grid .badge').filter({ has: page.locator('b', { hasText: new RegExp(`^${name}$`) }) });
@@ -11,9 +11,10 @@ const total = (page: Page) => page.locator('.mq-strand', { hasText: 'Badges' }).
 
 test.describe('Explorer Me page', () => {
   test.use({ seedMode: 'explorer' });
-  test('no belt badge and no Sutra scholar; the total is the listed count', async ({ page }) => {
+  test('no belt badge, Sutra scholar listed; the total is the listed count', async ({ page }) => {
     await open(page, '#/me');
-    for (const name of ['White belt', 'Green belt', 'Black belt', 'Sutra scholar']) await expect(badge(page, name)).toHaveCount(0);
+    for (const name of ['White belt', 'Green belt', 'Black belt']) await expect(badge(page, name)).toHaveCount(0);
+    await expect(badge(page, 'Sutra scholar')).toHaveCount(1);
     const n = await page.locator('.badge-grid .badge').count();
     expect(n).toBeGreaterThan(10);
     await expect(total(page)).toHaveText(`0 of ${n}`);
