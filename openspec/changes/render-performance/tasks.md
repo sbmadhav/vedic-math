@@ -27,7 +27,7 @@ Re-planned 2026-10-21 for React Router framework mode with server rendering (`re
 
 ## 3. Compression and caching (D3)
 
-- [ ] 3.1 Check edge compression with full GETs read to the end (`curl -s -D - -o /dev/null -H 'Accept-Encoding: br'`, not HEAD, so the streamed `/learn/arena` is the response a browser gets) on the entry chunk (its name from the live manifest), a CSS file, `/learn/` and `/learn/arena` (`content-encoding: br`, `Vary: Accept-Encoding`), then the entry chunk again with `Accept-Encoding: identity` (not Brotli). **[OWNER]** If any is not `br`, add a Cloudflare Compression Rule (steps from the builder). Add the curl check to the daily `e2e.yml`. Verify: the daily job passes.
+- [ ] 3.1 Check edge compression with full GETs read to the end (`curl -s -D - -o /dev/null -H 'Accept-Encoding: br'`, not HEAD, so the streamed `/learn/arena` is the response a browser gets) on the entry chunk (its name from the live manifest), a CSS file, `/learn/` and `/learn/arena` (each a 200 with the content type expected for that URL, `content-encoding: br` and `Vary: Accept-Encoding`; a compressed 404 page does not pass), then the entry chunk again with `Accept-Encoding: identity` (not Brotli). **[OWNER]** If any is not `br`, add a Cloudflare Compression Rule (steps from the builder). Add the curl check to the daily `e2e.yml`. Verify: the daily job passes.
 - [ ] 3.2 `_headers`: `Cache-Control: public, max-age=31536000, immutable` for `/learn/assets/*`, written by `build.py` from `shared/src/policy.json` with the rest of the headers. Verify: `e2e/tests/loading.spec.ts` checks the header on a chunk and its absence on `/learn/`, `/learn/__shell.html` and `/sw.js`; a build test checks `_headers`.
 
 ## 4. A lean first load (D4)

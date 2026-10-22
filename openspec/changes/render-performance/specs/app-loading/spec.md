@@ -11,7 +11,7 @@ Text responses (JS, CSS, HTML, JSON, SVG), whether static files or pages the ser
 
 #### Scenario: Compressed response
 - **WHEN** a browser that sends `Accept-Encoding: br` requests the entry chunk under `/learn/assets/`, the prerendered `/learn/` or the server-rendered `/learn/arena`
-- **THEN** each response has `content-encoding: br` and `Vary: Accept-Encoding`
+- **THEN** each response is a 200 of the content type expected for its URL and has `content-encoding: br` and `Vary: Accept-Encoding`
 
 #### Scenario: No Brotli asked for
 - **WHEN** a client that does not send `br` in `Accept-Encoding` requests the same entry chunk after a Brotli client did
