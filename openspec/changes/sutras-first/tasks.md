@@ -22,7 +22,7 @@ The owner asked for this on 2026-10-21 ("It is important to make the sutras and 
 - [x] 3.1 Closing a Deep dive opened from another page of the app goes back to it. Verify: `e2e/tests/sutras-first.spec.ts`; `e2e/tests/sutra-modal.spec.ts` and `routes.spec.ts` unchanged.
 - [x] 3.2 `#/sutras/<id>` opens without a Mode. Verify: `e2e/tests/sutras-first.spec.ts`.
 - [x] 3.3 `math/sutra_tag/<surface>` on following a tag. Verify: `e2e/tests/sutras-first.spec.ts` (the event, no Sutra id, nothing else).
-- [x] 3.4 Coverage specs: `e2e/tests/cov/sutra-tags-1.spec.ts` to `-6`, `sutra-deep-dive-3.spec.ts`, `analytics-12.spec.ts`; `sutra-pronunciation-1.spec.ts` and `say.spec.ts` read the Trick page's tag (the modified "Trick page with a bracketed Sutra" scenario).
+- [x] 3.4 Coverage specs: `e2e/tests/cov/sutra-tags-1.spec.ts` to `-6`, `sutra-deep-dive-3.spec.ts`, `analytics-13.spec.ts` (12 is taken by `try-trick-in-modes`); `sutra-pronunciation-1.spec.ts` and `say.spec.ts` read the Trick page's tag (the modified "Trick page with a bracketed Sutra" scenario).
 
 ## 4. Progress per Sutra (PR 2)
 
@@ -52,7 +52,7 @@ The owner asked for this on 2026-10-21 ("It is important to make the sutras and 
 
 ## 8. Docs and after release
 
-- [x] 8.0 The first-load budget: `docs/perf/baseline.json` grows by the new modules (PR 1: +4,874 bytes Brotli, `js/sutra-tag.js` and the tags in `js/app.js`, `js/star.js`, `math.css`). Verify: `python3 build.py --voice off` passes.
+- [x] 8.0 The first-load budget: `docs/perf/baseline.json` grows by the new modules (PR 1: +4,881 bytes Brotli, `js/sutra-tag.js` and the tags in `js/app.js`, `js/star.js`, `math.css`). Verify: `python3 build.py --voice off` passes.
 
 - [x] 8.1 `GLOSSARY.md`: Sutra tag, Sutra way, Sutra progress; Sutra and Home entries. Verify: `openspec validate sutras-first --strict`.
 - [ ] 8.2 After release: archive this change after `learnvedicmath` and `landing-modes-and-return` (their `landing-pages` and header requirements come first).
