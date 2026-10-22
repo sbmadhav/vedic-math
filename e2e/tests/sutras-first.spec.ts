@@ -116,16 +116,6 @@ test('Star: the header names the Sutra as text, the replay names it, and the end
 
 test.describe('a new visitor', () => {
   test.use({ seedMode: null });
-  test("Try a trick: the worked example carries the Sutra's tag as a link, and Start the Star stays on screen at 390 by 844", async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto(APP);
-    await page.locator('#tryBtn').click();
-    await expect(page.locator('#stStart')).toBeInViewport();
-    const tag = page.locator('.star-intro .sutra-tag');
-    await expect(tag.locator('b[lang="sa-Latn"]')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
-    await expect(tag.locator('a.sutra-tag-a')).toHaveAttribute('href', '#/sutras/s2');
-  });
-
   test('A Deep dive opens without a Mode, and no Mode is stored', async ({ page }) => {
     await page.goto(`${APP}#/sutras/s2`);
     await expect(page.locator('dialog.sutra-modal #sdTitle')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');

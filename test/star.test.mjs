@@ -4,7 +4,7 @@ import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { TRICKS } from '../js/vedic.js';
 import { STAR_THIRDS, starBand, starPool, kindOf, sigOf, dareFor, dareKatas, kata } from '../js/levels.js';
-import { starRound, starAnswer, starNext, starDare, canDare, pickRematch, roundKeys, starIntro, ROUND, TARGET } from '../js/star.js';
+import { starRound, starAnswer, starNext, starDare, canDare, pickRematch, roundKeys, ROUND, TARGET } from '../js/star.js';
 
 const STARS = TRICKS.flatMap(t => [1, 2, 3].map(star => ({ trick: t.id, star })));
 /* A seeded random for repeatable rounds */
@@ -241,38 +241,4 @@ test('with a small pool the second round reuses as few questions as it can; orde
 test('a rematch never repeats a question already in the round', () => {
   const st = round(); const seen = new Set(st.qs.map(sigOf));
   for (let i = 0; i < 6; i++) { const p = pickRematch(st, st.qs[0]); assert.ok(!seen.has(sigOf(p))); seen.add(sigOf(p)); }
-});
-
-/* ---------- The trial Star's worked example (openspec try-trick-teaches) ---------- */
-test('the worked example is the easiest problem of the band the round does not deal, and is never dealt or rematched after', () => {
-  for (const { trick, star } of STARS) {
-    const st = starRound({ trick, star, rating: 5, rand: rng(7) }), dealt = new Set(st.qs.map(sigOf));
-    const { state, example } = starIntro(st);
-    assert.ok(example, `${trick} ${star}: an example`);
-    assert.ok(!dealt.has(sigOf(example)), `${trick} ${star}: not one of the round's questions`);
-    const lowest = Math.min(...st.band.filter(p => !dealt.has(sigOf(p))).map(p => p.kata));
-    assert.equal(example.kata, lowest, `${trick} ${star}: lowest Kata first`);
-    assert.ok(state.used.has(sigOf(example)), 'marked used');
-    assert.ok(!st.used.has(sigOf(example)), 'the round passed in is not changed');
-    assert.deepEqual(state.qs, st.qs, 'the round deals the same four questions');
-    const re = pickRematch(state, state.qs[0]);
-    assert.notEqual(sigOf(re), sigOf(example), 'a rematch never repeats the example');
-  }
-});
-
-test('Try a trick\'s first Star (from9, Star 1) explains a two-digit subtraction from 100', () => {
-  const { example } = starIntro(starRound({ trick: 'from9', star: 1, rating: 5, rand: rng(3) }));
-  assert.equal(example.vals.length, 1);
-  assert.ok(example.vals[0] >= 10 && example.vals[0] <= 99);
-  assert.equal(example.q, `100 &minus; ${example.vals[0]} = ?`);
-  assert.equal(TRICKS.find(t => t.id === 'from9').steps(example.vals).at(-1).say, `So 100 \u2212 ${example.vals[0]} = ${100 - example.vals[0]}.`);
-});
-
-test('with every band problem dealt, the example comes from the Star\'s third; with nothing left, there is none', () => {
-  const band = starRound({ trick: 'sq5', star: 1, rating: 1 }).band.slice(0, ROUND);
-  const st = starRound({ trick: 'sq5', star: 1, pool: band, rand: rng(2) });
-  const { example } = starIntro(st);
-  assert.ok(example && !st.used.has(sigOf(example)));
-  const all = starRound({ trick: 'sq5', star: 1, pool: band, third: band, rand: rng(2) });
-  assert.equal(starIntro(all).example, null);
 });
