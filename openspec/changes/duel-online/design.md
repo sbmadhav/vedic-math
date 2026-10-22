@@ -42,6 +42,7 @@ What changes, and only because the stack changed:
 | `#/arena/duel`, `#/arena/duel/<code>`, `#/duel`; link `/play/#/arena/duel/<code>` | `/learn/arena/duel`, link `/learn/arena/duel#<code>`, `/learn/duel` (D8, D16) | `react-typescript` D5, owner P2 |
 | Turnstile alone in front of the three calls | Turnstile on the three calls as before, plus an access proof: a Firebase ID token the page already holds, or a `room`-scope session ticket (D21) | `react-typescript` D17, Q27 |
 | The WebSocket "ticket" | Called the **seat ticket** here, to keep it apart from the session ticket; its shape and 60 s single use are unchanged (D3) | Two tickets now exist |
+| `POST /api/duel/rooms/:code/join` and `/:code/resume` | `POST /api/duel/rooms/join` and `/rooms/resume` with the code in the body (D3) | Review of the re-plan: a code in the path contradicted the approved rule that the code is never in a URL a server sees (D14) |
 | One plan, Friend and Random Duels together | Phase 1 Friend Duels for every Player, phase 2 Random Duels for 13 and over (D22) | Owner N4 |
 | Free plan first (open question 4) | Workers Paid from the start; the Free-plan rows of D19 stay as the safety net they describe | `react-typescript` Q30 |
 | `node --test`, `@cloudflare/vitest-pool-workers` | Vitest everywhere; Worker tests in the Workers runtime with `@cloudflare/vitest-plugin` (D17) | `react-typescript` D10, task 1.4 |
@@ -87,19 +88,19 @@ Browser (/learn/arena/duel)                                  Cloudflare (learnve
 
 ### D3. HTTP endpoints
 
-All bodies are JSON, at most 1 KB; every response is `Cache-Control: no-store`; unknown fields are rejected. Every call except `GET /api/duel/status` carries an access proof in `Authorization` (D21); a missing or invalid one, or a `voice`-scope ticket, gets `401`.
+All bodies are JSON, at most 1 KB; every response is `Cache-Control: no-store`; unknown fields are rejected. Every HTTP call except `GET /api/duel/status` (create, join, resume, queue) carries an access proof in `Authorization` (D21); a missing or invalid one, or a `voice`-scope ticket, gets `401`. The WebSocket upgrade carries no access proof (a browser `WebSocket` cannot set `Authorization`); its seat ticket is the proof. No Duel code is ever in a request path or query: the join and resume calls carry it in the body, so it never reaches a server log or the edge's request logs.
 
 | Method and path | Body | Answer |
 |---|---|---|
 | `POST /api/duel/rooms` | `{ v, league, name, avatar, turnstile }` | `201 { code, ticket, expiresIn }`. Makes a Friend Duel room with a fresh code. |
-| `POST /api/duel/rooms/:code/join` | `{ v, name, avatar, turnstile }` | `200 { ticket, league, host: { name, avatar } }`, or `404 no-room`, `409 full`, `410 expired`. |
-| `POST /api/duel/rooms/:code/resume` | `{ v, seat, resume }` | `200 { ticket }` or `410 gone`. No Turnstile (rate limited instead). |
+| `POST /api/duel/rooms/join` | `{ v, code, name, avatar, turnstile }` | `200 { ticket, league, host: { name, avatar } }`, or `404 no-room`, `409 full`, `410 expired`. |
+| `POST /api/duel/rooms/resume` | `{ v, room, seat, resume }` (`room` is the Duel code, or the room id a Random Duel's `matched` message named) | `200 { ticket }` or `410 gone`. No Turnstile (rate limited instead). |
 | `POST /api/duel/queue` (phase 2) | `{ v, league, name, avatar, teen: true, key, prev?, turnstile }` | `200 { ticket }` for the League's queue. `key` is the hash of the Duel key, `prev` the hash of last week's key (D13). |
 | `GET /api/duel/ws` with `Upgrade: websocket` | seat ticket in `Sec-WebSocket-Protocol: vm-duel.1, t.<ticket>` | `101`, echoing only `vm-duel.1`. Routed to the room or queue named in the seat ticket. Needs no access proof: the seat ticket is one, made by a call that had one. |
 | `GET /api/duel/status` | | `200 { open: true, random, v: 1 }` or `503 { open: false, random: false, v: 1 }` (the off switch, D18; `random` is the Random Duel switch, D22). |
 
 - `ticket` in these answers is the **seat ticket**. It travels in the WebSocket subprotocol header instead of the URL, so it never sits in a URL that a log or a browser history could keep.
-- A **seat ticket** is `base64url(payload).base64url(HMAC-SHA256(payload, DUEL_TICKET_KEY))`, payload `{ k: 'room' | 'queue', v, id, seat, exp, n }`: 60 seconds of life, single use (the object records `n` until `exp`). `v` is the protocol version the HTTP call was made with; the WebSocket upgrade refuses a ticket whose `v` is not the server's current one (D4, Version). It is a different thing from the 30-minute session ticket of D21, signed with a different secret, so neither can ever be used as the other.
+- A **seat ticket** is `base64url(payload).base64url(HMAC-SHA256(payload, DUEL_TICKET_KEY))`, payload `{ k: 'room' | 'queue', v, id, seat, exp, n }`: 60 seconds of life, single use (the object records `n` until `exp`). `v` is the protocol version the HTTP call was made with; the WebSocket upgrade refuses a ticket whose `v` is not one the server accepts (D4, Version: the current one, and also the previous one during a deploy). It is a different thing from the 30-minute session ticket of D21, signed with a different secret, so neither can ever be used as the other.
 
 ### D4. Protocol (version 1)
 
@@ -220,8 +221,8 @@ The room engine (D17) runs these timers for every room. While a match runs, the 
 | Where | Limit | Over the limit |
 |---|---|---|
 | `POST /rooms` per hashed IP | 10 a minute | `429` |
-| `POST /rooms/:code/join` per hashed IP | 20 a minute (one IP is slow: about 200 tries in a code's 10 minutes; spread over many IPs it is not enough on its own, see open question 10) | `429` |
-| `POST /rooms/:code/resume` per hashed IP | 30 a minute | `429` |
+| `POST /rooms/join` per hashed IP | 20 a minute (one IP is slow: about 200 tries in a code's 10 minutes; spread over many IPs it is not enough on its own, see open question 10) | `429` |
+| `POST /rooms/resume` per hashed IP | 30 a minute | `429` |
 | `POST /queue` per hashed IP | 10 a minute | `429` |
 | WebSocket frames per seat | 10 a second, burst 20 | close 1008 |
 | Frame size | 256 bytes in, server frames at most 4 KB | close 1008 |
@@ -385,7 +386,7 @@ L1 to L6 cost about 15,000 GB-s, more than one day of the Free quota (13,000 GB-
 
 Added by the re-plan. It sits in front of the approved rules and changes none of them.
 
-- **Every call that makes, enters or resumes a match** (`POST /api/duel/rooms`, `/rooms/:code/join`, `/rooms/:code/resume`, `/queue`) carries one access proof in `Authorization`, checked by `workers/src/auth/` before anything else runs:
+- **Every call that makes, enters or resumes a match** (`POST /api/duel/rooms`, `/rooms/join`, `/rooms/resume`, `/queue`) carries one access proof in `Authorization`, checked by `workers/src/auth/` before anything else runs:
   - `Bearer <Firebase ID token>`: accepted after the D17 checks (RS256 against Google's published keys, `aud`, `iss`, `exp`, `iat`, `auth_time`, `sub`). The app sends one only when the page already holds it: Firebase auth is already loaded in this page (the Player posted to a World board in this session) and its cached token has at least 5 minutes left. A Duel never loads the Firebase SDK, never asks for a refresh and never creates an identity, so "a Duel sends no request to Firebase" still holds. An under-13 Player never has one (ADR 0006).
   - `Ticket <room session ticket>`, for every other Player: a 30-minute HMAC (`TICKET_KEY`) over the scope `room`, a random value and the expiry, issued by `POST /api/session { scope: 'room', turnstile }` only after a Turnstile check with action `room-session`. The app asks for a fresh one for each Duel (a new code, a join or a queue entry) and forgets it when that Duel ends, so one ticket never links two Duels and an under-13 Player gets nothing that outlasts a Duel (D14). While the match runs it is kept in memory and in the tab's `vm.duel.session`, so a reload can resume. It names no Player and is never stored by the server. The header form is the one the server voice uses for its `voice` tickets, whichever of the two ships first.
 - **Scopes never cross.** A `voice` ticket, an unscoped ticket or a ticket for any other scope gets `401` on every Duel path, and a `room` ticket gets `401` on the voice path (`react-typescript` task 11.3 tests the second; this change tests the first).

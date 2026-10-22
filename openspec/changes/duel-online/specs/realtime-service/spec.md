@@ -120,6 +120,13 @@ A Worker setting SHALL turn Duels off, letting running Duels finish and refusing
 - **WHEN** Duels are on and Random Duels are off
 - **THEN** new codes work, queue joins are refused, and the status endpoint says Random Duels are closed
 
+### Requirement: A Duel that cannot be saved ends
+A running Duel whose state can no longer be saved SHALL end at once with no winner and no Rematch, close both connections and refuse any return, so it never continues from an older state.
+
+#### Scenario: Saving fails in the middle of a Duel
+- **WHEN** a running Duel's state cannot be written because a plan limit was reached
+- **THEN** both Players are told the Duel ended with no winner, no Rematch is offered, and a Player who tries to come back is refused
+
 ### Requirement: Load tested before launch
 Before launch, and before any change to the referee, the room or the protocol version, the service SHALL pass the load tests in `workers/test/load/` against a staging Worker, never production, and the results SHALL be recorded in the repo.
 
