@@ -43,6 +43,7 @@ What changes, and only because the stack changed:
 | Turnstile alone in front of the three calls | Turnstile on the three calls as before, plus an access proof: a Firebase ID token the page already holds, or a `room`-scope session ticket (D21) | `react-typescript` D17, Q27 |
 | The WebSocket "ticket" | Called the **seat ticket** here, to keep it apart from the session ticket; its shape and 60 s single use are unchanged (D3) | Two tickets now exist |
 | `POST /api/duel/rooms/:code/join` and `/:code/resume` | `POST /api/duel/rooms/join` and `/rooms/resume` with the code in the body (D3) | Review of the re-plan: a code in the path contradicted the approved rule that the code is never in a URL a server sees (D14) |
+| JSON bodies at most 1 KB | At most 4 KB (D3, D11) | Review of the re-plan: a Turnstile token alone may be 2,048 characters (Cloudflare's documented maximum), so a 1 KB cap would refuse every valid create, join and queue call |
 | One plan, Friend and Random Duels together | Phase 1 Friend Duels for every Player, phase 2 Random Duels for 13 and over (D22) | Owner N4 |
 | Free plan first (open question 4) | Workers Paid from the start; the Free-plan rows of D19 stay as the safety net they describe | `react-typescript` Q30 |
 | `node --test`, `@cloudflare/vitest-pool-workers` | Vitest everywhere; Worker tests in the Workers runtime with `@cloudflare/vitest-plugin` (D17) | `react-typescript` D10, task 1.4 |
@@ -58,7 +59,7 @@ Added, because the owner decided it with the stack (Q28): Duel results of an und
 Browser (/learn/arena/duel)                                  Cloudflare (learnvedicmath.com, one Worker)
   app/src/views/duel/     ── POST /api/session (room) ────────▶ workers/src/index.ts
   app/src/logic/duel/     ── POST /api/duel/rooms ────────────▶   auth/ (ID token or session ticket, D21)
-     client.ts            ── POST /api/duel/rooms/:c/join ────▶   rooms/duel/http.ts ── Turnstile siteverify ─▶ challenges.cloudflare.com
+     client.ts            ── POST /api/duel/rooms/join ───────▶   rooms/duel/http.ts ── Turnstile siteverify ─▶ challenges.cloudflare.com
                           ── POST /api/duel/queue ────────────▶      │ rate limit (hashed IP), seat ticket (HMAC, 60 s)
                           ══ WebSocket /api/duel/ws ══════════▶      ├─▶ DuelRoom  (Durable Object on the room engine, one per match, SQLite)
                      (seat ticket in Sec-WebSocket-Protocol)          │     seats, seed, questions, referee, timers
@@ -88,7 +89,7 @@ Browser (/learn/arena/duel)                                  Cloudflare (learnve
 
 ### D3. HTTP endpoints
 
-All bodies are JSON, at most 1 KB; every response is `Cache-Control: no-store`; unknown fields are rejected. Every HTTP call except `GET /api/duel/status` (create, join, resume, queue) carries an access proof in `Authorization` (D21); a missing or invalid one, or a `voice`-scope ticket, gets `401`. The WebSocket upgrade carries no access proof (a browser `WebSocket` cannot set `Authorization`); its seat ticket is the proof. No Duel code is ever in a request path or query: the join and resume calls carry it in the body, so it never reaches a server log or the edge's request logs.
+All bodies are JSON, at most 4 KB (a Turnstile token alone may be 2,048 characters, Cloudflare's documented maximum, and every other field is bounded far below the rest; a larger body gets `413`, D11); every response is `Cache-Control: no-store`; unknown fields are rejected. Every HTTP call except `GET /api/duel/status` (create, join, resume, queue) carries an access proof in `Authorization` (D21); a missing or invalid one, or a `voice`-scope ticket, gets `401`. The WebSocket upgrade carries no access proof (a browser `WebSocket` cannot set `Authorization`); its seat ticket is the proof. No Duel code is ever in a request path or query: the join and resume calls carry it in the body, so it never reaches a server log or the edge's request logs.
 
 | Method and path | Body | Answer |
 |---|---|---|
@@ -225,6 +226,7 @@ The room engine (D17) runs these timers for every room. While a match runs, the 
 | `POST /rooms/resume` per hashed IP | 30 a minute | `429` |
 | `POST /queue` per hashed IP | 10 a minute | `429` |
 | WebSocket frames per seat | 10 a second, burst 20 | close 1008 |
+| HTTP body on every `/api/duel/` call | 4 KB of JSON (a Turnstile token alone may be 2,048 characters; `name`, `avatar`, `code`, `key`, `prev`, `resume` and the rest are short, bounded strings) | `413` |
 | Frame size | 256 bytes in, server frames at most 4 KB | close 1008 |
 | Invalid frames (bad JSON, unknown type, wrong field) | 5 strikes per match | close 1008; the seat counts as left |
 | Reactions per seat | 1 every 3 s, 12 a match | dropped silently |
