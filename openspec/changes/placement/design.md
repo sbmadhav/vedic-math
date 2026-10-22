@@ -125,7 +125,7 @@ Every step has at least 2 Skills, so the second try at a step is a different Ski
 
 - **A lucky guess places a child high** (Explorer's 3 choices give a 1 in 3 chance each). Mitigation: Ratings move with answers, and Practice drops after misses within a round; raise-only applies only to saved Ratings. A child placed too high meets easier questions within a few answers.
 - **Tired children quit early and place low.** Mitigation: Skip and quitting both give exactly today's behavior, and Retake is always in Me.
-- **The pool drifts** as Skills change. Mitigation: `test/placement.test.mjs` checks every pool Skill, every step, at level 2, for 200 seeds.
+- **The pool drifts** as Skills change. Mitigation: `app/src/logic/placement.test.ts` checks every pool Skill, every step, at level 2, for 200 seeds.
 - **Explorer reading algebra aloud with built-in voice** sounds poor until Part B lands. This is why the build waits for `better-voice`.
 
 ## Migration Plan
