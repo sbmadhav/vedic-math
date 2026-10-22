@@ -111,7 +111,3 @@ Under 600 px the rows are packed tighter (padding 8 and 6 px, row gap 6 px, nav 
 - Intent phrases are a hand-kept list. Mitigation: a node test checks every intent names an entry that exists and every phrase is written normalized.
 - A toast at the top covers the round's header (Back, Calm, text size) for three seconds; taps pass through it.
 - Merge with `hook-first-star`: both touch `home()` in `js/app.js`. This change only replaces how `last` is computed and the "New here?" note, so a merge is a line or two.
-
-## After try-trick-in-modes
-
-On 2026-10-21 `try-trick-in-modes` moved Try a trick under each Mode card (a lesson at `#/try`, not a Star). The audit numbers above were measured on the old path. The two scenarios that named it now read: Home after the Challenger card's Try a trick (Play this Star on screen at 390 by 844; a Try a trick leaves Keep going alone), and Keep going after a Star of Bolt's first Trick played from Home. Their tests are `e2e/tests/first-visit.spec.ts` and `e2e/tests/cov/first-visit-2.spec.ts`.

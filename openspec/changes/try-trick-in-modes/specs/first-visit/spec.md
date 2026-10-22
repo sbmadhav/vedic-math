@@ -4,7 +4,7 @@
 
 ### Requirement: Try a trick before any choice
 **Reason**: The owner asked on 2026-10-21 for Try a trick to be inside the three Modes and to teach a Sutra. One guessed-Challenger Star before any choice is replaced by a Try a trick in each Mode.
-**Migration**: The Mode picker's hero and cards are restated in "The Mode picker shows the Modes, each with its Try a trick"; the lesson itself is "Try a trick inside each Mode", "Try a trick teaches its Sutra first" and "Trying it".
+**Migration**: The Mode picker's cards and hero are restated in "One plain lede, and the Mode cards stay" and "The app's hero says little"; the lesson itself is "Try a trick inside each Mode", "Try a trick teaches its Sutra first" and "Trying it".
 
 ### Requirement: The trial Star teaches before it asks
 **Reason**: Try a trick no longer opens a Star; each Mode's Try a trick has its own teaching card ("Try a trick teaches its Sutra first").
@@ -42,26 +42,51 @@ A Star opened from Home or from the end of a Try a trick SHALL offer "Back home"
 - **WHEN** a Player opens a Star from the Dojo and leaves it with Back
 - **THEN** the Dojo opens, as before
 
-## ADDED Requirements
-
-### Requirement: The Mode picker shows the Modes, each with its Try a trick
-The Mode picker's hero SHALL hold only the headline "Fast, fun math for every brain", the line "One trick, two minutes, no sign-up." and the Nikhilam Family, with no Bolt and no button. Under the heading "Pick who is playing" it SHALL show the three Mode cards, each with its own Try a trick button directly under it, named with its Mode ("Try a trick as Explorer"), and no other Try a trick button. Pressing a card SHALL open that Mode's Home as before.
+### Requirement: One plain lede, and the Mode cards stay
+The Mode picker's lede SHALL be one plain sentence, and the three Mode cards (Explorer, Challenger, Pro) SHALL be the choice under the heading "Pick who is playing". Each card SHALL have its own Try a trick button directly under it, named with its Mode ("Try a trick as Explorer"), and the picker SHALL have no other Try a trick button. Pressing a card SHALL open that Mode's Home as before.
 
 #### Scenario: The cards still work
 - **WHEN** a new visitor presses the Explorer card
-- **THEN** Explorer Home opens, exactly as before this change, and no Try a trick opens
+- **THEN** Explorer Home opens, exactly as before this change, and no Try a trick opens and no guess is recorded
 
-#### Scenario: The hero says little
-- **WHEN** a new visitor opens the app
-- **THEN** the hero shows "Fast, fun math for every brain" and "One trick, two minutes, no sign-up.", at most 14 words, with the Nikhilam Family beside them and no button
+#### Scenario: Above the fold on a phone
+- **WHEN** a new visitor opens the Mode picker on a 390 by 844 screen
+- **THEN** the Explorer card's Try a trick is on screen without scrolling, and the lede has at most 25 words
 
 #### Scenario: Three Try a trick buttons
 - **WHEN** a new visitor opens the Mode picker
 - **THEN** there are exactly three Try a trick buttons, one under each Mode card, named "Try a trick as Explorer", "Try a trick as Challenger" and "Try a trick as Pro"
 
-#### Scenario: Above the fold on a phone
-- **WHEN** a new visitor opens the Mode picker on a 390 by 844 screen
-- **THEN** the Explorer card's Try a trick is on screen without scrolling; at 320, 375, 768 and 1280 px wide nothing scrolls sideways and every Try a trick is at least 44 px tall
+### Requirement: The app's hero says little
+The Mode picker's hero SHALL say as little as it can: the headline "Fast, fun math for every brain", the one line "One trick, two minutes, no sign-up." and the Nikhilam Family beside them as the mascot, with no Bolt and no button. The family SHALL move gently and hold still under reduced motion, Pause motion and Calm. Each Try a trick under a Mode card SHALL be at least 44 px tall and work by click, tap and Enter.
+
+#### Scenario: The hero says little
+- **WHEN** a new visitor opens the app
+- **THEN** the hero shows "Fast, fun math for every brain" and "One trick, two minutes, no sign-up.", at most 14 words, with the Nikhilam Family beside them and no button
+
+#### Scenario: Try a trick draws the eye and works every way
+- **WHEN** a new visitor opens the app at 320, 375, 768 or 1280 px wide
+- **THEN** nothing scrolls sideways, every Try a trick is at least 44 px tall and opens its Mode's Try a trick by click, tap and Enter, and the family holds still with reduced motion, Pause motion or Calm
+
+### Requirement: Home fits a phone
+On a screen up to 600 px wide, Home SHALL show the Player strip compactly (the avatar, nickname, Title and bar on one row, the Sparks, day streak and badge numbers on one short line), and a new Challenger Player's first primary action (Play this Star) SHALL be on screen without scrolling at 390 by 844, whether they picked the Challenger card or came Home from its Try a trick. Nothing on Home SHALL be removed for this.
+
+#### Scenario: After Try a trick
+- **WHEN** a new visitor presses Try a trick under the Challenger card, finishes it and opens Home on a 390 by 844 screen
+- **THEN** Play this Star is on screen without scrolling, the Player strip is at most 130 px tall, and the page does not scroll sideways
+
+### Requirement: Keep going does not repeat the first door
+On Challenger Home, the Keep going card SHALL be left out when the Skill it offers is the Trick of the Star the first door offers. Pro and Explorer Home SHALL show Keep going as before. A Try a trick SHALL leave Keep going as it was.
+
+#### Scenario: After the trial Star
+- **WHEN** a visitor who played a Star of Bolt's first Trick from Home opens Challenger Home
+- **THEN** there is no Keep going card, and the Star door offers that Trick's next Star
+
+#### Scenario: Another Skill
+- **WHEN** a Challenger Player who last practiced a Skill that is not that Trick opens Home
+- **THEN** the Keep going card offers that Skill
+
+## ADDED Requirements
 
 ### Requirement: Try a trick inside each Mode
 Each Mode SHALL have its own Try a trick at `#/try`, which opens the one of the Player's Mode: a short lesson on one Trick under the Sutra that Trick belongs to in the app's Sutra data. Explorer's SHALL be "The 11 sandwich" under Ūrdhva-Tiryagbhyām, Challenger's squares of numbers ending in 5 under Ekādhikena Pūrveṇa, and Pro's multiplying numbers near 100 under Nikhilaṃ Navataścaramaṃ Daśataḥ. A card's Try a trick SHALL pick that Mode as its card does, start the day and open `#/try`.

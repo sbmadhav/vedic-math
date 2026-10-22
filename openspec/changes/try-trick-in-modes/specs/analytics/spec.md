@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Try a trick and Find are counted
-Pressing a Try a trick button (under a Mode card on the Mode picker, or on a Mode's Home card) SHALL send one `math/try/start` event and one `math/try/mode/<mode>` event, where `<mode>` is the fixed Mode word `explorer`, `challenger` or `pro`. Opening a Try a trick SHALL be counted as a route view, `math/view/try`. Following a Find result SHALL send one `math/find/go` event, the same whatever the kind or the result. Opening the Find page SHALL be counted as a route view, `math/view/find`. These events SHALL follow "Events carry no identifiers"; the Find text, the result's name and the number of results SHALL never be in any event.
+Pressing a Try a trick button (on the Mode picker or a Home card) SHALL send one `math/try/start` and one `math/try/mode/<mode>`, `<mode>` being the fixed word `explorer`, `challenger` or `pro`; opening it is the route view `math/view/try`. Following a Find result SHALL send one `math/find/go`, whatever the kind or result, and opening Find is the route view `math/view/find`. These follow "Events carry no identifiers": no Find text, result name or result count is ever in an event.
 
 #### Scenario: Try a trick
 - **WHEN** a new visitor presses Try a trick under the Pro card

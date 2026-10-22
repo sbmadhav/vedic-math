@@ -37,7 +37,7 @@ Modes and Players affected: new Players in every Mode (the picker and Home), Exp
 
 ### Modified Capabilities
 
-- `first-visit`: Try a trick moves from one guessed-Challenger Star before any choice to one Sutra lesson inside each Mode (the Mode picker's cards and each Mode's Home); the picker's hero and cards are restated without the single button; the Mode guess is no longer set; Back from a Star opened at the end of a Try a trick goes Home.
+- `first-visit`: Try a trick moves from one guessed-Challenger Star before any choice to one Sutra lesson inside each Mode (the Mode picker's cards and each Mode's Home); the picker's lede, cards and hero ("One plain lede, and the Mode cards stay", "The app's hero says little") are restated without the single button; "Home fits a phone" and "Keep going does not repeat the first door" follow the new path; the Mode guess is no longer set; Back from a Star opened at the end of a Try a trick goes Home.
 - `analytics`: Try a trick also names its Mode with a fixed word; answers in a Try a trick are counted as untimed answers.
 
 ## Impact
@@ -48,7 +48,7 @@ Modes and Players affected: new Players in every Mode (the picker and Home), Exp
 - `js/fx.js`, `js/store.js`: `setMode()` and `setPlayerMode()` no longer take `guess`; `modeGuessed()` still reads an old record.
 - `js/metrics.js`: `tryStart(mode)`, the `try` answer area, the `#/try` route view.
 - `math.css`: the picker's card and button pairs, the Try a trick card, steps and the Explorer sandwich (tokens only); the hero button's rules removed.
-- Tests: new `test/try.test.mjs`; `test/star.test.mjs`, `test/store.test.mjs`, `test/metrics.test.mjs`, `test/lifecycle-scan.test.mjs`; new `e2e/tests/try-trick.spec.ts`; `e2e/tests/first-visit.spec.ts`, `e2e/tests/hero.spec.ts`; `e2e/tests/try-trick-teaches.spec.ts` removed; cov `first-visit-1`, `first-visit-2`, `first-visit-3` and `analytics-11` rewritten for the new scenarios, new `analytics-12`; `test/brand.test.mjs` and `test/guide.test.mjs` follow the picker and the new route.
+- Tests: new `test/try.test.mjs`; `test/star.test.mjs`, `test/store.test.mjs`, `test/metrics.test.mjs`, `test/lifecycle-scan.test.mjs`; new `e2e/tests/try-trick.spec.ts`; `e2e/tests/first-visit.spec.ts`, `e2e/tests/hero.spec.ts`; `e2e/tests/try-trick-teaches.spec.ts` removed; cov `first-visit-1`, `first-visit-2`, `first-visit-3`, `first-visit-4` and `analytics-11` rewritten for the new scenarios, new `analytics-12`; `test/brand.test.mjs` and `test/guide.test.mjs` follow the picker and the new route.
 - `js/guide.js`: the Play modes section covers `#/try`.
 - `docs/perf/baseline.json`: first load raised by 4,166 bytes Brotli for `js/try.js` (design, risks).
-- Docs: `GLOSSARY.md` (Try a trick, Mode guess); the `placement` and `find-and-home-polish` plans where they name the old Try a trick. Nothing new is sent beyond fixed words, and nothing new is kept beyond a seen mark in the Player's progress, so `parentNote()` and `cloud/README.md` do not change.
+- Docs: `GLOSSARY.md` (Try a trick, Mode guess); the `placement` plan where it names the old Try a trick (decisions 9, 10 and 14). Nothing new is sent beyond fixed words, and nothing new is kept beyond a seen mark in the Player's progress, so `parentNote()` and `cloud/README.md` do not change.

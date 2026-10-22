@@ -27,7 +27,7 @@ Owner asked for this on 2026-10-21 (approval for implementation, see `proposal.m
 
 ## 5. Docs and checks
 
-- [x] 5.1 `GLOSSARY.md` (Try a trick, Mode guess); `placement` design decisions 9 and 10 and tasks 3.1, 4.2 and 4.3; `find-and-home-polish` scenarios and design note. No spoken line changes (no studio voice re-record). Verify: `openspec validate try-trick-in-modes --strict`, `openspec validate placement --strict`, `openspec validate find-and-home-polish --strict`.
+- [x] 5.1 `GLOSSARY.md` (Try a trick, Mode guess); `placement` design decisions 9, 10 and 14 and tasks 3.1, 4.2, 4.3 and 4.5. No spoken line changes (no studio voice re-record). Verify: `openspec validate try-trick-in-modes --strict`, `openspec validate placement --strict`.
 - [x] 5.2 `pnpm typecheck`, `pnpm lint`, `pnpm test`, `python3 build.py --out /tmp/vm-site`, and the full Playwright suite on the local server. Verify: the pull request lists the results.
-- [ ] 5.3 After `try-trick-teaches` and `celebrations` are archived on main: merge main, re-run `openspec validate try-trick-in-modes --strict` (the REMOVED requirements then exist in `openspec/specs/first-visit/spec.md`).
+- [x] 5.3 The archive pull request (#121: `try-trick-teaches`, `celebrations`, `find-and-home-polish`, `explorer-belts`) merged into this branch; deltas rewritten against its `first-visit` spec (REMOVED three, MODIFIED six with their scenario names); `placement` decision 14 and task 4.5 superseded; `e2e/tests/cov/first-visit-4.spec.ts` rewritten. Verify: `openspec validate try-trick-in-modes --strict`; a scratch `openspec archive try-trick-in-modes -y` gives a valid `first-visit` spec. If #121 changes before it merges, merge it again and re-validate.
 - [ ] 5.4 After release: `openspec archive try-trick-in-modes -y`.
