@@ -81,7 +81,7 @@ Every pull request with a preview SHALL run the baseline's Lighthouse pages and 
 - **THEN** the perf check fails and shows the number
 
 ### Requirement: A limit not met yet is reported until it is met
-A byte or timing limit that the start measurement already missed for a page, visit and metric SHALL be reported on each pull request without failing it, until a pull request meets it there in both perf measurements by a margin (100 ms on paints and time to first byte, 25 ms on blocking time, 0.02 on layout shift, none on bytes). That pull request SHALL make it fail for that page, visit and metric from then on.
+A byte or timing limit that the start measurement already missed for a page, visit and metric SHALL be reported on each pull request without failing it, until a pull request meets it there in both perf measurements by a margin (100 ms on paints and time to first byte, 25 ms on blocking time, 0.02 on layout shift, so the 0.1 limit switches on at 0.08 or less; none on bytes). That pull request SHALL make it fail for that page, visit and metric from then on.
 
 #### Scenario: A limit not met yet
 - **WHEN** the Arena's largest contentful paint has never been under 2.5 s and a pull request measures 3.1 s, no worse than the baseline
