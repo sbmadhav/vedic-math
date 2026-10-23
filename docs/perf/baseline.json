@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 758499,
+  "total": 760224,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -47,7 +47,7 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 43015,
+   "/js/app.js": 43822,
    "/js/arena.js": 5327,
    "/js/bolt.js": 1088,
    "/js/celebrate.js": 3080,
@@ -62,8 +62,8 @@
    "/js/gamify.js": 3843,
    "/js/guide-art.js": 2484,
    "/js/guide.js": 10346,
-   "/js/handoff-schema.js": 6402,
-   "/js/handoff.js": 3129,
+   "/js/handoff-schema.js": 6534,
+   "/js/handoff.js": 3243,
    "/js/landing-sky.js": 261,
    "/js/levels.js": 4935,
    "/js/lib.js": 1707,
@@ -114,13 +114,13 @@
    "/js/skills/index.js": 1084,
    "/js/skills/middle.js": 6258,
    "/js/skills/upper.js": 7871,
-   "/js/sky-bg.js": 10568,
+   "/js/sky-bg.js": 10575,
    "/js/sky-scene.js": 6164,
    "/js/sky-view.js": 4458,
    "/js/sky.js": 3762,
    "/js/slokas.js": 16068,
    "/js/star.js": 8312,
-   "/js/store.js": 5886,
+   "/js/store.js": 6549,
    "/js/sutra-ambience.js": 4169,
    "/js/sutra-details.js": 13423,
    "/js/sutras.js": 3866,
@@ -134,9 +134,9 @@
    "/js/voice.js": 14365,
    "/js/watch.js": 2065,
    "/manifest.webmanifest": 313,
-   "/math.css": 21305,
-   "/play/": 3557,
-   "/sw.js": 6079,
+   "/math.css": 21329,
+   "/play/": 3561,
+   "/sw.js": 6053,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -168,6 +168,13 @@
     "from": 758466,
     "to": 758499,
     "why": "react-typescript task 1.7: the lint fixes in sw.ts (optional catch bindings, no non-null assertions); no new file"
+   },
+   {
+    "date": "2026-10-23",
+    "pr": 140,
+    "from": 758499,
+    "to": 760224,
+    "why": "learnvedicmath task 10.3: the backup code for every Player and Restore from code through the hand-off schema and prompt (the Me page's Restore prompt in js/app.js, the backup functions in js/store.js, the schema's second source, applyHandoff's moved flag and bootstrap guard, three style rules in math.css); the rest is main's drift since the last measurement (sky-bg.js, the play shell, sw.js); no new file"
    }
   ]
  },

@@ -112,7 +112,7 @@ test('restoring a backup code made before the update turns its XP into Sparks', 
   assert.equal(store.weekSparks(), 20);
   assert.equal(store.medal('a:3'), 3);
   assert.equal(store.kataDone('k:by11:4'), true);
-  const back = JSON.parse(store.exportData()).data;
+  const back = JSON.parse(store.exportData()).records.p1;
   assert.equal(back.sparks, 900);
   assert.equal(back.v, 3);
 });

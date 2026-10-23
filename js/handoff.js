@@ -40,8 +40,10 @@ function newId(taken) {
    none) or 'both' (the old site's Players are added; this device's settings win). Returns the Players written.
    All or nothing: every write and removal is planned first, every key it touches is saved as it was, and if any write
    fails (a full storage throws QuotaExceededError) every touched key is put back exactly as it was before the error is
-   rethrown, so this device never ends up with its progress gone and the import half written. */
-export function applyHandoff(st, payload, choice, now = Date.now()) {
+   rethrown, so this device never ends up with its progress gone and the import half written.
+   moved: false when the payload is a backup code restored on the Me page (js/store.js), which is not a move from the
+   old site, so vm.migratedAt is left alone. */
+export function applyHandoff(st, payload, choice, now = Date.now(), moved = true) {
   const here = progressHere(st);
   const uids = json(st, 'vm.cloudUids') || {};
   const withIdentity = new Set(Object.keys(uids));
@@ -69,7 +71,7 @@ export function applyHandoff(st, payload, choice, now = Date.now()) {
   const incoming = payload.players.list.map(p => ({ ...p, id: rename[p.id] }));
   const list = choice === 'both' ? [...here.list, ...incoming] : incoming;
   plan.push(['vm.players', JSON.stringify({ active: rename[payload.players.active], list })]);
-  plan.push(['vm.migratedAt', String(now)]);
+  if (moved) plan.push(['vm.migratedAt', String(now)]);
 
   const before = new Map();
   for (const [k] of plan) if (!before.has(k)) before.set(k, st.get(k));
@@ -157,4 +159,5 @@ async function start() {
   $('ho-title').focus();
 }
 
-if (typeof document !== 'undefined' && document.getElementById('handoff')) start();
+/* Only on the import page itself (js/store.js imports this module for applyHandoff; unit tests give it a bare document) */
+if (typeof document !== 'undefined' && typeof document.getElementById === 'function' && document.getElementById('handoff')) start();

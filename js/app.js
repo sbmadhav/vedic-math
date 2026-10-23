@@ -1491,7 +1491,7 @@ function skySwitchHTML(p) {
     <p class="mq-small" id="skyAbout">${fx.t({ challenger: 'Your home becomes a sky of Stars: one Constellation for each Sutra, three Stars for each Trick, and Bolt to show the way.', pro: 'Home becomes a map of every Trick\'s three Stars, grouped by Sutra, with a suggested path in Belt order.' })} Prefer a list? <a href="#/places">All places</a></p>
     <p class="pr-say" id="skyMsg" role="status" aria-live="polite"></p></div>`;
 }
-function meView() {
+function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw from one of its own buttons passes it on */
   document.title = `Me · Learn Vedic Math`;
   const p = store.player(), T = gm.titleInfo(), got = store.badges(), done = SKILLS.filter(s => store.mastered(s.id)).length;
   const badges = gm.badgesFor(fx.mode(), got); /* Explorer is not offered Belts or Sutra cards, so their badges are listed only once earned */
@@ -1529,16 +1529,24 @@ function meView() {
     <h2 class="mq-strand">Backup</h2>
     <p class="mq-data"><button class="md-btn md-btn--sm" id="pExport">Copy backup code</button> <button class="md-btn md-btn--sm" id="pImport">Restore from code</button> <button class="md-btn md-btn--sm" id="pReset">Reset this player</button></p>
     <p class="pr-say" id="pMsg" role="status" aria-live="polite"></p>
-    <p class="mq-note">Progress stays in this browser. Leaderboards only ever see your made-up nickname, color and score.</p>
+    <div class="md-card me-restore" id="pOffer" hidden>
+      <h3 class="mq-h3" id="pOfferH" tabindex="-1">Restore from this code?</h3>
+      <ul id="pOfferList"></ul>
+      <p class="mq-small">With them come their Sparks, Medals, Stars, Ratings and settings. World board names and the Device board start fresh.</p>
+      <p class="mq-small" id="pOfferHere" hidden><b>This device already has progress:</b> <span></span>. Keep both adds the code's Players next to the ones here; each Player keeps their own progress.</p>
+      <div class="me-acts" id="pOfferFresh"><button class="md-btn md-btn--sm md-btn--primary" id="pBring">Bring it</button><button class="md-btn md-btn--sm" id="pNotNow">Not now</button></div>
+      <div class="me-acts" id="pOfferHas" hidden><button class="md-btn md-btn--sm" id="pKeep">Keep this device's</button><button class="md-btn md-btn--sm" id="pUse">Use the code's</button><button class="md-btn md-btn--sm md-btn--primary" id="pBoth">Keep both</button></div>
+    </div>
+    <p class="mq-note">Progress stays in this browser; the backup code holds every Player on this device. Leaderboards only ever see your made-up nickname, color and score.</p>
   </div></section>`;
   const msg = t => ($('#pMsg').textContent = t);
-  $('#meName').onclick = () => { store.updatePlayer({ name: store.makeName() }); fx.sfx('pop'); meView(); };
-  view.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { store.updatePlayer({ avatar: b.dataset.c }); meView(); });
-  view.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { fx.setMode(b.dataset.mode); gm.startDay(); fx.sfx('level'); meView(); });
-  view.querySelectorAll('[data-switch]').forEach(b => b.onclick = () => { store.switchPlayer(b.dataset.switch); fx.applyMode(); fx.sfx('pop'); meView(); });
-  view.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { if (confirm('Remove this player and their progress from this device?')) { store.removePlayer(b.dataset.del); meView(); } });
+  $('#meName').onclick = () => { store.updatePlayer({ name: store.makeName() }); fx.sfx('pop'); meView(ctx); };
+  view.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { store.updatePlayer({ avatar: b.dataset.c }); meView(ctx); });
+  view.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { fx.setMode(b.dataset.mode); gm.startDay(); fx.sfx('level'); meView(ctx); });
+  view.querySelectorAll('[data-switch]').forEach(b => b.onclick = () => { store.switchPlayer(b.dataset.switch); fx.applyMode(); fx.sfx('pop'); meView(ctx); });
+  view.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { if (confirm('Remove this player and their progress from this device?')) { store.removePlayer(b.dataset.del); meView(ctx); } });
   $('#meAdd').onclick = () => { store.addPlayer(); fx.applyMode(); location.hash = '#/'; render(); };
-  const sky = $('#skySwitch'); if (sky) sky.onclick = () => { store.updatePlayer({ sky: sky.getAttribute('aria-checked') !== 'true' }); fx.sfx('pop'); meView(); $('#skySwitch').focus(); $('#skyMsg').textContent = SKY.skyOn(store.player()) ? 'The Sky is your home now.' : 'Your home is the tile home again.'; };
+  const sky = $('#skySwitch'); if (sky) sky.onclick = () => { store.updatePlayer({ sky: sky.getAttribute('aria-checked') !== 'true' }); fx.sfx('pop'); meView(ctx); $('#skySwitch').focus(); $('#skyMsg').textContent = SKY.skyOn(store.player()) ? 'The Sky is your home now.' : 'Your home is the tile home again.'; };
   $('#setSound').onchange = e => { fx.setSound(e.target.checked); fx.sfx('ok'); };
   $('#setBg').onchange = e => { setBg(e.target.checked); const t = document.getElementById('vmBg'); if (t) t.checked = e.target.checked; };
   $('#setCalm').onclick = e => { fx.setCalm(!fx.calmOn()); e.currentTarget.setAttribute('aria-checked', String(fx.calmOn())); };
@@ -1549,9 +1557,28 @@ function meView() {
   wireAmbienceSettings(view);
   wireWorldBoards(view);
 
-  $('#pExport').onclick = async () => { const code = btoa(unescape(encodeURIComponent(store.exportData()))); try { await navigator.clipboard.writeText(code); msg('Backup code copied. Paste it somewhere safe.'); } catch (e) { prompt('Copy this backup code:', code); } };
-  $('#pImport').onclick = () => { const code = prompt('Paste your backup code:'); if (!code) return; try { store.importData(decodeURIComponent(escape(atob(code.trim())))); msg('Progress restored.'); meView(); } catch (e) { msg('That code did not work. Check that it was copied in full.'); } };
-  $('#pReset').onclick = () => { if (confirm('Reset all progress for this player?')) { store.reset(); meView(); msg('Progress reset.'); } };
+  /* Backup: the code is every Player on this device (store.exportData); Restore from code checks a pasted code, shows
+     what it holds and writes only after a choice, as the hand-off page does (progress-handoff spec), then reloads so
+     every setting and Player is read afresh. The buttons are wired once; pending is the code awaiting a choice. */
+  const listen = (el, fn) => { if (ctx.signal) on(el, 'click', fn, ctx.signal); else el.onclick = fn; };
+  let pending = null;
+  listen($('#pExport'), async () => { const code = btoa(unescape(encodeURIComponent(store.exportData()))); try { await navigator.clipboard.writeText(code); msg('Backup code copied: every Player on this device. Paste it somewhere safe.'); } catch (e) { prompt('Copy this backup code:', code); } });
+  listen($('#pImport'), () => {
+    const code = prompt('Paste your backup code:'); if (!code) return;
+    let text, payload;
+    try { text = decodeURIComponent(escape(atob(code.replace(/\s/g, '')))); payload = store.readBackup(text); } catch (e) { pending = null; $('#pOffer').hidden = true; msg('That code could not be used. Check that it was copied in full.'); return; }
+    const list = $('#pOfferList'); list.textContent = '';
+    for (const q of payload.players.list) { const li = document.createElement('li'); const s = Math.floor((payload.records[q.id] || {}).sparks || 0); li.textContent = `${q.name}: ${s.toLocaleString('en')} Spark${s === 1 ? '' : 's'}`; list.append(li); }
+    const here = store.restoreOffer(payload);
+    $('#pOfferFresh').hidden = here.has; $('#pOfferHas').hidden = !here.has; $('#pOfferHere').hidden = !here.has;
+    $('#pOfferHere span').textContent = here.names.join(', '); $('#pBoth').hidden = !here.both;
+    pending = text; msg(''); $('#pOffer').hidden = false; $('#pOfferH').focus();
+  });
+  const choose = choice => { const text = pending; if (!text) return; pending = null; $('#pOffer').hidden = true; try { store.importData(text, choice); } catch (e) { msg('This browser would not let us save the progress, so nothing was changed. Make some room in its storage, then try again.'); return; } location.reload(); };
+  const keep = () => { pending = null; $('#pOffer').hidden = true; msg('Nothing was changed.'); };
+  listen($('#pBring'), () => choose('replace')); listen($('#pUse'), () => choose('replace')); listen($('#pBoth'), () => choose('both'));
+  listen($('#pNotNow'), keep); listen($('#pKeep'), keep);
+  $('#pReset').onclick = () => { if (confirm('Reset all progress for this player?')) { store.reset(); meView(ctx); msg('Progress reset.'); } };
 }
 
 /* ---------- Trick animator ---------- */
