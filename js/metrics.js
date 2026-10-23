@@ -17,6 +17,7 @@ export const SHARE_SURFACES = ['result', 'challenge-link'];
 export const WIN_BUCKETS = ['under-30', '30-60', '60-90', '90-180', 'over-180'];
 export const STAR_EVENTS = ['lit', 'skipped', 'comeback', 'dare_taken', 'dare_won'];
 export const TOUR_EVENTS = ['start', 'finish', 'skip'];
+export const FAMILY_EVENTS = ['visit/1', 'visit/2', 'visit/3', 'cheer', 'ask', 'show_me', 'not_now'];
 const ID = /^[a-z0-9][a-z0-9_-]{0,40}$/;
 
 const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -189,4 +190,7 @@ export function modeLink(mode) { if (LEAGUES.includes(mode)) send('landing/mode/
 /* ---------- Say it (openspec sutra-pronunciation) ---------- */
 /* A tap on a Say it button that starts a name clip. Fixed path and title: never the Sutra, the voice or the Mode.
    A tap that stops a playing clip sends nothing. */
+/* Family helper Visits (openspec family-helpers): the level or a fixed word only, never the Skill, Nickname, band or setting */
+export function family(kind) { if (FAMILY_EVENTS.includes(kind)) send('family/' + kind, 'Vedic Math: Family helpers'); }
+export function familyVisit(level, cheer = false) { family(cheer ? 'cheer' : 'visit/' + level); }
 export function say() { send('say/sutra', 'Say a Sutra name'); }

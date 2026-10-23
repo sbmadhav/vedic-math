@@ -62,6 +62,23 @@ test('the app home hero draws the same Nikhilam Family as the landing page, and 
   assert.match(css, /html\.motion-paused \.lv-family \*, body\.calm \.lv-family \*, html\.motion-paused \.mq-try::after, body\.calm \.mq-try::after/);
 });
 
+test('each Family helper is cut from the hero drawing (openspec family-helpers): the same group, tokens only, hidden from screen readers, never Bolt', async () => {
+  const { FAMILY_SVG, friendSVG, FRIEND_IDS } = await import('../js/family.js');
+  const group = { eka: 'lv-f-one', shunya: 'lv-f-zero', nava: 'lv-f-nine' };
+  assert.deepEqual([...FRIEND_IDS].sort(), Object.keys(group).sort(), 'the three friends are the hero\'s three digits');
+  for (const id of FRIEND_IDS) {
+    const svg = friendSVG(id);
+    assert.match(svg, new RegExp(`^<svg class="fh-art fh-art--${id}" viewBox="[^"]+" aria-hidden="true" focusable="false" data-pose="idle">`), id);
+    const body = svg.match(/<g class="fh-body">([\s\S]*)<\/g><\/svg>$/);
+    assert.ok(body && body[1].trim().length > 100, `${id} has a body`);
+    const hero = FAMILY_SVG.match(new RegExp(`<g class="${group[id]}">([\\s\\S]*?)</g>`));
+    assert.ok(hero, `the hero draws ${group[id]}`);
+    assert.equal(body[1], hero[1], `${id} is the hero's ${group[id]} group, drawing for drawing`);
+    assert.ok(!/#[0-9a-f]{3,8}\b/i.test(svg), `${id}: no hex colours, tokens only`);
+    assert.ok(!/lv-bolt|--bolt-(body|accent|belly|screen|line)/.test(svg), `${id}: Bolt is not a Family helper`);
+  }
+});
+
 test('every grown-up page is free of Bolt art: Bolt stays inside the game', () => {
   for (const p of pages.filter(f => f.startsWith('site'))) {
     assert.ok(!/lv-bolt|--bolt-(body|accent|belly|screen|line)|Bolt, the friendly robot/.test(src(p)), p);

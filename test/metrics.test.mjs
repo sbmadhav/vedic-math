@@ -89,6 +89,12 @@ test('tryStart and findGo send one fixed event each, with no text in path or tit
   assert.deepEqual(paths(), ['math/try/start', 'math/find/go', 'math/find/go']);
   assert.ok(sent.every(([p, t]) => PATH.test(p) && /^Vedic Math: /.test(t)));
 });
+/* ---------- Family helpers (openspec family-helpers, analytics delta) ---------- */
+test('Family helper events are fixed words only: the Visit level, cheer, ask, show_me, not_now', () => {
+  clear(); M.familyVisit(1); M.familyVisit(3); M.familyVisit(2, true); M.familyVisit(4); M.family('ask'); M.family('show_me'); M.family('not_now'); M.family('v-sq5'); M.family('Swift Tiger 42');
+  assert.deepEqual(paths(), ['math/family/visit/1', 'math/family/visit/3', 'math/family/cheer', 'math/family/ask', 'math/family/show_me', 'math/family/not_now']);
+  assert.ok(sent.every(([p, t]) => PATH.test(p) && t === 'Vedic Math: Family helpers'));
+});
 test('modeLink sends math/landing/mode/<Mode> for a Mode only, with a fixed title', () => {
   clear(); M.modeLink('pro'); M.modeLink('explorer'); M.modeLink('wizard'); M.modeLink('Swift Tiger 42'); M.modeLink(undefined);
   assert.deepEqual(paths(), ['math/landing/mode/pro', 'math/landing/mode/explorer']);
@@ -227,6 +233,7 @@ const ALLOWED = new Set([
   'h', 'knownId', 'picker',    // route views: the hash goes through metrics.routePath and the catalog check
   'asSky',                     // route views: true when home showed the Sky (a fixed word, sky)
   'ok', "lives ? '' : ''", 'fx.MODES[fx.mode()].league', // right or miss; 'run' or 'practice'; the League
+  'v.level', 'cheer',          // a Family helper Visit's level (1 to 3) and whether it is a cheer; metrics.family checks FAMILY_EVENTS
 ]);
 /* Every call of track(, siteTrack( and metrics.<fn>( with its argument text */
 export function callSites(src) {
