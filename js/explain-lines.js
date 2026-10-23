@@ -33,9 +33,8 @@ export const tourLines = mode => TOUR_STEPS.flatMap(s => s.options.map(o => say(
 
 
 export const gameLines = g => [g.desc].filter(Boolean);
-/* The round format rules beside the Challenge tower's map (Sprint, Survival, ...), in that order */
-export const formatLines = () => Object.values(LV.FORMATS).map(f => f.how).filter(Boolean);
-/* "Older roots" on the Sutras page: its intro, then one line per background note as the list shows it */
+export const formatLines = () => Object.values(LV.FORMATS).map(f => f.how); // the Challenge tower's round format rules
+/* "Older roots" on the Sutras page: the intro, then each background note as the list shows it */
 export const rootNote = ([h, b]) => `<b>${h}.</b> ${b}`;
 export const rootsLines = () => [ROOTS_INTRO, ...BG_NOTES.map(rootNote)];
 /* Video and link descriptions on Watch. js/videos.js loads only when Watch opens, so its lists are passed in */

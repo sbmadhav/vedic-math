@@ -105,7 +105,7 @@ export const STORIES = [
 
 /* What the background shows, for "What is in the background?" (music panel) and the history page */
 export const BG_NOTES = [NOTES.devanagari, NOTES.sulba, NOTES.falcon, NOTES.powers, NOTES.meru, NOTES.brahmi, NOTES.nakshatras];
-/* The line before them on the Sutras page ("Older roots"); js/explain-lines.js lists both for the studio voice */
+/* The Sutras page's line before them ("Older roots") */
 export const ROOTS_INTRO = 'The 1965 sutras stand on a much older tradition of Indian mathematics. The moving background draws real pieces of it.';
 
 /* ---------- Levels: the layer config ----------

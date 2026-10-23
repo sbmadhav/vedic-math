@@ -40,7 +40,7 @@
 1. Should Listen stay silent when Sound effects are off? Proposed: no, it plays (it is the voice, and it follows a tap).
 2. The wording items above: change them (and re-record) or keep them.
 3. The deferred places (tasks section 4): which matter enough to do next. Page introductions hold live counts ("You have collected 3 of 29"), so they would play from clips or the device's voice unless the fixed sentences are split out.
-4. The "Older roots" notes (`BG_NOTES` in `js/ambient.js`) are not recorded yet, because that module cannot be imported in Node. Moving the notes into a data module would let them be recorded and get a Listen button.
+4. The "Older roots" notes are in the recording list (`rootsLines()`, decision 8) but none of them is recorded yet: the 4.6 re-record records them, and their Listen button follows it.
 
 ## Risks / Trade-offs
 
