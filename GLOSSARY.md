@@ -119,8 +119,32 @@ The robot co-pilot who shows each Trick and reacts to the Player's answers. A te
 _Avoid_: mascot, buddy, pet, avatar
 
 **Nikhilam Family**:
-The brand mark: the Devanagari digits 1, 0 and 9 drawn as a family (a tall One, a baby Zero and a Nine), in the header, the hero picture on the landing page and the app home (where it is the site's mascot, `celebrations` change), the favicon (the baby Zero's face) and the app icons. Sources in `brand/nikhilam-family/`. Bolt teaches in the game and appears only there; the Nikhilam Family is the site's name in pictures.
+The brand mark: the Devanagari digits 1, 0 and 9 drawn as a family (a tall One, a baby Zero and a Nine), in the header, the hero picture on the landing page and the app home (where it is the site's mascot, `celebrations` change), the favicon (the baby Zero's face) and the app icons. Sources in `brand/nikhilam-family/`. Bolt teaches in the game; the Nikhilam Family is the site's name in pictures, and in the game they can also be the Player's Family helpers (proposed in the `family-helpers` change).
 _Avoid_: logo Bolt
+
+**Family helper**:
+One of the Nikhilam Family as the Player's friend in the game: Shunya, Nava or Eka. Fellow students who learned from Bolt too, never teachers: they hop in when a Player is stuck and give a hint, the method or a worked example on other numbers, never the answer. Off until turned on in Me ("Try the Nikhilam Family helpers"), then set by "When they help". (Proposed in the `family-helpers` change.)
+_Avoid_: tutor, assistant, AI helper, pet, teacher (that is Bolt)
+
+**Shunya**:
+The baby Zero of the Nikhilam Family as a Family helper: the funny one. Sometimes makes a playful mistake on another example for the others to catch (never for Early readers).
+_Avoid_: Zero (in copy, as a name), baby
+
+**Nava**:
+The Nine of the Nikhilam Family as a Family helper: witty, the nodder with comebacks, the one who encourages.
+_Avoid_: Nine (as a name)
+
+**Eka**:
+The tall One of the Nikhilam Family as a Family helper: a little serious, names the Sutra and works the steps through with the Player as a peer ("Bolt showed us this one...").
+_Avoid_: One (as a name), the teacher
+
+**Visit**:
+One appearance of the Family helpers: one friend for a first stumble (a light hint), two for repeated trouble (the method and encouragement), all three for a real block (a short skit on other numbers) or a breakthrough cheer. At most one every 3 minutes unless the Player asks; it never covers the question, the answer or the round's buttons, and closes in one tap.
+_Avoid_: popup, interruption, intervention
+
+**Help signal**:
+Something that may start a Visit: 2 misses in a row on one Skill, 3 misses in a round, about 20 seconds idle on one question, Hint pressed twice, leaving a round early after misses, or a help phrase in listening mode. Never acted on mid-question in a timed race.
+_Avoid_: trigger (in copy), frustration detection
 
 **Celebration**:
 What the app does when something good happens (`js/celebrate.js`, `celebrations` change). The big confetti is only for a true win (a Star lit, a Medal, a Belt, a badge, a new Title, a first Sutra card, a personal best, a game won); everyday moments (picking a Mode, a right answer, a streak) get a small one, such as a card pop, a few sparkles or a bounce. None moves under reduced motion, Pause motion or Calm.
