@@ -51,6 +51,24 @@ for (const scheme of ['light', 'dark'] as const) {
   });
 }
 
+/* The Install nudge on Home and the Install guide (openspec change install-app), on iPhone Safari where both show */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, install`, () => {
+    test.use({ colorScheme: scheme, seedProgress: { days: { '2026-01-05': 3 } }, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1' });
+    test('Home with the Install nudge, then the Install guide open, has no serious or critical axe violations', async ({ page }, testInfo) => {
+      chromiumOnly(testInfo);
+      await open(page);
+      await expect(page.locator('#installSlot .in-nudge')).toBeVisible();
+      await page.waitForLoadState('networkidle');
+      expect(await serious(page, '#/')).toEqual([]);
+      await page.locator('#installSlot [data-in="go"]').click();
+      await expect(page.locator('dialog#installGuide')).toBeVisible();
+      await page.locator('dialog#installGuide .in-other summary').click();
+      expect(await serious(page, '#/')).toEqual([]);
+    });
+  });
+}
+
 /* A Star round (star-round spec 5.4): during a question and during a replay */
 for (const scheme of ['light', 'dark'] as const) {
   test.describe(`${scheme} scheme, Star`, () => {
