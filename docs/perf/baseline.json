@@ -6,7 +6,8 @@
   "commit": "1401890",
   "swVersion": "1730cf8552",
   "runner": "GitHub Actions ubuntu-latest (perf.yml, run 39526007402)",
-  "lighthouse": "13.5.0"
+  "lighthouse": "13.5.0",
+  "serverLatency": "the simulation used production's observed server latency (about 20 to 30 ms per origin); since 2026-10-22 every run fixes it at tools/lighthouserc.json serverResponseTime (30 ms), so a preview host's own latency does not count (baseline.md, The server latency is fixed)"
  },
  "firstLoad": {
   "page": "/play/",
