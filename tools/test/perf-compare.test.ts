@@ -2,8 +2,8 @@
    its tolerance and fails one step past it, first contentful paint is reported and never fails, a missing page or
    interaction fails, and time to first byte and Speed Index are shown for information only. With production measured
    in the same job the limits count from production's medians (a slow runner that moves both hosts passes, the
-   regression a pull request adds fails), largest contentful paint is also held to the baseline, and the table gets a
-   Production column. */
+   regression a pull request adds fails), largest contentful paint stays on the baseline (the hosts differ on the
+   network chain), and the table gets a Production column. */
 import { test, expect } from 'vitest';
 import { compare, table, notes, REPORTED, ABSOLUTE, type PerfBaseline, type Lh, type Ix, type Reference } from '../perf-compare.ts';
 
@@ -90,17 +90,18 @@ test('the spec example against production: an Arena answer 35 ms slower than pro
   expect(table(rows)).toMatch(/\| arena-answer \| inp \| 48 ms \| 56 ms \| 91 ms \| 76 ms \| \*\*over\*\* \|/);
 });
 
-test('largest contentful paint keeps the absolute gate: the smaller of production + 100 and the baseline + 100 binds, and the table says which', () => {
+test('largest contentful paint is held to the baseline, not production: the hosts differ on the network chain (#139), and the table says so', () => {
   expect([...ABSOLUTE]).toEqual(['lcp']);
-  // Production faster than the baseline: production's limit binds
-  expect(runP(lh({ lcp: 5000 }), ix(), lh({ lcp: 5101 }), ix()).find(r => r.metric === 'lcp')).toMatchObject({ limit: 5100, from: 'production', ok: false });
-  expect(overP(lh({ lcp: 5000 }), ix(), lh({ lcp: 5100 }), ix())).toEqual([]);
-  // Production slower than the baseline: the baseline's limit binds, and the row says so
-  const rows = runP(lh({ lcp: 5400 }), ix(), lh({ lcp: 5301 }), ix());
-  expect(rows.find(r => r.metric === 'lcp')).toMatchObject({ base: 5200, production: 5400, now: 5301, limit: 5300, from: 'baseline', ok: false });
-  expect(table(rows)).toMatch(/\| arena \| lcp \| 5200 ms \| 5400 ms \| 5301 ms \| 5300 ms \(baseline\) \| \*\*over\*\* \|/);
-  expect(overP(lh({ lcp: 5400 }), ix(), lh({ lcp: 5300 }), ix())).toEqual([]);
-  // Blocking time has no absolute gate: over the baseline's limit, within production's, passes
+  // #139's job, the same bytes on both hosts: production 5340, the preview 5460 on /play/ against a baseline of 5420 passes
+  const same: PerfBaseline = { ...base, lighthouse: { pages: { arena: { ...base.lighthouse.pages.arena!, median: lh({ lcp: 5420 }) } } } };
+  const rows = compare(same, { pages: { arena: { median: lh({ lcp: 5460 }) } } }, { interactions: { 'arena-answer': ix() } }, production(lh({ lcp: 5340 }), ix()));
+  expect(rows.find(r => r.metric === 'lcp')).toMatchObject({ base: 5420, production: 5340, now: 5460, limit: 5520, from: 'baseline', ok: true });
+  expect(table(rows)).toMatch(/\| arena \| lcp \| 5420 ms \| 5340 ms \| 5460 ms \| 5520 ms \(baseline\) \| ok \|/);
+  // Over the baseline's 100 ms fails, however production reads
+  expect(runP(lh({ lcp: 5600 }), ix(), lh({ lcp: 5301 }), ix()).find(r => r.metric === 'lcp')).toMatchObject({ base: 5200, production: 5600, now: 5301, limit: 5300, from: 'baseline', ok: false });
+  expect(overP(lh({ lcp: 5600 }), ix(), lh({ lcp: 5300 }), ix())).toEqual([]);
+  expect(overP(lh({ lcp: 5000 }), ix(), lh({ lcp: 5300 }), ix())).toEqual([]);
+  // Blocking time has no baseline gate: over the baseline's limit, within production's, passes
   expect(runP(lh({ tbt: 190 }), ix(), lh({ tbt: 200 }), ix()).find(r => r.metric === 'tbt')).toMatchObject({ limit: 215, from: 'production' });
   expect(table(runP(lh({ tbt: 190 }), ix(), lh({ tbt: 200 }), ix()))).toMatch(/\| arena \| tbt \| 30 ms \| 190 ms \| 200 ms \| 215 ms \| ok \|/);
 });

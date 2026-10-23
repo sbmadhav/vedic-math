@@ -163,8 +163,10 @@ jobs:
   # page, so both see the same runner. tools/perf-compare.ts counts each limit from production's median of this job, the
   # regression the pull request adds: GitHub's runners differ about two to one in CPU speed and blocking time scales
   # with it, so against the baseline alone a slow runner failed pull requests that changed nothing (docs/perf/baseline.md,
-  # "The same-runner reference"). It fails beyond the tolerances; largest contentful paint is also held to the baseline,
-  # and first contentful paint is reported, not gated, until the server-rendered shell (openspec change perf-gate-fcp).
+  # "The same-runner reference"). It fails beyond the tolerances; largest contentful paint stays held to the baseline,
+  # as before, since the hosts differ on the network chain (a workers.dev preview reads over production on a cold first
+  # visit with the same bytes), and first contentful paint is reported, not gated, until the server-rendered shell
+  # (openspec change perf-gate-fcp).
   # The table, with the baseline for information, is posted on the pull request (one comment, updated on each push).
   # The first-load byte gate is in build.py.
   perf:

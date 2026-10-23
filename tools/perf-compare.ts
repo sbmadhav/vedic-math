@@ -11,9 +11,12 @@
    GitHub's runners differ about two to one in CPU speed and blocking time scales with it, so the Deep dive read 92 to
    191 ms across jobs on identical code (docs/perf/baseline.md, "The Deep dive's blocking time, after the fix"), and
    against the baseline alone a slow runner failed pull requests that changed nothing. The baseline stays in the table
-   for information. Largest contentful paint is also held to the baseline plus 100 ms, as before (ABSOLUTE): the smaller
-   limit binds, and the Limit column says (baseline) when that one does. Without --production (production after a
-   deploy, e2e.yml, which has no second host) every limit counts from the baseline, as before.
+   for information. Largest contentful paint is held to the baseline plus 100 ms, as before, not to production
+   (ABSOLUTE; its Limit column says (baseline)): it sits at the end of the network chain, where the hosts differ (a
+   workers.dev preview reads 60 to 150 ms over production on a cold first visit with the same bytes: docs/perf/baseline.md,
+   "The same-runner reference"), while blocking time and the interactions are CPU time, where the runner differs and
+   cancels. Without --production (production after a deploy, e2e.yml, which has no second host) every limit counts from
+   the baseline, as before.
 
    First contentful paint is reported, not gated (owner, 2026-10-23): its row keeps the reference, the measurement and
    the 100 ms limit it is held to again from the server-rendered shell on (react-typescript task 2.7 takes 'fcp' out of
@@ -61,8 +64,8 @@ export const LIMITS: Partial<Record<keyof Lh | keyof Ix, (ref: number) => number
 /* Metrics shown with their limit but never over: first contentful paint until the server-rendered shell (above) */
 export const REPORTED: ReadonlySet<string> = new Set(['fcp']);
 
-/* Metrics held to the baseline as well when production is the reference: largest contentful paint keeps its absolute
-   gate (openspec change perf-same-runner) */
+/* Metrics held to the baseline, not production, when production is the reference: largest contentful paint, a network
+   chain on which the hosts differ (openspec change perf-same-runner) */
 export const ABSOLUTE: ReadonlySet<string> = new Set(['lcp']);
 
 export function compare(base: PerfBaseline, lh: LhRun, ix: IxRun, ref?: Reference): Row[] {
@@ -86,10 +89,8 @@ export function compare(base: PerfBaseline, lh: LhRun, ix: IxRun, ref?: Referenc
     if (lim) {
       const extra = allowance(what, metric);
       const at = (r: number) => Math.max(lim(r), extra === undefined ? -Infinity : r + extra);
-      const candidates: [number, Row['from']][] = [];
-      if (p !== undefined) candidates.push([at(p), 'production']);
-      if (p === undefined || ABSOLUTE.has(metric)) candidates.push([at(b), 'baseline']);
-      [limit, from] = candidates.reduce((best, c) => (c[0] < best[0] ? c : best));
+      from = p !== undefined && !ABSOLUTE.has(metric) ? 'production' : 'baseline';
+      limit = at(from === 'production' && p !== undefined ? p : b);
     }
     const reported = REPORTED.has(metric);
     rows.push({ what, metric, base: b, ...production, now: n, limit, from, ok: reported || limit === null || n <= limit, reported });
@@ -130,7 +131,7 @@ export function table(rows: Row[]): string {
     gated, and the runner's speed when the runs recorded it (both hosts' when production was measured) */
 export function notes(rows: Row[], lh: Pick<LhRun, 'benchmarkIndex'>, production?: Pick<LhRun, 'benchmarkIndex'>): string[] {
   const out: string[] = [];
-  if (rows.some(r => r.production !== undefined)) out.push('Limits are production\'s median in this job plus the tolerance: the regression this pull request adds, measured on the same runner, so the runner\'s CPU speed cancels (openspec change perf-same-runner; docs/perf/baseline.md, "The same-runner reference"). The baseline column is information. Largest contentful paint is also held to the baseline plus 100 ms; its Limit reads (baseline) when that is the smaller.');
+  if (rows.some(r => r.production !== undefined)) out.push('Limits are production\'s median in this job plus the tolerance: the regression this pull request adds, measured on the same runner, so the runner\'s CPU speed cancels (openspec change perf-same-runner; docs/perf/baseline.md, "The same-runner reference"). The baseline column is information. Largest contentful paint is held to the baseline plus 100 ms instead, as before (its Limit reads (baseline)): it is a network chain on which the hosts differ, while blocking time and the interactions are CPU time, where the runner differs and cancels.');
   if (rows.some(r => r.reported)) out.push('First contentful paint is reported, not gated, until the server-rendered shell (react-typescript task 2.7): on today\'s page Lighthouse\'s simulated first paint races the module graph (docs/perf/baseline.md). Its rows show the 100 ms limit it will be held to again.');
   const bench = (run: Pick<LhRun, 'benchmarkIndex'> | undefined) => (typeof run?.benchmarkIndex === 'number' ? Math.round(run.benchmarkIndex) : undefined);
   const now = bench(lh);
