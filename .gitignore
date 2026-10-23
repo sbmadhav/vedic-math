@@ -1,6 +1,5 @@
 # no trailing slash, so a node_modules symlink to a shared install is ignored too
 node_modules
-_site/
 .DS_Store
 e2e/test-results/
 e2e/playwright-report/
@@ -13,10 +12,11 @@ tools/voice/voice.tar
 /voice/
 tools/voice/out-test/
 
-# Build outputs (python3 build.py --dev, --target moved) and the deploy tool's install
-_dev/
-_moved/
-_preview/
+# Build output: build.py writes _site/, _dev/ (--dev) and _moved/ (--target moved), and refuses any other --out inside
+# the repo that does not start with _ (eslint.config.js ignores the same _*/; the build never publishes such a path)
+/_*/
+
+# The deploy tool's install
 deploy/node_modules/
 .wrangler/
 __pycache__/

@@ -1,6 +1,6 @@
 # Tasks
 
-Build order (owner M6): this change first after the learnvedicmath.com move, then `duel-online`, then `gpu-effects`. Tasks marked **[OWNER]** need the owner. "Verify:" says how a task is checked. Every code task keeps `node --test 'test/**/*.test.{js,mjs}'`, the build and the Playwright suite green, and updates the matching e2e spec in the same commit (CLAUDE.md).
+Build order (owner M6): this change first after the learnvedicmath.com move, then `duel-online`, then `gpu-effects`. Tasks marked **[OWNER]** need the owner. "Verify:" says how a task is checked. Every code task keeps `pnpm typecheck`, `pnpm lint`, `pnpm test`, the build and the Playwright suite green, and updates the matching e2e spec in the same commit (CLAUDE.md).
 
 ## 0. Before building
 
