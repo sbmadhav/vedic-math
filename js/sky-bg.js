@@ -44,7 +44,6 @@ export function parseColor(v) {
   return [r, g, b, a / 255];
 }
 
-/* Runs fn once the page has loaded and the browser is idle (or after a short wait where there is no idle callback) */
 /* Runs fn once while the browser is idle (or after a short wait where there is no idle callback). Its own child
    signal is aborted once it has run, so a long session does not pile listeners on signal. */
 function whenIdle(fn, signal, timeout = 1200) {
@@ -209,32 +208,38 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, cameo = 
       const out = { cv, w, h }; capCache.set(key, out); return out;
     }
     /* The page's obstacles on screen, as [x0, y0, x1, y1]: measured when the page may have moved (scroll, resize, a new
-       route, and every 2.5 seconds for anything else), never more than once a frame */
+       route, and every 2.5 seconds for anything else), never more than once a frame. A box off screen is not entered. */
     let page = null, pageDirty = true, pageVersion = 0, measuring = false;
     let pageSig = '', clearList = [];
     function measure() {
-      const out = [], range = document.createRange(), on = r => r.width >= 1 && r.height >= 1 && r.bottom > 0 && r.top < H && r.right > 0 && r.left < W;
-      const push = (r, clear) => { const box = [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]; out.push(box); if (clear) clearList.push(box); };
+      const out = [], range = document.createRange(), off = r => r.bottom <= 0 || r.top >= H || r.right <= 0 || r.left >= W, on = r => r.width >= 1 && r.height >= 1 && !off(r);
+      const push = (r, clear) => { const box = [r.left, r.top, r.right, r.bottom].map(Math.round); out.push(box); if (clear) clearList.push(box); };
       pageDirty = false; clearList = [];
-      /* every run of text */
-      const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-      for (let n = walk.nextNode(); n; n = walk.nextNode()) {
-        if (!n.nodeValue.trim() || SKIP.has(n.parentNode.nodeName)) continue;
-        range.selectNodeContents(n); const r = range.getBoundingClientRect(); if (on(r)) push(r, true);
-      }
-      /* controls, pictures and boxes that show */
-      for (const el of document.body.querySelectorAll('*')) {
-        const tag = el.tagName.toUpperCase(); if (el === c || SKIP.has(tag)) continue;
-        const r = el.getBoundingClientRect(); if (!on(r)) continue;
-        if (CONTROL.has(tag)) { push(r, true); continue; }
-        if (PICTURE.has(tag)) { if (!el.closest('svg') || tag === 'SVG') push(r, false); continue; }
-        if (BAND.has(tag)) { push(r, false); continue; }
-        if (r.width < 24 || r.height < 24 || el.closest('svg')) continue;
-        const cs = getComputedStyle(el);
-        if (cs.visibility !== 'visible' || +cs.opacity < 0.1) continue;
-        const edge = ['Top', 'Bottom', 'Left', 'Right'].some(k => parseFloat(cs[`border${k}Width`]) > 0 && shows(cs[`border${k}Color`]));
-        if (shows(cs.backgroundColor) || cs.backgroundImage !== 'none' || edge || cs.boxShadow !== 'none' || cs.position === 'fixed' || cs.position === 'sticky' || (cs.backdropFilter && cs.backdropFilter !== 'none')) push(r, false);
-      }
+      const walk = (el, svg) => {
+        for (let n = el.firstChild; n; n = n.nextSibling) {
+          if (n.nodeType === 3) {
+            if (!n.nodeValue.trim() || SKIP.has(el.nodeName)) continue;
+            range.selectNodeContents(n); const r = range.getBoundingClientRect(); if (on(r)) push(r, true);
+          } else if (n.nodeType === 1 && n !== c) {
+            const tag = n.tagName.toUpperCase(); if (SKIP.has(tag)) continue;
+            if (svg) { walk(n, true); continue; }
+            const r = n.getBoundingClientRect(); if ((r.width || r.height) && off(r)) continue;
+            if (on(r)) {
+              if (CONTROL.has(tag)) push(r, true);
+              else if (PICTURE.has(tag) || BAND.has(tag)) push(r, false);
+              else if (r.width >= 24 && r.height >= 24) {
+                const cs = getComputedStyle(n);
+                if (cs.visibility === 'visible' && +cs.opacity >= 0.1) {
+                  const edge = ['Top', 'Bottom', 'Left', 'Right'].some(k => parseFloat(cs[`border${k}Width`]) > 0 && shows(cs[`border${k}Color`]));
+                  if (shows(cs.backgroundColor) || cs.backgroundImage !== 'none' || edge || cs.boxShadow !== 'none' || cs.position === 'fixed' || cs.position === 'sticky' || (cs.backdropFilter && cs.backdropFilter !== 'none')) push(r, false);
+                }
+              }
+            }
+            walk(n, tag === 'SVG');
+          }
+        }
+      };
+      walk(document.body);
       page = out;
       const sig = out.join(';'); if (sig !== pageSig) { pageSig = sig; pageVersion++; makeMask(); } /* the page really moved */
     }
