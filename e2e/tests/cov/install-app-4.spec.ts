@@ -7,6 +7,7 @@ import { asInstalledApp } from '../install-helpers';
 test('For grown-ups from the app: /parents/ opens in a new browsing context and the app stays on its route', async ({ page, context }) => {
   await asInstalledApp(page);
   await open(page, '#/learn');
+  await expect(page.locator('html')).toHaveClass(/\blv-installed\b/); /* the install module is here (it loads after the first paint) */
   const popup = context.waitForEvent('page');
   await page.locator('footer a.mq-grownups').click();
   const other = await popup;
@@ -18,6 +19,7 @@ test('For grown-ups from the app: /parents/ opens in a new browsing context and 
 test('The brand in the app: the game\'s Home opens, not the landing page', async ({ page }) => {
   await asInstalledApp(page);
   await open(page, '#/learn');
+  await expect(page.locator('header .md-brand')).toHaveAttribute('href', '#/'); /* set once the install module is here */
   await page.locator('header .md-brand').click();
   await expect(page).toHaveURL(/\/play\/#\/$/);
   await expect(page.locator('h1.home-h')).toBeVisible();

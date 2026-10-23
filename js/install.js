@@ -42,9 +42,12 @@ export function onInstallChange(fn, signal) { subs.add(fn); onAbort(signal, () =
 
 /* ---------- Boot ---------- */
 let started = false;
-export function initInstall() {
+/* initInstall(early): early is an install prompt js/app.js caught before this module loaded (it loads after the first
+   paint), handed over as if it had arrived here */
+export function initInstall(early) {
   if (started) return; started = true;
   const ps = page.signal;
+  if (early) { deferred = early; const st = getState(); if (st.installed) putState(markNotInstalled(st)); }
   /* Our nudge and guide stand in for the browser's own install bar. A prompt means the app is not installed (again). */
   on(window, 'beforeinstallprompt', e => { e.preventDefault(); deferred = e; const st = getState(); if (st.installed) putState(markNotInstalled(st)); applyInstalled(); notify(); }, ps);
   on(window, 'appinstalled', () => { deferred = null; justInstalled = true; putState(markInstalled(getState(), Date.now())); metrics.install('installed'); applyInstalled(); notify(); }, ps);

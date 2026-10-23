@@ -91,7 +91,9 @@ No worker change: the worker answers every navigation under `/play/` with the sa
 
 ### D12. First load
 
-The first-load budget (`docs/perf/baseline.json`) counts every precached file. This change adds about 15 KB Brotli: `install.js` (the steps for twelve kinds of browser, about 7 KB), `install-rules.js`, `prompt-slot.js`, `maskable-192.png` (4 KB), and small growth in `app.js`, `math.css`, the page and the manifest. Loading the guide's text on demand would not lower the number, since the build precaches every module. The baseline records the growth and why.
+The first-load budget (`docs/perf/baseline.json`) counts every precached file. This change adds about 16 KB Brotli: `install.js` (the steps for twelve kinds of browser, about 7 KB), `install-rules.js`, `prompt-slot.js`, `maskable-192.png` (4 KB), and small growth in `app.js`, `math.css`, the page and the manifest. Loading the guide's text on demand would not lower the number, since the build precaches every module. The baseline records the growth and why.
+
+The paint is another matter: Lighthouse's simulated largest contentful paint waits for every static import of `app.js` (`docs/perf/baseline.md`), and a first run with `install.js` and `install-rules.js` in that graph read 90 to 290 ms more on every page, past the 100 ms tolerance. So `app.js` does not import `install.js` statically: `loadInstall()` imports it 100 ms after the first render (after the first paint), `withInstall(fn, signal)` queues what a view wants from it until then (the nudge's mount, the Me card, the Guide's action), and `app.js` itself catches an early `beforeinstallprompt` and hands it to `initInstall(early)`. `prompt-slot.js` (0.6 KB) stays static: the tour claims it during the first render. The module is pinned and precached like every file under `js/`, so offline is unchanged.
 
 ## Risks / Trade-offs
 

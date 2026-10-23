@@ -333,6 +333,7 @@ test.describe('the Installed app', () => {
   test('a link that leaves the app opens in the browser; links inside the app stay', async ({ page, context }) => {
     await asInstalledApp(page);
     await open(page);
+    await expect(page.locator('html')).toHaveClass(/\blv-installed\b/); /* the install module is here (it loads after the first paint) */
     const grownUps = page.locator('footer a.mq-grownups');
     const popup = context.waitForEvent('page');
     await grownUps.click();

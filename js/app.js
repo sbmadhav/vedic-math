@@ -42,8 +42,23 @@ import { guideCounts } from './explain-lines.js';
 import { listenBtn, wireListen } from './listen.js';
 import { sayButton, respellHTML, devaHTML, wireSay } from './say.js';
 import { sutraAmbience, ambienceButton, wireAmbience, settingsHTML as ambienceSettingsHTML, wireSettings as wireAmbienceSettings } from './sutra-ambience.js';
-import { initInstall, mountNudge, openGuide, meCardHTML as installCardHTML, appHere } from './install.js';
 import { claim as claimSlot, release as releaseSlot } from './prompt-slot.js';
+
+/* Installing the app (openspec change install-app): js/install.js and its rules load after the first view has painted
+   (loadInstall, 100 ms after boot), so they are not in the static import graph the first paint waits for (design D12).
+   The browser's install prompt can arrive before that: it is caught here and handed to initInstall. withInstall(fn,
+   signal) runs fn with the module once it is here, unless signal (the view's) has aborted by then. */
+const boot = new AbortController(); /* the page's lifetime: never aborted */
+let install = null, installLoad = null, earlyPrompt = null; const installQueue = [];
+function loadInstall() {
+  return installLoad ||= import('./install.js').then(m => {
+    install = m; m.initInstall(earlyPrompt); earlyPrompt = null;
+    installQueue.splice(0).forEach(([fn, s]) => { if (!s || !s.aborted) fn(m); });
+    return m;
+  });
+}
+const withInstall = (fn, signal) => { if (install) fn(install); else installQueue.push([fn, signal]); };
+on(window, 'beforeinstallprompt', e => { if (!install) { e.preventDefault(); earlyPrompt = e; } }, boot.signal);
 
 const $ = (s, r = document) => r.querySelector(s);
 const view = $('#view');
@@ -276,7 +291,7 @@ function home(ctx = {}, { tiles = false } = {}) {
   if (hm) { if (ctx.signal) on(hm, 'toggle', keepMore, ctx.signal); else hm.ontoggle = keepMore; } /* home() also runs with no view signal (an unknown Skill falls back to it): then a property on an element of this view */
   if (m === 'pro') loadBoard($('#homeBoard'), `daily-${cloud.dayId()}-pro`, 5);
   homeTour(ctx.signal);
-  mountNudge($('#installSlot'), ctx.signal); /* the Install nudge's one place on Home (openspec change install-app) */
+  withInstall(m => m.mountNudge($('#installSlot'), ctx.signal), ctx.signal); /* the Install nudge's one place on Home (openspec change install-app) */
 }
 
 /* The Skill the Keep going card offers, or null. Challenger Home leaves it out when it is the Trick of the Star its
@@ -297,7 +312,7 @@ function skyHome({ signal } = {}) {
   const back = (render.from || '').match(/^#\/star\/([\w-]+)\/(\d)$/);
   const out = skyView($('#skyHome'), { signal, focus: back ? `${back[1]}:${back[2]}` : null });
   homeTour(signal);
-  mountNudge($('#installSlot'), signal);
+  withInstall(m => m.mountNudge($('#installSlot'), signal), signal);
   return out;
 }
 /* All places: the Sky as a plain list (#/places) */
@@ -1407,7 +1422,7 @@ function guideView(section, { signal } = {}) {
   const tryHTML = s => {
     const t = tryFor(s, mode); if (!t) return '';
     if (t.action === 'tour' && !m) return '';
-    if (t.action === 'install' && appHere()) return ''; /* the Installed app: nothing to install */
+    if (t.action === 'install' && install && install.appHere()) return ''; /* the Installed app: nothing to install (checked again below once the module is here) */
     const main = t.action ? `<button type="button" class="md-btn md-btn--sm md-btn--primary gd-try" data-gd="${t.action}">${esc(t.label)}</button>` : `<a class="md-btn md-btn--sm md-btn--primary gd-try" href="${esc(t.href)}">${esc(t.label)}</a>`;
     return `<p class="gd-acts">${main}${t.more ? ` <a class="md-btn md-btn--sm" href="${esc(t.more.href)}">${esc(t.more.label)}</a>` : ''}</p>`;
   };
@@ -1432,9 +1447,11 @@ function guideView(section, { signal } = {}) {
   on(view, 'click', e => {
     const b = e.target.closest('[data-gd]'); if (!b) return;
     if (b.dataset.gd === 'tour') askTour();
-    else if (b.dataset.gd === 'install') openGuide('guide');
+    else if (b.dataset.gd === 'install') withInstall(m => m.openGuide('guide'), signal);
     else if (b.dataset.gd === 'music') { e.stopPropagation(); window.scrollTo({ top: 0 }); const mb = $('#vmMBtn'); if (mb && mb.getAttribute('aria-expanded') !== 'true') mb.click(); const first = $('#vmMPanel [data-t]'); if (first) first.focus({ preventScroll: true }); }
   }, signal);
+  /* The Installed app, when the view drew before the install module was here: nothing to install, so its action goes */
+  withInstall(m => { if (m.appHere()) view.querySelectorAll('[data-gd="install"]').forEach(b => { const p = b.closest('.gd-acts'); (p && p.children.length === 1 ? p : b).remove(); }); }, signal);
   /* #/guide/<section>: focus its heading now (so the router leaves focus there), scroll to it once the router is done */
   const sec = section && $(`#gd-${CSS.escape(section)}`);
   if (sec) {
@@ -1517,7 +1534,7 @@ function meView() {
     <div class="players">${store.allPlayers().map(q => `<div class="player${q.id === p.id ? ' on' : ''}">${avatar(q, 40)}<span><b>${esc(q.name)}</b><small>${q.mode ? fx.MODES[q.mode].name : 'No mode yet'}</small></span>${q.id === p.id ? '<em>Playing</em>' : `<button class="md-btn md-btn--sm" data-switch="${q.id}">Switch</button><button class="md-btn md-btn--sm" data-del="${q.id}" aria-label="Remove ${esc(q.name)}">Remove</button>`}</div>`).join('')}
       <button class="md-btn md-btn--sm" id="meAdd">${icon('plus')} Add a player</button></div>
     <h2 class="mq-strand">Settings</h2>
-    ${skySwitchHTML(p)}${installCardHTML()}
+    ${skySwitchHTML(p)}${install ? install.meCardHTML() : '<div id="meInstallCard" hidden></div>'}
     <div class="me-set"><label><input type="checkbox" id="setSound" ${fx.soundOn() ? 'checked' : ''}> Sound effects</label><label><input type="checkbox" id="setVoice" ${fx.voiceOn() ? 'checked' : ''}> Read questions aloud</label></div>
     ${ambienceSettingsHTML()}
     <h3 class="mq-h3" id="calmH">Calm and motion</h3>
@@ -1555,7 +1572,8 @@ function meView() {
   fx.wireVoiceSettings(view, { player: p.id });
   wireAmbienceSettings(view);
   wireWorldBoards(view);
-  const mi = $('#meInstall'); if (mi) mi.onclick = () => openGuide('me'); /* the Install guide (openspec change install-app) */
+  /* The Install guide's card (openspec change install-app): drawn above when the module is here, else put in its place once it is */
+  withInstall(m => { const c = $('#meInstallCard'); if (c) c.outerHTML = m.meCardHTML(); const mi = $('#meInstall'); if (mi) mi.onclick = () => m.openGuide('me'); });
 
   $('#pExport').onclick = async () => { const code = btoa(unescape(encodeURIComponent(store.exportData()))); try { await navigator.clipboard.writeText(code); msg('Backup code copied. Paste it somewhere safe.'); } catch (e) { prompt('Copy this backup code:', code); } };
   $('#pImport').onclick = () => { const code = prompt('Paste your backup code:'); if (!code) return; try { store.importData(decodeURIComponent(escape(atob(code.trim())))); msg('Progress restored.'); meView(); } catch (e) { msg('That code did not work. Check that it was copied in full.'); } };
@@ -1636,9 +1654,10 @@ fx.warmVoice(); /* the studio voice's core pack, while idle, when read aloud is 
 gm.init();
 metrics.returnCheck(); /* before the first route view: remembers this device's first visit */
 modeFromLink();
-initInstall(); /* before the first view: the browser's install prompt can arrive early (openspec change install-app) */
 render();
 initAmbient();
+/* The install module, after the first paint (openspec change install-app, design D12); a load that fails is reported once */
+later(() => loadInstall().catch(e => console.error('install.js did not load', e)), 100, boot.signal);
 /* Offline: /sw.js (scope /play/, the game only) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
   const registerSW = () => navigator.serviceWorker.register('/sw.js', { scope: '/play/' }).catch(() => {});
