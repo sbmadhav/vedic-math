@@ -108,8 +108,9 @@ jobs:
 
   # The load and interaction checks on production after each deploy (openspec change react-typescript,
   # performance-budget spec, task 1.8): the same measurements as the preview's perf job, against
-  # https://learnvedicmath.com once the e2e job has seen the deploy go live. A miss opens an issue with the numbers;
-  # the deploy stays.
+  # https://learnvedicmath.com once the e2e job has seen the deploy go live, compared with docs/perf/baseline.json
+  # (production has no second host to measure as a same-runner reference, so the baseline stays its reference; openspec
+  # change perf-same-runner). A miss opens an issue with the numbers; the deploy stays.
   perf:
     needs: e2e
     if: always() && github.event_name == 'push' && vars.CLOUDFLARE_ACCOUNT_ID != ''
