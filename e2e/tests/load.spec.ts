@@ -37,7 +37,7 @@ test.describe('first visit', () => {
 
 test('a returning player loads home with no console errors or failed requests', async ({ page, issues }) => {
   await open(page);
-  await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
+  await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
   await page.waitForLoadState('networkidle');
   expect(issues.console, 'console errors').toEqual([]);
   expect(issues.failed, 'failed requests').toEqual([]);

@@ -42,7 +42,7 @@ test.describe('motion allowed', () => {
       const card = page.locator('.mode-card[data-mode="challenger"]');
       await card.click();
       await expect.poll(async () => (await fx(page)).sparkles).toBeGreaterThan(0);
-      await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
+      await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
       expect((await fx(page)).confetti).toBe(0);
       await expect(page.locator('.fx-sparkles')).toHaveCount(0); // they clean up after themselves
     });
@@ -87,7 +87,7 @@ for (const [name, use, key] of STILL) {
       test('opens Home at once with no sparkles, no confetti and nothing moving', async ({ page }) => {
         await page.goto(APP);
         await page.locator('.mode-card[data-mode="pro"]').click();
-        await expect(page.locator('h1.home-h')).toHaveText('Train your mental math');
+        await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
         expect(await fx(page)).toEqual({ confetti: 0, sparkles: 0 });
       });
     });

@@ -144,7 +144,7 @@ test.describe('All places', () => {
     await open(page, '#/places');
     await page.locator('.places-list').getByRole('link', { name: 'The tile home' }).click();
     await expect(page).toHaveURL(/#\/tiles$/);
-    await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
+    await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
   });
 });
 
@@ -185,7 +185,7 @@ test.describe('Belt copy with the Sky off', () => {
   test.use({ seedPlayer: { sky: false }, seedProgress: { v: 3, skills: {}, sky: { lit: { 'from9:1': 1, 'from9:2': 1, 'from9:3': 1, 'by11:1': 1 }, skipped: {}, last: {} } } });
   test('the Challenger Dojo card names the next Star; the Me page counts lit Stars', async ({ page }) => {
     await open(page);
-    await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
+    await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
     const card = page.locator('.dojo-card');
     await expect(card).toContainText('White belt: 4 of 9 Stars lit');
     await expect(card).toContainText('Next Star: Multiply by 11, Star 2');
@@ -197,9 +197,9 @@ test.describe('Belt copy with the Sky off', () => {
   });
   test.describe('Pro', () => {
     test.use({ seedMode: 'pro' });
-    test('the Pro Dojo door counts lit Stars', async ({ page }) => {
+    test('the Pro Sutra door counts belts and lit Stars (the Dojo door folded into it, openspec change sutras-first)', async ({ page }) => {
       await open(page);
-      await expect(page.locator('.door[href="#/dojo"]')).toContainText('0 of 7 belts · 4 of 63 Stars lit');
+      await expect(page.locator('.sutra-door')).toContainText('0 of 7 belts, 4 of 63 Stars');
     });
   });
 });

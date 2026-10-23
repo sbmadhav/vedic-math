@@ -2,8 +2,8 @@ import { test, expect, APP, open, appErrors } from './fixtures';
 
 /* The first visit (openspec first-visit, try-trick-in-modes): the Mode picker with a Try a trick under each Mode card
    (the lesson itself is in try-trick.spec.ts), Back home from a Star opened from Home,
-   three doors first on Home with the rest under More ways to play, Sparks explained on the quests card, and the
-   Explorer picture home left alone. Analytics is stubbed so the one fixed event can be checked and nothing counts. */
+   the Sutra door first on Home (openspec change sutras-first) with the rest under More ways to play, Sparks explained
+   on the quests card, and the Explorer picture home left alone. Analytics is stubbed so the one fixed event can be checked and nothing counts. */
 const STUB = `window.__events = window.__events || []; window.siteTrack = (path, title) => { window.__events.push(path); };`;
 type Page = import('@playwright/test').Page;
 const events = (page: Page): Promise<string[]> => page.evaluate(() => (globalThis as any).__events || []);
@@ -70,7 +70,7 @@ test.describe('the landing', () => {
     await expect(page.locator('#stExit')).toBeVisible();
     await page.locator('#stExit').click();
     await expect(page).toHaveURL(new RegExp(`${APP.replace(/\//g, '\\/')}#\\/$`));
-    await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
+    await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
     await expect(page.locator('.mode-line')).toHaveText(/Mode: Challenger Change$/);
     await expect(page.locator('.home-doors .door')).toHaveCount(3);
   });
@@ -94,7 +94,7 @@ test.describe('Home on a 390 px phone after Try a trick', () => {
       await page.locator('#tyStart').click();
       for (const a of [625, 2025, 4225]) { await page.locator('#tyIn').fill(String(a)); await page.keyboard.press('Enter'); await page.locator('#tyNext').click(); }
       await page.locator('#tyHome').click();
-      await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
+      await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
       await expect(page.locator('.mq-continue')).toHaveCount(0); /* Try a trick is a lesson: it leaves Keep going alone */
       const strip = (await page.locator('.me-strip').boundingBox())!;
       expect(strip.height).toBeLessThanOrEqual(130);
@@ -119,16 +119,18 @@ test.describe('Keep going for another Skill', () => {
 });
 
 test.describe('Home: three doors first', () => {
-  test('a new Challenger on a phone: Play this Star, Open the Dojo and the Arena door come first, the Star is explained, the rest is folded', async ({ page, issues }) => {
+  test('a new Challenger on a phone: Play this Star, Learn the sutra and Open the Dojo, then the Arena door, come first; the Sutra and the Star are explained; the rest is folded', async ({ page, issues }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await open(page);
     const acts = await actions(page);
     const first = acts.findIndex(a => a === 'Play this Star');
     expect(first).toBeGreaterThanOrEqual(0);
-    expect(acts[first + 1]).toBe('Open the Dojo');
-    expect(acts[first + 2]).toMatch(/^Race in the Arena/);
-    expect(acts[first + 3]).toMatch(/^Learn a skill/);
-    await expect(page.locator('.dojo-card .door-line')).toContainText('A Star is a two-minute round of four questions on one speed trick');
+    expect(acts[first + 1]).toBe('Learn the sutra');
+    expect(acts[first + 2]).toBe('Open the Dojo');
+    expect(acts[first + 3]).toMatch(/^Race in the Arena/);
+    expect(acts[first + 4]).toMatch(/^Learn a skill/);
+    await expect(page.locator('.sutra-door .sutra-tag-n')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
+    await expect(page.locator('.dojo-card .door-line')).toContainText('A sutra is a short rule that does a whole sum in a line or two. A Star is a two-minute round of four questions on one of its tricks.');
     await expect(page.locator('#view .md-btn--primary')).toHaveCount(1);
     await expect(page.locator('#view .md-btn--primary')).toHaveText('Play this Star');
     // The rest waits under More ways to play, closed by default
@@ -181,13 +183,16 @@ test.describe('Home: three doors first', () => {
 
   test.describe('Pro', () => {
     test.use({ seedMode: 'pro' });
-    test('the Arena door with Play today\'s round, then the Dojo and Skill map doors, before the leaderboard card', async ({ page }) => {
+    test('the Sutra door with Play this Star, then the Arena and Skill map doors, before the leaderboard card (openspec change sutras-first)', async ({ page }) => {
       await open(page);
       const doors = page.locator('.home-doors .door');
       await expect(doors).toHaveCount(3);
-      await expect(doors.nth(0).locator('.md-btn--primary')).toHaveText("Play today's round");
-      await expect(doors.nth(1)).toHaveAttribute('href', '#/dojo');
-      await expect(doors.nth(1)).toContainText('0 of 7 belts');
+      await expect(doors.nth(0)).toHaveClass(/sutra-door/);
+      await expect(doors.nth(0).locator('.md-btn--primary')).toHaveText('Play this Star');
+      await expect(doors.nth(0).getByRole('link', { name: 'Open the Dojo' })).toHaveAttribute('href', '#/dojo');
+      await expect(doors.nth(0)).toContainText('0 of 7 belts');
+      await expect(doors.nth(1)).toHaveAttribute('href', '#/arena');
+      await expect(doors.nth(1)).toContainText("Today's Arena round");
       await expect(doors.nth(2)).toHaveAttribute('href', '#/learn');
       await expect(page.locator('#view .md-btn--primary')).toHaveCount(1);
       const board = (await page.locator('.board-card').boundingBox())!, last = (await doors.nth(2).boundingBox())!;
