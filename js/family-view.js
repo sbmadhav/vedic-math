@@ -137,7 +137,7 @@ export function mountFamily({ root, card = null, signal, area = 'practice', prot
     if (e.type === 'question') { if (current) close(); watchIdle(); } /* a new question ends the last one's Visit */
     const plan = co.note(e, { quiet: !!current && e.type !== 'ask' });
     if (!plan) return;
-    if (plan.kind === 'leave') { const ctl = child(page.signal); later(() => { if (!current) show(plan, { at: { ...r, root: document.getElementById('view') || document.body, card: null, protect: 'a, button, input, select, textarea, h1, h2', hint: null, signal: ctl.signal } }); }, 400, ctl.signal); return; }
+    if (plan.kind === 'leave') { const ctl = child(page.signal); later(() => { if (!current) show(plan, { at: { ...r, root: document.getElementById('view') || document.body, card: null, protect: 'a, button, input, select, textarea, h1, h2, .pr-q, .mq-viz', hint: null, signal: ctl.signal } }); }, 400, ctl.signal); return; } /* the next page's controls, and its question if it is a round */
     if (e.type === 'ask' && current) close();
     show(plan);
   }
