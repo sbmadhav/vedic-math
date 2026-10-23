@@ -1,7 +1,6 @@
 import { test, expect, APP, open } from '../fixtures';
 
-/* first-visit spec, the Requirements of openspec change try-trick-in-modes: "The Mode picker shows the Modes, each with
-   its Try a trick", "Try a trick inside each Mode", "Try a trick on Home", "Try a trick teaches its Sutra first",
+/* first-visit spec, the Requirements added by openspec change try-trick-in-modes: "Try a trick inside each Mode", "Try a trick on Home", "Try a trick teaches its Sutra first",
    "Trying it", "The end of a Try a trick", "Try a trick is reachable by keyboard and screen reader" and "Try a trick
    holds still and says nothing new": one test per scenario. */
 type Page = import('@playwright/test').Page;
@@ -15,43 +14,6 @@ async function finishChallenger(page: Page) {
 
 test.describe('a new visitor', () => {
   test.use({ seedMode: null });
-
-  test('The cards still work: the Explorer card opens Explorer Home as before, and no Try a trick opens', async ({ page }) => {
-    await page.goto(APP);
-    await page.locator('.mode-card[data-mode="explorer"]').click();
-    await expect(page.locator('h1.home-h')).toHaveText('What do you want to play?');
-    await expect(page).not.toHaveURL(/#\/try$/);
-    expect((await player(page)).modeGuess).toBeUndefined();
-  });
-
-  test('The hero says little: the headline and the line, at most 14 words, with the Nikhilam Family and no button', async ({ page }) => {
-    await page.goto(APP);
-    const hero = page.locator('.mq-hero-t');
-    await expect(hero.locator('h1')).toHaveText('Fast, fun math for every brain');
-    await expect(hero.locator('p')).toHaveText(['One trick, two minutes, no sign-up.']);
-    expect((await hero.innerText()).trim().split(/\s+/).length).toBeLessThanOrEqual(14);
-    await expect(page.locator('.mq-hero-in button, .mq-hero-in a')).toHaveCount(0);
-    await expect(page.getByRole('img', { name: 'The Nikhilam Family: the Devanagari digits one, zero and nine' })).toBeVisible();
-  });
-
-  test('Three Try a trick buttons: one under each Mode card, named with its Mode', async ({ page }) => {
-    await page.goto(APP);
-    await expect(page.getByRole('button', { name: /Try a trick/ })).toHaveCount(3);
-    for (const m of ['explorer', 'challenger', 'pro']) await expect(page.locator(`.mode-opt:has(.mode-card[data-mode="${m}"]) [data-try="${m}"]`)).toHaveCount(1);
-    for (const n of ['Explorer', 'Challenger', 'Pro']) await expect(page.getByRole('button', { name: `Try a trick as ${n}`, exact: true })).toBeVisible();
-  });
-
-  test('Above the fold on a phone: at 390 by 844 the Explorer Try a trick is on screen; at 320 to 1280 px nothing scrolls sideways and each is 44 px tall', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto(APP);
-    const b = (await page.locator('[data-try="explorer"]').boundingBox())!;
-    expect(b.y + b.height).toBeLessThanOrEqual(844);
-    for (const w of [320, 375, 768, 1280]) {
-      await page.setViewportSize({ width: w, height: 800 });
-      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(w);
-      for (const t of await page.locator('.mode-try').all()) expect((await t.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    }
-  });
 
   test('Challenger from the picker: the Mode is Challenger and squares ending in 5 open, naming Ekādhikena Pūrveṇa', async ({ page }) => {
     await page.goto(APP);

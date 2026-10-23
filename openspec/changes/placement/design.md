@@ -100,6 +100,8 @@ Every step has at least 2 Skills, so the second try at a step is a different Ski
 
 **13. Calm and screen readers.** The climb has no clock in any setting. The staircase picture moves only when `fx.noMotion()` is false. Each question's heading takes focus; the step ("Step 3") and the result are announced through `fx.announce()`; the 3 choices are buttons named by their values. The result screen and the offer are checked by `a11y.spec.ts` in both color schemes.
 
+**14. Try a trick's worked example card (from `try-trick-teaches`, its decision 4): superseded.** `try-trick-in-modes` (2026-10-21) removed that card with `starIntro()`, `runStar({ intro })` and `starView.introFor`: Try a trick is now its own lesson at `#/try` inside each Mode, not a Star, so the Hook never meets a worked example card on the first Star. How Try a trick fits the first visit and `isNewPlayer()` is in decisions 9 and 10.
+
 ## Risks / Trade-offs
 
 - **A lucky guess places a child high** (Explorer's 3 choices give a 1 in 3 chance each). Mitigation: Ratings move with answers, and Practice drops after misses within a round; raise-only applies only to saved Ratings. A child placed too high meets easier questions within a few answers.

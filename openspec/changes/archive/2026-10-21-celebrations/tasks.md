@@ -22,4 +22,4 @@ Owner asked for this on 2026-10-20 (heroes, mascot, confetti for true wins, smal
 
 ## 4. After release
 
-- [ ] 4.1 `openspec archive celebrations -y` after `try-trick-teaches` is archived (both modify "Try a trick before any choice"; this delta carries that change's text).
+- [x] 4.1 `openspec archive celebrations -y` after `try-trick-teaches` is archived (both modify "Try a trick before any choice"; this delta carries that change's text). Done 2026-10-21 (PR #121): released in PR #109, live on learnvedicmath.com since the deploy of `1401890` (the commit `docs/perf/baseline.md` measured on the live site); archived after `try-trick-teaches` in the same PR. The hero rule became its own first-visit requirement, "The app's hero says little", so no requirement runs past the 500 characters `--strict` allows; coverage specs `e2e/tests/cov/celebrations-1.spec.ts` and `e2e/tests/cov/first-visit-4.spec.ts` have one test per new scenario; `openspec validate --all --strict` passes.
