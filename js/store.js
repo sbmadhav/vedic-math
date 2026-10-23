@@ -199,11 +199,16 @@ const local = {
   remove: k => { try { localStorage.removeItem(k); } catch (e) {} },
   keys: () => { const out = []; try { for (let i = 0; i < localStorage.length; i++) out.push(localStorage.key(i)); } catch (e) {} return out; },
 };
+export { MAX_PLAYERS } from './handoff-schema.js';
+/* Every Player, or nothing: a code that Restore would refuse (more Players than the cap, or more text than it reads)
+   is never made, so no one keeps a backup that quietly left Players out. Throws 'too many Players' or 'too big'. */
 export function exportData() {
-  players();
+  const list = players().list;
   const device = H.readDevice(local.get, local.keys);
-  if (!device) throw new Error('nothing to back up');
-  return JSON.stringify(H.payloadOf(device, [], Date.now(), H.FROM_BACKUP));
+  if (!device || device.players.list.length !== list.length) throw new Error('too many Players');
+  const text = JSON.stringify(H.payloadOf(device, [], Date.now(), H.FROM_BACKUP));
+  if (text.length > H.MAX_JSON) throw new Error('too big');
+  return text;
 }
 /* The payload a pasted code's text holds, checked, or throws. Writes nothing: the Me page shows the prompt first. */
 export function readBackup(txt) {

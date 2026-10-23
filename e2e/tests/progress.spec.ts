@@ -272,6 +272,18 @@ test.describe('backup code', () => {
     await expect(page.locator('#view h1')).toHaveText('Bold Yak 55');
   });
 
+  test('a device with more Players than one code holds is told, and nothing is copied', async ({ page }) => {
+    await page.addInitScript(() => { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: (t: string) => { (window as any).__copied = t; return Promise.resolve(); } } }); });
+    await open(page, '#/me');
+    const n = await page.evaluate(async () => { const s = await e2eMod('store'); while (s.allPlayers().length <= s.MAX_PLAYERS) s.addPlayer(); s.switchPlayer('p1'); return s.allPlayers().length as number; });
+    expect(n).toBe(13);
+    await page.reload();
+    await expect(page.locator('.players .player')).toHaveCount(13);
+    await page.locator('#pExport').click();
+    await expect(page.locator('#pMsg')).toHaveText('One backup code holds up to 12 Players, and this device has more. Remove a Player you no longer need, then try again.');
+    expect(await page.evaluate(() => (window as any).__copied ?? null)).toBeNull();
+  });
+
   test('a code that is not a backup, or does not match the schema, changes nothing and says so', async ({ page }) => {
     await open(page, '#/me');
     const before = await stored(page);

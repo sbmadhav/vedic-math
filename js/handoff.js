@@ -84,11 +84,11 @@ export function applyHandoff(st, payload, choice, now = Date.now(), moved = true
   return incoming;
 }
 
-/* Puts every saved key back: first removes the ones that did not exist (the import's own keys free their space), then
-   writes the old values, which fitted before */
+/* Puts every saved key back: first removes every key the plan touched (the import's own writes free their space, and no
+   key holds a new, larger value while an old one goes back in), then writes the old values, which fitted together before */
 function restore(st, before) {
-  for (const [k, v] of before) if (v === null) st.remove(k);
-  for (const [k, v] of before) if (v !== null) { try { st.set(k, v); } catch (e) { /* cannot happen: the value fitted before */ } }
+  for (const [k] of before) st.remove(k);
+  for (const [k, v] of before) if (v !== null) { try { st.set(k, v); } catch (e) { /* cannot happen: the old values fitted together before */ } }
 }
 
 /* ---------- the page ---------- */

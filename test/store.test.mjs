@@ -252,6 +252,23 @@ test('Restore refuses a code the schema does not match, and nothing changes: unk
   assert.equal(JSON.stringify(mem), snapshot);
 });
 
+test('exportData makes no code that Restore would refuse: more Players than the cap, or more text than it reads', () => {
+  const snapshot = JSON.stringify(mem), active = store.player().id;
+  const extra = [];
+  while (store.allPlayers().length <= store.MAX_PLAYERS) extra.push(store.addPlayer().id);
+  assert.equal(store.allPlayers().length, store.MAX_PLAYERS + 1);
+  assert.throws(() => store.exportData(), /too many Players/);
+  for (const id of extra) store.removePlayer(id);
+  store.switchPlayer(active);
+  assert.equal(JSON.stringify(mem), snapshot, 'the Players added for the test are gone again');
+  assert.doesNotThrow(() => store.exportData());
+  const seen = Object.fromEntries(Array.from({ length: 4000 }, (_, i) => ['tip-' + i + '-' + 'x'.repeat(80), 1_700_000_000_000]));
+  mem['mathquest.v1.' + active] = JSON.stringify({ ...JSON.parse(mem['mathquest.v1.' + active]), seen });
+  assert.throws(() => store.exportData(), /too big/);
+  mem['mathquest.v1.' + active] = JSON.stringify({ ...JSON.parse(mem['mathquest.v1.' + active]), seen: {} });
+  assert.doesNotThrow(() => store.exportData());
+});
+
 test('readBackup checks a code without writing: an old single-Player code becomes one cleaned Player, a hand-off from sbmadhav.com is accepted, and restoreOffer says what the prompt needs', () => {
   const snapshot = JSON.stringify(mem);
   const p = store.readBackup(JSON.stringify({ player: { id: 'pzz', name: 'Bold Yak 55', avatar: 'plum', mode: 'pro', parentOk: 1, sky: true }, data: { skills: {}, sparks: 12, best: { bolt: '<b>' } } }));

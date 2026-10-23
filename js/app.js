@@ -1562,7 +1562,11 @@ function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw
      every setting and Player is read afresh. The buttons are wired once; pending is the code awaiting a choice. */
   const listen = (el, fn) => { if (ctx.signal) on(el, 'click', fn, ctx.signal); else el.onclick = fn; };
   let pending = null;
-  listen($('#pExport'), async () => { const code = btoa(unescape(encodeURIComponent(store.exportData()))); try { await navigator.clipboard.writeText(code); msg('Backup code copied: every Player on this device. Paste it somewhere safe.'); } catch (e) { prompt('Copy this backup code:', code); } });
+  listen($('#pExport'), async () => {
+    let code;
+    try { code = btoa(unescape(encodeURIComponent(store.exportData()))); } catch (e) { msg(e.message === 'too many Players' ? `One backup code holds up to ${store.MAX_PLAYERS} Players, and this device has more. Remove a Player you no longer need, then try again.` : 'This progress is too big for one backup code. Nothing was copied.'); return; }
+    try { await navigator.clipboard.writeText(code); msg('Backup code copied: every Player on this device. Paste it somewhere safe.'); } catch (e) { prompt('Copy this backup code:', code); }
+  });
   listen($('#pImport'), () => {
     const code = prompt('Paste your backup code:'); if (!code) return;
     let text, payload;
