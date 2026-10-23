@@ -38,6 +38,7 @@ Settings:
 - Lighthouse's mobile preset: simulated slow 4G, 4x CPU slowdown, a Moto G Power sized screen, performance only.
 - Each metric is the median of 5 runs. Each run uses a fresh browser profile, except the repeat visit.
 - Pages and settings are in `tools/lighthouserc.json`.
+- Since 2026-10-22 the simulation's server latency is fixed at 30 ms for the measured origin (`serverResponseTime` in `tools/lighthouserc.json`, applied by `e2e/perf/lantern.mts`); the baseline run used production's observed latency, about the same value. Why is under "The server latency is fixed" below.
 
 The four kinds of visit:
 - **first:** empty storage, so `/play/` shows the Mode picker.
@@ -60,6 +61,13 @@ The four kinds of visit:
 **How much it varies.** Earlier runs of the same workflow (20 and 21 October) gave first contentful paint medians within about 150 ms of these on most pages, but up to 450 ms away on some: Arena 2,395 ms in run 39516318621, whose single runs spread from 1,404 to 3,164 ms. A runner's load decides how far a run strays. That is more than the 100 ms tolerance for first and largest contentful paint, so the gate (task 1.8) has to allow for it.
 
 For reference, the same script on an Apple-silicon laptop against the same site (commit `ad54a37`, 23:32 UTC) gave first contentful paint within 100 ms of these numbers and a total blocking time of 0 to 48 ms.
+
+**The server latency is fixed.** With simulated throttling, Lighthouse adds the measured origin's observed server response time to every request it models, and largest contentful paint sits at the end of a long chain of them (the page, `app.js`, three levels of static imports with no modulepreload, the styles they load). Measured from a laptop with the latency pinned to 300 ms, production's `/play/` read 8,700 ms against about 5,400 ms: about 12 ms of largest contentful paint per 1 ms of server latency (first contentful paint about 2 ms per 1 ms). So the gate was comparing hosts, not code:
+- Production, the host the baseline was measured on, re-measured on the runner on 2026-10-21 with the sky (#110, #111), the Home redo (#116) and phase 1 (#114) deployed, read largest contentful paint 5,384 / 5,528 / 5,414 / 5,642 ms (03:42 UTC), 5,403 / 5,377 / 5,472 / 5,568 ms (05:07) and 5,468 / 5,533 / 5,438 / 5,583 ms (05:12) for `/play/` first, the Arena, Games and the Deep dive: all within tolerance of the baseline.
+- Pull request previews on workers.dev of the same code read 170 to 380 ms over on every cold-cache page: PR #115 5,512 / 5,841 / 5,845 / 5,932 and 5,503 / 5,926 / 5,945 / 5,921 ms; PR #124, a docs-only change, 5,768 / 5,832 / 5,722 / 5,897 and 5,593 / 5,752 / 5,830 / 6,014 ms. The repeat visit, answered by the service worker with no network, read 1,260 ms on both hosts.
+- The difference is the host's answer time. The document's server response time was 21 to 77 ms on production and 67 to 256 ms on previews; lantern's per-origin latency, measured from a laptop, 21 to 32 ms on production (largest contentful paint 5,355 to 5,421 ms) and 51 to 55 ms on a preview (5,515 to 5,605 ms).
+
+The fixed value, 30 ms, is lantern's own default for an origin it has no data for and inside production's observed range, so the baseline's numbers stand. Every run now simulates the same server whichever host answers, and the observed latency is recorded as `lat` in the results for information. A real server regression still shows: the server response time (`srt`) is observed, not simulated.
 
 ## Interactions
 

@@ -3,7 +3,11 @@ import { test, expect, APP, chromiumOnly, type Page } from './fixtures';
 /* The background sky's frame cost (prototype budget: under about 2 ms a frame on a mid phone), measured with the CPU
    slowed 4x. Every requestAnimationFrame callback is timed; a callback that drew (it called clearRect on the scene's
    canvas) is a frame. The main thread's total task time over the same seconds, with the sky and without it, gives the
-   cost per frame that includes the browser's own work for the canvas. The numbers go to the report as annotations. */
+   cost per frame that includes the browser's own work for the canvas. The numbers go to the report as annotations.
+   Tagged @frame-cost: in CI the spec runs on its own, after the suite, on one worker (preview.yml, e2e.yml). With three
+   workers on a four-core runner the other two browsers preempt the measured callback: the p95 read 3.6 to 6.6 ms there
+   for frames whose p50 was about 1 ms (0.2 ms on a laptop under the same throttle, p95 1.0 ms), and no run had passed
+   since the sky landed. The budget below does not change with that; a drawing that costs more still fails it. */
 
 test.use({ reducedMotion: 'no-preference' });
 
@@ -34,7 +38,7 @@ async function measure(page: Page, url: string, width: number, height: number, s
 const pct = (a: number[], p: number) => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.min(s.length - 1, Math.floor(p * s.length))] : 0; };
 
 for (const [name, url, width, height] of [['landing 375', '/?home', 375, 812], ['landing 1280', '/?home', 1280, 800], ['home 375', APP, 375, 812], ['home 1280', APP, 1280, 800]] as const) {
-  test(`${name}: frame cost with the CPU slowed 4x`, async ({ browser }, testInfo) => {
+  test(`${name}: frame cost with the CPU slowed 4x`, { tag: '@frame-cost' }, async ({ browser }, testInfo) => {
     chromiumOnly(testInfo, 'CPU throttling and Performance metrics: chromium');
     test.setTimeout(90_000);
     const run = async (sky: boolean) => { const ctx = await browser.newContext({ serviceWorkers: 'block', reducedMotion: 'no-preference' }); const page = await ctx.newPage(); try { return await measure(page, `${testInfo.project.use.baseURL}${url}`, width, height, sky); } finally { await ctx.close(); } };
