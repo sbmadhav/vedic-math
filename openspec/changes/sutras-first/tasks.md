@@ -52,7 +52,7 @@ The owner asked for this on 2026-10-21 ("It is important to make the sutras and 
 
 ## 8. Docs and after release
 
-- [x] 8.0 The first-load budget: `docs/perf/baseline.json` grows by the new modules (PR 1: +4,881 bytes Brotli, `js/sutra-tag.js` and the tags in `js/app.js`, `js/star.js`, `math.css`; PR 2: +1,605 bytes, `js/sutra-progress.js` and the card meters; PR 3: +983 bytes, the Sutra door, "Your sutras" and Explorer's card in `js/app.js` (+833) and `math.css` (+159), on top of the +4,079 that merging `try-trick-in-modes` (#128) brings; the baseline reads 770,047). Verify: `python3 build.py --voice off` passes.
+- [x] 8.0 The first-load budget: `docs/perf/baseline.json` grows by the new modules (PR 1: +4,881 bytes Brotli, `js/sutra-tag.js` and the tags in `js/app.js`, `js/star.js`, `math.css`; PR 2: +1,605 bytes, `js/sutra-progress.js` and the card meters; PR 3: +1,087 bytes, the Sutra door, "Your sutras" and Explorer's card in `js/app.js` (+908) and `math.css` (+159), on top of the +4,079 that merging `try-trick-in-modes` (#128) brings and the 9 bytes of main's #130 that came with it; the baseline reads 770,151). Verify: `python3 build.py --voice off` passes.
 
 - [x] 8.1 `GLOSSARY.md`: Sutra tag, Sutra way, Sutra progress; Sutra and Home entries. Verify: `openspec validate sutras-first --strict`.
 - [ ] 8.2 After release: archive this change after `learnvedicmath` and `landing-modes-and-return` (their `landing-pages` and header requirements come first).

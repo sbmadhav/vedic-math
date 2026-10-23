@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 770047,
+  "total": 770151,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -47,7 +47,7 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 45082,
+   "/js/app.js": 45157,
    "/js/arena.js": 5392,
    "/js/bolt.js": 1088,
    "/js/celebrate.js": 3080,
@@ -114,7 +114,7 @@
    "/js/skills/index.js": 1084,
    "/js/skills/middle.js": 6258,
    "/js/skills/upper.js": 7871,
-   "/js/sky-bg.js": 10568,
+   "/js/sky-bg.js": 10575,
    "/js/sky-scene.js": 6164,
    "/js/sky-view.js": 4458,
    "/js/sky.js": 3762,
@@ -139,7 +139,7 @@
    "/manifest.webmanifest": 313,
    "/math.css": 22046,
    "/play/": 3598,
-   "/sw.js": 6085,
+   "/sw.js": 6107,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -176,8 +176,8 @@
     "date": "2026-10-22",
     "pr": "126, 129, 128 and this one",
     "from": 762665,
-    "to": 770047,
-    "why": "openspec change sutras-first, stacked on #128: js/sutra-tag.js and js/sutra-progress.js (new), the tags and progress in js/app.js, js/star.js, js/mental.js, js/sutras.js and math.css, and the Home that leads with the Sutras (the Sutra door, Your sutras, Explorer's A sutra to say); the figure before was #128's own measurement, which the merge into this branch kept"
+    "to": 770151,
+    "why": "openspec change sutras-first, stacked on #128: js/sutra-tag.js and js/sutra-progress.js (new), the tags and progress in js/app.js, js/star.js, js/mental.js, js/sutras.js and math.css, and the Home that leads with the Sutras (the Sutra door, Your sutras, Explorer's A sutra to say, and its Say it kept alive across the Read aloud redraw); the figure before was #128's own measurement, which the merge into this branch kept; the 9 bytes after that are main's #130 (js/sky-bg.js), merged through #128"
    }
   ]
  },

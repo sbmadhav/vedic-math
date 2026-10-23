@@ -248,14 +248,14 @@ function home(ctx = {}, { tiles = false } = {}) {
     <p class="mq-cta"><button class="md-btn" id="voiceBtn" aria-pressed="${fx.voiceOn()}">${icon('speaker')} Read questions aloud: ${fx.voiceOn() ? 'on' : 'off'}</button> <a class="md-btn" href="#/watch">${icon('play')} Watch and sing</a></p>`;
   } else {
     /* Three doors first (openspec first-visit), each with one plain line that says what its word means; the rest of the
-       tiles wait under More ways to play. Challenger leads with the next Star, Pro with today's Arena round. */
+       tiles wait under More ways to play. */
     const belt = gm.currentBelt(), bp = gm.beltProgress(), earned = bp.filter(b => b.earned).length, next = bp.find(b => !b.earned), nk = SKY.suggested(store.starStates(), SKY.startBeltOf(store.player())), ns = nk && SKY.parseKey(nk), nt = ns && TRICKS.find(t => t.id === ns.trick);
     /* The Sutra door first in both Modes (openspec change sutras-first): the next Star on Bolt's path shown as its
        Sutra, with Play this Star (the one primary button), Learn the sutra and the Dojo's belts. Then the Arena and the
        Skill map. The tag is text here: Learn the sutra is the door's link to the Deep dive. */
     const ss = nt && sutraOfTrick(nt.id);
     const sutraDoor = `<div class="md-card door dojo-card sutra-door"><span class="md-tag md-tag--plum">${fx.t({ challenger: 'Your next sutra', pro: 'Next sutra' })}</span>
-      ${ss ? tagHTML(ss.id, { mode: m, relation: ss.relation, link: false, cls: 'sutra-door-tag' }) : '<h2 class="mq-h3">Every Star is lit. Legend!</h2>'}
+      ${ss ? tagHTML(ss.id, { mode: m, relation: ss.relation, link: false, cls: 'sutra-door-tag' }) : `<h2 class="mq-h3">${nt ? 'Your next Star' : 'Every Star is lit. Legend!'}</h2>`}
       ${nt ? `<p>Next Star: <b>${nt.title}, Star ${ns.n}</b></p>` : ''}
       <p class="door-acts">${nt ? `<a class="md-btn md-btn--primary" href="#/star/${nt.id}/${ns.n}">Play this Star</a> ` : ''}${ss ? `<a class="md-btn" href="#/sutras/${ss.id}" data-tag="home">Learn the sutra</a> ` : ''}<a class="md-btn" href="#/dojo">Open the Dojo</a></p>
       <p class="door-line">${fx.t({ challenger: 'A sutra is a short rule that does a whole sum in a line or two. A Star is a two-minute round of four questions on one of its tricks.', pro: 'A sutra is a one-line rule from Bharati Krishna Tirtha\'s 1965 book that replaces a long method. A Star is a two-minute round of four questions on one of its tricks.' })}</p>
@@ -280,13 +280,13 @@ function home(ctx = {}, { tiles = false } = {}) {
     <p class="mode-line">Mode: <b>${fx.MODES[m].name}</b>${store.modeGuessed() ? ', our guess for a first try' : ''} <a href="#/me">Change</a></p>
     ${newHereHTML()}${cont}${body}
   </div></section>`;
-  const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); home(); };
+  const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); home(ctx, { tiles }); }; /* the redraw keeps this view's signal, so its listeners (Say it) live on */
   const hm = $('#homeMore'), keepMore = () => fx.setHomeMoreOpen(hm.open); /* remembered on this device */
   if (hm) { if (ctx.signal) on(hm, 'toggle', keepMore, ctx.signal); else hm.ontoggle = keepMore; } /* home() also runs with no view signal (an unknown Skill falls back to it): then a property on an element of this view */
   const tc = $('[data-try-open]'), counted = () => metrics.tryStart(m); /* the Try a trick card counts as a Try a trick pressed */
   if (tc) { if (ctx.signal) on(tc, 'click', counted, ctx.signal); else tc.onclick = counted; }
   if (m === 'pro') loadBoard($('#homeBoard'), `daily-${cloud.dayId()}-pro`, 5);
-  if (ctx.signal) wireSay(view, ctx.signal); /* Say it on Explorer's Sutra card */
+  const sc = $('.sutra-say'); if (sc && ctx.signal) wireSay(sc, ctx.signal); /* Say it on Explorer's Sutra card: wired on the card, which every redraw replaces, so a redraw within the view adds no second listener */
   homeTour(ctx.signal);
 }
 
@@ -366,8 +366,8 @@ function learnView() {
   </div></section>`;
 }
 
-function gradeView(g) {
-  const G = gradeOf(g); if (!G) return home();
+function gradeView(g, { signal } = {}) {
+  const G = gradeOf(g); if (!G) return home({ signal });
   if (g !== 'V') store.setGrade(g);
   document.title = `${G.pro} · Learn Vedic Math`;
   const list = skillsFor(g), st = gradeStats(g), strands = Object.keys(STRANDS).filter(k => list.some(s => s.strand === k));
@@ -387,7 +387,7 @@ function gradeView(g) {
 
 /* ---------- Skill: lesson plus practice ---------- */
 function skillView(id, { signal } = {}) {
-  const s = byId[id]; if (!s) return home();
+  const s = byId[id]; if (!s) return home({ signal });
   document.title = `${s.title} · Learn Vedic Math`;
   const S = STRANDS[s.strand], trick = s.trick && TRICKS.find(t => t.id === s.trick);
   const back = trick ? ['#/dojo', 'Dojo'] : ['#/grade/' + s.grade, gradeLabel(s.grade)];
@@ -527,7 +527,7 @@ function answerUI(p) {
 }
 
 function mixView(g, isRun = false, { signal } = {}) {
-  const G = gradeOf(g); if (!G) return home();
+  const G = gradeOf(g); if (!G) return home({ signal });
   document.title = `${isRun ? 'Endless run' : 'Endless practice'}, ${G.pro} · Learn Vedic Math`;
   const list = skillsFor(g);
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">

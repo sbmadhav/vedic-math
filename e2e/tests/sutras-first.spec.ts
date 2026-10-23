@@ -1,5 +1,6 @@
-import { test, expect, APP, open } from './fixtures';
+import { test, expect, APP, open, appErrors } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
+import { fakeAudio } from './audio-fake';
 
 /* openspec change sutras-first: Sutra tags where methods are taught, one tap to the Deep dive and back, a Deep dive
    without a Mode, and the tag event. The shared analytics.js is replaced by a stub that records window.siteTrack. */
@@ -290,6 +291,24 @@ test.describe('Home', () => {
       await page.clock.setSystemTime(new Date(2026, 9, 23, 12));
       await open(page);
       await expect(card.locator('.sutra-say-name b[lang="sa-Latn"]')).toHaveText(NAMES[SAY[(day + 1) % SAY.length]]);
+    });
+
+    test('Say it still plays after the Read questions aloud switch redraws Home, and a second tap stops it', async ({ page, issues }) => {
+      await fakeAudio(page);
+      await open(page);
+      const vb = page.locator('#voiceBtn');
+      const was = await vb.getAttribute('aria-pressed'); /* on by default in Explorer; either way the switch flips it and redraws Home */
+      const flipped = was === 'true' ? 'false' : 'true';
+      await vb.click();
+      await expect(vb).toHaveAttribute('aria-pressed', flipped);
+      const say = page.locator('.sutra-say [data-say]');
+      await say.click();
+      await expect(say).toHaveAttribute('aria-pressed', 'true');
+      await say.click(); /* one listener: a second tap stops the clip instead of starting it again */
+      await expect(say).toHaveAttribute('aria-pressed', 'false');
+      await vb.click(); /* and the switch still works both ways */
+      await expect(vb).toHaveAttribute('aria-pressed', was!);
+      expect(appErrors(issues), 'page errors').toEqual([]);
     });
   });
 
