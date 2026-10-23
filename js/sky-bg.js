@@ -209,32 +209,45 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, cameo = 
       const out = { cv, w, h }; capCache.set(key, out); return out;
     }
     /* The page's obstacles on screen, as [x0, y0, x1, y1]: measured when the page may have moved (scroll, resize, a new
-       route, and every 2.5 seconds for anything else), never more than once a frame */
+       route, and every 2.5 seconds for anything else), never more than once a frame.
+       One walk from body that enters only what is on screen: a box entirely off screen is left with everything in it.
+       A long page (the Deep dive: about 2,250 elements and 1,700 runs of text, nearly all below the fold) measured
+       element by element took over 100 ms on a slow phone, a long task that put the route's blocking time over its
+       budget; on screen it has a few hundred. A box without a size (display: contents, a wrapper of floats) says
+       nothing about what is in it, so it is entered. What this does not see: a fixed or absolutely positioned box
+       placed on screen from inside one that is off screen. */
     let page = null, pageDirty = true, pageVersion = 0, measuring = false;
     let pageSig = '', clearList = [];
     function measure() {
       const out = [], range = document.createRange(), on = r => r.width >= 1 && r.height >= 1 && r.bottom > 0 && r.top < H && r.right > 0 && r.left < W;
+      const away = r => (r.width > 0 || r.height > 0) && (r.bottom <= 0 || r.top >= H || r.right <= 0 || r.left >= W);
       const push = (r, clear) => { const box = [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]; out.push(box); if (clear) clearList.push(box); };
       pageDirty = false; clearList = [];
-      /* every run of text */
-      const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-      for (let n = walk.nextNode(); n; n = walk.nextNode()) {
-        if (!n.nodeValue.trim() || SKIP.has(n.parentNode.nodeName)) continue;
-        range.selectNodeContents(n); const r = range.getBoundingClientRect(); if (on(r)) push(r, true);
-      }
-      /* controls, pictures and boxes that show */
-      for (const el of document.body.querySelectorAll('*')) {
-        const tag = el.tagName.toUpperCase(); if (el === c || SKIP.has(tag)) continue;
-        const r = el.getBoundingClientRect(); if (!on(r)) continue;
-        if (CONTROL.has(tag)) { push(r, true); continue; }
-        if (PICTURE.has(tag)) { if (!el.closest('svg') || tag === 'SVG') push(r, false); continue; }
-        if (BAND.has(tag)) { push(r, false); continue; }
-        if (r.width < 24 || r.height < 24 || el.closest('svg')) continue;
-        const cs = getComputedStyle(el);
-        if (cs.visibility !== 'visible' || +cs.opacity < 0.1) continue;
-        const edge = ['Top', 'Bottom', 'Left', 'Right'].some(k => parseFloat(cs[`border${k}Width`]) > 0 && shows(cs[`border${k}Color`]));
-        if (shows(cs.backgroundColor) || cs.backgroundImage !== 'none' || edge || cs.boxShadow !== 'none' || cs.position === 'fixed' || cs.position === 'sticky' || (cs.backdropFilter && cs.backdropFilter !== 'none')) push(r, false);
-      }
+      const visit = (el, inSvg) => {
+        for (let n = el.firstChild; n; n = n.nextSibling) {
+          if (n.nodeType === 3) { /* a run of text */
+            if (!n.nodeValue.trim() || SKIP.has(el.nodeName)) continue;
+            range.selectNodeContents(n); const r = range.getBoundingClientRect(); if (on(r)) push(r, true);
+          } else if (n.nodeType === 1 && n !== c) {
+            const tag = n.tagName.toUpperCase(); if (SKIP.has(tag)) continue;
+            if (inSvg) { visit(n, true); continue; } /* inside a drawing only its text counts; the drawing's box is in already */
+            const r = n.getBoundingClientRect(); if (away(r)) continue;
+            if (on(r)) { /* controls, pictures and boxes that show */
+              if (CONTROL.has(tag)) push(r, true);
+              else if (PICTURE.has(tag) || BAND.has(tag)) push(r, false);
+              else if (r.width >= 24 && r.height >= 24) {
+                const cs = getComputedStyle(n);
+                if (cs.visibility === 'visible' && +cs.opacity >= 0.1) {
+                  const edge = ['Top', 'Bottom', 'Left', 'Right'].some(k => parseFloat(cs[`border${k}Width`]) > 0 && shows(cs[`border${k}Color`]));
+                  if (shows(cs.backgroundColor) || cs.backgroundImage !== 'none' || edge || cs.boxShadow !== 'none' || cs.position === 'fixed' || cs.position === 'sticky' || (cs.backdropFilter && cs.backdropFilter !== 'none')) push(r, false);
+                }
+              }
+            }
+            visit(n, tag === 'SVG');
+          }
+        }
+      };
+      visit(document.body, false);
       page = out;
       const sig = out.join(';'); if (sig !== pageSig) { pageSig = sig; pageVersion++; makeMask(); } /* the page really moved */
     }

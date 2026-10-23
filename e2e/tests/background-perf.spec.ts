@@ -52,3 +52,36 @@ for (const [name, url, width, height] of [['landing 375', '/?home', 375, 812], [
     expect(pct(f, 0.95), 'p95 draw time').toBeLessThan(process.env.CI ? 4 : 2);
   });
 }
+
+/* The first frame measures the page (every run of text and box on screen) before it clears behind them. The Deep dive
+   has about 2,250 elements and 1,700 runs of text, nearly all below the fold; measured one by one they took 43 ms under
+   the throttle on a laptop and over 100 ms on the runner, a long task that put the route's total blocking time 60 to
+   90 ms over its baseline (issue #117). Entering only what is on screen keeps the frame short of a long task (50 ms). */
+test('deep dive 412: the first frame, which measures the page, is not a long task', { tag: '@frame-cost' }, async ({ browser }, testInfo) => {
+  chromiumOnly(testInfo, 'CPU throttling: chromium');
+  const ctx = await browser.newContext({ serviceWorkers: 'block', reducedMotion: 'no-preference', viewport: { width: 412, height: 823 } });
+  const page = await ctx.newPage();
+  try {
+    await page.addInitScript(() => {
+      localStorage.setItem('vm.players', JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode: 'challenger', created: 1760000000000 }] }));
+      localStorage.setItem('vm.sound', '0'); localStorage.setItem('vm.tour', 'done');
+      const w = window as any, raf = window.requestAnimationFrame.bind(window), clear = CanvasRenderingContext2D.prototype.clearRect;
+      w.__first = null; w.__drew = false;
+      CanvasRenderingContext2D.prototype.clearRect = function (...a: [number, number, number, number]) { if (this.canvas.classList.contains('vm-bg')) w.__drew = true; return clear.apply(this, a); };
+      window.requestAnimationFrame = cb => raf(ts => { w.__drew = false; const t0 = performance.now(); cb(ts); const d = performance.now() - t0; if (w.__drew && w.__first === null) w.__first = d; });
+    });
+    const cdp = await ctx.newCDPSession(page);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+    await page.goto(`${testInfo.project.use.baseURL}${APP}#/sutras/s1`);
+    await expect(page.locator('canvas.vm-bg')).toHaveAttribute('data-running', '1', { timeout: 15_000 });
+    await expect.poll(() => page.evaluate(() => (window as any).__first), { timeout: 5000 }).not.toBeNull();
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    const { first, elements } = await page.evaluate(() => ({ first: (window as any).__first as number, elements: document.body.querySelectorAll('*').length }));
+    const line = `deep dive 412: first frame ${first.toFixed(1)} ms on a page of ${elements} elements`;
+    console.log(line);
+    testInfo.annotations.push({ type: 'first frame (CPU 4x)', description: line });
+    expect(elements, 'the page is a long one').toBeGreaterThan(1500);
+    /* Half a long task; a shared CI runner gets the whole of one */
+    expect(first, 'first frame').toBeLessThan(process.env.CI ? 50 : 25);
+  } finally { await ctx.close(); }
+});
