@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 758499,
+  "total": 759188,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -47,7 +47,7 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 43015,
+   "/js/app.js": 43180,
    "/js/arena.js": 5327,
    "/js/bolt.js": 1088,
    "/js/celebrate.js": 3080,
@@ -114,12 +114,12 @@
    "/js/skills/index.js": 1084,
    "/js/skills/middle.js": 6258,
    "/js/skills/upper.js": 7871,
-   "/js/sky-bg.js": 10568,
+   "/js/sky-bg.js": 10575,
    "/js/sky-scene.js": 6164,
    "/js/sky-view.js": 4458,
    "/js/sky.js": 3762,
    "/js/slokas.js": 16068,
-   "/js/star.js": 8312,
+   "/js/star.js": 8422,
    "/js/store.js": 5886,
    "/js/sutra-ambience.js": 4169,
    "/js/sutra-details.js": 13423,
@@ -132,11 +132,11 @@
    "/js/voice-plan.js": 2458,
    "/js/voice-worker.js": 877,
    "/js/voice.js": 14365,
-   "/js/watch.js": 2065,
+   "/js/watch.js": 2376,
    "/manifest.webmanifest": 313,
-   "/math.css": 21305,
-   "/play/": 3557,
-   "/sw.js": 6079,
+   "/math.css": 21401,
+   "/play/": 3574,
+   "/sw.js": 6062,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -168,6 +168,13 @@
     "from": 758466,
     "to": 758499,
     "why": "react-typescript task 1.7: the lint fixes in sw.ts (optional catch bindings, no non-null assertions); no new file"
+   },
+   {
+    "date": "2026-10-23",
+    "pr": "lvm-third-party-facade",
+    "from": 758499,
+    "to": 759188,
+    "why": "learnvedicmath task 7.2, the YouTube facade: the player opens on this site's thumbnail behind a play button and writes the frame only on play (js/watch.js facade, js/app.js playVideo, the Star round's fallback, math.css .vp-play); the only growth is that code"
    }
   ]
  },
