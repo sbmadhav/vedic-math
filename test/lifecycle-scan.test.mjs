@@ -45,6 +45,15 @@ test('the Sky (js/sky-view.js): no bare listeners, timers or frame loops; its li
   assert.ok((src.match(/\bon\([^;]*\bsignal\b/g) || []).length >= 4, 'pointer, scroll and motion listeners on the view signal');
 });
 
+test('Try a trick (js/try.js): no bare listeners or timers; its listeners go through life.on on a child signal', () => {
+  assert.deepEqual(hits('try.js', /\.?addEventListener\(/), []);
+  assert.deepEqual(hits('try.js', TIMERS), []);
+  const src = readFileSync(new URL('../js/try.js', import.meta.url), 'utf8');
+  assert.match(src, /import \{[^}]*\bon\b[^}]*\bchild\b[^}]*\} from '\.\/life\.js'/);
+  assert.match(src, /round = child\(signal\)/);
+  assert.doesNotMatch(src, /\.on(click|submit|keydown)\s*=/);
+});
+
 test('no bare listeners or timers in the play shell (js/shell.js)', () => {
   assert.deepEqual(hits('shell.js', /\.?addEventListener\(/), []);
   assert.deepEqual(hits('shell.js', TIMERS), []);

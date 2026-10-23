@@ -35,12 +35,11 @@ html.motion-paused .md-brand:hover svg, body.calm .md-brand:hover svg, html.moti
 :root[data-theme="dark"] .hl-word { background: linear-gradient(90deg, var(--coral), var(--teal)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hl-word { background: linear-gradient(90deg, var(--coral), var(--teal)); -webkit-background-clip: text; background-clip: text; color: transparent; } }
 
-/* The app home's hero (Mode picker, openspec first-visit): one headline, one short line, Try a trick, and the Nikhilam
-   Family (js/family.js, the landing page's drawing). Same rules as the landing hero (theme/site.css): the family moves
-   gently, the nine nods toward Try a trick each time its ring glows, and everything holds still under no motion. */
+/* The app home's hero (Mode picker, openspec try-trick-in-modes): one headline, one short line and the Nikhilam Family
+   (js/family.js, the landing page's drawing), which moves gently and holds still under no motion. Try a trick sits
+   under each Mode card. */
 .mq-hero-in { display: grid; grid-template-columns: 1fr auto; gap: var(--space-6); align-items: center; margin-bottom: var(--space-7); }
 .mq-hero .md-lede.mq-hero-sub { margin: var(--space-3) 0 0; font-weight: 700; }
-.mq-hero .try-it { margin: var(--space-6) 0 0; }
 .mq-hero .lv-family { width: clamp(120px, 22vw, 220px); height: auto; overflow: visible; }
 @media (max-width: 700px) { .mq-hero-in { grid-template-columns: 1fr; gap: var(--space-3); } .mq-hero .lv-family { order: -1; width: 104px; } }
 .lv-family .lv-f-one, .lv-family .lv-f-zero, .lv-family .lv-f-nine { transform-box: fill-box; transform-origin: 50% 100%; }
@@ -55,19 +54,9 @@ html.motion-paused .md-brand:hover svg, body.calm .md-brand:hover svg, html.moti
 @keyframes lv-hop { 0%, 55%, 100% { transform: none; } 25% { transform: translateY(-5px); } }
 @keyframes lv-shrink { 0%, 55%, 100% { transform: none; } 25% { transform: scale(.7); } }
 @keyframes lv-twinkle { 50% { opacity: .3; transform: scale(.6); } }
-.mq-hero-in:has(.mq-try:hover, .mq-try:focus-visible) :is(.lv-f-one, .lv-f-zero, .lv-f-nine) { animation: lv-cheer .5s ease-out 2; }
-.mq-hero-in:has(.mq-try:hover, .mq-try:focus-visible) .lv-f-zero { animation-delay: .08s; }
-.mq-hero-in:has(.mq-try:hover, .mq-try:focus-visible) .lv-f-nine { animation-delay: .16s; }
 @keyframes lv-cheer { 50% { transform: translateY(-6px); } }
-/* Try a trick: the one big first action. A ring glows out every four seconds and the arrow nudges with it. */
-.try-it .md-btn.mq-try { position: relative; margin: 0; min-height: 60px; padding: 0 var(--space-7); font-size: clamp(1.25rem, 3vw, 1.4rem); font-weight: 800; gap: var(--space-2-5); }
-.try-it .md-btn.mq-try svg.mq-try-go { width: 1.1em; height: 1.1em; animation: lv-go 4s ease-in-out infinite; }
-.mq-try::after { content: ""; position: absolute; inset: -3px; border-radius: inherit; border: 3px solid var(--coral); opacity: 0; pointer-events: none; animation: lv-ring 4s ease-out infinite; }
-.mq-try:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
-@keyframes lv-ring { 0% { opacity: .75; transform: scale(1); } 32%, 100% { opacity: 0; transform: scale(1.1, 1.45); } }
-@keyframes lv-go { 0%, 30%, 100% { transform: none; } 12% { transform: translateX(5px); } }
-@media (prefers-reduced-motion: reduce) { .lv-family *, .mq-try::after, .mq-try svg { animation: none !important; } }
-html.motion-paused .lv-family *, body.calm .lv-family *, html.motion-paused .mq-try::after, body.calm .mq-try::after, html.motion-paused .mq-try svg, body.calm .mq-try svg { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .lv-family * { animation: none !important; } }
+html.motion-paused .lv-family *, body.calm .lv-family * { animation: none !important; }
 
 /* Small celebrations (js/celebrate.js, openspec celebrations): sparkles on a fixed layer, token colours, transform and
    opacity only. The script never starts them under no motion. */
@@ -147,7 +136,7 @@ html.motion-paused .lv-family *, body.calm .lv-family *, html.motion-paused .mq-
 .sutra-tag-a { display: inline; color: var(--ink); text-decoration: none; }
 a.sutra-tag-a { border-radius: var(--radius-sm); }
 a.sutra-tag-a:hover .sutra-tag-n, a.sutra-tag-a:focus-visible .sutra-tag-n { text-decoration: underline; text-underline-offset: 3px; }
-.sutra-tag-k { display: inline-block; margin-right: var(--space-1); padding: 1px var(--space-2); border-radius: 99px; background: color-mix(in srgb, var(--plum) 16%, var(--card)); color: var(--plum-strong); font-size: .8rem; font-weight: 700; }
+.sutra-tag-k { display: inline-block; margin-right: var(--space-1); padding: 1px var(--space-2); border-radius: var(--radius-pill); background: color-mix(in srgb, var(--plum) 16%, var(--card)); color: var(--plum-strong); font-size: .8rem; font-weight: 700; }
 .sutra-tag-n { font: 600 1em/1.3 var(--display); color: var(--plum-strong); }
 .sutra-tag-m { color: var(--ink-muted); font-style: italic; }
 .sutra-tag--line .sutra-tag-m::before { content: ': '; font-style: normal; }
@@ -162,7 +151,7 @@ a.sutra-tag-a:hover .sutra-tag-n, a.sutra-tag-a:focus-visible .sutra-tag-n { tex
 .sutra-tag--mini .sutra-tag-k { font-size: 11px; }
 .dojo-cell .sutra-tag--mini { text-align: center; }
 .star-sutra { margin: var(--space-1) 0 0; font-size: .9rem; }
-.star-intro .sutra-tag--full, .star-end .sutra-tag { text-align: left; margin: var(--space-3) 0; }
+.star-end .sutra-tag { text-align: left; margin: var(--space-3) 0; }
 .ar-sutras { margin: var(--space-2) 0 0; } .ar-sutras .mq-h3 { margin-top: var(--space-2) !important; }
 .vp-foot .sutra-tag { margin: 0 0 var(--space-2); } .vp-foot .sutra-tag-a { color: var(--ink); font-weight: 400; }
 .watch-tags .tagv--sutra { font-weight: 600; }
@@ -351,10 +340,11 @@ html.motion-paused .mq-grade, body.calm .mq-grade, html.motion-paused .mq-skill,
 .mq-small { color: var(--ink-muted); font-size: 13.5px; margin: 6px 0; }
 
 /* Mode picker */
-/* Try a trick on the landing (openspec first-visit): one big primary action before the Mode cards */
-.try-it { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); margin: var(--space-5) 0 var(--space-7); }
-.try-it .md-btn { font-size: 1.2rem; padding: 14px 26px; } .try-it .md-btn svg { width: 22px; height: 22px; }
-.try-it small { color: var(--ink-muted); font-size: 14px; }
+/* Each Mode card with its own Try a trick under it (openspec try-trick-in-modes) */
+.mode-opt { display: grid; grid-template-rows: 1fr auto; gap: var(--space-2); }
+.mode-opt .md-btn.mode-try { width: 100%; min-height: 48px; margin: 0; justify-content: center; gap: var(--space-2); font-weight: 800; }
+.mode-try svg.mode-try-go { width: 1.1em; height: 1.1em; }
+.mode-try:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .pick-h { margin: 0 0 var(--space-3) !important; }
 .mode-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 8px 0 18px; }
 @media (max-width: 760px) { .mode-pick { grid-template-columns: 1fr; } }
@@ -990,7 +980,7 @@ html.motion-paused .wb-card .md-switch .md-knob, body.calm .wb-card .md-switch .
 .star-say { margin: 0; position: relative; background: var(--bg-alt); border: 2px solid var(--edge); border-radius: 18px; padding: 8px 14px; font: 700 clamp(15px, 2.2vw, 17px)/1.35 var(--font-sans); }
 .star-say:empty { visibility: hidden; }
 .star-main { display: grid; justify-items: center; text-align: center; }
-.star-ask, .star-replay, .star-end, .star-offer, .star-intro { display: grid; justify-items: center; gap: var(--space-3); width: 100%; }
+.star-ask, .star-replay, .star-end, .star-offer { display: grid; justify-items: center; gap: var(--space-3); width: 100%; }
 .star-tag { display: inline-flex; padding: 4px 12px; border-radius: var(--radius-pill); font-weight: 800; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; background: var(--bg-alt); color: var(--ink-muted); }
 .star-tag--rematch { background: var(--plum); color: var(--on-accent); }
 .star-tag--dare { background: var(--sun); color: var(--on-accent); }
@@ -1020,11 +1010,8 @@ html.motion-paused .wb-card .md-switch .md-knob, body.calm .wb-card .md-switch .
 .star-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; width: 100%; text-align: left; }
 .star-step { padding: 10px 14px; border-radius: var(--radius-md); border: 2px solid var(--edge); background: var(--card); animation: stepIn .35s cubic-bezier(.5,1.6,.5,1); }
 .star-step p { margin: 4px 0 0; font-size: 15px; }
-/* The trial Star's worked example (openspec try-trick-teaches): every step at once, nothing moves */
+/* Steps shown all at once (Try a trick's worked example, openspec try-trick-in-modes): nothing moves */
 .star-steps--still .star-step { animation: none; }
-.star-intro-idea { margin: 0; max-width: 46ch; font-weight: 600; }
-.star-intro-k { margin: 0; justify-self: start; font: 700 1.05rem/1.3 var(--font-sans); }
-.star-intro-n { margin: 0; color: var(--ink-muted); }
 .star-acts { display: flex; gap: var(--space-2); flex-wrap: wrap; justify-content: center; margin: 0; }
 .star-video { width: 100%; }
 .star-video iframe { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: var(--radius-md); }
@@ -1236,7 +1223,6 @@ html.play-open #view { z-index: 70; }
 .play-shell .star-q { font-size: calc(var(--play-scale) * clamp(2.2rem, min(13cqw, 11cqh), 5.6rem)); }
 .play-shell .star-q--long { font-size: calc(var(--play-scale) * clamp(1.2rem, 4cqh, 1.9rem)); }
 .play-shell .star-q--sm { font-size: calc(var(--play-scale) * clamp(1.5rem, 6cqh, 2.6rem)); }
-.play-shell .star-intro .star-q--sm { font-size: calc(var(--play-scale) * clamp(1.3rem, 4.5cqh, 1.9rem)); }
 .play-shell .star-boxes span { font-size: calc(var(--play-scale) * clamp(1.4rem, 5cqh, 2.2rem)); }
 .play-shell .star-plain { font-size: calc(var(--play-scale) * clamp(1.6rem, 6cqh, 2.8rem)); }
 .play-shell .star-choice { font-size: calc(var(--play-scale) * 1.3rem); }
@@ -1431,3 +1417,39 @@ html.motion-paused .play-card, body.calm .play-card { transition: none; } html.m
 .find-hit { display: grid; gap: 2px; width: 100%; box-sizing: border-box; text-align: left; font: inherit; padding: 10px 14px; border: 2px solid var(--line); border-radius: var(--radius-lg); background: var(--card); color: var(--ink); text-decoration: none; cursor: pointer; }
 .find-hit:hover, .find-hit:focus-visible { border-color: var(--sky); } .find-hit b { font: 600 1.05rem/1.25 var(--display); } .find-hit small { color: var(--ink-muted); font-size: 13.5px; line-height: 1.35; }
 .find-group .mq-strand { margin: 22px 0 10px !important; } .find-group--top .find-hit { border-color: var(--teal-strong); } /* the Best match: an answer to a question, before the kinds */ .find-none { margin: var(--space-4) 0; }
+
+/* Try a trick (js/try.js, openspec try-trick-in-modes): the teaching card, three questions and the end card.
+   Tokens only; nothing animates here (the sparkles after a right answer are js/celebrate.js, off under no motion). */
+.try { display: grid; gap: var(--space-3); justify-items: start; }
+.try .try-h { margin: 0; }
+.try .try-lede { margin: 0; }
+.try-sutra { justify-self: stretch; margin: 0; } /* the card's Sutra block is its Trick's full Sutra tag (js/sutra-tag.js) */
+.try-why { margin: var(--space-1) 0 0; font-size: 15px; color: var(--ink); }
+.try-k { margin: var(--space-2) 0 0; font: 700 1.05rem/1.3 var(--font-sans); }
+.try-steps { max-width: 640px; }
+.try-acts { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-2) 0 0; }
+.try-acts:empty { display: none; }
+.try-src { margin: 0; }
+.try-q, .try-end { display: grid; gap: var(--space-3); justify-items: start; width: 100%; }
+.try-qh { margin: 0; font: 600 clamp(2rem, 7vw, 3rem)/1.1 var(--display); color: var(--ink); }
+.try-end .try-qh { font-size: clamp(1.6rem, 5vw, 2.2rem); }
+.try-end-n { margin: 0; font-weight: 700; }
+.try-form { display: flex; flex-wrap: wrap; gap: var(--space-2); width: 100%; max-width: 480px; }
+.try-form .ans-in { flex: 1 1 160px; }
+.try-form .md-btn { margin: 0; }
+.try-say { margin: 0; min-height: 1.5em; font-weight: 600; }
+.try-say:empty { min-height: 0; }
+.try-ask { margin: 0; font-weight: 700; font-size: 1.15rem; }
+.try-choices .pr-choice.ok { background: var(--teal); border-color: var(--teal-strong); color: var(--on-accent); }
+.try-choices .pr-choice:disabled:not(.ok) { opacity: .45; }
+/* The 11 sandwich: the two digits as bread, the filling in the middle */
+.try-sw { display: inline-flex; gap: var(--space-2); align-items: center; font: 700 2rem/1 var(--display); }
+.try-sw i { font-style: normal; display: grid; place-items: center; min-width: 56px; min-height: 56px; padding: 0 var(--space-2); border-radius: var(--radius-md); background: color-mix(in srgb, var(--sun) 35%, var(--card)); border: 2px solid var(--edge); color: var(--ink); }
+.try-sw .try-sw-mid { background: color-mix(in srgb, var(--teal) 30%, var(--card)); }
+.try-sw .try-sw-mid.is-empty { background: var(--card); border-style: dashed; color: var(--ink-muted); }
+.anim-show .try-sw { font-size: 1.5rem; }
+.anim-show .try-sw i { min-width: 44px; min-height: 44px; }
+/* Home's Try a trick card */
+.try-card { margin: var(--space-4) 0; }
+.try-card h2 { margin: var(--space-2) 0 var(--space-1); }
+.try-card .door-acts { margin: var(--space-2) 0 0; }

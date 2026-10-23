@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, APP, open } from '../fixtures';
 
 /* sutra-tags spec (openspec change sutras-first), Requirement "Tags in a Star round": one test per scenario. */
 
@@ -19,4 +19,18 @@ test('The end screen links: when the round ends, its tag is a link to #/sutras/s
   await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
   await page.locator('#stSkip').click();
   await expect(page.locator('.star-end a.sutra-tag-a')).toHaveAttribute('href', '#/sutras/s3');
+});
+
+test.describe('a new visitor', () => {
+  test.use({ seedMode: null });
+  test("Try a trick's card: under the Pro card, the card's Sutra block is the tag Sutra Nikhilaṃ with its meaning and Say it, a link to #/sutras/s2", async ({ page }) => {
+    await page.goto(APP);
+    await page.locator('.mode-try[data-try="pro"]').click();
+    const tag = page.locator('.try-sutra.sutra-tag--full');
+    await expect(tag.locator('.sutra-tag-k')).toHaveText('Sutra');
+    await expect(tag.locator('b[lang="sa-Latn"]')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
+    await expect(tag.locator('.sutra-tag-m')).toHaveText('All from 9 and the last from 10');
+    await expect(tag.locator('.say-btn')).toBeVisible();
+    await expect(tag.locator('a.sutra-tag-a')).toHaveAttribute('href', '#/sutras/s2');
+  });
 });

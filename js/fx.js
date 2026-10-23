@@ -10,10 +10,11 @@ export const MODES = {
   pro: { name: 'Pro', ages: '13 to adult', blurb: 'Algebra to calculus, sutra deep dives, leaderboards.', color: 'plum', grades: [8, 9, 10, 11, 12], league: 'pro' }
 };
 export const mode = () => store.player().mode;
-/* guess: the Mode was set for the Player by Try a trick (openspec first-visit), not picked; any pick clears it */
-export function setMode(m, { guess = false } = {}) {
-  store.setPlayerMode(m, { guess }); applyMode();
-  if (!guess) try { window.siteTrack && window.siteTrack('math/mode/' + m, 'Vedic Math mode: ' + m); } catch (e) {} /* a guessed Mode is never sent (first-visit spec) */
+/* A pick (a Mode card, a card's Try a trick, a Mode link or Me). It also clears a Mode guess an older Try a trick left
+   on the Player record (openspec try-trick-in-modes: nothing guesses a Mode any more). */
+export function setMode(m) {
+  store.setPlayerMode(m); applyMode();
+  try { window.siteTrack && window.siteTrack('math/mode/' + m, 'Vedic Math mode: ' + m); } catch (e) {}
 }
 export function applyMode() {
   const m = mode() || 'none';
