@@ -16,7 +16,7 @@ While this repo is public, open an issue. At any time, write to hello@learnvedic
 
 ## What is not
 
-Code from outside the project. From the cutoff commit named in [LICENSE](LICENSE), the code and content are proprietary and the repo is going private (design D16), so pull requests from outside are not accepted. The owner may take a small fix by exception; by sending one you agree the owner may use it under the repository's licence, and you are credited in the commit.
+Code from outside the project. After the cutoff commit named in [LICENSE](LICENSE), the code and content are proprietary, and the repo goes private once the owner says so (design D13 and D16), so pull requests from outside are not accepted. The owner may take a small fix by exception; by sending one you agree the owner may use it under the repository's licence, and you are credited in the commit.
 
 Also not, in any change: ads, trackers, sign-ups or anything that collects personal data (Players are often children); new third-party scripts or services; changes to the vendored design system (`vendor/design-system/`, a pinned copy of [sbmadhav/design-system](https://github.com/sbmadhav/design-system): change it there, then vendor the new version here); a kid mode switch in the header (the play modes, Explorer, Challenger and Pro, set the wording).
 
