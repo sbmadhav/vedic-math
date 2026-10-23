@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: Progress per Sutra comes from what the device keeps
-A Sutra's progress SHALL be computed on the device from the records it already keeps for the Player (each Trick's mastery, its Stars lit, its Katas done, and whether the Sutra card is collected), over the Tricks its card lists. Nothing new SHALL be stored for it, and nothing about it SHALL be sent.
+A Sutra's progress SHALL be computed on the device from the records it already keeps for the Player (each Trick's mastery, its Stars lit, its Katas done, and whether the Sutra card is collected), over the Tricks its card lists. A Sutra SHALL count as started when any of its Tricks has been practiced (it has a Skill record), any of its Stars is lit or any of its Katas is done; a collected card alone SHALL NOT start it. Nothing new SHALL be stored for it, and nothing about it SHALL be sent.
 
 #### Scenario: Same record, same progress
 - **WHEN** the unit tests compute the progress of Ekādhikena Pūrveṇa for a record with two of its nine Stars lit and Square numbers ending in 5 mastered
@@ -30,3 +30,7 @@ Challenger and Pro Home SHALL show a "Your sutras" card after the doors: the Sut
 #### Scenario: A new Challenger
 - **WHEN** a new Challenger Player opens Home
 - **THEN** "Your sutras" lists the Sutra of the next Star with "0 of n Stars lit" and a link to see all 29 sutras
+
+#### Scenario: A started Sutra is listed, a collected card alone is not
+- **WHEN** a Challenger who has practiced Square numbers ending in 5 without lighting a Star, and collected the Ūrdhva-Tiryagbhyām card without practicing any of its Tricks, opens Home
+- **THEN** "Your sutras" lists the Sutra of the next Star, then Ekādhikena Pūrveṇa with "0 of 9 Stars lit", and not Ūrdhva-Tiryagbhyām

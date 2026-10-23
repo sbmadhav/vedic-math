@@ -136,7 +136,7 @@ html.motion-paused .lv-family *, body.calm .lv-family * { animation: none !impor
 .sutra-tag-a { display: inline; color: var(--ink); text-decoration: none; }
 a.sutra-tag-a { border-radius: var(--radius-sm); }
 a.sutra-tag-a:hover .sutra-tag-n, a.sutra-tag-a:focus-visible .sutra-tag-n { text-decoration: underline; text-underline-offset: 3px; }
-.sutra-tag-k { display: inline-block; margin-right: var(--space-1); padding: 1px var(--space-2); border-radius: 99px; background: color-mix(in srgb, var(--plum) 16%, var(--card)); color: var(--plum-strong); font-size: .8rem; font-weight: 700; }
+.sutra-tag-k { display: inline-block; margin-right: var(--space-1); padding: 1px var(--space-2); border-radius: var(--radius-pill); background: color-mix(in srgb, var(--plum) 16%, var(--card)); color: var(--plum-strong); font-size: .8rem; font-weight: 700; }
 .sutra-tag-n { font: 600 1em/1.3 var(--display); color: var(--plum-strong); }
 .sutra-tag-m { color: var(--ink-muted); font-style: italic; }
 .sutra-tag--line .sutra-tag-m::before { content: ': '; font-style: normal; }
@@ -151,7 +151,7 @@ a.sutra-tag-a:hover .sutra-tag-n, a.sutra-tag-a:focus-visible .sutra-tag-n { tex
 .sutra-tag--mini .sutra-tag-k { font-size: 11px; }
 .dojo-cell .sutra-tag--mini { text-align: center; }
 .star-sutra { margin: var(--space-1) 0 0; font-size: .9rem; }
-.star-intro .sutra-tag--full, .star-end .sutra-tag { text-align: left; margin: var(--space-3) 0; }
+.star-end .sutra-tag { text-align: left; margin: var(--space-3) 0; }
 .ar-sutras { margin: var(--space-2) 0 0; } .ar-sutras .mq-h3 { margin-top: var(--space-2) !important; }
 .vp-foot .sutra-tag { margin: 0 0 var(--space-2); } .vp-foot .sutra-tag-a { color: var(--ink); font-weight: 400; }
 .watch-tags .tagv--sutra { font-weight: 600; }
@@ -1430,8 +1430,7 @@ html.motion-paused .play-card, body.calm .play-card { transition: none; } html.m
 .try { display: grid; gap: var(--space-3); justify-items: start; }
 .try .try-h { margin: 0; }
 .try .try-lede { margin: 0; }
-.try-sutra { justify-self: stretch; margin: 0; }
-.try-sutra-k { font-size: 14px; color: var(--ink-muted); }
+.try-sutra { justify-self: stretch; margin: 0; } /* the card's Sutra block is its Trick's full Sutra tag (js/sutra-tag.js) */
 .try-why { margin: var(--space-1) 0 0; font-size: 15px; color: var(--ink); }
 .try-k { margin: var(--space-2) 0 0; font: 700 1.05rem/1.3 var(--font-sans); }
 .try-steps { max-width: 640px; }

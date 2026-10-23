@@ -65,7 +65,7 @@ test.describe('Pro', () => {
 
   test('Pro\'s card: Nikhilaṃ, all from 9 and the last from 10, each distance from 100, and 97 × 96 ending in 9312', async ({ page }) => {
     await open(page, '#/try');
-    await expect(page.locator('.try-sutra .mq-sutra-mean')).toHaveText('All from 9 and the last from 10');
+    await expect(page.locator('.try-sutra .sutra-tag-m')).toHaveText('All from 9 and the last from 10');
     await expect(page.locator('.try-why')).toContainText('each distance from 100');
     await expect(page.locator('.try-k')).toHaveText('Worked example: 97 × 96');
     await expect(page.locator('.try-steps .star-step').last()).toContainText('9312');
@@ -104,7 +104,7 @@ test.describe('Challenger', () => {
 
   test('Challenger\'s card: Ekādhikena Pūrveṇa, by one more than the one before, 35² in three steps ending in 1225, Your turn and no answer box', async ({ page }) => {
     await open(page, '#/try');
-    await expect(page.locator('.try-sutra .mq-sutra-mean')).toHaveText('By one more than the one before');
+    await expect(page.locator('.try-sutra .sutra-tag-m')).toHaveText('By one more than the one before');
     await expect(page.locator('.try-steps .star-step')).toHaveCount(3);
     await expect(page.locator('.try-steps .star-step').last()).toContainText('35² = 1225.');
     await expect(page.locator('#tyStart')).toHaveText('Your turn');
@@ -160,7 +160,7 @@ test.describe('Explorer', () => {
 
   test('Explorer\'s card: Ūrdhva-Tiryagbhyām, straight down and across, 23 split into 2 and 3 with 5 in the middle, ending in 253', async ({ page }) => {
     await open(page, '#/try');
-    await expect(page.locator('.try-sutra .mq-sutra-mean')).toHaveText('Its name means straight down and across.');
+    await expect(page.locator('.try-sutra .sutra-tag-m')).toHaveText('Its name means straight down and across.');
     await expect(page.locator('.try-steps .star-step').first()).toContainText('Split 23 into 2 and 3.');
     await expect(page.locator('.try-steps .star-step').nth(1)).toContainText('2 + 3 = 5');
     await expect(page.locator('.try-steps .star-step').last()).toContainText('253');

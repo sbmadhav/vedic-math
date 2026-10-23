@@ -55,11 +55,11 @@ Working a sum with one Sutra's short rule in a line or two, the method the app t
 _Avoid_: Vedic method (it sounds like it is from the Vedas), shortcut, hack
 
 **Sutra tag**:
-The line that names the Sutra a Trick, Star, Kata, Arena question, video or game uses: its kind word (Sutra, Sub-sutra, Special case of, Uses the idea of), its name and its meaning in the Mode's words, as one link to its Deep dive. Never spoken. The map and the words are in `js/sutra-tag.js` (`sutras-first` change).
+The line that names the Sutra a Trick, Star, Try a trick, Kata, Arena question, video or game uses: its kind word (Sutra, Sub-sutra, Special case of, Uses the idea of), its name and its meaning in the Mode's words, as one link to its Deep dive. Never spoken. The map and the words are in `js/sutra-tag.js` (`sutras-first` change).
 _Avoid_: badge (a badge is earned), label, chip
 
 **Sutra progress**:
-How far a Player is with one Sutra, worked out on the device from its Tricks' mastery, Stars lit, Katas done and whether its card is collected. Never stored on its own and never sent (`sutras-first` change).
+How far a Player is with one Sutra, worked out on the device from its Tricks' mastery, Stars lit, Katas done and whether its card is collected. A Sutra is started once one of its Tricks is practiced (it has a Skill record), one of its Stars is lit or one of its Katas is done; a collected card alone does not start it. Never stored on its own and never sent (`sutras-first` change).
 _Avoid_: sutra score, sutra level, mastery (that is one Skill's)
 
 **Verse** (śloka):

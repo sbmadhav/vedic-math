@@ -52,7 +52,7 @@ test.describe('the Mode picker', () => {
     await expect(page).toHaveURL(/#\/try$/);
     await expect(page.locator('#tyH')).toHaveText('Square numbers ending in 5');
     await expect(page.locator('.try-sutra b')).toHaveText('Ekādhikena Pūrveṇa');
-    await expect(page.locator('.try-sutra .mq-sutra-mean')).toHaveText('By one more than the one before');
+    await expect(page.locator('.try-sutra .sutra-tag-m')).toHaveText('By one more than the one before');
     await expect(page.locator('.try-sutra .say-btn')).toBeVisible();
     await expect(page.locator('.try-k')).toHaveText('Worked example: 352');
     await expect(page.locator('.try-steps .star-step')).toHaveCount(3);
@@ -78,7 +78,7 @@ test.describe('the Mode picker', () => {
     await page.keyboard.press('Enter');
     await expect(page.locator('#tyH')).toHaveText('Multiply numbers near 100');
     await expect(page.locator('.try-sutra b')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
-    await expect(page.locator('.try-sutra .mq-sutra-mean')).toHaveText('All from 9 and the last from 10');
+    await expect(page.locator('.try-sutra .sutra-tag-m')).toHaveText('All from 9 and the last from 10');
     await expect(page.locator('.try-why')).toContainText('distance from 100');
     await expect(page.locator('.try-steps .star-step').last()).toContainText('So 97 × 96 = 9312.');
     await expect(page.locator('#tyStart')).toBeFocused();
@@ -96,7 +96,7 @@ test.describe('the Mode picker', () => {
     await page.locator('[data-try="explorer"]').click();
     await expect(page.locator('#tyH')).toHaveText('The 11 sandwich');
     await expect(page.locator('.try-sutra b')).toHaveText('Ūrdhva-Tiryagbhyām');
-    await expect(page.locator('.try-sutra .mq-sutra-mean')).toHaveText('Its name means straight down and across.');
+    await expect(page.locator('.try-sutra .sutra-tag-m')).toHaveText('Its name means straight down and across.');
     await expect(page.locator('.try-steps .star-step').first()).toContainText('Split 23 into 2 and 3.');
     await expect(page.locator('.try-steps .star-step').last()).toContainText('23 × 11 = 253.');
     await expect(page.locator('#tyStart')).toHaveText('My turn');

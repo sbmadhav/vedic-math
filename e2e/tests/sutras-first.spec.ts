@@ -117,6 +117,29 @@ test('Star: the header names the Sutra as text, the replay names it, and the end
 
 test.describe('a new visitor', () => {
   test.use({ seedMode: null });
+  test("Try a trick: the card's Sutra block is the Sutra's tag with Say it, a link to the Deep dive counted as surface try, and closing the Deep dive comes back to the card", async ({ page }) => {
+    /* Try a trick lives inside each Mode (openspec try-trick-in-modes): the Pro card's Try a trick opens the near-100 lesson */
+    await stubAnalytics(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(APP);
+    await page.locator('.mode-try[data-try="pro"]').click();
+    const tag = page.locator('.try-sutra.sutra-tag--full');
+    await expect(tag.locator('.sutra-tag-k')).toHaveText('Sutra');
+    await expect(tag.locator('b[lang="sa-Latn"]')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
+    await expect(tag.locator('.sutra-tag-m')).toHaveText('All from 9 and the last from 10');
+    await expect(tag.locator('.say-btn')).toBeVisible();
+    await expect(tag.locator('.try-why')).toContainText('each distance from 100');
+    await expect(page.locator('#tyStart')).toBeFocused();
+    const link = tag.locator('a.sutra-tag-a');
+    await expect(link).toHaveAttribute('href', '#/sutras/s2');
+    await link.click();
+    await expect(page.locator('dialog.sutra-modal #sdTitle')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
+    expect((await events(page)).filter(([p]) => p.startsWith('math/sutra_tag/'))).toEqual([['math/sutra_tag/try', 'Sutra tag: try']]);
+    await page.locator('dialog.sutra-modal .sd-x').click();
+    await expect(page.locator('#tyStart')).toBeVisible();
+    expect(new URL(page.url()).hash).toBe('#/try');
+  });
+
   test('A Deep dive opens without a Mode, and no Mode is stored', async ({ page }) => {
     await page.goto(`${APP}#/sutras/s2`);
     await expect(page.locator('dialog.sutra-modal #sdTitle')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');

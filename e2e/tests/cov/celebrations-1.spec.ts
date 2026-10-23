@@ -124,13 +124,17 @@ test.describe('motion allowed', () => {
   });
 
   test('Pause motion during a burst: the confetti is gone at once', async ({ page }) => {
+    /* A first Sutra card is a true win whose burst falls outside the play shell (a Star's shell makes the site
+       header inert), so the Player can reach the Pause motion switch in the header's music panel while it falls */
     await watchFx(page);
-    await lightStar(page);
-    // The Pause motion switch in the header's music panel, pressed while the burst is still falling
+    await open(page, '#/sutras');
+    await page.locator('.sutra-card .sutra-face').first().click();
+    await expect(page.locator('canvas.fx-confetti')).toHaveCount(1);
+    expect((await fx(page)).confetti).toBe(1);
     await page.locator('#vmMBtn').click();
     const sw = page.locator('#vmMotion');
     await expect(sw).toBeVisible();
-    await expect(page.locator('canvas.fx-confetti')).toHaveCount(1);
+    await expect(page.locator('canvas.fx-confetti')).toHaveCount(1); // still falling as the switch is pressed
     await sw.click();
     await expect(sw).toHaveAttribute('aria-checked', 'true');
     await expect(page.locator('canvas.fx-confetti')).toHaveCount(0, { timeout: 500 });

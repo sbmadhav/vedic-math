@@ -9,7 +9,7 @@ import { TRICKS } from './vedic.js';
 import { SUTRAS } from './sutras.js';
 import { checkOne } from './check.js';
 import { on, child } from './life.js';
-import { sayButton, respellHTML } from './say.js';
+import { trickTagHTML } from './sutra-tag.js';
 import * as store from './store.js';
 import * as fx from './fx.js';
 import * as metrics from './metrics.js';
@@ -100,8 +100,10 @@ export function runTry(root, { mode, signal }) {
 
   function teach() {
     const ps = newPhase();
+    /* The Sutra block is the Trick's Sutra tag (js/sutra-tag.js, openspec sutras-first): the kind word, the name as a
+       link to the Deep dive, this card's own meaning line, Say it and the Respelling, then the why line */
     main.innerHTML = `<p class="md-lede try-lede">${T.lede}</p>
-      <div class="mq-sutra try-sutra"><p class="mq-sutra-name"><span class="try-sutra-k">Sutra:</span> <b lang="sa-Latn">${S.name}</b>${sayButton(S.id, { label: true })}</p>${respellHTML(S.id)}<span class="mq-sutra-mean">${T.mean}</span><p class="try-why">${T.why}</p></div>
+      ${trickTagHTML(T.trick, { mode, size: 'full', surface: 'try', mean: T.mean, cls: 'try-sutra', extra: `<p class="try-why">${T.why}</p>` })}
       <h2 class="try-k">Worked example: ${T.q(T.example).replace(/ = \?$/, '')}</h2>
       ${stepsHTML(T.example)}
       <p class="try-acts"><button type="button" class="md-btn md-btn--primary" id="tyStart" aria-describedby="tyH">${T.start}</button></p>

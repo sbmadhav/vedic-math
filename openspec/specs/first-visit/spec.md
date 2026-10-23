@@ -100,7 +100,7 @@ On Challenger Home, the Keep going card SHALL be left out when the Skill it offe
 - **THEN** the Keep going card offers that Skill
 
 ### Requirement: The trial Star teaches before it asks
-When Try a trick opens its Star, the round SHALL first show one card with the Trick's title, its one-line idea, and a worked example: a problem of that Star the round does not deal, with the Trick's own steps ending in the result. Its one button, "Start the Star", SHALL open the first question; the number pad SHALL be hidden until then. The card SHALL NOT be spoken, and SHALL show only on the Try a trick path, once.
+When Try a trick opens its Star, the round SHALL first show one card with the Trick's title, its one-line idea, and a worked example: a problem of that Star the round does not deal, with the Trick's own steps ending in the result. Its one button, "Start the Star", SHALL open the first question; the number pad SHALL be hidden until then. Read aloud SHALL NOT speak the card (only the live region announces it, once), and the card SHALL show only on the Try a trick path, once.
 
 #### Scenario: The worked example
 - **WHEN** a new visitor presses Try a trick and the Star is Star 1 of `from9`
