@@ -125,6 +125,26 @@ test.describe('the Install nudge', () => {
     await expect(page.locator('#installWrap')).toBeHidden();
   });
 
+  test('appinstalled while the Me page or the Guide is open: the card and the action go without a reload', async ({ page }) => {
+    await open(page, '#/me');
+    await offerInstall(page);
+    await expect(page.locator('#meInstall')).toBeVisible();
+    await page.evaluate(() => window.dispatchEvent(new Event('appinstalled')));
+    await expect(page.locator('#meInstall')).toHaveCount(0);
+    await expect(page.locator('#installWrap')).toBeHidden();
+    /* A new page load where the browser offers again (the app was removed): the card is back on the next render */
+    await page.goto(`${APP}#/learn`);
+    await page.reload();
+    await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
+    await offerInstall(page);
+    await page.goto(`${APP}#/me`);
+    await expect(page.locator('#meInstall')).toBeVisible();
+    await page.goto(`${APP}#/guide/offline`);
+    await expect(page.locator('#gd-offline [data-gd="install"]')).toBeVisible();
+    await page.evaluate(() => window.dispatchEvent(new Event('appinstalled')));
+    await expect(page.locator('#gd-offline [data-gd="install"]')).toHaveCount(0);
+  });
+
   test.describe('Explorer', () => {
     test.use({ seedMode: 'explorer' });
     test('the nudge speaks to the grown-up', async ({ page }) => {

@@ -74,6 +74,13 @@ function applyInstalled() {
   const brand = document.querySelector('.md-header .md-brand');
   if (brand) { if (!brand.dataset.web) brand.dataset.web = brand.getAttribute('href'); brand.setAttribute('href', inApp ? '#/' : brand.dataset.web); }
   const foot = document.getElementById('installWrap'); if (foot) foot.hidden = appHere();
+  /* The Me page's card and the Guide's action, when they are on screen as the app arrives (appinstalled while that
+     view is open, or a view drawn before this module loaded): gone, like the footer's link. They come back with the
+     next render if the browser offers to install again (a new prompt, which arrives with a new page load). */
+  if (appHere()) {
+    document.querySelectorAll('.in-me').forEach(c => c.remove());
+    document.querySelectorAll('[data-gd="install"]').forEach(b => { const p = b.closest('.gd-acts'); (p && p.children.length === 1 ? p : b).remove(); });
+  }
 }
 
 /* ---------- The browser's install prompt ---------- */

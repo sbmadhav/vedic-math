@@ -1450,8 +1450,6 @@ function guideView(section, { signal } = {}) {
     else if (b.dataset.gd === 'install') withInstall(m => m.openGuide('guide'), signal);
     else if (b.dataset.gd === 'music') { e.stopPropagation(); window.scrollTo({ top: 0 }); const mb = $('#vmMBtn'); if (mb && mb.getAttribute('aria-expanded') !== 'true') mb.click(); const first = $('#vmMPanel [data-t]'); if (first) first.focus({ preventScroll: true }); }
   }, signal);
-  /* The Installed app, when the view drew before the install module was here: nothing to install, so its action goes */
-  withInstall(m => { if (m.appHere()) view.querySelectorAll('[data-gd="install"]').forEach(b => { const p = b.closest('.gd-acts'); (p && p.children.length === 1 ? p : b).remove(); }); }, signal);
   /* #/guide/<section>: focus its heading now (so the router leaves focus there), scroll to it once the router is done */
   const sec = section && $(`#gd-${CSS.escape(section)}`);
   if (sec) {
