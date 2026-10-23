@@ -1,3 +1,8 @@
+This licence applies to the code published in sbmadhav/vedic-math up to commit
+<cutoff sha> (<cutoff date>). Later code is proprietary unless a file says
+otherwise; see LICENSE-CONTENT.md. (Placeholders awaiting the owner: the
+cutoff commit and the go-ahead, learnvedicmath task 12.3.)
+
 MIT License
 
 Copyright (c) 2026 Madhav Srinivasan
