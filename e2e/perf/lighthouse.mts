@@ -11,7 +11,9 @@
      instead of the first-visit Mode picker. Storage is seeded on robots.txt, so no game file is cached.
    - "repeat": a returning Player whose earlier visit finished and whose service worker took control: one unmeasured
      visit, wait for the worker to be active, then each measured run in the same profile.
-   Analytics never counts a run: GoatCounter and Cloudflare Web Analytics are blocked by URL pattern. */
+   Analytics never counts a run: GoatCounter and Cloudflare Web Analytics are blocked by URL pattern.
+   The simulation's server latency is fixed (serverResponseTime in tools/lighthouserc.json, through perf/lantern.mts),
+   so the host's own latency never counts either: a preview on workers.dev is measured as if production served it. */
 import lighthouse from 'lighthouse';
 import { chromium, type BrowserContext } from '@playwright/test';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, realpathSync } from 'node:fs';
@@ -19,21 +21,24 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:net';
+import { lanternData } from './lantern.mts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const RC = JSON.parse(readFileSync(join(HERE, '..', '..', 'tools', 'lighthouserc.json'), 'utf8')) as {
-  ci: { collect: { numberOfRuns: number; settings: Record<string, unknown> } };
+  ci: { collect: { numberOfRuns: number; serverResponseTime: number; settings: Record<string, unknown> } };
   pages: { name: string; path: string; visit: 'first' | 'returning' | 'repeat' }[];
 };
 
 /* ttfb: time to first byte of the page as Lighthouse's throttled run models it (DNS, connection, TLS and the server's
    answer: the metrics audit's timeToFirstByte; the server's response time when the worker answers the page);
-   srt: the server's own response time (the server-response-time audit) */
-export type Metrics = { fcp: number; lcp: number; tbt: number; cls: number; si: number; ttfb: number; srt: number };
-export const METRICS: (keyof Metrics)[] = ['fcp', 'lcp', 'tbt', 'cls', 'si', 'ttfb', 'srt'];
+   srt: the server's own response time (the server-response-time audit);
+   lat: the origin's observed server latency (the network-server-latency audit), the value the simulation would have
+   used had it not been fixed; information only, it shows how far the host is from the fixed value */
+export type Metrics = { fcp: number; lcp: number; tbt: number; cls: number; si: number; ttfb: number; srt: number; lat: number };
+export const METRICS: (keyof Metrics)[] = ['fcp', 'lcp', 'tbt', 'cls', 'si', 'ttfb', 'srt', 'lat'];
 const AUDIT: Record<Exclude<keyof Metrics, 'ttfb'>, string> = {
   fcp: 'first-contentful-paint', lcp: 'largest-contentful-paint', tbt: 'total-blocking-time',
-  cls: 'cumulative-layout-shift', si: 'speed-index', srt: 'server-response-time',
+  cls: 'cumulative-layout-shift', si: 'speed-index', srt: 'server-response-time', lat: 'network-server-latency',
 };
 /* Analytics never counts a run: Lighthouse blocks these patterns, and the setup visits abort the same requests */
 const ANALYTICS_PATTERNS = ['*goatcounter.com*', '*gc.zgo.at*', '*/vendor/goatcounter/count.js*', '*cloudflareinsights.com*'];
@@ -90,6 +95,7 @@ async function once(url: string, port: number, keepStorage: boolean, visit: 'fir
   const flags = {
     port, output: 'json' as const, logLevel: 'error' as const, onlyCategories: ['performance'],
     disableStorageReset: keepStorage, blockedUrlPatterns: ANALYTICS_PATTERNS,
+    precomputedLanternData: lanternData(url, RC.ci.collect.serverResponseTime),
     ...RC.ci.collect.settings,
   };
   const res = await lighthouse(url, flags as Parameters<typeof lighthouse>[1]);
