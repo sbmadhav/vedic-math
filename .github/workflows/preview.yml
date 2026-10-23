@@ -129,6 +129,7 @@ jobs:
           pnpm exec playwright install --with-deps chromium
 
       - name: Playwright tests against the preview (chromium)
+        id: suite
         if: steps.token.outputs.present == 'true'
         working-directory: e2e
         env:
@@ -139,9 +140,9 @@ jobs:
       # The background's frame cost (tests/background-perf.spec.ts, @frame-cost) is measured with nothing else running:
       # with three workers on a four-core runner the other browsers preempt the timed frame, and its p95 read 3.6 to
       # 6.6 ms for a drawing that costs about 1 ms there (docs/agent/e2e.md). Its own output folders keep the suite's
-      # traces and report in the artifact. Runs after the suite whether the suite passed or not.
+      # traces and report in the artifact. Runs whenever the suite ran, passed or not.
       - name: Frame cost of the background, alone on the runner (chromium)
-        if: ${{ !cancelled() && steps.token.outputs.present == 'true' }}
+        if: ${{ !cancelled() && (steps.suite.outcome == 'success' || steps.suite.outcome == 'failure') }}
         working-directory: e2e
         env:
           BASE_URL: ${{ steps.upload.outputs.url }}

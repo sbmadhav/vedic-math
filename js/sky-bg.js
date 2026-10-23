@@ -44,7 +44,6 @@ export function parseColor(v) {
   return [r, g, b, a / 255];
 }
 
-/* Runs fn once the page has loaded and the browser is idle (or after a short wait where there is no idle callback) */
 /* Runs fn once while the browser is idle (or after a short wait where there is no idle callback). Its own child
    signal is aborted once it has run, so a long session does not pile listeners on signal. */
 function whenIdle(fn, signal, timeout = 1200) {
@@ -209,30 +208,23 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, cameo = 
       const out = { cv, w, h }; capCache.set(key, out); return out;
     }
     /* The page's obstacles on screen, as [x0, y0, x1, y1]: measured when the page may have moved (scroll, resize, a new
-       route, and every 2.5 seconds for anything else), never more than once a frame.
-       One walk from body that enters only what is on screen: a box entirely off screen is left with everything in it.
-       A long page (the Deep dive: about 2,250 elements and 1,700 runs of text, nearly all below the fold) measured
-       element by element took over 100 ms on a slow phone, a long task that put the route's blocking time over its
-       budget; on screen it has a few hundred. A box without a size (display: contents, a wrapper of floats) says
-       nothing about what is in it, so it is entered. What this does not see: a fixed or absolutely positioned box
-       placed on screen from inside one that is off screen. */
+       route, and every 2.5 seconds for anything else), never more than once a frame. A box off screen is not entered. */
     let page = null, pageDirty = true, pageVersion = 0, measuring = false;
     let pageSig = '', clearList = [];
     function measure() {
-      const out = [], range = document.createRange(), on = r => r.width >= 1 && r.height >= 1 && r.bottom > 0 && r.top < H && r.right > 0 && r.left < W;
-      const away = r => (r.width > 0 || r.height > 0) && (r.bottom <= 0 || r.top >= H || r.right <= 0 || r.left >= W);
-      const push = (r, clear) => { const box = [Math.round(r.left), Math.round(r.top), Math.round(r.right), Math.round(r.bottom)]; out.push(box); if (clear) clearList.push(box); };
+      const out = [], range = document.createRange(), off = r => r.bottom <= 0 || r.top >= H || r.right <= 0 || r.left >= W, on = r => r.width >= 1 && r.height >= 1 && !off(r);
+      const push = (r, clear) => { const box = [r.left, r.top, r.right, r.bottom].map(Math.round); out.push(box); if (clear) clearList.push(box); };
       pageDirty = false; clearList = [];
-      const visit = (el, inSvg) => {
+      const walk = (el, svg) => {
         for (let n = el.firstChild; n; n = n.nextSibling) {
-          if (n.nodeType === 3) { /* a run of text */
+          if (n.nodeType === 3) {
             if (!n.nodeValue.trim() || SKIP.has(el.nodeName)) continue;
             range.selectNodeContents(n); const r = range.getBoundingClientRect(); if (on(r)) push(r, true);
           } else if (n.nodeType === 1 && n !== c) {
             const tag = n.tagName.toUpperCase(); if (SKIP.has(tag)) continue;
-            if (inSvg) { visit(n, true); continue; } /* inside a drawing only its text counts; the drawing's box is in already */
-            const r = n.getBoundingClientRect(); if (away(r)) continue;
-            if (on(r)) { /* controls, pictures and boxes that show */
+            if (svg) { walk(n, true); continue; }
+            const r = n.getBoundingClientRect(); if ((r.width || r.height) && off(r)) continue;
+            if (on(r)) {
               if (CONTROL.has(tag)) push(r, true);
               else if (PICTURE.has(tag) || BAND.has(tag)) push(r, false);
               else if (r.width >= 24 && r.height >= 24) {
@@ -243,11 +235,11 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, cameo = 
                 }
               }
             }
-            visit(n, tag === 'SVG');
+            walk(n, tag === 'SVG');
           }
         }
       };
-      visit(document.body, false);
+      walk(document.body);
       page = out;
       const sig = out.join(';'); if (sig !== pageSig) { pageSig = sig; pageVersion++; makeMask(); } /* the page really moved */
     }

@@ -84,6 +84,7 @@ jobs:
       # playwright.config.ts); the run after a push leaves both out. The background's frame cost (@frame-cost) runs
       # on its own below.
       - name: Playwright tests
+        id: suite
         env:
           E2E_SKIP_COV: ${{ github.event_name == 'push' && '1' || '' }}
         run: pnpm exec playwright test --grep-invert "${{ github.event_name == 'push' && '@live-videos|@frame-cost' || '@frame-cost' }}"
@@ -91,9 +92,9 @@ jobs:
       # The background's frame cost (tests/background-perf.spec.ts, @frame-cost) is measured with nothing else running:
       # with three workers on a four-core runner the other browsers preempt the timed frame, and its p95 read 3.6 to
       # 6.6 ms for a drawing that costs about 1 ms there (docs/agent/e2e.md). Its own output folders keep the suite's
-      # traces and report in the artifact. Runs after the suite whether the suite passed or not.
+      # traces and report in the artifact. Runs whenever the suite ran, passed or not.
       - name: Frame cost of the background, alone on the runner (chromium)
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && (steps.suite.outcome == 'success' || steps.suite.outcome == 'failure') }}
         env:
           PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/frame-cost
         run: pnpm exec playwright test --project=chromium --grep @frame-cost --workers=1 --output test-results/frame-cost
