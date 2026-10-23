@@ -113,3 +113,19 @@ test('ci-fetch fails when the archive lacks a file the index names', () => {
   assert.notEqual(r.status, 0);
   assert.match(r.stderr, /p\/core\.0123456789\.(m4a|json) is named by js\/voice-index\.js but is not in the archive/);
 });
+
+/* The Family helpers' voice samples (openspec family-helpers, task 1.5): owner-run, a few lines per friend and band */
+test('family-samples.mjs plans a few lines per friend and band in three distinct voices, and sends nothing without GO=1', async () => {
+  const { samplePlan, planCost } = await import('../tools/voice/family-samples.mjs');
+  const plan = samplePlan({});
+  assert.equal(new Set(plan.map(s => s.voice)).size, 3);
+  assert.deepEqual([...new Set(plan.map(s => s.voice))], ['en-US-Chirp3-HD-Puck', 'en-US-Chirp3-HD-Leda', 'en-US-Chirp3-HD-Charon']);
+  for (const f of ['shunya', 'nava', 'eka']) for (const b of ['early', 'growing', 'fluent']) assert.ok(plan.some(s => s.friend === f && s.band === b), `${f} ${b}`);
+  assert.ok(plan.every(s => !/\{\w+\}/.test(s.text) && s.text.length > 0));
+  assert.ok(planCost(plan) < 0.1, 'well under ten cents');
+  assert.equal(samplePlan({ NAVA: 'en-US-Chirp3-HD-Kore' }).find(s => s.friend === 'nava').voice, 'en-US-Chirp3-HD-Kore');
+  const env = { ...process.env }; for (const k of ['GO', 'GOOGLE_TTS_TOKEN', 'GOOGLE_TTS_KEY']) delete env[k];
+  const r = spawnSync(process.execPath, [fileURLToPath(new URL('../tools/voice/family-samples.mjs', import.meta.url))], { env, encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /Nothing sent/);
+});

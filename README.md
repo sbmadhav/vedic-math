@@ -79,6 +79,18 @@ node tools/voice/publish.mjs   # uploads the archive with gh and writes its tag 
 
 Commit `js/voice-index.js` and `tools/voice/manifest.json` with the wording change. `test/voice-coverage.test.mjs` fails when an Explorer line has no recording.
 
+### Family helper voice samples
+
+The Nikhilam Family helpers (`openspec/changes/family-helpers/`) get their own Chirp 3 HD voices: Shunya Puck, Nava Leda, Eka Charon. Before the full recording, hear a few lines per friend and Reading band (36 lines, about $0.05 at list price, inside the same spend guard; without `GO=1` the tool only prints the plan):
+
+```sh
+node tools/voice/family-samples.mjs   # the plan and its cost, nothing sent
+GOOGLE_TTS_TOKEN=$(gcloud auth print-access-token) GOOGLE_CLOUD_PROJECT=sbmadhav-vedic-math GO=1 node tools/voice/family-samples.mjs
+python3 -m http.server 8371           # from the repository root, then open http://localhost:8371/docs/prototypes/family-helpers/listen.html
+```
+
+Swap a voice with `SHUNYA=`, `NAVA=` or `EKA=` set to another Chirp 3 HD voice name. The samples land in `tools/voice/out/family-samples/` (git-ignored); never commit them. Until the owner's full recording lands, the Family's lines are text only.
+
 `main` is protected: every change from someone else arrives as a pull request, needs the owner's review and passing checks, and nothing merges without approval.
 
 ## Contributing

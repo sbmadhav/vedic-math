@@ -8,4 +8,5 @@ Read aloud plays prerecorded audio from the voice host, `https://voice.learnvedi
 - Keys and tokens come only from the shell (`GOOGLE_TTS_TOKEN=$(gcloud auth print-access-token)`), never a file. Keep the spend guard in `tools/voice/voice-lib.mjs` ($300 a month, $50 a run, 300 requests a minute).
 - The game never calls a speech service, and `build.py` fails on a provider host or key in a published file.
 - `sw.js` keeps voice files cache first in `lvm-voice`, a cache every deploy keeps: up to 4,000 whole lines, and one copy of the line set, clip directory and each pack (a re-record's new copy replaces the old one; `app/src/sw/sw-voice.test.ts`).
+- The Family helpers' voice samples (`tools/voice/family-samples.mjs`, owner-run, `GO=1` to spend) write only to the git-ignored `tools/voice/out/family-samples/`; the listening page is `docs/prototypes/family-helpers/listen.html` (README, "Family helper voice samples"). Their lines stay text only until the full recording.
 - End-to-end runs before the voice host is live: `E2E_VOICE_ORIGIN` points the tests at another copy of the files (`docs/agent/e2e.md`).
