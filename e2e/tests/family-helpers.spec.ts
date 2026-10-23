@@ -88,6 +88,15 @@ test.describe('helpers on', () => {
     await expect(visit(page)).toHaveCount(0);
   });
 
+  test('leaving the page with a Visit open takes the Visit with it', async ({ page }) => {
+    await open(page, SKILL);
+    await askFriend(page);
+    await page.goto(`${APP}#/dojo`);
+    await expect(page.locator('#practice')).toHaveCount(0);
+    await expect(visit(page)).toHaveCount(0);
+    await expect(page.locator('.fh-layer .fh-visit')).toHaveCount(0);
+  });
+
   test('Pause motion during a Visit stops its movement at once', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await open(page, SKILL);

@@ -57,6 +57,7 @@ const firstSentence = s => { const t = plainText(s), m = t.match(/^.*?[.!?](\s|$
      { type: 'leave', skill }              the Player left the round
      { type: 'ask', skill }                Ask a friend
      { type: 'raceStart' }                 a timed race began: hold what is noticed until roundEnd
+     { type: 'raceEnd' }                   a timed race was left before its end: nothing held carries over
      { type: 'roundEnd', skill, misses, lit, hard }  a round ended (hard: memory says this Skill was hard last time)
    note() returns { level: 1 | 2 | 3, kind: 'help' | 'cheer' | 'leave', skill, reason, asked } or null, and records the
    Visit it returns: the view shows every plan it gets. note(event, { quiet: true }) counts the event but starts no
@@ -100,6 +101,7 @@ export function createCoach({ now = () => Date.now(), rules = RULES, setting = '
       case 'leave': { const was = st.sinceRight > 0; st.sinceRight = 0; return was ? help(skill, 'leave') : null; }
       case 'ask': return record({ level: visitLevel(skill), kind: 'help', skill, reason: 'ask', asked: true }); /* any time, muted or resting */
       case 'raceStart': st.race = true; st.held = null; return null;
+      case 'raceEnd': st.race = false; st.held = null; st.roundMiss = 0; st.sinceRight = 0; return null; /* left early: the next round starts clean */
       case 'roundEnd': {
         const held = st.held; st.race = false; st.held = null; st.roundMiss = 0; st.sinceRight = 0;
         if (ev.lit && ev.hard) return auto() ? record({ level: 3, kind: 'cheer', skill, reason: 'breakthrough', asked: false }) : null;

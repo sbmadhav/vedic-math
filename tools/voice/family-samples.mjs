@@ -3,12 +3,14 @@
    on docs/prototypes/family-helpers/listen.html and swap a voice before the full recording.
    Repo-only and owner-run. Without GO=1 it only prints the plan and its cost, and sends nothing. With GO=1 it asks
    Google Text-to-Speech through voice-lib.mjs's spend guard ($300 a month, $50 a run, paced), caches every line, and
-   writes git-ignored files: tools/voice/out/family-samples/<friend>/<band>-<n>.m4a and samples.json.
+   writes git-ignored files: tools/voice/out/family-samples/<friend>/<band>-<n>-<voice>-<text hash>.m4a and samples.json
+   (the voice and the text are in the name, so a swapped voice or a changed line gets fresh audio, never a relabelled file).
      node tools/voice/family-samples.mjs                       the plan and the cost, nothing sent
      GOOGLE_TTS_TOKEN=$(gcloud auth print-access-token) GOOGLE_CLOUD_PROJECT=sbmadhav-vedic-math GO=1 node tools/voice/family-samples.mjs
    Swap a voice for a try: SHUNYA=en-US-Chirp3-HD-Fenrir (likewise NAVA, EKA). Never commit the audio or a key. */
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 import { LINES } from '../../js/family-lines.js';
 import { FRIENDS, BANDS } from '../../js/family-helpers.js';
 import { PRICE_PER_CHAR } from './voice-lib.mjs';
@@ -18,6 +20,7 @@ const OUT = fileURLToPath(new URL('./out/family-samples/', import.meta.url));
 export const KINDS = { shunya: ['hello', 'nudgeEarly', 'intro', 'cheer'], nava: ['hello', 'nudgeEarly', 'encourage', 'cheer'], eka: ['hello', 'methodEarly', 'steps', 'cheer'] };
 export const VARS = { name: 'Swift Tiger', title: 'Square numbers ending in 5' };
 const fill = line => line.replace(/\{(\w+)\}/g, (m, k) => VARS[k] || '');
+const stamp = text => createHash('sha1').update(text).digest('hex').slice(0, 6);
 
 /* { friend, band, n, voice, text, file } for every sample; env may swap a friend's voice */
 export function samplePlan(env = process.env) {
@@ -26,7 +29,8 @@ export function samplePlan(env = process.env) {
     const voice = env[id.toUpperCase()] || f.voice;
     for (const band of BANDS) KINDS[id].forEach((kind, n) => {
       const list = (LINES[id][kind] || {})[band]; if (!list || !list.length) return;
-      out.push({ friend: id, name: f.name, band, kind, n: n + 1, voice, text: fill(list[0]), file: `${id}/${band}-${n + 1}.m4a` });
+      const text = fill(list[0]);
+      out.push({ friend: id, name: f.name, band, kind, n: n + 1, voice, text, file: `${id}/${band}-${n + 1}-${voice.split('-').pop()}-${stamp(text)}.m4a` });
     });
   }
   return out;

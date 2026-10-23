@@ -650,7 +650,8 @@ function starView(trick, n, { signal } = {}, back = null) {
   const fam = familyRound({ root: play.area, card: '.star-end', signal, area: 'star', protect: '.star-end-h, .star-end-sp, .star-acts, .star-talk', ctx: () => ({ skill: byId['v-' + trick] }) });
   fam.note({ type: 'raceStart' });
   const onEnd = ({ misses, lit }) => { const acts = play.area.querySelector('.star-acts'); if (acts && fam.askHTML) acts.insertAdjacentHTML('beforeend', fam.askHTML); fam.note({ type: 'roundEnd', misses, lit }); };
-  return runStar(play.area, { trick, star: n, signal, back, again: () => mount(ctx => starView(trick, n, ctx, back)), findVideo: starVideo, intro, onEnd });
+  const run = runStar(play.area, { trick, star: n, signal, back, again: () => mount(ctx => starView(trick, n, ctx, back)), findVideo: starVideo, intro, onEnd });
+  return { destroy: () => { fam.note({ type: 'raceEnd' }); run.destroy(); } }; /* a Star left before its end screen must not hold the next round's Visits */
 }
 /* star-round's findVideo seam: the Trick's hand-matched video (null offline or when the list fails to load), opened
    in the in-page player. open(opener) resolves when the player closes. */

@@ -42,7 +42,7 @@
 | Asked | the Player taps "Ask a friend" (any time, any setting but Off) |
 | Help phrase | a help phrase in listening mode (step 3, D14) |
 
-A timed race is never interrupted mid-question (the Arena, a Star's clock): the engine is told when a race starts, holds what it noticed, and offers one visit at the round's end (or at a Practice pause). In step 2 the Star round reports only its end.
+A timed race is never interrupted mid-question (the Arena, a Star's clock): the engine is told when a race starts, holds what it noticed, and offers one visit at the round's end (or at a Practice pause); a race left before its end drops what was held. In step 2 the Star round reports only its end.
 
 **D5. Escalation.** Each Skill's trouble count goes up by one with each signal in a session. Level = the trouble count, from 1 to 3 (Misses in a round starts at 2):
 

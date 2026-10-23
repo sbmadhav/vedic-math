@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 774070,
+  "total": 774335,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -47,7 +47,7 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 44001,
+   "/js/app.js": 44068,
    "/js/arena.js": 5327,
    "/js/bolt.js": 1088,
    "/js/celebrate.js": 3080,
@@ -55,10 +55,10 @@
    "/js/cloud-config.js": 588,
    "/js/cloud.js": 4437,
    "/js/explain-lines.js": 2176,
-   "/js/family-helpers.js": 5209,
+   "/js/family-helpers.js": 5263,
    "/js/family-hook.js": 775,
    "/js/family-lines.js": 2624,
-   "/js/family-view.js": 3957,
+   "/js/family-view.js": 4094,
    "/js/family.js": 1528,
    "/js/find.js": 6645,
    "/js/fx.js": 3986,
@@ -118,7 +118,7 @@
    "/js/skills/index.js": 1084,
    "/js/skills/middle.js": 6258,
    "/js/skills/upper.js": 7871,
-   "/js/sky-bg.js": 10568,
+   "/js/sky-bg.js": 10575,
    "/js/sky-scene.js": 6164,
    "/js/sky-view.js": 4458,
    "/js/sky.js": 3762,
@@ -139,8 +139,8 @@
    "/js/watch.js": 2065,
    "/manifest.webmanifest": 313,
    "/math.css": 22360,
-   "/play/": 3620,
-   "/sw.js": 6120,
+   "/play/": 3621,
+   "/sw.js": 6119,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -174,11 +174,11 @@
     "why": "react-typescript task 1.7: the lint fixes in sw.ts (optional catch bindings, no non-null assertions); no new file"
    },
    {
-    "date": "2026-10-22",
+    "date": "2026-10-23",
     "pr": "family-helpers",
     "from": 758499,
-    "to": 774070,
-    "why": "the Nikhilam Family helpers (openspec change family-helpers, task 2.10): four new modules (js/family-helpers.js, js/family-hook.js, js/family-lines.js, js/family-view.js) counted because every module is precached, though the overlay, engine and line table load only for a Player who turned the switch on in Me; js/family.js gains each friend's art; app.js, star.js, math.css, metrics.js and handoff-schema.js grow a little"
+    "to": 774335,
+    "why": "the Nikhilam Family helpers (openspec change family-helpers, task 2.10): four new modules (js/family-helpers.js, js/family-hook.js, js/family-lines.js, js/family-view.js) counted because every module is precached, though the overlay, engine and line table load only for a Player who turned the switch on in Me; js/family.js gains each friend's art; app.js, star.js, math.css, metrics.js and handoff-schema.js grow a little; measured after merging #130, so the lighter js/sky-bg.js is in the count"
    }
   ]
  },

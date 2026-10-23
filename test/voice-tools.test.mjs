@@ -123,7 +123,10 @@ test('family-samples.mjs plans a few lines per friend and band in three distinct
   for (const f of ['shunya', 'nava', 'eka']) for (const b of ['early', 'growing', 'fluent']) assert.ok(plan.some(s => s.friend === f && s.band === b), `${f} ${b}`);
   assert.ok(plan.every(s => !/\{\w+\}/.test(s.text) && s.text.length > 0));
   assert.ok(planCost(plan) < 0.1, 'well under ten cents');
-  assert.equal(samplePlan({ NAVA: 'en-US-Chirp3-HD-Kore' }).find(s => s.friend === 'nava').voice, 'en-US-Chirp3-HD-Kore');
+  const swapped = samplePlan({ NAVA: 'en-US-Chirp3-HD-Kore' }).find(s => s.friend === 'nava');
+  assert.equal(swapped.voice, 'en-US-Chirp3-HD-Kore');
+  assert.notEqual(swapped.file, plan.find(s => s.friend === 'nava').file, 'a swapped voice gets its own file: old audio is never relabelled');
+  assert.match(swapped.file, /^nava\/early-1-Kore-[0-9a-f]{6}\.m4a$/);
   const env = { ...process.env }; for (const k of ['GO', 'GOOGLE_TTS_TOKEN', 'GOOGLE_TTS_KEY']) delete env[k];
   const r = spawnSync(process.execPath, [fileURLToPath(new URL('../tools/voice/family-samples.mjs', import.meta.url))], { env, encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);

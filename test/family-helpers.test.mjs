@@ -146,6 +146,13 @@ test('a timed race holds what is noticed until its end; a Star with two or more 
   assert.equal(createCoach({ now: t }).note({ type: 'roundEnd', skill: 'v-sq5', misses: 0 }), null);
   const lit = createCoach({ now: t }).note({ type: 'roundEnd', skill: 'v-sq5', misses: 0, lit: true, hard: true });
   assert.equal(lit.kind, 'cheer');
+  /* a Star left before its end screen: nothing held carries into the next round */
+  const left = createCoach({ now: t });
+  left.note({ type: 'raceStart' }); left.note({ type: 'miss', skill: 'v-sq5' }); left.note({ type: 'miss', skill: 'v-sq5' });
+  assert.equal(left.note({ type: 'raceEnd' }), null);
+  assert.equal(left.note({ type: 'leave', skill: 'v-sq5' }), null, 'no goodbye for the race that was left');
+  left.note({ type: 'miss', skill: 'a' });
+  assert.equal(left.note({ type: 'miss', skill: 'a' }).level, 1, 'the next round is not held');
 });
 
 test('leaving a round after a miss with no right answer since starts a short leave Visit', () => {

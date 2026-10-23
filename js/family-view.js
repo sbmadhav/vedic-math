@@ -9,7 +9,7 @@
 import * as store from './store.js';
 import * as fx from './fx.js';
 import * as metrics from './metrics.js';
-import { on, later, child } from './life.js';
+import { on, later, child, onAbort } from './life.js';
 import { friendSVG } from './family.js';
 import { createCoach, planVisit, showMeTurn, placeVisit, exampleFor, skillInfo, bandFor, nickWords, helpSetting, memoryAfter, wasHard, FRIENDS, RULES } from './family-helpers.js';
 import { answerText } from './answers.js';
@@ -60,6 +60,9 @@ function open(v, r, { info, band, example, nick = '' }) {
   el.innerHTML = `<div class="fh-bubble"><button type="button" class="fh-x" aria-label="Close">&times;</button><p class="fh-who"></p><div class="fh-say"></div><div class="fh-btns"></div></div>
     <div class="fh-crew">${crew.map(f => `<span class="fh-friend" data-f="${f}">${friendSVG(f)}</span>`).join('')}</div>`;
   current = { ctl, el, back: r.root.querySelector('input.ans-in, .pr-choice, [data-fh-ask]') };
+  /* The round's signal ends before this Visit's own hashchange listener could run (the app's runs first and tears the
+     view down), so the Visit leaves with the signal: no floating bubble with dead buttons on the next page */
+  onAbort(vs, () => { if (current && current.el === el) current = null; el.remove(); });
   const turns = v.turns.slice(); let i = 0;
   const still = () => el.classList.toggle('fh-still', fx.noMotion());
   still(); fx.onMotionChange(still, vs);
