@@ -171,7 +171,7 @@
    },
    {
     "date": "2026-10-23",
-    "pr": 136,
+    "pr": 138,
     "from": 758499,
     "to": 758942,
     "why": "learnvedicmath task 9.2: js/handoff.js counts the hand-off result once per visit (RESULTS, the spec's list, with its comment and fixed titles; +454 bytes); the rest is main's drift since the last measurement (sky-bg.js, the play shell, sw.js); no new file"
