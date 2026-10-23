@@ -116,13 +116,14 @@ test('the precache list holds every import-map module, the shell, the styles, fo
   assert.equal(urls.get(importMap()['/js/app.js']), sha('js/app.js'));
   const tokens = read('play/index.html').match(/href="(\/ds\/2\.1\.0\/tokens\.css\?v=\w+)"/)[1];
   assert.equal(urls.get(tokens), sha('ds/2.1.0/tokens.css'), 'the published tokens.css, as served');
-  for (const u of ['/fonts/nunito-sans-latin-wght-normal.woff2', '/fonts/jetbrains-mono-latin-500-normal.woff2', '/icons/icon-192.png', '/icons/maskable-512.png',
+  for (const u of ['/fonts/nunito-sans-latin-wght-normal.woff2', '/fonts/jetbrains-mono-latin-500-normal.woff2', '/icons/icon-192.png', '/icons/maskable-192.png', '/icons/maskable-512.png',
     '/icons/favicon-16.png', '/icons/favicon-32.png', '/icons/favicon-48.png', '/icons/favicon.svg', '/icons/apple-touch-icon.png', '/manifest.webmanifest'])
     assert.equal(urls.get(u), sha(u.slice(1)), `${u} is precached with its hash`);
   for (const [u, hash] of precache) {
     assert.ok(u.startsWith('/'), `${u} is not an absolute path`);
     assert.match(String(hash), /^[0-9a-f]{10}$/, `${u} has no hash`);
     assert.ok(!u.startsWith('/vendor/') && !u.startsWith('/thumbs/'), `${u} is fetched on first use, never precached`);
+    assert.ok(!u.startsWith('/screenshots/'), `${u}: the install screenshots are for the browser's install dialog, never precached`);
   }
 });
 
