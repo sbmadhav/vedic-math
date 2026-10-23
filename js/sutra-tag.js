@@ -34,8 +34,9 @@ export const NOTES = {
   check9: 'The digit sum check, casting out nines, is much older than the 1965 book. The sutra itself is about sums of coefficients; a digit sum is the same idea for numbers.',
   times5: 'Times 10, then halve, is a proportion: the idea of this sub-sutra. The book uses it for working bases, as in the trick for multiplying with a working base like 50.'
 };
-/* Where a tag can be followed from: the fixed words of the math/sutra_tag/<surface> event (analytics spec) */
-export const SURFACES = ['trick', 'star', 'kata', 'katas', 'dojo', 'arena', 'watch', 'game', 'home'];
+/* Where a tag can be followed from: the fixed words of the math/sutra_tag/<surface> event (analytics spec).
+   try: the card of a Try a trick (js/try.js, openspec try-trick-in-modes). */
+export const SURFACES = ['trick', 'star', 'try', 'kata', 'katas', 'dojo', 'arena', 'watch', 'game', 'home'];
 
 /* The Sutra a Trick uses, and how: { id, relation } or null */
 export function sutraOfTrick(trickId) {
@@ -58,7 +59,7 @@ export const meaningFor = (id, mode) => { const c = cardOf(id); return c ? (mode
 const KIND = {
   sutra: { explorer: 'Sutra', challenger: 'Sutra', pro: 'Sutra' },
   sub: { explorer: 'Sub-sutra', challenger: 'Sub-sutra', pro: 'Sub-sutra' },
-  case: { explorer: 'Sutra', challenger: 'A special case of', pro: 'Special case of' },
+  case: { explorer: 'Part of', challenger: 'A special case of', pro: 'Special case of' }, /* Explorer: honest and short, a special case is part of its Sutra */
   idea: { explorer: 'Idea from', challenger: 'Uses the idea of', pro: 'Uses the idea of' }
 };
 export const kindWord = (relation, mode) => (KIND[relation] || KIND.sutra)[modeOf(mode)];
@@ -68,10 +69,11 @@ export const ownRelation = id => (cardOf(id) && CARDS[id].sub ? 'sub' : 'sutra')
 /* One tag. size: 'full' (kind, name, meaning, Say it and the Respelling, and the Pro note), 'line' (kind, name, meaning)
    or 'mini' (the name, with kind and meaning for screen readers only). link: false draws the same words as text (a
    Star's header while questions are on screen, a Watch card, a games list card). surface: one of SURFACES, for the
-   tag event. note: the Pro note's text (full size, Pro only). extra: HTML after the link, such as "3 of 4 right". */
-export function tagHTML(id, { mode = 'challenger', relation = ownRelation(id), size = 'line', link = true, surface = '', note = '', extra = '', cls = '' } = {}) {
+   tag event. note: the Pro note's text (full size, Pro only). extra: HTML after the link, such as "3 of 4 right".
+   mean: a meaning line in place of the card's (a Try a trick's card says the Sutra in its Mode's words). */
+export function tagHTML(id, { mode = 'challenger', relation = ownRelation(id), size = 'line', link = true, surface = '', note = '', extra = '', cls = '', mean = '' } = {}) {
   const c = cardOf(id); if (!c) return '';
-  const m = modeOf(mode), kind = kindWord(relation, m), mean = meaningFor(id, m);
+  const m = modeOf(mode), kind = kindWord(relation, m); mean = mean || meaningFor(id, m);
   const words = `<span class="sutra-tag-k">${esc(kind)}</span> <b class="sutra-tag-n" lang="sa-Latn">${esc(c.name)}</b>${size === 'mini' ? `<span class="md-sr-only">: ${esc(mean)}</span>` : ` <span class="sutra-tag-m">${esc(mean)}</span>`}`;
   const go = SURFACES.includes(surface) ? ` data-tag="${surface}"` : '';
   const body = link ? `<a class="sutra-tag-a" href="#/sutras/${id}"${go}>${words}<span class="md-sr-only">, open its deep dive</span></a>` : `<span class="sutra-tag-a">${words}</span>`;
