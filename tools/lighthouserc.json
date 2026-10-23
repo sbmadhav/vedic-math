@@ -1,8 +1,9 @@
 {
-  "//": "Lighthouse settings and pages of the performance checks (openspec change react-typescript, performance-budget spec). e2e/perf/lighthouse.mts measures the baseline with them (task 0.4) and the preview perf job reads the same file (task 1.8). Mobile preset: Lighthouse's default (simulated slow 4G, 4x CPU slowdown). From phase 2 the paths move under /learn/ (task 2.7).",
+  "//": "Lighthouse settings and pages of the performance checks (openspec change react-typescript, performance-budget spec). e2e/perf/lighthouse.mts measures the baseline with them (task 0.4) and the preview perf job reads the same file (task 1.8). Mobile preset: Lighthouse's default (simulated slow 4G, 4x CPU slowdown). serverResponseTime: the server latency, in ms, the simulation uses for the measured origin whichever host serves the page (lantern's own default for an origin it has no data for, and about what production's edge gave the baseline run); the simulation adds it to every request on the way to largest contentful paint, so left to the observed value a workers.dev preview, which answers 20 to 30 ms slower, read 170 to 380 ms over the baseline on the same code (docs/perf/baseline.md). The observed latency is still recorded, as lat. From phase 2 the paths move under /learn/ (task 2.7).",
   "ci": {
     "collect": {
       "numberOfRuns": 5,
+      "serverResponseTime": 30,
       "settings": {
         "formFactor": "mobile",
         "throttlingMethod": "simulate",
