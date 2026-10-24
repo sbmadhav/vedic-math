@@ -44,6 +44,23 @@ import { listenBtn, wireListen } from './listen.js';
 import { sayButton, respellHTML, devaHTML, wireSay } from './say.js';
 import { sutraAmbience, ambienceButton, wireAmbience, settingsHTML as ambienceSettingsHTML, wireSettings as wireAmbienceSettings } from './sutra-ambience.js';
 import { tagHTML, trickTagHTML, sutraOfTrick, sutraOfGame, roundSutras, SURFACES as TAG_SURFACES } from './sutra-tag.js';
+import { claim as claimSlot, release as releaseSlot } from './prompt-slot.js';
+
+/* Installing the app (openspec change install-app): js/install.js and its rules load after the first view has painted
+   (loadInstall, 100 ms after boot), so they are not in the static import graph the first paint waits for (design D12).
+   The browser's install prompt can arrive before that: it is caught here and handed to initInstall. withInstall(fn,
+   signal) runs fn with the module once it is here, unless signal (the view's) has aborted by then. */
+const boot = new AbortController(); /* the page's lifetime: never aborted */
+let install = null, installLoad = null, earlyPrompt = null; const installQueue = [];
+function loadInstall() {
+  return installLoad ||= import('./install.js').then(m => {
+    install = m; m.initInstall(earlyPrompt); earlyPrompt = null;
+    installQueue.splice(0).forEach(([fn, s]) => { if (!s || !s.aborted) fn(m); });
+    return m;
+  });
+}
+const withInstall = (fn, signal) => { if (install) fn(install); else installQueue.push([fn, signal]); };
+on(window, 'beforeinstallprompt', e => { if (!install) { e.preventDefault(); earlyPrompt = e; } }, boot.signal);
 
 const $ = (s, r = document) => r.querySelector(s);
 const view = $('#view');
@@ -273,15 +290,16 @@ function home(ctx = {}, { tiles = false } = {}) {
     ${heroStats()}
     <h1 class="md-heading home-h">${fx.t({ explorer: 'What do you want to play?', challenger: 'Ready to get faster?', pro: 'Train your mental math' })}</h1>
     <p class="mode-line">Mode: <b>${fx.MODES[m].name}</b>${store.modeGuessed() ? ', our guess for a first try' : ''} <a href="#/me">Change</a></p>
-    ${newHereHTML()}${cont}${body}
+    ${newHereHTML()}<div class="in-slot" id="installSlot"></div>${cont}${body}
   </div></section>`;
-  const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); home(); };
+  const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); mount(c => home(c, { tiles })); }; /* a fresh view signal, so the Install nudge and the tour mount again */
   const hm = $('#homeMore'), keepMore = () => fx.setHomeMoreOpen(hm.open); /* remembered on this device */
   if (hm) { if (ctx.signal) on(hm, 'toggle', keepMore, ctx.signal); else hm.ontoggle = keepMore; } /* home() also runs with no view signal (an unknown Skill falls back to it): then a property on an element of this view */
   const tc = $('[data-try-open]'), counted = () => metrics.tryStart(m); /* the Try a trick card counts as a Try a trick pressed */
   if (tc) { if (ctx.signal) on(tc, 'click', counted, ctx.signal); else tc.onclick = counted; }
   if (m === 'pro') loadBoard($('#homeBoard'), `daily-${cloud.dayId()}-pro`, 5);
   homeTour(ctx.signal);
+  withInstall(m => m.mountNudge($('#installSlot'), ctx.signal), ctx.signal); /* the Install nudge's one place on Home (openspec change install-app) */
 }
 
 /* Home's Try a trick card (openspec try-trick-in-modes): the Mode's own Try a trick, until the Player has finished it on
@@ -307,11 +325,12 @@ function keepGoingSkill(m) {
 const litStars = () => { const { lit } = store.starStates(); return SKY.PATH.filter(k => lit[k]).length; };
 function skyHome({ signal } = {}) {
   document.title = `Learn Vedic Math`;
-  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}${newHereHTML()}<div id="skyHome"></div>
+  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}${newHereHTML()}<div class="in-slot" id="installSlot"></div><div id="skyHome"></div>
     <p class="mode-line">Mode: <b>${fx.MODES[fx.mode()].name}</b> <a href="#/me">Change</a></p></div></section>`;
   const back = (render.from || '').match(/^#\/star\/([\w-]+)\/(\d)$/);
   const out = skyView($('#skyHome'), { signal, focus: back ? `${back[1]}:${back[2]}` : null });
   homeTour(signal);
+  withInstall(m => m.mountNudge($('#installSlot'), signal), signal);
   return out;
 }
 /* All places: the Sky as a plain list (#/places) */
@@ -1424,12 +1443,13 @@ function homeTour(signal) {
   const replay = tourAsked; tourAsked = false;
   if (!signal || !fx.mode()) return;
   if (!replay && !tourDue({ mode: fx.mode(), state: tourState(), hash: location.hash, fresh: store.sparks() === 0 })) return;
+  claimSlot('tour', signal); /* the tour is a prompt too: nothing else asks for attention while it is due or open (openspec change install-app) */
   later(() => {
     const has = sel => { const el = document.querySelector(sel); if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
     const steps = resolveTour(has, fx.mode());
-    if (!steps.length) return;
+    if (!steps.length) { releaseSlot('tour'); return; }
     setTourState('shown'); metrics.tourEvent('start');
-    startTour(steps, { signal, onEnd: outcome => { if (outcome === 'finish') { setTourState('done'); metrics.tourEvent('finish'); } else { setTourState('skipped'); metrics.tourEvent('skip'); } } });
+    startTour(steps, { signal, onEnd: outcome => { releaseSlot('tour'); if (outcome === 'finish') { setTourState('done'); metrics.tourEvent('finish'); } else { setTourState('skipped'); metrics.tourEvent('skip'); } } });
   }, 300, signal);
 }
 function guideView(section, { signal } = {}) {
@@ -1440,6 +1460,7 @@ function guideView(section, { signal } = {}) {
   const tryHTML = s => {
     const t = tryFor(s, mode); if (!t) return '';
     if (t.action === 'tour' && !m) return '';
+    if (t.action === 'install' && install && install.appHere()) return ''; /* the Installed app: nothing to install (checked again below once the module is here) */
     const main = t.action ? `<button type="button" class="md-btn md-btn--sm md-btn--primary gd-try" data-gd="${t.action}">${esc(t.label)}</button>` : `<a class="md-btn md-btn--sm md-btn--primary gd-try" href="${esc(t.href)}">${esc(t.label)}</a>`;
     return `<p class="gd-acts">${main}${t.more ? ` <a class="md-btn md-btn--sm" href="${esc(t.more.href)}">${esc(t.more.label)}</a>` : ''}</p>`;
   };
@@ -1464,6 +1485,7 @@ function guideView(section, { signal } = {}) {
   on(view, 'click', e => {
     const b = e.target.closest('[data-gd]'); if (!b) return;
     if (b.dataset.gd === 'tour') askTour();
+    else if (b.dataset.gd === 'install') withInstall(m => m.openGuide('guide'), signal);
     else if (b.dataset.gd === 'music') { e.stopPropagation(); window.scrollTo({ top: 0 }); const mb = $('#vmMBtn'); if (mb && mb.getAttribute('aria-expanded') !== 'true') mb.click(); const first = $('#vmMPanel [data-t]'); if (first) first.focus({ preventScroll: true }); }
   }, signal);
   /* #/guide/<section>: focus its heading now (so the router leaves focus there), scroll to it once the router is done */
@@ -1548,7 +1570,7 @@ function meView() {
     <div class="players">${store.allPlayers().map(q => `<div class="player${q.id === p.id ? ' on' : ''}">${avatar(q, 40)}<span><b>${esc(q.name)}</b><small>${q.mode ? fx.MODES[q.mode].name : 'No mode yet'}</small></span>${q.id === p.id ? '<em>Playing</em>' : `<button class="md-btn md-btn--sm" data-switch="${q.id}">Switch</button><button class="md-btn md-btn--sm" data-del="${q.id}" aria-label="Remove ${esc(q.name)}">Remove</button>`}</div>`).join('')}
       <button class="md-btn md-btn--sm" id="meAdd">${icon('plus')} Add a player</button></div>
     <h2 class="mq-strand">Settings</h2>
-    ${skySwitchHTML(p)}
+    ${skySwitchHTML(p)}${install ? install.meCardHTML() : '<div id="meInstallCard" hidden></div>'}
     <div class="me-set"><label><input type="checkbox" id="setSound" ${fx.soundOn() ? 'checked' : ''}> Sound effects</label><label><input type="checkbox" id="setVoice" ${fx.voiceOn() ? 'checked' : ''}> Read questions aloud</label></div>
     ${ambienceSettingsHTML()}
     <h3 class="mq-h3" id="calmH">Calm and motion</h3>
@@ -1586,6 +1608,8 @@ function meView() {
   fx.wireVoiceSettings(view, { player: p.id });
   wireAmbienceSettings(view);
   wireWorldBoards(view);
+  /* The Install guide's card (openspec change install-app): drawn above when the module is here, else put in its place once it is */
+  withInstall(m => { const c = $('#meInstallCard'); if (c) c.outerHTML = m.meCardHTML(); const mi = $('#meInstall'); if (mi) mi.onclick = () => m.openGuide('me'); });
 
   $('#pExport').onclick = async () => { const code = btoa(unescape(encodeURIComponent(store.exportData()))); try { await navigator.clipboard.writeText(code); msg('Backup code copied. Paste it somewhere safe.'); } catch (e) { prompt('Copy this backup code:', code); } };
   $('#pImport').onclick = () => { const code = prompt('Paste your backup code:'); if (!code) return; try { store.importData(decodeURIComponent(escape(atob(code.trim())))); msg('Progress restored.'); meView(); } catch (e) { msg('That code did not work. Check that it was copied in full.'); } };
@@ -1668,6 +1692,8 @@ metrics.returnCheck(); /* before the first route view: remembers this device's f
 modeFromLink();
 render();
 initAmbient();
+/* The install module, after the first paint (openspec change install-app, design D12); a load that fails is reported once */
+later(() => loadInstall().catch(e => console.error('install.js did not load', e)), 100, boot.signal);
 /* Offline: /sw.js (scope /play/, the game only) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
   const registerSW = () => navigator.serviceWorker.register('/sw.js', { scope: '/play/' }).catch(() => {});

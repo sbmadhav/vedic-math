@@ -7,13 +7,27 @@
   "scope": "/play/",
   "display": "standalone",
   "orientation": "any",
+  "lang": "en",
+  "dir": "ltr",
   "background_color": "#F6F7F9",
   "theme_color": "#F6F7F9",
   "categories": ["education", "games", "kids"],
+  "launch_handler": { "client_mode": ["navigate-existing", "auto"] },
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
     { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
     { "src": "/icons/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "screenshots": [
+    { "src": "/screenshots/home-narrow.png", "sizes": "780x1688", "type": "image/png", "form_factor": "narrow", "label": "Home: the next Star, today's Arena round and the daily quests" },
+    { "src": "/screenshots/star-narrow.png", "sizes": "780x1688", "type": "image/png", "form_factor": "narrow", "label": "A Star: four questions on one speed trick" },
+    { "src": "/screenshots/home-wide.png", "sizes": "1280x800", "type": "image/png", "form_factor": "wide", "label": "Home on a computer" }
+  ],
+  "shortcuts": [
+    { "name": "Today's Arena round", "short_name": "Arena", "description": "Sixty seconds, the same questions for everyone today", "url": "/play/#/arena" },
+    { "name": "Practice a skill", "short_name": "Practice", "description": "The skill map, from counting to calculus", "url": "/play/#/learn" },
+    { "name": "The 29 Sutras", "short_name": "Sutras", "description": "The sutras and sub-sutras, as cards to collect", "url": "/play/#/sutras" }
   ]
 }

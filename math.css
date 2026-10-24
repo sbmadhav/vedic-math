@@ -1460,3 +1460,45 @@ html.motion-paused .play-card, body.calm .play-card { transition: none; } html.m
 .try-card { margin: var(--space-4) 0; }
 .try-card h2 { margin: var(--space-2) 0 var(--space-1); }
 .try-card .door-acts { margin: var(--space-2) 0 0; }
+
+/* Installing the app (openspec change install-app): the Install nudge on Home, the Install guide and the Me page card.
+   Tokens only; the guide is a .vm-sheet dialog, so it already holds still under Calm, Pause motion and reduced motion. */
+.in-slot:empty { display: none; }
+.in-nudge { display: flex; align-items: flex-start; gap: var(--space-3); margin: var(--space-3) 0; padding: var(--space-3) var(--space-4); border: 2px solid var(--teal-strong); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--teal) 12%, var(--card)); color: var(--ink); animation: toastIn .3s ease-out; }
+.in-nudge-ic { flex: none; width: 48px; height: 48px; border-radius: var(--radius-sm); }
+.in-nudge-x { min-width: 0; flex: 1; }
+.in-nudge-t { margin: 0; font: 600 1.05rem/1.3 var(--display); }
+.in-nudge-b { margin: var(--space-1) 0 var(--space-2); color: var(--ink-muted); line-height: 1.45; }
+.in-nudge-acts { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; }
+.in-nudge-acts .md-btn { min-height: 44px; }
+@media (prefers-reduced-motion: reduce) { .in-nudge { animation: none; } }
+html.motion-paused .in-nudge, body.calm .in-nudge { animation: none; }
+.vm-sheet.in-guide { box-sizing: border-box; width: min(520px, calc(100vw - 2 * var(--space-4))); max-width: none; max-height: calc(100dvh - 2 * var(--space-4)); padding: var(--space-4); }
+@media (max-width: 380px) { .in-guide .in-steps .in-ic { display: none; } } /* a 320 px phone: the step number and words keep the width */
+.in-guide .in-why { list-style: none; margin: 0 0 var(--space-4); padding: 0; display: grid; gap: var(--space-2); }
+.in-guide .in-why li, .in-guide .in-steps li { display: flex; align-items: flex-start; gap: var(--space-2-5); line-height: 1.45; }
+.in-guide .in-ic { flex: none; display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--sky) 16%, var(--card)); color: var(--ink); }
+.in-guide .in-ic svg { width: 22px; height: 22px; }
+.in-guide .in-one { margin: 0 0 var(--space-4); padding: var(--space-3) var(--space-4); border: 2px solid var(--teal-strong); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--teal) 12%, var(--card)); }
+.in-guide .in-one .md-btn { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 48px; }
+.in-guide .in-one .md-btn svg { width: 22px; height: 22px; }
+.in-guide .in-one .mq-small { margin: var(--space-2) 0 0; }
+.in-guide .in-h { margin: 0 0 var(--space-2); font: 600 1.05rem/1.3 var(--display); }
+.in-guide .in-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.in-guide .in-steps:focus { outline: none; }
+.in-guide .in-steps:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; border-radius: var(--radius-xs); }
+.in-guide .in-n { flex: none; display: inline-grid; place-items: center; width: 28px; height: 28px; margin-top: var(--space-1); border-radius: var(--radius-round); background: var(--ink); color: var(--bg); font: 700 .9rem/1 var(--font-sans); }
+.in-guide .in-t { min-width: 0; padding-top: var(--space-1-5); }
+.in-guide .in-note { margin: var(--space-3) 0 0; }
+.in-guide .in-copy { margin: var(--space-3) 0 0; }
+.in-guide .in-other { margin: var(--space-4) 0 0; }
+.in-guide .in-other summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
+.in-guide .in-pick { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+.in-guide .in-pick .md-chip { min-height: 44px; text-align: left; }
+.in-guide .in-status { min-height: 1.4em; margin: var(--space-3) 0 0; font-weight: 600; }
+.in-guide .in-status:empty { margin: 0; min-height: 0; }
+.in-me { margin: var(--space-3) 0; padding: var(--space-3) var(--space-4); }
+.in-me .in-me-t { margin: 0 0 var(--space-1); }
+.in-me .mq-small { margin: 0 0 var(--space-2); }
+.in-me .md-btn { display: inline-flex; align-items: center; gap: var(--space-2); }
+.in-me .md-btn svg { width: 20px; height: 20px; }

@@ -8,7 +8,7 @@
 //   icons/favicon-16/32/48.png        favicon.svg; its eyes sit on the 16, 32 and 48 px pixel grids
 //   icons/apple-touch-icon.png        180, the app mark full bleed (iOS rounds the corners itself)
 //   icons/icon-192.png, icon-512.png  mark.svg, rounded tile on a transparent background
-//   icons/maskable-512.png            the family inside the maskable safe zone (a circle of 40% radius)
+//   icons/maskable-192.png, -512.png  the family inside the maskable safe zone (a circle of 40% radius)
 //   icons/og.png                      1200 x 630 social image with the light lockup
 import { Resvg } from '@resvg/resvg-js';
 import { copyFileSync, readFileSync, writeFileSync } from 'node:fs';
@@ -59,8 +59,10 @@ png(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64
 // of 64) with a little room, and centred
 const k = (25.6 * 0.94) / Math.hypot(box.width / 2, box.height / 2);
 const tx = 32 - (box.x + box.width / 2) * k, ty = 32 - (box.y + box.height / 2) * k;
-png(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="${TILE}"/>`
-  + `<g transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${k.toFixed(4)})">${family}</g></svg>`, 512, 'maskable-512.png');
+const maskable = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="${TILE}"/>`
+  + `<g transform="translate(${tx.toFixed(3)} ${ty.toFixed(3)}) scale(${k.toFixed(4)})">${family}</g></svg>`;
+png(maskable, 512, 'maskable-512.png');
+png(maskable, 192, 'maskable-192.png'); // the install-app change: Android picks the 192 cut for launchers and shortcuts
 
 // Social image: the light lockup centred on the Daybreak page, with the family's three colours along the foot
 const lockup = src('lockup-light.svg');

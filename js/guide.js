@@ -303,7 +303,7 @@ export function sections(n) {
         w('A grown-up can add it to the home screen.', 'To install, use your browser\'s Install app option, or Share then Add to Home Screen on iPhone and iPad.')
       ],
       tip: w('It gets new things by itself.', 'Updates arrive by themselves the next time you open it online.'),
-      try: null },
+      try: { action: 'install', label: w('How to add it', 'How to install') } },
 
     { id: 'parents', group: 'extras', art: 'shield', covers: [],
       title: w('For grown-ups', 'For parents and teachers', 'Privacy'),
