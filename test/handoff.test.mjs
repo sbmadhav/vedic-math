@@ -249,6 +249,38 @@ test('the game reads what the hand-off wrote', async () => {
   assert.equal(store.sparks(), 5);
 });
 
+/* A storage with a byte cap, as a full browser behaves: a write that would go over it throws QuotaExceededError and
+   leaves the key as it was */
+const capped = (init, cap) => {
+  const st = storage(init), set = st.set;
+  st.size = () => [...st.m.entries()].reduce((n, [k, v]) => n + k.length + v.length, 0);
+  st.set = (k, v) => {
+    const had = st.m.has(k) ? st.m.get(k) : null;
+    set(k, v);
+    if (st.size() > cap) { if (had === null) st.m.delete(k); else st.m.set(k, had); const e = new Error('full'); e.name = 'QuotaExceededError'; throw e; }
+  };
+  return st;
+};
+
+test('a rollback frees every touched key before the old values go back, so a full browser gets its progress back whole', () => {
+  // This device: a Device board stored first, then a small record for p1; the old site's p1 brings a much bigger record
+  const entry = (k, v) => k.length + v.length;
+  const board = JSON.stringify(Array.from({ length: 30 }, (_, i) => ({ board: 'daily-2026-10-' + i, pid: 'p1', score: 100 + i, ts: 1_700_000_000_000 })));
+  const old = JSON.stringify(record());
+  const init = { 'vm.board': board, 'vm.players': players([P1]), 'mathquest.v1.p1': old };
+  const big = record({ seen: Object.fromEntries(Array.from({ length: 300 }, (_, i) => ['tip-' + i, 1_700_000_000_000])) });
+  const payload = S.payloadOf(device({ 'vm.players': players([P1]), 'mathquest.v1.p1': big }), [], 1_700_000_000_000);
+  assert.equal(S.validatePayload(payload).ok, true);
+  const probe = storage(init), snapshot = [...probe.m.entries()].sort();
+  const total = [...probe.m.entries()].reduce((n, [k, v]) => n + entry(k, v), 0);
+  // The cap lets the big record in once the board and the old record are gone, and nothing more: the Players list fails
+  const cap = total - entry('vm.board', board) - entry('mathquest.v1.p1', old) + entry('mathquest.v1.p1', JSON.stringify(payload.records.p1)) + 20;
+  assert.ok(total <= cap, 'what the device held fitted its browser');
+  const st = capped(init, cap);
+  assert.throws(() => applyHandoff(st, payload, 'replace'), /full/);
+  assert.deepEqual([...st.m.entries()].sort(), snapshot, 'the board, the record and the Players list are back as they were');
+});
+
 test('a write that fails part way (storage full) leaves every key exactly as it was, for both choices', async () => {
   const payload = await imported();
   const start = { 'vm.players': players([P1, { ...P1, id: 'pzz', name: 'Bold Yak 55' }]), 'mathquest.v1.p1': record({ sparks: 999 }), 'mathquest.v1.pzz': record(),
