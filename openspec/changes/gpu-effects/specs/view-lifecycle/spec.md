@@ -2,13 +2,9 @@
 
 ## ADDED Requirements
 
-### Requirement: Decoration stops with its page
-When the route changes, every decoration scene the previous page mounted SHALL be unmounted, its listeners and observers removed and its frames stopped. The decoration worker SHALL be ended 60 seconds after the last mounted scene is unmounted, if no scene has been mounted again in that time.
+### Requirement: A celebration stops with its page
+When the route changes, a celebration that is playing SHALL stop at once, its canvas SHALL be removed and its GPU resources released, and no part of it SHALL appear on the next page.
 
-#### Scenario: Leaving the Sky
-- **WHEN** a Player leaves the Sky for the Arena
-- **THEN** the Sky backdrop draws no further frames and its canvas is removed
-
-#### Scenario: Nothing mounted
-- **WHEN** the last mounted decoration scene was unmounted 60 seconds ago and none has been mounted since
-- **THEN** the decoration worker has been ended
+#### Scenario: Leaving during a Belt burst
+- **WHEN** a Player taps Home while a Belt burst is playing
+- **THEN** Home shows no burst, and the burst's canvas is gone
