@@ -109,7 +109,8 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 
 - [ ] 9.1 `js/analytics.js` replaces `/assets/analytics.js` (same behaviour, site code `learnvedicmath`, idle load, Do Not Track and GPC off, queue); `vendor/goatcounter/count.js` pinned with its licence. `js/metrics.js` comments and the theme event name (`math/theme/<scheme>`). Verify: `e2e/tests/analytics.spec.ts` and `analytics-gpc.spec.ts` against the new endpoint (still answered locally in tests).
   - Done 2026-10-19 (`js/analytics.js`, `vendor/goatcounter/count.js`, events specs stub `/js/analytics.js`). Open only for the GoatCounter site code (owner 1.9); the code `learnvedicmath` is already in place.
-- [ ] 9.2 Hand-off events (analytics spec). Verify: e2e on `/import/` sees exactly one event after the fragment is gone.
+- [x] 9.2 Hand-off events (analytics spec). Verify: e2e on `/import/` sees exactly one event after the fragment is gone.
+  - Done 2026-10-23: `js/handoff.js` sends `math/handoff/<result>` once per visit through `count(result)`, result one of `RESULTS` (accepted, replaced, kept, declined, invalid, too-big, popup; the spec's list, pinned by `test/handoff.test.mjs`); Keep both counts as accepted, a browser whose storage would not take the progress as too-big (D11). `e2e/tests/import.spec.ts` records each count with the address bar as it was: exactly one per result, sent from `/import/` with no fragment, fixed words only; a visit with no payload sends nothing. `popup` waits for the export popup button (10.2, deferred).
 - [ ] 9.3 Cloudflare Web Analytics manual snippet, loaded by `js/analytics.js` under the same off switch; try serving `beacon.min.js` from this site in Report-Only first; add the chosen hosts to `THIRD_PARTIES`. Verify: e2e sees no beacon with GPC on; production dashboard shows page loads.
 
 ## 10. Hand-off, new side (decisions 3 and 8)
