@@ -25,7 +25,7 @@ Nothing is loaded from sbmadhav.com or another repo. The design system is a pinn
 - Use the words defined in `GLOSSARY.md` in code comments, docs and plans; read `docs/adr/` before changing who can post, what is sent, or when an identity is created.
 - Never commit studio voice audio or a speech service key, and a change to any spoken line needs a re-record and publish in the same PR (`docs/agent/studio-voice.md`).
 - Repo-only files (`cloud/`, `test/`, `docs/`, `tools/`, `e2e/`, `site/` sources, `app/`, `shared/`, `workers/`, `deploy/`, the workspace files, `wrangler.jsonc`, this file, the README, `build.py`) are listed in `exclude` in `_config.yml`; add new ones there.
-- A build inside the repo goes in a folder whose name starts with `_` (`_site/`, `_dev/`, `_moved/`, or `--out _<name>` in a worktree): git and ESLint ignore `_*/`, nothing under `_` is published, and `build.py` refuses any other place inside the repo.
+- A build inside the repo goes in a top-level folder whose name starts with `_` (`_site/`, `_dev/`, `_moved/`, or `--out _<name>` in a worktree): git and ESLint ignore `_*/`, nothing under `_` is published, and `build.py` refuses any other place inside the repo.
 
 ## Migration in progress (openspec change `react-typescript`)
 
