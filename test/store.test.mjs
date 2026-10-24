@@ -267,6 +267,13 @@ test('exportData makes no code that Restore would refuse: more Players than the 
   assert.throws(() => store.exportData(), /too big/);
   mem['mathquest.v1.' + active] = JSON.stringify({ ...JSON.parse(mem['mathquest.v1.' + active]), seen: {} });
   assert.doesNotThrow(() => store.exportData());
+  // A record the schema leaves out whole (over its entry cap even after trimming) is never quietly missing from a code
+  const kept = mem['mathquest.v1.' + active];
+  const skills = Object.fromEntries(Array.from({ length: 5001 }, (_, i) => ['s' + i, { m: 0.5 }]));
+  mem['mathquest.v1.' + active] = JSON.stringify({ ...JSON.parse(kept), skills });
+  assert.throws(() => store.exportData(), /too big/);
+  mem['mathquest.v1.' + active] = kept;
+  assert.doesNotThrow(() => store.exportData());
 });
 
 test('readBackup checks a code without writing: an old single-Player code becomes one cleaned Player, a hand-off from sbmadhav.com is accepted, and restoreOffer says what the prompt needs', () => {

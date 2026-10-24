@@ -206,6 +206,9 @@ export function exportData() {
   const list = players().list;
   const device = H.readDevice(local.get, local.keys);
   if (!device || device.players.list.length !== list.length) throw new Error('too many Players');
+  // A stored record the schema would leave out (over its caps even after trimming) would make a code without that
+  // Player's progress, and Use the code's would then delete it: refuse instead (#141 review)
+  if (list.some(p => local.get('mathquest.v1.' + p.id) !== null && !device.records[p.id])) throw new Error('too big');
   const text = JSON.stringify(H.payloadOf(device, [], Date.now(), H.FROM_BACKUP));
   if (text.length > H.MAX_JSON) throw new Error('too big');
   return text;
