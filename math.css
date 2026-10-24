@@ -753,7 +753,14 @@ html.motion-paused .vm-player[open], body.calm .vm-player[open] { animation: non
 .sd-ex summary b { grid-column: 1; overflow-wrap: anywhere; }
 .sd-ex details > p { margin: 0; padding: 0 12px 12px; line-height: 1.6; overflow-wrap: anywhere; }
 .sd-uses { display: flex; flex-wrap: wrap; gap: 6px; } .sd-uses span { padding: 4px 10px; border-radius: 99px; background: color-mix(in srgb, var(--teal) 16%, var(--card)); font-size: 13.5px; font-weight: 700; }
-.sd-try { display: flex; flex-wrap: wrap; gap: 8px; }
+.sd-try { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.sd-try li { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.sd-try small, .sd-prog { color: var(--ink-muted); }
+/* Sutra progress on a card's face (openspec change sutras-first) */
+.sutra-prog { display: flex; flex-direction: column; gap: 3px; margin-top: auto; }
+.sutra-prog small { font-size: 13px; color: var(--ink-muted); }
+.sutra-prog-bar { height: 6px; }
+.sutra-kid { font-size: 14px; color: var(--ink); }
 .sd-foot { position: sticky; bottom: 0; z-index: 3; display: flex; justify-content: space-between; gap: 10px; margin: 20px calc(-1 * var(--sd-pad)) 0; padding: 12px var(--sd-pad) calc(12px + env(safe-area-inset-bottom, 0px)); background: var(--bg); border-top: 1px solid var(--line); }
 .sd-foot a { text-decoration: none; min-width: 0; max-width: calc(50% - 5px); }
 .sd-foot a > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }

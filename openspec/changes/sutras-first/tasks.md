@@ -26,17 +26,17 @@ The owner asked for this on 2026-10-21 ("It is important to make the sutras and 
 
 ## 4. Progress per Sutra (PR 2)
 
-- [ ] 4.1 `js/sutra-progress.js`: pure progress per card and its line by Mode. Verify: `test/sutra-progress.test.mjs` (counts, no writes, the no-trick line, Explorer without Stars).
-- [ ] 4.2 Sutras page: progress line and meter on each card face, Explorer meanings and lede, the card grids before the history cards. Verify: `e2e/tests/sutras-first.spec.ts`.
-- [ ] 4.3 Deep dive "Try it yourself": each Trick's Stars lit or practiced. Verify: `e2e/tests/sutras-first.spec.ts`.
-- [ ] 4.4 Coverage specs: `e2e/tests/cov/sutra-progress-1.spec.ts`, `-2.spec.ts`.
+- [x] 4.1 `js/sutra-progress.js`: pure progress per card and its line by Mode. Verify: `test/sutra-progress.test.mjs` (counts, no writes, the no-trick line, Explorer without Stars).
+- [x] 4.2 Sutras page: progress line and meter on each card face, Explorer meanings and lede, the card grids before the history cards. Verify: `e2e/tests/sutras-progress.spec.ts`.
+- [x] 4.3 Deep dive "Try it yourself": each Trick's Stars lit or practiced. Verify: `e2e/tests/sutras-first.spec.ts`.
+- [x] 4.4 Coverage specs: `e2e/tests/cov/sutra-progress-1.spec.ts`, `-2.spec.ts`.
 
 ## 5. Sutras first in the menu (PR 2)
 
-- [ ] 5.1 `play/index.html`: Sutras after Home, shown in Explorer; `js/find.js` `sectionLines()` in the same order with an Explorer line. Verify: `e2e/tests/header.spec.ts`, `test/find.test.mjs`.
-- [ ] 5.2 `js/gamify.js`: Sutra scholar in every Mode; the Explorer Dojo's Sutras button. Verify: `test/gamify.test.mjs`, `e2e/tests/dojo.spec.ts`, the badges and star-round cov specs that change with them.
-- [ ] 5.3 `learnvedicmath`'s header requirement lists the new nav order. Verify: `openspec validate learnvedicmath --strict`.
-- [ ] 5.4 Coverage specs: `e2e/tests/cov/site-header-6.spec.ts`; the updated `badges-6-explorer` and `star-round-16-explorer`.
+- [x] 5.1 `play/index.html`: Sutras after Home, shown in Explorer; `js/find.js` `sectionLines()` in the same order with an Explorer line. Verify: `e2e/tests/header.spec.ts`, `test/find.test.mjs`.
+- [x] 5.2 `js/gamify.js`: Sutra scholar in every Mode; the Explorer Dojo's Sutras button. Verify: `test/gamify.test.mjs`, `e2e/tests/dojo.spec.ts`, the badges and star-round cov specs that change with them.
+- [x] 5.3 `learnvedicmath`'s header requirement lists the new nav order. Verify: `openspec validate learnvedicmath --strict`.
+- [x] 5.4 Coverage specs: `e2e/tests/cov/site-header-5.spec.ts`; the updated `badges-6-explorer` and `star-round-16-explorer`.
 
 ## 6. Home leads with the Sutras (PR 3)
 
@@ -52,7 +52,7 @@ The owner asked for this on 2026-10-21 ("It is important to make the sutras and 
 
 ## 8. Docs and after release
 
-- [x] 8.0 The first-load budget: `docs/perf/baseline.json` grows by the new modules (PR 1: +4,881 bytes Brotli, `js/sutra-tag.js` and the tags in `js/app.js`, `js/star.js`, `math.css`). Verify: `python3 build.py --voice off` passes.
+- [x] 8.0 The first-load budget: `docs/perf/baseline.json` grows by the new modules (PR 1: +4,881 bytes Brotli, `js/sutra-tag.js` and the tags in `js/app.js`, `js/star.js`, `math.css`; 767,625 bytes once `try-trick-in-modes` is merged in, with the tag on its Try a trick card. PR 2: +1,634 bytes, `js/sutra-progress.js`, the card meters and the Guide's menu line, 769,259 bytes). Each pull request re-measures after its last edit. Verify: `python3 build.py --voice off` passes.
 
 - [x] 8.1 `GLOSSARY.md`: Sutra tag, Sutra way, Sutra progress; Sutra and Home entries. Verify: `openspec validate sutras-first --strict`.
 - [ ] 8.2 After release: archive this change after `learnvedicmath` and `landing-modes-and-return` (their `landing-pages` and header requirements come first).

@@ -2,8 +2,8 @@
    is a page inside an existing section, reached from that section's page.
    - id: the module js/play/exp/<id>.js (exports mount) and the styles css/play/<id>.css
    - route: the page (params after it go to mount); section: the page Back returns to and that lists it
-   - modes: who sees it listed and who may open it (Dojo and Sutras are hidden in Explorer, so their experiences are
-     too; Pattern Wall, Teach the Apprentice and Estimation Bets read above Explorer for now, owner decision 2026-10-17)
+   - modes: who sees it listed and who may open it (the Dojo is hidden in Explorer, so its experiences are
+     too; the Sutras page is in Explorer's menu since the sutras-first change, and its Lost Scroll stays above Explorer; Pattern Wall, Teach the Apprentice and Estimation Bets read above Explorer for now, owner decision 2026-10-17)
    Colors are the design system's three accents: coral, teal and sun. */
 export const SECTIONS = {
   dojo: { href: '#/dojo', label: 'Dojo' },

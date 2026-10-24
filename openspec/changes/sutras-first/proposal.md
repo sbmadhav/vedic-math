@@ -49,7 +49,8 @@ Modes and Players affected: every Mode. Explorer gains the Sutras page in its me
 
 - `first-visit`: Home's first door is the next Sutra; Pro leads with it instead of the Arena; the Player strip follows the doors; Explorer Home gains its Sutra card.
 - `landing-pages`: the hero and the page order lead with the Sutras and the method (a new section before "Pick how you learn").
-- `site-header`: Sutras come right after Home in the menu, in every Mode.
+- `site-header`: Sutras come right after Home in the menu, in every Mode; the header requirement's order follows.
+- `find`: the browse list follows the new menu order, and the Sutras section is listed in Explorer too.
 - `sutra-deep-dive`: a Deep dive opens without a Mode; closing it returns to the page it was opened from.
 - `star-round`: Explorer's Dojo may link to the Sutras page.
 - `badges`: Sutra scholar is listed to Explorer, who now has Sutra cards.

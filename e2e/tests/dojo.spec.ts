@@ -113,7 +113,7 @@ test.describe('Dojo in Explorer', () => {
     await expect(page.locator('#view')).not.toContainText(/\d\/9 Stars/);
     await expect(page.locator('#view')).not.toContainText('Light all 9 Stars');
     await expect(page.locator('.dojo-star')).toHaveCount(0);
-    await expect(page.locator('#view a[href="#/sutras"]')).toHaveCount(0);
+    await expect(page.locator('#view a[href="#/sutras"]')).toHaveCount(1); /* Explorer has the Sutras (openspec change sutras-first) */
     await expect(page.locator('#view a[href="#/arena"]')).toHaveCount(1);
   });
   test.describe('with a White belt kept from Challenger', () => {
