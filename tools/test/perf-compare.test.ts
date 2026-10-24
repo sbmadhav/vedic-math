@@ -5,7 +5,7 @@
    regression a pull request adds fails), largest contentful paint stays on the baseline (the hosts differ on the
    network chain), and the table gets a Production column. */
 import { test, expect } from 'vitest';
-import { compare, table, notes, REPORTED, ABSOLUTE, type PerfBaseline, type Lh, type Ix, type Reference } from '../perf-compare.ts';
+import { main, compare, table, notes, REPORTED, ABSOLUTE, type PerfBaseline, type Lh, type Ix, type Reference } from '../perf-compare.ts';
 
 const lh = (o: Partial<Lh> = {}): Lh => ({ fcp: 1900, lcp: 5200, tbt: 30, cls: 0.007, si: 1900, ttfb: 70, ...o });
 const ix = (o: Partial<Ix> = {}): Ix => ({ inp: 48, visible: 33, ...o });
@@ -136,4 +136,11 @@ test('the notes with production: the same-runner line first, then both runners\'
   expect(lines[2]).toMatch(/^Runner CPU speed: Lighthouse benchmarkIndex 4177 on the preview's runs, 4190 on production's \(higher is faster\)/);
   // Production's speed not recorded: the preview's alone
   expect(notes(rows, { benchmarkIndex: 4177 }, {})[2]).toMatch(/^Runner CPU speed: Lighthouse benchmarkIndex 4177 \(higher is faster\)/);
+});
+
+test('an incomplete --production option is refused, never a silent fall back to the baseline (#139 review)', () => {
+  // The usage check runs before any file is read, so the paths need not exist
+  expect(() => main(['b.json', 'l.json', 'i.json', '--production'])).toThrow(/usage/);
+  expect(() => main(['b.json', 'l.json', 'i.json', '--production', 'p.json'])).toThrow(/usage/);
+  expect(() => main(['b.json', 'l.json', 'i.json', '--production', 'p.json', '--out', 't.md'])).toThrow(/usage/);
 });

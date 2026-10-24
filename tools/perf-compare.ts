@@ -142,14 +142,15 @@ export function notes(rows: Row[], lh: Pick<LhRun, 'benchmarkIndex'>, production
 
 const USAGE = 'usage: node tools/perf-compare.ts <baseline.json> <lighthouse.json> <interactions.json> [--production <lighthouse.json> <interactions.json>] [--out table.md]';
 
-function main(argv: string[]) {
+export function main(argv: string[]) {
   const args = [...argv];
+  const wantsProduction = args.includes('--production');
   /* The values after an option, taken out of the positional arguments */
   const take = (name: string, count: number) => { const i = args.indexOf(name); return i >= 0 ? args.splice(i, count + 1).slice(1) : []; };
   const [out] = take('--out', 1);
   const [prodLh, prodIx] = take('--production', 2);
   const [basePath, lhPath, ixPath] = args;
-  if (!basePath || !lhPath || !ixPath || args.length > 3 || (prodLh !== undefined && (!prodIx || prodIx.startsWith('--')))) throw new Error(USAGE);
+  if (!basePath || !lhPath || !ixPath || args.length > 3 || (wantsProduction && (!prodLh || !prodIx || prodLh.startsWith('--') || prodIx.startsWith('--')))) throw new Error(USAGE);
   const read = (p: string) => JSON.parse(readFileSync(p, 'utf8'));
   const lh = read(lhPath) as LhRun;
   const production: Reference | undefined = prodLh && prodIx ? { lh: read(prodLh) as LhRun, ix: read(prodIx) as IxRun } : undefined;
