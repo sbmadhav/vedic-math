@@ -21,7 +21,10 @@ const RENDERED = ['app/src/root.tsx', 'app/src/routes/**/*.{ts,tsx}', 'app/src/v
 export default tseslint.config(
   {
     ignores: [
-      '**/node_modules/**', '_site/**', '_dev/**', '_moved/**', '_preview/**', '.wrangler/**',
+      // _*/ is build output: build.py writes _site/, _dev/ and _moved/ and refuses any other --out inside the repo
+      // that does not start with _ (.gitignore has the same rule). eslint . reads every other .js file, so a build
+      // elsewhere would be linted (its vendored Firebase copy fails).
+      '**/node_modules/**', '_*/**', '.wrangler/**',
       'vendor/**', 'e2e/**', 'cloud/**', 'deploy/**', 'tools/voice/**', 'tools/sutra-voice/**', 'tools/brand/**',
       'tools/eslint-rules/fixtures/**', 'test/**', 'site/**', 'moved/**', 'theme/**', 'docs/**', 'openspec/**',
     ],

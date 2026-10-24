@@ -23,7 +23,7 @@
 | `import('/js/store.js')` in e2e specs | `mod(page, 'store')` (`e2e/tests/fixtures.ts`) |
 
 - Server rendering (`react-typescript` D14): the server renders the document, the shell and every part of a view that is the same for every visitor; anything that depends on a Player's data renders in the browser after start-up, inside `ClientOnly`. The store's server snapshot has no Players. Routes have no server loader or action. Start-up side effects run once, after hydration (its B7), and the app runs under Strict Mode in development (its B9).
-- `try-trick-teaches` (shipped, not yet archived) shows a worked example card first when Try a trick opens its Star (`starIntro()`, the Star round's `intro` option). Its decision 4 says how `placement` absorbs that card.
+- `try-trick-teaches` (shipped and archived) shows a worked example card first when Try a trick opens its Star (`starIntro()`, the Star round's `intro` option). Its decision 4 says how `placement` absorbs that card.
 
 ## Goals / Non-Goals
 

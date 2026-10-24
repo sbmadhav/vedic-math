@@ -7,7 +7,11 @@ Let two Players on two devices race the same questions online: a friend by Duel 
 ## ADDED Requirements
 
 ### Requirement: Friend Duels by code or link
-Any Player with an Age answer SHALL be able to start a Friend Duel, which gives a 6-letter Duel code and a link holding it in the hash route. A friend SHALL join by typing the code or opening the link, and SHALL see the host's Nickname, color and League and confirm before joining. A code SHALL work for 10 minutes or until a friend joins, whichever is first, and a room SHALL never take a third Player.
+Any Player with an Age answer SHALL be able to start a Friend Duel, which gives a 6-letter Duel code and a link to the Duel lobby holding the code in its fragment (`/learn/arena/duel#<code>`), so the code never reaches the server. A friend SHALL join by typing the code or opening the link, and SHALL see the host's Nickname, color and League and confirm before joining. A code SHALL work for 10 minutes or until a friend joins, whichever is first, and a room SHALL never take a third Player.
+
+#### Scenario: The code stays out of the request
+- **WHEN** a friend opens `https://learnvedicmath.com/learn/arena/duel#BKTRMZ`
+- **THEN** the page request the server receives is for `/learn/arena/duel` with no code in it, the address bar keeps `#BKTRMZ`, and the join screen for that Duel is shown
 
 #### Scenario: Two friends on two phones
 - **WHEN** a Player starts a Friend Duel and a friend opens the link on another phone and confirms
@@ -29,7 +33,11 @@ Duel codes SHALL use six letters from the 20 consonants `BCDFGHJKLMNPQRSTVWXZ`, 
 - **THEN** the join screen for that Duel is shown
 
 ### Requirement: Random Duels are for 13 and over, in the same League
-Only a Player whose Age answer is 13 or over SHALL be offered Find a player, which pairs them with another waiting Player in the same League. A Player under 13, or without an Age answer, SHALL NOT see it. If no one is found within 60 seconds, the app SHALL offer to try again or to start a Friend Duel.
+Only a Player whose Age answer is 13 or over SHALL be offered Find a player, and only while the service says Random Duels are open; it pairs them with another waiting Player in the same League. A Player under 13, or without an Age answer, SHALL NOT see it. If no one is found within 60 seconds, the app SHALL offer to try again or to start a Friend Duel.
+
+#### Scenario: Random Duels not open yet
+- **WHEN** a Player aged 15 opens the Duel lobby while the status endpoint says Random Duels are closed
+- **THEN** Duel a friend and I have a code are offered, and Find a player is not shown
 
 #### Scenario: A Player aged 10
 - **WHEN** a Player whose Age answer is 10 opens the Duel lobby
@@ -87,7 +95,7 @@ If a Player's connection drops during a Duel, the question clock SHALL stop for 
 - **THEN** the other Player is told they left and wins
 
 ### Requirement: Sparks from Duels stay on the device
-A finished Duel SHALL earn 10 Sparks, and a win 10 more, at most 100 Sparks a day from Duels per Player, and none for a Duel that ended with nobody answering or in which the Player answered fewer than 5 questions. Duel results SHALL NOT be posted to any Board, and a Duel SHALL NOT load Firebase or create a Board identity.
+A finished Duel SHALL earn 10 Sparks, and a win 10 more, at most 100 Sparks a day from Duels per Player, and none for a Duel that ended with nobody answering or in which the Player answered fewer than 5 questions. Duel results SHALL stay on the device and SHALL NOT be posted to any Board, and a Duel SHALL NOT load Firebase or create a Board identity.
 
 #### Scenario: A won Duel
 - **WHEN** a Player wins a Duel after answering 14 questions

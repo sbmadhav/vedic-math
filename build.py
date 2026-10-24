@@ -2,7 +2,7 @@
 """Build Learn Vedic Math into an output directory and stamp cache versions there.
 
     python3 build.py                          the site for https://learnvedicmath.com/, into _site/
-    python3 build.py --out DIR                the same, into DIR (emptied first)
+    python3 build.py --out DIR                the same, into DIR (emptied first; inside the repo, DIR must start with _)
     python3 build.py --dev                    the same layout without stamps and with the 'dev' worker, into _dev/
     python3 build.py --preview --out DIR      a branch preview: adds X-Robots-Tag: noindex, nofollow on every response
     python3 build.py --target moved           the Phase B "Vedic Math has moved" output for https://sbmadhav.com/vedic-math/, into _moved/
@@ -794,7 +794,8 @@ def build_moved(out):
 
 def main():
     ap = argparse.ArgumentParser(description="Build Learn Vedic Math into an output directory with cache stamps.")
-    ap.add_argument("--out", help="output directory, emptied first (default: _site/, _dev/ with --dev, _moved/ for --target moved)")
+    ap.add_argument("--out", help="output directory, emptied first (default: _site/, _dev/ with --dev, _moved/ for --target moved); "
+                                  "inside the repo its name must start with _ (git and ESLint ignore _*/)")
     ap.add_argument("--dev", action="store_true", help="no stamps and the 'dev' worker, for local runs")
     ap.add_argument("--preview", action="store_true", help="a branch preview: X-Robots-Tag: noindex, nofollow on every response")
     ap.add_argument("--target", choices=["site", "moved"], default="site", help="site (learnvedicmath.com) or moved (the Phase B page for the old origin)")
@@ -806,6 +807,9 @@ def main():
     out = pathlib.Path(args.out).resolve() if args.out else ROOT / default
     if out == ROOT or ROOT.is_relative_to(out):
         fail("--out must not be the repo itself")
+    if out.is_relative_to(ROOT) and not out.relative_to(ROOT).parts[0].startswith("_"):
+        # .gitignore and eslint.config.js ignore _*/, and no path starting with _ is ever published
+        fail(f"--out inside the repo must be a folder starting with _, like _site/: {out.relative_to(ROOT)}")
     if args.target == "moved":
         build_moved(out)
     else:
