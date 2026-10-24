@@ -43,12 +43,14 @@ After one visit online, the game works offline: `/sw.js` (scope `/play/`) saves 
 
 | Check | Command |
 |---|---|
-| The app builds, and the source has no cache stamps | `python3 build.py --out _site` |
-| Unit tests | `pnpm test` (after `pnpm install`) |
+| Type check | `pnpm typecheck` |
+| Lint (ESLint and stylelint) | `pnpm lint` |
+| Unit tests (Vitest) | `pnpm test` |
+| The app builds, and the source has no cache stamps | `python3 build.py` (into `_site/`) |
 | Firestore rules tests (emulator, needs Java) | `cd cloud/test && npm install && npm test` |
-| End-to-end tests (live site, or `BASE_URL=http://localhost:8124` for a local build) | `corepack enable && pnpm install`, then `cd e2e && pnpm exec playwright install chromium webkit && pnpm exec playwright test` |
+| End-to-end tests (live site, or `BASE_URL=http://localhost:8124` for a local build) | `cd e2e && pnpm exec playwright install chromium webkit && pnpm exec playwright test` |
 
-The pre-commit hook in `.githooks/` runs the first two. Enable it once per clone:
+The pnpm commands need `corepack enable && pnpm install` once per clone. The pre-commit hook in `.githooks/` runs the first four. Enable it once per clone:
 
 ```sh
 git config core.hooksPath .githooks

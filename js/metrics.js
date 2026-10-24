@@ -194,3 +194,14 @@ export function modeLink(mode) { if (LEAGUES.includes(mode)) send('landing/mode/
 export function family(kind) { if (FAMILY_EVENTS.includes(kind)) send('family/' + kind, 'Vedic Math: Family helpers'); }
 export function familyVisit(level, cheer = false) { family(cheer ? 'cheer' : 'visit/' + level); }
 export function say() { send('say/sutra', 'Say a Sutra name'); }
+
+/* ---------- Installing the app (openspec change install-app) ---------- */
+/* Fixed words only: never the browser, the platform or how many times the nudge was put off. wizard_open names which
+   entry point opened the Install guide, one of INSTALL_FROM. */
+export const INSTALL_EVENTS = ['nudge_shown', 'nudge_later', 'wizard_open', 'prompt_accepted', 'prompt_dismissed', 'installed', 'opened'];
+export const INSTALL_FROM = ['home', 'me', 'footer', 'guide'];
+export function install(kind, from) {
+  if (!INSTALL_EVENTS.includes(kind)) return;
+  if (kind === 'wizard_open') { if (INSTALL_FROM.includes(from)) send(`install/wizard_open/${from}`, 'Vedic Math: install'); return; }
+  send('install/' + kind, 'Vedic Math: install');
+}

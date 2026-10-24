@@ -30,7 +30,8 @@ setBudget(1e9);
    build.py list the real repository's files. */
 const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_') && k !== 'BUILD_TODAY'));
 execFileSync('git', ['init', '-q'], { cwd: dir, env });
-const out = join(dir, 'out');
+/* Inside the copy, so its name starts with _ as build.py requires of an output inside the repo */
+const out = join(dir, '_out');
 test.after(() => rmSync(dir, { recursive: true, force: true }));
 
 const build = (...args) => execFileSync('python3', ['build.py', '--out', out, ...args], { cwd: dir, env, encoding: 'utf8' });
@@ -67,6 +68,13 @@ test('the source in git is unstamped: no import map, plain URLs, a dev worker', 
   assert.match(html, /<script type="module" src="\/js\/app\.js"><\/script>/);
   assert.match(src, /\nconst VERSION: string = 'dev';\nconst PRECACHE: \[string, string\]\[\] = \[\];\n/);
   assert.ok(!existsSync(join(repo, 'index.html')), 'the game moved to play/index.html');
+});
+
+test('--out inside the repo must start with _ (git and ESLint ignore _*/), and is never the repo itself', () => {
+  const run = o => spawnSync('python3', ['build.py', '--out', o], { cwd: dir, env, encoding: 'utf8' });
+  fails(run(join(dir, 'out')), /--out inside the repo must be a folder starting with _/);
+  assert.ok(!existsSync(join(dir, 'out')), 'nothing is written');
+  fails(run(dir), /must not be the repo itself/);
 });
 
 test('the output has the pages at the root, is stamped, and holds only publishable files', () => {
@@ -116,13 +124,14 @@ test('the precache list holds every import-map module, the shell, the styles, fo
   assert.equal(urls.get(importMap()['/js/app.js']), sha('js/app.js'));
   const tokens = read('play/index.html').match(/href="(\/ds\/2\.1\.0\/tokens\.css\?v=\w+)"/)[1];
   assert.equal(urls.get(tokens), sha('ds/2.1.0/tokens.css'), 'the published tokens.css, as served');
-  for (const u of ['/fonts/nunito-sans-latin-wght-normal.woff2', '/fonts/jetbrains-mono-latin-500-normal.woff2', '/icons/icon-192.png', '/icons/maskable-512.png',
+  for (const u of ['/fonts/nunito-sans-latin-wght-normal.woff2', '/fonts/jetbrains-mono-latin-500-normal.woff2', '/icons/icon-192.png', '/icons/maskable-192.png', '/icons/maskable-512.png',
     '/icons/favicon-16.png', '/icons/favicon-32.png', '/icons/favicon-48.png', '/icons/favicon.svg', '/icons/apple-touch-icon.png', '/manifest.webmanifest'])
     assert.equal(urls.get(u), sha(u.slice(1)), `${u} is precached with its hash`);
   for (const [u, hash] of precache) {
     assert.ok(u.startsWith('/'), `${u} is not an absolute path`);
     assert.match(String(hash), /^[0-9a-f]{10}$/, `${u} has no hash`);
     assert.ok(!u.startsWith('/vendor/') && !u.startsWith('/thumbs/'), `${u} is fetched on first use, never precached`);
+    assert.ok(!u.startsWith('/screenshots/'), `${u}: the install screenshots are for the browser's install dialog, never precached`);
   }
 });
 

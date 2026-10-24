@@ -88,6 +88,28 @@ test('the worker registers with scope /play/, caches under lvm-, and every preca
   for (const u of modules) expect(saved, `${u} is saved for offline use`).toContain(u);
 });
 
+/* The Installed app opens at the manifest's start_url, and its shortcuts at their own URLs (openspec change install-app):
+   after one visit online, each opens offline from the saved shell, with the install module precached */
+test('the installed app\'s start_url and shortcuts open offline after one visit', async ({ page, context, request }) => {
+  const manifest = await (await request.get('/manifest.webmanifest')).json();
+  await open(page);
+  await workerReady(page);
+  const saved = await page.evaluate(async prefix => {
+    const name = (await caches.keys()).filter(k => k.startsWith(prefix) && k !== prefix + 'voice').pop()!;
+    return (await (await caches.open(name)).keys()).map(r => new URL(r.url).pathname);
+  }, OWN_PREFIX);
+  for (const f of ['/js/install.js', '/js/install-rules.js', '/js/prompt-slot.js', '/icons/maskable-192.png']) expect(saved, f).toContain(f);
+  await goOffline(context);
+  await expectOffline(page);
+  for (const url of [manifest.start_url, ...manifest.shortcuts.map((s: { url: string }) => s.url)]) {
+    const tab = await context.newPage();
+    const res = await tab.goto(url);
+    expect(res?.fromServiceWorker(), `${url}: the page came from the worker`).toBe(true);
+    await expect(tab.locator('#view h1, #view h2').first(), `${url} renders offline`).toBeVisible();
+    await tab.close();
+  }
+});
+
 test.describe('first visit', () => {
   test.use({ seedMode: null });
 

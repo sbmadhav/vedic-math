@@ -21,7 +21,7 @@ Every Worked example's highlighted result SHALL be mathematically correct, and a
 
 #### Scenario: A wrong result fails the build
 - **WHEN** a Worked example's highlighted result is changed to a wrong value, or an example is added without a check
-- **THEN** `node --test 'test/**/*.test.{js,mjs}'` fails, naming the Sutra and the example
+- **THEN** `pnpm test` fails, naming the Sutra and the example
 
 ### Requirement: Try first, then open the steps
 Worked examples SHALL be shown as disclosures: the first open, the others closed until the Player opens them. Each SHALL be a control named by its number and question, reachable with Tab and opened and closed with Enter or Space, and SHALL work in both color schemes using design tokens only. A short tip above the list SHALL say to try each one before opening it, worded for the Player's Mode.
