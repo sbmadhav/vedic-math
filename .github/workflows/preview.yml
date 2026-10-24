@@ -159,8 +159,10 @@ jobs:
 
   # The load and interaction gate (openspec change react-typescript, performance-budget spec, task 1.8): the pages of
   # tools/lighthouserc.json through Lighthouse's mobile preset and e2e/perf/interactions.ts (chromium, 4x CPU), each
-  # median compared with docs/perf/baseline.json by tools/perf-compare.ts, which fails beyond the tolerances. The table
-  # is posted on the pull request (one comment, updated on each push). The first-load byte gate is in build.py.
+  # median compared with docs/perf/baseline.json by tools/perf-compare.ts, which fails beyond the tolerances; first
+  # contentful paint is reported with its limit, not gated, until the server-rendered shell (openspec change
+  # perf-gate-fcp). The table is posted on the pull request (one comment, updated on each push). The first-load byte
+  # gate is in build.py.
   perf:
     needs: preview
     # Runs whenever a preview was uploaded, even when a Playwright test failed: the two checks report on their own
