@@ -3,7 +3,7 @@
    the difficulty rises. */
 import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
-import { FAMILIES, mentalQ } from '../js/mental.js';
+import { FAMILIES, mentalQ, sutraOfProduct, sutraOfSquare } from '../js/mental.js';
 import { verifyQuestion, plain } from './support/verify.mjs';
 
 /* A seeded Math.random, so every run checks the same questions */
@@ -55,4 +55,22 @@ test('the median answer rises with difficulty: bottom, middle and top thirds of 
 
 test('the same seed gives the same questions', () => {
   for (const f of FAMILIES) assert.deepEqual(seeded(7, () => mentalQ(f, 12)), seeded(7, () => mentalQ(f, 12)));
+});
+
+/* openspec change sutras-first: each Pro question names the Sutra card that answers it in a line, or none. The
+   helpers draw no random numbers, so a seeded daily set keeps its questions (test/arena.test.mjs pins them). */
+test('each Pro question names the Sutra that answers it, from its own numbers', () => {
+  assert.equal(sutraOfProduct(47, 43), 'u8', 'same tens, units add to 10');
+  assert.equal(sutraOfProduct(17, 13), 'u8');
+  assert.equal(sutraOfProduct(47, 38), 's3');
+  assert.equal(sutraOfSquare(85), 's1'); assert.equal(sutraOfSquare(115), 's1');
+  assert.equal(sutraOfSquare(96), 's10'); assert.equal(sutraOfSquare(112), 's10');
+  assert.equal(sutraOfSquare(47), 's3'); assert.equal(sutraOfSquare(237), 's3');
+  for (const [k, qs] of Object.entries(draws)) for (const q of qs) {
+    const f = k.split(' ')[0];
+    if (f === 'nearBase') assert.equal(q.sutra, 's2', k);
+    else if (f === 'percent' || f === 'divide') assert.equal(q.sutra, null, k);
+    else if (f === 'square') { const n = Number(plain(q.q).match(/^(\d+)/)[1]); assert.equal(q.sutra, sutraOfSquare(n), k); }
+    else { const [a, b] = plain(q.q).match(/\d+/g).map(Number); assert.equal(q.sutra, sutraOfProduct(a, b), k); }
+  }
 });

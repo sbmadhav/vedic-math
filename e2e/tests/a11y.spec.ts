@@ -51,6 +51,41 @@ for (const scheme of ['light', 'dark'] as const) {
   });
 }
 
+/* The Mode picker and Try a trick in each Mode (openspec try-trick-in-modes): the card, a question, a miss and the end */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, Try a trick`, () => {
+    test.use({ colorScheme: scheme });
+    test.describe('the Mode picker', () => {
+      test.use({ seedMode: null });
+      test('the Mode picker with a Try a trick under each card has no serious or critical axe violations', async ({ page }, testInfo) => {
+        chromiumOnly(testInfo);
+        await page.goto(APP);
+        await expect(page.locator('.mode-try')).toHaveCount(3);
+        expect(await serious(page)).toEqual([]);
+      });
+    });
+    for (const mode of ['explorer', 'challenger', 'pro'] as const) test.describe(mode, () => {
+      test.use({ seedMode: mode });
+      test(`#/try (${mode}) on its card, a question, a miss and the end has no serious or critical axe violations`, async ({ page }, testInfo) => {
+        chromiumOnly(testInfo);
+        await open(page, '#/try');
+        await page.waitForLoadState('networkidle');
+        expect(await serious(page, '#/try')).toEqual([]);
+        await page.locator('#tyStart').click();
+        expect(await serious(page, '#/try')).toEqual([]);
+        for (let k = 0; k < 3; k++) {
+          if (mode === 'explorer') { const c = page.locator('.pr-choice:not([disabled])'); await c.first().click(); if (!(await page.locator('#tyNext').count())) await c.first().click(); }
+          else { await page.locator('#tyIn').fill('1'); await page.keyboard.press('Enter'); }
+          if (k === 0) expect(await serious(page, '#/try')).toEqual([]);
+          await page.locator('#tyNext').click();
+        }
+        await expect(page.locator('.try-end')).toBeVisible();
+        expect(await serious(page, '#/try')).toEqual([]);
+      });
+    });
+  });
+}
+
 /* The Install nudge on Home and the Install guide (openspec change install-app), on iPhone Safari where both show */
 for (const scheme of ['light', 'dark'] as const) {
   test.describe(`${scheme} scheme, install`, () => {

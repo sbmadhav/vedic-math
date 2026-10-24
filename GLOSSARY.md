@@ -50,6 +50,18 @@ _Avoid_: shortcut, hack, strategy
 One of the short named rules from Bharati Krishna Tirtha's 1965 book. Tricks are grouped under the Sutra they come from.
 _Avoid_: formula, verse, Vedic sutra (never "from the Vedas")
 
+**Sutra way**:
+Working a sum with one Sutra's short rule in a line or two, the method the app teaches in place of school's long one (98 × 97: 95 | 06, not two rows and an add). The owner's "new method" (`sutras-first` change).
+_Avoid_: Vedic method (it sounds like it is from the Vedas), shortcut, hack
+
+**Sutra tag**:
+The line that names the Sutra a Trick, Star, Try a trick, Kata, Arena question, video or game uses: its kind word (Sutra, Sub-sutra, Special case of, Uses the idea of), its name and its meaning in the Mode's words, as one link to its Deep dive. Never spoken. The map and the words are in `js/sutra-tag.js` (`sutras-first` change).
+_Avoid_: badge (a badge is earned), label, chip
+
+**Sutra progress**:
+How far a Player is with one Sutra, worked out on the device from its Tricks' mastery, Stars lit, Katas done and whether its card is collected. Never stored on its own and never sent (`sutras-first` change).
+_Avoid_: sutra score, sutra level, mastery (that is one Skill's)
+
 **Verse** (śloka):
 A genuine Sanskrit verse, prose rule (sūtra) or Vedic mantra about mathematics from an older text, shown in Mathematics in Sanskrit verse at the end of the Sutras page (`js/slokas.js`). Verses are not the source of the Sutras; the only verse in the 1965 book (gopī bhāgya, π/10) is the Swami's own.
 _Avoid_: calling a Sutra a verse; "ancient" without a date
@@ -131,11 +143,11 @@ A Trick learned and then used correctly in a timed round. The thing the product 
 _Avoid_: aha, win
 
 **Try a trick**:
-The one primary button on the landing (the mode picker), the big first action in its hero beside the Nikhilam Family. It sets Challenger as a Mode guess and opens the first Star of Bolt's path on a worked example of its Trick, so a curious visitor sees the Trick once and reaches a question in two taps with no choice to make. (`first-visit-clarity` change; the worked example is proposed in `try-trick-teaches`.)
+A short lesson inside each Mode, at `#/try`: one Trick taught under the Sutra it belongs to, on one worked example with every step shown, then three questions and an end card with the next step. Explorer's is the 11 sandwich (Ūrdhva-Tiryagbhyām), Challenger's squares ending in 5 (Ekādhikena Pūrveṇa), Pro's multiplying near 100 (Nikhilaṃ Navataścaramaṃ Daśataḥ). It is reached from the Try a trick button under each Mode card on the Mode picker, which picks that Mode, and from a card on each Mode's Home until it is finished. Right answers earn Sparks; it changes no Rating, mastery, Keep going, Star or Belt. (`try-trick-in-modes` change; before it, one Try a trick above the cards guessed Challenger and opened a Star.)
 _Avoid_: demo, trial mode, guest mode
 
 **Mode guess**:
-A Mode set by Try a trick rather than picked (`modeGuess` on the Player record). Home names it ("our guess for a first try") beside Change, and any pick on the landing's cards or on Me clears it. Kept on the device only.
+A Mode set by the earlier Try a trick rather than picked (`modeGuess` on the Player record). Nothing sets one now (`try-trick-in-modes`); a record that still has one shows it on Home ("our guess for a first try") beside Change until any pick clears it. Kept on the device only.
 _Avoid_: default mode, auto mode
 
 **Door**:

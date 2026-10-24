@@ -42,11 +42,12 @@ test('Card does not flip: Say it on an unflipped card plays the clip and the car
   await expect(card.locator('.sutra-face')).toHaveAttribute('aria-expanded', 'false');
 });
 
-test('Trick page with a bracketed Sutra: Say it on div9 ("Nikhilaṃ (division by 9)") plays the Sutra 2 clip', async ({ page }) => {
+test('Trick page with a bracketed Sutra: Say it on div9 (its tag "A special case of Nikhilaṃ Navataścaramaṃ Daśataḥ") plays the Sutra 2 clip', async ({ page }) => {
   await fakeAudio(page);
   const urls = soundRequests(page);
   await open(page, '#/skill/v-div9');
-  await expect(page.locator('.mq-sutra b[lang="sa-Latn"]')).toHaveText('Nikhilaṃ (division by 9)');
+  await expect(page.locator('.mq-sutra .sutra-tag-k')).toHaveText('A special case of');
+  await expect(page.locator('.mq-sutra b[lang="sa-Latn"]')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
   await page.locator('.mq-sutra').getByRole('button', { name: 'Hear how to say Nikhilaṃ Navataścaramaṃ Daśataḥ' }).click();
   await expect.poll(() => urls[0]).toBe('/sounds/sutras/s2.m4a');
 });

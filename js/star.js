@@ -13,6 +13,7 @@ import * as store from './store.js';
 import * as fx from './fx.js';
 import * as AD from './adapt.js';
 import * as metrics from './metrics.js';
+import { trickTagHTML, trickSutraName } from './sutra-tag.js';
 
 export const ROUND = 4;
 export const SPARK = { right: 10, comeback: 15, dare: 20 };
@@ -104,17 +105,6 @@ export function starDare(prev, problem = null) {
   return { state: st, events: [{ type: 'dare', problem: p }] };
 }
 
-/* The worked example shown before a trial Star's first question (openspec try-trick-teaches): the easiest problem of
-   the Star's band that this round does not deal (lowest Kata first), else of the Star's whole third. It is marked used,
-   so no rematch or Dare repeats it. Returns { state, example } (example null when every problem is dealt). */
-export function starIntro(prev) {
-  const st = copy(prev), easiest = ps => ps.filter(p => !st.used.has(sigOf(p))).sort((a, b) => (a.kata || 0) - (b.kata || 0))[0];
-  let p = easiest(st.band);
-  if (!p) { st.third = st.third || starThird(st.trick, st.star); p = easiest(st.third); }
-  if (p) st.used.add(sigOf(p));
-  return { state: st, example: p || null };
-}
-
 /* ---------- The view ---------- */
 const esc = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 /* Text for the live region: no tags, and entities as words a screen reader reads */
@@ -126,9 +116,8 @@ const pickOne = a => a[Math.floor(Math.random() * a.length)];
 /* Plays one Star round in root. trick: a Trick id; star: 1 to 3; signal: the view's (everything stops when it aborts).
    back: { href, label } for the end screen's way out; again(): Play again; findVideo(trickId, mode): a Promise of
    { title, src, open? } (src: an embeddable video URL; open(opener): plays it elsewhere and resolves when closed) or null.
-   intro: true shows the Trick worked once on a problem the round does not deal, before the first question (the trial
-   Star of Try a trick, openspec try-trick-teaches). Returns { destroy }, which saves the Rating. */
-export function runStar(root, { trick, star, signal, back = { href: '#/dojo', label: 'Back to the Dojo' }, again = null, findVideo = async () => null, intro = false } = {}) {
+   Returns { destroy }, which saves the Rating. */
+export function runStar(root, { trick, star, signal, back = { href: '#/dojo', label: 'Back to the Dojo' }, again = null, findVideo = async () => null } = {}) {
   const t = TRICKS.find(x => x.id === trick), skill = byId['v-' + trick], mode = fx.mode() || 'challenger', boxes = mode !== 'pro';
   const round = child(signal), rs = round.signal;
   const rating = AD.skillRating('v-' + trick, mode), dial = new AD.Dial(rating);
@@ -137,11 +126,12 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
   const wasLit = store.starState(trick, star) === 'lit';
   let video = null, phase = null, entry = '', fields = [], active = 0, input = false, dialSaved = false, dareP = null, replaySkip = null, shown = 0;
   Promise.resolve().then(() => findVideo(trick, mode)).then(v => { if (!rs.aborted) video = v || null; }).catch(() => {});
+  const sutraName = trickSutraName(trick); /* the Sutra the replay names (openspec change sutras-first) */
   const videoAvailable = () => !!(video && video.src) && navigator.onLine !== false;
   const saveDial = () => { if (dialSaved) return; dialSaved = true; AD.saveRating('skill:v-' + trick, dial); };
 
   root.innerHTML = `<div class="star-round${fx.noMotion() ? ' still' : ''}">
-    <header class="star-top"><div><span class="md-tag md-tag--plum">Star ${star} of 3</span><h1 class="md-heading star-h">${esc(t.title)}</h1></div>
+    <header class="star-top"><div><span class="md-tag md-tag--plum">Star ${star} of 3</span><h1 class="md-heading star-h">${esc(t.title)}</h1>${trickTagHTML(trick, { mode, link: false, cls: 'star-sutra' })}</div>
       <button type="button" class="md-btn md-btn--sm" id="stSkip">Skip this Star</button></header>
     <div class="star-hud"><span class="star-dots" id="stDots" role="img"></span>
       <span class="star-meter">${SPARK_SVG}<span class="star-bar" id="stMeter" role="progressbar" aria-label="Sparks to light this Star" aria-valuemin="0" aria-valuemax="${TARGET}" aria-valuenow="0" aria-valuetext="0 of ${TARGET} Sparks"><i></i></span><b class="star-meter-n" id="stMeterN" aria-hidden="true">0/${TARGET}</b></span></div>
@@ -289,7 +279,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
   function replay(p, of) {
     const ps = newPhase(), steps = t.steps(p.vals); let i = 0;
     dareBtn.hidden = true; pad.querySelectorAll('button').forEach(b => (b.disabled = true));
-    main.innerHTML = `<div class="star-replay"><span class="star-tag star-tag--trick">The Trick</span><h2 class="star-q star-q--sm" id="stQ" tabindex="-1">${p.q}</h2>
+    main.innerHTML = `<div class="star-replay"><span class="star-tag star-tag--trick">The Trick${sutraName ? ` · <span lang="sa-Latn">${esc(sutraName)}</span>` : ''}</span><h2 class="star-q star-q--sm" id="stQ" tabindex="-1">${p.q}</h2>
       <ol class="star-steps" id="stSteps"></ol><p class="star-acts"><button type="button" class="md-btn md-btn--sm" id="stRSkip">Skip</button></p></div>`;
     say(of === 'dare' ? 'Here is the Dare, step by step.' : 'Here is how the trick does it.', 'explain');
     const list = $('#stSteps'), done = () => {
@@ -341,7 +331,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     const line = skipped ? (litNow ? 'A lit Star stays lit.' : 'Come back to it any time. Lighting it later clears the mark.')
       : lit ? (nowLit ? 'It shines in your sky now.' : 'Still shining. Every round still earns Sparks.')
       : litNow ? 'It stays lit. Every round still earns Sparks.' : `${need} more Sparks to light it.`;
-    main.innerHTML = `<div class="star-end"><h2 class="star-end-h" id="stQ" tabindex="-1">${head}</h2><p class="star-end-sp"><span class="fx-sparks">+${st.sparks} Sparks</span></p><p>${line}</p>
+    main.innerHTML = `<div class="star-end"><h2 class="star-end-h" id="stQ" tabindex="-1">${head}</h2><p class="star-end-sp"><span class="fx-sparks">+${st.sparks} Sparks</span></p><p>${line}</p>${trickTagHTML(trick, { mode, surface: 'star' })}
       <p class="star-acts"><button type="button" class="md-btn md-btn--primary" id="stAgain">Play again</button><a class="md-btn" href="${esc(back.href)}" id="stBack">${esc(back.label)}</a></p></div>`;
     say(lit ? 'You did it!' : skipped ? 'Okay. On to the next one when you are ready.' : 'Good practice. Every miss teaches.', lit ? 'cheer' : 'idle');
     if (!skipped) fx.announce(`${head}. ${st.sparks} Sparks earned. ${line}`);
@@ -351,25 +341,6 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     $('#stQ').focus({ preventScroll: true });
   }
 
-  /* The Trick first (openspec try-trick-teaches): one worked example, every step shown at once (nothing moves or
-     times out, so Calm and Pause motion need nothing different), and one button to the first question. Escape
-     starts too, as it ends a replay. Nothing is spoken: a Player with Read aloud on hears the first question. */
-  function teach(p) {
-    const ps = newPhase(), steps = t.steps(p.vals);
-    dareBtn.hidden = true; pad.hidden = true;
-    main.innerHTML = `<div class="star-intro"><span class="star-tag star-tag--trick">Learn the trick</span><h2 class="star-q star-q--sm" id="stIntroH">${esc(t.title)}</h2>
-      <p class="star-intro-idea">${esc(t.idea)}</p>
-      <h3 class="star-intro-k">Worked example: ${p.q.replace(/ = \?$/, '')}</h3>
-      <ol class="star-steps star-steps--still" id="stSteps">${steps.map(s => `<li class="star-step"><div class="anim-show">${s.show}</div><p>${s.say}</p></li>`).join('')}</ol>
-      <p class="star-acts"><button type="button" class="md-btn md-btn--primary" id="stStart" aria-describedby="stIntroH">Start the Star</button></p><p class="mq-small star-intro-n">Then ${ROUND} questions like it.</p></div>`;
-    say('Watch it once. Then it is your turn.', 'explain'); hud();
-    fx.announce(`Learn the trick first: ${said(t.title)}. A worked example, then Start the Star.`);
-    const start = () => { if (ps.aborted) return; replaySkip = null; shown = 1; ask(); };
-    replaySkip = start; on($('#stStart'), 'click', start, ps);
-    $('#stStart').focus({ preventScroll: true });
-  }
-
-  const first = intro ? starIntro(st) : null;
-  if (first && first.example) { st = first.state; teach(first.example); } else ask();
+  ask();
   return { destroy: () => { saveDial(); round.abort(); } };
 }

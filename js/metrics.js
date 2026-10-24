@@ -11,7 +11,7 @@ import { TRICKS } from './vedic.js';
 
 const FIRST = 'vm.firstSeen', FLAGS = 'vm.metrics';
 export const LEAGUES = ['explorer', 'challenger', 'pro'];
-export const ANSWER_AREAS = ['practice', 'run', 'kata', 'star'];
+export const ANSWER_AREAS = ['practice', 'run', 'kata', 'star', 'try'];
 export const ROUND_AREAS = ['arena', 'game', 'tower', 'duel'];
 export const SHARE_SURFACES = ['result', 'challenge-link'];
 export const WIN_BUCKETS = ['under-30', '30-60', '60-90', '90-180', 'over-180'];
@@ -55,6 +55,7 @@ const ROUTES = [
   [/^#\/katas\/([\w-]+)$/, 'katas/{trick:1}'],
   [/^#\/kata\/([\w-]+)\/\d+$/, 'kata/{trick:1}/kata'],
   [/^#\/star\/([\w-]+)\/\d+$/, 'star/{trick:1}/star'],
+  [/^#\/try$/, 'try'],
   [/^#\/tower$/, 'tower'],
   [/^#\/tower\/\d+$/, 'tower/chapter'],
   [/^#\/challenge\/\d+$/, 'challenge/challenge'],
@@ -114,7 +115,7 @@ export function tourEvent(kind) {
   if (TOUR_EVENTS.includes(kind)) send('tour/' + kind, 'Vedic Math: tour');
 }
 
-/* ---------- Answers in untimed play (Practice, Endless runs, Katas, Star rounds) ---------- */
+/* ---------- Answers in untimed play (Practice, Endless runs, Katas, Star rounds, Try a trick) ---------- */
 export function answered(area, ok) {
   if (!ANSWER_AREAS.includes(area)) return;
   send(`q_answered/${area}/${ok ? 'right' : 'miss'}`, 'Vedic Math: question answered');
@@ -178,9 +179,13 @@ export function shareClick(surface) {
   if (SHARE_SURFACES.includes(surface)) send('share_click/' + surface, 'Vedic Math: share');
 }
 
-/* ---------- Try a trick and Find (openspec first-visit, find) ---------- */
-/* Fixed words only: never the Find text, the result's name or the number of results */
-export function tryStart() { send('try/start', 'Vedic Math: try a trick'); }
+/* ---------- Try a trick and Find (openspec first-visit, find, try-trick-in-modes) ---------- */
+/* Fixed words only: never the Find text, the result's name or the number of results. A Try a trick pressed sends
+   try/start (as before) and the Mode whose Try a trick it is, as a fixed League word (like landing/mode/<id>). */
+export function tryStart(mode) {
+  send('try/start', 'Vedic Math: try a trick');
+  if (LEAGUES.includes(mode)) send('try/mode/' + mode, 'Vedic Math: try a trick in a Mode');
+}
 export function findGo() { send('find/go', 'Vedic Math: find result followed'); }
 /* A Mode link from a landing page Mode card (openspec change landing-modes-and-return): the Mode, a fixed word, only.
    It waits in the early queue, since the game reads the link before js/analytics.js has run. */
