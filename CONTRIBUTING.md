@@ -34,7 +34,7 @@ Nothing merges without the owner's approval. `main` deploys straight to the live
 
 ## Local setup
 
-You need Python 3, Node.js 22 or newer and pnpm (`corepack enable`). The app itself has no install step; `pnpm install` once at the root is for the checks.
+You need Python 3, Node.js 22.19 or newer (`engines` in `package.json`) and pnpm (`corepack enable`). The app itself has no install step; `pnpm install` once at the root is for the checks.
 
 Build the site and serve it the way Cloudflare does:
 
@@ -57,7 +57,7 @@ Then open http://localhost:8124/ (the landing page) or http://localhost:8124/pla
 | End-to-end tests | `cd e2e && pnpm exec playwright test` |
 | Firestore rules tests (only when you change `cloud/`; needs Java) | `cd cloud/test && npm install && npm test` |
 
-The pre-commit hook runs the first four (the build into a throwaway directory). CI runs them on every pull request and checks that the build holds no repo-only files. A build inside the repo goes in a folder whose name starts with `_` (`_site/`, `_dev/`, `_moved/`, or `--out _<name>`): git and ESLint ignore `_*/`, and `build.py` refuses any other place inside the repo. Cache stamps are added only by the CI deploy, never in git, so there is nothing to run or commit after editing `play/index.html`, `site/`, `math.css` or `js/`.
+The pre-commit hook runs the first four (the build into a throwaway directory). CI runs them on every pull request and checks that the build holds no repo-only files. A build inside the repo goes in a folder whose name starts with `_` (`_site/`, `_dev/`, `_moved/`, or `--out _<name>`): git and ESLint ignore `_*/`, and `build.py` refuses any other place inside the repo. Every build but `--dev` stamps its output (versioned references and a stamped service worker), and that output is never committed: the source in git holds no cache stamps, so there is nothing to run or commit after editing `play/index.html`, `site/`, `math.css` or `js/`.
 
 ## Tests
 
