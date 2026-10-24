@@ -169,18 +169,20 @@ test('importData refuses a backup whose skills are null or a list, and keeps the
   assert.equal(store.sparks(), 55);
 });
 
-/* Mode guess (openspec first-visit): Try a trick marks the Mode as a guess; any pick, or forgetting the Mode, clears it */
-test('setPlayerMode marks a guess only when asked, and a pick or null clears it', () => {
-  store.setPlayerMode('challenger', { guess: true });
-  assert.equal(store.player().mode, 'challenger');
+/* Mode guess (openspec first-visit, try-trick-in-modes): nothing writes one any more; a record that still has one from the
+   earlier Try a trick keeps it until a pick, or forgetting the Mode, clears it */
+test('a Mode guess left on a record from before is read until a pick or null clears it, and nothing sets one', () => {
+  const mark = () => { const pl = JSON.parse(localStorage.getItem('vm.players')); pl.list.find(p => p.id === store.player().id).modeGuess = true; Object.assign(store.player(), { mode: 'challenger', modeGuess: true }); localStorage.setItem('vm.players', JSON.stringify(pl)); };
+  mark();
   assert.equal(store.modeGuessed(), true);
-  assert.equal(saved().list.find(p => p.id === store.player().id).modeGuess, true);
   store.setPlayerMode('pro');
   assert.equal(store.player().mode, 'pro');
   assert.equal(store.modeGuessed(), false);
   assert.ok(!('modeGuess' in saved().list.find(p => p.id === store.player().id)), 'the field is removed, not set to false');
-  store.setPlayerMode('challenger', { guess: true });
+  mark();
   store.setPlayerMode(null);
   assert.equal(store.player().mode, null);
   assert.equal(store.modeGuessed(), false);
+  store.setPlayerMode('challenger', { guess: true });
+  assert.equal(store.modeGuessed(), false, 'setPlayerMode takes no guess option');
 });

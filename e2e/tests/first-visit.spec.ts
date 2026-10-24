@@ -1,6 +1,7 @@
 import { test, expect, APP, open, appErrors } from './fixtures';
 
-/* The first visit (openspec first-visit): Try a trick on the landing with a guessed Mode, Back home from that Star,
+/* The first visit (openspec first-visit, try-trick-in-modes): the Mode picker with a Try a trick under each Mode card
+   (the lesson itself is in try-trick.spec.ts), Back home from a Star opened from Home,
    three doors first on Home with the rest under More ways to play, Sparks explained on the quests card, and the
    Explorer picture home left alone. Analytics is stubbed so the one fixed event can be checked and nothing counts. */
 const STUB = `window.__events = window.__events || []; window.siteTrack = (path, title) => { window.__events.push(path); };`;
@@ -17,32 +18,31 @@ test.beforeEach(async ({ page }) => {
 test.describe('the landing', () => {
   test.use({ seedMode: null });
 
-  test('Try a trick: two taps from the landing to a first answer, Challenger as a guess, one math/try/start', async ({ page, issues }) => {
+  test('the picker: the short hero, Pick who is playing, three cards each with its Try a trick, and no guess', async ({ page, issues }) => {
     await page.goto(APP);
     await expect(page.locator('#view h1')).toHaveText('Fast, fun math for every brain');
     expect((await page.locator('#view .md-lede').innerText()).split(/\s+/).length).toBeLessThanOrEqual(25);
     await expect(page.locator('.mode-pick .mode-card')).toHaveCount(3);
-    await expect(page.locator('.pick-h')).toHaveText('Or pick who is playing');
-    await page.locator('#tryBtn').click(); // tap 1
-    await expect(page).toHaveURL(/#\/star\/[\w-]+\/1$/);
-    await expect(page.locator('#stStart')).toBeFocused(); // the Trick worked once (openspec try-trick-teaches)
-    await page.locator('#stStart').click(); // tap 2
-    await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
-    await expect(page.locator('.star-key[data-k="7"]')).toBeVisible();
-    await page.locator('.star-key[data-k="7"]').click(); // tap 3: the first answer digit
-    await expect(page.locator('#stOut')).toContainText('7');
-    expect(await player(page)).toMatchObject({ mode: 'challenger', modeGuess: true });
-    expect((await events(page)).filter(e => e.startsWith('math/try/'))).toEqual(['math/try/start']);
-    // The guessed Mode is not counted as a Mode pick
-    expect((await events(page)).filter(e => e.startsWith('math/mode/'))).toEqual([]);
+    await expect(page.locator('.mode-pick .mode-try')).toHaveCount(3);
+    await expect(page.locator('.pick-h')).toHaveText('Pick who is playing');
+    await page.locator('[data-try="challenger"]').click();
+    await expect(page).toHaveURL(/#\/try$/);
+    await expect(page.locator('#tyStart')).toBeFocused();
+    await page.locator('#tyStart').click();
+    await expect(page.locator('#tyIn')).toBeFocused();
+    expect(await player(page)).toMatchObject({ mode: 'challenger' });
+    expect((await player(page)).modeGuess).toBeUndefined();
+    expect((await events(page)).filter(e => e.startsWith('math/try/'))).toEqual(['math/try/start', 'math/try/mode/challenger']);
+    // A card's Try a trick is a pick: it is counted as one
+    expect((await events(page)).filter(e => e.startsWith('math/mode/'))).toEqual(['math/mode/challenger']);
     await expect(page.locator('dialog.vm-tour')).toHaveCount(0);
     expect(appErrors(issues)).toEqual([]);
   });
 
-  test('on a 390 px phone Try a trick is above the fold and the page does not scroll sideways', async ({ page }) => {
+  test('on a 390 px phone the Explorer card\'s Try a trick is above the fold and the page does not scroll sideways', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(APP);
-    const b = (await page.locator('#tryBtn').boundingBox())!;
+    const b = (await page.locator('[data-try="explorer"]').boundingBox())!;
     expect(b.y + b.height).toBeLessThanOrEqual(844);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   });
@@ -60,23 +60,19 @@ test.describe('the landing', () => {
     expect((await events(page)).filter(e => e.startsWith('math/try/'))).toEqual([]);
   });
 
-  test('Back from the trial Star goes Home, where the mode line names the guess; picking on Me clears it', async ({ page }) => {
+  test('Back from the Star at the end of Try a trick goes Home, where the mode line names no guess', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('#tryBtn').click();
-    await page.locator('#stStart').click();
+    await page.locator('[data-try="challenger"]').click();
+    await page.locator('#tyStart').click();
+    for (const a of [625, 2025, 4225]) { await page.locator('#tyIn').fill(String(a)); await page.keyboard.press('Enter'); await page.locator('#tyNext').click(); }
+    await page.locator('#tyGoOn').click();
     await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
     await expect(page.locator('#stExit')).toBeVisible();
     await page.locator('#stExit').click();
     await expect(page).toHaveURL(new RegExp(`${APP.replace(/\//g, '\\/')}#\\/$`));
     await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
-    await expect(page.locator('.mode-line')).toContainText('Mode: Challenger, our guess for a first try');
-    await expect(page.locator('.mode-line a[href="#/me"]')).toHaveText('Change');
+    await expect(page.locator('.mode-line')).toHaveText(/Mode: Challenger Change$/);
     await expect(page.locator('.home-doors .door')).toHaveCount(3);
-    await page.locator('.mode-line a[href="#/me"]').click();
-    await page.locator('.mode-pick--sm .mode-card[data-mode="pro"]').click();
-    await open(page, '#/');
-    await expect(page.locator('.mode-line')).toHaveText(/Mode: Pro Change$/);
-    expect((await player(page)).modeGuess).toBeUndefined();
   });
 
   test('the landing links to Find, which opens without a Mode', async ({ page }) => {
@@ -87,30 +83,19 @@ test.describe('the landing', () => {
   });
 });
 
-/* The Star's first question, answered right: its text is plain arithmetic ("100 − 98 = ?") */
-async function answerFirst(page: Page) {
-  const q = (await page.locator('#stQ').innerText()).replace(/[\u2212\u2013]/g, '-').replace(/[×x]/g, '*').replace(/[^\d+\-*/(). ]/g, '');
-  const ans = String(Math.round(Function(`return (${q})`)()));
-  for (const ch of ans) await page.locator(`.star-key[data-k="${ch}"]`).click();
-  await page.locator('.star-key[data-k="go"]').click();
-}
-
 /* Home on a phone (openspec change find-and-home-polish): the primary action in the first screen, no card that repeats it */
 test.describe('Home on a 390 px phone after Try a trick', () => {
   test.use({ seedMode: null, viewport: { width: 390, height: 844 } });
   for (const scheme of ['light', 'dark'] as const) {
-    test(`compact Player strip, no Keep going for the Star's own Trick, Play this Star on screen (${scheme})`, async ({ page, issues }) => {
+    test(`compact Player strip, no Keep going, Play this Star on screen (${scheme})`, async ({ page, issues }) => {
       await page.emulateMedia({ colorScheme: scheme });
       await page.goto(APP);
-      await page.locator('#tryBtn').click();
-      await page.locator('#stStart').click(); /* the trial Star teaches its Trick first (openspec try-trick-teaches) */
-      await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
-      await answerFirst(page);
-      await expect(page.locator('#stMain .star-tag')).toHaveText('Question 2 of 4');
-      await page.locator('#stExit').click();
+      await page.locator('[data-try="challenger"]').click();
+      await page.locator('#tyStart').click();
+      for (const a of [625, 2025, 4225]) { await page.locator('#tyIn').fill(String(a)); await page.keyboard.press('Enter'); await page.locator('#tyNext').click(); }
+      await page.locator('#tyHome').click();
       await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
-      expect(await page.evaluate(() => localStorage.getItem('mathquest.v1.' + JSON.parse(localStorage.getItem('vm.players')!).active))).toContain('"last":"v-');
-      await expect(page.locator('.mq-continue')).toHaveCount(0);
+      await expect(page.locator('.mq-continue')).toHaveCount(0); /* Try a trick is a lesson: it leaves Keep going alone */
       const strip = (await page.locator('.me-strip').boundingBox())!;
       expect(strip.height).toBeLessThanOrEqual(130);
       const play = (await page.locator('#view .md-btn--primary').boundingBox())!;

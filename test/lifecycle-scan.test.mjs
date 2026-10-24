@@ -54,6 +54,15 @@ test('the Family helpers (js/family-view.js, js/family-hook.js, js/family-helper
   assert.match(src, /import \{[^}]*\bon\b[^}]*\blater\b[^}]*\bchild\b[^}]*\} from '\.\/life\.js'/);
 });
 
+test('Try a trick (js/try.js): no bare listeners or timers; its listeners go through life.on on a child signal', () => {
+  assert.deepEqual(hits('try.js', /\.?addEventListener\(/), []);
+  assert.deepEqual(hits('try.js', TIMERS), []);
+  const src = readFileSync(new URL('../js/try.js', import.meta.url), 'utf8');
+  assert.match(src, /import \{[^}]*\bon\b[^}]*\bchild\b[^}]*\} from '\.\/life\.js'/);
+  assert.match(src, /round = child\(signal\)/);
+  assert.doesNotMatch(src, /\.on(click|submit|keydown)\s*=/);
+});
+
 test('no bare listeners or timers in the play shell (js/shell.js)', () => {
   assert.deepEqual(hits('shell.js', /\.?addEventListener\(/), []);
   assert.deepEqual(hits('shell.js', TIMERS), []);
