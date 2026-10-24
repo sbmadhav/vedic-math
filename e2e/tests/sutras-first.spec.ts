@@ -34,6 +34,10 @@ test.describe('Trick page', () => {
       await open(page, '#/skill/v-sq5');
       await expect(page.locator('.mq-sutra .sutra-tag-m')).toHaveText('One more than the number before');
     });
+    test('a special case reads "Part of" in Explorer, never "Sutra"', async ({ page }) => {
+      await open(page, '#/skill/v-by11');
+      await expect(page.locator('.mq-sutra .sutra-tag-k')).toHaveText('Part of');
+    });
   });
 
   test.describe('Pro', () => {
