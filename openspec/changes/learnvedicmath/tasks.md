@@ -4,27 +4,39 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 
 ## 0. Before building (ordering)
 
-- [ ] 0.1 Merge, on the current site, better-voice Part B (PR #55, about 23,700 voice files: see design D17) with explanation audio, PR #47 (Play) and PR #49 (sutra pronunciation), and confirm the live E2E run after each (owner decision 6). Decide PR #50 (Sanskrit verses): merge before the move, or rebase it after (design open question 7).
-- [ ] 0.2 Archive `content-security-policy` and `site-header` (this change modifies their specs), and any other change whose release check is done. Verify: `openspec list` shows neither, and `openspec validate learnvedicmath --strict` reports no "Archive would refuse" notice.
+- [x] 0.1 Merge, on the current site, better-voice Part B (PR #55, about 23,700 voice files: see design D17) with explanation audio, PR #47 (Play) and PR #49 (sutra pronunciation), and confirm the live E2E run after each (owner decision 6). Decide PR #50 (Sanskrit verses): merge before the move, or rebase it after (design open question 7).
+  - Done 2026-10-21 (audit): PR #55 merged 2026-10-19, #47 on 2026-10-18 and #49 on 2026-10-17 (PR #44 on 2026-10-17 too), all on the old site before the move; the live suite passed after them (and on learnvedicmath.com in `e2e.yml` run 39495039945). PR #50 (Sanskrit verses) was merged before the move, on 2026-10-18, and its change is archived as `2026-10-17-sanskrit-verses`.
+- [x] 0.2 Archive `content-security-policy` and `site-header` (this change modifies their specs), and any other change whose release check is done. Verify: `openspec list` shows neither, and `openspec validate learnvedicmath --strict` reports no "Archive would refuse" notice.
+  - Done 2026-10-21 (audit): both are in `openspec/changes/archive/` (`2026-10-18-content-security-policy`, `2026-10-18-site-header`); `openspec list` shows neither and `openspec validate learnvedicmath --strict` reports the change valid with no archive notice.
 - [x] 0.3 **[OWNER]** Answer the open questions L1 to L8 in `design.md` (World board viewing, going private route, Blaze plan, licence of new code, brand name and icons, credit link, PR #50, where the Studio voice files live). Defaults are written into this change; a different answer is folded in with `/opsx:update`.
   - Done 2026-10-17: L2 GitHub Pro, L6 no credit line, the rest as the defaults in design.md.
-- [ ] 0.4 Rebase this change onto `main` after 0.1 and update file paths in `design.md` D2 for anything the merged work added under `/vedic-math/`.
+- [x] 0.4 Rebase this change onto `main` after 0.1 and update file paths in `design.md` D2 for anything the merged work added under `/vedic-math/`.
+  - Done 2026-10-21 (audit): the change was built on `main` and merged in PR #82 (2026-10-20), after 0.1.
 
 ## 1. Owner setup, Phase A (can start now, in parallel with 0)
 
 - [ ] 1.1 **[OWNER]** (sec P0) Passkey or hardware-key 2FA on Squarespace, GitHub, the Google account that will own Firebase, and the new Cloudflare account; registrar lock and auto-renew on at Squarespace. Steps 1 and 2 of the owner guide.
 - [ ] 1.2 **[OWNER]** Create the Cloudflare account, add `learnvedicmath.com` (Free plan), delete the imported Squarespace parking records, then change the nameservers at Squarespace to Cloudflare's two. Verify: Cloudflare shows the zone Active; `dig NS learnvedicmath.com +short` lists Cloudflare.
+  - Checked 2026-10-21 (read only): `dig NS learnvedicmath.com +short` lists `jean.ns.cloudflare.com` and `skip.ns.cloudflare.com`. Left for the owner to tick.
 - [ ] 1.3 **[OWNER]** Read the Cloudflare self-serve subscription agreement for commercial use, and note the answer in `docs/owner-setup-learnvedicmath.md`.
 - [ ] 1.4 **[OWNER]** (sec P1) DNSSEC: enable in Cloudflare, add the DS record at Squarespace. Verify: `dig +dnssec learnvedicmath.com` has the `ad` flag through a validating resolver, and DNSViz shows a secure chain.
+  - Checked 2026-10-21 (read only): not on yet. `dig DS learnvedicmath.com @1.1.1.1` is empty and the answer has no `ad` flag.
 - [ ] 1.5 **[OWNER]** Email Routing for `privacy@`, `hello@` and `security@` to the owner's Gmail; then DMARC `p=reject` (sec P1). Verify: a test mail to each arrives; `dig TXT _dmarc.learnvedicmath.com` shows `p=reject`.
+  - Checked 2026-10-21 (read only): MX points at Cloudflare Email Routing and `_dmarc` is `v=DMARC1; p=reject; sp=reject; adkim=s; aspf=s`. The test mails are the owner's to confirm.
 - [ ] 1.6 **[OWNER]** (sec P1) CAA records (`letsencrypt.org`, `pki.goog`, plus whatever Cloudflare adds; `iodef` to `security@`). Verify: the Cloudflare edge certificate is still active after a day.
+  - Checked 2026-10-21 (read only): not done. `dig CAA learnvedicmath.com +short` returns nothing.
 - [ ] 1.7 **[OWNER]** Create the `production` (branch `main` only) and `preview` environments first, then two Cloudflare API tokens for CI (permissions in the owner guide §8, this account and zone only, 1 year): the production one with `gh secret set CLOUDFLARE_API_TOKEN --env production`, the preview one with `gh secret set CLOUDFLARE_PREVIEW_TOKEN --env preview`; the account id with `gh variable set CLOUDFLARE_ACCOUNT_ID`. Never pasted into chat, never stored at repository scope while environments exist. Verify: `gh secret list --env production` and `--env preview` show one name each, and `gh secret list` shows neither.
+  - Checked 2026-10-21 (read only): `gh secret list --env production` shows `CLOUDFLARE_API_TOKEN`, `--env preview` shows `CLOUDFLARE_PREVIEW_TOKEN`, `gh secret list` shows none, and `CLOUDFLARE_ACCOUNT_ID` is a repository variable. Left for the owner to tick.
 - [ ] 1.8 **[OWNER]** New Firebase/GCP project (D14): Blaze plan with a $5 budget and alerts (if open question 3 is yes), then run `bash cloud/setup.sh <project-id>` after task 8.4 lands, and the App Check and API key steps of the owner guide.
   - Not needed for launch: the site launches with Device boards only (see 8.5). World boards turn on when this and 8.5 are done, in a later PR.
 - [ ] 1.9 **[OWNER]** New GoatCounter site code `learnvedicmath` (same login as `sbmadhav`), settings: no IP collection, ignore the owner's own visits.
+  - Checked 2026-10-21 (read only): not done. `https://learnvedicmath.goatcounter.com/` answers 400 "no site at this domain", so the page views and events the live site sends are dropped until the site exists.
 - [ ] 1.10 **[OWNER]** (sec P0) Verify `learnvedicmath.com` in GitHub account Settings > Pages > Verified domains (TXT host `_github-pages-challenge-sbmadhav`, host part only). Verify: GitHub shows it Verified.
+  - Checked 2026-10-21 (read only): the TXT record `_github-pages-challenge-sbmadhav.learnvedicmath.com` exists. Whether GitHub shows the domain Verified is for the owner to check.
 - [ ] 1.11 **[OWNER]** Search Console: add the domain property (TXT), and mark the site as directed to children where Google's tools ask (YouTube embeds, decision 10).
+  - Checked 2026-10-21 (read only): no `google-site-verification` TXT record on `learnvedicmath.com` yet.
 - [ ] 1.12 **[OWNER]** Cloudflare Web Analytics: add the site with the manual snippet (not automatic injection) and give the site token to the builder (it is public).
+  - Checked 2026-10-21: the site token is in `js/analytics.js` (`CF_TOKEN`, PR #98) and the live pages load the manual beacon. Left for the owner to tick.
 - [ ] 1.13 **[OWNER]** (sec P2) Uptime monitor (UptimeRobot or Better Stack free) on `https://learnvedicmath.com/`, `/play/` and `/sw.js`, alerting the owner's email; Cloudflare notifications for certificate and DNS changes.
 
 ## Phase A: build and launch
@@ -32,8 +44,9 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 ## 2. Layout and build
 
 - [x] 2.1 Move `index.html` to `play/index.html`; module, style, font and icon paths drop the `/vedic-math/` prefix (`/js/`, `/css/`, `/math.css`); `BASE`, the import check and every `/vedic-math/` string in `build.py` follow D2. Verify: `test/build.test.mjs` builds `_site` and finds `play/index.html`, `index.html`, `js/app.js`, and no `/vedic-math/` outside `_redirects`.
-- [ ] 2.2 `build.py`: `--dev` (no stamps, `'dev'` worker), `--preview` (adds `X-Robots-Tag`), `--target moved` (D8, old origin). Verify: build tests for each target; `--target moved` output has `index.html`, `404.html`, a KILL `sw.js` with a hashed `VERSION`, and only `/vedic-math/` paths.
+- [x] 2.2 `build.py`: `--dev` (no stamps, `'dev'` worker), `--preview` (adds `X-Robots-Tag`), `--target moved` (D8, old origin). Verify: build tests for each target; `--target moved` output has `index.html`, `404.html`, a KILL `sw.js` with a hashed `VERSION`, and only `/vedic-math/` paths.
   - Built 2026-10-19: `--dev`, `--preview` and `--target moved` (build tests for the first two); the moved output needs `moved/` from task 10.4, so this is checked with 10.4.
+  - Done 2026-10-21 (audit; PR #82, PR #99): `test/build.test.mjs` "--target moved builds the moved page, its pinned packer and the KILL worker under /vedic-math/" passes, and the published `https://sbmadhav.com/vedic-math/sw.js` is the KILL worker (`const KILL = true;`, `VERSION = '331a4033dd'`).
 - [x] 2.3 `build.py` writes `_redirects` (`/vedic-math/* /play/ 301`, `/vedic-math /play/ 301`), `robots.txt`, `sitemap.xml`, `404.html`, and fails on the host limits (hosting spec). Verify: build tests, including an oversized-file case.
 - [x] 2.4 `build.py` fails on any `sbmadhav.com` reference in a published file except the export-page URL, any `https://` module import, and any third-party host not in `THIRD_PARTIES` (D10). Verify: build tests with one failing case each.
 - [x] 2.5 `wrangler.jsonc` as in D1, wrangler pinned in a new `deploy/package.json`; `_config.yml` `exclude:` gains `wrangler.jsonc`, `worker/`, `deploy/`, `vendor/**/SHA256SUMS`, `tools/`, `site/` sources (the build renders them). Verify: `npx wrangler deploy --dry-run` from `deploy/` succeeds; CI's repo-only check lists the new paths.
@@ -69,8 +82,10 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 - [x] 5.3 `.well-known/security.txt` (expires in 11 months), and the build fails under 30 days. Verify: build test with a fake date.
 - [x] 5.4 `e2e/tests/csp.spec.ts` against `wrangler dev` and production: every main route, a playing video, a World board for a 15-year-old Player, the voice worker, no violation; the negative control still fires. `e2e/tests/headers.spec.ts`: every header and value on `/`, `/play/`, `/import/`, `/parents/`, a JS file and the 404.
   - Specs written (`csp.spec.ts` reads the header now; `headers.spec.ts`); green against a local `_site` served with its `_headers` on chromium, webkit and mobile. The production run is task 14.1.
+  - Checked 2026-10-21 against production: `BASE_URL=https://learnvedicmath.com npx playwright test tests/headers.spec.ts tests/csp.spec.ts`: 68 passed, 4 skipped (the World board case on each project, which needs Firebase from 8.5, and the camera case on webkit, which skips there by design) on chromium, webkit and mobile. Still open: `headers.spec.ts` has no `/import/` case (its COOP `same-origin-allow-popups` is live, checked by `curl -sI`), and the World board case runs after 8.5.
   - Done 2026-10-23: `csp.spec.ts` walks the spec's whole route list (Home, Learn, a Grade, a Skill, the Dojo, the Arena, Games, a game, the Sutras, Watch, Me and a Star round), opens a video on its facade and presses play before the frame is checked, starts the voice worker, keeps the negative control, and skips the World board test through the fixtures' `needsWorldBoards` while `js/cloud-config.js` has `FIREBASE = null` (`boards-off.spec.ts` covers that state). Green with `headers.spec.ts` on chromium, webkit and mobile against `_site` served by `e2e/local-server.mjs` on port 8690. The `wrangler dev` and production runs stay with task 14.1 (the World board case runs once 8.5 serves a config).
 - [ ] 5.5 **[OWNER]** (sec P1) Cloudflare zone settings: Always Use HTTPS on, minimum TLS 1.2, the `www` Single Redirect rule, and a rate-limiting rule on `/_csp` and `/import/` (owner guide step 11). Workers have no separate origin, so there is no SSL mode to choose.
+  - Checked 2026-10-21 (read only): not done. `https://www.learnvedicmath.com/` answers 200 with the page instead of a 301 to `https://learnvedicmath.com/`, and `http://learnvedicmath.com/` answers 200 instead of redirecting to https (Always Use HTTPS is off).
 
 ## 6. Service worker and manifest
 
@@ -82,6 +97,7 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 
 - [x] 7.1 `tools/fetch-thumbs.mjs` and `thumbs/<id>.webp` for every `js/videos.js` entry; `thumbSrc()` returns `/thumbs/<id>.webp`. Verify: `test/videos.test.mjs` fails on a missing thumbnail; `e2e/tests/watch.spec.ts` sees no `i.ytimg.com` request.
 - [x] 7.2 YouTube facade: no iframe until play is pressed (watch-shelf spec), in the Watch shelf, a Skill's Watch section and the Star round's video. Verify: e2e counts frames and YouTube requests before and after the tap.
+  - Checked 2026-10-21: the code already makes no frame before a tap (the Watch shelf and a Skill's Watch section use `[data-watch]` buttons and the Star round uses `video.open`, all through `openPlayer()` in `js/app.js`, which writes the iframe only then). Open for the Verify: no e2e counts frames and YouTube requests before and after the tap yet.
   - Done 2026-10-23: `js/watch.js` `facade()` is this site's thumbnail behind a play button (`.vp-play`); `js/app.js` `openPlayer()` opens every player (shelf cards, a Skill's Watch it explained buttons, Find hits, the Sutra deep dive, the Star round's offer) on it, and `playVideo()` writes the `youtube-nocookie.com` frame, counts the view (`watched`, `math/watch/<kind>`) and starts the Video learner minute only on the press; `js/star.js`'s inline fallback shows the same facade and writes its frame on the press. `e2e/tests/watch.spec.ts` (the shelf and a Skill's Watch section) and `star.spec.ts` count frames and YouTube or Google requests before and after the tap (one frame and none, then two frames and `www.youtube-nocookie.com` only); `csp.spec.ts`, `progress.spec.ts`, `find.spec.ts` and the coverage specs press play where they need the frame. The first-load baseline grew by 689 bytes Brotli for that code (`docs/perf/baseline.json`, its change log).
 - [ ] 7.3 `tools/vendor-firebase.mjs` and `vendor/firebase/<v>/` (current major, imports rewritten, Apache-2.0 licence); `js/cloud.js` loads from there; the build fails if a vendored file names `gstatic.com/firebasejs`. Verify: `test/cloud.test.mjs` loader paths; `e2e/tests/fixtures.ts` `FIREBASE_SDK` matches `/vendor/firebase/`; `leaderboard.live.spec.ts` passes against production with the real vendored SDK (reads only).
   - Done 2026-10-19: Firebase 13.0.0 vendored, `cloud.js` loads `/vendor/firebase/13.0.0/`, fixtures and loader tests follow. Open until 8.5: `leaderboard.live.spec.ts` against production needs the new project (owner 1.8).
@@ -113,7 +129,9 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 - [ ] 9.1 `js/analytics.js` replaces `/assets/analytics.js` (same behaviour, site code `learnvedicmath`, idle load, Do Not Track and GPC off, queue); `vendor/goatcounter/count.js` pinned with its licence. `js/metrics.js` comments and the theme event name (`math/theme/<scheme>`). Verify: `e2e/tests/analytics.spec.ts` and `analytics-gpc.spec.ts` against the new endpoint (still answered locally in tests).
   - Done 2026-10-19 (`js/analytics.js`, `vendor/goatcounter/count.js`, events specs stub `/js/analytics.js`). Open only for the GoatCounter site code (owner 1.9); the code `learnvedicmath` is already in place.
 - [ ] 9.2 Hand-off events (analytics spec). Verify: e2e on `/import/` sees exactly one event after the fragment is gone.
+  - Checked 2026-10-21: `js/handoff.js` sends `math/handoff/<accepted|replaced|merged|kept|declined|invalid|error>` and `moved/handoff-pack.js` sends `move/handoff/<bucket>`. Open: no e2e on `/import/` checks exactly one event after the fragment is gone, and the buckets differ from the analytics spec (code has merged and error; the spec lists too-big and popup).
 - [ ] 9.3 Cloudflare Web Analytics manual snippet, loaded by `js/analytics.js` under the same off switch; try serving `beacon.min.js` from this site in Report-Only first; add the chosen hosts to `THIRD_PARTIES`. Verify: e2e sees no beacon with GPC on; production dashboard shows page loads.
+  - Checked 2026-10-21: the manual beacon is loaded by `js/analytics.js` from `static.cloudflareinsights.com` (both hosts are in `THIRD_PARTIES`), and `e2e/tests/analytics-gpc.spec.ts` sees no beacon with GPC on and exactly one with it off. The beacon is served from Cloudflare's host, not from this site (the self-hosted try was not made). Open for the production dashboard check (owner).
 
 ## 10. Hand-off, new side (decisions 3 and 8)
 
@@ -128,12 +146,15 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 
 ## 11. CI/CD
 
-- [ ] 11.1 `ci.yml`: new stamp checks (`/js/app.js` pinned, `/play/` shell precached, `_headers` present and within limits), `compose.py --check`, then the `main`-only `deploy` job (`needs: [check, voice-upload]`, task 7.7) with `wrangler deploy` from `deploy/` using `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; the GitHub Pages deploy job removed. Verify: a push to a test branch runs checks only; `main` deploys.
+- [x] 11.1 `ci.yml`: new stamp checks (`/js/app.js` pinned, `/play/` shell precached, `_headers` present and within limits), `compose.py --check`, then the `main`-only `deploy` job (`needs: [check, voice-upload]`, task 7.7) with `wrangler deploy` from `deploy/` using `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`; the GitHub Pages deploy job removed. Verify: a push to a test branch runs checks only; `main` deploys.
   - Written 2026-10-19 (`ci.yml`: checks, wrangler dry run, `voice-upload`, `deploy`; the Pages deploy is gone and `moved.yml` publishes Phase B by hand). The deploy runs once `vars.CLOUDFLARE_ACCOUNT_ID` exists (owner 1.7), so the Verify (a push to main deploys) waits on the owner. R2 (7.8) is optional for it since 2026-10-20: with `vars.R2_ACCOUNT_ID` empty the site is built with `build.py --voice off` and deployed with the device voice (design, "Changes made while building").
+  - Done 2026-10-21 (audit): every push to `main` runs `check`, `rules` and `deploy` (for example run 39543610796, deploy success; `voice-upload` skipped while `R2_ACCOUNT_ID` is empty), and pull request runs of `ci.yml` have no deploy job.
 - [ ] 11.2 `preview.yml`: same-repo pull requests build with `--preview`, upload with `--preview-alias pr-<n>`, comment the URL, run e2e chromium against it. Verify: a test PR gets a comment and a green run; a fork PR gets neither secret nor deploy.
   - Written 2026-10-19 (`preview.yml`); runs once the owner has saved `CLOUDFLARE_PREVIEW_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` (1.7).
-- [ ] 11.3 `e2e.yml`: base URL `https://learnvedicmath.com`; the deploy wait checks `/play/`, `/sw.js`, `/js/app.js`; daily and manual runs; comments about 429 rewritten (D12). `playwright.config.ts` and `fixtures.ts` follow (`APP = '/play/'` helper; the 208 `/vedic-math` references in 73 test files move to it). Verify: the suite passes against `wrangler dev` and against a preview.
+  - Checked 2026-10-21 (audit): same-repo pull requests get the preview comment (for example PR #115: `https://pr-115-learnvedicmath.sbmadhav.workers.dev`) and a chromium run against it (run 39527019371 green). A fork pull request is skipped by the job's `if: github.event.pull_request.head.repo.full_name == github.repository`; no fork pull request has been opened to see it, so this stays open until one shows neither secret nor deploy.
+- [x] 11.3 `e2e.yml`: base URL `https://learnvedicmath.com`; the deploy wait checks `/play/`, `/sw.js`, `/js/app.js`; daily and manual runs; comments about 429 rewritten (D12). `playwright.config.ts` and `fixtures.ts` follow (`APP = '/play/'` helper; the 208 `/vedic-math` references in 73 test files move to it). Verify: the suite passes against `wrangler dev` and against a preview.
   - Written 2026-10-19: `e2e.yml`, `playwright.config.ts`, `fixtures.ts` (`APP = '/play/'`) and every spec moved to the root paths; the suite passes against a local `_site` (all three projects). The preview run waits on 11.2.
+  - Done 2026-10-21 (audit; PR #103): `e2e.yml` run 39495039945 (push, 2026-10-20) against `https://learnvedicmath.com` passed on chromium, webkit and mobile (1,416 passed, 1 flaky), and preview runs pass against a preview.
 - [x] 11.4 `.github/dependabot.yml` (github-actions, npm in `/e2e`, `/cloud/test`, `/deploy`; weekly, grouped). (sec P1)
 - [ ] 11.5 **[OWNER]** (sec P1) Turn on CodeQL default setup, secret scanning and push protection, and Dependabot alerts in the repo's Settings > Code security, while the repo is public.
 - [x] 11.6 CI check that `CLOUDFLARE_API_TOKEN` is named only by the `deploy` job (environment `production`) and `CLOUDFLARE_PREVIEW_TOKEN` only by the preview job (environment `preview`, `pull_request` event). Verify: a test workflow naming either secret elsewhere fails the check.
@@ -141,11 +162,14 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 ## 12. Docs and copy
 
 - [ ] 12.1 `SECURITY.md`: scope `https://learnvedicmath.com/`, contact `security@learnvedicmath.com` and the advisory form (while public).
-- [ ] 12.2 `GLOSSARY.md`: Hand-off, Moved page, Export page, Landing page; Parent step marked retired; World board and Device board wording for under-13 Players. (Proposed entries are added by this change's planning PR.)
+- [x] 12.2 `GLOSSARY.md`: Hand-off, Moved page, Export page, Landing page; Parent step marked retired; World board and Device board wording for under-13 Players. (Proposed entries are added by this change's planning PR.)
+  - Done 2026-10-21 (audit; PR #52, PR #86): `GLOSSARY.md` has Hand-off, Moved page, Export page, Landing page, Parent step (retired), and World board and Device board say under-13 Players see the Device board only.
 - [ ] 12.3 `LICENSE-CONTENT.md`, `LICENSE` header and `CONTRIBUTING.md` (D16), after open question 4. Verify: copy tests (no em dashes).
 - [ ] 12.4 `docs/PLAN.md`: hosting, Boards and analytics sections point to this change and ADRs 0004 to 0006.
 - [ ] 12.5 `openspec/config.yaml` context: new domain, Cloudflare, self-hosted SDK, under-13 device-only.
+  - Checked 2026-10-21: `openspec/config.yaml` names the domain and Cloudflare Workers, but still says under-13 Players post "without the Parent step" and does not mention the self-hosted SDK as the source; open.
 - [ ] 12.6 Manual checks recorded in this file before launch: COOP on `/import/` keeps the popup link in Chromium and WebKit; YouTube plays with `strict-origin-when-cross-origin`; `auto-trailing-slash` serves `/play` and `/import`; the Report-Only policy does not break anything.
+  - Part checked 2026-10-21: `curl -sI https://learnvedicmath.com/play` and `/import` answer 307 to `/play/` and `/import/`; `videos.live.spec.ts` (285 passed, chromium) plays every video in a frame with `referrerpolicy="strict-origin-when-cross-origin"`; the live suite passes with the Report-Only policy sent on every page. Open: the COOP popup check needs the export page (16.2).
 
 ## 13. Legal and security program (decisions 13 and 14)
 
@@ -155,8 +179,10 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 
 ## 14. Pre-launch checks (Phase A gate)
 
-- [ ] 14.1 Production deploy reachable on `learnvedicmath.com` and `www`; `e2e.yml` green against production, all three projects.
-- [ ] 14.2 Header scan (securityheaders.com or `curl -sI`) shows every header; Mozilla Observatory grade recorded.
+- [x] 14.1 Production deploy reachable on `learnvedicmath.com` and `www`; `e2e.yml` green against production, all three projects.
+  - Done 2026-10-21 (audit): `https://learnvedicmath.com/` and `https://www.learnvedicmath.com/` both answer 200 with the site (www should redirect: owner task 5.5); `e2e.yml` run 39495039945 green against production on all three projects. The live runs since the background sky merged (PRs #110 and #111, 2026-10-21) are not green, for reasons outside this change: the push run after #115 (39543610870) failed 3 frame-cost cases of `background-perf.spec.ts` (chromium, p95 draw time over the 4 ms CI budget) and one `celebrations.spec.ts` case on webkit (the confetti canvas still there 5 s after the burst), 1,665 passed; the daily run on 2026-10-21 (39596555775) failed 4 frame-cost cases and the same webkit case, 2,509 passed; the daily run on 2026-10-22 (39775674798) was cancelled at the `e2e` job's 50-minute limit.
+- [x] 14.2 Header scan (securityheaders.com or `curl -sI`) shows every header; Mozilla Observatory grade recorded.
+  - Done 2026-10-21 (audit): `curl -sI` on `/`, `/play/`, `/import/`, `/sw.js` and a 404 shows HSTS, CSP and its Report-Only variant (pages), COOP (`same-origin-allow-popups` on `/import/`), CORP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy and Reporting-Endpoints; `headers.spec.ts` passes against production. Mozilla Observatory (API v2, 2026-10-21): B+ (80), 11 of 12 tests passed, the same for www; the failed test is most likely the redirection one, since `http://learnvedicmath.com/` answers 200 without a redirect to https (owner 5.5).
 - [ ] 14.3 `leaderboard.live.spec.ts` green against the new project with App Check enforced (reads only).
 - [ ] 14.4 **[OWNER]** Phone and Chromebook check: landing, Play, a Star, a video, a 15-year-old posts once by hand, an under-13 Player's Me page, offline after one visit, install.
 - [ ] 14.5 **[OWNER]** Privacy policy and terms published (after 13.1; until then the pages say "draft under review" and the site is not promoted).
@@ -175,11 +201,13 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 
 ## 16. Old origin
 
-- [ ] 16.1 Build `_moved` and publish it at `https://sbmadhav.com/vedic-math/` (by this repo's Pages, which keep serving after the repo goes private on GitHub Pro). Verify: `e2e/tests/moved.live.spec.ts` against `https://sbmadhav.com` (payload, KILL worker installed, `madhav-*` untouched).
+- [x] 16.1 Build `_moved` and publish it at `https://sbmadhav.com/vedic-math/` (by this repo's Pages, which keep serving after the repo goes private on GitHub Pro). Verify: `e2e/tests/moved.live.spec.ts` against `https://sbmadhav.com` (payload, KILL worker installed, `madhav-*` untouched).
   - Ready 2026-10-20: `moved.yml` (confirm `MOVED`) builds and publishes it once the hand-off PR is merged and learnvedicmath.com serves `/import/`. `e2e/tests/moved.live.spec.ts` checks the live redirect, the payload and that `/vedic-math/sw.js` is the KILL worker; the `madhav-*` and worker-unregistration checks run locally in `moved.spec.ts` (Chromium). Not ticked until the owner has run `moved.yml` and the live spec passes.
+  - Done 2026-10-21 (audit; PR #99): `moved.yml` run 39478035063 (2026-10-20) published it; `MOVED_URL=https://sbmadhav.com/vedic-math/ npx playwright test --project=chromium tests/moved.live.spec.ts` passed 2 of 2 on 2026-10-20, 2026-10-21 and 2026-10-22, and the published `sw.js` is the KILL worker.
 - [ ] 16.2 User-site repo (`sbmadhav.github.io`) PR: home page and Explore menu link to `https://learnvedicmath.com/`; `/vm-export/` page (export spec) with its e2e; the root worker keeps `/vedic-math/` network only and adds `/vm-export/`; the copy of `handoff-schema.js` checked against this repo's. Not merged without the owner.
 - [ ] 16.3 **[OWNER]** Old Firebase project: deploy write-deny rules (the builder prepares `cloud/firestore.rules.frozen`), keep reads for open tabs.
-- [ ] 16.4 `e2e.yml` gains the daily moved-page check for the length of Phase B.
+- [x] 16.4 `e2e.yml` gains the daily moved-page check for the length of Phase B.
+  - Done 2026-10-21 (audit): the `moved-page` job in `e2e.yml` runs `moved.live.spec.ts` on the daily and manual runs when the repository variable `MOVE_PHASE` is `B`. On 2026-10-21 `gh variable list` shows no `MOVE_PHASE`, so the job is skipped until the owner runs `gh variable set MOVE_PHASE --body B`.
 - [ ] 16.5 Weekly look at `math/handoff/*`, `move/handoff/*` and `move/export/*`; at month 3, apply the rule in D13 (below 5 a week for 2 weeks: go to Phase C; else extend a month). Noted in this file.
 
 ## 17. Old app retirement

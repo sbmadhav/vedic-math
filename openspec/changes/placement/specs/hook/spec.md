@@ -79,3 +79,14 @@ When Calm is on, the dare SHALL NOT race: it SHALL state how long the calculator
 #### Scenario: Screen reader
 - **WHEN** a screen reader user plays the dare
 - **THEN** they hear the dare, then who won, and not each key the calculator types
+
+### Requirement: The Hook and Try a trick's worked example
+When Try a trick opens a Star on which the Hook plays, the Hook SHALL be the teaching: its dare and reveal SHALL come first and the worked example card SHALL NOT be shown on that Star. When the Hook does not play on the Star Try a trick opens, because the Player has seen or skipped the Hook or the Trick has no dare, the worked example card SHALL be shown as the `first-visit` capability describes. A Player SHALL never get both on the same Star.
+
+#### Scenario: New visitor
+- **WHEN** a new visitor presses Try a trick and the Star is Star 1 of `from9`
+- **THEN** the Hook's dare appears, no worked example card is shown, and after the reveal the round's first question follows
+
+#### Scenario: Hook already skipped
+- **WHEN** a Player who skipped the Hook on an earlier visit opens the Mode picker from Me and presses Try a trick
+- **THEN** the worked example card is shown and no Hook plays
