@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 784047,
+  "total": 784288,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -48,7 +48,7 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 45179,
+   "/js/app.js": 45245,
    "/js/arena.js": 5327,
    "/js/bolt.js": 1088,
    "/js/celebrate.js": 3080,
@@ -124,7 +124,7 @@
    "/js/sky.js": 3762,
    "/js/slokas.js": 16068,
    "/js/star.js": 7892,
-   "/js/store.js": 6756,
+   "/js/store.js": 6936,
    "/js/sutra-ambience.js": 4169,
    "/js/sutra-details.js": 13423,
    "/js/sutras.js": 3866,
@@ -140,8 +140,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 22224,
-   "/play/": 3907,
-   "/sw.js": 6128,
+   "/play/": 3919,
+   "/sw.js": 6111,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -192,8 +192,8 @@
     "date": "2026-10-24",
     "pr": 141,
     "from": 781931,
-    "to": 784047,
-    "why": "learnvedicmath task 10.3: the backup code for every Player and Restore from code through the hand-off schema and prompt (the Me page's Restore prompt and the export refusals in js/app.js, the backup functions in js/store.js, the schema's second source, applyHandoff's moved flag, rollback order and bootstrap guard, three style rules in math.css); measured on main as of #138, so that code is the only growth; no new file"
+    "to": 784288,
+    "why": "learnvedicmath task 10.3: the backup code for every Player and Restore from code through the hand-off schema and prompt (the Me page's Restore prompt and the export refusals in js/app.js, the backup functions in js/store.js, the schema's second source, applyHandoff's moved flag, rollback order and bootstrap guard, three style rules in math.css); js/store.js loads the hand-off modules only when the Me page asks (loadBackup), so the first paint waits for no new module; measured on main as of #138, so that code is the only growth; no new file"
    }
   ]
  },

@@ -8,6 +8,15 @@ globalThis.localStorage = { getItem: k => (k in mem ? mem[k] : null), setItem: (
 const store = await import('../js/store.js');
 const saved = () => JSON.parse(mem['vm.players']);
 
+test('the backup functions wait for loadBackup, so a first load never fetches the hand-off modules; the Player cap is the schema\'s', async () => {
+  assert.throws(() => store.exportData(), /backup not loaded/);
+  assert.throws(() => store.readBackup('{}'), /backup not loaded/);
+  await store.loadBackup();
+  const S = await import('../js/handoff-schema.js');
+  assert.equal(store.MAX_PLAYERS, S.MAX_PLAYERS);
+  assert.doesNotThrow(() => store.exportData());
+});
+
 test('a new Player has no Age answer, and nothing can give the retired Parent step', () => {
   assert.equal(store.setParentOk, undefined);
   const p = store.player();

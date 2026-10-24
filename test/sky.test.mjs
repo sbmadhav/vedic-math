@@ -157,6 +157,7 @@ test('migration: a second run changes nothing, makes no skipped marks, and keeps
 
 test('migration through the store emits no Star Quest event, earns no Sparks, and runs again after an old backup is restored', async () => {
   const store = await import('../js/store.js');
+  await store.loadBackup();
   const gm = await import('../js/gamify.js');
   mem['mathquest.v1.p1'] = JSON.stringify({ v: 3, skills: {}, sparks: 12, katasDone: { ...katas('from9', 1, 50), ...katas('by11', 1, 50), ...katas('times5', 1, 50), ...katas('sq5', 1, 9) } });
   sent.length = 0;

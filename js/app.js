@@ -1614,17 +1614,21 @@ function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw
      every setting and Player is read afresh. The buttons are wired once; pending is the code awaiting a choice. */
   const listen = (el, fn) => { if (ctx.signal) on(el, 'click', fn, ctx.signal); else el.onclick = fn; };
   let pending = null;
+  store.loadBackup().catch(() => {}); /* the hand-off modules, after this view has drawn; each button waits for them */
+  const ready = async () => { try { await store.loadBackup(); return true; } catch (e) { msg('The backup tools could not load. Check the connection, then try again.'); return false; } };
   listen($('#pExport'), async () => {
+    if (!(await ready())) return;
     let code;
     try { code = btoa(unescape(encodeURIComponent(store.exportData()))); } catch (e) { msg(e.message === 'too many Players' ? `One backup code holds up to ${store.MAX_PLAYERS} Players, and this device has more. Remove a Player you no longer need, then try again.` : 'This progress is too big for one backup code. Nothing was copied.'); return; }
     try { await navigator.clipboard.writeText(code); msg('Backup code copied: every Player on this device. Paste it somewhere safe.'); } catch (e) { prompt('Copy this backup code:', code); }
   });
-  listen($('#pImport'), () => {
+  listen($('#pImport'), async () => {
+    if (!(await ready())) return;
     const code = prompt('Paste your backup code:'); if (!code) return;
     let text, payload;
     try { text = decodeURIComponent(escape(atob(code.replace(/\s/g, '')))); payload = store.readBackup(text); } catch (e) { pending = null; $('#pOffer').hidden = true; msg('That code could not be used. Check that it was copied in full.'); return; }
     const list = $('#pOfferList'); list.textContent = '';
-    for (const q of payload.players.list) { const li = document.createElement('li'); const s = Math.floor((payload.records[q.id] || {}).sparks || 0); li.textContent = `${q.name}: ${s.toLocaleString('en')} Spark${s === 1 ? '' : 's'}`; list.append(li); }
+    for (const q of payload.players.list) { const li = document.createElement('li'); const r = payload.records[q.id] || {}, s = Math.floor(r.sparks || r.xp || 0); /* a code from before Sparks holds XP, which becomes the same Sparks */ li.textContent = `${q.name}: ${s.toLocaleString('en')} Spark${s === 1 ? '' : 's'}`; list.append(li); }
     const here = store.restoreOffer(payload);
     $('#pOfferFresh').hidden = here.has; $('#pOfferHas').hidden = !here.has; $('#pOfferHere').hidden = !here.has;
     $('#pOfferHere span').textContent = here.names.join(', '); $('#pBoth').hidden = !here.both;

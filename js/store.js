@@ -1,8 +1,6 @@
 /* Progress lives in this browser (localStorage), one record per player so a family can share a device.
    Mastery is a running score from 0 to 1: first tries count fully, a try after a hint counts half.
    Nothing here leaves the device except what cloud.js posts to World boards (nickname, color, score). */
-import * as H from './handoff-schema.js';
-import { applyHandoff, progressHere } from './handoff.js';
 const LEGACY = 'mathquest.v1', PKEY = 'vm.players', BOARD = 'vm.board';
 let S = null, P = null;
 const blank = () => ({ v: 3, skills: {}, sparks: 0, days: {}, best: {}, last: null, grade: null, badges: {}, counts: {}, seen: {}, medals: {}, katasDone: {}, ratings: {}, weekSparks: {}, questDay: null });
@@ -199,10 +197,18 @@ const local = {
   remove: k => { try { localStorage.removeItem(k); } catch (e) {} },
   keys: () => { const out = []; try { for (let i = 0; i < localStorage.length; i++) out.push(localStorage.key(i)); } catch (e) {} return out; },
 };
-export { MAX_PLAYERS } from './handoff-schema.js';
+/* The hand-off modules are not part of a first load (nothing before the first paint waits for them): the Me page
+   calls loadBackup() and the functions below need it to have resolved. */
+let H = null, HO = null;
+export function loadBackup() {
+  return H ? Promise.resolve() : Promise.all([import('./handoff-schema.js'), import('./handoff.js')]).then(([schema, ho]) => { H = schema; HO = ho; });
+}
+const need = () => { if (!H) throw new Error('backup not loaded'); };
+export const MAX_PLAYERS = 12; // js/handoff-schema.js MAX_PLAYERS, without loading it; test/store.test.mjs checks they match
 /* Every Player, or nothing: a code that Restore would refuse (more Players than the cap, or more text than it reads)
    is never made, so no one keeps a backup that quietly left Players out. Throws 'too many Players' or 'too big'. */
 export function exportData() {
+  need();
   const list = players().list;
   const device = H.readDevice(local.get, local.keys);
   if (!device || device.players.list.length !== list.length) throw new Error('too many Players');
@@ -215,6 +221,7 @@ export function exportData() {
 }
 /* The payload a pasted code's text holds, checked, or throws. Writes nothing: the Me page shows the prompt first. */
 export function readBackup(txt) {
+  need();
   if (typeof txt !== 'string' || txt.length > H.MAX_JSON) throw new Error('bad');
   let d; try { d = JSON.parse(txt); } catch (e) { throw new Error('bad'); }
   if (!isObj(d)) throw new Error('bad');
@@ -237,7 +244,8 @@ export function readBackup(txt) {
 /* What the Restore prompt says: whether this device has progress (then it asks Keep this device's, Use the code's or
    Keep both), the Nicknames here, and whether Keep both stays within the Player cap */
 export function restoreOffer(payload) {
-  const here = progressHere(local);
+  need();
+  const here = HO.progressHere(local);
   return { has: here.has, names: here.list.map(p => (typeof p.name === 'string' ? p.name : 'A Player')), both: here.list.length + payload.players.list.length <= H.MAX_PLAYERS };
 }
 /* Writes a backup. choice 'replace': this device's Players, their progress and the Device board give way (as the Me
@@ -246,7 +254,7 @@ export function restoreOffer(payload) {
    then every cache here is dropped and listeners hear import. */
 export function importData(txt, choice = 'replace') {
   const payload = readBackup(txt);
-  applyHandoff(local, payload, choice, Date.now(), false);
+  HO.applyHandoff(local, payload, choice, Date.now(), false);
   S = null; P = null; migratedAll = false;
   emit('import'); emit('player', player());
 }
