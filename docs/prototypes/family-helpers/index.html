@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Family Helpers Prototype</title>
+<meta name="robots" content="noindex">
+<!-- Look-and-motion prototype for openspec change family-helpers (task 1.4). Repo-only (docs/ is not published).
+     Serve the repository root (python3 -m http.server 8371) and open /docs/prototypes/family-helpers/.
+     It runs the real modules: the art (js/family.js), the engine and line table (js/family-helpers.js,
+     js/family-lines.js) and the overlay (js/family-view.js), over a practice card with the game's own classes. -->
+<script>try{var t=new URLSearchParams(location.search).get('theme')||localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;}catch(e){}</script>
+<link rel="stylesheet" href="../../../vendor/design-system/2.1.0/tokens.css">
+<link rel="stylesheet" href="../../../vendor/design-system/2.1.0/components.css">
+<link rel="stylesheet" href="../../../theme/fonts.css">
+<link rel="stylesheet" href="../../../theme/learnvedicmath.css">
+<link rel="stylesheet" href="../../../math.css">
+<style>
+body { background: var(--page, var(--bg)); color: var(--ink); font-family: var(--font-sans); margin: 0; }
+.fp { max-width: 1080px; margin: 0 auto; padding: var(--space-5) var(--space-4) 240px; }
+.fp h1 { font-family: var(--font-display); font-size: clamp(26px, 6vw, 38px); margin: 0 0 var(--space-2); }
+.fp-lede { color: var(--ink-muted); margin: 0 0 var(--space-4); line-height: 1.5; max-width: 70ch; }
+.fp-ctl { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-bottom: var(--space-4); }
+.fp-ctl label { display: inline-flex; gap: 6px; align-items: center; font-weight: 600; font-size: 14px; }
+.fp-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-5); align-items: start; }
+.fp-row > * { min-width: 0; }
+.fp-frame { border: 2px solid var(--edge); border-radius: var(--radius-lg); width: 320px; height: 640px; background: var(--bg); }
+.fp-note { font-size: 14px; color: var(--ink-muted); }
+@media (max-width: 760px) { .fp-row { grid-template-columns: 1fr; } }
+body.fp-framed .fp-ctl, body.fp-framed h1, body.fp-framed .fp-lede, body.fp-framed .fp-aside { display: none; }
+body.fp-framed .fp { padding-top: var(--space-3); }
+</style>
+</head>
+<body>
+<div id="vmLive" class="vm-live" role="status" aria-live="polite"></div>
+<main class="fp">
+  <h1>The Nikhilam Family helpers</h1>
+  <p class="fp-lede">Shunya (the Zero), Nava (the Nine) and Eka (the One) hop in from the nearest edge, perch beside the card and take turns in one bubble. They never cover the question, the answer or the buttons. Pick a Visit, a band and the motion and colour settings; open the 320 px frame to see a phone.</p>
+  <div class="fp-ctl" role="group" aria-label="Prototype controls">
+    <button class="md-btn md-btn--sm" data-go="1">Level 1: a light hint</button>
+    <button class="md-btn md-btn--sm" data-go="2">Level 2: method and cheer</button>
+    <button class="md-btn md-btn--sm" data-go="3">Level 3: the skit</button>
+    <button class="md-btn md-btn--sm" data-go="mistake">Skit with Shunya's mistake</button>
+    <button class="md-btn md-btn--sm" data-go="cheer">Breakthrough cheer</button>
+    <button class="md-btn md-btn--sm" data-go="leave">Leaving early</button>
+    <label>Band <select id="fpBand"><option value="early">Early (about 4 to 6)</option><option value="growing" selected>Growing (about 7 to 9)</option><option value="fluent">Fluent (10 and up)</option></select></label>
+    <label><input type="checkbox" id="fpGreet" checked> Greet by Nickname</label>
+    <label><input type="checkbox" id="fpCalm"> Calm (still)</label>
+    <label><input type="checkbox" id="fpDark"> Deep Space</label>
+    <button class="md-btn md-btn--sm" id="fpFrame">Show the 320 px frame</button>
+  </div>
+  <div class="fp-row">
+    <div class="mq-practice md-card" id="practice">
+      <div class="pr-head"><span class="pr-meter"><span><small>Your turn</small><b>40% mastery</b></span></span><span class="pr-score">1/2</span></div>
+      <div class="pr-q" id="prQ">35<sup>2</sup> = ?</div>
+      <form class="pr-form" id="prForm" autocomplete="off" onsubmit="return false">
+        <div class="pr-in"><input class="ans-in" aria-label="Your answer" placeholder="Your answer"></div>
+        <div class="pr-actions"><button class="md-btn md-btn--primary" id="prCheck">Check</button><button type="button" class="md-btn md-btn--sm" id="prHint">Hint</button><button type="button" class="md-btn md-btn--sm" id="prShow">Show me</button><button type="button" class="md-btn md-btn--sm fh-ask">Ask a friend</button></div>
+      </form>
+      <div class="pr-say" id="prSay" role="status" aria-live="polite"></div>
+    </div>
+    <div class="fp-aside">
+      <p class="fp-note">Square numbers ending in 5 (Ekādhikena Pūrveṇa). The worked example is on 25, never the question on the card. Escape or the close button ends a Visit; Not now would mute them for the session in the game.</p>
+      <iframe class="fp-frame" id="fpPhone" title="The prototype at 320 by 640" hidden></iframe>
+    </div>
+  </div>
+</main>
+<script type="module">
+import { planVisit, skillInfo } from '../../../js/family-helpers.js';
+import { showVisit, closeVisit } from '../../../js/family-view.js';
+import { TRICKS } from '../../../js/vedic.js';
+import { byId } from '../../../js/skills/index.js';
+
+const framed = new URLSearchParams(location.search).has('frame');
+document.body.classList.toggle('fp-framed', framed);
+const $ = s => document.querySelector(s);
+const trick = TRICKS.find(t => t.id === 'sq5'), info = skillInfo(byId['v-sq5'], trick);
+const example = { q: '25<sup>2</sup> = ?', steps: trick.steps([25]).map(s => s.say), answer: '625' };
+const ctl = new AbortController();
+const round = () => ({ root: $('#practice'), card: $('#practice'), protect: '.pr-q, .pr-form, .pr-say:not(:empty)', hint: () => { $('#prSay').innerHTML = '<div class="md-bubble">Hint: the part before the 5 is 3. Multiply it by one more than itself.</div>'; return true; }, signal: ctl.signal });
+function go(kind) {
+  closeVisit();
+  const band = $('#fpBand').value, greet = $('#fpGreet').checked;
+  const plan = kind === 'cheer' ? { level: 3, kind: 'cheer' } : kind === 'leave' ? { level: 1, kind: 'leave' } : { level: kind === 'mistake' ? 3 : Number(kind), kind: 'help' };
+  const rng = kind === 'mistake' ? () => 0.01 : Math.random;
+  const v = planVisit({ plan, band: kind === 'mistake' && band === 'early' ? 'growing' : band, info, example: plan.level === 3 ? example : null, nick: 'Swift Tiger', greet, remember: false, rng });
+  showVisit(v, round(), { info, band, example, nick: 'Swift Tiger' });
+}
+document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
+$('#practice .fh-ask').addEventListener('click', () => go('1'));
+const calm = on => { try { localStorage.setItem('vm.calm', on ? '1' : '0'); } catch (e) {} document.body.classList.toggle('calm', on); document.dispatchEvent(new CustomEvent('vmcalm', { detail: { on } })); };
+$('#fpCalm').addEventListener('change', e => calm(e.target.checked));
+$('#fpDark').addEventListener('change', e => { document.documentElement.dataset.theme = e.target.checked ? 'dark' : 'light'; });
+$('#fpFrame').addEventListener('click', () => { const f = $('#fpPhone'); f.hidden = !f.hidden; if (!f.hidden) f.src = `?frame=1&theme=${document.documentElement.dataset.theme || 'light'}`; });
+calm(false);
+if (framed) setTimeout(() => go('1'), 400);
+</script>
+</body>
+</html>
