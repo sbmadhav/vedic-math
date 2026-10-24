@@ -6,7 +6,33 @@ import { test, expect, APP, chromiumOnly } from './fixtures';
 /* The hand-off import page, /import/ (openspec change learnvedicmath, design D9, progress-handoff spec; task 10.2).
    The moved page on sbmadhav.com sends a Player here with their progress in the fragment. The page takes the fragment
    out of the address bar first, checks it strictly, asks once, and writes only after a choice. e2e/tests/moved.spec.ts
-   covers the other side. */
+   covers the other side.
+
+   Counts (analytics spec "Hand-off results are counted", task 9.2): the page sends one math/handoff/<result> per visit,
+   only once the address bar holds no fragment. /js/analytics.js is replaced by a stub that records each siteTrack call
+   with the address bar as it was at that moment, in sessionStorage so the record survives the redirect to the game. */
+const STUB = `window.siteTrack = (path, title) => { const c = JSON.parse(sessionStorage.getItem('e2e.counts') || '[]'); c.push({ path, title, hash: location.hash, at: location.pathname }); sessionStorage.setItem('e2e.counts', JSON.stringify(c)); };`;
+type Count = { path: string; title: string; hash: string; at: string };
+/** The hand-off counts so far in this tab (the game the page opens afterwards sends its own route views) */
+const counts = async (page: Page): Promise<Count[]> => (await page.evaluate(() => JSON.parse(sessionStorage.getItem('e2e.counts') || '[]') as Count[])).filter(c => c.path.startsWith('math/handoff/'));
+/** The one count of this visit, sent from /import/ with no fragment in the address bar and nothing but fixed words */
+async function expectCount(page: Page, result: string) {
+  const c = await counts(page);
+  expect(c.map(x => x.path)).toEqual([`math/handoff/${result}`]);
+  expect(c[0]).toMatchObject({ hash: '', at: '/import/' });
+  expect(c[0].title).toMatch(/^Hand-off: [a-z ]+$/);
+}
+
+/** Opens a hand-off link as its own visit. From /import/ (the fragment already taken out), a goto to /import/#... would
+    only change the fragment of the same document, and the page would not run again. */
+async function visit(page: Page, url: string) {
+  await page.goto('about:blank');
+  await page.goto(url);
+}
+
+test.beforeEach(async ({ page }) => {
+  await page.route(/\/js\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
+});
 
 const T = 1_760_000_000_000;
 const OTTER = { id: 'p1', name: 'Brave Otter 17', avatar: 'plum', mode: 'explorer', created: T, age: 10 };
@@ -56,10 +82,13 @@ test.describe('a device with no progress here', () => {
     expect(s.theme).toBe('dark');
     expect(s['vm.migratedAt']).toMatch(/^\d+$/);
     expect(sent.filter(u => u.includes(d.slice(0, 40)))).toEqual([]);
+    await expectCount(page, 'accepted');
+    expect(JSON.stringify(await counts(page))).not.toMatch(/Otter|Comet|1234|Sparks/);
   });
 
   test('Not now writes nothing and opens the game', async ({ page }) => {
     await page.goto(link(payload(), '#/dojo'));
+    expect(await counts(page), 'nothing is counted before a choice').toEqual([]);
     await page.locator('#ho-not-now').click();
     await expect(page).toHaveURL(new RegExp(`${APP}#/dojo$`));
     // The game makes its own blank first Player; nothing from the link is in it
@@ -67,6 +96,7 @@ test.describe('a device with no progress here', () => {
     expect(JSON.parse(s['mathquest.v1.p1'] || '{}').sparks || 0).toBe(0);
     expect(s['vm.migratedAt'] ?? null).toBeNull();
     expect(await names(page)).not.toContain('Brave Otter 17');
+    await expectCount(page, 'declined');
   });
 
   test('a crafted link imports nothing, runs nothing and says so', async ({ page }) => {
@@ -81,6 +111,7 @@ test.describe('a device with no progress here', () => {
     expect(Object.keys(await stored(page)).filter(k => !['vm.sound', 'vm.tour'].includes(k))).toEqual([]);
     const go = page.locator('#ho-bad').getByRole('link', { name: 'Go to Learn Vedic Math' });
     await expect(go).toBeVisible();
+    await expectCount(page, 'invalid');
     await go.click();
     await expect(page).toHaveURL(new RegExp(`${APP}$`));
   });
@@ -104,16 +135,37 @@ test.describe('a device with no progress here', () => {
     expect((await stored(page))['vm.players']).toBeUndefined();
     expect(page.url()).toContain('/import/#v=1&d=' + d);
     await expect(page.locator('#ho-error').getByRole('link', { name: 'Go to Learn Vedic Math' })).toBeVisible();
+    await expectCount(page, 'too-big');
   });
 
-  test('a link that is not a payload, or no fragment at all, imports nothing', async ({ page }) => {
-    await page.goto('/import/#v=1&d=not-gzip-at-all');
+  test('a link that is not a payload, or no fragment at all, imports nothing; each bad link counts once, no link counts nothing', async ({ page }) => {
+    await visit(page, '/import/#v=1&d=not-gzip-at-all');
     await expect(page.locator('#ho-bad')).toBeVisible();
-    await page.goto('/import/#v=2&d=' + payload());
+    await visit(page, '/import/#v=2&d=' + payload());
     await expect(page.locator('#ho-bad')).toBeVisible();
-    await page.goto('/import/');
+    expect((await counts(page)).map(c => c.path)).toEqual(['math/handoff/invalid', 'math/handoff/invalid']);
+    await visit(page, '/import/');
     await expect(page.locator('#ho-title')).toHaveText('Nothing to bring over');
     await expect(page.locator('#ho-none')).toBeVisible();
+    await visit(page, '/import/#/arena'); // a route with no payload is not a hand-off either
+    await expect(page.locator('#ho-none')).toBeVisible();
+    expect(page.url()).toMatch(/\/import\/$/);
+    expect(Object.keys(await stored(page)).filter(k => !['vm.sound', 'vm.tour'].includes(k))).toEqual([]);
+    expect((await counts(page)).map(c => c.path)).toEqual(['math/handoff/invalid', 'math/handoff/invalid']);
+  });
+
+  test('a payload over a cap imports nothing and counts too-big: 256 KB decompressed, or a fragment longer than a link may carry', async ({ page }) => {
+    // Repetition compresses: 300 KB of JSON fits a fragment of a few hundred characters
+    const huge = gzipSync(Buffer.from(JSON.stringify({ v: 1, from: 'sbmadhav.com', pad: 'a'.repeat(300_000) }))).toString('base64url');
+    expect(huge.length).toBeLessThan(2_000);
+    await page.goto(link(huge));
+    await expect(page.locator('#ho-bad')).toBeVisible();
+    expect(page.url()).toMatch(/\/import\/$/);
+    await expectCount(page, 'too-big');
+    await visit(page, link('A'.repeat(40_000)));
+    await expect(page.locator('#ho-bad')).toBeVisible();
+    expect(page.url()).toMatch(/\/import\/$/);
+    expect((await counts(page)).map(c => c.path)).toEqual(['math/handoff/too-big', 'math/handoff/too-big']);
     expect(Object.keys(await stored(page)).filter(k => !['vm.sound', 'vm.tour'].includes(k))).toEqual([]);
   });
 
@@ -152,6 +204,7 @@ test.describe('a device that already has progress here', () => {
     expect(JSON.parse(after['mathquest.v1.p1']).sparks).toBe(50);
     expect(after['vm.migratedAt'] ?? null).toBeNull();
     expect(await names(page)).toEqual(['Swift Tiger 42']);
+    await expectCount(page, 'kept');
   });
 
   test('Use the old site\'s replaces this device\'s Players', async ({ page }) => {
@@ -160,6 +213,7 @@ test.describe('a device that already has progress here', () => {
     await expect(page).toHaveURL(new RegExp(`${APP}#/arena$`));
     expect(await names(page)).toEqual(['Brave Otter 17', 'Cosmic Comet 33']);
     expect(JSON.parse((await stored(page))['mathquest.v1.p1']).sparks).toBe(1234);
+    await expectCount(page, 'replaced');
   });
 
   test('Keep both adds the old site\'s Players next to this one, each with their own progress', async ({ page }) => {
@@ -173,6 +227,7 @@ test.describe('a device that already has progress here', () => {
     expect(otter.id).not.toBe('p1');
     expect(JSON.parse(s['mathquest.v1.' + otter.id]).sparks).toBe(1234);
     expect(new Set(P.list.map((p: any) => p.id)).size).toBe(3);
+    await expectCount(page, 'accepted'); // Keep both: the old site's Players came in and nothing here was lost
   });
 
   test('storage full part way: nothing changes, the error shows, and the fragment comes back so a reload retries', async ({ page }) => {
@@ -195,9 +250,12 @@ test.describe('a device that already has progress here', () => {
     await expect(page.locator('#ho-title')).toBeFocused();
     expect(await stored(page)).toEqual(before);
     expect(page.url()).toContain('/import/#v=1&d=' + d);
+    // The progress did not fit this browser: counted as too-big, before the fragment came back to the address bar
+    await expectCount(page, 'too-big');
     await page.reload();
     await expect(page.locator('#ho-conflict')).toBeVisible();
     await expect(page.locator('#ho-title')).toHaveText('Bring your progress from the old site?');
     await expect(page.locator('#ho-list .ho-name')).toHaveText(['Brave Otter 17', 'Cosmic Comet 33']);
+    expect((await counts(page)).map(c => c.path), 'the retry is a new visit, not yet counted').toEqual(['math/handoff/too-big']);
   });
 });

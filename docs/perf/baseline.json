@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 781463,
+  "total": 781931,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -64,7 +64,7 @@
    "/js/guide-art.js": 2484,
    "/js/guide.js": 10402,
    "/js/handoff-schema.js": 6443,
-   "/js/handoff.js": 3637,
+   "/js/handoff.js": 4085,
    "/js/install-rules.js": 2226,
    "/js/install.js": 7143,
    "/js/landing-sky.js": 261,
@@ -140,8 +140,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 22202,
-   "/play/": 3903,
-   "/sw.js": 6109,
+   "/play/": 3915,
+   "/sw.js": 6117,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -180,6 +180,13 @@
     "from": 780836,
     "to": 781463,
     "why": "learnvedicmath task 7.2, the YouTube facade: the player opens on this site's thumbnail behind a play button and writes the frame only on play (js/watch.js facade, js/app.js playVideo, the Star round's fallback, math.css .vp-play); measured on main as of #128, so that code is the only growth"
+   },
+   {
+    "date": "2026-10-24",
+    "pr": 138,
+    "from": 781463,
+    "to": 781931,
+    "why": "learnvedicmath task 9.2: js/handoff.js counts the hand-off result once per visit (RESULTS, the spec's list, with its comment and fixed titles); measured on main as of #135, so that code is the only growth; no new file"
    }
   ]
  },
