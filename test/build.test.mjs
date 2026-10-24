@@ -30,7 +30,8 @@ setBudget(1e9);
    build.py list the real repository's files. */
 const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_') && k !== 'BUILD_TODAY'));
 execFileSync('git', ['init', '-q'], { cwd: dir, env });
-const out = join(dir, 'out');
+/* Inside the copy, so its name starts with _ as build.py requires of an output inside the repo */
+const out = join(dir, '_out');
 test.after(() => rmSync(dir, { recursive: true, force: true }));
 
 const build = (...args) => execFileSync('python3', ['build.py', '--out', out, ...args], { cwd: dir, env, encoding: 'utf8' });
@@ -67,6 +68,13 @@ test('the source in git is unstamped: no import map, plain URLs, a dev worker', 
   assert.match(html, /<script type="module" src="\/js\/app\.js"><\/script>/);
   assert.match(src, /\nconst VERSION: string = 'dev';\nconst PRECACHE: \[string, string\]\[\] = \[\];\n/);
   assert.ok(!existsSync(join(repo, 'index.html')), 'the game moved to play/index.html');
+});
+
+test('--out inside the repo must start with _ (git and ESLint ignore _*/), and is never the repo itself', () => {
+  const run = o => spawnSync('python3', ['build.py', '--out', o], { cwd: dir, env, encoding: 'utf8' });
+  fails(run(join(dir, 'out')), /--out inside the repo must be a folder starting with _/);
+  assert.ok(!existsSync(join(dir, 'out')), 'nothing is written');
+  fails(run(dir), /must not be the repo itself/);
 });
 
 test('the output has the pages at the root, is stamped, and holds only publishable files', () => {
