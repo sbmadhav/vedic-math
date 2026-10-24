@@ -103,7 +103,7 @@ test('modeLink sends math/landing/mode/<Mode> for a Mode only, with a fixed titl
 });
 test('app.js calls tryStart with only the Mode and findGo with no arguments', () => {
   const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
-  assert.deepEqual(callSites(app).filter(c => c.fn === 'metrics.tryStart').map(c => c.args.trim()), ['mode', 'm']);
+  assert.deepEqual(callSites(app).filter(c => c.fn === 'metrics.tryStart').map(c => c.args.trim()), ['mode', 'm', 'm']); // the picker, the tile Home, the Sky Home
   assert.deepEqual(callSites(app).filter(c => c.fn === 'metrics.findGo').map(c => c.args.trim()), ['']);
 });
 

@@ -323,10 +323,12 @@ function keepGoingSkill(m) {
 const litStars = () => { const { lit } = store.starStates(); return SKY.PATH.filter(k => lit[k]).length; };
 function skyHome({ signal } = {}) {
   document.title = `Learn Vedic Math`;
-  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}${newHereHTML()}<div class="in-slot" id="installSlot"></div><div id="skyHome"></div>
+  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}${newHereHTML()}<div class="in-slot" id="installSlot"></div><div id="skyHome"></div>${tryCard(fx.mode())}
     <p class="mode-line">Mode: <b>${fx.MODES[fx.mode()].name}</b> <a href="#/me">Change</a></p></div></section>`;
   const back = (render.from || '').match(/^#\/star\/([\w-]+)\/(\d)$/);
   const out = skyView($('#skyHome'), { signal, focus: back ? `${back[1]}:${back[2]}` : null });
+  const tc = $('[data-try-open]'), m = fx.mode(), counted = () => metrics.tryStart(m); /* the Sky is this Player's Home, so it keeps the Try a trick card too */
+  if (tc) { if (signal) on(tc, 'click', counted, signal); else tc.onclick = counted; }
   homeTour(signal);
   withInstall(m => m.mountNudge($('#installSlot'), signal), signal);
   return out;

@@ -292,3 +292,21 @@ test.describe('a record with a Mode guess from before', () => {
     await expect(page.locator('.mode-line')).toHaveText(/Mode: Pro Change$/);
   });
 });
+
+test.describe('the Sky as Home', () => {
+  test.use({ seedMode: 'challenger', seedPlayer: { sky: true } });
+  test('the Sky Home shows the Try a trick card after the Sky until it is finished, and its button counts a start', async ({ page }) => {
+    await open(page);
+    await expect(page.locator('#skyHome')).toBeVisible();
+    const card = page.locator('.try-card');
+    await expect(card).toContainText('Square numbers ending in 5');
+    await card.getByRole('link', { name: 'Try a trick' }).click();
+    await expect(page.locator('#tyH')).toHaveText('Square numbers ending in 5');
+    expect((await events(page)).filter(e => e.startsWith('math/try/'))).toEqual(['math/try/start', 'math/try/mode/challenger']);
+    await page.locator('#tyStart').click();
+    for (const a of ANSWERS.challenger) { await typeAnswer(page, a); await page.locator('#tyNext').click(); }
+    await page.locator('#tyHome').click();
+    await expect(page.locator('#skyHome')).toBeVisible();
+    await expect(page.locator('.try-card')).toHaveCount(0);
+  });
+});
