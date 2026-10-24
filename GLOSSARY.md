@@ -59,7 +59,7 @@ The line that names the Sutra a Trick, Star, Try a trick, Kata, Arena question, 
 _Avoid_: badge (a badge is earned), label, chip
 
 **Sutra progress**:
-How far a Player is with one Sutra, worked out on the device from its Tricks' mastery, Stars lit, Katas done and whether its card is collected. Never stored on its own and never sent (`sutras-first` change).
+How far a Player is with one Sutra, worked out on the device from its Tricks' mastery, Stars lit, Katas done and whether its card is collected. A Sutra is started once one of its Tricks is practiced (it has a Skill record), one of its Stars is lit or one of its Katas is done; a collected card alone does not start it. Never stored on its own and never sent (`sutras-first` change).
 _Avoid_: sutra score, sutra level, mastery (that is one Skill's)
 
 **Verse** (śloka):
@@ -151,8 +151,12 @@ A Mode set by the earlier Try a trick rather than picked (`modeGuess` on the Pla
 _Avoid_: default mode, auto mode
 
 **Door**:
-One of the three cards at the top of Challenger and Pro Home (Challenger: the next Star, the Arena, the Skill map; Pro: the Arena, the Dojo, the Skill map), each with one plain line that says what its word means. The other tiles wait under **More ways to play**.
+One of the three cards at the top of Challenger and Pro Home, in both Modes the **Sutra door**, the Arena and the Skill map, each with one plain line that says what its word means. The other tiles wait under **More ways to play**.
 _Avoid_: tile (that is what is under More ways to play), hero, CTA
+
+**Sutra door**:
+The first Door on Challenger and Pro Home (`sutras-first`): the next Star on Bolt's path shown as its Sutra's tag, "Next Star: <Trick>, Star n", Play this Star (Home's one primary button), Learn the sutra (its Deep dive), Open the Dojo with the belts in its foot, and one line saying what a Sutra and a Star are. After the doors, **Your sutras** lists the next Star's Sutra and up to three the Player has started, each with its Sutra progress. Explorer Home has no doors; its **A sutra to say** card names one Sutra a day with Say it and its Explorer meaning.
+_Avoid_: Dojo door, Dojo card (the belts now sit in the Sutra door's foot)
 
 **Find**:
 The page at `#/find` (menu bar, after Guide; the `/` key) with one box over every named thing: sections, Play modes, grades, Skills, Tricks, Sutras, games, play experiences, guide sections and videos, by name or a plain word. Results match a share of the words typed (question words like how and what are ignored), more words matched first. Built in the page from the catalogs (`js/find.js`); nothing typed is stored or sent. Its browse list gives each section's one-line description, the same line the menu shows as a tooltip.

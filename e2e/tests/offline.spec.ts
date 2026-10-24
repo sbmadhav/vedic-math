@@ -95,7 +95,7 @@ test.describe('first visit', () => {
     test.setTimeout(120_000);
     await page.goto(APP);
     await page.locator('.mode-card[data-mode="pro"]').click();
-    await expect(page.locator('h1.home-h')).toHaveText('Train your mental math');
+    await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
     await workerReady(page);
     await goOffline(context);
     await expectOffline(page);

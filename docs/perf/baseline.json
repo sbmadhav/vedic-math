@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 769259,
+  "total": 770322,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -47,7 +47,7 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 44249,
+   "/js/app.js": 45157,
    "/js/arena.js": 5392,
    "/js/bolt.js": 1088,
    "/js/celebrate.js": 3080,
@@ -137,9 +137,9 @@
    "/js/voice.js": 14365,
    "/js/watch.js": 2065,
    "/manifest.webmanifest": 313,
-   "/math.css": 21907,
-   "/play/": 3603,
-   "/sw.js": 6082,
+   "/math.css": 22054,
+   "/play/": 3599,
+   "/sw.js": 6094,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -171,6 +171,13 @@
     "from": 758466,
     "to": 758499,
     "why": "react-typescript task 1.7: the lint fixes in sw.ts (optional catch bindings, no non-null assertions); no new file"
+   },
+   {
+    "date": "2026-10-22",
+    "pr": "126, 129, 128 and this one",
+    "from": 762665,
+    "to": 770322,
+    "why": "openspec change sutras-first, stacked on #128: js/sutra-tag.js and js/sutra-progress.js (new), the tags and progress in js/app.js, js/star.js, js/mental.js, js/sutras.js and math.css, the full tag on the Try a trick card and the Guide's menu line (the reviews of #126 and #129), and the Home that leads with the Sutras (the Sutra door, Your sutras, Explorer's A sutra to say, and its Say it kept alive across the Read aloud redraw); the figure before was #128's own measurement, which the merge into this branch kept; the 9 bytes after that are main's #130 (js/sky-bg.js), merged through #128"
    }
   ]
  },

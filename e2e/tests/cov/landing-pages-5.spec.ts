@@ -14,5 +14,5 @@ test('A returning Challenger: the Challenger card is Your Mode, the others offer
 test('Switching from the landing page: Switch to Pro opens the Pro Home', async ({ page }) => {
   await page.goto('/?home');
   await page.getByRole('link', { name: 'Switch to Pro' }).click();
-  await expect(page.locator('h1.home-h')).toHaveText('Train your mental math');
+  await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
 });

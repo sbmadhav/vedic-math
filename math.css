@@ -1460,3 +1460,20 @@ html.motion-paused .play-card, body.calm .play-card { transition: none; } html.m
 .try-card { margin: var(--space-4) 0; }
 .try-card h2 { margin: var(--space-2) 0 var(--space-1); }
 .try-card .door-acts { margin: var(--space-2) 0 0; }
+
+/* ---------- Home leads with the Sutras (openspec change sutras-first). Tokens only. ---------- */
+.sutra-door .sutra-door-tag { margin: var(--space-1) 0; font-size: 1.05rem; }
+.sutra-door .sutra-door-tag .sutra-tag-n { display: block; font-size: 1.2rem; }
+.sutra-door .sutra-door-tag .sutra-tag-m { display: block; }
+.sutra-door .sutra-door-tag .sutra-tag-m::before { content: none; }
+.your-sutras-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
+.your-sutra { display: flex; flex-direction: column; gap: 2px; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--line); background: var(--card); color: var(--ink); text-decoration: none; overflow-wrap: anywhere; }
+.your-sutra:hover, .your-sutra:focus-visible { border-color: var(--edge); }
+.your-sutra b { font: 600 1.05rem/1.3 var(--display); color: var(--plum-strong); }
+.your-sutra .sutra-tag-m { font-size: 14px; }
+.sutra-say { margin: 0 0 var(--space-3); }
+.sutra-say-name { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: var(--space-2) 0 0; overflow-wrap: anywhere; }
+.sutra-say-name b { font: 600 1.3rem/1.3 var(--display); color: var(--plum-strong); }
+.sutra-say-kid { margin: var(--space-1) 0; font-size: 1.1rem; color: var(--ink); }
+.home-doors + .try-card, .your-sutras { margin-top: var(--space-3); }
+.your-sutras + .me-strip { margin-top: var(--space-3); }

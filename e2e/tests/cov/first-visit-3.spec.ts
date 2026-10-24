@@ -56,9 +56,9 @@ test.describe('a new visitor', () => {
 test.describe('Pro', () => {
   test.use({ seedMode: 'pro' });
 
-  test('From Home: the Try a trick card opens the Pro Try a trick, and Play today\'s round was the only primary button', async ({ page }) => {
+  test('From Home: the Try a trick card opens the Pro Try a trick, and Play this Star was the only primary button (the Sutra door leads since openspec change sutras-first)', async ({ page }) => {
     await open(page);
-    await expect(page.locator('#view .md-btn--primary')).toHaveText(["Play today's round"]);
+    await expect(page.locator('#view .md-btn--primary')).toHaveText(['Play this Star']);
     await page.locator('.try-card a').click();
     await expect(page.locator('#tyH')).toHaveText('Multiply numbers near 100');
   });

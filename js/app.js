@@ -235,7 +235,7 @@ function home(ctx = {}, { tiles = false } = {}) {
   const cont = last ? `<a class="mq-continue" href="#/skill/${last.id}">${ring(store.mastery(last.id), 40)}<span><small>Keep going</small><b>${both(last.title, last.kid)}</b></span><span class="mq-go" aria-hidden="true">&rarr;</span></a>` : '';
   let body = '';
   if (m === 'explorer') {
-    body = `<div class="play-grid play-grid--big">
+    body = `${sutraToSay()}<div class="play-grid play-grid--big">
       ${tile('#/game/balloons', 'Balloon pop', 'Count and pop', 'coral', 'balloon')}
       ${tile('#/skill/k-count', 'How many dots?', 'Count with ten frames', 'sun', 'dots')}
       ${tile('#/game/more-less', 'Which has more?', 'Big or small', 'teal', 'scale')}
@@ -248,41 +248,64 @@ function home(ctx = {}, { tiles = false } = {}) {
     <p class="mq-cta"><button class="md-btn" id="voiceBtn" aria-pressed="${fx.voiceOn()}">${icon('speaker')} Read questions aloud: ${fx.voiceOn() ? 'on' : 'off'}</button> <a class="md-btn" href="#/watch">${icon('play')} Watch and sing</a></p>`;
   } else {
     /* Three doors first (openspec first-visit), each with one plain line that says what its word means; the rest of the
-       tiles wait under More ways to play. Challenger leads with the next Star, Pro with today's Arena round. */
+       tiles wait under More ways to play. */
     const belt = gm.currentBelt(), bp = gm.beltProgress(), earned = bp.filter(b => b.earned).length, next = bp.find(b => !b.earned), nk = SKY.suggested(store.starStates(), SKY.startBeltOf(store.player())), ns = nk && SKY.parseKey(nk), nt = ns && TRICKS.find(t => t.id === ns.trick);
-    const starCard = `<div class="md-card door dojo-card"><span class="md-tag md-tag--plum">Dojo</span><h2 class="mq-h3">${belt ? `You hold the ${belt.name}` : 'Earn your white belt'}</h2>
-      ${nt ? `<p>Next Star: <b>${nt.title}, Star ${ns.n}</b></p>` : '<p>Every Star is lit. Legend!</p>'}
-      <p class="door-acts">${nt ? `<a class="md-btn md-btn--primary" href="#/star/${nt.id}/${ns.n}">Play this Star</a> ` : ''}<a class="md-btn" href="#/dojo">Open the Dojo</a></p>
-      <p class="door-line">A Star is a two-minute round of four questions on one speed trick. Light it to earn your belt in the Dojo, where the tricks live.</p>
+    /* The Sutra door first in both Modes (openspec change sutras-first): the next Star on Bolt's path shown as its
+       Sutra, with Play this Star (the one primary button), Learn the sutra and the Dojo's belts. Then the Arena and the
+       Skill map. The tag is text here: Learn the sutra is the door's link to the Deep dive. */
+    const ss = nt && sutraOfTrick(nt.id);
+    const sutraDoor = `<div class="md-card door dojo-card sutra-door"><span class="md-tag md-tag--plum">${fx.t({ challenger: 'Your next sutra', pro: 'Next sutra' })}</span>
+      ${ss ? tagHTML(ss.id, { mode: m, relation: ss.relation, link: false, cls: 'sutra-door-tag' }) : `<h2 class="mq-h3">${nt ? 'Your next Star' : 'Every Star is lit. Legend!'}</h2>`}
+      ${nt ? `<p>Next Star: <b>${nt.title}, Star ${ns.n}</b></p>` : ''}
+      <p class="door-acts">${nt ? `<a class="md-btn md-btn--primary" href="#/star/${nt.id}/${ns.n}">Play this Star</a> ` : ''}${ss ? `<a class="md-btn" href="#/sutras/${ss.id}" data-tag="home">Learn the sutra</a> ` : ''}<a class="md-btn" href="#/dojo">Open the Dojo</a></p>
+      <p class="door-line">${fx.t({ challenger: 'A sutra is a short rule that does a whole sum in a line or two. A Star is a two-minute round of four questions on one of its tricks.', pro: 'A sutra is a one-line rule from Bharati Krishna Tirtha\'s 1965 book that replaces a long method. A Star is a two-minute round of four questions on one of its tricks.' })}</p>
       <div class="belts-mini">${bp.map(b => `<span class="belt-mini${b.earned ? ' on' : ''}" style="--belt:${b.color}" title="${b.name}"></span>`).join('')}</div>
-      ${next ? `<p class="mq-small">${next.name}: ${next.lit} of ${gm.STARS_PER_BELT} Stars lit</p>` : ''}</div>`;
-    const arenaCard = `<div class="md-card door"><span class="md-tag md-tag--coral">Arena</span><h2 class="mq-h3">Today's round</h2>
-      <p class="door-line">Sixty seconds of mental arithmetic: products, squares and percents. Every Pro gets the same questions today, and the best scores go on the leaderboard.</p>
-      <p class="door-acts"><a class="md-btn md-btn--primary" href="#/arena">Play today's round</a></p></div>`;
+      <p class="mq-small">${belt ? `You hold the ${belt.name}.` : 'Light Stars to earn your white belt.'}${next ? ` ${next.name}: ${next.lit} of ${gm.STARS_PER_BELT} Stars lit` : ''}${m === 'pro' ? ` · ${earned} of ${BELTS.length} belts, ${litStars()} of ${SKY.PATH.length} Stars` : ''}</p></div>`;
     const door = (href, title, line, color, ic) => `<a class="md-card door door--${color}" href="${href}"><span class="play-ic" aria-hidden="true">${icon(ic)}</span><b>${title}</b><span class="door-line">${line}</span></a>`;
     const doors = m === 'challenger'
-      ? starCard + door('#/arena', 'Race in the Arena', 'Sixty seconds, the same questions for every Challenger today, and a leaderboard at the end.', 'coral', 'trophy') + door('#/learn', 'Learn a skill', 'Skills by grade, from counting to calculus, each with a hint and a worked answer.', 'sun', 'map')
-      : arenaCard + door('#/dojo', 'Train a trick in the Dojo', `${earned} of ${BELTS.length} belts · ${litStars()} of ${SKY.PATH.length} Stars lit. A Star is a two-minute round of four questions on one speed trick.`, 'plum', 'belt') + door('#/learn', 'Skill map', 'Algebra, geometry and calculus, each skill with a hint and a worked answer.', 'sky', 'map');
+      ? sutraDoor + door('#/arena', 'Race in the Arena', 'Sixty seconds, the same questions for every Challenger today, and a leaderboard at the end.', 'coral', 'trophy') + door('#/learn', 'Learn a skill', 'Skills by grade, from counting to calculus, each with a hint and a worked answer.', 'sun', 'map')
+      : sutraDoor + door('#/arena', "Today's Arena round", 'Sixty seconds of mental arithmetic: products, squares and percents. Every Pro gets the same questions today, and the best scores go on the leaderboard.', 'coral', 'trophy') + door('#/learn', 'Skill map', 'Algebra, geometry and calculus, each skill with a hint and a worked answer.', 'sky', 'map');
     const more = m === 'challenger'
       ? [tile('#/arena/party', 'Party Mode', 'Two to four players, one screen', 'sky', 'duel'), tile('#/games', 'Games', 'Times sprint, target, fractions', 'teal', 'game'), tile('#/sutras', 'Sutra cards', 'Collect all 29', 'plum', 'cards'), tile('#/watch', 'Watch and learn', 'Best trick videos', 'coral', 'play')]
       : [tile('#/sutras', 'Sutra deep dive', `${gm.collectedCount()} of ${SUTRAS.length + SUBSUTRAS.length} cards collected`, 'sun', 'cards'), tile('#/arena/party', 'Party Mode', 'Family math night', 'coral', 'duel'), tile('#/games', 'Puzzles and games', 'Hit the target and more', 'teal', 'game'), tile('#/watch', 'Watch shelf', '3Blue1Brown, Numberphile, more', 'sky', 'play')];
     const board = m === 'pro' ? `<div class="md-card board-card"><span class="md-tag md-tag--coral">Arena</span><h2 class="mq-h3">Today's leaderboard</h2><div id="homeBoard" class="lb-wrap"><p class="mq-small">Loading…</p></div>${parentNote()}</div>` : '';
-    body = `<div class="home-doors">${doors}</div>${tryCard(m)}${board ? `<div class="home-2">${questsHTML()}${board}</div>` : questsHTML()}
+    body = `<div class="home-doors">${doors}</div>${tryCard(m)}${yourSutras(m, ss && ss.id)}${heroStats()}${board ? `<div class="home-2">${questsHTML()}${board}</div>` : questsHTML()}
       <details class="mq-more home-more" id="homeMore"${fx.homeMoreOpen() ? ' open' : ''}><summary>More ways to play</summary><div class="play-grid">${more.join('')}</div></details>`;
   }
+  /* Home leads with the Sutras (openspec change sutras-first): Explorer keeps the Player strip on top; Challenger and Pro
+     show it after the doors and "Your sutras" */
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
-    ${heroStats()}
-    <h1 class="md-heading home-h">${fx.t({ explorer: 'What do you want to play?', challenger: 'Ready to get faster?', pro: 'Train your mental math' })}</h1>
+    ${m === 'explorer' ? heroStats() : ''}
+    <h1 class="md-heading home-h">${fx.t({ explorer: 'What do you want to play?', challenger: 'Learn a sutra, then use it', pro: 'Mental math, the sutra way' })}</h1>
     <p class="mode-line">Mode: <b>${fx.MODES[m].name}</b>${store.modeGuessed() ? ', our guess for a first try' : ''} <a href="#/me">Change</a></p>
     ${newHereHTML()}${cont}${body}
   </div></section>`;
-  const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); home(); };
+  const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); home(ctx, { tiles }); }; /* the redraw keeps this view's signal, so its listeners (Say it) live on */
   const hm = $('#homeMore'), keepMore = () => fx.setHomeMoreOpen(hm.open); /* remembered on this device */
   if (hm) { if (ctx.signal) on(hm, 'toggle', keepMore, ctx.signal); else hm.ontoggle = keepMore; } /* home() also runs with no view signal (an unknown Skill falls back to it): then a property on an element of this view */
   const tc = $('[data-try-open]'), counted = () => metrics.tryStart(m); /* the Try a trick card counts as a Try a trick pressed */
   if (tc) { if (ctx.signal) on(tc, 'click', counted, ctx.signal); else tc.onclick = counted; }
   if (m === 'pro') loadBoard($('#homeBoard'), `daily-${cloud.dayId()}-pro`, 5);
+  const sc = $('.sutra-say'); if (sc && ctx.signal) wireSay(sc, ctx.signal); /* Say it on Explorer's Sutra card: wired on the card, which every redraw replaces, so a redraw within the view adds no second listener */
   homeTour(ctx.signal);
+}
+
+/* "Your sutras" on Challenger and Pro Home (openspec change sutras-first, sutra-progress spec): the Sutra of the next
+   Star and up to three others the Player has started, in Bolt's path order, each a link to its Deep dive with its
+   progress, and a link to all 29. Read from the device only. */
+const PATH_SUTRAS = [...new Set(BELTS.flatMap(b => b.tricks).map(id => (sutraOfTrick(id) || {}).id).filter(Boolean))];
+function yourSutras(m, nextId) {
+  const begun = PATH_SUTRAS.filter(id => id !== nextId && sutraProgress(ALL_SUTRAS.find(c => c.id === id)).begun).slice(0, 3);
+  const ids = [...(nextId ? [nextId] : []), ...begun]; if (!ids.length) return '';
+  const row = id => { const c = ALL_SUTRAS.find(x => x.id === id), p = sutraProgress(c); return `<li><a class="your-sutra" href="#/sutras/${id}" data-tag="home"><b lang="sa-Latn">${esc(c.name)}</b><span class="sutra-tag-m">${esc(m === 'explorer' ? c.kid : c.meaning)}</span>${progressMeter(p, m)}${id === nextId ? '<span class="md-sr-only">, the sutra of your next Star</span>' : ''}</a></li>`; };
+  return `<div class="md-card your-sutras"><h2 class="mq-h3">Your sutras</h2><ul class="your-sutras-list">${ids.map(row).join('')}</ul><p class="door-acts"><a class="md-btn md-btn--sm" href="#/sutras">See all ${ALL_SUTRAS.length} sutras</a></p></div>`;
+}
+/* Explorer Home's "A sutra to say" (openspec change sutras-first): one Sutra a day, from those with a plain-number idea,
+   with Say it (its Name clip, after a tap) and its Explorer meaning */
+const SAY_SUTRAS = ['s1', 's14', 's2', 'u8', 'u12'];
+function sutraToSay() {
+  const d = new Date(), day = Math.floor((d.getTime() - d.getTimezoneOffset() * 60000) / 86400000), id = SAY_SUTRAS[day % SAY_SUTRAS.length], c = ALL_SUTRAS.find(x => x.id === id);
+  return `<div class="md-card sutra-say"><span class="md-tag md-tag--plum">A sutra to say</span><p class="sutra-say-name"><b lang="sa-Latn">${esc(c.name)}</b>${sayButton(id)}</p>${respellHTML(id, 'p')}<p class="sutra-say-kid">${esc(c.kid)}</p><p class="door-acts"><a class="md-btn" href="#/sutras/${id}" data-tag="home">See how it works</a></p></div>`;
 }
 
 /* Home's Try a trick card (openspec try-trick-in-modes): the Mode's own Try a trick, until the Player has finished it on
@@ -343,8 +366,8 @@ function learnView() {
   </div></section>`;
 }
 
-function gradeView(g) {
-  const G = gradeOf(g); if (!G) return home();
+function gradeView(g, { signal } = {}) {
+  const G = gradeOf(g); if (!G) return home({ signal });
   if (g !== 'V') store.setGrade(g);
   document.title = `${G.pro} · Learn Vedic Math`;
   const list = skillsFor(g), st = gradeStats(g), strands = Object.keys(STRANDS).filter(k => list.some(s => s.strand === k));
@@ -364,7 +387,7 @@ function gradeView(g) {
 
 /* ---------- Skill: lesson plus practice ---------- */
 function skillView(id, { signal } = {}) {
-  const s = byId[id]; if (!s) return home();
+  const s = byId[id]; if (!s) return home({ signal });
   document.title = `${s.title} · Learn Vedic Math`;
   const S = STRANDS[s.strand], trick = s.trick && TRICKS.find(t => t.id === s.trick);
   const back = trick ? ['#/dojo', 'Dojo'] : ['#/grade/' + s.grade, gradeLabel(s.grade)];
@@ -504,7 +527,7 @@ function answerUI(p) {
 }
 
 function mixView(g, isRun = false, { signal } = {}) {
-  const G = gradeOf(g); if (!G) return home();
+  const G = gradeOf(g); if (!G) return home({ signal });
   document.title = `${isRun ? 'Endless run' : 'Endless practice'}, ${G.pro} · Learn Vedic Math`;
   const list = skillsFor(g);
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">

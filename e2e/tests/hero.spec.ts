@@ -8,7 +8,7 @@ import { test, expect, APP } from './fixtures';
 type Page = import('@playwright/test').Page;
 
 const HEROES = [
-  { name: 'landing page', url: '/?home', text: '.lv-hero-t', h1: 'Math tricks you can do in your head', line: 'Free, for ages 4 to adult.', cta: 'main a.lv-play', label: 'Start learning', mode: null },
+  { name: 'landing page', url: '/?home', text: '.lv-hero-t', h1: 'Math in your head, the sutra way', line: 'Free, for ages 4 to adult.', cta: 'main a.lv-play', label: 'Start learning', mode: null },
   { name: 'welcome back landing page', url: '/?home', text: '.lv-hero-t', h1: 'Welcome back, Swift Tiger 42', line: 'Pick up where you left off.', cta: 'main a.lv-play', label: 'Keep playing', mode: 'challenger' },
 ] as const;
 const words = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
