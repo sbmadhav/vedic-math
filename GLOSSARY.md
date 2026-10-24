@@ -179,7 +179,7 @@ The setting that speaks questions, hints and praise. On by default for Explorer,
 _Avoid_: TTS, narration, voice mode
 
 **Copy table**:
-The one list of app wording that varies by Mode or Reading band (`js/copy.js`): each line with its Mode variants or a default, and Early and Growing variants. (Proposed in the `age-bands` change.)
+The one list of app wording that varies by Mode or Reading band (`app/src/logic/copy.ts`): each line with its Mode variants or a default, and Early and Growing variants. (Proposed in the `age-bands` change.)
 _Avoid_: strings file, translations, i18n
 
 **Built-in voice**:
