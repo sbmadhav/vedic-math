@@ -15,6 +15,7 @@ import { BADGES, STARS_PER_BELT, QUEST_POOL } from './gamify.js';
 import { MODES as PLAY_MODES } from './fx.js';
 import { MAX_LENGTH } from './watch.js';
 import * as LV from './levels.js';
+import { BG_NOTES, ROOTS_INTRO } from './sky-scene.js';
 
 /* A worked example as heard: its label, then its working ("65 squared. 6 times 7 equals 42, then 25, gives 4225.") */
 export const exampleLine = ([q, a]) => `${q}. ${a}`;
@@ -32,6 +33,10 @@ export const tourLines = mode => TOUR_STEPS.flatMap(s => s.options.map(o => say(
 
 
 export const gameLines = g => [g.desc].filter(Boolean);
+export const formatLines = () => Object.values(LV.FORMATS).map(f => f.how); // the Challenge tower's round format rules
+/* "Older roots" on the Sutras page: the intro, then each background note as the list shows it */
+export const rootNote = ([h, b]) => `<b>${h}.</b> ${b}`;
+export const rootsLines = () => [ROOTS_INTRO, ...BG_NOTES.map(rootNote)];
 /* Video and link descriptions on Watch. js/videos.js loads only when Watch opens, so its lists are passed in */
 export const videoLines = (videos = [], links = []) => [...videos, ...links].map(v => v.why).filter(Boolean);
 
@@ -49,10 +54,11 @@ export function allExplanationLines({ videos = [], links = [] } = {}) {
   for (const c of [...SUTRAS, ...SUBSUTRAS]) { add('sutra-card', sutraCardLines(c)); add('sutra-deep', sutraDeepLines(c.name)); }
   add('sutra-history', HISTORY);
   for (const g of GAMES) add('game:' + g.id, gameLines(g));
-  add('formats', Object.values(LV.FORMATS).map(f => f.how));
+  add('formats', formatLines());
   add('badges', BADGES.map(b => b.how));
   add('quests', Object.values(QUEST_POOL).flat().map(q => q.label));
   add('modes', Object.values(PLAY_MODES).map(m => m.blurb));
+  add('roots', rootsLines());
   for (const m of MODES) { for (const sec of sectionsFor(m, n)) add('guide:' + m, guideLines(sec, m)); add('tour:' + m, tourLines(m)); }
   add('watch', videoLines(videos, links));
   return out;
@@ -86,11 +92,12 @@ export function linesForKey(key, mode = 'challenger') {
   if (kind === 'history') return HISTORY.slice();
   if (kind === 'guide') { const sec = sectionsFor(mode, guideCounts()).find(x => x.id === id); return sec ? guideLines(sec, mode) : []; }
   if (kind === 'game') { const g = GAMES.find(x => x.id === id); return g ? gameLines(g) : []; }
+  if (kind === 'formats') return formatLines();
   return [];
 }
 /* Every key a page can ask for in a Mode, for the coverage test */
 export function listenKeys(mode = 'challenger') {
   const sut = [...SUTRAS.map(c => 's' + c.n), ...SUBSUTRAS.map(c => 'u' + c.n)];
   return [...SKILLS.map(s => 'skill:' + s.id), ...sut.map(id => 'sutra-card:' + id), ...sut.flatMap(id => SUTRA_PARTS.map(p => `sutra:${id}:${p}`)),
-    'history', ...sectionsFor(mode, guideCounts()).map(s => 'guide:' + s.id), ...GAMES.map(g => 'game:' + g.id)];
+    'history', ...sectionsFor(mode, guideCounts()).map(s => 'guide:' + s.id), ...GAMES.map(g => 'game:' + g.id), 'formats'];
 }

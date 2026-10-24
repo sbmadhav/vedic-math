@@ -64,7 +64,12 @@ test.describe('a device with no progress here', () => {
     await expect(page.locator('#ho-title')).toHaveText('Bring your progress from the old site?');
     expect(page.url()).toMatch(/\/import\/$/);
     expect(await page.evaluate(() => location.hash)).toBe('');
-    await expect(page.locator('#ho-list li')).toHaveText(['Brave Otter 17: 1,234 Sparks', 'Cosmic Comet 33: 7 Sparks']);
+    // Each Player is a row: an avatar tile by Mode with the first letter (decoration), the Nickname, the Mode word and Sparks
+    await expect(page.locator('#ho-list li.ho-player .ho-name')).toHaveText(['Brave Otter 17', 'Cosmic Comet 33']);
+    await expect(page.locator('#ho-list .ho-meta')).toHaveText(['Explorer, 1,234 Sparks', 'Pro, 7 Sparks']);
+    await expect(page.locator('#ho-list .ho-avatar')).toHaveText(['B', 'C']);
+    await expect(page.locator('#ho-list .ho-avatar--sun[aria-hidden="true"]')).toHaveCount(1);
+    await expect(page.locator('#ho-list .ho-avatar--plum[aria-hidden="true"]')).toHaveCount(1);
     await expect(page.locator('#ho-conflict')).toBeHidden();
     expect((await stored(page))['vm.players']).toBeUndefined();
     expect(issues.console, 'the import page logs no error').toEqual([]);
@@ -104,10 +109,33 @@ test.describe('a device with no progress here', () => {
     await expect(page.locator('main img')).toHaveCount(0);
     expect(dialogs).toBe(0);
     expect(Object.keys(await stored(page)).filter(k => !['vm.sound', 'vm.tour'].includes(k))).toEqual([]);
-    await expect(page.locator('#ho-bad a.lv-play')).toHaveText('Go to Learn Vedic Math');
+    const go = page.locator('#ho-bad').getByRole('link', { name: 'Go to Learn Vedic Math' });
+    await expect(go).toBeVisible();
     await expectCount(page, 'invalid');
-    await page.locator('#ho-bad a.lv-play').click();
+    await go.click();
     await expect(page).toHaveURL(new RegExp(`${APP}$`));
+  });
+
+  test('storage refuses every write: nothing is saved, the heading says so and takes focus, and the error shows', async ({ page }) => {
+    await page.addInitScript(() => {
+      const set = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (k: string, v: string) {
+        if (/^(vm\.|mathquest\.|theme$)/.test(k)) throw new DOMException('full', 'QuotaExceededError');
+        return set.call(this, k, v);
+      };
+    });
+    const d = payload();
+    await page.goto(link(d));
+    await expect(page.locator('#ho-title')).toHaveText('Bring your progress from the old site?');
+    await page.locator('#ho-bring').click();
+    await expect(page.locator('#ho-title')).toHaveText('Progress not saved');
+    await expect(page.locator('#ho-title')).toBeFocused();
+    await expect(page.locator('#ho-error')).toBeVisible();
+    await expect(page.locator('#ho-offer')).toBeHidden();
+    expect((await stored(page))['vm.players']).toBeUndefined();
+    expect(page.url()).toContain('/import/#v=1&d=' + d);
+    await expect(page.locator('#ho-error').getByRole('link', { name: 'Go to Learn Vedic Math' })).toBeVisible();
+    await expectCount(page, 'too-big');
   });
 
   test('a link that is not a payload, or no fragment at all, imports nothing; each bad link counts once, no link counts nothing', async ({ page }) => {
@@ -218,13 +246,16 @@ test.describe('a device that already has progress here', () => {
     const before = await stored(page);
     await page.locator('#ho-use').click();
     await expect(page.locator('#ho-error')).toContainText('nothing was changed on this device');
+    await expect(page.locator('#ho-title')).toHaveText('Progress not saved');
+    await expect(page.locator('#ho-title')).toBeFocused();
     expect(await stored(page)).toEqual(before);
     expect(page.url()).toContain('/import/#v=1&d=' + d);
     // The progress did not fit this browser: counted as too-big, before the fragment came back to the address bar
     await expectCount(page, 'too-big');
     await page.reload();
     await expect(page.locator('#ho-conflict')).toBeVisible();
-    await expect(page.locator('#ho-list li')).toHaveText(['Brave Otter 17: 1,234 Sparks', 'Cosmic Comet 33: 7 Sparks']);
+    await expect(page.locator('#ho-title')).toHaveText('Bring your progress from the old site?');
+    await expect(page.locator('#ho-list .ho-name')).toHaveText(['Brave Otter 17', 'Cosmic Comet 33']);
     expect((await counts(page)).map(c => c.path), 'the retry is a new visit, not yet counted').toEqual(['math/handoff/too-big']);
   });
 });

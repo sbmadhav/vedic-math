@@ -131,11 +131,11 @@ A Trick learned and then used correctly in a timed round. The thing the product 
 _Avoid_: aha, win
 
 **Try a trick**:
-The one primary button on the landing (the mode picker), the big first action in its hero beside the Nikhilam Family. It sets Challenger as a Mode guess and opens the first Star of Bolt's path on a worked example of its Trick, so a curious visitor sees the Trick once and reaches a question in two taps with no choice to make. (`first-visit-clarity` change; the worked example is proposed in `try-trick-teaches`.)
+A short lesson inside each Mode, at `#/try`: one Trick taught under the Sutra it belongs to, on one worked example with every step shown, then three questions and an end card with the next step. Explorer's is the 11 sandwich (Ūrdhva-Tiryagbhyām), Challenger's squares ending in 5 (Ekādhikena Pūrveṇa), Pro's multiplying near 100 (Nikhilaṃ Navataścaramaṃ Daśataḥ). It is reached from the Try a trick button under each Mode card on the Mode picker, which picks that Mode, and from a card on each Mode's Home until it is finished. Right answers earn Sparks; it changes no Rating, mastery, Keep going, Star or Belt. (`try-trick-in-modes` change; before it, one Try a trick above the cards guessed Challenger and opened a Star.)
 _Avoid_: demo, trial mode, guest mode
 
 **Mode guess**:
-A Mode set by Try a trick rather than picked (`modeGuess` on the Player record). Home names it ("our guess for a first try") beside Change, and any pick on the landing's cards or on Me clears it. Kept on the device only.
+A Mode set by the earlier Try a trick rather than picked (`modeGuess` on the Player record). Nothing sets one now (`try-trick-in-modes`); a record that still has one shows it on Home ("our guess for a first try") beside Change until any pick clears it. Kept on the device only.
 _Avoid_: default mode, auto mode
 
 **Door**:
@@ -167,7 +167,7 @@ The setting that speaks questions, hints and praise. On by default for Explorer,
 _Avoid_: TTS, narration, voice mode
 
 **Copy table**:
-The one list of app wording that varies by Mode or Reading band (`js/copy.js`): each line with its Mode variants or a default, and Early and Growing variants. (Proposed in the `age-bands` change.)
+The one list of app wording that varies by Mode or Reading band (`app/src/logic/copy.ts`): each line with its Mode variants or a default, and Early and Growing variants. (Proposed in the `age-bands` change.)
 _Avoid_: strings file, translations, i18n
 
 **Built-in voice**:
@@ -306,12 +306,28 @@ _Avoid_: onboarding, walkthrough, tutorial
 The Sky as a plain list: every Constellation with its Stars and their states, every Landmark and every other place. The keyboard and screen reader way round the Sky.
 _Avoid_: sitemap, menu, index
 
+**Installed app**:
+The game opened from its home screen, dock or app list icon rather than in a browser tab: a standalone window (or `navigator.standalone` on iPhone and iPad) with the scope `/play/`. Links that leave the scope open in the browser. (`install-app` change.)
+_Avoid_: PWA (in copy), native app, the app (when the browser tab is meant too)
+
+**Install guide**:
+The dialog that tells a Player how to install the game on the device in hand, with one tap where the browser offers it, and says plainly where it cannot be installed. Opened from the Me page, the footer, the Guide and the Install nudge. (`install-app` change.)
+_Avoid_: wizard (in copy), installer, popup
+
+**Install nudge**:
+The small card in Home's one slot for it that offers the Installed app, on a Player's second day of play, where the browser can install. "Not now" puts it off for 7 days, at most three times. Not a dialog. (`install-app` change.)
+_Avoid_: banner, popup, prompt (the browser's own install dialog is the prompt)
+
+**Prompt slot**:
+The rule that at most one prompt or visitor asks for a Player's attention at a time (`js/prompt-slot.js`): the Install nudge and the tour claim it, and later prompts (the Family helpers' visitors) wait for it, as they wait while a dialog, a toast or a round is on screen. (`install-app` change.)
+_Avoid_: queue, z-index (a layer is not the rule)
+
 **Comeback**:
 Getting the rematch right after a mistake in a Star. It pays more Sparks than a first-time right answer, at most once per kind of question in a round.
 _Avoid_: retry, second chance, redemption
 
 **Decoration**:
-Moving pictures that carry no information and take no input: the Sky backdrop, the Moving background, celebrations and Mandala Studio's glow. The only thing WebGL may draw (ADR 0011). Off with reduced motion, Pause motion and Calm. (Proposed in the `gpu-effects` change.)
+Moving pictures that carry no information and take no input: the Sky in 3D, Sutra deep-dive illustrations, the Moving background, celebrations and Mandala Studio's glow. The only thing WebGL may draw (ADR 0011), as 3D scenes (ADR 0013). With reduced motion, Pause motion or Calm it holds a still frame and celebrations do not run. (The Sky in `react-typescript`; the rest proposed in the `gpu-effects` change.)
 _Avoid_: effects, animations (too broad), graphics
 
 **Performance budget**:

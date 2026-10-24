@@ -43,11 +43,18 @@ Every match screen and end screen SHALL offer Report, with four fixed reasons an
 - **THEN** they are not paired with each other
 
 ### Requirement: Under-13 Players get no lasting identifier
-A Player whose Age answer is under 13 SHALL be able to play Friend Duels only, and SHALL get no Duel key or other identifier that lasts beyond one Duel. The server SHALL keep nothing about their Duel more than 10 minutes after it ends, except a report someone makes about it.
+A Player whose Age answer is under 13 SHALL be able to play Friend Duels only, and SHALL get no Duel key or other identifier that lasts beyond one Duel: their access to a Duel SHALL be a session ticket from the server that names no one, asked for that Duel and forgotten when it ends, and a Duel SHALL NOT load Firebase or create any identity for them. The server SHALL keep nothing about their Duel more than 10 minutes after it ends, except a report someone makes about it.
 
 #### Scenario: A child's Friend Duel
 - **WHEN** a Player aged 8 finishes a Friend Duel
-- **THEN** the device holds no Duel key, and 10 minutes later the server holds nothing about that Duel
+- **THEN** the device holds no Duel key and no session ticket, no request went to Firebase, and 10 minutes later the server holds nothing about that Duel
+
+### Requirement: Under-13 Duel results stay on the device
+The results of a Duel played by a Player whose Age answer is under 13 (wins, Sparks, the Duel count) SHALL stay on the device. No setting, on the device or on the server, SHALL let a grown-up send those results anywhere or open Random Duels for that Player; that would need a verifiable parental consent method, which is not part of this change.
+
+#### Scenario: Looking for a grown-up switch
+- **WHEN** a grown-up looks through Me, the parent note and the Duel lobby on a device whose Player is aged 9
+- **THEN** there is no setting that shares that Player's Duel results or turns on Find a player for them
 
 ### Requirement: Teens get a weekly Duel key
 For a Player whose Age answer is 13 or over, the app SHALL make a random Duel key at their first Random Duel and a new one each ISO week, and SHALL send only its hash. The replaced key SHALL stay on the device for 7 more days and its hash SHALL be sent as `prev` with each queue join, so the queue checks Block pairs against both hashes and a Block lasts its full 7 days across the week change. Both SHALL be used only for Block and for the automatic limits.

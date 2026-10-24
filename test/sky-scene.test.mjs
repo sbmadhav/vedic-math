@@ -84,6 +84,19 @@ test('drawing data stays in its boxes', () => {
   assert.equal(superscript(12), '¹²');
 });
 
+test('the sky keeps out of a hero, draws the plaque without an edge, and never a compact caption (design audit)', async () => {
+  const { KEEP_CLEAR } = await import('../js/sky-bg.js');
+  const sels = KEEP_CLEAR.split(',').map(s => s.trim());
+  for (const sel of ['[data-sky-clear]', '.lv-hero', '.mq-hero']) assert.ok(sels.includes(sel), `${sel} is kept clear`);
+  const src = readFileSync(new URL('../js/sky-bg.js', import.meta.url), 'utf8');
+  assert.match(src, /querySelectorAll\(KEEP_CLEAR\)/, 'measure() lists every match as an obstacle');
+  const cap = src.slice(src.indexOf('function caption('), src.indexOf('function measure('));
+  assert.match(cap, /roundRect\(0, 0, w, h, 12\)/, 'the plaque corner is radius-sm (12)');
+  assert.doesNotMatch(cap, /strokeStyle|\.stroke\(/, 'no stroked edge: a stroked plaque read as a card');
+  const place = src.slice(src.indexOf('function place('), src.indexOf('const overlaps'));
+  assert.match(place, /\.filter\(s => !s\.compact\)/, 'a compact caption (the title without its line) is never placed; the drawing goes alone');
+});
+
 test('circling the square: Baudhayana\'s rule gives a circle of nearly the square\'s area, and the drawing fits its box', async () => {
   const { SULBA, sulbaRadius, FAMILY, CAMEO, PALETTE } = await import('../js/sky-scene.js');
   const a = SULBA.a, r = sulbaRadius(a);

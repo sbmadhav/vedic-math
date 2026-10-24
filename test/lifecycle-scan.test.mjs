@@ -45,6 +45,15 @@ test('the Sky (js/sky-view.js): no bare listeners, timers or frame loops; its li
   assert.ok((src.match(/\bon\([^;]*\bsignal\b/g) || []).length >= 4, 'pointer, scroll and motion listeners on the view signal');
 });
 
+test('Try a trick (js/try.js): no bare listeners or timers; its listeners go through life.on on a child signal', () => {
+  assert.deepEqual(hits('try.js', /\.?addEventListener\(/), []);
+  assert.deepEqual(hits('try.js', TIMERS), []);
+  const src = readFileSync(new URL('../js/try.js', import.meta.url), 'utf8');
+  assert.match(src, /import \{[^}]*\bon\b[^}]*\bchild\b[^}]*\} from '\.\/life\.js'/);
+  assert.match(src, /round = child\(signal\)/);
+  assert.doesNotMatch(src, /\.on(click|submit|keydown)\s*=/);
+});
+
 test('no bare listeners or timers in the play shell (js/shell.js)', () => {
   assert.deepEqual(hits('shell.js', /\.?addEventListener\(/), []);
   assert.deepEqual(hits('shell.js', TIMERS), []);
@@ -91,4 +100,16 @@ test('the background sky (js/sky-bg.js): no bare listeners, timers or frame loop
   assert.match(src, /import \{[^}]*\bon\b[^}]*\bloop\b[^}]*\} from '\.\/life\.js'/);
   assert.match(src, /loop\(frame, loopCtl\.signal\)/, 'the frame loop runs on a child signal, aborted when the tab hides or motion stops');
   assert.match(src, /on\(document, 'visibilitychange', sync, signal\)/);
+});
+
+test('installing the app (js/install.js, js/prompt-slot.js): no bare listeners or timers; the install prompt and appinstalled go through life.on', () => {
+  for (const f of ['install.js', 'install-rules.js', 'prompt-slot.js']) {
+    assert.deepEqual(hits(f, /\.?addEventListener\(/), [], f);
+    assert.deepEqual(hits(f, TIMERS), [], f);
+  }
+  const src = readFileSync(new URL('../js/install.js', import.meta.url), 'utf8');
+  assert.match(src, /on\(window, 'beforeinstallprompt', [^\n]*, ps\);/, 'the install prompt on the page signal');
+  assert.match(src, /on\(window, 'appinstalled', [^\n]*, ps\);/, 'appinstalled on the page signal');
+  assert.match(src, /on\(slot, 'click', [\s\S]*?\}, ctl\.signal\);/, 'the nudge on a child of the view signal');
+  assert.match(src, /every\([^\n]*, 2000, poll\.signal\)/, 'the nudge looks again on a child signal that stops after a minute');
 });

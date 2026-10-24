@@ -8,7 +8,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import * as S from '../js/handoff-schema.js';
-import { applyHandoff, progressHere, RESULTS } from '../js/handoff.js';
+import { applyHandoff, progressHere, playerRow, RESULTS } from '../js/handoff.js';
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const b64url = buf => Buffer.from(buf).toString('base64url');
@@ -187,6 +187,40 @@ test('the validator accepts a packed payload and rejects anything off the schema
     assert.equal(S.validatePayload(r === undefined ? p : r).ok, false, what);
   }
   for (const x of [null, undefined, 1, 'x', true]) assert.equal(S.validatePayload(x).ok, false);
+});
+
+/* ---------- the offer's Player rows (the import page) ---------- */
+/* A document stand-in: elements hold a class, text and children, and setting innerHTML throws, so a row built from
+   the payload can only be built from text */
+const fakeDoc = () => ({ createElement: tag => ({ tag, className: '', textContent: '', attrs: {}, children: [], setAttribute(k, v) { this.attrs[k] = v; }, append(...c) { this.children.push(...c); }, set innerHTML(v) { throw new Error('innerHTML with payload data'); } }) });
+const textOf = n => (typeof n === 'string' ? n : n.textContent || n.children.map(textOf).join(''));
+
+test('a Player row: an avatar tile coloured by Mode with the first letter, the Nickname, then the Mode word and Sparks, from text only', () => {
+  const li = playerRow(P2, 1234, fakeDoc());
+  assert.equal(li.tag, 'li'); assert.equal(li.className, 'ho-player');
+  const [avatar, gap, text] = li.children;
+  assert.equal(avatar.className, 'ho-avatar ho-avatar--sun', 'Explorer is sun');
+  assert.equal(avatar.textContent, 'B'); assert.equal(avatar.attrs['aria-hidden'], 'true');
+  assert.equal(gap, ' ', 'readable before the styles load; never shown in the flex row');
+  assert.deepEqual(text.children.map(c => (typeof c === 'string' ? c : c.className)), ['ho-name', ' ', 'ho-meta']);
+  assert.equal(text.children[0].textContent, 'Brave Otter 17');
+  assert.equal(text.children[2].textContent, 'Explorer, 1,234 Sparks');
+  assert.equal(textOf(li), 'B Brave Otter 17 Explorer, 1,234 Sparks');
+  const meta = (p, n) => playerRow(p, n, fakeDoc()).children[2].children[2].textContent;
+  assert.equal(playerRow(P1, 1, fakeDoc()).children[0].className, 'ho-avatar ho-avatar--sky', 'Challenger is sky');
+  assert.equal(meta(P1, 1), 'Challenger, 1 Spark');
+  assert.equal(playerRow({ ...P1, mode: 'pro' }, 0, fakeDoc()).children[0].className, 'ho-avatar ho-avatar--plum', 'Pro is plum');
+  const noMode = playerRow({ ...P1, mode: null }, 40, fakeDoc());
+  assert.equal(noMode.children[0].className, 'ho-avatar', 'the oldest format packs no Mode');
+  assert.equal(meta({ ...P1, mode: null }, 40), '40 Sparks');
+});
+
+test('the Mode words in the rows are the ones js/fx.js shows', () => {
+  const src = readFileSync(join(repo, 'js/fx.js'), 'utf8');
+  for (const [mode, word] of [['explorer', 'Explorer'], ['challenger', 'Challenger'], ['pro', 'Pro']]) {
+    assert.match(src, new RegExp(`${mode}: \\{ name: '${word}'`), `fx.js MODES.${mode}.name`);
+    assert.equal(playerRow({ ...P1, mode }, 2, fakeDoc()).children[2].children[2].textContent, `${word}, 2 Sparks`);
+  }
 });
 
 /* ---------- writing (the import page) ---------- */
