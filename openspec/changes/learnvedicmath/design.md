@@ -202,7 +202,7 @@ Crawlers and first-time visitors (no storage) see the landing page. The script r
 
 - GoatCounter with a new site code (`learnvedicmath`) on goatcounter.com, script served from this site. Event names stay as they are (`math/...`), because the new site code starts empty. The theme event becomes `math/theme/<scheme>`.
 - Cloudflare Web Analytics for traffic and Core Web Vitals: page loads only (hash route changes are not tracked by it, which is fine: GoatCounter counts routes).
-- Hand-off buckets: `math/handoff/<accepted|replaced|merged|kept|declined|invalid|error|popup>` on the new site, `move/handoff/<sent|empty|too-big>` and `move/export/<sent|empty>` on sbmadhav.com. These decide when Phase B ends (D13).
+- Hand-off buckets (the analytics spec's list): `math/handoff/<accepted|replaced|kept|declined|invalid|too-big|popup>` on the new site, one per visit to `/import/` and only after the fragment is gone; `move/handoff/<sent|empty|too-big>` and `move/export/<sent|empty>` on sbmadhav.com. Keep both counts as `accepted` (the old site's Players came in and nothing here was lost); a browser whose storage would not take the progress counts as `too-big`, like a link over a cap; a visit with no payload in the link is not a hand-off and sends nothing. These decide when Phase B ends (D13).
 - PostHog later, only cookieless (`cookieless_mode: 'always'`, `person_profiles: 'never'`, no autocapture, no replay, no surveys, no `identify()`, discard IP), and only after the privacy policy names it. A separate change.
 - Never Google Analytics.
 

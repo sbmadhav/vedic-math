@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 783577,
+  "total": 784047,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -64,7 +64,7 @@
    "/js/guide-art.js": 2484,
    "/js/guide.js": 10402,
    "/js/handoff-schema.js": 6582,
-   "/js/handoff.js": 3783,
+   "/js/handoff.js": 4229,
    "/js/install-rules.js": 2226,
    "/js/install.js": 7143,
    "/js/landing-sky.js": 261,
@@ -140,8 +140,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 22224,
-   "/play/": 3895,
-   "/sw.js": 6116,
+   "/play/": 3907,
+   "/sw.js": 6128,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -183,10 +183,17 @@
    },
    {
     "date": "2026-10-24",
-    "pr": 141,
+    "pr": 138,
     "from": 781463,
-    "to": 783577,
-    "why": "learnvedicmath task 10.3: the backup code for every Player and Restore from code through the hand-off schema and prompt (the Me page's Restore prompt and the export refusals in js/app.js, the backup functions in js/store.js, the schema's second source, applyHandoff's moved flag, rollback order and bootstrap guard, three style rules in math.css); measured on main as of #135, so that code is the only growth; no new file"
+    "to": 781931,
+    "why": "learnvedicmath task 9.2: js/handoff.js counts the hand-off result once per visit (RESULTS, the spec's list, with its comment and fixed titles); measured on main as of #135, so that code is the only growth; no new file"
+   },
+   {
+    "date": "2026-10-24",
+    "pr": 141,
+    "from": 781931,
+    "to": 784047,
+    "why": "learnvedicmath task 10.3: the backup code for every Player and Restore from code through the hand-off schema and prompt (the Me page's Restore prompt and the export refusals in js/app.js, the backup functions in js/store.js, the schema's second source, applyHandoff's moved flag, rollback order and bootstrap guard, three style rules in math.css); measured on main as of #138, so that code is the only growth; no new file"
    }
   ]
  },
