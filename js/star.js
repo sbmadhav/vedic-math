@@ -106,17 +106,6 @@ export function starDare(prev, problem = null) {
   return { state: st, events: [{ type: 'dare', problem: p }] };
 }
 
-/* The worked example shown before a trial Star's first question (openspec try-trick-teaches): the easiest problem of
-   the Star's band that this round does not deal (lowest Kata first), else of the Star's whole third. It is marked used,
-   so no rematch or Dare repeats it. Returns { state, example } (example null when every problem is dealt). */
-export function starIntro(prev) {
-  const st = copy(prev), easiest = ps => ps.filter(p => !st.used.has(sigOf(p))).sort((a, b) => (a.kata || 0) - (b.kata || 0))[0];
-  let p = easiest(st.band);
-  if (!p) { st.third = st.third || starThird(st.trick, st.star); p = easiest(st.third); }
-  if (p) st.used.add(sigOf(p));
-  return { state: st, example: p || null };
-}
-
 /* ---------- The view ---------- */
 const esc = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 /* Text for the live region: no tags, and entities as words a screen reader reads */
@@ -128,9 +117,8 @@ const pickOne = a => a[Math.floor(Math.random() * a.length)];
 /* Plays one Star round in root. trick: a Trick id; star: 1 to 3; signal: the view's (everything stops when it aborts).
    back: { href, label } for the end screen's way out; again(): Play again; findVideo(trickId, mode): a Promise of
    { title, src, open? } (src: an embeddable video URL; open(opener): plays it elsewhere and resolves when closed) or null.
-   intro: true shows the Trick worked once on a problem the round does not deal, before the first question (the trial
-   Star of Try a trick, openspec try-trick-teaches). Returns { destroy }, which saves the Rating. */
-export function runStar(root, { trick, star, signal, back = { href: '#/dojo', label: 'Back to the Dojo' }, again = null, findVideo = async () => null, intro = false } = {}) {
+   Returns { destroy }, which saves the Rating. */
+export function runStar(root, { trick, star, signal, back = { href: '#/dojo', label: 'Back to the Dojo' }, again = null, findVideo = async () => null } = {}) {
   const t = TRICKS.find(x => x.id === trick), skill = byId['v-' + trick], mode = fx.mode() || 'challenger', boxes = mode !== 'pro';
   const round = child(signal), rs = round.signal;
   const rating = AD.skillRating('v-' + trick, mode), dial = new AD.Dial(rating);
@@ -360,25 +348,6 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     $('#stQ').focus({ preventScroll: true });
   }
 
-  /* The Trick first (openspec try-trick-teaches): one worked example, every step shown at once (nothing moves or
-     times out, so Calm and Pause motion need nothing different), and one button to the first question. Escape
-     starts too, as it ends a replay. Nothing is spoken: a Player with Read aloud on hears the first question. */
-  function teach(p) {
-    const ps = newPhase(), steps = t.steps(p.vals);
-    dareBtn.hidden = true; pad.hidden = true;
-    main.innerHTML = `<div class="star-intro"><span class="star-tag star-tag--trick">Learn the trick</span><h2 class="star-q star-q--sm" id="stIntroH">${esc(t.title)}</h2>
-      <p class="star-intro-idea">${esc(t.idea)}</p>
-      <h3 class="star-intro-k">Worked example: ${p.q.replace(/ = \?$/, '')}</h3>
-      <ol class="star-steps star-steps--still" id="stSteps">${steps.map(s => `<li class="star-step"><div class="anim-show">${s.show}</div><p>${s.say}</p></li>`).join('')}</ol>
-      <p class="star-acts"><button type="button" class="md-btn md-btn--primary" id="stStart" aria-describedby="stIntroH">Start the Star</button></p><p class="mq-small star-intro-n">Then ${ROUND} questions like it.</p></div>`;
-    say('Watch it once. Then it is your turn.', 'explain'); hud();
-    fx.announce(`Learn the trick first: ${said(t.title)}. A worked example, then Start the Star.`);
-    const start = () => { if (ps.aborted) return; replaySkip = null; shown = 1; ask(); };
-    replaySkip = start; on($('#stStart'), 'click', start, ps);
-    $('#stStart').focus({ preventScroll: true });
-  }
-
-  const first = intro ? starIntro(st) : null;
-  if (first && first.example) { st = first.state; teach(first.example); } else ask();
+  ask();
   return { destroy: () => { saveDial(); round.abort(); } };
 }

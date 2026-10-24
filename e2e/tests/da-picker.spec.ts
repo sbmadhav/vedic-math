@@ -25,7 +25,7 @@ test('the picker heading is a 24px title above the card titles; the ages are a s
   expect(px(h2)).toBe(24);
   expect(px(h2)).toBeGreaterThan(px(title));
   expect(px(title)).toBeGreaterThan(px(small));
-  await expect(page.locator('.pick-h')).toHaveText('Or pick who is playing');
+  await expect(page.locator('.pick-h')).toHaveText('Pick who is playing'); // no Try a trick above the cards any more (try-trick-in-modes)
 });
 
 test("the hero's headline is the display-l size of the design system", async ({ page }) => {
