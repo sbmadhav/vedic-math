@@ -11,7 +11,9 @@
      instead of the first-visit Mode picker. Storage is seeded on robots.txt, so no game file is cached.
    - "repeat": a returning Player whose earlier visit finished and whose service worker took control: one unmeasured
      visit, wait for the worker to be active, then each measured run in the same profile.
-   Analytics never counts a run: GoatCounter and Cloudflare Web Analytics are blocked by URL pattern. */
+   Analytics never counts a run: GoatCounter and Cloudflare Web Analytics are blocked by URL pattern.
+   The simulation's server latency is fixed (serverResponseTime in tools/lighthouserc.json, through perf/lantern.mts),
+   so the host's own latency never counts either: a preview on workers.dev is measured as if production served it. */
 import lighthouse from 'lighthouse';
 import { chromium, type BrowserContext } from '@playwright/test';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, readFileSync, realpathSync } from 'node:fs';
@@ -19,21 +21,27 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:net';
+import { lanternData } from './lantern.mts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const RC = JSON.parse(readFileSync(join(HERE, '..', '..', 'tools', 'lighthouserc.json'), 'utf8')) as {
-  ci: { collect: { numberOfRuns: number; settings: Record<string, unknown> } };
+  ci: { collect: { numberOfRuns: number; serverResponseTime: number; settings: Record<string, unknown> } };
   pages: { name: string; path: string; visit: 'first' | 'returning' | 'repeat' }[];
 };
 
 /* ttfb: time to first byte of the page as Lighthouse's throttled run models it (DNS, connection, TLS and the server's
    answer: the metrics audit's timeToFirstByte; the server's response time when the worker answers the page);
-   srt: the server's own response time (the server-response-time audit) */
-export type Metrics = { fcp: number; lcp: number; tbt: number; cls: number; si: number; ttfb: number; srt: number };
-export const METRICS: (keyof Metrics)[] = ['fcp', 'lcp', 'tbt', 'cls', 'si', 'ttfb', 'srt'];
-const AUDIT: Record<Exclude<keyof Metrics, 'ttfb'>, string> = {
+   srt: the server's own response time (the server-response-time audit);
+   lat: the origin's observed server latency (the network-server-latency audit), the value the simulation would have
+   used had it not been fixed; information only, it shows how far the host is from the fixed value;
+   bench: Lighthouse's benchmarkIndex of the machine on that run, its CPU speed measure (higher is faster); information
+   only (openspec change perf-gate-fcp): blocking time scales with the runner's speed, so a run says how fast its runner
+   was (docs/perf/baseline.md, "The Deep dive's blocking time"); the job's median is written as benchmarkIndex */
+export type Metrics = { fcp: number; lcp: number; tbt: number; cls: number; si: number; ttfb: number; srt: number; lat: number; bench: number };
+export const METRICS: (keyof Metrics)[] = ['fcp', 'lcp', 'tbt', 'cls', 'si', 'ttfb', 'srt', 'lat', 'bench'];
+const AUDIT: Record<Exclude<keyof Metrics, 'ttfb' | 'bench'>, string> = {
   fcp: 'first-contentful-paint', lcp: 'largest-contentful-paint', tbt: 'total-blocking-time',
-  cls: 'cumulative-layout-shift', si: 'speed-index', srt: 'server-response-time',
+  cls: 'cumulative-layout-shift', si: 'speed-index', srt: 'server-response-time', lat: 'network-server-latency',
 };
 /* Analytics never counts a run: Lighthouse blocks these patterns, and the setup visits abort the same requests */
 const ANALYTICS_PATTERNS = ['*goatcounter.com*', '*gc.zgo.at*', '*/vendor/goatcounter/count.js*', '*cloudflareinsights.com*'];
@@ -90,6 +98,7 @@ async function once(url: string, port: number, keepStorage: boolean, visit: 'fir
   const flags = {
     port, output: 'json' as const, logLevel: 'error' as const, onlyCategories: ['performance'],
     disableStorageReset: keepStorage, blockedUrlPatterns: ANALYTICS_PATTERNS,
+    precomputedLanternData: lanternData(url, RC.ci.collect.serverResponseTime),
     ...RC.ci.collect.settings,
   };
   const res = await lighthouse(url, flags as Parameters<typeof lighthouse>[1]);
@@ -102,6 +111,7 @@ async function once(url: string, port: number, keepStorage: boolean, visit: 'fir
     if (typeof v !== 'number') throw new Error(`${url}: no ${audit} in the report`);
     out[k] = v;
   }
+  out.bench = lhr.environment.benchmarkIndex;
   // The repeat visit's page is answered by the service worker, so Lighthouse has no network time to first byte for it
   // (timeToFirstByte is missing): the worker's answer time, the server-response-time audit, stands in there and only
   // there. A first or returning visit always has one; a run without it fails and is made again (retried)
@@ -168,7 +178,9 @@ async function main(argv: string[]) {
     result[p.name] = { path: p.path, visit: p.visit, median: med, runs: all };
     console.log(`${p.name.padEnd(16)} ${p.visit.padEnd(9)} ${METRICS.map(k => `${k} ${med[k]}`).join('  ')}`);
   }
-  const out = { base, date: new Date().toISOString(), runs, lighthouse: (await import('lighthouse/package.json', { with: { type: 'json' } })).default.version, pages: result };
+  // The machine's speed over the whole job: the median benchmarkIndex of every run of every page
+  const benchmarkIndex = Math.round(median(Object.values(result).flatMap(p => p.runs.map(r => r.bench))));
+  const out = { base, date: new Date().toISOString(), runs, lighthouse: (await import('lighthouse/package.json', { with: { type: 'json' } })).default.version, benchmarkIndex, pages: result };
   if (json) {
     mkdirSync(dirname(json), { recursive: true });
     writeFileSync(json, JSON.stringify(out, null, 1) + '\n');
