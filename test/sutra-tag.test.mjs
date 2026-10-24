@@ -46,6 +46,7 @@ test('names and meanings come from the cards; Explorer reads the kid line', () =
 test('kind words by Mode', () => {
   assert.equal(kindWord('case', 'challenger'), 'A special case of');
   assert.equal(kindWord('case', 'pro'), 'Special case of');
+  assert.equal(kindWord('case', 'explorer'), 'Special case of', 'Explorer is told a special case is one too (design decision 2)');
   assert.equal(kindWord('idea', 'pro'), 'Uses the idea of');
   assert.equal(kindWord('idea', 'explorer'), 'Idea from');
   assert.equal(kindWord('sub', 'challenger'), 'Sub-sutra');

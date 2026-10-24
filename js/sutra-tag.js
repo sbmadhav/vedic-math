@@ -58,7 +58,7 @@ export const meaningFor = (id, mode) => { const c = cardOf(id); return c ? (mode
 const KIND = {
   sutra: { explorer: 'Sutra', challenger: 'Sutra', pro: 'Sutra' },
   sub: { explorer: 'Sub-sutra', challenger: 'Sub-sutra', pro: 'Sub-sutra' },
-  case: { explorer: 'Sutra', challenger: 'A special case of', pro: 'Special case of' },
+  case: { explorer: 'Special case of', challenger: 'A special case of', pro: 'Special case of' },
   idea: { explorer: 'Idea from', challenger: 'Uses the idea of', pro: 'Uses the idea of' }
 };
 export const kindWord = (relation, mode) => (KIND[relation] || KIND.sutra)[modeOf(mode)];
