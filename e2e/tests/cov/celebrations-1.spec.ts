@@ -134,9 +134,16 @@ test.describe('motion allowed', () => {
     await page.locator('#vmMBtn').click();
     const sw = page.locator('#vmMotion');
     await expect(sw).toBeVisible();
-    await expect(page.locator('canvas.fx-confetti')).toHaveCount(1); // still falling as the switch is pressed
+    /* Record whether the burst was still falling when the switch fired sitemotion (window capture runs before
+       the document listener that stops it), so the burst ending on its own cannot pass this test */
+    await page.evaluate(() => {
+      window.addEventListener('sitemotion', () => {
+        (globalThis as any).__atPause = document.querySelectorAll('canvas.fx-confetti').length;
+      }, { capture: true, once: true });
+    });
     await sw.click();
     await expect(sw).toHaveAttribute('aria-checked', 'true');
+    expect(await page.evaluate(() => (globalThis as any).__atPause)).toBe(1);
     await expect(page.locator('canvas.fx-confetti')).toHaveCount(0, { timeout: 500 });
   });
 });
