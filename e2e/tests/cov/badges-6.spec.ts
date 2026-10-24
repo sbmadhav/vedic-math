@@ -65,6 +65,7 @@ test('Click a Watch link: a video closed within a few seconds awards no Video le
   await card.click();
   const dlg = page.locator('dialog.vm-player');
   await expect(dlg).toBeVisible();
+  await dlg.locator('.vp-play').click(); // the facade: the video plays, and its minute counts, from this press
   await page.waitForTimeout(1500);
   await dlg.locator('.vp-x').click();
   await expect(dlg).toBeHidden();

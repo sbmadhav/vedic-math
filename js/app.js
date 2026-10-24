@@ -684,10 +684,10 @@ function tryView({ signal } = {}) {
   if (signal) { wireSay(view, signal); runTry($('#tryRoot'), { mode: m, signal }); }
 }
 /* star-round's findVideo seam: the Trick's hand-matched video (null offline or when the list fails to load), opened
-   in the in-page player. open(opener) resolves when the player closes. */
+   in the in-page player, which counts the view when play is pressed. open(opener) resolves when the player closes. */
 async function starVideo(trick, mode) {
   const v = await W.videoForTrick(trick, mode);
-  return v && { title: v.title, src: W.embedSrc(v), open: opener => { store.bump('watched'); track('watch/' + v.kind, 'Watch: ' + v.title); return new Promise(done => openPlayer(v, opener, done)); } };
+  return v && { title: v.title, src: W.embedSrc(v), thumb: W.thumbSrc(v), open: opener => new Promise(done => openPlayer(v, opener, done)) };
 }
 
 /* ---------- Arena challenge tower ---------- */
@@ -1327,12 +1327,12 @@ document.addEventListener('click', e => {
   if (!b) return;
   e.preventDefault();
   W.loadVideos().then(({ VIDEOS }) => {
-    const v = VIDEOS.find(x => x.yt === b.dataset.watch); if (!v) return;
-    store.bump('watched'); track('watch/' + v.kind, 'Watch: ' + v.title);
-    openPlayer(v, b);
+    const v = VIDEOS.find(x => x.yt === b.dataset.watch); if (v) openPlayer(v, b);
   }).catch(() => {});
 });
 let playerDlg = null;
+/* The player opens on the facade (W.facade: this site's thumbnail behind a play button). Only when the Player presses
+   play is the YouTube frame written, the view counted and the one-minute timer started (watch-shelf spec, design D10). */
 function openPlayer(v, opener, onClose = null) {
   if (musicOn()) stopMusic();
   if (!playerDlg) {
@@ -1341,18 +1341,25 @@ function openPlayer(v, opener, onClose = null) {
     document.body.append(playerDlg);
     const close = () => playerDlg.close();
     playerDlg.querySelector('.vp-x').onclick = close;
-    playerDlg.addEventListener('click', ev => { if (ev.target === playerDlg) close(); });
+    playerDlg.addEventListener('click', ev => { if (ev.target === playerDlg) close(); else if (ev.target.closest('.vp-play')) playVideo(); });
     playerDlg.addEventListener('close', () => { clearTimeout(playerDlg._minute); playerDlg.querySelector('.vp-frame').innerHTML = ''; const done = playerDlg._onClose; playerDlg._onClose = null; if (playerDlg._opener && document.body.contains(playerDlg._opener)) playerDlg._opener.focus({ preventScroll: true }); if (done) done(); });
   }
-  playerDlg._opener = opener; playerDlg._onClose = onClose;
+  playerDlg._video = v; playerDlg._opener = opener; playerDlg._onClose = onClose;
   playerDlg.querySelector('#vpTitle').textContent = v.title;
   playerDlg.querySelector('.vp-desc').textContent = `${v.why} (${v.channel})`;
   // Open on YouTube: Pro only (Explorer and Challenger get no link that leaves the site)
   playerDlg.querySelector('.vp-foot').innerHTML = outLink(`https://www.youtube.com/watch?v=${v.yt}`, 'Open on YouTube', 'vp-yt');
   playerDlg.classList.toggle('tall', v.kind === 'short');
-  playerDlg.querySelector('.vp-frame').innerHTML = `<iframe src="${W.embedSrc(v)}" title="${esc(v.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+  playerDlg.querySelector('.vp-frame').innerHTML = W.facade(W.thumbSrc(v));
   playerDlg.showModal();
-  // Video learner: the player has stayed open for a whole minute (cancelled when it closes)
+  playerDlg.querySelector('.vp-play').focus({ preventScroll: true });
+}
+/* The play press: the privacy-enhanced frame replaces the facade and starts playing */
+function playVideo() {
+  const v = playerDlg._video;
+  store.bump('watched'); track('watch/' + v.kind, 'Watch: ' + v.title);
+  playerDlg.querySelector('.vp-frame').innerHTML = `<iframe src="${W.embedSrc(v)}" title="${esc(v.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+  // Video learner: the video has played for a whole minute (cancelled when the player closes)
   clearTimeout(playerDlg._minute); playerDlg._minute = setTimeout(() => { if (playerDlg.open) store.bump('watchedMinute'); }, 60000);
 }
 
