@@ -1,8 +1,10 @@
 # Vedic Math for Everyone: Product Plan
 
-Updated Oct 14, 2026 · Owner: Madhav Srinivasan
+Updated Oct 23, 2026 · Owner: Madhav Srinivasan
 
 Terms are defined in [GLOSSARY.md](../GLOSSARY.md); decisions are in [docs/adr/](adr/).
+
+The move to its own site, https://learnvedicmath.com/, is the `learnvedicmath` change (`openspec/changes/learnvedicmath/`): hosting ([ADR 0004](adr/0004-host-on-cloudflare-workers.md)), the move in three phases with the Hand-off on the device ([ADR 0005](adr/0005-phased-move-and-progress-hand-off.md)), Boards for Players under 13 ([ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)) and analytics (its design D11). The hosting, Boards and analytics lines below point there.
 
 This plan rebases the Oct 13 review and action plan (a six-persona age panel plus an adversarial plan review) onto what has shipped since. The diagnosis carries over; the order of work changes, because world leaderboards and adaptive games are already live.
 
@@ -10,7 +12,7 @@ This plan rebases the Oct 13 review and action plan (a six-persona age panel plu
 
 - **Big idea: "Become the human calculator."** Learn a trick in 60 seconds, then out-race your phone, your parents and your friends. Every feature serves one loop: **Dare → Reveal → Prove → Race → Brag → Return**.
 - **Primary audience for the next 90 days:** ages 9 to 14 and their parent. Explorer (about 4 to 7) and Pro (13 to adult) get targeted fixes, no new tracks.
-- **Next 3 weeks:** fix the 12 trust bugs, add the Age answer and the Parent step before anything from an under-13 Player goes online (in every Mode), instrument hash routes, then ship "Beat the calculator" as the Hook.
+- **Next 3 weeks:** fix the 12 trust bugs, add the Age answer before anything from a Player goes online (in every Mode; under-13 Players use Device boards only, [ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)), instrument hash routes, then ship "Beat the calculator" as the Hook.
 - **Gates are real-kid sessions first, metrics second.** Traffic is too low for percentage gates to be more than directional.
 
 ## Where things stand
@@ -18,13 +20,14 @@ This plan rebases the Oct 13 review and action plan (a six-persona age panel plu
 | Area | Oct 13 review | Now |
 | --- | --- | --- |
 | Overall (age panel) | 5.9/10; motivation to return 4.7/10 | Unchanged until Phase 0 ships |
-| World leaderboards | "Coming soon" | Live on Firebase: Arena daily and weekly, a daily and weekly board per game, weekly Sparks (formerly XP). Rules enforce the nickname word list, score caps, date bounds, query limits. App Check registered, not enforced. |
+| World leaderboards | "Coming soon" | Live on Firebase: Arena daily and weekly, a daily and weekly board per game, weekly Sparks (formerly XP). Rules enforce the nickname word list, score caps, date bounds, query limits. App Check registered, not enforced. On learnvedicmath.com the Boards start fresh in a new Firebase project with App Check enforced and entries that expire after 30 days (change `learnvedicmath`, design D14); Players under 13 use Device boards only and the Parent step is retired ([ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)). The site launched with Device boards only until the project exists (tasks 1.8 and 8.5). |
 | Difficulty fit | Wrong for 5 of 6 personas | Games adapt on a 1 to 20 Rating (right answers raise it, misses lower it), start by Mode (Explorer 1, Challenger 5, Pro 9), remember each Player's Rating, and score by difficulty. The Arena and Practice use Ratings too: an Arena Rating per League sets where Arena Practice rounds start and adapt, and a Rating per Skill picks each Practice question's generator level (1 to 3). Daily Arena rounds stay identical for a League on a fixed difficulty ramp. The Pro Arena is mental arithmetic only (2-digit products, squares, percents, near-base products, division), with Pro daily rounds switching over on Monday 2026-10-19 so no Board mixes question sets. |
 | Repeats | Many | No repeats within a game round |
 | Offline | Root service worker could mix module versions | Own repo and service worker, every module pinned with a `?v=` hash |
+| Hosting | GitHub Pages at sbmadhav.com/vedic-math/, sharing the design system, fonts and analytics with the main site; no response headers | https://learnvedicmath.com/ on Cloudflare Workers static assets, deployed by CI from `main`, with real response headers and everything served from its own origin (change `learnvedicmath`, [ADR 0004](adr/0004-host-on-cloudflare-workers.md)). The old address hands progress over on the device, in three phases ([ADR 0005](adr/0005-phased-move-and-progress-hand-off.md)). |
 | Trust bugs | 12 open | 12 open (verified in code, see Phase 0) |
-| Analytics | Hash routes not counted | Unchanged |
-| Privacy | Plan required a parent gate before any online feature | Scores from every mode go online under an anonymous Firebase ID with no parent step. **Fix in Phase 0.** |
+| Analytics | Hash routes not counted | On learnvedicmath.com: GoatCounter with its own site code, `count.js` served from this site by `js/analytics.js`, plus Cloudflare Web Analytics for page loads and Core Web Vitals (change `learnvedicmath`, design D11). Events keep their `math/...` names through `window.siteTrack`; no user IDs, never Google Analytics. Route counting is still the Phase 0 item below. |
+| Privacy | Plan required a parent gate before any online feature | The Age answer decides, in every Mode: a Player 13 or over posts under an anonymous identity created at the first post ([ADR 0002](adr/0002-no-identity-until-the-first-post.md)); a Player under 13 uses Device boards only and posts nothing ([ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)). |
 
 **Keep and amplify:** content depth (135 skills, 21 tricks, 29 sutra deep dives, 1,050 katas, 1,000 tower challenges, 14 games with 72 levels each), the two tries, then hint, then worked reveal scaffold, the trick animator, honest history of the sutras, and privacy by design.
 
@@ -52,7 +55,7 @@ All items are S (under a day). Line numbers are as of commit `97181d9`.
 Also in Phase 0:
 
 - **View cleanup contract.** Every view returns `{ destroy }` and gets an `AbortSignal` for each listener, timer and animation-frame loop. This removes the root cause of bugs 1, 2 and 7 instead of patching each one.
-- **Age answer and Parent step for World boards** ([ADR 0001](adr/0001-parent-step-follows-the-age-answer.md)). Ask one neutral age question the first time a Score or weekly Sparks total would be posted. Players under 13, in any Mode, keep everything on the device until a grown-up gives the Parent step (a simple adult check, stored locally). Reason: for under-13 players, a persistent identifier can count as personal information under COPPA. Get a legal read before promoting the site to schools.
+- **Age answer for World boards** ([ADR 0001](adr/0001-parent-step-follows-the-age-answer.md); its Parent step is superseded by [ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)). Ask one neutral age question at the end of the first Ranked round, before a Score or weekly Sparks total could be posted; until it is answered only the Device board is shown. Players under 13, in any Mode, keep everything on the device: Device boards only, no Parent step, because a toggle on the device is not verifiable parental consent under the amended COPPA Rule and a persistent identifier counts as personal information. A Player 13 or over sees a World board after a Show World board tap and gets an identity only at the first post ([ADR 0002](adr/0002-no-identity-until-the-first-post.md)). Get a legal read before any paid plan or promoting the site to schools.
 - **No identity until the first post** ([ADR 0002](adr/0002-no-identity-until-the-first-post.md)). Viewing World boards reads without signing in; the anonymous ID is created only when something is actually posted.
 - **Parent note says exactly what is sent.** Sparks from all play, Practice included, adds up to one weekly total that is posted; Practice Scores never leave the device. Update `parentNote()` and `cloud/README.md` together.
 - **Pro Arena becomes mental arithmetic.** Replace algebra and logs in the Pro Arena sets with 2 × 2 digits, squares, percents, near-base products and division. Extend Ratings to Arena and Practice.
@@ -99,8 +102,8 @@ The game-world direction (Star Quest) and its decisions so far are in `docs/star
 ## Phase 3: grow the boards (only after Gate C)
 
 - Friend boards from challenge links and weekly leagues.
-- Enforce App Check for Firestore and Authentication after a week of clean metrics.
-- Turn on TTL (needs the Blaze plan and a budget alert), then restore the 30-day deletion promise in `parentNote()`.
+- Enforce App Check for Firestore and Authentication after a week of clean metrics. On learnvedicmath.com this comes with the new Firebase project (change `learnvedicmath`, design D14, owner task 1.8).
+- Turn on TTL (needs the Blaze plan and a budget alert), then restore the 30-day deletion promise in `parentNote()`. Same: the new project runs on Blaze with a $5 budget, the rules never list an expired entry, and the copy says "stops being shown after 30 days and is then deleted automatically" (design D14, owner answer L3).
 - A Cloud Function that replays seeds to verify scores, only if cheating is actually seen.
 
 ## Not doing in 2026
@@ -133,8 +136,8 @@ The north star is **weekly magic moments**: a trick learned and then used correc
 ## Privacy and integrity (every phase)
 
 - Generated nicknames only; links and share text carry only the nickname and a score.
-- The Parent step before anything from a Player under 13 goes online, in every Mode (by the Age answer, never by Mode).
-- No user IDs in analytics: cookieless, aggregate events only.
+- Nothing from a Player under 13 goes online, in every Mode (by the Age answer, never by Mode): Device boards only, the Parent step retired ([ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)).
+- No user IDs in analytics: cookieless, aggregate events only (GoatCounter from this site and Cloudflare Web Analytics; PostHog only cookieless, in a later change; never Google Analytics: change `learnvedicmath`, design D11).
 - `parentNote()` and `cloud/README.md` always describe exactly what is sent and kept.
 - Honest Vedic framing on every surface, share cards included. Sanskrit names come from `js/sutras.js` only.
 
@@ -143,6 +146,7 @@ The north star is **weekly magic moments**: a trick learned and then used correc
 - **Stay vanilla JS** with the view cleanup contract (recommended over Preact + htm or a framework rewrite: smallest change, fixes the root cause, keeps the build-free code).
 - **Seed everything with versions** (`v2:daily:2026-10-20`), so editing a generator never silently changes today's challenge. The same seeds power challenge links, the Daily Sutra and the fair Duel.
 - **Every behavior change ships with a test:** node tests in `test/`, Playwright specs in `e2e/`.
+- **Hosting:** Cloudflare Workers static assets at learnvedicmath.com, deployed by CI from `main`, real response headers, nothing loaded from another site before a Player acts (plays a video, opens or posts to a World board) ([ADR 0004](adr/0004-host-on-cloudflare-workers.md)); the move from sbmadhav.com runs in three phases with the Hand-off on the device, no server in any of it ([ADR 0005](adr/0005-phased-move-and-progress-hand-off.md); change `learnvedicmath`).
 
 ## Risks
 
@@ -150,6 +154,6 @@ The north star is **weekly magic moments**: a trick learned and then used correc
 | --- | --- |
 | Kids shrug at beating the calculator | Hook test during Phase 0, before building it |
 | Solo time alongside a full-time role | Phase 0 plus the hook is the minimum (about 3 weeks); Phase 2 social features wait for Gate B |
-| Child privacy on live boards | Age answer and Parent step in Phase 0; legal read before school outreach |
+| Child privacy on live boards | Age answer in Phase 0; under-13 Players use Device boards only ([ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)); legal read before any paid plan or school outreach |
 | Cheating on public boards | Rules already cap scores and rate-limit; enforce App Check; Cloud Function only if needed |
 | AI panel overstates or misses fun | Real-kid sessions gate every phase |
