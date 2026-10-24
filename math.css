@@ -30,7 +30,7 @@ html.motion-paused .md-brand:hover svg, body.calm .md-brand:hover svg, html.moti
 
 .mq-tight { padding-top: 36px; }
 .mq-narrow { max-width: 820px; }
-.mq-hero .md-heading { font-size: clamp(2.1rem, 5vw, 3.3rem); max-width: 16em; text-wrap: balance; }
+.mq-hero .md-heading { font-size: var(--text-display-l-size); max-width: 16em; text-wrap: balance; }
 .hl-word { background: linear-gradient(transparent 62%, color-mix(in srgb, var(--sun) 70%, transparent) 62%); padding: 0 .08em; }
 :root[data-theme="dark"] .hl-word { background: linear-gradient(90deg, var(--coral), var(--teal)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hl-word { background: linear-gradient(90deg, var(--coral), var(--teal)); -webkit-background-clip: text; background-clip: text; color: transparent; } }
@@ -319,18 +319,25 @@ html.motion-paused .mq-grade, body.calm .mq-grade, html.motion-paused .mq-skill,
 .mode-opt .md-btn.mode-try { width: 100%; min-height: 48px; margin: 0; justify-content: center; gap: var(--space-2); font-weight: 800; }
 .mode-try svg.mode-try-go { width: 1.1em; height: 1.1em; }
 .mode-try:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
-.pick-h { margin: 0 0 var(--space-3) !important; }
-.mode-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 8px 0 18px; }
-@media (max-width: 760px) { .mode-pick { grid-template-columns: 1fr; } }
-.mode-card { display: grid; gap: 4px; align-content: start; justify-items: start; text-align: left; padding: 22px; border: 2px solid var(--edge); border-radius: var(--radius-xl); background: var(--card); color: var(--ink); cursor: pointer; box-shadow: var(--shadow-ledge); font: inherit; transition: transform .15s; }
-.mode-card:hover { transform: translateY(-3px) rotate(-.6deg); }
-.mode-card:active { transform: translateY(2px); box-shadow: none; }
-.mode-card b { font: 600 1.6rem/1.1 var(--display); }
-.mode-card small { font-weight: 700; color: var(--ink-muted); }
-.mode-card span:last-child { color: var(--ink-muted); }
-.mode-ic { width: 64px; height: 64px; border-radius: var(--radius-md); display: grid; place-items: center; margin-bottom: 8px; color: var(--on-accent); }
+/* The picker's heading is a title (24px), above the card titles (20px); .mq-h3 (above) sets its size and margin with
+   !important, so these do too */
+.pick-h { font: var(--text-title) !important; letter-spacing: var(--text-title-tracking); margin: 0 0 var(--space-3) !important; }
+.mode-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); margin: 0 0 var(--space-4); }
+.mode-card { display: grid; gap: var(--space-1); align-content: start; justify-items: start; text-align: left; padding: var(--space-5); border: 2px solid var(--edge); border-radius: var(--radius-xl); background: var(--card); color: var(--ink); cursor: pointer; box-shadow: var(--shadow-ledge); font: inherit; transition: transform .15s, box-shadow .15s; }
+.mode-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-ledge-hover); }
+.mode-card:active { transform: translateY(2px); box-shadow: var(--shadow-ledge-press); }
+.mode-card b { font: var(--text-card-title); letter-spacing: var(--text-card-title-tracking); }
+.mode-card small { font: var(--text-label-sm); color: var(--ink-muted); }
+.mode-card span:last-child { text-wrap: pretty; }
+.mode-ic { width: 64px; height: 64px; border-radius: var(--radius-md); display: grid; place-items: center; margin-bottom: var(--space-2); color: var(--on-accent); }
 .mode-card--sun .mode-ic { background: var(--sun); } .mode-card--sky .mode-ic { background: var(--sky); } .mode-card--plum .mode-ic { background: var(--plum); }
-.mode-card[aria-pressed="true"] { outline: 4px solid var(--teal-strong); outline-offset: 2px; }
+.mode-card[aria-pressed="true"] { outline: 4px solid var(--teal-strong); outline-offset: 3px; }
+/* Phones and tablets: one column of row cards, the icon beside the words, so the three take a short screen */
+@media (max-width: 900px) {
+  .mode-pick { grid-template-columns: 1fr; }
+  .mode-card { grid-template-columns: auto 1fr; column-gap: var(--space-4); align-items: center; padding: var(--space-4); }
+  .mode-ic { grid-row: span 3; width: var(--control-height-lg, 48px); height: 48px; margin: 0; }
+}
 .mode-pick--sm .mode-card { padding: 14px; } .mode-pick--sm .mode-card b { font-size: 1.2rem; } .mode-pick--sm .mode-ic { width: 48px; height: 48px; }
 
 /* Home */

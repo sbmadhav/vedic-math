@@ -5,6 +5,7 @@
    For each voice in VOICES it writes ../audio/<voice>/whole/<id>.m4a (one clip per item, the quality ceiling) and
    ../audio/<voice>/stitch.m4a + stitch.json (one sprite: the number clips, scale words and word frames the items
    need, numbers in mid-sentence and end-of-sentence takes), then ../items.json.
+   The audio folder is git-ignored: the committed samples were deleted once the Studio voice shipped (better-voice 5.2).
    Every generated clip is cached in .cache/ (git-ignored), so a stopped run resumes where it left off.
    ALL=1 also makes every number 0 to 99 in both takes (slow on a busy machine; about 210 clips per voice). */
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';

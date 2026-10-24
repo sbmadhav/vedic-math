@@ -12,6 +12,8 @@ tools/voice/voice-*.tar
 tools/voice/voice.tar
 /voice/
 tools/voice/out-test/
+# The listening page's sample clips (made locally by tools/voice/make-clips.mjs); deleted from the repo in better-voice 5.2
+docs/prototypes/voice/audio/
 
 # Build outputs (python3 build.py --dev, --target moved) and the deploy tool's install
 _dev/
