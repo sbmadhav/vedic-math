@@ -1,6 +1,6 @@
 import { test, expect, open } from '../fixtures';
 
-/* star-round spec, Requirement "Where Stars are offered", Scenario "Dojo in Explorer": an Explorer Player opens the
+/* star-round spec, Requirement "Explorer's Dojo offers no Stars", Scenario "Dojo in Explorer": an Explorer Player opens the
    Dojo and sees the Tricks in their seven belt groups, no Star count or "belts earned" line, the line that belts and
    Stars come with Challenger and Pro, and no link to the Sutras page. */
 test.describe('Dojo in Explorer', () => {

@@ -125,8 +125,11 @@ async function twoMisses(page: Page) {
 }
 const noYouTube = (page: Page) => page.route(/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>video</title>' }));
 
-test('two misses offer the hand-matched video once; it plays in the in-page player and closing it returns to the rematch', async ({ page }) => {
+test('two misses offer the hand-matched video once; the player opens on its facade, plays on the press, and closing it returns to the rematch', async ({ page }) => {
   await noYouTube(page);
+  // The facade (change learnvedicmath, design D10): no frame and no YouTube request until play is pressed
+  const yt: string[] = [];
+  page.on('request', r => { if (/(^|\.)(youtube(-nocookie)?\.com|ytimg\.com|google\.com|gstatic\.com|googleapis\.com)$/.test(new URL(r.url()).host)) yt.push(r.url()); });
   await open(page, '#/star/sq5/1');
   await twoMisses(page);
   await expect(page.locator('.star-offer')).toBeVisible();
@@ -134,7 +137,14 @@ test('two misses offer the hand-matched video once; it plays in the in-page play
   await page.locator('#stWatch').click();
   const player = page.locator('dialog.vm-player');
   await expect(player).toBeVisible();
+  await expect(player.locator('.vp-play img')).toHaveAttribute('src', /^\/thumbs\/yt-[\w-]{11}\.webp$/);
+  await expect(player.locator('iframe')).toHaveCount(0);
+  expect(page.frames(), 'no frame before play').toHaveLength(1);
+  expect(yt, 'no YouTube request before play').toEqual([]);
+  await player.locator('.vp-play').click();
   await expect(player.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\//);
+  await expect.poll(() => page.frames().length, 'the YouTube frame after play').toBe(2);
+  await expect.poll(() => yt.length).toBeGreaterThan(0);
   await player.locator('.vp-x').click();
   await expect(player).toBeHidden();
   await expect(tag(page)).toHaveText('Rematch');

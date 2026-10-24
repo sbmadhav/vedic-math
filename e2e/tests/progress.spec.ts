@@ -105,6 +105,7 @@ test('Video learner: closing a video after 5 seconds earns nothing, a minute in 
   const dlg = page.locator('dialog.vm-player');
   await card.click();
   await expect(dlg).toBeVisible();
+  await dlg.locator('.vp-play').click(); // the facade: the minute counts from the press on play
   await page.clock.runFor(5_000);
   await dlg.locator('.vp-x').click();
   await expect(dlg).toBeHidden();
@@ -116,6 +117,7 @@ test('Video learner: closing a video after 5 seconds earns nothing, a minute in 
   expect(await sparks()).toBe(0);
   await card.click();
   await expect(dlg).toBeVisible();
+  await dlg.locator('.vp-play').click();
   await page.clock.runFor(61_000);
   expect((await badges()).watch).toBeTruthy();
   await dlg.locator('.vp-x').click();

@@ -92,6 +92,23 @@ function restore(st, before) {
 }
 
 /* ---------- the page ---------- */
+/* Each Mode's word and the colour of its avatar tile, as js/fx.js MODES has them. fx.js is not imported here: it
+   brings the game's store and voice with it, and this page never runs the game. */
+const MODE = { explorer: ['Explorer', 'sun'], challenger: ['Challenger', 'sky'], pro: ['Pro', 'plum'] };
+/* One Player as a row (design audit): an avatar tile with the Nickname's first letter, the Nickname, and the Mode word
+   with the Sparks. textContent only: nothing from the payload becomes markup. A Player packed from the oldest format
+   has no Mode and reads as the Sparks alone. */
+export function playerRow(p, sparks, doc = document) {
+  const el = (tag, cls, text) => { const e = doc.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+  const [word, color] = Object.hasOwn(MODE, p.mode) ? MODE[p.mode] : [];
+  const avatar = el('span', 'ho-avatar' + (color ? ` ho-avatar--${color}` : ''), p.name.slice(0, 1));
+  avatar.setAttribute('aria-hidden', 'true');
+  const text = el('span');
+  text.append(el('span', 'ho-name', p.name), ' ', el('span', 'ho-meta', `${word ? word + ', ' : ''}${sparks.toLocaleString('en')} Spark${sparks === 1 ? '' : 's'}`));
+  const li = el('li', 'ho-player');
+  li.append(avatar, ' ', text); /* the space keeps the row readable before its styles load; a flex row never shows it */
+  return li;
+}
 const local = {
   get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
   set: (k, v) => localStorage.setItem(k, v),
@@ -121,12 +138,7 @@ async function start() {
   }
   const payload = checked.value, route = f.route;
   const list = $('ho-list');
-  for (const p of payload.players.list) {
-    const li = document.createElement('li');
-    const s = sparksOf(payload.records[p.id]);
-    li.textContent = `${p.name}: ${s.toLocaleString('en')} Spark${s === 1 ? '' : 's'}`;
-    list.append(li);
-  }
+  for (const p of payload.players.list) list.append(playerRow(p, sparksOf(payload.records[p.id])));
   if (payload.dropped && payload.dropped.length) {
     $('ho-dropped').textContent = `Too much to fit in one link, so these stay on the old site: ${payload.dropped.map(p => PART_NAMES[p]).join(', ')}.`;
     $('ho-dropped').hidden = false;
@@ -144,7 +156,10 @@ async function start() {
       // then the fragment returns to the address bar, so a reload after making room tries again.
       track('math/handoff/error', 'Hand-off: could not save');
       try { history.replaceState(null, '', location.pathname + raw); } catch (err) { /* the link still works from the old site */ }
+      // The heading says what happened and takes focus again, as the other states do (design audit)
+      $('ho-title').textContent = 'Progress not saved';
       show('ho-error');
+      $('ho-title').focus();
       return;
     }
     counted();

@@ -33,10 +33,10 @@ function players() {
 export const allPlayers = () => players().list;
 export const player = () => players().list.find(p => p.id === P.active) || P.list[0];
 export function updatePlayer(patch) { Object.assign(player(), patch); put(PKEY, P); emit('player', player()); }
-/* The Mode was guessed by Try a trick (openspec first-visit) and not yet picked by hand. setPlayerMode sets the Mode
-   and marks it a guess only when asked; any other set (a pick, or null to forget the Mode) clears the mark. */
+/* A Mode guess: written only by the Try a trick before try-trick-in-modes (Challenger as a guess), never now. A record
+   that still has one keeps it until setPlayerMode, which every pick (and null, to forget the Mode) goes through, clears it. */
 export const modeGuessed = () => !!player().modeGuess;
-export function setPlayerMode(mode, { guess = false } = {}) { delete player().modeGuess; updatePlayer(guess && mode ? { mode, modeGuess: true } : { mode }); }
+export function setPlayerMode(mode) { delete player().modeGuess; updatePlayer({ mode }); }
 /* Player ids are unique on the device: each one names that Player's World board identity (cloud.appNameFor) */
 const newId = () => { let t = Date.now(), id; do id = 'p' + (t++).toString(36); while (players().list.some(p => p.id === id)); return id; };
 export function addPlayer() { const p = { id: newId(), name: makeName(), avatar: AVATARS[P.list.length % AVATARS.length], mode: null, created: Date.now() }; players().list.push(p); switchPlayer(p.id); return p; }

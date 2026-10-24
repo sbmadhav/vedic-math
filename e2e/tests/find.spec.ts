@@ -83,7 +83,7 @@ test('results come grouped and ranked: a Skill by name, a Sutra in plain letters
   const video = page.locator('#findOut .find-group', { has: page.locator('h2', { hasText: 'Videos' }) }).locator('button.find-hit').first();
   await expect(video).toBeVisible();
   await video.click();
-  await expect(page.locator('dialog.watch-player[open], dialog[open] iframe').first()).toBeVisible();
+  await expect(page.locator('dialog.vm-player[open] .vp-play')).toBeVisible(); // the player, on its facade until play is pressed
   await expect(page).toHaveURL(/#\/find$/);
 });
 

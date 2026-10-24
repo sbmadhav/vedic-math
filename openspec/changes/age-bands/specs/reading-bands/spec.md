@@ -10,8 +10,8 @@ Fit how the app talks and how a Player answers to how well they read, in every M
 On a first visit, before the Mode pick, the system SHALL ask each new Player "What grade are you in?" with big buttons for Pre-K, K, grades 1 to 12 and Grown-up, a way to answer with an age instead (3 to 17 and Grown-up), and Skip. A speaker button SHALL read the question on tap. The question SHALL NOT say what any answer changes.
 
 #### Scenario: New visitor
-- **WHEN** a new visitor opens `/play/`
-- **THEN** the grade question appears before the Mode picker, with Pre-K to 12, Grown-up, "Tell my age instead" and Skip
+- **WHEN** a new visitor opens `/learn/`
+- **THEN** the grade question appears before the Mode picker, and the Mode cards are never painted before it, with Pre-K to 12, Grown-up, "Tell my age instead" and Skip
 
 #### Scenario: Skip
 - **WHEN** a new Player presses Skip
@@ -131,3 +131,14 @@ A Reading band SHALL NOT change any Rating, how Ratings move, question generatio
 #### Scenario: Same questions
 - **WHEN** an Early and a Fluent Player with the same Ratings and seed start the same Practice
 - **THEN** they get the same questions at the same levels, and the same right and wrong answers move their Ratings the same way
+
+### Requirement: Band presentation is drawn in the browser
+The page the server renders SHALL be the same whatever the Player's Grade answer or Reading band, and no page request SHALL carry the Grade answer or the band. What a band changes SHALL be drawn in the browser after start-up, with no hydration warning, and the larger buttons of the Early band SHALL be in place at first paint, so nothing moves when the app starts.
+
+#### Scenario: Cold load
+- **WHEN** an Early Player and a Player with no Grade answer each open `/learn/arena` in a new tab
+- **THEN** the server sends both the same HTML, the request carries no cookie, query or header with the Grade answer or the band, and the console shows no hydration warning
+
+#### Scenario: No jump at start-up
+- **WHEN** an Early Player opens `/learn/` in a new tab
+- **THEN** the page's first paint already has the Early band's button sizes, and no layout shift is measured when the app starts

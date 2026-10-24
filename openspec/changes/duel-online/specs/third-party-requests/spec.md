@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: Turnstile only when a Duel is started
-The Turnstile script and challenge SHALL load from `challenges.cloudflare.com` only after a Player taps Duel a friend, I have a code or Find a player, and never on any other page or view. It SHALL be on the build's list of allowed third-party hosts with that reason.
+The Turnstile script and challenge SHALL load from `challenges.cloudflare.com` only after a Player taps Duel a friend, I have a code or Find a player, and never on any other page or view. It SHALL be on the site's one list of allowed third-party hosts (the policy source that both the static headers and the Worker's headers are built from) with that reason.
 
 #### Scenario: Opening the Duel lobby
 - **WHEN** a Player opens the Duel lobby and looks at it without tapping
