@@ -10,7 +10,8 @@ import type { Page } from '@playwright/test';
      BASE_URL=http://localhost:8124 npx playwright test csp
    A server that sends no policy skips them on http; on https the policy must be there.
    The fixtures still apply: the Firebase SDK is the in-page fake (served at its /vendor/firebase/ URL, so script-src
-   is checked), YouTube is answered with an empty page, and GoatCounter is answered locally. */
+   is checked), YouTube is answered with an empty page, and GoatCounter is answered locally. The World board test skips
+   while the served js/cloud-config.js has FIREBASE = null (needsWorldBoards; boards-off.spec.ts covers that state). */
 
 type Violation = { directive: string; blocked: string; source: string };
 
@@ -67,7 +68,8 @@ test('main routes render with no CSP violation', async ({ page, baseURL }) => {
   await page.locator('#themeBtn').click();
   await expect(page.locator('html')).not.toHaveAttribute('data-theme', /./);
 
-  for (const hash of ['#/learn', '#/dojo', '#/games', '#/game/times-sprint', '#/sutras', '#/me', '#/skill/3-mult', '#/grade/3', '#/star/sq5/1']) {
+  // Home, Learn, a Grade, a Skill, the Dojo, the Arena, Games, a game, the Sutras, Watch, Me and a Star round (the spec's list)
+  for (const hash of ['#/learn', '#/grade/3', '#/skill/3-mult', '#/dojo', '#/arena', '#/games', '#/game/times-sprint', '#/sutras', '#/watch', '#/me', '#/star/sq5/1']) {
     await page.goto(`${APP}${hash}`);
     await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
   }
@@ -116,7 +118,7 @@ test('Arena World boards load the Firebase SDK from this site with no CSP violat
 });
 });
 
-test('the Watch shelf shows thumbnails and plays a video in the page with no CSP violation', async ({ page, baseURL }) => {
+test('the Watch shelf shows thumbnails, the player opens on its facade, and a video plays in the page on play with no CSP violation', async ({ page, baseURL }) => {
   const v = await watchViolations(page);
   await open(page, '#/watch');
   await policy(page, baseURL);
@@ -124,7 +126,16 @@ test('the Watch shelf shows thumbnails and plays a video in the page with no CSP
   await expect(card).toBeVisible();
   await expect.poll(() => card.locator('img').evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0)).toBe(true);
   await card.click();
-  const frame = page.locator('dialog.vm-player iframe');
+  // The facade: this site's thumbnail under the policy's img-src, and no frame yet (change learnvedicmath, design D10)
+  const dlg = page.locator('dialog.vm-player');
+  await expect(dlg).toBeVisible();
+  const thumb = dlg.locator('.vp-play img');
+  await expect(thumb).toHaveAttribute('src', /^\/thumbs\/yt-/);
+  await expect.poll(() => thumb.evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0)).toBe(true);
+  await expect(dlg.locator('iframe')).toHaveCount(0);
+  expect(page.frames().some(f => /youtube/.test(f.url()))).toBe(false);
+  await dlg.locator('.vp-play').click();
+  const frame = dlg.locator('iframe');
   await expect(frame).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\//);
   await expect.poll(() => page.frames().some(f => /youtube-nocookie\.com/.test(f.url()))).toBe(true);
   await expectNoViolations(page, v, '#/watch');

@@ -9,6 +9,7 @@ import { checkOne } from './check.js';
 import { answerText } from './answers.js';
 import { boltHTML, pose } from './bolt.js';
 import { on, later, child, onAbort } from './life.js';
+import { facade } from './watch.js';
 import * as store from './store.js';
 import * as fx from './fx.js';
 import * as AD from './adapt.js';
@@ -308,8 +309,13 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     const close = () => { st = starNext(st).state; ask(); };
     on($('#stWatch'), 'click', () => {
       if (video.open) { video.open($('#stWatch')).then(() => { if (!ps.aborted) close(); }); return; } /* the in-page player; closing it goes back to the round */
-      $('#stVideo').innerHTML = `<iframe src="${esc(video.src)}" title="${esc(video.title || t.title)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+      /* No player of its own: the facade here, and the frame only once play is pressed (watch-shelf spec) */
+      const frame = $('#stVideo'); frame.innerHTML = `<div class="vp-frame">${facade(video.thumb || null)}</div>`;
+      on(frame.querySelector('.vp-play'), 'click', () => {
+        frame.firstElementChild.innerHTML = `<iframe src="${esc(video.src)}" title="${esc(video.title || t.title)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+      }, ps);
       $('#stWatch').remove(); $('#stNoVid').textContent = 'Back to the round';
+      frame.querySelector('.vp-play').focus({ preventScroll: true });
     }, ps);
     on($('#stNoVid'), 'click', close, ps);
     $('#stWatch').focus({ preventScroll: true });
