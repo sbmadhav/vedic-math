@@ -1,6 +1,6 @@
 import { test, expect, open } from '../fixtures';
 
-/* site-header spec, Requirement "Small screens", Scenario "A 390px phone" (openspec change find-and-home-polish). */
+/* site-header spec, Requirement "One header row on a phone", Scenario "A 390px phone" (openspec change find-and-home-polish). */
 for (const scheme of ['light', 'dark'] as const) {
   test.describe(`${scheme} scheme`, () => {
     test.use({ colorScheme: scheme, viewport: { width: 390, height: 844 } });

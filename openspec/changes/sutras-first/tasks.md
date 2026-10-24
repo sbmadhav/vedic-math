@@ -12,7 +12,7 @@ The owner asked for this on 2026-10-21 ("It is important to make the sutras and 
 
 - [x] 2.1 Trick page: the `full` tag replaces the Sutra block, keeping Say it and the Respelling. Verify: `e2e/tests/sutras-first.spec.ts`.
 - [x] 2.2 Dojo cells, the Katas list and each Kata (heading and result). Verify: `e2e/tests/sutras-first.spec.ts`, `e2e/tests/dojo.spec.ts`.
-- [x] 2.3 Star round: the header tag (text), Try a trick's worked example (a `line` tag under its title, so Start the Star stays on screen at 390 by 844) and the end screen (links), the replay names the Sutra. Verify: `e2e/tests/sutras-first.spec.ts`, `test/lifecycle-scan.test.mjs`.
+- [x] 2.3 Star round: the header tag (text), the end screen (a link), the replay names the Sutra; Try a trick's card (`js/try.js`, after `try-trick-in-modes` merged in) carries the `full` tag as a link with its own meaning line. Verify: `e2e/tests/sutras-first.spec.ts`, `e2e/tests/cov/sutra-tags-3.spec.ts`, `test/sutra-tag.test.mjs`, `test/lifecycle-scan.test.mjs`.
 - [x] 2.4 Arena result: "Sutras in this round" for daily and Practice rounds. Verify: `e2e/tests/sutras-first.spec.ts`.
 - [x] 2.5 Watch cards and the player; the Answer checker's page and card. Verify: `e2e/tests/sutras-first.spec.ts`, `e2e/tests/watch.spec.ts`.
 - [x] 2.6 CSS with tokens only, wrapping at 320 px. Verify: axe and no sideways scroll at 320 px in Daybreak and Deep Space (`e2e/tests/sutras-first.spec.ts`).

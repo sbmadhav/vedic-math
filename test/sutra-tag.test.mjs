@@ -46,7 +46,7 @@ test('names and meanings come from the cards; Explorer reads the kid line', () =
 test('kind words by Mode', () => {
   assert.equal(kindWord('case', 'challenger'), 'A special case of');
   assert.equal(kindWord('case', 'pro'), 'Special case of');
-  assert.equal(kindWord('case', 'explorer'), 'Special case of', 'Explorer is told a special case is one too (design decision 2)');
+  assert.equal(kindWord('case', 'explorer'), 'Part of', 'a special case is never called the Sutra itself, in any Mode');
   assert.equal(kindWord('idea', 'pro'), 'Uses the idea of');
   assert.equal(kindWord('idea', 'explorer'), 'Idea from');
   assert.equal(kindWord('sub', 'challenger'), 'Sub-sutra');
@@ -81,10 +81,16 @@ test('full tags carry Say it for the card and the note for Pro only', () => {
   assert.equal(tagHTML('zz'), '');
   assert.equal(trickTagHTML('nope'), '');
   assert.equal(trickSutraName('div9'), 'Nikhilaṃ Navataścaramaṃ Daśataḥ');
+  /* A Try a trick's card says the Sutra in its own words (js/try.js) and keeps the kind word, the name and the link */
+  const own = trickTagHTML('by11', { mode: 'explorer', size: 'full', surface: 'try', mean: 'Its name means straight down and across.' });
+  assert.match(own, /sutra-tag-m">Its name means straight down and across\.</);
+  assert.doesNotMatch(own, /criss-cross/);
+  assert.equal(linkName(own), 'Part of Ūrdhva-Tiryagbhyām Its name means straight down and across. , open its deep dive');
+  assert.match(own, /data-tag="try"/);
 });
 
 test('surfaces are fixed words', () => {
-  assert.deepEqual(SURFACES, ['trick', 'star', 'kata', 'katas', 'dojo', 'arena', 'watch', 'game', 'home']);
+  assert.deepEqual(SURFACES, ['trick', 'star', 'try', 'kata', 'katas', 'dojo', 'arena', 'watch', 'game', 'home']);
   assert.doesNotMatch(tagHTML('s1', { surface: 'javascript:alert(1)' }), /data-tag/);
 });
 

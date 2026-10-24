@@ -25,7 +25,11 @@ A Sutra tag SHALL be shown on every Trick page, in each Trick's cell in the Dojo
 - **THEN** each of the 21 Trick cells has a tag link to its Sutra's Deep dive
 
 ### Requirement: Tags in a Star round
-A Star round SHALL show its Trick's Sutra tag under its title, on Try a trick's worked example, in the replay after a miss, and on the end screen. The tag under the title SHALL be text, not a link, so no tap leaves a round by mistake; the worked example's and the end screen's tags SHALL be links.
+A Star round SHALL show its Trick's Sutra tag under its title, in the replay after a miss, and on the end screen, and a Try a trick's card SHALL show its Trick's Sutra tag as its Sutra block (the kind word, the name, the card's own meaning line, Say it and the Respelling). The tag under the title SHALL be text, not a link, so no tap leaves a round by mistake; the Try a trick card's and the end screen's tags SHALL be links.
+
+#### Scenario: Try a trick's card
+- **WHEN** a new visitor presses Try a trick under the Pro card
+- **THEN** the card's Sutra block is the tag "Sutra Nikhilaṃ Navataścaramaṃ Daśataḥ" with "All from 9 and the last from 10" and Say it, a link to `#/sutras/s2`
 
 #### Scenario: A Star names its Sutra
 - **WHEN** a Challenger Player opens Star 1 of Multiply by 11 and misses the first question

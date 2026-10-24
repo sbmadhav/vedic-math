@@ -36,7 +36,7 @@ Out of scope:
 - The Sky (opt-in) already draws each Sutra as a Constellation; it keeps its labels.
 - The in-app Mode picker's hero, which `try-trick-in-modes` is changing.
 
-Modes and Players affected: every Mode. Explorer gains the Sutras page in its menu, a Sutra card on Home and Sutra tags in its words; Challenger and Pro get the new Home order, tags everywhere and per-Sutra progress. Nothing new is stored: progress per Sutra is computed from records the device already keeps, and none of it is sent. The one new thing sent is the anonymous `math/sutra_tag/<surface>` event above, a fixed word with no identifier, as every other event. Boards, Ratings and Ranked rounds do not change.
+Modes and Players affected: every Mode. Explorer gains the Sutras page in its menu, a Sutra card on Home and Sutra tags in its words; Challenger and Pro get the new Home order, tags everywhere and per-Sutra progress. Nothing changes for what is stored, Boards, Ratings or Ranked rounds; the one new thing sent is the anonymous tag event above, fixed words only.
 
 ## Capabilities
 
@@ -60,4 +60,4 @@ Modes and Players affected: every Mode. Explorer gains the Sutras page in its me
 - New `js/sutra-tag.js` (the Sutra map and the tag) and `js/sutra-progress.js` (pure progress per Sutra); `js/app.js` (Trick page, Dojo, Katas, Kata, Arena review, Watch, game page, Sutras page, Deep dive, Home, the router's Mode-free routes), `js/star.js` (header, worked example, replay, end screen), `js/arena.js` (the round's review list), `js/mental.js` (each Pro question names the Sutra that answers it), `js/sutras.js` (Explorer meanings), `js/gamify.js` (Sutra scholar in every Mode), `js/find.js` (menu order), `play/index.html` (menu order, Sutras in Explorer), `site/index.html` and `theme/site.css` (landing), `math.css` (tokens only).
 - Tests: new `test/sutra-tag.test.mjs`, `test/sutra-progress.test.mjs`; `test/mental.test.mjs`, `test/arena.test.mjs`, `test/find.test.mjs`, `test/gamify.test.mjs`; new `e2e/tests/sutras-first.spec.ts`; updated header, Home, landing, Dojo and first-visit specs; one cov spec per new scenario.
 - Docs: `GLOSSARY.md` (Sutra tag, Sutra way, Sutra progress), `docs/agent/play-experiences.md` if a kit line changes (none expected).
-- Nothing new is kept, and nothing is sent beyond the anonymous tag event (a fixed surface word, no identifier, like every event the analytics spec allows), so `parentNote()`, `cloud/README.md` and the privacy policy do not change (ADRs 0002, 0006 and 0008 hold: progress per Sutra is computed on the device from records that already stay there, and no progress is sent).
+- Nothing new is kept, and the only new event is `math/sutra_tag/<surface>` with a fixed word (no Sutra, Trick, Mode or progress in it), so `parentNote()`, `cloud/README.md` and the privacy policy do not change (ADRs 0002, 0006 and 0008 hold: progress per Sutra is computed on the device from records that already stay there).
