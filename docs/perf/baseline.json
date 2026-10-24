@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 776913,
+  "total": 777312,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -48,14 +48,14 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 43955,
+   "/js/app.js": 44002,
    "/js/arena.js": 5327,
    "/js/bolt.js": 1088,
    "/js/celebrate.js": 3080,
    "/js/check.js": 2946,
    "/js/cloud-config.js": 588,
    "/js/cloud.js": 4437,
-   "/js/explain-lines.js": 2176,
+   "/js/explain-lines.js": 2338,
    "/js/family.js": 946,
    "/js/find.js": 6645,
    "/js/fx.js": 3986,
@@ -119,11 +119,11 @@
    "/js/skills/middle.js": 6258,
    "/js/skills/upper.js": 7871,
    "/js/sky-bg.js": 10972,
-   "/js/sky-scene.js": 6164,
+   "/js/sky-scene.js": 6249,
    "/js/sky-view.js": 4458,
    "/js/sky.js": 3762,
    "/js/slokas.js": 16068,
-   "/js/star.js": 8422,
+   "/js/star.js": 8532,
    "/js/store.js": 5886,
    "/js/sutra-ambience.js": 4169,
    "/js/sutra-details.js": 13423,
@@ -139,8 +139,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 22138,
-   "/play/": 3891,
-   "/sw.js": 6107,
+   "/play/": 3896,
+   "/sw.js": 6097,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -176,9 +176,9 @@
    {
     "date": "2026-10-24",
     "pr": 135,
-    "from": 776226,
-    "to": 776913,
-    "why": "learnvedicmath task 7.2, the YouTube facade: the player opens on this site's thumbnail behind a play button and writes the frame only on play (js/watch.js facade, js/app.js playVideo, the Star round's fallback, math.css .vp-play); measured on main as of #132, so that code is the only growth"
+    "from": 776579,
+    "to": 777312,
+    "why": "learnvedicmath task 7.2, the YouTube facade: the player opens on this site's thumbnail behind a play button and writes the frame only on play (js/watch.js facade, js/app.js playVideo, the Star round's fallback, math.css .vp-play); measured on main as of #122, so that code is the only growth"
    }
   ]
  },

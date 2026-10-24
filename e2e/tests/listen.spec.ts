@@ -222,6 +222,68 @@ test.describe('Listen', () => {
     expect(pressed).toBe('true');
   });
 
+  /* explanation-audio 4.4: today's quests on Home and the round formats on a tower chapter, each a recorded label */
+  test("Home's daily quests are read, each label in turn", async ({ page }) => {
+    await setup(page);
+    await open(page, '#/');
+    const want = await page.evaluate(async () => {
+      const { normalize } = await e2eMod('voice');
+      return [...document.querySelectorAll('.quest-card .q-l')].map(el => normalize(el.innerHTML));
+    });
+    expect(want).toHaveLength(3);
+    await page.getByRole('button', { name: "Listen: today's quests" }).click();
+    await expect.poll(async () => (await vlog(page)).filter(e => e === 'builtin').length).toBe(3);
+    await expect.poll(async () => (await spoken(page)).join(' ')).toBe(want.join(' '));
+  });
+
+  test('a tower chapter reads the round format rules in the studio voice', async ({ page }) => {
+    await needsStudioVoice(page);
+    const st = await setup(page);
+    await open(page, '#/tower/1');
+    const n = await st.recordKey('formats');
+    expect(n).toBe(5);
+    const btn = page.getByRole('button', { name: 'Listen: the round formats' });
+    await btn.click();
+    await expect.poll(async () => (await vlog(page)).filter(e => e === 'studio:line').length, { timeout: 20_000 }).toBe(n);
+    await expect(btn).toHaveAttribute('aria-pressed', 'false', { timeout: 10_000 });
+    expect(await spoken(page)).toEqual([]);
+  });
+
+  test('a tower chapter reads the round format rules with the device voice when none is recorded', async ({ page }) => {
+    await setup(page);
+    await open(page, '#/tower/1');
+    const want = await page.evaluate(async () => {
+      const { normalize } = await e2eMod('voice');
+      const { linesForKey } = await e2eMod('explain-lines');
+      return linesForKey('formats').map((t: string) => normalize(t));
+    });
+    await page.getByRole('button', { name: 'Listen: the round formats' }).click();
+    await expect.poll(async () => (await spoken(page)).join(' ')).toBe(want.join(' ')); // the device voice says a line sentence by sentence
+  });
+
+  /* explanation-audio 4.1: the Star replay's steps, once they are all shown; ending the replay stops it */
+  test('a Star replay reads its steps once they are all shown, and Escape stops it', async ({ page }) => {
+    await setup(page, { endAfter: 4000 });
+    await open(page, '#/star/sq5/1');
+    await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
+    await page.keyboard.type('1'); await page.keyboard.press('Enter');
+    await expect(page.locator('.star-replay')).toBeVisible();
+    const btn = page.getByRole('button', { name: 'Listen: the steps' });
+    await expect(btn).toHaveCount(0); // not while the steps are still appearing
+    await expect(page.locator('#stRGo')).toBeVisible({ timeout: 20_000 });
+    await expect(btn).toBeVisible();
+    const first = (await page.locator('.star-step > p').first().innerText()).trim();
+    await btn.click();
+    await expect(btn).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(async () => (await spoken(page)).join(' ')).toContain(first.split(' ').slice(0, 3).join(' '));
+    const before = (await spoken(page)).length;
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#stMain .star-tag')).toHaveText('Rematch');
+    await page.waitForTimeout(5000); // past the first sentence's end: the next step must not start
+    expect((await spoken(page)).length).toBe(before);
+    expect((await events(page)).filter(e => e === 'math/listen/explanation')).toHaveLength(1);
+  });
+
   test('a tour step has its own Listen button', async ({ page }) => {
     await setup(page, { endAfter: 4000 });
     await open(page, '#/guide');

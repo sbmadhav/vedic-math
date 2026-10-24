@@ -105,6 +105,8 @@ export const STORIES = [
 
 /* What the background shows, for "What is in the background?" (music panel) and the history page */
 export const BG_NOTES = [NOTES.devanagari, NOTES.sulba, NOTES.falcon, NOTES.powers, NOTES.meru, NOTES.brahmi, NOTES.nakshatras];
+/* The Sutras page's line before them ("Older roots") */
+export const ROOTS_INTRO = 'The 1965 sutras stand on a much older tradition of Indian mathematics. The moving background draws real pieces of it.';
 
 /* ---------- Levels: the layer config ----------
    fps: frame cap. stars: background stars per 100,000 square px. constellations: how many (phone, wide), their height
