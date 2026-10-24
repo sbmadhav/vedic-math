@@ -1,5 +1,5 @@
 /* Star rounds (openspec star-round): the pools each Star deals from, the kinds of question, Dares, and the round's
-   state machine (js/star.js). Run: node --test test/ */
+   state machine (js/star.js). Run: pnpm test */
 import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { TRICKS } from '../js/vedic.js';
