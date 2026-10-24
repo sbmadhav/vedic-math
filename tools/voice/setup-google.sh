@@ -256,6 +256,7 @@ pause "Done? Press Enter."
 stage "Record the 4 sample voices"
 say "This records the 12 test lines in Aoede, Leda, Kore and Achernar: about 6,000"
 say "characters, inside the free 1 million a month (list price would be about 18 cents)."
+say "The clips stay on this machine: docs/prototypes/voice/audio/ is git-ignored."
 if confirm "Record now?"; then
   GOOGLE_TTS_TOKEN="$(gcloud auth print-access-token)" GOOGLE_CLOUD_PROJECT="$GCP_PROJECT" \
     ONLY=chirp3-aoede,chirp3-leda,chirp3-kore,chirp3-achernar node make-clips.mjs \
