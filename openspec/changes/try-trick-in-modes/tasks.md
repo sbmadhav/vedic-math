@@ -18,7 +18,7 @@ Owner asked for this on 2026-10-21 (approval for implementation, see `proposal.m
 - [x] 3.1 The picker: no hero button, "Pick who is playing", a Try a trick under each card named "Try a trick as <Mode>", picking that Mode and opening `#/try`. Verify: `try-trick.spec.ts` "the Mode picker"; `e2e/tests/first-visit.spec.ts` "the picker"; `e2e/tests/hero.spec.ts` "app home (the Mode picker)"; `test/brand.test.mjs`.
 - [x] 3.2 Home's Try a trick card after the doors (after the tiles in Explorer), not primary, until finished; counted as a Try a trick pressed. Verify: `try-trick.spec.ts` "Home shows the Try a trick card ..." and the Pro Home test; `first-visit.spec.ts` "Home: three doors first" unchanged and passing.
 - [x] 3.3 No Mode guess written: `fx.setMode(m)`, `store.setPlayerMode(m)`; an old guess still read and cleared by a pick. Verify: `test/store.test.mjs`; `e2e/tests/cov/first-visit-1.spec.ts` (Home after the trial, Picking clears the guess, Try a trick sets no guess).
-- [x] 3.4 `metrics.tryStart(mode)`: `math/try/start` then `math/try/mode/<mode>` (a Mode word only); the `try` answer area. Verify: `test/metrics.test.mjs`; `e2e/tests/cov/analytics-11.spec.ts`, new `e2e/tests/cov/analytics-12.spec.ts`.
+- [x] 3.4 `metrics.tryStart(mode)`: `math/try/start` then `math/try/mode/<mode>` (a Mode word only); the `try` answer area. Verify: `test/metrics.test.mjs`; `e2e/tests/cov/analytics-11.spec.ts`, new `e2e/tests/cov/analytics-13.spec.ts`.
 - [x] 3.5 Back home from a Star opened from the end of a Try a trick. Verify: `try-trick.spec.ts` "Play Star 1 from the end card"; `cov/first-visit-1.spec.ts` "After the trial".
 
 ## 4. Retire the trial Star
