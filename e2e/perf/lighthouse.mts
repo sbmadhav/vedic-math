@@ -1,8 +1,13 @@
 /* Lighthouse load timings of the game (openspec change react-typescript, performance-budget spec, task 0.4; the
    preview gate of task 1.8 reads the same pages and settings from tools/lighthouserc.json).
 
-   Run from e2e/: node perf/lighthouse.mts [base URL] [--runs N] [--json <file>]
+   Run from e2e/: node perf/lighthouse.mts [base URL] [--runs N] [--json <file>] [--production <url> --production-json <file>]
    (base URL defaults to BASE_URL or https://learnvedicmath.com; Node 22.19 or newer runs the TypeScript as it is).
+   With --production (the preview's perf job; openspec change perf-same-runner) production is measured in the same job
+   as a reference: every page on each host in turn with the same runs, settings and fixed server latency, the hosts'
+   order swapping on each page (perf/interleave.mts), and production's results written to their own file. Both hosts
+   then see the same runner, so its CPU speed, which moves blocking time about two to one between GitHub's runners,
+   cancels in tools/perf-compare.ts (docs/perf/baseline.md, "The same-runner reference").
 
    Lighthouse's mobile preset (its default): simulated slow 4G, 4x CPU slowdown, a Moto G Power sized screen,
    performance only, the median of each metric over N runs (5). Chromium is Playwright's, so no other browser install
@@ -22,6 +27,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:net';
 import { lanternData } from './lantern.mts';
+import { interleave } from './interleave.mts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const RC = JSON.parse(readFileSync(join(HERE, '..', '..', 'tools', 'lighthouserc.json'), 'utf8')) as {
@@ -169,21 +175,30 @@ async function main(argv: string[]) {
   const runs = runOption === undefined ? RC.ci.collect.numberOfRuns : Number(runOption);
   if (!Number.isSafeInteger(runs) || runs < 1) throw new Error('--runs must be a positive integer');
   const json = opt('--json');
+  const production = opt('--production')?.replace(/\/$/, '');
+  const productionJson = opt('--production-json');
+  if ((production === undefined) !== (productionJson === undefined)) throw new Error('--production <url> and --production-json <file> go together');
   const base = (args[0] || process.env.BASE_URL || 'https://learnvedicmath.com').replace(/\/$/, '');
-  const result: Record<string, { path: string; visit: string; median: Metrics; runs: Metrics[] }> = {};
-  for (const p of RC.pages) {
-    const all = await page(base, p.path, p.visit, runs);
+  type Site = { base: string; json?: string; label: string; pages: Record<string, { path: string; visit: string; median: Metrics; runs: Metrics[] }> };
+  const sites: Site[] = [{ base, json, label: 'preview', pages: {} }];
+  if (production) sites.push({ base: production, json: productionJson, label: 'production', pages: {} });
+  // Each page on every site in turn (both on this runner, minutes apart), the sites' order swapping page by page
+  for (const { page: p, site } of interleave(RC.pages, sites)) {
+    const all = await page(site.base, p.path, p.visit, runs);
     const med = {} as Metrics;
     for (const k of METRICS) med[k] = round(k, median(all.map(r => r[k])));
-    result[p.name] = { path: p.path, visit: p.visit, median: med, runs: all };
-    console.log(`${p.name.padEnd(16)} ${p.visit.padEnd(9)} ${METRICS.map(k => `${k} ${med[k]}`).join('  ')}`);
+    site.pages[p.name] = { path: p.path, visit: p.visit, median: med, runs: all };
+    console.log(`${production ? site.label.padEnd(11) : ''}${p.name.padEnd(16)} ${p.visit.padEnd(9)} ${METRICS.map(k => `${k} ${med[k]}`).join('  ')}`);
   }
-  // The machine's speed over the whole job: the median benchmarkIndex of every run of every page
-  const benchmarkIndex = Math.round(median(Object.values(result).flatMap(p => p.runs.map(r => r.bench))));
-  const out = { base, date: new Date().toISOString(), runs, lighthouse: (await import('lighthouse/package.json', { with: { type: 'json' } })).default.version, benchmarkIndex, pages: result };
-  if (json) {
-    mkdirSync(dirname(json), { recursive: true });
-    writeFileSync(json, JSON.stringify(out, null, 1) + '\n');
+  const version = (await import('lighthouse/package.json', { with: { type: 'json' } })).default.version;
+  for (const site of sites) {
+    // The machine's speed over the whole job: the median benchmarkIndex of every run of every page on this site
+    const benchmarkIndex = Math.round(median(Object.values(site.pages).flatMap(p => p.runs.map(r => r.bench))));
+    const out = { base: site.base, date: new Date().toISOString(), runs, lighthouse: version, benchmarkIndex, pages: site.pages };
+    if (site.json) {
+      mkdirSync(dirname(site.json), { recursive: true });
+      writeFileSync(site.json, JSON.stringify(out, null, 1) + '\n');
+    }
   }
 }
 

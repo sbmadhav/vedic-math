@@ -157,12 +157,18 @@ jobs:
           path: e2e/playwright-report
           retention-days: 14
 
-  # The load and interaction gate (openspec change react-typescript, performance-budget spec, task 1.8): the pages of
-  # tools/lighthouserc.json through Lighthouse's mobile preset and e2e/perf/interactions.ts (chromium, 4x CPU), each
-  # median compared with docs/perf/baseline.json by tools/perf-compare.ts, which fails beyond the tolerances; first
-  # contentful paint is reported with its limit, not gated, until the server-rendered shell (openspec change
-  # perf-gate-fcp). The table is posted on the pull request (one comment, updated on each push). The first-load byte
-  # gate is in build.py.
+  # The load and interaction gate (openspec change react-typescript, performance-budget spec, task 1.8; openspec changes
+  # perf-gate-fcp and perf-same-runner): the pages of tools/lighthouserc.json through Lighthouse's mobile preset and
+  # e2e/perf/interactions.ts (chromium, 4x CPU), measured on the preview and on production in the same job, page by
+  # page, so both see the same runner. tools/perf-compare.ts counts each limit from production's median of this job, the
+  # regression the pull request adds: GitHub's runners differ about two to one in CPU speed and blocking time scales
+  # with it, so against the baseline alone a slow runner failed pull requests that changed nothing (docs/perf/baseline.md,
+  # "The same-runner reference"). It fails beyond the tolerances; largest contentful paint stays held to the baseline,
+  # as before, since the hosts differ on the network chain (a workers.dev preview reads over production on a cold first
+  # visit with the same bytes), and first contentful paint is reported, not gated, until the server-rendered shell
+  # (openspec change perf-gate-fcp).
+  # The table, with the baseline for information, is posted on the pull request (one comment, updated on each push).
+  # The first-load byte gate is in build.py.
   perf:
     needs: preview
     # Runs whenever a preview was uploaded, even when a Playwright test failed: the two checks report on their own
@@ -174,6 +180,8 @@ jobs:
       pull-requests: write
     env:
       BASE_URL: ${{ needs.preview.outputs.url }}
+      PRODUCTION_URL: https://learnvedicmath.com
+      E2E_SKIP_COV: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -190,30 +198,47 @@ jobs:
           pnpm install --frozen-lockfile --filter e2e
           pnpm exec playwright install --with-deps chromium
 
-      - name: Lighthouse (mobile preset, 5 runs a page)
+      - name: Lighthouse (mobile preset, 5 runs a page), the preview and production page by page
         working-directory: e2e
-        run: node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json
+        run: node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json --production "$PRODUCTION_URL" --production-json perf/results/production/lighthouse.json
 
-      - name: Interaction timings (4x CPU, 5 runs)
+      - name: Interaction timings (4x CPU, 5 runs), production then the preview
         working-directory: e2e
-        env:
-          E2E_SKIP_COV: "1"
-        run: pnpm exec playwright test -c perf/playwright.config.ts
+        run: |
+          mkdir -p perf/results/production
+          BASE_URL="$PRODUCTION_URL" pnpm exec playwright test -c perf/playwright.config.ts
+          cp perf/results/interactions.json perf/results/production/interactions.json
+          pnpm exec playwright test -c perf/playwright.config.ts
 
-      # A runner's load can move a Lighthouse median by a few hundred ms (docs/perf/baseline.md), more than the 100 ms
-      # tolerance, so a miss is measured once more and only a miss in both runs fails the pull request
-      - name: Compare with the baseline
+      # A runner's load can still move a Lighthouse median by a few hundred ms within a job (docs/perf/baseline.md), more
+      # than the 100 ms tolerance, so a miss is measured once more, only the kind that missed (the Lighthouse pages or
+      # the interactions, on both hosts), and only a miss in both runs fails the pull request. The first run's results
+      # stay in the artifact under results/first.
+      - name: Compare with production and the baseline
         id: compare
         run: |
           set +e
-          node tools/perf-compare.ts docs/perf/baseline.json e2e/perf/results/lighthouse.json e2e/perf/results/interactions.json --out perf-table.md
-          code=$?
+          compare() {
+            node tools/perf-compare.ts docs/perf/baseline.json e2e/perf/results/lighthouse.json e2e/perf/results/interactions.json \
+              --production e2e/perf/results/production/lighthouse.json e2e/perf/results/production/interactions.json --out perf-table.md
+          }
+          compare; code=$?
           if [ "$code" != 0 ]; then
             echo "::warning::a median missed its tolerance; measuring again to confirm"
-            mkdir -p e2e/perf/first && cp e2e/perf/results/*.json e2e/perf/first/
-            (cd e2e && node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json && pnpm exec playwright test -c perf/playwright.config.ts)
-            node tools/perf-compare.ts docs/perf/baseline.json e2e/perf/results/lighthouse.json e2e/perf/results/interactions.json --out perf-table.md
-            code=$?
+            mkdir -p e2e/perf/results/first/production
+            cp e2e/perf/results/*.json e2e/perf/results/first/ && cp e2e/perf/results/production/*.json e2e/perf/results/first/production/
+            cd e2e
+            # An over row of a Lighthouse metric (any but inp and visible) re-measures the pages; an over interaction row the interactions
+            if grep '\*\*over\*\*' ../perf-table.md | grep -qvE '\| (inp|visible) \|'; then
+              node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json --production "$PRODUCTION_URL" --production-json perf/results/production/lighthouse.json
+            fi
+            if grep '\*\*over\*\*' ../perf-table.md | grep -qE '\| (inp|visible) \|'; then
+              BASE_URL="$PRODUCTION_URL" pnpm exec playwright test -c perf/playwright.config.ts \
+                && cp perf/results/interactions.json perf/results/production/interactions.json \
+                && pnpm exec playwright test -c perf/playwright.config.ts
+            fi
+            cd ..
+            compare; code=$?
           fi
           echo "code=$code" >> "$GITHUB_OUTPUT"
           cat perf-table.md >> "$GITHUB_STEP_SUMMARY"
@@ -226,7 +251,7 @@ jobs:
           SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           marker='<!-- perf-table -->'
-          body=$(printf '%s\nPerformance of %s against docs/perf/baseline.json (median of 5 runs, the preview on workers.dev):\n\n%s\n\n---\n_Posted by the preview workflow (perf job)_' "$marker" "$SHA" "$(cat perf-table.md)")
+          body=$(printf '%s\nPerformance of %s: the preview against production, both measured in this job page by page on one runner (median of 5 runs each), with docs/perf/baseline.json for information:\n\n%s\n\n---\n_Posted by the preview workflow (perf job)_' "$marker" "$SHA" "$(cat perf-table.md)")
           id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate --jq ".[] | select(.body | startswith(\"$marker\")) | .id" | tail -1)
           if [ -n "$id" ]; then gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -f body="$body" >/dev/null
           else gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "$body"; fi
@@ -234,7 +259,7 @@ jobs:
       - name: Fail beyond the tolerances
         if: steps.compare.outputs.code != '0'
         run: |
-          echo "::error::a load or interaction median is beyond its tolerance (see the table above)"
+          echo "::error::a load or interaction median is beyond its tolerance against production measured in this job (see the table above)"
           exit 1
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
