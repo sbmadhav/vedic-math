@@ -13,6 +13,17 @@ Each explanation block SHALL have a Listen button that reads it aloud: a Skill p
 - **WHEN** an Explorer Player presses Listen on a Guide section
 - **THEN** the Explorer wording of that section is read
 
+### Requirement: Star replays, quests and round formats can be heard
+A Star replay SHALL have a Listen button once every step is shown, reading the steps in order; ending the replay SHALL stop it. The Daily quests card SHALL have one reading today's quest labels, and the Challenge tower chapter one reading the round format rules.
+
+#### Scenario: A Star replay
+- **WHEN** a Player misses a Star question, the replay has shown every step, and the Player presses Listen
+- **THEN** the steps are read in order, and skipping the replay stops it
+
+#### Scenario: Today's quests
+- **WHEN** a Player presses Listen on the Daily quests card
+- **THEN** today's three quest labels are read in order
+
 ### Requirement: Listen uses the studio voice
 A Listen button SHALL read each line with the read-aloud voice order: the natural voice when the Player turned it on, else the whole studio recording, else studio clips, else this device's voice. Every explanation line with fixed words SHALL be in the studio recording list, so it plays whole once recorded.
 
