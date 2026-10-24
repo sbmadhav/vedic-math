@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 775127,
+  "total": 775619,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -64,7 +64,7 @@
    "/js/guide-art.js": 2484,
    "/js/guide.js": 10362,
    "/js/handoff-schema.js": 6443,
-   "/js/handoff.js": 3129,
+   "/js/handoff.js": 3637,
    "/js/install-rules.js": 2226,
    "/js/install.js": 7143,
    "/js/landing-sky.js": 261,
@@ -139,8 +139,8 @@
    "/js/watch.js": 2065,
    "/manifest.webmanifest": 605,
    "/math.css": 21804,
-   "/play/": 3901,
-   "/sw.js": 6132,
+   "/play/": 3899,
+   "/sw.js": 6118,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -172,13 +172,6 @@
     "from": 758466,
     "to": 758499,
     "why": "react-typescript task 1.7: the lint fixes in sw.ts (optional catch bindings, no non-null assertions); no new file"
-   },
-   {
-    "date": "2026-10-21",
-    "pr": "install-app",
-    "from": 758499,
-    "to": 775127,
-    "why": "install-app: the Install guide and nudge (js/install.js, with the steps for twelve kinds of browser), their rules (js/install-rules.js), the Prompt slot (js/prompt-slot.js), the 192 px maskable icon the manifest now lists (precached with every manifest icon), and the page, manifest, app.js, metrics.js and math.css lines that use them; loading the guide on demand would not lower it, since the build precaches every module. Measured on the tree merged with main at #130 (whose js/sky-bg.js is 7 bytes larger than the 758,499 baseline knew)"
    }
   ]
  },
