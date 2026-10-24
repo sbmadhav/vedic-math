@@ -58,8 +58,8 @@ test('the app home hero draws the same Nikhilam Family as the landing page, and 
   const picker = app.slice(app.indexOf('function modePicker('), app.indexOf('function afterPick('));
   assert.doesNotMatch(picker, /icon\('bolt'\)|boltHTML/, 'no Bolt in the app home hero');
   const css = src('math.css');
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{ \.lv-family \*, \.mq-try::after, \.mq-try svg \{ animation: none !important; \} \}/);
-  assert.match(css, /html\.motion-paused \.lv-family \*, body\.calm \.lv-family \*, html\.motion-paused \.mq-try::after, body\.calm \.mq-try::after/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{ \.lv-family \* \{ animation: none !important; \} \}/);
+  assert.match(css, /html\.motion-paused \.lv-family \*, body\.calm \.lv-family \* \{ animation: none !important; \}/);
 });
 
 test('every grown-up page is free of Bolt art: Bolt stays inside the game', () => {
