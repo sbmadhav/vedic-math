@@ -1,13 +1,20 @@
 /* The load and interaction gate (openspec change react-typescript, performance-budget spec "Load and interaction times
-   do not regress", task 1.8). Compares a run of e2e/perf/lighthouse.mts and e2e/perf/interactions.ts with the
-   baseline in docs/perf/baseline.json, prints a Markdown table with both numbers, and fails beyond the tolerances:
-   first or largest contentful paint more than 100 ms slower, total blocking time more than 25 ms longer, layout shift
-   above the larger of the baseline and 0.1, any interaction timing more than 20 ms slower (or more than the noise the
-   baseline records for that timing, when it records one: interactions.noise).
+   do not regress", task 1.8; openspec change perf-gate-fcp). Compares a run of e2e/perf/lighthouse.mts and
+   e2e/perf/interactions.ts with the baseline in docs/perf/baseline.json, prints a Markdown table with both numbers, and
+   fails beyond the tolerances: largest contentful paint more than 100 ms slower, total blocking time more than 25 ms
+   longer, layout shift above the larger of the baseline and 0.1, any interaction timing more than 20 ms slower (or more
+   than the noise the baseline records for that timing, when it records one: interactions.noise).
+
+   First contentful paint is reported, not gated (owner, 2026-10-23): its row keeps the baseline, the measurement and
+   the 100 ms limit it is held to again from the server-rendered shell on (react-typescript task 2.7 takes 'fcp' out of
+   REPORTED), and never counts as over. On today's page Lighthouse's simulated first paint races the module graph, so
+   the line misses on either host with the code unchanged (docs/perf/baseline.md, "First contentful paint races the
+   module graph").
 
    Usage: node tools/perf-compare.ts <baseline.json> <lighthouse.json> <interactions.json> [--out table.md]
-   Exit code 1 when a median misses its tolerance. Time to first byte, the server's response time and Speed Index are
-   shown for information. */
+   Exit code 1 when a gated median misses its tolerance. Time to first byte, the server's response time and Speed Index
+   are shown for information. The runner's CPU speed (Lighthouse's benchmarkIndex, when the run recorded it) is printed
+   under the table: blocking time scales with it (docs/perf/baseline.md, "The Deep dive's blocking time"). */
 import { readFileSync, writeFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -17,7 +24,9 @@ export type PerfBaseline = {
   lighthouse: { pages: Record<string, { path: string; visit: string; median: Lh }> };
   interactions: { interactions: Record<string, Ix>; noise?: Record<string, Partial<Ix> | string> };
 };
-export type Row = { what: string; metric: string; base: number; now: number; limit: number | null; ok: boolean };
+/** A run of e2e/perf/lighthouse.mts: the medians per page, and the machine's benchmarkIndex when the run recorded it */
+export type LhRun = { pages: Record<string, { median: Lh }>; benchmarkIndex?: number };
+export type Row = { what: string; metric: string; base: number; now: number; limit: number | null; ok: boolean; reported: boolean };
 
 /* The tolerance of each gated metric: the largest value that still passes, given the baseline's */
 export const LIMITS: Partial<Record<keyof Lh | keyof Ix, (base: number) => number>> = {
@@ -29,7 +38,10 @@ export const LIMITS: Partial<Record<keyof Lh | keyof Ix, (base: number) => numbe
   visible: b => b + 20,
 };
 
-export function compare(base: PerfBaseline, lh: { pages: Record<string, { median: Lh }> }, ix: { interactions: Record<string, Ix> }): Row[] {
+/* Metrics shown with their limit but never over: first contentful paint until the server-rendered shell (above) */
+export const REPORTED: ReadonlySet<string> = new Set(['fcp']);
+
+export function compare(base: PerfBaseline, lh: LhRun, ix: { interactions: Record<string, Ix> }): Row[] {
   const rows: Row[] = [];
   const noise = base.interactions.noise ?? {};
   const allowance = (what: string, metric: keyof Lh | keyof Ix) => {
@@ -38,13 +50,14 @@ export function compare(base: PerfBaseline, lh: { pages: Record<string, { median
   };
   const add = (what: string, metric: keyof Lh | keyof Ix, b: number | undefined, n: number | undefined) => {
     if (b === undefined || n === undefined) {
-      rows.push({ what, metric, base: b ?? NaN, now: n ?? NaN, limit: null, ok: false });
+      rows.push({ what, metric, base: b ?? NaN, now: n ?? NaN, limit: null, ok: false, reported: false });
       return;
     }
     const lim = LIMITS[metric];
     const extra = allowance(what, metric);
     const limit = lim ? Math.max(lim(b), extra === undefined ? -Infinity : b + extra) : null;
-    rows.push({ what, metric, base: b, now: n, limit, ok: limit === null || n <= limit });
+    const reported = REPORTED.has(metric);
+    rows.push({ what, metric, base: b, now: n, limit, ok: reported || limit === null || n <= limit, reported });
   };
   for (const [page, { median }] of Object.entries(base.lighthouse.pages)) {
     const now = lh.pages[page]?.median;
@@ -61,8 +74,16 @@ const fmt = (metric: string, v: number) => (Number.isNaN(v) ? 'missing' : metric
 
 export function table(rows: Row[]): string {
   const lines = ['| Page or interaction | Metric | Baseline | Now | Limit | |', '|---|---|---|---|---|---|'];
-  for (const r of rows) lines.push(`| ${r.what} | ${r.metric} | ${fmt(r.metric, r.base)} | ${fmt(r.metric, r.now)} | ${r.limit === null ? 'info' : fmt(r.metric, r.limit)} | ${r.ok ? 'ok' : '**over**'} |`);
+  for (const r of rows) lines.push(`| ${r.what} | ${r.metric} | ${fmt(r.metric, r.base)} | ${fmt(r.metric, r.now)} | ${r.limit === null ? 'info' : fmt(r.metric, r.limit)} | ${r.reported ? 'reported' : r.ok ? 'ok' : '**over**'} |`);
   return lines.join('\n');
+}
+
+/** The lines under the table: what is reported rather than gated, and the runner's speed when the run recorded it */
+export function notes(rows: Row[], lh: Pick<LhRun, 'benchmarkIndex'>): string[] {
+  const out: string[] = [];
+  if (rows.some(r => r.reported)) out.push('First contentful paint is reported, not gated, until the server-rendered shell (react-typescript task 2.7): on today\'s page Lighthouse\'s simulated first paint races the module graph (docs/perf/baseline.md). Its rows show the 100 ms limit it will be held to again.');
+  if (typeof lh.benchmarkIndex === 'number') out.push(`Runner CPU speed: Lighthouse benchmarkIndex ${Math.round(lh.benchmarkIndex)} (higher is faster). Blocking time scales with it (docs/perf/baseline.md, "The Deep dive's blocking time").`);
+  return out;
 }
 
 function main(argv: string[]) {
@@ -72,9 +93,10 @@ function main(argv: string[]) {
   const [basePath, lhPath, ixPath] = args;
   if (!basePath || !lhPath || !ixPath) throw new Error('usage: node tools/perf-compare.ts <baseline.json> <lighthouse.json> <interactions.json> [--out table.md]');
   const read = (p: string) => JSON.parse(readFileSync(p, 'utf8'));
-  const rows = compare(read(basePath) as PerfBaseline, read(lhPath), read(ixPath));
+  const lh = read(lhPath) as LhRun;
+  const rows = compare(read(basePath) as PerfBaseline, lh, read(ixPath));
   const over = rows.filter(r => !r.ok);
-  const md = `${over.length ? `**${over.length} over budget**` : 'Every median is within its tolerance.'}\n\n${table(rows)}\n`;
+  const md = `${over.length ? `**${over.length} over budget**` : 'Every gated median is within its tolerance.'}\n\n${table(rows)}\n${notes(rows, lh).map(n => `\n${n}\n`).join('')}`;
   console.log(md);
   if (out) writeFileSync(out, md);
   if (over.length) process.exitCode = 1;
