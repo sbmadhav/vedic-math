@@ -1609,35 +1609,15 @@ function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw
   /* The Install guide's card (openspec change install-app): drawn above when the module is here, else put in its place once it is */
   withInstall(m => { const c = $('#meInstallCard'); if (c) c.outerHTML = m.meCardHTML(); const mi = $('#meInstall'); if (mi) mi.onclick = () => m.openGuide('me'); });
 
-  /* Backup: the code is every Player on this device (store.exportData); Restore from code checks a pasted code, shows
-     what it holds and writes only after a choice, as the hand-off page does (progress-handoff spec), then reloads so
-     every setting and Player is read afresh. The buttons are wired once; pending is the code awaiting a choice. */
+  /* Backup (js/backup.js, loaded after this view has drawn, so a first load never waits for it): every button waits
+     for the module, then runs its handler; the buttons are wired once */
   const listen = (el, fn) => { if (ctx.signal) on(el, 'click', fn, ctx.signal); else el.onclick = fn; };
-  let pending = null;
-  store.loadBackup().catch(() => {}); /* the hand-off modules, after this view has drawn; each button waits for them */
-  const ready = async () => { try { await store.loadBackup(); return true; } catch (e) { msg('The backup tools could not load. Check the connection, then try again.'); return false; } };
-  listen($('#pExport'), async () => {
-    if (!(await ready())) return;
-    let code;
-    try { code = btoa(unescape(encodeURIComponent(store.exportData()))); } catch (e) { msg(e.message === 'too many Players' ? `One backup code holds up to ${store.MAX_PLAYERS} Players, and this device has more. Remove a Player you no longer need, then try again.` : 'This progress is too big for one backup code. Nothing was copied.'); return; }
-    try { await navigator.clipboard.writeText(code); msg('Backup code copied: every Player on this device. Paste it somewhere safe.'); } catch (e) { prompt('Copy this backup code:', code); }
-  });
-  listen($('#pImport'), async () => {
-    if (!(await ready())) return;
-    const code = prompt('Paste your backup code:'); if (!code) return;
-    let text, payload;
-    try { text = decodeURIComponent(escape(atob(code.replace(/\s/g, '')))); payload = store.readBackup(text); } catch (e) { pending = null; $('#pOffer').hidden = true; msg('That code could not be used. Check that it was copied in full.'); return; }
-    const list = $('#pOfferList'); list.textContent = '';
-    for (const q of payload.players.list) { const li = document.createElement('li'); const r = payload.records[q.id] || {}, s = Math.floor(r.sparks || r.xp || 0); /* a code from before Sparks holds XP, which becomes the same Sparks */ li.textContent = `${q.name}: ${s.toLocaleString('en')} Spark${s === 1 ? '' : 's'}`; list.append(li); }
-    const here = store.restoreOffer(payload);
-    $('#pOfferFresh').hidden = here.has; $('#pOfferHas').hidden = !here.has; $('#pOfferHere').hidden = !here.has;
-    $('#pOfferHere span').textContent = here.names.join(', '); $('#pBoth').hidden = !here.both;
-    pending = text; msg(''); $('#pOffer').hidden = false; $('#pOfferH').focus();
-  });
-  const choose = choice => { const text = pending; if (!text) return; pending = null; $('#pOffer').hidden = true; try { store.importData(text, choice); } catch (e) { msg('This browser would not let us save the progress, so nothing was changed. Make some room in its storage, then try again.'); return; } location.reload(); };
-  const keep = () => { pending = null; $('#pOffer').hidden = true; msg('Nothing was changed.'); };
-  listen($('#pBring'), () => choose('replace')); listen($('#pUse'), () => choose('replace')); listen($('#pBoth'), () => choose('both'));
-  listen($('#pNotNow'), keep); listen($('#pKeep'), keep);
+  let bk = null;
+  store.loadBackup().catch(() => {});
+  const backup = fn => async () => { if (!bk) { try { bk = (await store.loadBackup()).meBackup({ $, msg }); } catch (e) { msg('The backup tools could not load. Check the connection, then try again.'); return; } } fn(bk); };
+  listen($('#pExport'), backup(b => b.copy())); listen($('#pImport'), backup(b => b.restore()));
+  listen($('#pBring'), backup(b => b.choose('replace'))); listen($('#pUse'), backup(b => b.choose('replace'))); listen($('#pBoth'), backup(b => b.choose('both')));
+  listen($('#pNotNow'), backup(b => b.keep())); listen($('#pKeep'), backup(b => b.keep()));
   $('#pReset').onclick = () => { if (confirm('Reset all progress for this player?')) { store.reset(); meView(ctx); msg('Progress reset.'); } };
 }
 

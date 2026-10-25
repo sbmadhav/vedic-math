@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 784288,
+  "total": 785198,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -48,8 +48,9 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 45245,
+   "/js/app.js": 44647,
    "/js/arena.js": 5327,
+   "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
    "/js/celebrate.js": 3080,
    "/js/check.js": 2946,
@@ -124,7 +125,7 @@
    "/js/sky.js": 3762,
    "/js/slokas.js": 16068,
    "/js/star.js": 7892,
-   "/js/store.js": 6936,
+   "/js/store.js": 5753,
    "/js/sutra-ambience.js": 4169,
    "/js/sutra-details.js": 13423,
    "/js/sutras.js": 3866,
@@ -140,8 +141,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 22224,
-   "/play/": 3919,
-   "/sw.js": 6111,
+   "/play/": 3920,
+   "/sw.js": 6125,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -192,8 +193,8 @@
     "date": "2026-10-24",
     "pr": 141,
     "from": 781931,
-    "to": 784288,
-    "why": "learnvedicmath task 10.3: the backup code for every Player and Restore from code through the hand-off schema and prompt (the Me page's Restore prompt and the export refusals in js/app.js, the backup functions in js/store.js, the schema's second source, applyHandoff's moved flag, rollback order and bootstrap guard, three style rules in math.css); js/store.js loads the hand-off modules only when the Me page asks (loadBackup), so the first paint waits for no new module; measured on main as of #138, so that code is the only growth; no new file"
+    "to": 785198,
+    "why": "learnvedicmath task 10.3: the backup code for every Player and Restore from code through the hand-off schema and prompt; the backup functions and the Me page's Restore prompt handlers are a new module, js/backup.js, which js/store.js loads only when the Me page asks (loadBackup), with the hand-off modules it imports, so the first paint waits for no new module, and against main app.js grows by 382 bytes and store.js shrinks by 109 (the rest of the growth is js/backup.js in the precache); the Restore prompt's markup in js/app.js, the schema's second source, applyHandoff's moved flag, rollback order and bootstrap guard, three style rules in math.css; measured on main as of #138, so that code is the only growth"
    }
   ]
  },

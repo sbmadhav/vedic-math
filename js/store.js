@@ -1,7 +1,8 @@
 /* Progress lives in this browser (localStorage), one record per player so a family can share a device.
    Mastery is a running score from 0 to 1: first tries count fully, a try after a hint counts half.
    Nothing here leaves the device except what cloud.js posts to World boards (nickname, color, score). */
-const LEGACY = 'mathquest.v1', PKEY = 'vm.players', BOARD = 'vm.board';
+export const LEGACY = 'mathquest.v1', PKEY = 'vm.players'; /* js/backup.js reads these */
+const BOARD = 'vm.board';
 let S = null, P = null;
 const blank = () => ({ v: 3, skills: {}, sparks: 0, days: {}, best: {}, last: null, grade: null, badges: {}, counts: {}, seen: {}, medals: {}, katasDone: {}, ratings: {}, weekSparks: {}, questDay: null });
 const get = k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
@@ -181,80 +182,22 @@ export const setGrade = g => { load(); S.grade = String(g); save(); };
 export const savedGrade = () => (load(), S.grade);
 export function reset() { S = blank(); save(); emit('player', player()); }
 
-/* ---------- Backup code (openspec change learnvedicmath, progress-handoff spec "Backup code for every Player") ----------
-   Copy backup code on the Me page holds every Player on this device in the hand-off payload format (the allow-list
-   the move uses, js/handoff-schema.js: Players, their progress and play records, the listed settings, nothing else),
-   as JSON text with no size cap; the page wraps it as a code. Restore from code accepts that format only when it
-   matches the schema exactly (the same checks, caps and version as /import/), and an old single-Player code
-   ({ player, data } or a bare record) read the way the packer reads a device, then writes through the same prompt and
-   the same all-or-nothing write as the hand-off (js/handoff.js). A code is outside data: nothing in it becomes markup,
-   and a code that fails imports nothing. A field added to the record must be added to the schema too, or a backup
-   loses it. */
-const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
-const local = {
-  get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
-  set: (k, v) => localStorage.setItem(k, v),
-  remove: k => { try { localStorage.removeItem(k); } catch (e) {} },
-  keys: () => { const out = []; try { for (let i = 0; i < localStorage.length; i++) out.push(localStorage.key(i)); } catch (e) {} return out; },
-};
-/* The hand-off modules are not part of a first load (nothing before the first paint waits for them): the Me page
-   calls loadBackup() and the functions below need it to have resolved. */
-let H = null, HO = null;
-export function loadBackup() {
-  return H ? Promise.resolve() : Promise.all([import('./handoff-schema.js'), import('./handoff.js')]).then(([schema, ho]) => { H = schema; HO = ho; });
-}
-const need = () => { if (!H) throw new Error('backup not loaded'); };
+/* ---------- Backup code (progress-handoff spec "Backup code for every Player"): js/backup.js ----------
+   Not part of a first load (nothing before the first paint waits for it or the hand-off modules): the Me page calls
+   loadBackup() and the functions below need it to have resolved. */
+let B = null;
+export function loadBackup() { return B ? Promise.resolve(B) : import('./backup.js').then(m => (B = m)); }
+const need = () => { if (!B) throw new Error('backup not loaded'); return B; };
 export const MAX_PLAYERS = 12; // js/handoff-schema.js MAX_PLAYERS, without loading it; test/store.test.mjs checks they match
-/* Every Player, or nothing: a code that Restore would refuse (more Players than the cap, or more text than it reads)
-   is never made, so no one keeps a backup that quietly left Players out. Throws 'too many Players' or 'too big'. */
-export function exportData() {
-  need();
-  const list = players().list;
-  const device = H.readDevice(local.get, local.keys);
-  if (!device || device.players.list.length !== list.length) throw new Error('too many Players');
-  // A stored record the schema would leave out (over its caps even after trimming) would make a code without that
-  // Player's progress, and Use the code's would then delete it: refuse instead (#141 review)
-  if (list.some(p => local.get('mathquest.v1.' + p.id) !== null && !device.records[p.id])) throw new Error('too big');
-  const text = JSON.stringify(H.payloadOf(device, [], Date.now(), H.FROM_BACKUP));
-  if (text.length > H.MAX_JSON) throw new Error('too big');
-  return text;
-}
-/* The payload a pasted code's text holds, checked, or throws. Writes nothing: the Me page shows the prompt first. */
-export function readBackup(txt) {
-  need();
-  if (typeof txt !== 'string' || txt.length > H.MAX_JSON) throw new Error('bad');
-  let d; try { d = JSON.parse(txt); } catch (e) { throw new Error('bad'); }
-  if (!isObj(d)) throw new Error('bad');
-  let payload = d;
-  if (!('players' in d)) {
-    // An old single-Player code: its record, and the Player it names (or, when it names none, the Player who pastes
-    // it, as the old restore did), read the way the packer reads a device
-    const data = isObj(d.data) ? d.data : d;
-    if (!isObj(data.skills)) throw new Error('bad');
-    const p = isObj(d.player) ? d.player : player(), id = typeof p.id === 'string' && H.ID_RE.test(p.id) ? p.id : player().id;
-    const m = new Map([[PKEY, JSON.stringify({ active: id, list: [{ ...p, id }] })], [LEGACY + '.' + id, JSON.stringify(data)]]);
-    const device = H.readDevice(k => (m.has(k) ? m.get(k) : null), () => [...m.keys()]);
-    if (!device) throw new Error('bad');
-    payload = H.payloadOf(device, [], Date.now(), H.FROM_BACKUP);
-  }
-  const c = H.validatePayload(payload);
-  if (!c.ok) throw new Error(c.error);
-  return c.value;
-}
-/* What the Restore prompt says: whether this device has progress (then it asks Keep this device's, Use the code's or
-   Keep both), the Nicknames here, and whether Keep both stays within the Player cap */
-export function restoreOffer(payload) {
-  need();
-  const here = HO.progressHere(local);
-  return { has: here.has, names: here.list.map(p => (typeof p.name === 'string' ? p.name : 'A Player')), both: here.list.length + payload.players.list.length <= H.MAX_PLAYERS };
-}
-/* Writes a backup. choice 'replace': this device's Players, their progress and the Device board give way (as the Me
-   page's remove does; World board identities are forgotten) and the code's settings are written; 'both': the code's
-   Players are added next to these, with new ids where they clash, and this device's settings win. All or nothing;
-   then every cache here is dropped and listeners hear import. */
+/* Every Player on this device as a code's text; throws 'too many Players' or 'too big' rather than leave one out */
+export const exportData = () => need().exportData();
+/* The payload a pasted code's text holds, checked, or throws; writes nothing */
+export const readBackup = txt => need().readBackup(txt);
+/* What the Restore prompt says: { has, names, both } */
+export const restoreOffer = payload => need().restoreOffer(payload);
+/* Writes a backup (choice 'replace' or 'both'), all or nothing; then every cache here is dropped and listeners hear import */
 export function importData(txt, choice = 'replace') {
-  const payload = readBackup(txt);
-  HO.applyHandoff(local, payload, choice, Date.now(), false);
+  need().writeBackup(txt, choice);
   S = null; P = null; migratedAll = false;
   emit('import'); emit('player', player());
 }

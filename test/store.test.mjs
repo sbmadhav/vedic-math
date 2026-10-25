@@ -15,6 +15,13 @@ test('the backup functions wait for loadBackup, so a first load never fetches th
   const S = await import('../js/handoff-schema.js');
   assert.equal(store.MAX_PLAYERS, S.MAX_PLAYERS);
   assert.doesNotThrow(() => store.exportData());
+  // The backup code's functions and the Me page's Restore handlers are js/backup.js, which only loadBackup imports:
+  // no static import of it or of the hand-off modules from the first load's modules (docs/perf/baseline.md)
+  const { readFileSync } = await import('node:fs');
+  for (const f of ['js/store.js', 'js/app.js']) {
+    const src = readFileSync(new URL('../' + f, import.meta.url), 'utf8');
+    assert.doesNotMatch(src, /^import[^;]*from '\.\/(backup|handoff|handoff-schema)\.js'/m, f);
+  }
 });
 
 test('a new Player has no Age answer, and nothing can give the retired Parent step', () => {
