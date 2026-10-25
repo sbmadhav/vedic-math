@@ -261,6 +261,7 @@ const ALLOWED = new Set([
   'from',                      // the Install guide's entry point (metrics.install checks it against INSTALL_FROM)
   'ok', "lives ? '' : ''", 'fx.MODES[fx.mode()].league', // right or miss; 'run' or 'practice'; the League
   'v.level', 'cheer',          // a Family helper Visit's level (1 to 3) and whether it is a cheer; metrics.family checks FAMILY_EVENTS
+  'result', 'TITLES[result]', // the import page's hand-off result and its title (js/handoff.js count: one of RESULTS, a fixed set the analytics spec lists; test/handoff.test.mjs pins it)
 ]);
 /* Every call of track(, siteTrack( and metrics.<fn>( with its argument text */
 export function callSites(src) {
