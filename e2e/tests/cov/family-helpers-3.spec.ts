@@ -1,5 +1,5 @@
 import { test, expect, open } from '../fixtures';
-import { SKILL, ON, visit, friends, missTwice, askFriend } from '../family-kit';
+import { SKILL, ON, visit, friends, missTwice, askFriend, familyReady } from '../family-kit';
 
 /* family-helpers spec (change family-helpers), Requirement "Help signals start a visit". */
 
@@ -18,7 +18,8 @@ test.describe('Always', () => {
   test('Idle on a question: after 20 seconds untouched, a friend hops in', async ({ page }) => {
     await page.clock.install();
     await open(page, SKILL);
-    await expect(page.locator('#practice #prQ')).toBeVisible(); /* the question is up, so its idle timer is armed */
+    await expect(page.locator('#practice #prQ')).toBeVisible();
+    await familyReady(page); /* the question is up and the Family mounted, so its idle timer is armed */
     await page.clock.fastForward(15_000);
     await expect(visit(page)).toHaveCount(0);
     await page.clock.fastForward(6_000);

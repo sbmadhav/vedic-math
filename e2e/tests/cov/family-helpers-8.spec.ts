@@ -1,5 +1,5 @@
 import { test, expect, open } from '../fixtures';
-import { SKILL, ON, visit, btn, missTwice, askFriend, turns, nextQuestion, overlaps } from '../family-kit';
+import { SKILL, ON, visit, btn, missTwice, askFriend, turns, nextQuestion, overlaps, familyReady } from '../family-kit';
 
 /* family-helpers spec (change family-helpers), Requirement "Never in the way". */
 test.use({ seedPlayer: ON });
@@ -22,6 +22,7 @@ test('Focus stays in the answer: a Visit opens while typing goes on into the ans
   await open(page, SKILL);
   const input = page.locator('#practice .ans-in');
   await input.focus();
+  await familyReady(page);
   await page.clock.fastForward(21_000);
   await expect(visit(page)).toBeVisible();
   await expect(input).toBeFocused();

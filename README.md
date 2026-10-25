@@ -88,7 +88,7 @@ The Nikhilam Family helpers (`openspec/changes/family-helpers/`) get their own C
 ```sh
 node tools/voice/family-samples.mjs   # the plan and its cost, nothing sent
 GOOGLE_TTS_TOKEN=$(gcloud auth print-access-token) GOOGLE_CLOUD_PROJECT=sbmadhav-vedic-math GO=1 node tools/voice/family-samples.mjs
-python3 -m http.server 8371           # from the repository root, then open http://localhost:8371/docs/prototypes/family-helpers/listen.html
+python3 -m http.server 8371 --bind 127.0.0.1   # from the repository root, then open http://localhost:8371/docs/prototypes/family-helpers/listen.html
 ```
 
 Swap a voice with `SHUNYA=`, `NAVA=` or `EKA=` set to another Chirp 3 HD voice name. The samples land in `tools/voice/out/family-samples/` (git-ignored); never commit them. Until the owner's full recording lands, the Family's lines are text only.

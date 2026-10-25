@@ -52,4 +52,4 @@ Out of scope:
 
 ## Affected
 
-Every Mode and every Player who turns the switch on (off by default): Practice on Skill pages and Endless practice and runs, Katas, the Star end screen, Me. Nothing is sent that was not sent before, except the anonymous fixed-word visit counts (analytics). Step 3 also adds the Turnstile check and per-address limit to the server voice planned in `react-typescript` (its server-voice spec). No change for a Player who leaves the switch off.
+Every Mode and every Player who turns the switch on (off by default): Practice on Skill pages and Endless practice and runs, Katas, the Star end screen, Me. In step 2 nothing is sent that was not sent before, except the anonymous fixed-word visit counts (analytics). Step 3 sends, for a Player 13 and over who turns the conversation on, each turn's Skill id, question numbers and Visit words with a Turnstile check and its ticket (D15, D18, ADR 0015), and also adds the Turnstile check and per-address limit to the server voice planned in `react-typescript` (its server-voice spec). No change for a Player who leaves the switch off.

@@ -1,5 +1,5 @@
 import { test, expect, open, APP } from './fixtures';
-import { SKILL, ON, visit, friends, say, btn, ask, missTwice, miss, nextQuestion, closeVisit, askFriend, turns, factors, overlaps } from './family-kit';
+import { SKILL, ON, visit, friends, say, btn, ask, missTwice, miss, nextQuestion, closeVisit, askFriend, turns, factors, overlaps, familyReady } from './family-kit';
 
 /* The Nikhilam Family helpers (openspec family-helpers): behaviors beyond the one-per-scenario coverage specs in
    e2e/tests/cov/family-*.spec.ts. Nothing here posts a Score. */
@@ -41,6 +41,19 @@ test.describe('helpers on', () => {
     await expect(page.locator('#practice #prQ')).toBeVisible();
     await expect(ask(page)).toHaveCount(0);
     await missTwice(page);
+    await expect(visit(page)).toHaveCount(0);
+  });
+
+  test('a solved question is not idle: 20 seconds untouched after a right answer bring nobody', async ({ page }) => {
+    await page.clock.install();
+    await open(page, SKILL);
+    await expect(page.locator('#practice #prQ')).toBeVisible();
+    await familyReady(page);
+    const { a, b } = await factors(page);
+    await page.locator('#practice .ans-in').fill(String(a * b));
+    await page.locator('#practice #prCheck').click();
+    await expect(page.locator('#practice #prSay')).toHaveClass(/\bok\b/);
+    await page.clock.fastForward(25_000);
     await expect(visit(page)).toHaveCount(0);
   });
 

@@ -56,7 +56,7 @@ Every reply SHALL give a hint, the method or an example on other numbers, never 
 - **THEN** it is replaced by a scripted line
 
 ### Requirement: Four actions, checked by the app
-The model SHALL be able to ask for only these actions: `showExample(a, b)`, `pointAt(part)`, `showSutra()` and `react(mood)`. The app SHALL validate every action before drawing it and drop one that fails: `showExample` only with numbers that differ from the question's in either order and whose result differs from the question's answer, `pointAt` only with a part from the Skill's fixed list, `react` only with a known pose.
+The model SHALL be able to ask for only these actions: `showExample(a, b)`, `pointAt(part)`, `showSutra()` and `react(mood)`. The app SHALL validate every action before drawing it and drop one that fails: `showExample` only with numbers that differ from the question's in either order and whose result differs from the question's answer, `showSutra` only when the current Skill has a Sutra and its meaning, `pointAt` only with a part from the Skill's fixed list, `react` only with a known pose.
 
 #### Scenario: An example on the question's own numbers
 - **WHEN** a reply asks for `showExample` with the same numbers as the question on screen
@@ -65,6 +65,10 @@ The model SHALL be able to ask for only these actions: `showExample(a, b)`, `poi
 #### Scenario: An example with the same answer
 - **WHEN** the question on screen is 97 × 96 and a reply asks for `showExample(96, 97)`, or for other numbers whose result is also 9312
 - **THEN** no example is drawn and the reply's line still shows
+
+#### Scenario: A Sutra on a Skill with none
+- **WHEN** a reply asks for `showSutra()` on a Skill that has no Sutra yet
+- **THEN** no Sutra is drawn and the reply's line still shows
 
 ### Requirement: No action reaches the answer or the round
 No action SHALL take or show the answer, change a setting, move to the next question, open a page, or change the round's tries, hints or Score.

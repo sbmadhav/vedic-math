@@ -12,6 +12,11 @@ export const who = (page: Page) => page.locator('.fh-visit .fh-who');
 export const btn = (page: Page, name: string) => page.locator('.fh-visit .fh-btns button', { hasText: name });
 export const ask = (page: Page) => page.locator('#practice [data-fh-ask]');
 
+/** Waits until the round's Family is mounted: js/family-hook.js loads the overlay with a dynamic import and arms the
+    idle timer only once it resolves, so a test that moves the clock waits for the same module first */
+export async function familyReady(page: Page) {
+  await page.evaluate(async () => { await e2eMod('family-view'); for (let i = 0; i < 3; i++) await Promise.resolve(); });
+}
 /** a and b of the a × b on screen */
 export async function factors(page: Page) {
   const q = (await page.locator('#practice #prQ').textContent()) || '';

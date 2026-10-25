@@ -52,6 +52,7 @@ const BTN = { show: 'Show me', hint: 'Another hint', notnow: 'Not now', thanks: 
 /* Opens a Visit. v: planVisit()'s { kind, level, turns, buttons }. r: the round { root, card, protect, hint, signal } */
 function open(v, r, { info, band, example, nick = '' }) {
   close();
+  if (r.signal.aborted) return; /* the round already ended (events replayed after the Player left): no Visit with dead buttons */
   const ctl = child(r.signal), vs = ctl.signal;
   const crew = [...new Set(v.turns.map(t => t.friend))];
   const el = document.createElement('div');
@@ -122,6 +123,7 @@ export function mountFamily({ root, card = null, signal, area = 'practice', prot
     return { c, s, info: skillInfo(s, trick) };
   }
   function show(plan, { at = r } = {}) {
+    if (at.signal.aborted) return; /* the round ended before this module loaded: nothing to show, nothing to count */
     const p = player(), { c, s, info } = ctxInfo(), band = bandFor(p), mem = p.familyMem || null;
     const example = s && s.gen && plan.kind === 'help' ? exampleFor({ gen: () => s.gen(1), answerOf: e => answerText(e, s), q: c.problem ? c.problem.q : '', answer: c.problem ? answerText(c.problem, s) : '' }) : null;
     const greet = !greeted(), remember = plan.kind === 'help' && mem && mem.last === info.key;
@@ -138,6 +140,7 @@ export function mountFamily({ root, card = null, signal, area = 'practice', prot
     if (e.type === 'roundEnd' && e.hard == null) e.hard = wasHard(player().familyMem, info.key);
     if (e.type === 'ask') metrics.family('ask');
     if (e.type === 'question') { if (current) close(); watchIdle(); } /* a new question ends the last one's Visit */
+    if ((e.type === 'right' || e.type === 'roundEnd') && idle) { idle.abort(); idle = null; } /* a solved question is not idle */
     const plan = co.note(e, { quiet: !!current && e.type !== 'ask' });
     if (!plan) return;
     if (plan.kind === 'leave') { const ctl = child(page.signal); later(() => { if (!current) show(plan, { at: { ...r, root: document.getElementById('view') || document.body, card: null, protect: 'a, button, input, select, textarea, h1, h2, .pr-q, .mq-viz', hint: null, signal: ctl.signal } }); }, 400, ctl.signal); return; } /* the next page's controls, and its question if it is a round */
