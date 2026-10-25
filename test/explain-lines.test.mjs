@@ -28,10 +28,11 @@ test('every Skill, Trick, Sutra deep dive and game has its explanation listed', 
 test('the explanation lines are the same on every load (explanation-audio 4.6)', () => {
   const load = seed => execFileSync(process.execPath, ['--input-type=module', '-e', `
     let x = ${seed}; Math.random = () => (x = (x * 1103515245 + 12345) % 2147483648) / 2147483648;
+    const { VIDEOS, LINKS } = await import(${JSON.stringify(new URL('../js/videos.js', import.meta.url).href)});
     const { allExplanationLines } = await import(${JSON.stringify(new URL('../js/explain-lines.js', import.meta.url).href)});
-    process.stdout.write(JSON.stringify(allExplanationLines()));`], { encoding: 'utf8', maxBuffer: 64 << 20 });
+    process.stdout.write(JSON.stringify(allExplanationLines({ videos: VIDEOS, links: LINKS })));`], { encoding: 'utf8', maxBuffer: 64 << 20 });
   const a = JSON.parse(load(7)), b = JSON.parse(load(424242));
-  assert.deepEqual(b.filter((l, i) => l.text !== a[i]?.text).slice(0, 5), [], 'lines drawn at random cannot be recorded whole');
+  assert.deepEqual(b.filter((l, i) => l.text !== a[i]?.text || l.src !== a[i]?.src).slice(0, 5), [], 'lines drawn at random cannot be recorded whole');
   assert.equal(a.length, b.length);
 });
 
