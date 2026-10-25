@@ -30,7 +30,7 @@ html.motion-paused .md-brand:hover svg, body.calm .md-brand:hover svg, html.moti
 
 .mq-tight { padding-top: 36px; }
 .mq-narrow { max-width: 820px; }
-.mq-hero .md-heading { font-size: clamp(2.1rem, 5vw, 3.3rem); max-width: 16em; text-wrap: balance; }
+.mq-hero .md-heading { font-size: var(--text-display-l-size); max-width: 16em; text-wrap: balance; }
 .hl-word { background: linear-gradient(transparent 62%, color-mix(in srgb, var(--sun) 70%, transparent) 62%); padding: 0 .08em; }
 :root[data-theme="dark"] .hl-word { background: linear-gradient(90deg, var(--coral), var(--teal)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hl-word { background: linear-gradient(90deg, var(--coral), var(--teal)); -webkit-background-clip: text; background-clip: text; color: transparent; } }
@@ -345,18 +345,25 @@ html.motion-paused .mq-grade, body.calm .mq-grade, html.motion-paused .mq-skill,
 .mode-opt .md-btn.mode-try { width: 100%; min-height: 48px; margin: 0; justify-content: center; gap: var(--space-2); font-weight: 800; }
 .mode-try svg.mode-try-go { width: 1.1em; height: 1.1em; }
 .mode-try:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
-.pick-h { margin: 0 0 var(--space-3) !important; }
-.mode-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 8px 0 18px; }
-@media (max-width: 760px) { .mode-pick { grid-template-columns: 1fr; } }
-.mode-card { display: grid; gap: 4px; align-content: start; justify-items: start; text-align: left; padding: 22px; border: 2px solid var(--edge); border-radius: var(--radius-xl); background: var(--card); color: var(--ink); cursor: pointer; box-shadow: var(--shadow-ledge); font: inherit; transition: transform .15s; }
-.mode-card:hover { transform: translateY(-3px) rotate(-.6deg); }
-.mode-card:active { transform: translateY(2px); box-shadow: none; }
-.mode-card b { font: 600 1.6rem/1.1 var(--display); }
-.mode-card small { font-weight: 700; color: var(--ink-muted); }
-.mode-card span:last-child { color: var(--ink-muted); }
-.mode-ic { width: 64px; height: 64px; border-radius: var(--radius-md); display: grid; place-items: center; margin-bottom: 8px; color: var(--on-accent); }
+/* The picker's heading is a title (24px), above the card titles (20px); .mq-h3 (above) sets its size and margin with
+   !important, so these do too */
+.pick-h { font: var(--text-title) !important; letter-spacing: var(--text-title-tracking); margin: 0 0 var(--space-3) !important; }
+.mode-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); margin: 0 0 var(--space-4); }
+.mode-card { display: grid; gap: var(--space-1); align-content: start; justify-items: start; text-align: left; padding: var(--space-5); border: 2px solid var(--edge); border-radius: var(--radius-xl); background: var(--card); color: var(--ink); cursor: pointer; box-shadow: var(--shadow-ledge); font: inherit; transition: transform .15s, box-shadow .15s; }
+.mode-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-ledge-hover); }
+.mode-card:active { transform: translateY(2px); box-shadow: var(--shadow-ledge-press); }
+.mode-card b { font: var(--text-card-title); letter-spacing: var(--text-card-title-tracking); }
+.mode-card small { font: var(--text-label-sm); color: var(--ink-muted); }
+.mode-card span:last-child { text-wrap: pretty; }
+.mode-ic { width: 64px; height: 64px; border-radius: var(--radius-md); display: grid; place-items: center; margin-bottom: var(--space-2); color: var(--on-accent); }
 .mode-card--sun .mode-ic { background: var(--sun); } .mode-card--sky .mode-ic { background: var(--sky); } .mode-card--plum .mode-ic { background: var(--plum); }
-.mode-card[aria-pressed="true"] { outline: 4px solid var(--teal-strong); outline-offset: 2px; }
+.mode-card[aria-pressed="true"] { outline: 4px solid var(--teal-strong); outline-offset: 3px; }
+/* Phones and tablets: one column of row cards, the icon beside the words, so the three take a short screen */
+@media (max-width: 900px) {
+  .mode-pick { grid-template-columns: 1fr; }
+  .mode-card { grid-template-columns: auto 1fr; column-gap: var(--space-4); align-items: center; padding: var(--space-4); }
+  .mode-ic { grid-row: span 3; width: var(--control-height-lg, 48px); height: 48px; margin: 0; }
+}
 .mode-pick--sm .mode-card { padding: 14px; } .mode-pick--sm .mode-card b { font-size: 1.2rem; } .mode-pick--sm .mode-ic { width: 48px; height: 48px; }
 
 /* Home */
@@ -696,6 +703,11 @@ html.motion-paused .vm-eq i, body.calm .vm-eq i { animation: none; }
 .vp-frame { position: relative; aspect-ratio: 16 / 9; background: #000; }
 .vm-player.tall .vp-frame { aspect-ratio: 9 / 16; max-height: 74dvh; margin: 0 auto; }
 .vp-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+/* The facade (js/watch.js facade): this site's thumbnail behind a play button; the frame is written only when it is pressed */
+.vp-play { position: absolute; inset: 0; width: 100%; height: 100%; padding: 0; border: 0; background: var(--media-black); color: var(--media-ink); cursor: pointer; }
+.vp-play img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.vp-play:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.vp-play:hover .watch-play svg { transform: scale(1.08); }
 .vp-desc { margin: 12px 16px 4px; color: var(--ink-muted); font-size: 14.5px; }
 .vp-foot { margin: 0 16px 14px; font-size: 14px; } .vp-foot a { color: var(--sky-strong); font-weight: 700; }
 .watch-play { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; }
@@ -1022,6 +1034,7 @@ html.motion-paused .wb-card .md-switch .md-knob, body.calm .wb-card .md-switch .
 .star-acts { display: flex; gap: var(--space-2); flex-wrap: wrap; justify-content: center; margin: 0; }
 .star-video { width: 100%; }
 .star-video iframe { width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: var(--radius-md); }
+.star-video .vp-frame { border-radius: var(--radius-md); overflow: hidden; }
 .star-end-h { margin: 0; font: 600 clamp(1.7rem, 6vw, 2.3rem)/1.1 var(--display); }
 .star-end-h:focus { outline: none; }
 .star-end-sp { margin: 0; font-size: 1.3rem; }
@@ -1477,3 +1490,45 @@ html.motion-paused .play-card, body.calm .play-card { transition: none; } html.m
 .sutra-say-kid { margin: var(--space-1) 0; font-size: 1.1rem; color: var(--ink); }
 .home-doors + .try-card, .your-sutras { margin-top: var(--space-3); }
 .your-sutras + .me-strip { margin-top: var(--space-3); }
+
+/* Installing the app (openspec change install-app): the Install nudge on Home, the Install guide and the Me page card.
+   Tokens only; the guide is a .vm-sheet dialog, so it already holds still under Calm, Pause motion and reduced motion. */
+.in-slot:empty { display: none; }
+.in-nudge { display: flex; align-items: flex-start; gap: var(--space-3); margin: var(--space-3) 0; padding: var(--space-3) var(--space-4); border: 2px solid var(--teal-strong); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--teal) 12%, var(--card)); color: var(--ink); animation: toastIn .3s ease-out; }
+.in-nudge-ic { flex: none; width: 48px; height: 48px; border-radius: var(--radius-sm); }
+.in-nudge-x { min-width: 0; flex: 1; }
+.in-nudge-t { margin: 0; font: 600 1.05rem/1.3 var(--display); }
+.in-nudge-b { margin: var(--space-1) 0 var(--space-2); color: var(--ink-muted); line-height: 1.45; }
+.in-nudge-acts { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; }
+.in-nudge-acts .md-btn { min-height: 44px; }
+@media (prefers-reduced-motion: reduce) { .in-nudge { animation: none; } }
+html.motion-paused .in-nudge, body.calm .in-nudge { animation: none; }
+.vm-sheet.in-guide { box-sizing: border-box; width: min(520px, calc(100vw - 2 * var(--space-4))); max-width: none; max-height: calc(100dvh - 2 * var(--space-4)); padding: var(--space-4); }
+@media (max-width: 380px) { .in-guide .in-steps .in-ic { display: none; } } /* a 320 px phone: the step number and words keep the width */
+.in-guide .in-why { list-style: none; margin: 0 0 var(--space-4); padding: 0; display: grid; gap: var(--space-2); }
+.in-guide .in-why li, .in-guide .in-steps li { display: flex; align-items: flex-start; gap: var(--space-2-5); line-height: 1.45; }
+.in-guide .in-ic { flex: none; display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--sky) 16%, var(--card)); color: var(--ink); }
+.in-guide .in-ic svg { width: 22px; height: 22px; }
+.in-guide .in-one { margin: 0 0 var(--space-4); padding: var(--space-3) var(--space-4); border: 2px solid var(--teal-strong); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--teal) 12%, var(--card)); }
+.in-guide .in-one .md-btn { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 48px; }
+.in-guide .in-one .md-btn svg { width: 22px; height: 22px; }
+.in-guide .in-one .mq-small { margin: var(--space-2) 0 0; }
+.in-guide .in-h { margin: 0 0 var(--space-2); font: 600 1.05rem/1.3 var(--display); }
+.in-guide .in-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.in-guide .in-steps:focus { outline: none; }
+.in-guide .in-steps:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; border-radius: var(--radius-xs); }
+.in-guide .in-n { flex: none; display: inline-grid; place-items: center; width: 28px; height: 28px; margin-top: var(--space-1); border-radius: var(--radius-round); background: var(--ink); color: var(--bg); font: 700 .9rem/1 var(--font-sans); }
+.in-guide .in-t { min-width: 0; padding-top: var(--space-1-5); }
+.in-guide .in-note { margin: var(--space-3) 0 0; }
+.in-guide .in-copy { margin: var(--space-3) 0 0; }
+.in-guide .in-other { margin: var(--space-4) 0 0; }
+.in-guide .in-other summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; }
+.in-guide .in-pick { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+.in-guide .in-pick .md-chip { min-height: 44px; text-align: left; }
+.in-guide .in-status { min-height: 1.4em; margin: var(--space-3) 0 0; font-weight: 600; }
+.in-guide .in-status:empty { margin: 0; min-height: 0; }
+.in-me { margin: var(--space-3) 0; padding: var(--space-3) var(--space-4); }
+.in-me .in-me-t { margin: 0 0 var(--space-1); }
+.in-me .mq-small { margin: 0 0 var(--space-2); }
+.in-me .md-btn { display: inline-flex; align-items: center; gap: var(--space-2); }
+.in-me .md-btn svg { width: 20px; height: 20px; }

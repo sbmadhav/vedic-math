@@ -22,7 +22,7 @@ import * as LV from './levels.js';
 import { LEVELS, LEVELS_PER_GAME, levelMedal, boardGame } from './games.js';
 import * as AD from './adapt.js';
 import { initAmbient, bgOn, setBg, setBgLevel, BG_NOTES, stop as stopMusic, isPlaying as musicOn } from './ambient.js';
-import { levelFor } from './sky-scene.js';
+import { levelFor, ROOTS_INTRO } from './sky-scene.js';
 import { on, later, every, child, onAbort } from './life.js';
 import * as metrics from './metrics.js';
 import { boltHTML } from './bolt.js';
@@ -39,12 +39,29 @@ import { GROUPS, sectionsFor, tryFor, say, resolveTour, tourDue, tourState, setT
 import { sectionLines, buildIndex, rank, countOf, kindLabel } from './find.js';
 import { artFor } from './guide-art.js';
 import { startTour } from './tour.js';
-import { guideCounts } from './explain-lines.js';
+import { guideCounts, rootNote } from './explain-lines.js';
 import { listenBtn, wireListen } from './listen.js';
 import { sayButton, respellHTML, devaHTML, wireSay } from './say.js';
 import { sutraAmbience, ambienceButton, wireAmbience, settingsHTML as ambienceSettingsHTML, wireSettings as wireAmbienceSettings } from './sutra-ambience.js';
 import { tagHTML, trickTagHTML, sutraOfTrick, sutraOfGame, roundSutras, SURFACES as TAG_SURFACES } from './sutra-tag.js';
 import { progressOf, progressLine, trickLine } from './sutra-progress.js';
+import { claim as claimSlot, release as releaseSlot } from './prompt-slot.js';
+
+/* Installing the app (openspec change install-app): js/install.js and its rules load after the first view has painted
+   (loadInstall, 100 ms after boot), so they are not in the static import graph the first paint waits for (design D12).
+   The browser's install prompt can arrive before that: it is caught here and handed to initInstall. withInstall(fn,
+   signal) runs fn with the module once it is here, unless signal (the view's) has aborted by then. */
+const boot = new AbortController(); /* the page's lifetime: never aborted */
+let install = null, installLoad = null, earlyPrompt = null; const installQueue = [];
+function loadInstall() {
+  return installLoad ||= import('./install.js').then(m => {
+    install = m; m.initInstall(earlyPrompt); earlyPrompt = null;
+    installQueue.splice(0).forEach(([fn, s]) => { if (!s || !s.aborted) fn(m); });
+    return m;
+  });
+}
+const withInstall = (fn, signal) => { if (install) fn(install); else installQueue.push([fn, signal]); };
+on(window, 'beforeinstallprompt', e => { if (!install) { e.preventDefault(); earlyPrompt = e; } }, boot.signal);
 
 const $ = (s, r = document) => r.querySelector(s);
 const view = $('#view');
@@ -217,7 +234,7 @@ function modeIcon(id) {
 /* ---------- Home: one per mode ---------- */
 function questsHTML() {
   const qs = gm.quests();
-  return `<div class="md-card quest-card"><h2 class="mq-h3">Daily quests</h2><ul class="quests">${qs.map(q => `<li class="${q.done ? 'done' : ''}"><span class="q-check" aria-hidden="true">${q.done ? '&#10003;' : ''}</span><span class="q-t">${q.label}<span class="mq-bar"><i style="width:${pct(q.prog / q.goal)}%"></i></span></span><span class="q-n">${q.prog}/${q.goal}</span></li>`).join('')}</ul><p class="mq-small">Sparks are the points you earn for right answers. Each quest is worth 25 bonus Sparks. New quests every day.</p></div>`;
+  return `<div class="md-card quest-card"><h2 class="mq-h3">Daily quests</h2><p class="listen-row">${listenBtn('from:.q-l', "today's quests")}</p><ul class="quests">${qs.map(q => `<li class="${q.done ? 'done' : ''}"><span class="q-check" aria-hidden="true">${q.done ? '&#10003;' : ''}</span><span class="q-t"><span class="q-l">${q.label}</span><span class="mq-bar"><i style="width:${pct(q.prog / q.goal)}%"></i></span></span><span class="q-n">${q.prog}/${q.goal}</span></li>`).join('')}</ul><p class="mq-small">Sparks are the points you earn for right answers. Each quest is worth 25 bonus Sparks. New quests every day.</p></div>`;
 }
 function heroStats() {
   const p = store.player(), T = gm.titleInfo();
@@ -278,9 +295,9 @@ function home(ctx = {}, { tiles = false } = {}) {
     ${m === 'explorer' ? heroStats() : ''}
     <h1 class="md-heading home-h">${fx.t({ explorer: 'What do you want to play?', challenger: 'Learn a sutra, then use it', pro: 'Mental math, the sutra way' })}</h1>
     <p class="mode-line">Mode: <b>${fx.MODES[m].name}</b>${store.modeGuessed() ? ', our guess for a first try' : ''} <a href="#/me">Change</a></p>
-    ${newHereHTML()}${cont}${body}
+    ${newHereHTML()}<div class="in-slot" id="installSlot"></div>${cont}${body}
   </div></section>`;
-  const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); home(ctx, { tiles }); }; /* the redraw keeps this view's signal, so its listeners (Say it) live on */
+  const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); mount(c => home(c, { tiles })); }; /* a fresh view signal, so the Install nudge, the tour and Say it on Explorer's Sutra card mount again */
   const hm = $('#homeMore'), keepMore = () => fx.setHomeMoreOpen(hm.open); /* remembered on this device */
   if (hm) { if (ctx.signal) on(hm, 'toggle', keepMore, ctx.signal); else hm.ontoggle = keepMore; } /* home() also runs with no view signal (an unknown Skill falls back to it): then a property on an element of this view */
   const tc = $('[data-try-open]'), counted = () => metrics.tryStart(m); /* the Try a trick card counts as a Try a trick pressed */
@@ -288,6 +305,7 @@ function home(ctx = {}, { tiles = false } = {}) {
   if (m === 'pro') loadBoard($('#homeBoard'), `daily-${cloud.dayId()}-pro`, 5);
   const sc = $('.sutra-say'); if (sc && ctx.signal) wireSay(sc, ctx.signal); /* Say it on Explorer's Sutra card: wired on the card, which every redraw replaces, so a redraw within the view adds no second listener */
   homeTour(ctx.signal);
+  withInstall(m => m.mountNudge($('#installSlot'), ctx.signal), ctx.signal); /* the Install nudge's one place on Home (openspec change install-app) */
 }
 
 /* "Your sutras" on Challenger and Pro Home (openspec change sutras-first, sutra-progress spec): the Sutra of the next
@@ -331,11 +349,14 @@ function keepGoingSkill(m) {
 const litStars = () => { const { lit } = store.starStates(); return SKY.PATH.filter(k => lit[k]).length; };
 function skyHome({ signal } = {}) {
   document.title = `Learn Vedic Math`;
-  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}${newHereHTML()}<div id="skyHome"></div>
+  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}${newHereHTML()}<div class="in-slot" id="installSlot"></div><div id="skyHome"></div>${tryCard(fx.mode())}
     <p class="mode-line">Mode: <b>${fx.MODES[fx.mode()].name}</b> <a href="#/me">Change</a></p></div></section>`;
   const back = (render.from || '').match(/^#\/star\/([\w-]+)\/(\d)$/);
   const out = skyView($('#skyHome'), { signal, focus: back ? `${back[1]}:${back[2]}` : null });
+  const tc = $('[data-try-open]'), m = fx.mode(), counted = () => metrics.tryStart(m); /* the Sky is this Player's Home, so it keeps the Try a trick card too */
+  if (tc) { if (signal) on(tc, 'click', counted, signal); else tc.onclick = counted; }
   homeTour(signal);
+  withInstall(m => m.mountNudge($('#installSlot'), signal), signal);
   return out;
 }
 /* All places: the Sky as a plain list (#/places) */
@@ -690,10 +711,10 @@ function tryView({ signal } = {}) {
   if (signal) { wireSay(view, signal); runTry($('#tryRoot'), { mode: m, signal }); }
 }
 /* star-round's findVideo seam: the Trick's hand-matched video (null offline or when the list fails to load), opened
-   in the in-page player. open(opener) resolves when the player closes. */
+   in the in-page player, which counts the view when play is pressed. open(opener) resolves when the player closes. */
 async function starVideo(trick, mode) {
   const v = await W.videoForTrick(trick, mode);
-  return v && { title: v.title, src: W.embedSrc(v), open: opener => { store.bump('watched'); track('watch/' + v.kind, 'Watch: ' + v.title); return new Promise(done => openPlayer(v, opener, done)); } };
+  return v && { title: v.title, src: W.embedSrc(v), thumb: W.thumbSrc(v), open: opener => new Promise(done => openPlayer(v, opener, done)) };
 }
 
 /* ---------- Arena challenge tower ---------- */
@@ -717,7 +738,7 @@ function chapterView(c) {
     ${crumbs(['#/arena', 'Arena'], ['#/tower', 'Challenge tower'], [null, `Chapter ${c}`])}
     <span class="md-tag md-tag--coral">Chapter ${c} of ${LV.TOPICS.length}</span>
     <h1 class="md-heading">${tp.name}</h1>
-    <div class="fmt-legend">${Object.values(LV.FORMATS).map(f => `<span><b>${f.name}</b> ${f.how}</span>`).join('')}</div>
+    <div class="fmt-legend">${Object.values(LV.FORMATS).map(f => `<span><b>${f.name}</b> ${f.how}</span>`).join('')}</div><p class="listen-row">${listenBtn('formats', 'the round formats')}</p>
     ${levelMap(LV.PER_CHAPTER, n => ({ medal: store.medal(LV.challengeKey(lo + n)) }), n => `#/challenge/${lo + n}`)}
     <p class="mq-cta">${c > 1 ? `<a class="md-btn" href="#/tower/${c - 1}">&larr; Chapter ${c - 1}</a>` : ''}${c < LV.TOPICS.length ? `<a class="md-btn" href="#/tower/${c + 1}">Chapter ${c + 1} &rarr;</a>` : ''}</p>
   </div></section>`;
@@ -793,7 +814,7 @@ function sutrasView({ signal } = {}) {
     ${playShelf('sutras', 'A mystery from the old texts')}
     <div class="md-card history"><h2 class="mq-h3">Where Vedic math comes from</h2><p class="listen-row">${listenBtn('history', 'where Vedic math comes from')}</p>${HISTORY.map(h => `<p>${h}</p>`).join('')}
       <p class="mq-small" data-history-links hidden></p></div>
-    <div class="md-card history roots"><h2 class="mq-h3">Older roots: what you see in the background</h2><p>The 1965 sutras stand on a much older tradition of Indian mathematics. The moving background draws real pieces of it.</p><ul>${BG_NOTES.map(([h, b]) => `<li><b>${h}.</b> ${b}</li>`).join('')}</ul></div>
+    <div class="md-card history roots"><h2 class="mq-h3">Older roots: what you see in the background</h2><p>${ROOTS_INTRO}</p><ul>${BG_NOTES.map(n => `<li>${rootNote(n)}</li>`).join('')}</ul></div>
     ${versesHTML()}
   </div></section>`;
   const flip = (art, open) => { art.classList.toggle('flipped', open); art.querySelector('.sutra-face').setAttribute('aria-expanded', String(open)); fx.sfx('tap'); if (open) { collect(art.dataset.name); art.classList.add('got'); art.querySelector('.sutra-more').focus({ preventScroll: true }); } else art.querySelector('.sutra-face').focus({ preventScroll: true }); };
@@ -1352,12 +1373,12 @@ document.addEventListener('click', e => {
   if (!b) return;
   e.preventDefault();
   W.loadVideos().then(({ VIDEOS }) => {
-    const v = VIDEOS.find(x => x.yt === b.dataset.watch); if (!v) return;
-    store.bump('watched'); track('watch/' + v.kind, 'Watch: ' + v.title);
-    openPlayer(v, b);
+    const v = VIDEOS.find(x => x.yt === b.dataset.watch); if (v) openPlayer(v, b);
   }).catch(() => {});
 });
 let playerDlg = null;
+/* The player opens on the facade (W.facade: this site's thumbnail behind a play button). Only when the Player presses
+   play is the YouTube frame written, the view counted and the one-minute timer started (watch-shelf spec, design D10). */
 function openPlayer(v, opener, onClose = null) {
   if (musicOn()) stopMusic();
   if (!playerDlg) {
@@ -1366,19 +1387,27 @@ function openPlayer(v, opener, onClose = null) {
     document.body.append(playerDlg);
     const close = () => playerDlg.close();
     playerDlg.querySelector('.vp-x').onclick = close;
-    playerDlg.addEventListener('click', ev => { if (ev.target === playerDlg || (ev.target.closest && ev.target.closest('.sutra-tag-a[href]'))) close(); }); /* a Sutra tag opens its Deep dive: the player closes first */
+    /* a Sutra tag opens its Deep dive: the player closes first */
+    playerDlg.addEventListener('click', ev => { if (ev.target === playerDlg || (ev.target.closest && ev.target.closest('.sutra-tag-a[href]'))) close(); else if (ev.target.closest && ev.target.closest('.vp-play')) playVideo(); });
     playerDlg.addEventListener('close', () => { clearTimeout(playerDlg._minute); playerDlg.querySelector('.vp-frame').innerHTML = ''; const done = playerDlg._onClose; playerDlg._onClose = null; if (playerDlg._opener && document.body.contains(playerDlg._opener)) playerDlg._opener.focus({ preventScroll: true }); if (done) done(); });
   }
-  playerDlg._opener = opener; playerDlg._onClose = onClose;
+  playerDlg._video = v; playerDlg._opener = opener; playerDlg._onClose = onClose;
   playerDlg.querySelector('#vpTitle').textContent = v.title;
   playerDlg.querySelector('.vp-desc').textContent = `${v.why} (${v.channel})`;
   // Open on YouTube: Pro only (Explorer and Challenger get no link that leaves the site)
   const vs = v.tricks && v.tricks.length ? sutraOfTrick(v.tricks[0]) : null; /* the video's Sutra tag (openspec change sutras-first) */
   playerDlg.querySelector('.vp-foot').innerHTML = (vs ? tagHTML(vs.id, { mode: fx.mode(), relation: vs.relation, surface: 'watch' }) : '') + outLink(`https://www.youtube.com/watch?v=${v.yt}`, 'Open on YouTube', 'vp-yt');
   playerDlg.classList.toggle('tall', v.kind === 'short');
-  playerDlg.querySelector('.vp-frame').innerHTML = `<iframe src="${W.embedSrc(v)}" title="${esc(v.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+  playerDlg.querySelector('.vp-frame').innerHTML = W.facade(W.thumbSrc(v));
   playerDlg.showModal();
-  // Video learner: the player has stayed open for a whole minute (cancelled when it closes)
+  playerDlg.querySelector('.vp-play').focus({ preventScroll: true });
+}
+/* The play press: the privacy-enhanced frame replaces the facade and starts playing */
+function playVideo() {
+  const v = playerDlg._video;
+  store.bump('watched'); track('watch/' + v.kind, 'Watch: ' + v.title);
+  playerDlg.querySelector('.vp-frame').innerHTML = `<iframe src="${W.embedSrc(v)}" title="${esc(v.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+  // Video learner: the video has played for a whole minute (cancelled when the player closes)
   clearTimeout(playerDlg._minute); playerDlg._minute = setTimeout(() => { if (playerDlg.open) store.bump('watchedMinute'); }, 60000);
 }
 
@@ -1452,12 +1481,13 @@ function homeTour(signal) {
   const replay = tourAsked; tourAsked = false;
   if (!signal || !fx.mode()) return;
   if (!replay && !tourDue({ mode: fx.mode(), state: tourState(), hash: location.hash, fresh: store.sparks() === 0 })) return;
+  claimSlot('tour', signal); /* the tour is a prompt too: nothing else asks for attention while it is due or open (openspec change install-app) */
   later(() => {
     const has = sel => { const el = document.querySelector(sel); if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
     const steps = resolveTour(has, fx.mode());
-    if (!steps.length) return;
+    if (!steps.length) { releaseSlot('tour'); return; }
     setTourState('shown'); metrics.tourEvent('start');
-    startTour(steps, { signal, onEnd: outcome => { if (outcome === 'finish') { setTourState('done'); metrics.tourEvent('finish'); } else { setTourState('skipped'); metrics.tourEvent('skip'); } } });
+    startTour(steps, { signal, onEnd: outcome => { releaseSlot('tour'); if (outcome === 'finish') { setTourState('done'); metrics.tourEvent('finish'); } else { setTourState('skipped'); metrics.tourEvent('skip'); } } });
   }, 300, signal);
 }
 function guideView(section, { signal } = {}) {
@@ -1468,6 +1498,7 @@ function guideView(section, { signal } = {}) {
   const tryHTML = s => {
     const t = tryFor(s, mode); if (!t) return '';
     if (t.action === 'tour' && !m) return '';
+    if (t.action === 'install' && install && install.appHere()) return ''; /* the Installed app: nothing to install (checked again below once the module is here) */
     const main = t.action ? `<button type="button" class="md-btn md-btn--sm md-btn--primary gd-try" data-gd="${t.action}">${esc(t.label)}</button>` : `<a class="md-btn md-btn--sm md-btn--primary gd-try" href="${esc(t.href)}">${esc(t.label)}</a>`;
     return `<p class="gd-acts">${main}${t.more ? ` <a class="md-btn md-btn--sm" href="${esc(t.more.href)}">${esc(t.more.label)}</a>` : ''}</p>`;
   };
@@ -1492,6 +1523,7 @@ function guideView(section, { signal } = {}) {
   on(view, 'click', e => {
     const b = e.target.closest('[data-gd]'); if (!b) return;
     if (b.dataset.gd === 'tour') askTour();
+    else if (b.dataset.gd === 'install') withInstall(m => m.openGuide('guide'), signal);
     else if (b.dataset.gd === 'music') { e.stopPropagation(); window.scrollTo({ top: 0 }); const mb = $('#vmMBtn'); if (mb && mb.getAttribute('aria-expanded') !== 'true') mb.click(); const first = $('#vmMPanel [data-t]'); if (first) first.focus({ preventScroll: true }); }
   }, signal);
   /* #/guide/<section>: focus its heading now (so the router leaves focus there), scroll to it once the router is done */
@@ -1576,7 +1608,7 @@ function meView() {
     <div class="players">${store.allPlayers().map(q => `<div class="player${q.id === p.id ? ' on' : ''}">${avatar(q, 40)}<span><b>${esc(q.name)}</b><small>${q.mode ? fx.MODES[q.mode].name : 'No mode yet'}</small></span>${q.id === p.id ? '<em>Playing</em>' : `<button class="md-btn md-btn--sm" data-switch="${q.id}">Switch</button><button class="md-btn md-btn--sm" data-del="${q.id}" aria-label="Remove ${esc(q.name)}">Remove</button>`}</div>`).join('')}
       <button class="md-btn md-btn--sm" id="meAdd">${icon('plus')} Add a player</button></div>
     <h2 class="mq-strand">Settings</h2>
-    ${skySwitchHTML(p)}
+    ${skySwitchHTML(p)}${install ? install.meCardHTML() : '<div id="meInstallCard" hidden></div>'}
     <div class="me-set"><label><input type="checkbox" id="setSound" ${fx.soundOn() ? 'checked' : ''}> Sound effects</label><label><input type="checkbox" id="setVoice" ${fx.voiceOn() ? 'checked' : ''}> Read questions aloud</label></div>
     ${ambienceSettingsHTML()}
     <h3 class="mq-h3" id="calmH">Calm and motion</h3>
@@ -1614,6 +1646,8 @@ function meView() {
   fx.wireVoiceSettings(view, { player: p.id });
   wireAmbienceSettings(view);
   wireWorldBoards(view);
+  /* The Install guide's card (openspec change install-app): drawn above when the module is here, else put in its place once it is */
+  withInstall(m => { const c = $('#meInstallCard'); if (c) c.outerHTML = m.meCardHTML(); const mi = $('#meInstall'); if (mi) mi.onclick = () => m.openGuide('me'); });
 
   $('#pExport').onclick = async () => { const code = btoa(unescape(encodeURIComponent(store.exportData()))); try { await navigator.clipboard.writeText(code); msg('Backup code copied. Paste it somewhere safe.'); } catch (e) { prompt('Copy this backup code:', code); } };
   $('#pImport').onclick = () => { const code = prompt('Paste your backup code:'); if (!code) return; try { store.importData(decodeURIComponent(escape(atob(code.trim())))); msg('Progress restored.'); meView(); } catch (e) { msg('That code did not work. Check that it was copied in full.'); } };
@@ -1696,6 +1730,8 @@ metrics.returnCheck(); /* before the first route view: remembers this device's f
 modeFromLink();
 render();
 initAmbient();
+/* The install module, after the first paint (openspec change install-app, design D12); a load that fails is reported once */
+later(() => loadInstall().catch(e => console.error('install.js did not load', e)), 100, boot.signal);
 /* Offline: /sw.js (scope /play/, the game only) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
   const registerSW = () => navigator.serviceWorker.register('/sw.js', { scope: '/play/' }).catch(() => {});

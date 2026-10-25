@@ -108,6 +108,10 @@ test.describe('under 13', () => {
     });
     await open(page, '#/watch');
     await page.locator('#view button.watch-card').first().click();
+    await expect(page.locator('dialog.vm-player .vp-play')).toBeVisible(); // the facade: nothing is sent and no view is counted before play
+    expect(hosts, 'no host reached by opening the player').toEqual([]);
+    expect((await page.evaluate(() => (window as any).__ev || []) as string[]).filter(e => e.startsWith('math/watch/'))).toEqual([]);
+    await page.locator('dialog.vm-player .vp-play').click();
     await expect(page.locator('dialog.vm-player iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\//);
     events.push(...await page.evaluate(() => (window as any).__ev || []));
     expect(events.filter(e => e.startsWith('math/watch/'))).toEqual([expect.stringMatching(/^math\/watch\/(video|short)$/)]);

@@ -43,7 +43,7 @@ test('Every main route: home, Learn, a Grade, a Skill, the Dojo, the Arena, Game
   }
 });
 
-test('A video plays in the page: the thumbnails show, the YouTube player frame loads, and no violation fires', async ({ page, baseURL }) => {
+test('A video plays in the page: the thumbnails show, the player opens on its facade, the YouTube player frame loads on play, and no violation fires', async ({ page, baseURL }) => {
   const v = await watchViolations(page);
   await open(page, '#/watch');
   await policy(page, baseURL);
@@ -51,6 +51,12 @@ test('A video plays in the page: the thumbnails show, the YouTube player frame l
   await expect(card).toBeVisible();
   await expect.poll(() => card.locator('img').evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0)).toBe(true);
   await card.click();
+  // The facade (change learnvedicmath): this site's thumbnail, no frame, then the frame on play
+  const dlg = page.locator('dialog.vm-player');
+  await expect(dlg).toBeVisible();
+  await expect(dlg.locator('.vp-play img')).toHaveAttribute('src', /^\/thumbs\/yt-/);
+  await expect(dlg.locator('iframe')).toHaveCount(0);
+  await dlg.locator('.vp-play').click();
   await expect(page.locator('dialog.vm-player iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\//);
   await expect.poll(() => page.frames().some(f => /youtube-nocookie\.com/.test(f.url()))).toBe(true);
   await none(page, v, '#/watch');

@@ -103,8 +103,25 @@ test('modeLink sends math/landing/mode/<Mode> for a Mode only, with a fixed titl
 });
 test('app.js calls tryStart with only the Mode and findGo with no arguments', () => {
   const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
-  assert.deepEqual(callSites(app).filter(c => c.fn === 'metrics.tryStart').map(c => c.args.trim()), ['mode', 'm']);
+  assert.deepEqual(callSites(app).filter(c => c.fn === 'metrics.tryStart').map(c => c.args.trim()), ['mode', 'm', 'm']); // the picker, the tile Home, the Sky Home
   assert.deepEqual(callSites(app).filter(c => c.fn === 'metrics.findGo').map(c => c.args.trim()), ['']);
+});
+
+/* ---------- Installing the app (install-app) ---------- */
+test('install: each kind sends math/install/<kind>; wizard_open names a known entry point; anything else sends nothing', () => {
+  clear();
+  for (const k of M.INSTALL_EVENTS) if (k !== 'wizard_open') M.install(k);
+  for (const f of M.INSTALL_FROM) M.install('wizard_open', f);
+  M.install('wizard_open'); M.install('wizard_open', 'ios-safari'); M.install('nudge'); M.install('Swift Tiger 42'); M.install(undefined);
+  assert.deepEqual(paths(), ['math/install/nudge_shown', 'math/install/nudge_later', 'math/install/prompt_accepted', 'math/install/prompt_dismissed',
+    'math/install/installed', 'math/install/opened', 'math/install/wizard_open/home', 'math/install/wizard_open/me', 'math/install/wizard_open/footer', 'math/install/wizard_open/guide']);
+  assert.ok(sent.every(([p, t]) => PATH.test(p) && t === 'Vedic Math: install'));
+});
+test('js/install.js sends install events with fixed words or its entry point only', () => {
+  const src = readFileSync(new URL('../js/install.js', import.meta.url), 'utf8');
+  const calls = callSites(src).filter(c => c.fn === 'metrics.install');
+  assert.ok(calls.length >= 6, `found the call sites (${calls.length})`);
+  for (const c of calls) assert.match(c.args.trim(), /^'(nudge_shown|nudge_later|prompt_accepted|prompt_dismissed|installed|opened)'$|^'wizard_open', from$/, c.args);
 });
 
 /* ---------- Star Quest counts (sky-home) ---------- */
@@ -212,6 +229,7 @@ test('no event or title carries anything but fixed words, route names, catalog i
   for (const s of M.SHARE_SURFACES) M.shareClick(s);
   for (const k of M.STAR_EVENTS) M.starEvent(k, 'sq5');
   for (const k of M.TOUR_EVENTS) M.tourEvent(k);
+  for (const k of M.INSTALL_EVENTS) M.install(k, 'home');
   M.view('#/', known, false, true);
   for (const [p, t] of sent) {
     assert.match(p, PATH, p);
@@ -234,8 +252,10 @@ const ALLOWED = new Set([
   'v.kind', 'v.title',          // Watch: a video's kind (video or short) and title (catalog, js/videos.js)
   'h', 'knownId', 'picker',    // route views: the hash goes through metrics.routePath and the catalog check
   'asSky',                     // route views: true when home showed the Sky (a fixed word, sky)
+  'from',                      // the Install guide's entry point (metrics.install checks it against INSTALL_FROM)
   'ok', "lives ? '' : ''", 'fx.MODES[fx.mode()].league', // right or miss; 'run' or 'practice'; the League
   'surface',                   // a followed Sutra tag's surface: one of the fixed words in js/sutra-tag.js SURFACES
+  'result', 'TITLES[result]', // the import page's hand-off result and its title (js/handoff.js count: one of RESULTS, a fixed set the analytics spec lists; test/handoff.test.mjs pins it)
 ]);
 /* Every call of track(, siteTrack( and metrics.<fn>( with its argument text */
 export function callSites(src) {
