@@ -20,7 +20,11 @@ import { BG_NOTES, ROOTS_INTRO } from './sky-scene.js';
 /* A worked example as heard: its label, then its working ("65 squared. 6 times 7 equals 42, then 25, gives 4225.") */
 export const exampleLine = ([q, a]) => `${q}. ${a}`;
 
-export const skillLines = s => [s.idea, ...(s.method || [])].filter(Boolean);
+/* A Skill as its page shows it: the idea, then the method (a Trick's Skill: when to use it) */
+export const skillLines = s => {
+  const t = s.trick && TRICKS.find(x => x.id === s.trick);
+  return [s.idea, ...(t ? [t.when] : s.method || [])].filter(Boolean);
+};
 export const trickLines = t => [t.idea, t.when].filter(Boolean);
 export const sutraCardLines = c => [c.meaning, c.plain, c.example].filter(Boolean);
 export function sutraDeepLines(name) {
@@ -69,11 +73,7 @@ export function allExplanationLines({ videos = [], links = [] } = {}) {
    recording once the inventory is recorded. Keys that read numbers made up per problem (worked steps) are handled in
    js/listen.js from the page itself. */
 const sutraById = id => [...SUTRAS.map(c => ({ ...c, id: 's' + c.n })), ...SUBSUTRAS.map(c => ({ ...c, id: 'u' + c.n }))].find(c => c.id === id);
-/* A Skill page: its idea, then How it works (a Trick's page shows when to use it instead of the method) */
-export const skillPageLines = s => {
-  const t = s.trick && TRICKS.find(x => x.id === s.trick);
-  return [s.idea, ...(t ? [t.when] : s.method || [])].filter(Boolean);
-};
+export const skillPageLines = skillLines;
 export const SUTRA_PARTS = ['plain', 'why', 'examples', 'uses'];
 /* One section of a Sutra deep dive, as the dialog shows it */
 export function sutraSectionLines(c, part) {

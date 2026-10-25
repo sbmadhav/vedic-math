@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 801147,
+  "total": 801153,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -56,7 +56,7 @@
    "/js/check.js": 2946,
    "/js/cloud-config.js": 588,
    "/js/cloud.js": 4437,
-   "/js/explain-lines.js": 2338,
+   "/js/explain-lines.js": 2325,
    "/js/family-helpers.js": 5263,
    "/js/family-hook.js": 775,
    "/js/family-lines.js": 2624,
@@ -145,8 +145,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 23317,
-   "/play/": 3973,
-   "/sw.js": 6187,
+   "/play/": 3965,
+   "/sw.js": 6214,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
