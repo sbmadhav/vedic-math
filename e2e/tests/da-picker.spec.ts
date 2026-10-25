@@ -1,4 +1,4 @@
-import { test, expect, APP, type Page } from './fixtures';
+import { test, expect, APP, pinStoryDay, type Page } from './fixtures';
 
 /* The first-visit Mode picker after the design audit (packet P7): the picker heading on the type scale above the card
    titles, the hero's headline on the display-l token, one column of row cards on phones and tablets, and the
@@ -71,13 +71,16 @@ test('at 1280 the cards are three across', async ({ page }) => {
 });
 
 /* The still frame (reduced motion, the suite's default) holds the day's story where there is room. A tall screen has
-   room below the picker; the story and its caption stay out of the hero, and the plaque has no stroked edge. */
+   room below the picker; the story and its caption stay out of the hero, and the plaque has no stroked edge. The day
+   is fixed: the taller drawings (the Meru-prastāra, the rope and peg) have room only for the drawing here. */
 test('the sky keeps its story out of the hero, never with a compact caption, and the caption plaque has no edge', async ({ page }, testInfo) => {
+  await picker(page, 1280, 1100);
+  await pinStoryDay(page, 'nakshatras');
   await picker(page, 1280, 1100);
   await expect(sky(page)).toHaveAttribute('data-phase', 'still', { timeout: 10_000 });
   const s = await state(page), hero = (await page.locator('.mq-hero').boundingBox())!;
   expect(s.place).not.toBe('compact');
-  expect(s.story, 'a story is placed at 1280 by 1100').not.toBe('');
+  expect(s.story, 'the pinned day\'s story is placed at 1280 by 1100').toBe('nakshatras');
   expect(meets(s.box.split(',').map(Number), hero), `story ${s.story} at ${s.box} is clear of the hero`).toBe(false);
   expect(s.cap, 'the story has its caption').toBeTruthy();
   const [x, y, w, h] = s.cap.split(',').map(Number);
