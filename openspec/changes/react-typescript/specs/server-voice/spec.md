@@ -79,7 +79,7 @@ The server SHALL count what every request to the speech provider costs at list p
 - **THEN** the day's counted spend never passes the cap
 
 ### Requirement: The device's voice is the fallback
-Read aloud SHALL say a line with studio clips when every clip is loaded, or else with the device's voice, whenever the server refuses, the cap is reached, the server voice is switched off, the network is down, or the Server line has not started playing within 600 ms of the tap. One line SHALL always be said by one voice. A Server line a Player has heard SHALL play again offline.
+Read aloud SHALL say a line with studio clips when every clip is loaded, or else with the device's voice, whenever the server refuses, the cap or the per-address limit is reached, the Player's Age answer is under 13 and the Server line is not on the voice host yet, the server voice is switched off, the network is down, or the Server line has not started playing within 600 ms of the tap. One line SHALL always be said by one voice. A Server line a Player has heard SHALL play again offline.
 
 #### Scenario: Offline
 - **WHEN** a Player who is offline is asked a sentence they have never heard
@@ -101,8 +101,8 @@ A request to the server voice SHALL carry only the protocol version, the voice p
 - **THEN** the request body holds only `v`, `voice`, `template` and `nums`, the access proof is in the `Authorization` header, and the request carries no cookie
 
 #### Scenario: A Player under 13
-- **WHEN** an Explorer Player whose Age answer is under 13 is asked a new sentence
-- **THEN** the same request is sent with no Player data, no Firebase identity is created, and no lasting identifier is sent
+- **WHEN** an Explorer Player whose Age answer is under 13 is asked a sentence
+- **THEN** the game asks only the voice host for it, Turnstile does not load, no request reaches the server voice, no Firebase identity is created, and the line is said by the Server line already on the voice host, the clips or the device's voice
 
 ### Requirement: The provider's key stays on the server
 The speech provider's key SHALL exist only as a server secret.
@@ -112,22 +112,29 @@ The speech provider's key SHALL exist only as a server secret.
 - **THEN** it is not found
 
 ### Requirement: The access proof is transient
-The access proof SHALL be either a Firebase ID token, which a Player has only after their first World board post and which names that Player's anonymous Firebase account, or an anonymous ticket the server signed. The server SHALL check it, then discard it: it SHALL never log, store or forward it, and SHALL never link it to a sentence. The parent note and privacy notice SHALL say so.
+The access proof SHALL be a `voice`-scope session ticket the server signed after a Cloudflare Turnstile check, naming no Player. The game SHALL NOT send a Firebase ID token to the server voice. The server SHALL check the ticket, then discard it: it SHALL never log, store or forward it, and SHALL never link it to a sentence. The parent note and privacy notice SHALL say so.
 
 #### Scenario: A Player who has posted
 - **WHEN** a Player with a Firebase identity is asked a new sentence
-- **THEN** the token is checked and discarded, the speech provider receives only the sentence and the profile's settings, and no record joins the token to the sentence
+- **THEN** the request carries the `voice` ticket and no Firebase ID token, the ticket is checked and discarded, the speech provider receives only the sentence and the profile's settings, and no record joins the ticket to the sentence
 
 ### Requirement: Access is checked before a new recording
-The server SHALL check access before voicing a new sentence: a Firebase ID token when the Player has one, verified for signature, audience, issuer and expiry, or a short-lived session ticket the server signed for voice when the Player has no Firebase identity; a ticket made for another use SHALL be refused. It SHALL never create an identity for this, and SHALL rate limit requests per connection address without keeping the address.
+The server SHALL voice a new sentence only for a request with a valid `voice`-scope session ticket, issued after a Cloudflare Turnstile check the game runs once per browser session (and again when the ticket expires), as the Family conversation does; a ticket made for another use SHALL be refused. Turnstile SHALL never load for a Player whose Age answer is under 13, so such a Player SHALL ask the server voice for nothing. The server SHALL never create an identity for this.
 
-#### Scenario: A Player with no Firebase identity
-- **WHEN** an Explorer Player whose Age answer is under 13 is asked a new sentence
-- **THEN** the game gets a short-lived ticket the server signed, the server accepts it, and no Firebase identity is created
+#### Scenario: A Player of 13 or over with no Firebase identity
+- **WHEN** a Challenger Player whose Age answer is 14 is asked a new sentence for the first time in a browser session
+- **THEN** the Turnstile check runs once, the game gets a short-lived `voice` ticket the server signed, the server accepts it, and no Firebase identity is created
 
-#### Scenario: A bad token
-- **WHEN** a request to voice a new sentence carries an expired or forged token
+#### Scenario: No ticket
+- **WHEN** a request to voice a new sentence carries no ticket, or an expired or forged one
 - **THEN** the server refuses it without asking the provider, and the Player hears the clips or the device's voice
+
+### Requirement: A per-address limit on new recordings
+The server SHALL limit requests to voice a new sentence per connection address (about 20 an hour, a server setting), counted in the same Durable Object as the spend ledger with the address kept only as a keyed hash whose key changes daily, and the count deleted when its hour ends. Over the limit it SHALL refuse without asking the provider.
+
+#### Scenario: Too many from one address
+- **WHEN** requests to voice new sentences from one connection address pass the hourly limit
+- **THEN** the next one is refused without asking the provider, the Player hears the clips or the device's voice, and no address is stored, only its keyed hash until the hour ends
 
 ### Requirement: The server voice can be switched off
 The server SHALL have one setting that switches the server voice off. Off, it SHALL voice nothing, and within 5 minutes the game SHALL stop playing Server lines, cached or new, and say them with the clips or the device's voice. A build without the voice host SHALL also have the server voice off.

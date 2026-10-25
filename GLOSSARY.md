@@ -146,6 +146,10 @@ _Avoid_: popup, interruption, intervention
 Something that may start a Visit: 2 misses in a row on one Skill, 3 misses in a round, about 20 seconds idle on one question, Hint pressed twice, leaving a round early after misses, or a help phrase in listening mode. Never acted on mid-question in a timed race.
 _Avoid_: trigger (in copy), frustration detection
 
+**Clue**:
+In talking with the Family (13 and over), one reply that hints at the question on screen, or points at a part of it. Each question has a few; at zero the speakers explain the method in general. Talk about the method or the Sutra in general uses none, and the first clue on a question counts as the round's Hint. (Proposed in the `family-helpers` change, design D18.)
+_Avoid_: hint token, credit
+
 **Celebration**:
 What the app does when something good happens (`js/celebrate.js`, `celebrations` change). The big confetti is only for a true win (a Star lit, a Medal, a Belt, a badge, a new Title, a first Sutra card, a personal best, a game won); everyday moments (picking a Mode, a right answer, a streak) get a small one, such as a card pop, a few sparkles or a bounce. None moves under reduced motion, Pause motion or Calm.
 _Avoid_: reward animation, juice

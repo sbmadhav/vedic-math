@@ -19,7 +19,7 @@ The model is two old desktop helpers, with their mistakes left out. From Bonzi B
 - **Never in the way.** They roam the edges and margins, never over the question, the answer field or the buttons; every visit closes in one tap or Escape; "Not now" mutes them for the session; focus stays in the answer field. Me gains a setting: Always, Only when I ask, Off. Calm, Pause motion and reduced motion make them fade in still. Screen readers hear the words through the existing polite live region; the art is hidden from them.
 - **They know the Player a little, on the device only.** They greet the Player by Nickname and remember which Sutra or Skill was hard last time; both stay in the Player's record on this device and are never sent (ADRs 0006 and 0008).
 - **Voices later, text now.** Text always shows in the bubble. Each friend gets a Chirp 3 HD voice distinct from Bolt's Aoede (Shunya Puck, Nava Leda, Eka Charon), every line prerecorded per band; the owner runs and pays for the samples and the recording. Until the recording lands the new lines are text only.
-- **Second layer, later and opt-in: talking with the Family** (an AI conversation, server side, only for Players whose saved age or grade says 13 or over, never for under-13) and **listening** (push-to-talk in Pro, and an opt-in listening mode with a mic badge that only looks for help phrases, on the device where the browser allows, never storing audio or words). Both are planned here with a proposed ADR (0015) and built after the React port.
+- **Second layer, later and opt-in: talking with the Family** (an AI conversation, server side, only for Players whose saved age or grade says 13 or over, never for under-13) and **listening** (push-to-talk in Pro, and an opt-in listening mode with a mic badge that only looks for help phrases, on the device where the browser allows, never storing audio or words). Both are planned here with a proposed ADR (0015) and built after the React port. On 2026-10-24 the owner settled the conversation's shape (design D18): Bolt joins Shunya, Nava and Eka, and answers every why or how question; one call per turn to Claude Haiku 4.5 on our own Worker route returns at most two short replies; four checked actions (an example on other numbers, pointing at a part of the question, the Sutra, a pose), none of which shows the answer; a clue limit per question; text only at first; fixed safety instructions, contact details stripped in the browser and a server check that swaps a bad reply for a scripted line; Cloudflare Turnstile once per browser session and about 20 turns an hour per address, the same protection on the server voice. CopilotKit was weighed and rejected. What a turn sends is unchanged.
 
 Out of scope:
 
@@ -32,7 +32,7 @@ Out of scope:
 
 1. **Now (this PR):** this change, ADR 0015 (proposed), the glossary words, the prototype `docs/prototypes/family-helpers/` (look and motion) with its listening page, the voice sample tool `tools/voice/family-samples.mjs` (the owner runs it).
 2. **Now (this PR):** the scripted Family in the Legacy Practice, Kata and Star end views, behind the per-Player switch "Try the Nikhilam Family helpers" in Me (off by default, like the Sky's switch was), with the help setting, the line table and the tests.
-3. **After react-typescript phase 2 ships** (held for its owner task 0.8, Workers Paid): port the overlay into the React root layout; then the recording of the lines; then the AI conversation layer for 13+ and listening (ADR 0015, server code on the Worker with its own ledger limit beside `VoiceLedger`); then the 3D Family on React Three Fiber.
+3. **After react-typescript phase 2 ships** (held for its owner task 0.8, Workers Paid): port the overlay into the React root layout; then the recording of the lines; then the AI conversation layer for 13+ and listening (ADR 0015, design D18, server code on the Worker with its own ledger limit beside `VoiceLedger`, behind Turnstile; a throwaway prototype outside the repository tries the chat first); then the 3D Family on React Three Fiber.
 
 `age-bands` is not a dependency: the Family read `player.reading` when it exists and fall back to the Mode. `sutras-first`, when it lands, gives every Skill a Sutra tag; until then Eka names the Sutra from the Trick's own `sutra` and `meaning` (`js/vedic.js`), and says the method without a Sutra name for school Skills.
 
@@ -42,7 +42,7 @@ Out of scope:
 
 - `family-helpers`: the three friends, the help signals, escalation, the visit and its buttons, never the answer, where they stand, the Me setting and the switch, memory on the device, text and voice, Calm and motion, screen readers.
 - `helper-listening`: push-to-talk and the opt-in listening mode (planned, step 3).
-- `helper-conversation`: the opt-in AI conversation layer for 13+ with its caps and fallback (planned, step 3).
+- `helper-conversation`: the opt-in AI conversation layer for 13+: Bolt and the three friends, our own endpoint and model, what is sent, the server check, the four actions, the clue limit, safety, bot protection, text only, the caps and fallback (planned, step 3).
 
 ### Modified Capabilities
 
@@ -52,4 +52,4 @@ Out of scope:
 
 ## Affected
 
-Every Mode and every Player who turns the switch on (off by default): Practice on Skill pages and Endless practice and runs, Katas, the Star end screen, Me. Nothing is sent that was not sent before, except the anonymous fixed-word visit counts (analytics). No change for a Player who leaves the switch off.
+Every Mode and every Player who turns the switch on (off by default): Practice on Skill pages and Endless practice and runs, Katas, the Star end screen, Me. Nothing is sent that was not sent before, except the anonymous fixed-word visit counts (analytics). Step 3 also adds the Turnstile check and per-address limit to the server voice planned in `react-typescript` (its server-voice spec). No change for a Player who leaves the switch off.
