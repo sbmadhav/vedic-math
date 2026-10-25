@@ -1561,7 +1561,7 @@ function familySwitchHTML(p) {
     ${on ? `<fieldset class="me-fam-when"><legend>When they help</legend>${FAMILY_WHEN.map(([v, l]) => `<label><input type="radio" name="familyHelp" value="${v}"${v === when ? ' checked' : ''}> ${l}</label>`).join('')}</fieldset>` : ''}
     <p class="pr-say" id="familyMsg" role="status" aria-live="polite"></p></div>`;
 }
-function meView() {
+function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw from one of its own buttons passes it on */
   document.title = `Me · Learn Vedic Math`;
   const p = store.player(), T = gm.titleInfo(), got = store.badges(), done = SKILLS.filter(s => store.mastered(s.id)).length;
   const badges = gm.badgesFor(fx.mode(), got); /* Explorer is not offered Belts or Sutra cards, so their badges are listed only once earned */
@@ -1600,17 +1600,25 @@ function meView() {
     <h2 class="mq-strand">Backup</h2>
     <p class="mq-data"><button class="md-btn md-btn--sm" id="pExport">Copy backup code</button> <button class="md-btn md-btn--sm" id="pImport">Restore from code</button> <button class="md-btn md-btn--sm" id="pReset">Reset this player</button></p>
     <p class="pr-say" id="pMsg" role="status" aria-live="polite"></p>
-    <p class="mq-note">Progress stays in this browser. Leaderboards only ever see your made-up nickname, color and score.</p>
+    <div class="md-card me-restore" id="pOffer" hidden>
+      <h3 class="mq-h3" id="pOfferH" tabindex="-1">Restore from this code?</h3>
+      <ul id="pOfferList"></ul>
+      <p class="mq-small">With them come their Sparks, Medals, Stars, Ratings and settings. World board names and the Device board start fresh.</p>
+      <p class="mq-small" id="pOfferHere" hidden><b>This device already has progress:</b> <span></span>. Keep both adds the code's Players next to the ones here; each Player keeps their own progress.</p>
+      <div class="me-acts" id="pOfferFresh"><button class="md-btn md-btn--sm md-btn--primary" id="pBring">Bring it</button><button class="md-btn md-btn--sm" id="pNotNow">Not now</button></div>
+      <div class="me-acts" id="pOfferHas" hidden><button class="md-btn md-btn--sm" id="pKeep">Keep this device's</button><button class="md-btn md-btn--sm" id="pUse">Use the code's</button><button class="md-btn md-btn--sm md-btn--primary" id="pBoth">Keep both</button></div>
+    </div>
+    <p class="mq-note">Progress stays in this browser; the backup code holds every Player on this device. Leaderboards only ever see your made-up nickname, color and score.</p>
   </div></section>`;
   const msg = t => ($('#pMsg').textContent = t);
-  $('#meName').onclick = () => { store.updatePlayer({ name: store.makeName() }); fx.sfx('pop'); meView(); };
-  view.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { store.updatePlayer({ avatar: b.dataset.c }); meView(); });
-  view.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { fx.setMode(b.dataset.mode); gm.startDay(); fx.sfx('level'); meView(); });
-  view.querySelectorAll('[data-switch]').forEach(b => b.onclick = () => { store.switchPlayer(b.dataset.switch); fx.applyMode(); fx.sfx('pop'); meView(); });
-  view.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { if (confirm('Remove this player and their progress from this device?')) { store.removePlayer(b.dataset.del); meView(); } });
+  $('#meName').onclick = () => { store.updatePlayer({ name: store.makeName() }); fx.sfx('pop'); meView(ctx); };
+  view.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { store.updatePlayer({ avatar: b.dataset.c }); meView(ctx); });
+  view.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { fx.setMode(b.dataset.mode); gm.startDay(); fx.sfx('level'); meView(ctx); });
+  view.querySelectorAll('[data-switch]').forEach(b => b.onclick = () => { store.switchPlayer(b.dataset.switch); fx.applyMode(); fx.sfx('pop'); meView(ctx); });
+  view.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { if (confirm('Remove this player and their progress from this device?')) { store.removePlayer(b.dataset.del); meView(ctx); } });
   $('#meAdd').onclick = () => { store.addPlayer(); fx.applyMode(); location.hash = '#/'; render(); };
-  const sky = $('#skySwitch'); if (sky) sky.onclick = () => { store.updatePlayer({ sky: sky.getAttribute('aria-checked') !== 'true' }); fx.sfx('pop'); meView(); $('#skySwitch').focus(); $('#skyMsg').textContent = SKY.skyOn(store.player()) ? 'The Sky is your home now.' : 'Your home is the tile home again.'; };
-  const fam = $('#familySwitch'); if (fam) fam.onclick = () => { store.updatePlayer({ family: fam.getAttribute('aria-checked') !== 'true' }); fx.sfx('pop'); meView(); $('#familySwitch').focus(); $('#familyMsg').textContent = store.player().family ? 'The Family helpers are on.' : 'The Family helpers are off.'; };
+  const sky = $('#skySwitch'); if (sky) sky.onclick = () => { store.updatePlayer({ sky: sky.getAttribute('aria-checked') !== 'true' }); fx.sfx('pop'); meView(ctx); $('#skySwitch').focus(); $('#skyMsg').textContent = SKY.skyOn(store.player()) ? 'The Sky is your home now.' : 'Your home is the tile home again.'; };
+  const fam = $('#familySwitch'); if (fam) fam.onclick = () => { store.updatePlayer({ family: fam.getAttribute('aria-checked') !== 'true' }); fx.sfx('pop'); meView(ctx); $('#familySwitch').focus(); $('#familyMsg').textContent = store.player().family ? 'The Family helpers are on.' : 'The Family helpers are off.'; };
   view.querySelectorAll('input[name="familyHelp"]').forEach(r => r.onchange = () => { store.updatePlayer({ familyHelp: r.value }); $('#familyMsg').textContent = r.value === 'off' ? 'They will stay away.' : r.value === 'ask' ? 'They come when you tap Ask a friend.' : 'They come when a question gets tricky, or when you ask.'; });
   $('#setSound').onchange = e => { fx.setSound(e.target.checked); fx.sfx('ok'); };
   $('#setBg').onchange = e => { setBg(e.target.checked); const t = document.getElementById('vmBg'); if (t) t.checked = e.target.checked; };
@@ -1624,9 +1632,16 @@ function meView() {
   /* The Install guide's card (openspec change install-app): drawn above when the module is here, else put in its place once it is */
   withInstall(m => { const c = $('#meInstallCard'); if (c) c.outerHTML = m.meCardHTML(); const mi = $('#meInstall'); if (mi) mi.onclick = () => m.openGuide('me'); });
 
-  $('#pExport').onclick = async () => { const code = btoa(unescape(encodeURIComponent(store.exportData()))); try { await navigator.clipboard.writeText(code); msg('Backup code copied. Paste it somewhere safe.'); } catch (e) { prompt('Copy this backup code:', code); } };
-  $('#pImport').onclick = () => { const code = prompt('Paste your backup code:'); if (!code) return; try { store.importData(decodeURIComponent(escape(atob(code.trim())))); msg('Progress restored.'); meView(); } catch (e) { msg('That code did not work. Check that it was copied in full.'); } };
-  $('#pReset').onclick = () => { if (confirm('Reset all progress for this player?')) { store.reset(); meView(); msg('Progress reset.'); } };
+  /* Backup (js/backup.js, loaded after this view has drawn, so a first load never waits for it): every button waits
+     for the module, then runs its handler; the buttons are wired once */
+  const listen = (el, fn) => { if (ctx.signal) on(el, 'click', fn, ctx.signal); else el.onclick = fn; };
+  let bk = null;
+  store.loadBackup().catch(() => {});
+  const backup = fn => async () => { if (!bk) { try { bk = (await store.loadBackup()).meBackup({ $, msg }); } catch (e) { msg('The backup tools could not load. Check the connection, then try again.'); return; } } fn(bk); };
+  listen($('#pExport'), backup(b => b.copy())); listen($('#pImport'), backup(b => b.restore()));
+  listen($('#pBring'), backup(b => b.choose('replace'))); listen($('#pUse'), backup(b => b.choose('replace'))); listen($('#pBoth'), backup(b => b.choose('both')));
+  listen($('#pNotNow'), backup(b => b.keep())); listen($('#pKeep'), backup(b => b.keep()));
+  $('#pReset').onclick = () => { if (confirm('Reset all progress for this player?')) { store.reset(); meView(ctx); msg('Progress reset.'); } };
 }
 
 /* ---------- Trick animator ---------- */
