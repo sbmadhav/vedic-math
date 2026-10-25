@@ -20,9 +20,7 @@ import { BG_NOTES, ROOTS_INTRO } from './sky-scene.js';
 /* A worked example as heard: its label, then its working ("65 squared. 6 times 7 equals 42, then 25, gives 4225.") */
 export const exampleLine = ([q, a]) => `${q}. ${a}`;
 
-/* A Skill's explanation as its page shows it: the idea, then How it works. A Trick's Skill shows when to use it instead:
-   its `method` also holds two worked steps on numbers drawn per page load, never shown and never recorded, so the
-   recording list is the same on every run (explanation-audio 4.6). */
+/* A Skill as its page shows it: the idea, then How it works (a Trick's Skill: when to use it, not its drawn steps) */
 export const skillLines = s => {
   const t = s.trick && TRICKS.find(x => x.id === s.trick);
   return [s.idea, ...(t ? [t.when] : s.method || [])].filter(Boolean);
@@ -75,7 +73,6 @@ export function allExplanationLines({ videos = [], links = [] } = {}) {
    recording once the inventory is recorded. Keys that read numbers made up per problem (worked steps) are handled in
    js/listen.js from the page itself. */
 const sutraById = id => [...SUTRAS.map(c => ({ ...c, id: 's' + c.n })), ...SUBSUTRAS.map(c => ({ ...c, id: 'u' + c.n }))].find(c => c.id === id);
-/* A Skill page reads what skillLines() records */
 export const skillPageLines = skillLines;
 export const SUTRA_PARTS = ['plain', 'why', 'examples', 'uses'];
 /* One section of a Sutra deep dive, as the dialog shows it */
