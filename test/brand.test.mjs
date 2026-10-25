@@ -93,7 +93,7 @@ test('every page links the favicon set and the Apple touch icon; pages with Open
 test('the icons have the sizes the pages and the manifest name', () => {
   for (const [f, w, h] of [['icons/favicon-16.png', 16, 16], ['icons/favicon-32.png', 32, 32], ['icons/favicon-48.png', 48, 48],
     ['icons/apple-touch-icon.png', 180, 180], ['icons/icon-192.png', 192, 192], ['icons/icon-512.png', 512, 512],
-    ['icons/maskable-512.png', 512, 512], ['icons/og.png', 1200, 630]]) {
+    ['icons/maskable-192.png', 192, 192], ['icons/maskable-512.png', 512, 512], ['icons/og.png', 1200, 630]]) {
     const p = png(f);
     assert.deepEqual([p.w, p.h], [w, h], f);
   }
@@ -103,6 +103,7 @@ test('the icons have the sizes the pages and the manifest name', () => {
     assert.equal(`${p.w}x${p.h}`, i.sizes, i.src);
   }
   assert.ok(manifest.icons.some(i => i.purpose === 'maskable' && i.src === '/icons/maskable-512.png'));
+  assert.ok(manifest.icons.some(i => i.purpose === 'maskable' && i.src === '/icons/maskable-192.png'));
 });
 
 test('the published favicon is the brand source, and its eyes sit on the 16, 32 and 48 px pixel grids', () => {

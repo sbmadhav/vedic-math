@@ -53,6 +53,7 @@ export const EXCLUDED = [
   'vm.metrics', 'vm.firstSeen',                    // analytics milestones start fresh
   'vm.migratedAt',                                 // written by the hand-off itself, on each side
   'vm.voiceName', 'vm.naturalVoice', 'vm.naturalVoiceId', // this device's speech engine and its 100 MB download
+  'vm.install',                                    // the Install nudge's schedule (openspec change install-app): this site's app, not the old one
 ];
 /* Parts the packer may leave out, biggest first, to fit MAX_PAYLOAD; the import page names them */
 export const OPTIONAL = ['play', 'seen', 'days', 'skyLast', 'questDay'];

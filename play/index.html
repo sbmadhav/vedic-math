@@ -15,15 +15,22 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Learn Vedic Math logo: the digits one, zero and nine drawn as a smiling family">
-<!-- Before paint: the saved color scheme and Pause motion, so there is no flash and nothing moves -->
-<script>try{var d=document.documentElement,t=localStorage.getItem('theme');if(t==='light'||t==='dark')d.dataset.theme=t;if(localStorage.getItem('motion-paused')==='1')d.classList.add('motion-paused');}catch(e){}</script>
+<!-- The browser and the installed app's bars take the page background (--bg): Daybreak here, Deep Space set before paint
+     below, then kept on the current --bg by the design system's header script -->
 <meta name="theme-color" content="#F6F7F9">
+<!-- Before paint: the saved color scheme and Pause motion, so there is no flash and nothing moves; the bar color follows the scheme -->
+<script>try{var d=document.documentElement,t=localStorage.getItem('theme');if(t==='light'||t==='dark')d.dataset.theme=t;if(localStorage.getItem('motion-paused')==='1')d.classList.add('motion-paused');if(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))document.querySelector('meta[name="theme-color"]').content='#0F1218';}catch(e){}</script>
 <link rel="icon" href="/icons/favicon-16.png" sizes="16x16" type="image/png">
 <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="/icons/favicon-48.png" sizes="48x48" type="image/png">
 <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
+<!-- The installed app on iPhone and iPad (openspec change install-app): its name under the icon, full screen, the system status bar -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Vedic Math">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preload" href="/fonts/nunito-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/fonts/fredoka-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/ds/2.1.0/tokens.css">
@@ -64,7 +71,7 @@
 
 <footer class="mq-foot">
   <div class="md-wrap">
-    <p>Learn Vedic Math is a free place to learn and play. Speed tricks use sutras from Bharati Krishna Tirtha's 1965 book; lessons, problems and visuals are original. Progress stays in this browser, and World boards only see a made-up Nickname. <a class="mq-guide" href="#/guide">How to use this app</a> · <a class="mq-grownups" href="/parents/?home">For grown-ups</a> · <a class="mq-privacy" href="/privacy/?home">Privacy</a> · <button type="button" class="linkbtn mq-reset" id="resetMode">Reset play mode</button></p>
+    <p>Learn Vedic Math is a free place to learn and play. Speed tricks use sutras from Bharati Krishna Tirtha's 1965 book; lessons, problems and visuals are original. Progress stays in this browser, and World boards only see a made-up Nickname. <a class="mq-guide" href="#/guide">How to use this app</a> · <a class="mq-grownups" href="/parents/?home">For grown-ups</a> · <a class="mq-privacy" href="/privacy/?home">Privacy</a><span id="installWrap" hidden> · <button type="button" class="linkbtn mq-install" id="installLink">Install the app</button></span> · <button type="button" class="linkbtn mq-reset" id="resetMode">Reset play mode</button></p>
   </div>
 </footer>
 
