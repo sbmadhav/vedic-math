@@ -60,7 +60,26 @@ test('every Listen key resolves to recorded lines in every Mode', () => {
 test('the keys the app draws exist', () => {
   const src = (f) => readFileSync(new URL(`../js/${f}`, import.meta.url), 'utf8');
   const app = src('app.js');
-  for (const k of ["'skill:' + s.id", "'sutra-card:' + c.id", '`sutra:${c.id}:plain`', '`sutra:${c.id}:why`', '`sutra:${c.id}:examples`', '`sutra:${c.id}:uses`', "'history'", "'guide:' + s.id", "'game:' + g.id"])
+  for (const k of ["'skill:' + s.id", "'sutra-card:' + c.id", '`sutra:${c.id}:plain`', '`sutra:${c.id}:why`', '`sutra:${c.id}:examples`', '`sutra:${c.id}:uses`', "'history'", "'guide:' + s.id", "'game:' + g.id", "'formats'"])
     assert.ok(app.includes(`listenBtn(${k}`), k);
   assert.match(src('tour.js'), /listenBtn\('tour'/);
+  assert.match(src('star.js'), /listenBtn\('from:\.star-step > p'/); // the Star replay's steps (worked steps: clips)
+  assert.match(app, /listenBtn\('from:\.q-l'/); // today's quests, each a recorded label
+});
+
+/* explanation-audio 4.4 and 4.5: quest labels, format rules and the "Older roots" notes are in the recording list, in
+   the words the page shows */
+import { rootsLines, formatLines } from '../js/explain-lines.js';
+import { BG_NOTES, ROOTS_INTRO } from '../js/sky-scene.js';
+import { QUEST_POOL } from '../js/gamify.js';
+import { FORMATS } from '../js/levels.js';
+
+test('quest labels, format rules and the Older roots notes are listed for the studio voice', () => {
+  const by = src => new Set(lines.filter(l => l.src === src).map(l => l.text));
+  for (const q of Object.values(QUEST_POOL).flat()) assert.ok(by('quests').has(q.label), q.label);
+  assert.deepEqual(formatLines(), Object.values(FORMATS).map(f => f.how));
+  for (const t of formatLines()) assert.ok(by('formats').has(t), t);
+  assert.equal(rootsLines()[0], ROOTS_INTRO);
+  assert.equal(rootsLines().length, BG_NOTES.length + 1);
+  for (const t of rootsLines()) assert.ok(by('roots').has(t), t);
 });

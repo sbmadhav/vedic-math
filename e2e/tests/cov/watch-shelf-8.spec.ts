@@ -69,6 +69,7 @@ for (const mode of ['explorer', 'challenger', 'pro'] as Mode[]) {
       for (const i of [0, n - 1]) {
         await cards.nth(i).click();
         await expect(dlg).toBeVisible();
+        await dlg.locator('.vp-play').click(); // the facade: the frame is written on play (change learnvedicmath)
         await expect(dlg.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/[A-Za-z0-9_-]{11}\?/);
         expect(await dlg.locator('iframe').getAttribute('src')).not.toMatch(PLAYLIST_OR_CHANNEL);
         const out = await dlg.locator('a[href]').evaluateAll(as => as.map(a => (a as HTMLAnchorElement).href));

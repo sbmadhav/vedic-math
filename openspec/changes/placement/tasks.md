@@ -2,7 +2,7 @@
 
 Prerequisites (owner Q15, and `react-typescript` design D3: build after the move and after the migration): `learnvedicmath` is archived (Parent step retired, privacy policy in `docs/legal/`); `react-typescript` has finished phase 6 (every view below is a React route module at `/learn/`, the logic is in `app/src/logic/` and `shared/src/`, and the lifecycle hooks, their lint rule, `ClientOnly`, `Markup` and the store's server snapshot exist); `better-voice` Part B is merged (Studio voice); `sky-home`, `star-round` and `try-trick-in-modes` are archived. Before starting, check every path below against the migrated layout and fix this file if it differs. `hook-first-star` is superseded by this change and is never applied.
 
-Re-planned 2026-10-21 for the React game (`react-typescript` task 12.2): the same tasks and checks, with paths, tests and lifecycle in the new stack, plus server-safe rendering (3.7); the Hook note from `try-trick-teaches` (4.5) is superseded by `try-trick-in-modes`. Vitest runs the unit tests (`pnpm test`), `pnpm lint` runs the lifecycle rule, and e2e specs reach modules through `mod(page, name)`. Every listener, timer and frame loop in a view goes through the hooks in `app/src/hooks/`; nothing in a view reads storage, `window` or the time during render.
+Re-planned 2026-10-21 for the React game (`react-typescript` task 12.2): the same tasks and checks, with paths, tests and lifecycle in the new stack, plus server-safe rendering (3.7) and the Hook note from `try-trick-teaches` (4.5, since superseded by `try-trick-in-modes`). Vitest runs the unit tests (`pnpm test`), `pnpm lint` runs the lifecycle rule, and e2e specs reach modules through `mod(page, name)`. Every listener, timer and frame loop in a view goes through the hooks in `app/src/hooks/`; nothing in a view reads storage, `window` or the time during render.
 
 ## 1. The engine (`app/src/logic/placement.ts`, pure)
 
@@ -33,7 +33,7 @@ Re-planned 2026-10-21 for the React game (`react-typescript` task 12.2): the sam
 - [ ] 4.2 `app/src/logic/hook.ts`: `HOOK_DARES`, `calcKeys`, `isNewPlayer()`, `S.hookSeen` (hook-first-star tasks 1.1 and 1.2). Verify: new `app/src/logic/hook.test.ts` with the cases written there, plus: `isNewPlayer()` is still true after a finished Placement and after a finished Try a trick (`try-trick-in-modes`: it earns Sparks but records no answer, so the Sparks condition of hook-first-star is left out, design decision 10).
 - [ ] 4.3 `app/src/views/star/Hook.tsx` and `Calculator.tsx` (what `runHook()` did), and the Star round's easiest-first deal (hook-first-star tasks 2.1 and 2.2); the race on `useInterval`, the reveal on `useTimer`, both under the round's `useRound` signal; `S.hookSeen` set when the dare appears, on Skip, and when a new Player's first Star has no dare (design decision 10). Verify: new `e2e/tests/hook.spec.ts`, every case listed in hook-first-star task 2.1, plus: a new Challenger placed at grade 5 opening the suggested Star gets the dare; a new Pro placed at grade 8 gets no Hook, then none on `from9` either; leaving the Star mid-race stops the calculator (no key appears after `fastForward(5000)` on Home). `app/src/logic/star.test.ts`: `starRound({ easiestFirst: true })`. Also: after a finished Try a trick, Play this Star on Home still opens with the Hook (a Try a trick records no answers).
 - [ ] 4.4 The Hook in Calm, motion and for screen readers (hook-first-star tasks 3.1 and 3.2). Verify: as written there, in `hook.spec.ts` and `a11y.spec.ts`.
-- [x] 4.5 Superseded (design decision 16): `try-trick-in-modes` removed Try a trick's worked example card, so there is nothing for the Star round's `intro` option to carry or the Hook to replace, and no `first-visit` or Hook-note delta. Nothing to build here.
+- [x] 4.5 Superseded (design decisions 10 and 16): `try-trick-in-modes` removed Try a trick's worked example card (`starIntro()` and the Star round's `intro` option), so there is nothing for the Star round to pass or the Hook to replace. Nothing to build here.
 
 ## 5. Privacy and analytics
 
@@ -48,7 +48,7 @@ Re-planned 2026-10-21 for the React game (`react-typescript` task 12.2): the sam
 ## 7. Docs
 
 - [ ] 7.1 `GLOSSARY.md`: drop "(Proposed in the `placement` change.)" from Placement, Placement level, Step and Hook once live. `docs/PLAN.md`: replace the Placement row (Age answer, grade picker and 3 items) with this design. ADR 0001: reword its last consequence (Placement does not ask the Age answer). Mark `docs/adr/0007` accepted. Verify: reviewer reads the diff; the copy test passes (no em dashes).
-- [ ] 7.2 `/opsx:archive placement` after release; delete `openspec/changes/hook-first-star/` in the same commit (it was never applied). Verify: `openspec validate --strict` passes and `openspec/specs/` gains `placement` and `hook`.
+- [ ] 7.2 `/opsx:archive placement` after release; delete `openspec/changes/hook-first-star/` in the same commit (it was never applied). Verify: `openspec validate --strict` passes and `openspec/specs/` gains `placement` and `hook`, and `first-visit` holds the Hook rule.
 
 ## 8. Release check
 

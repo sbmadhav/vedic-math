@@ -22,7 +22,7 @@ import * as LV from './levels.js';
 import { LEVELS, LEVELS_PER_GAME, levelMedal, boardGame } from './games.js';
 import * as AD from './adapt.js';
 import { initAmbient, bgOn, setBg, setBgLevel, BG_NOTES, stop as stopMusic, isPlaying as musicOn } from './ambient.js';
-import { levelFor } from './sky-scene.js';
+import { levelFor, ROOTS_INTRO } from './sky-scene.js';
 import { on, later, every, child, onAbort } from './life.js';
 import * as metrics from './metrics.js';
 import { boltHTML } from './bolt.js';
@@ -39,7 +39,7 @@ import { GROUPS, sectionsFor, tryFor, say, resolveTour, tourDue, tourState, setT
 import { sectionLines, buildIndex, rank, countOf, kindLabel } from './find.js';
 import { artFor } from './guide-art.js';
 import { startTour } from './tour.js';
-import { guideCounts } from './explain-lines.js';
+import { guideCounts, rootNote } from './explain-lines.js';
 import { listenBtn, wireListen } from './listen.js';
 import { sayButton, respellHTML, devaHTML, wireSay } from './say.js';
 import { sutraAmbience, ambienceButton, wireAmbience, settingsHTML as ambienceSettingsHTML, wireSettings as wireAmbienceSettings } from './sutra-ambience.js';
@@ -233,7 +233,7 @@ function modeIcon(id) {
 /* ---------- Home: one per mode ---------- */
 function questsHTML() {
   const qs = gm.quests();
-  return `<div class="md-card quest-card"><h2 class="mq-h3">Daily quests</h2><ul class="quests">${qs.map(q => `<li class="${q.done ? 'done' : ''}"><span class="q-check" aria-hidden="true">${q.done ? '&#10003;' : ''}</span><span class="q-t">${q.label}<span class="mq-bar"><i style="width:${pct(q.prog / q.goal)}%"></i></span></span><span class="q-n">${q.prog}/${q.goal}</span></li>`).join('')}</ul><p class="mq-small">Sparks are the points you earn for right answers. Each quest is worth 25 bonus Sparks. New quests every day.</p></div>`;
+  return `<div class="md-card quest-card"><h2 class="mq-h3">Daily quests</h2><p class="listen-row">${listenBtn('from:.q-l', "today's quests")}</p><ul class="quests">${qs.map(q => `<li class="${q.done ? 'done' : ''}"><span class="q-check" aria-hidden="true">${q.done ? '&#10003;' : ''}</span><span class="q-t"><span class="q-l">${q.label}</span><span class="mq-bar"><i style="width:${pct(q.prog / q.goal)}%"></i></span></span><span class="q-n">${q.prog}/${q.goal}</span></li>`).join('')}</ul><p class="mq-small">Sparks are the points you earn for right answers. Each quest is worth 25 bonus Sparks. New quests every day.</p></div>`;
 }
 function heroStats() {
   const p = store.player(), T = gm.titleInfo();
@@ -325,10 +325,12 @@ function keepGoingSkill(m) {
 const litStars = () => { const { lit } = store.starStates(); return SKY.PATH.filter(k => lit[k]).length; };
 function skyHome({ signal } = {}) {
   document.title = `Learn Vedic Math`;
-  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}${newHereHTML()}<div class="in-slot" id="installSlot"></div><div id="skyHome"></div>
+  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}${newHereHTML()}<div class="in-slot" id="installSlot"></div><div id="skyHome"></div>${tryCard(fx.mode())}
     <p class="mode-line">Mode: <b>${fx.MODES[fx.mode()].name}</b> <a href="#/me">Change</a></p></div></section>`;
   const back = (render.from || '').match(/^#\/star\/([\w-]+)\/(\d)$/);
   const out = skyView($('#skyHome'), { signal, focus: back ? `${back[1]}:${back[2]}` : null });
+  const tc = $('[data-try-open]'), m = fx.mode(), counted = () => metrics.tryStart(m); /* the Sky is this Player's Home, so it keeps the Try a trick card too */
+  if (tc) { if (signal) on(tc, 'click', counted, signal); else tc.onclick = counted; }
   homeTour(signal);
   withInstall(m => m.mountNudge($('#installSlot'), signal), signal);
   return out;
@@ -685,10 +687,10 @@ function tryView({ signal } = {}) {
   if (signal) { wireSay(view, signal); runTry($('#tryRoot'), { mode: m, signal }); }
 }
 /* star-round's findVideo seam: the Trick's hand-matched video (null offline or when the list fails to load), opened
-   in the in-page player. open(opener) resolves when the player closes. */
+   in the in-page player, which counts the view when play is pressed. open(opener) resolves when the player closes. */
 async function starVideo(trick, mode) {
   const v = await W.videoForTrick(trick, mode);
-  return v && { title: v.title, src: W.embedSrc(v), open: opener => { store.bump('watched'); track('watch/' + v.kind, 'Watch: ' + v.title); return new Promise(done => openPlayer(v, opener, done)); } };
+  return v && { title: v.title, src: W.embedSrc(v), thumb: W.thumbSrc(v), open: opener => new Promise(done => openPlayer(v, opener, done)) };
 }
 
 /* ---------- Arena challenge tower ---------- */
@@ -712,7 +714,7 @@ function chapterView(c) {
     ${crumbs(['#/arena', 'Arena'], ['#/tower', 'Challenge tower'], [null, `Chapter ${c}`])}
     <span class="md-tag md-tag--coral">Chapter ${c} of ${LV.TOPICS.length}</span>
     <h1 class="md-heading">${tp.name}</h1>
-    <div class="fmt-legend">${Object.values(LV.FORMATS).map(f => `<span><b>${f.name}</b> ${f.how}</span>`).join('')}</div>
+    <div class="fmt-legend">${Object.values(LV.FORMATS).map(f => `<span><b>${f.name}</b> ${f.how}</span>`).join('')}</div><p class="listen-row">${listenBtn('formats', 'the round formats')}</p>
     ${levelMap(LV.PER_CHAPTER, n => ({ medal: store.medal(LV.challengeKey(lo + n)) }), n => `#/challenge/${lo + n}`)}
     <p class="mq-cta">${c > 1 ? `<a class="md-btn" href="#/tower/${c - 1}">&larr; Chapter ${c - 1}</a>` : ''}${c < LV.TOPICS.length ? `<a class="md-btn" href="#/tower/${c + 1}">Chapter ${c + 1} &rarr;</a>` : ''}</p>
   </div></section>`;
@@ -782,7 +784,7 @@ function sutrasView({ signal } = {}) {
     ${playShelf('sutras', 'A mystery from the old texts')}
     <div class="md-card history"><h2 class="mq-h3">Where Vedic math comes from</h2><p class="listen-row">${listenBtn('history', 'where Vedic math comes from')}</p>${HISTORY.map(h => `<p>${h}</p>`).join('')}
       <p class="mq-small" data-history-links hidden></p></div>
-    <div class="md-card history roots"><h2 class="mq-h3">Older roots: what you see in the background</h2><p>The 1965 sutras stand on a much older tradition of Indian mathematics. The moving background draws real pieces of it.</p><ul>${BG_NOTES.map(([h, b]) => `<li><b>${h}.</b> ${b}</li>`).join('')}</ul></div>
+    <div class="md-card history roots"><h2 class="mq-h3">Older roots: what you see in the background</h2><p>${ROOTS_INTRO}</p><ul>${BG_NOTES.map(n => `<li>${rootNote(n)}</li>`).join('')}</ul></div>
     <h2 class="mq-strand">The 16 sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => !c.sub).map(card).join('')}</div>
     <h2 class="mq-strand">The 13 sub-sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => c.sub).map(card).join('')}</div>
     ${versesHTML()}
@@ -1343,12 +1345,12 @@ document.addEventListener('click', e => {
   if (!b) return;
   e.preventDefault();
   W.loadVideos().then(({ VIDEOS }) => {
-    const v = VIDEOS.find(x => x.yt === b.dataset.watch); if (!v) return;
-    store.bump('watched'); track('watch/' + v.kind, 'Watch: ' + v.title);
-    openPlayer(v, b);
+    const v = VIDEOS.find(x => x.yt === b.dataset.watch); if (v) openPlayer(v, b);
   }).catch(() => {});
 });
 let playerDlg = null;
+/* The player opens on the facade (W.facade: this site's thumbnail behind a play button). Only when the Player presses
+   play is the YouTube frame written, the view counted and the one-minute timer started (watch-shelf spec, design D10). */
 function openPlayer(v, opener, onClose = null) {
   if (musicOn()) stopMusic();
   if (!playerDlg) {
@@ -1357,19 +1359,27 @@ function openPlayer(v, opener, onClose = null) {
     document.body.append(playerDlg);
     const close = () => playerDlg.close();
     playerDlg.querySelector('.vp-x').onclick = close;
-    playerDlg.addEventListener('click', ev => { if (ev.target === playerDlg || (ev.target.closest && ev.target.closest('.sutra-tag-a[href]'))) close(); }); /* a Sutra tag opens its Deep dive: the player closes first */
+    /* a Sutra tag opens its Deep dive: the player closes first */
+    playerDlg.addEventListener('click', ev => { if (ev.target === playerDlg || (ev.target.closest && ev.target.closest('.sutra-tag-a[href]'))) close(); else if (ev.target.closest && ev.target.closest('.vp-play')) playVideo(); });
     playerDlg.addEventListener('close', () => { clearTimeout(playerDlg._minute); playerDlg.querySelector('.vp-frame').innerHTML = ''; const done = playerDlg._onClose; playerDlg._onClose = null; if (playerDlg._opener && document.body.contains(playerDlg._opener)) playerDlg._opener.focus({ preventScroll: true }); if (done) done(); });
   }
-  playerDlg._opener = opener; playerDlg._onClose = onClose;
+  playerDlg._video = v; playerDlg._opener = opener; playerDlg._onClose = onClose;
   playerDlg.querySelector('#vpTitle').textContent = v.title;
   playerDlg.querySelector('.vp-desc').textContent = `${v.why} (${v.channel})`;
   // Open on YouTube: Pro only (Explorer and Challenger get no link that leaves the site)
   const vs = v.tricks && v.tricks.length ? sutraOfTrick(v.tricks[0]) : null; /* the video's Sutra tag (openspec change sutras-first) */
   playerDlg.querySelector('.vp-foot').innerHTML = (vs ? tagHTML(vs.id, { mode: fx.mode(), relation: vs.relation, surface: 'watch' }) : '') + outLink(`https://www.youtube.com/watch?v=${v.yt}`, 'Open on YouTube', 'vp-yt');
   playerDlg.classList.toggle('tall', v.kind === 'short');
-  playerDlg.querySelector('.vp-frame').innerHTML = `<iframe src="${W.embedSrc(v)}" title="${esc(v.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+  playerDlg.querySelector('.vp-frame').innerHTML = W.facade(W.thumbSrc(v));
   playerDlg.showModal();
-  // Video learner: the player has stayed open for a whole minute (cancelled when it closes)
+  playerDlg.querySelector('.vp-play').focus({ preventScroll: true });
+}
+/* The play press: the privacy-enhanced frame replaces the facade and starts playing */
+function playVideo() {
+  const v = playerDlg._video;
+  store.bump('watched'); track('watch/' + v.kind, 'Watch: ' + v.title);
+  playerDlg.querySelector('.vp-frame').innerHTML = `<iframe src="${W.embedSrc(v)}" title="${esc(v.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+  // Video learner: the video has played for a whole minute (cancelled when the player closes)
   clearTimeout(playerDlg._minute); playerDlg._minute = setTimeout(() => { if (playerDlg.open) store.bump('watchedMinute'); }, 60000);
 }
 

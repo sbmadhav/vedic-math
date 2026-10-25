@@ -8,7 +8,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import * as S from '../js/handoff-schema.js';
-import { applyHandoff, progressHere, playerRow } from '../js/handoff.js';
+import { applyHandoff, progressHere, playerRow, RESULTS } from '../js/handoff.js';
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const b64url = buf => Buffer.from(buf).toString('base64url');
@@ -301,4 +301,20 @@ test('a write that fails part way (storage full) leaves every key exactly as it 
       assert.deepEqual([...st.m.entries()].sort(), snapshot, `${choice}: failing write ${n} of ${writes} restores every key`);
     }
   }
+});
+
+/* ---------- the one count the import page sends (analytics spec, task 9.2) ---------- */
+test('the import page\'s result buckets are exactly the ones the analytics spec lists', () => {
+  // The requirement "Hand-off results are counted" lives in the main spec once the change is archived, in its delta until then
+  const spec = ['openspec/specs/analytics/spec.md', 'openspec/changes/learnvedicmath/specs/analytics/spec.md']
+    .map(f => { try { return readFileSync(join(repo, f), 'utf8'); } catch (e) { return ''; } })
+    .find(s => s.includes('### Requirement: Hand-off results are counted'));
+  assert.ok(spec, 'the requirement is in a spec');
+  const m = /`math\/handoff\/<result>` event per visit, where the result is one of ([^.]+), and only after the fragment/.exec(spec);
+  assert.ok(m, 'the requirement names the results');
+  assert.deepEqual(RESULTS, m[1].split(/, | or /));
+  assert.ok(RESULTS.every(r => /^[a-z-]+$/.test(r)), 'fixed words only');
+  const src = readFileSync(join(repo, 'js/handoff.js'), 'utf8');
+  assert.deepEqual([...src.matchAll(/math\/handoff\/([a-z-]+)/g)].map(x => x[1]), [], 'every count goes through count(result), never a literal path');
+  for (const r of src.matchAll(/count\('([a-z-]+)'\)/g)) assert.ok(RESULTS.includes(r[1]), r[1]);
 });

@@ -9,9 +9,9 @@ The numbers of the live game before the migration to React (openspec change `rea
 - **Machine:** a GitHub-hosted `ubuntu-latest` runner, through `.github/workflows/perf.yml` (run 39526007402). The gates of task 1.8 run on the same kind of runner, so like is compared with like. Lighthouse 13.5.0, with the Chromium of Playwright 1.64.1.
 - **Re-measuring:** run `perf.yml` by hand (Actions, "Perf baseline", optional `base_url`). Locally, from the repository root: `python3 build.py --out _site --voice off` (the mode production builds in while R2 is not set up), then `node tools/budget.ts _site`. From `e2e/`: `node perf/lighthouse.mts` and `pnpm exec playwright test -c perf/playwright.config.ts`.
 
-## First load: 758,499 bytes (Brotli)
+## First load: 776,579 bytes (Brotli)
 
-The Brotli-compressed size (quality 11) of everything a first visit to `/play/` requests before the first tap, counting each unique file once: 740.7 KB in 125 files, the budget since #115. The live site measured 744,827 bytes (727.4 KB) in 122 files; what merged since (the sky background #110 and #111, phase 1's #114, the Home redo #116) and #115's own edits brought it here (see the table at the end). `tools/budget.ts` reads it from a build:
+The Brotli-compressed size (quality 11) of everything a first visit to `/play/` requests before the first tap, counting each unique file once: 758.4 KB in 129 files, the budget since #122. The live site measured 744,827 bytes (727.4 KB) in 122 files; what merged since (the sky background #110 and #111, phase 1's #114, the Home redo #116) and #115's own edits brought it here (see the table at the end). `tools/budget.ts` reads it from a build:
 - the page itself;
 - every file the page links or loads (styles, the design system, the header script, fonts it preloads, icons, the manifest);
 - the static module graph of `/js/app.js`;
@@ -130,3 +130,8 @@ The baseline is run 1. Task 0.4's repeatability check: the same job runs the scr
 | 2026-10-21 | #111 | 755,652 to 757,612 bytes | Merged on `main` after #110: the sky background's second part (`js/sky-bg.js`), a feature outside this change. |
 | 2026-10-21 | #114, #116 | 757,612 to 758,466 bytes | Merged on `main`: phase 1's #114 (the three `js/` edits, comments and absolute `/sounds/` URLs, and `sw.js` published from `sw.ts` with its header comment and the `/api/` rule) and the Home redo (#116). |
 | 2026-10-21 | #115 | 758,466 to 758,499 bytes | Task 1.7's lint fixes in `sw.ts` (optional catch bindings, no non-null assertions). No new file. |
+| 2026-10-21 | #137 | 758,499 to 759,002 bytes | The hand-off page redo (design audit P4); `baseline.json` only. |
+| 2026-10-24 | #140 | 759,002 to 759,593 bytes | The Mode picker on the type scale and the sky's hero rule (design audit P7); `baseline.json` only. |
+| 2026-10-24 | #132 | 759,593 to 776,226 bytes | Installing the app (the complete manifest, the Install guide and the Install nudge on Home); `baseline.json` only. |
+| 2026-10-24 | #122 | 776,226 to 776,579 bytes | The Listen buttons on Star replays, the Daily quests card and the Challenge tower chapters (`js/star.js`, `js/app.js`, `js/explain-lines.js`), and the "Older roots" lines in the recording list (`ROOTS_INTRO` in `js/sky-scene.js`, `rootsLines()`); no new file. Re-measured after merging `main` with #137, #140 and #132. |
+| 2026-10-24 | #126 | 781,931 to 786,952 bytes | Sutras first, part 1: the Sutra tag (`js/sutra-tag.js`, new, 2,823 bytes) on the Trick page, Star, Try a trick, Katas, Arena, Watch and games (`js/app.js`, `js/star.js`, `js/arena.js`, `js/games.js`, `js/mental.js`, `js/try.js`, `math.css`) and the Sutra cards' kid lines (`js/sutras.js`). Re-measured after merging `main` with #122, #128, #135 and #138. |

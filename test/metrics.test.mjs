@@ -103,7 +103,7 @@ test('modeLink sends math/landing/mode/<Mode> for a Mode only, with a fixed titl
 });
 test('app.js calls tryStart with only the Mode and findGo with no arguments', () => {
   const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
-  assert.deepEqual(callSites(app).filter(c => c.fn === 'metrics.tryStart').map(c => c.args.trim()), ['mode', 'm']);
+  assert.deepEqual(callSites(app).filter(c => c.fn === 'metrics.tryStart').map(c => c.args.trim()), ['mode', 'm', 'm']); // the picker, the tile Home, the Sky Home
   assert.deepEqual(callSites(app).filter(c => c.fn === 'metrics.findGo').map(c => c.args.trim()), ['']);
 });
 
@@ -255,6 +255,7 @@ const ALLOWED = new Set([
   'from',                      // the Install guide's entry point (metrics.install checks it against INSTALL_FROM)
   'ok', "lives ? '' : ''", 'fx.MODES[fx.mode()].league', // right or miss; 'run' or 'practice'; the League
   'surface',                   // a followed Sutra tag's surface: one of the fixed words in js/sutra-tag.js SURFACES
+  'result', 'TITLES[result]', // the import page's hand-off result and its title (js/handoff.js count: one of RESULTS, a fixed set the analytics spec lists; test/handoff.test.mjs pins it)
 ]);
 /* Every call of track(, siteTrack( and metrics.<fn>( with its argument text */
 export function callSites(src) {

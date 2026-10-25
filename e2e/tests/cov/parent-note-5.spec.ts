@@ -11,11 +11,13 @@ async function noYouTube(page: Page) {
   await page.route(/^https:\/\/i\.ytimg\.com\//, r => r.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg"/>' }));
 }
 
-/** The player is open, holds the privacy-enhanced embed set to play, and no Age or Parent sheet stands in the way. */
+/** The player is open and, once play is pressed on its facade (change learnvedicmath), holds the privacy-enhanced embed
+    set to play; no Age or Parent sheet stands in the way. */
 async function expectPlaying(page: Page, yt?: string) {
   const dlg = page.locator('dialog.vm-player');
   await expect(dlg).toBeVisible();
   await expect(dlg).toHaveJSProperty('open', true);
+  await dlg.locator('.vp-play').click();
   const src = yt ? new RegExp(`^https://www\\.youtube-nocookie\\.com/embed/${yt}\\?autoplay=1&`) : /^https:\/\/www\.youtube-nocookie\.com\/embed\/[\w-]{11}\?autoplay=1&/;
   await expect(dlg.locator('iframe')).toHaveAttribute('src', src);
   await expect(dlg.locator('iframe')).toHaveAttribute('allow', /autoplay/);

@@ -1,8 +1,9 @@
 import { test, expect, open } from '../fixtures';
 
-/* watch-shelf / Every video plays in the page / Choosing a video: the video plays in the page's own player from
-   youtube-nocookie.com and the page stays open (no navigation, no new tab). tests/watch.spec.ts checks the embed
-   origin; this adds "the page stays open". YouTube is answered with an empty page, so no real player loads. */
+/* watch-shelf / Every video plays in the page / Choosing a video: a Player chooses a video and presses play; it plays
+   in the page's own player from youtube-nocookie.com and the page stays open (no navigation, no new tab).
+   tests/watch.spec.ts checks the embed origin and the facade before play; this adds "the page stays open". YouTube is
+   answered with an empty page, so no real player loads. */
 
 test.beforeEach(async ({ page }) => {
   await page.route(/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>video</title>' }));
@@ -23,6 +24,8 @@ test('choosing a video on the Watch shelf plays it in the page from youtube-noco
   await card.click();
   const dlg = page.locator('dialog.vm-player');
   await expect(dlg).toBeVisible();
+  await expect(dlg.locator('iframe'), 'the facade: no frame until play is pressed').toHaveCount(0);
+  await dlg.locator('.vp-play').click();
   const iframe = dlg.locator('iframe');
   await expect(iframe).toHaveCount(1);
   await expect(iframe).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/[\w-]{11}\?/);

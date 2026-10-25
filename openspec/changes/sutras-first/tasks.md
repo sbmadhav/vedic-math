@@ -22,7 +22,7 @@ The owner asked for this on 2026-10-21 ("It is important to make the sutras and 
 - [x] 3.1 Closing a Deep dive opened from another page of the app goes back to it. Verify: `e2e/tests/sutras-first.spec.ts`; `e2e/tests/sutra-modal.spec.ts` and `routes.spec.ts` unchanged.
 - [x] 3.2 `#/sutras/<id>` opens without a Mode. Verify: `e2e/tests/sutras-first.spec.ts`.
 - [x] 3.3 `math/sutra_tag/<surface>` on following a tag. Verify: `e2e/tests/sutras-first.spec.ts` (the event, no Sutra id, nothing else).
-- [x] 3.4 Coverage specs: `e2e/tests/cov/sutra-tags-1.spec.ts` to `-6`, `sutra-deep-dive-3.spec.ts`, `analytics-13.spec.ts` (12 is `install-app`; `try-trick-in-modes` has 14); `sutra-pronunciation-1.spec.ts` and `say.spec.ts` read the Trick page's tag (the modified "Trick page with a bracketed Sutra" scenario).
+- [x] 3.4 Coverage specs: `e2e/tests/cov/sutra-tags-1.spec.ts` to `-6`, `sutra-deep-dive-3.spec.ts`, `analytics-14.spec.ts` (12 is `install-app`; `try-trick-in-modes` has 13); `sutra-pronunciation-1.spec.ts` and `say.spec.ts` read the Trick page's tag (the modified "Trick page with a bracketed Sutra" scenario).
 
 ## 4. Progress per Sutra (PR 2)
 

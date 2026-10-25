@@ -8,12 +8,14 @@ import { byId } from './skills/index.js';
 import { checkOne } from './check.js';
 import { answerText } from './answers.js';
 import { boltHTML, pose } from './bolt.js';
-import { on, later, child } from './life.js';
+import { on, later, child, onAbort } from './life.js';
+import { facade } from './watch.js';
 import * as store from './store.js';
 import * as fx from './fx.js';
 import * as AD from './adapt.js';
 import * as metrics from './metrics.js';
 import { trickTagHTML, trickSutraName } from './sutra-tag.js';
+import { listenBtn, stopListen } from './listen.js';
 
 export const ROUND = 4;
 export const SPARK = { right: 10, comeback: 15, dare: 20 };
@@ -275,7 +277,8 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     }
   }
 
-  /* The Trick worked step by step on the missed question's own numbers; Skip or Escape ends it at once */
+  /* The Trick worked step by step on the missed question's own numbers, with Listen once every step is shown; Skip or
+     Escape ends it at once */
   function replay(p, of) {
     const ps = newPhase(), steps = t.steps(p.vals); let i = 0;
     dareBtn.hidden = true; pad.querySelectorAll('button').forEach(b => (b.disabled = true));
@@ -285,7 +288,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     const list = $('#stSteps'), done = () => {
       replaySkip = null; const b = $('#stRSkip');
       b.textContent = of === 'dare' ? 'Back to the question' : 'Try one like it'; b.className = 'md-btn md-btn--primary'; b.id = 'stRGo';
-      replaySkip = next; b.focus({ preventScroll: true });
+      replaySkip = next; b.insertAdjacentHTML('beforebegin', listenBtn('from:.star-step > p', 'the steps')); b.focus({ preventScroll: true });
     };
     const next = () => { if (ps.aborted) return; const r = starNext(st, { videoAvailable: videoAvailable() }); st = r.state; if (r.events.some(e => e.type === 'offer')) offer(); else ask(); };
     const add = () => {
@@ -294,6 +297,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
       if (i < steps.length) later(add, 2500, ps); else done();
     };
     replaySkip = next; on($('#stRSkip'), 'click', () => replaySkip && replaySkip(), ps);
+    onAbort(ps, stopListen); // the replay ending (Skip, Go, Escape) stops its Listen
     add();
   }
 
@@ -306,8 +310,13 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     const close = () => { st = starNext(st).state; ask(); };
     on($('#stWatch'), 'click', () => {
       if (video.open) { video.open($('#stWatch')).then(() => { if (!ps.aborted) close(); }); return; } /* the in-page player; closing it goes back to the round */
-      $('#stVideo').innerHTML = `<iframe src="${esc(video.src)}" title="${esc(video.title || t.title)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+      /* No player of its own: the facade here, and the frame only once play is pressed (watch-shelf spec) */
+      const frame = $('#stVideo'); frame.innerHTML = `<div class="vp-frame">${facade(video.thumb || null)}</div>`;
+      on(frame.querySelector('.vp-play'), 'click', () => {
+        frame.firstElementChild.innerHTML = `<iframe src="${esc(video.src)}" title="${esc(video.title || t.title)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+      }, ps);
       $('#stWatch').remove(); $('#stNoVid').textContent = 'Back to the round';
+      frame.querySelector('.vp-play').focus({ preventScroll: true });
     }, ps);
     on($('#stNoVid'), 'click', close, ps);
     $('#stWatch').focus({ preventScroll: true });
