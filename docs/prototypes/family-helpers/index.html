@@ -90,6 +90,7 @@ document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', 
 $('#practice .fh-ask').addEventListener('click', () => go('1'));
 const calm = (on, save = true) => { if (save) try { localStorage.setItem('vm.calm', on ? '1' : '0'); } catch (e) {} document.body.classList.toggle('calm', on); document.dispatchEvent(new CustomEvent('vmcalm', { detail: { on } })); };
 $('#fpCalm').addEventListener('change', e => calm(e.target.checked));
+$('#fpDark').checked = document.documentElement.dataset.theme === 'dark';
 $('#fpDark').addEventListener('change', e => { document.documentElement.dataset.theme = e.target.checked ? 'dark' : 'light'; });
 $('#fpFrame').addEventListener('click', () => { const f = $('#fpPhone'); f.hidden = !f.hidden; if (!f.hidden) f.src = `?frame=1&theme=${document.documentElement.dataset.theme || 'light'}&calm=${$('#fpCalm').checked ? 1 : 0}`; });
 /* Starts from the saved Calm setting (or the parent's choice, for the frame) and never overwrites it on load */

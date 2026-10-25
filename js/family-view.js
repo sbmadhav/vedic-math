@@ -23,10 +23,10 @@ const setGreeted = () => { try { sessionStorage.setItem('vm.familyHi', '1'); } c
 const plain = h => String(h).replace(/<[^>]+>/g, ' ').replace(/&minus;/g, '-').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
 
 /* One coach for the tab, so the 3 minute rule and the escalation span Practice, Katas and Stars (design D5) */
-let coach = null;
+let coach = null, coachFor = null; /* a new coach for each Player, so one Player's Visits never hold back another's */
 const coachNow = () => {
-  const s = helpSetting(store.player());
-  if (!coach) coach = createCoach({ setting: s, muted: muted() }); else coach.setSetting(s);
+  const p = store.player(), s = helpSetting(p);
+  if (!coach || coachFor !== p.id) { coach = createCoach({ setting: s, muted: muted() }); coachFor = p.id; } else coach.setSetting(s);
   return coach;
 };
 /* The one page-lifetime controller: a 'leave' Visit outlives the round that sent it (it shows on the next page) */
@@ -52,7 +52,6 @@ const BTN = { show: 'Show me', hint: 'Another hint', notnow: 'Not now', thanks: 
 /* Opens a Visit. v: planVisit()'s { kind, level, turns, buttons }. r: the round { root, card, protect, hint, signal } */
 function open(v, r, { info, band, example, nick = '' }) {
   close();
-  if (r.signal.aborted) return; /* the round already ended (events replayed after the Player left): no Visit with dead buttons */
   const ctl = child(r.signal), vs = ctl.signal;
   const crew = [...new Set(v.turns.map(t => t.friend))];
   const el = document.createElement('div');
@@ -123,7 +122,7 @@ export function mountFamily({ root, card = null, signal, area = 'practice', prot
     return { c, s, info: skillInfo(s, trick) };
   }
   function show(plan, { at = r } = {}) {
-    if (at.signal.aborted) return; /* the round ended before this module loaded: nothing to show, nothing to count */
+    if (at.signal.aborted) return; /* the round ended first */
     const p = player(), { c, s, info } = ctxInfo(), band = bandFor(p), mem = p.familyMem || null;
     const example = s && s.gen && plan.kind === 'help' ? exampleFor({ gen: () => s.gen(1), answerOf: e => answerText(e, s), q: c.problem ? c.problem.q : '', answer: c.problem ? answerText(c.problem, s) : '' }) : null;
     const greet = !greeted(), remember = plan.kind === 'help' && mem && mem.last === info.key;
@@ -140,7 +139,7 @@ export function mountFamily({ root, card = null, signal, area = 'practice', prot
     if (e.type === 'roundEnd' && e.hard == null) e.hard = wasHard(player().familyMem, info.key);
     if (e.type === 'ask') metrics.family('ask');
     if (e.type === 'question') { if (current) close(); watchIdle(); } /* a new question ends the last one's Visit */
-    if ((e.type === 'right' || e.type === 'roundEnd') && idle) { idle.abort(); idle = null; } /* a solved question is not idle */
+    if (e.type === 'right' || e.type === 'roundEnd') idle?.abort(); /* solved, so not idle */
     const plan = co.note(e, { quiet: !!current && e.type !== 'ask' });
     if (!plan) return;
     if (plan.kind === 'leave') { const ctl = child(page.signal); later(() => { if (!current) show(plan, { at: { ...r, root: document.getElementById('view') || document.body, card: null, protect: 'a, button, input, select, textarea, h1, h2, .pr-q, .mq-viz', hint: null, signal: ctl.signal } }); }, 400, ctl.signal); return; } /* the next page's controls, and its question if it is a round */

@@ -57,6 +57,19 @@ test.describe('helpers on', () => {
     await expect(visit(page)).toHaveCount(0);
   });
 
+  test('a second Player on the same tab starts fresh: their first Ask a friend brings one friend', async ({ page }) => {
+    await open(page, SKILL);
+    await askFriend(page);
+    await expect(friends(page)).toHaveCount(1);
+    await closeVisit(page);
+    await page.evaluate(async () => { const s = await e2eMod('store'); const { id, name, created, familyMem, ...same } = s.player(); s.addPlayer(); s.updatePlayer({ ...same, family: true }); location.hash = '#/me'; /* a second Player with the same Mode and answers */ });
+    await expect(page.locator('#familySwitch')).toHaveAttribute('aria-checked', 'true');
+    await page.evaluate(h => { location.hash = h; }, SKILL);
+    await expect(page.locator('#practice #prQ')).toBeVisible();
+    await askFriend(page);
+    await expect(friends(page)).toHaveCount(1);
+  });
+
   test('Ask a friend twice: one friend, then two taking turns with Next; the close button closes in one tap', async ({ page }) => {
     await open(page, SKILL);
     await askFriend(page);
