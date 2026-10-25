@@ -20,7 +20,7 @@ import { BG_NOTES, ROOTS_INTRO } from './sky-scene.js';
 /* A worked example as heard: its label, then its working ("65 squared. 6 times 7 equals 42, then 25, gives 4225.") */
 export const exampleLine = ([q, a]) => `${q}. ${a}`;
 
-/* A Skill as its page shows it: the idea, then How it works (a Trick's Skill: when to use it, not its drawn steps) */
+/* A Skill as its page shows it: the idea, then the method (a Trick's Skill: when to use it) */
 export const skillLines = s => {
   const t = s.trick && TRICKS.find(x => x.id === s.trick);
   return [s.idea, ...(t ? [t.when] : s.method || [])].filter(Boolean);
