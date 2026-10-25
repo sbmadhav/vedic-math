@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 786952,
+  "total": 790245,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -48,8 +48,9 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 44969,
+   "/js/app.js": 45329,
    "/js/arena.js": 5392,
+   "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
    "/js/celebrate.js": 3080,
    "/js/check.js": 2946,
@@ -63,8 +64,8 @@
    "/js/gamify.js": 3843,
    "/js/guide-art.js": 2484,
    "/js/guide.js": 10402,
-   "/js/handoff-schema.js": 6443,
-   "/js/handoff.js": 4085,
+   "/js/handoff-schema.js": 6582,
+   "/js/handoff.js": 4229,
    "/js/install-rules.js": 2226,
    "/js/install.js": 7143,
    "/js/landing-sky.js": 261,
@@ -124,7 +125,7 @@
    "/js/sky.js": 3762,
    "/js/slokas.js": 16068,
    "/js/star.js": 8008,
-   "/js/store.js": 5862,
+   "/js/store.js": 5753,
    "/js/sutra-ambience.js": 4169,
    "/js/sutra-details.js": 13423,
    "/js/sutra-tag.js": 2823,
@@ -140,9 +141,9 @@
    "/js/voice.js": 14365,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 22637,
-   "/play/": 3930,
-   "/sw.js": 6117,
+   "/math.css": 22678,
+   "/play/": 3946,
+   "/sw.js": 6143,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -188,6 +189,13 @@
     "from": 781463,
     "to": 781931,
     "why": "learnvedicmath task 9.2: js/handoff.js counts the hand-off result once per visit (RESULTS, the spec's list, with its comment and fixed titles); measured on main as of #135, so that code is the only growth; no new file"
+   },
+   {
+    "date": "2026-10-24",
+    "pr": 141,
+    "from": 781931,
+    "to": 785198,
+    "why": "learnvedicmath task 10.3: the backup code for every Player and Restore from code through the hand-off schema and prompt; the backup functions and the Me page's Restore prompt handlers are a new module, js/backup.js, which js/store.js loads only when the Me page asks (loadBackup), with the hand-off modules it imports, so the first paint waits for no new module, and against main app.js grows by 382 bytes and store.js shrinks by 109 (the rest of the growth is js/backup.js in the precache); the Restore prompt's markup in js/app.js, the schema's second source, applyHandoff's moved flag, rollback order and bootstrap guard, three style rules in math.css; measured on main as of #138, so that code is the only growth"
    }
   ]
  },
