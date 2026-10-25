@@ -199,6 +199,13 @@
     "from": 781931,
     "to": 785198,
     "why": "learnvedicmath task 10.3: the backup code for every Player and Restore from code through the hand-off schema and prompt; the backup functions and the Me page's Restore prompt handlers are a new module, js/backup.js, which js/store.js loads only when the Me page asks (loadBackup), with the hand-off modules it imports, so the first paint waits for no new module, and against main app.js grows by 382 bytes and store.js shrinks by 109 (the rest of the growth is js/backup.js in the precache); the Restore prompt's markup in js/app.js, the schema's second source, applyHandoff's moved flag, rollback order and bootstrap guard, three style rules in math.css; measured on main as of #138, so that code is the only growth"
+   },
+   {
+    "date": "2026-10-25",
+    "pr": 131,
+    "from": 785198,
+    "to": 801153,
+    "why": "family-helpers step 2: the Nikhilam Family as study friends behind a Me switch (js/family.js, js/family-hook.js, js/family-helpers.js, js/family-view.js and js/family-lines.js in the precache; the page imports the Family modules only when the switch is on), plus 102 bytes of review fixes in js/family-view.js; measured on main as of #141, #143 and #147, so that code is the only growth"
    }
   ]
  },
