@@ -36,6 +36,12 @@ test('the explanation lines are the same on every load (explanation-audio 4.6)',
 });
 
 test('a Skill page reads the lines its Skill records, and a Trick Skill reads when to use the Trick', () => {
+  const count = SKILLS.find(s => s.id === 'k-count');
+  assert.deepEqual(skillLines(count), [
+    'Counting means saying one number for each thing, and the last number you say tells how many.',
+    'Touch each dot once as you say a number.',
+    'Use the ten frame: a full frame is 10, so start at 10 and count on.',
+  ], count.id);
   for (const s of SKILLS) assert.deepEqual(skillPageLines(s), skillLines(s), s.id);
   for (const t of TRICKS) assert.deepEqual(skillLines(SKILLS.find(s => s.trick === t.id)), [t.idea, t.when].filter(Boolean), t.id);
 });
