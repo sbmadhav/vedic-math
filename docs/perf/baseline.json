@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 781931,
+  "total": 782025,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -118,7 +118,7 @@
    "/js/skills/index.js": 1084,
    "/js/skills/middle.js": 6258,
    "/js/skills/upper.js": 7871,
-   "/js/sky-bg.js": 10972,
+   "/js/sky-bg.js": 11071,
    "/js/sky-scene.js": 6249,
    "/js/sky-view.js": 4458,
    "/js/sky.js": 3762,
@@ -140,8 +140,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 22202,
-   "/play/": 3915,
-   "/sw.js": 6117,
+   "/play/": 3906,
+   "/sw.js": 6121,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },

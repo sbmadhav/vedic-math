@@ -482,7 +482,8 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, cameo = 
       knockout();
       if (pageDirty) measureSoon();
     }
-    /* The still frame: the same layers at rest, and the day's story complete with its caption where there is room */
+    /* The still frame: the same layers at rest, and the day's story complete with its caption where there is room
+       (captions differ in length: else the next story that fits complete, and a drawing alone only when none does) */
     function drawStill(dropStory = false) {
       const keepT = t; t = 0; pageDirty = true;
       g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
@@ -491,7 +492,9 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, cameo = 
       if (L.stories && stories.length) {
         if (dropStory) stillStory = null;
         else if (stillStory === undefined || (stillStory && stillStory.W !== W)) {
-          const st = stories[Math.floor(Date.now() / 864e5) % stories.length], pl = place(st);
+          const n = stories.length, d = Math.floor(Date.now() / 864e5); let st, pl, alone;
+          for (let i = 0; i < n && !(pl && pl.cap); i++) { st = stories[(d + i) % n]; pl = place(st); if (pl.art && !alone) alone = [st, pl]; }
+          if (!pl.cap && alone) [st, pl] = alone;
           stillStory = pl.art ? { n: -1, story: st, pick: st.art === 'powers' ? POWERS.find(([n]) => n === POWER_PICKS[0]) : null, cut: null, W, ...pl } : null;
         }
         if (stillStory) { clearUnder(stillStory); drawStory(stillStory, 'hold', 1); }

@@ -202,6 +202,26 @@ test.describe('still frame', () => {
     }
   });
 
+  /* The still frame's story changes with the date, and captions differ in length: on every day of the cycle the home
+     at 1280 by 1000 shows a story with its full caption (a day whose story only fits as a drawing alone shows the next
+     story that fits complete), never a faint drawing without one */
+  test('on every day of the story cycle the home\'s still frame holds a story with its full caption', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.goto(APP);
+    const ids = await storyIds(page);
+    const today = Math.floor(Date.now() / 864e5);
+    for (let i = 0; i < ids.length; i++) {
+      const day = today - (today % ids.length) + i; /* the day whose own story is ids[i] */
+      await page.clock.setSystemTime(day * 864e5 + 12 * 3600e3);
+      await page.reload();
+      await expect(sky(page)).toHaveAttribute('data-phase', 'still', { timeout: 10_000 });
+      const s = await state(page);
+      expect(s.story, `the day of ${ids[i]}`).not.toBe('');
+      expect(s.place, `the day of ${ids[i]}: ${s.story} is placed with its caption`).toBe('spot');
+      expect(s.cap, `the day of ${ids[i]}: ${s.story} has its caption`).toBeTruthy();
+    }
+  });
+
   test('after a scroll the still frame is clear behind the text where it is now', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 700 });
     await open(page, '#/learn');
