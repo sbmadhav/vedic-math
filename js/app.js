@@ -22,12 +22,13 @@ import * as LV from './levels.js';
 import { LEVELS, LEVELS_PER_GAME, levelMedal, boardGame } from './games.js';
 import * as AD from './adapt.js';
 import { initAmbient, bgOn, setBg, setBgLevel, BG_NOTES, stop as stopMusic, isPlaying as musicOn } from './ambient.js';
-import { levelFor } from './sky-scene.js';
+import { levelFor, ROOTS_INTRO } from './sky-scene.js';
 import { on, later, every, child, onAbort } from './life.js';
 import * as metrics from './metrics.js';
 import { boltHTML } from './bolt.js';
 import { FAMILY_SVG } from './family.js';
 import { runStar } from './star.js';
+import { runTry, tryFor as tryOf, sutraOf, finished as tryFinished } from './try.js';
 import * as SKY from './sky.js';
 import { skyView, placesHTML } from './sky-view.js';
 import { openShell } from './shell.js';
@@ -38,10 +39,27 @@ import { GROUPS, sectionsFor, tryFor, say, resolveTour, tourDue, tourState, setT
 import { sectionLines, buildIndex, rank, countOf, kindLabel } from './find.js';
 import { artFor } from './guide-art.js';
 import { startTour } from './tour.js';
-import { guideCounts } from './explain-lines.js';
+import { guideCounts, rootNote } from './explain-lines.js';
 import { listenBtn, wireListen } from './listen.js';
 import { sayButton, respellHTML, devaHTML, wireSay } from './say.js';
 import { sutraAmbience, ambienceButton, wireAmbience, settingsHTML as ambienceSettingsHTML, wireSettings as wireAmbienceSettings } from './sutra-ambience.js';
+import { claim as claimSlot, release as releaseSlot } from './prompt-slot.js';
+
+/* Installing the app (openspec change install-app): js/install.js and its rules load after the first view has painted
+   (loadInstall, 100 ms after boot), so they are not in the static import graph the first paint waits for (design D12).
+   The browser's install prompt can arrive before that: it is caught here and handed to initInstall. withInstall(fn,
+   signal) runs fn with the module once it is here, unless signal (the view's) has aborted by then. */
+const boot = new AbortController(); /* the page's lifetime: never aborted */
+let install = null, installLoad = null, earlyPrompt = null; const installQueue = [];
+function loadInstall() {
+  return installLoad ||= import('./install.js').then(m => {
+    install = m; m.initInstall(earlyPrompt); earlyPrompt = null;
+    installQueue.splice(0).forEach(([fn, s]) => { if (!s || !s.aborted) fn(m); });
+    return m;
+  });
+}
+const withInstall = (fn, signal) => { if (install) fn(install); else installQueue.push([fn, signal]); };
+on(window, 'beforeinstallprompt', e => { if (!install) { e.preventDefault(); earlyPrompt = e; } }, boot.signal);
 
 const $ = (s, r = document) => r.querySelector(s);
 const view = $('#view');
@@ -81,6 +99,7 @@ const routes = [
   [/^#\/katas\/([\w-]+)$/, (m, ctx) => katasView(m[1], ctx)],
   [/^#\/kata\/([\w-]+)\/(\d+)$/, (m, ctx) => kataView(m[1], +m[2], ctx)],
   [/^#\/star\/([\w-]+)\/(\d+)$/, (m, ctx) => starView(m[1], +m[2], ctx)],
+  [/^#\/try$/, (m, ctx) => tryView(ctx)],
   [/^#\/tower$/, (m, ctx) => towerView(ctx)],
   [/^#\/tower\/(\d+)$/, (m, ctx) => chapterView(+m[1], ctx)],
   [/^#\/challenge\/(\d+)$/, (m, ctx) => challengeView(+m[1], ctx)],
@@ -162,16 +181,15 @@ function titleBar(T, cls = 'mq-sparkbar mq-sparkbar--big') {
 function modePicker({ signal } = {}) {
   document.title = `Learn Vedic Math`;
   const p = store.player();
-  /* The hero says as little as it can (openspec first-visit): one headline, one short line, Try a trick as the one big
-     first action, and the Nikhilam Family beside it (js/family.js). The Mode cards follow. */
+  /* The hero says as little as it can (openspec try-trick-in-modes): one headline, one short line and the Nikhilam
+     Family (js/family.js). Then the Mode cards, each with its own Try a trick under it: no Mode is guessed. */
   view.innerHTML = `<section class="md-section mq-hero"><div class="md-wrap">
     <div class="mq-hero-in"><div class="mq-hero-t">
       <h1 class="md-heading">Fast, fun math for <span class="hl-word">every</span> brain</h1>
       <p class="md-lede mq-hero-sub">One trick, two minutes, no sign-up.</p>
-      <p class="try-it"><button type="button" class="md-btn md-btn--primary mq-try" id="tryBtn">Try a trick<svg class="mq-try-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></p>
     </div>${FAMILY_SVG}</div>
-    <h2 class="mq-h3 pick-h">Or pick who is playing</h2>
-    <div class="mode-pick">${Object.entries(fx.MODES).map(([id, m]) => `<button class="mode-card mode-card--${m.color}" data-mode="${id}"><span class="mode-ic" aria-hidden="true">${modeIcon(id)}</span><b>${m.name}</b><small>${m.ages}</small><span>${m.blurb}</span></button>`).join('')}</div>
+    <h2 class="mq-h3 pick-h">Pick who is playing</h2>
+    <div class="mode-pick">${Object.entries(fx.MODES).map(([id, m]) => `<div class="mode-opt"><button class="mode-card mode-card--${m.color}" data-mode="${id}"><span class="mode-ic" aria-hidden="true">${modeIcon(id)}</span><b>${m.name}</b><small>${m.ages}</small><span>${m.blurb}</span></button><button type="button" class="md-btn md-btn--primary mode-try" data-try="${id}" aria-label="Try a trick as ${m.name}">Try a trick<svg class="mode-try-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>`).join('')}</div>
     <p class="mq-note">Playing as <b>${esc(p.name)}</b>. Nicknames are made up for you, so no real names are ever needed. You can change who is playing any time.</p>
     <p class="mq-note gd-pickhelp">Not sure where to start? <a href="#/guide">See how it works</a> or <a href="#/find">find something by name</a>.</p>
   </div></section>`;
@@ -186,9 +204,17 @@ function modePicker({ signal } = {}) {
     fx.pop(b, signal); fx.sparkle(b, { n: 10 }); fx.cheer(view.querySelector('.lv-family'), signal);
     later(go, 560, signal);
   }, signal));
-  /* Try a trick (openspec first-visit): Challenger as a guess, then the first Star of Bolt's path, the one Home offers */
-  /* The trial Star teaches before it asks (openspec try-trick-teaches): starView shows the worked example once for this route */
-  on($('#tryBtn'), 'click', () => { fx.setMode('challenger', { guess: true }); gm.startDay(); metrics.tryStart(); location.hash = starView.introFor = firstStarHref(); }, signal);
+  /* A card's Try a trick (openspec try-trick-in-modes): picks that Mode, as its card does, and opens that Mode's
+     Try a trick at #/try */
+  view.querySelectorAll('[data-try]').forEach(b => on(b, 'click', () => {
+    if (picked) return; picked = true;
+    fx.setMode(b.dataset.try); gm.startDay(); openTry(b.dataset.try);
+  }, signal));
+}
+/* Opens the Try a trick of the Player's Mode, counted once (math/try/start and math/try/mode/<mode>) */
+function openTry(mode) {
+  metrics.tryStart(mode); modePicker.pending = null;
+  if (location.hash === '#/try') render(); else location.hash = '#/try';
 }
 /* Where a Mode card goes: the page the visitor asked for before picking (a Find result, a link), when it is a route
    in this app the picked Mode can open (one of its Find entries), else Home. Kept in memory only, never stored. */
@@ -196,11 +222,6 @@ function afterPick(mode) {
   const to = modePicker.pending; modePicker.pending = null;
   if (!to || !/^#\/[\w\/-]+$/.test(to) || !routes.some(([re]) => re.test(to))) return '#/';
   return buildIndex({ mode, counts: guideCounts() }).some(e => e.href === to) ? to : '#/';
-}
-/* The Star Home's Play this Star offers: the next one on Bolt's suggested path (js/sky.js), or the first Trick's Star 1 */
-function firstStarHref() {
-  const nk = SKY.suggested(store.starStates(), SKY.startBeltOf(store.player())), ns = nk && SKY.parseKey(nk);
-  return ns ? `#/star/${ns.trick}/${ns.n}` : `#/star/${TRICKS[0].id}/1`;
 }
 function modeIcon(id) {
   const P = 'fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"';
@@ -210,7 +231,7 @@ function modeIcon(id) {
 /* ---------- Home: one per mode ---------- */
 function questsHTML() {
   const qs = gm.quests();
-  return `<div class="md-card quest-card"><h2 class="mq-h3">Daily quests</h2><ul class="quests">${qs.map(q => `<li class="${q.done ? 'done' : ''}"><span class="q-check" aria-hidden="true">${q.done ? '&#10003;' : ''}</span><span class="q-t">${q.label}<span class="mq-bar"><i style="width:${pct(q.prog / q.goal)}%"></i></span></span><span class="q-n">${q.prog}/${q.goal}</span></li>`).join('')}</ul><p class="mq-small">Sparks are the points you earn for right answers. Each quest is worth 25 bonus Sparks. New quests every day.</p></div>`;
+  return `<div class="md-card quest-card"><h2 class="mq-h3">Daily quests</h2><p class="listen-row">${listenBtn('from:.q-l', "today's quests")}</p><ul class="quests">${qs.map(q => `<li class="${q.done ? 'done' : ''}"><span class="q-check" aria-hidden="true">${q.done ? '&#10003;' : ''}</span><span class="q-t"><span class="q-l">${q.label}</span><span class="mq-bar"><i style="width:${pct(q.prog / q.goal)}%"></i></span></span><span class="q-n">${q.prog}/${q.goal}</span></li>`).join('')}</ul><p class="mq-small">Sparks are the points you earn for right answers. Each quest is worth 25 bonus Sparks. New quests every day.</p></div>`;
 }
 function heroStats() {
   const p = store.player(), T = gm.titleInfo();
@@ -237,7 +258,7 @@ function home(ctx = {}, { tiles = false } = {}) {
       ${tile('#/game/quick-look', 'Quick look', 'Flash dots', 'sun', 'eye')}
       ${tile('#/skill/k-shapes', 'Shape detective', 'Name that shape', 'teal', 'shape')}
       ${tile('#/arena', 'Race the clock', 'Tap fast!', 'coral', 'bolt')}
-    </div>
+    </div>${tryCard(m)}
     <p class="mq-cta"><button class="md-btn" id="voiceBtn" aria-pressed="${fx.voiceOn()}">${icon('speaker')} Read questions aloud: ${fx.voiceOn() ? 'on' : 'off'}</button> <a class="md-btn" href="#/watch">${icon('play')} Watch and sing</a></p>`;
   } else {
     /* Three doors first (openspec first-visit), each with one plain line that says what its word means; the rest of the
@@ -260,20 +281,33 @@ function home(ctx = {}, { tiles = false } = {}) {
       ? [tile('#/arena/party', 'Party Mode', 'Two to four players, one screen', 'sky', 'duel'), tile('#/games', 'Games', 'Times sprint, target, fractions', 'teal', 'game'), tile('#/sutras', 'Sutra cards', 'Collect all 29', 'plum', 'cards'), tile('#/watch', 'Watch and learn', 'Best trick videos', 'coral', 'play')]
       : [tile('#/sutras', 'Sutra deep dive', `${gm.collectedCount()} of ${SUTRAS.length + SUBSUTRAS.length} cards collected`, 'sun', 'cards'), tile('#/arena/party', 'Party Mode', 'Family math night', 'coral', 'duel'), tile('#/games', 'Puzzles and games', 'Hit the target and more', 'teal', 'game'), tile('#/watch', 'Watch shelf', '3Blue1Brown, Numberphile, more', 'sky', 'play')];
     const board = m === 'pro' ? `<div class="md-card board-card"><span class="md-tag md-tag--coral">Arena</span><h2 class="mq-h3">Today's leaderboard</h2><div id="homeBoard" class="lb-wrap"><p class="mq-small">Loading…</p></div>${parentNote()}</div>` : '';
-    body = `<div class="home-doors">${doors}</div>${board ? `<div class="home-2">${questsHTML()}${board}</div>` : questsHTML()}
+    body = `<div class="home-doors">${doors}</div>${tryCard(m)}${board ? `<div class="home-2">${questsHTML()}${board}</div>` : questsHTML()}
       <details class="mq-more home-more" id="homeMore"${fx.homeMoreOpen() ? ' open' : ''}><summary>More ways to play</summary><div class="play-grid">${more.join('')}</div></details>`;
   }
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${heroStats()}
     <h1 class="md-heading home-h">${fx.t({ explorer: 'What do you want to play?', challenger: 'Ready to get faster?', pro: 'Train your mental math' })}</h1>
     <p class="mode-line">Mode: <b>${fx.MODES[m].name}</b>${store.modeGuessed() ? ', our guess for a first try' : ''} <a href="#/me">Change</a></p>
-    ${newHereHTML()}${cont}${body}
+    ${newHereHTML()}<div class="in-slot" id="installSlot"></div>${cont}${body}
   </div></section>`;
-  const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); home(); };
+  const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); mount(c => home(c, { tiles })); }; /* a fresh view signal, so the Install nudge and the tour mount again */
   const hm = $('#homeMore'), keepMore = () => fx.setHomeMoreOpen(hm.open); /* remembered on this device */
   if (hm) { if (ctx.signal) on(hm, 'toggle', keepMore, ctx.signal); else hm.ontoggle = keepMore; } /* home() also runs with no view signal (an unknown Skill falls back to it): then a property on an element of this view */
+  const tc = $('[data-try-open]'), counted = () => metrics.tryStart(m); /* the Try a trick card counts as a Try a trick pressed */
+  if (tc) { if (ctx.signal) on(tc, 'click', counted, ctx.signal); else tc.onclick = counted; }
   if (m === 'pro') loadBoard($('#homeBoard'), `daily-${cloud.dayId()}-pro`, 5);
   homeTour(ctx.signal);
+  withInstall(m => m.mountNudge($('#installSlot'), ctx.signal), ctx.signal); /* the Install nudge's one place on Home (openspec change install-app) */
+}
+
+/* Home's Try a trick card (openspec try-trick-in-modes): the Mode's own Try a trick, until the Player has finished it on
+   this device. Its button is not a primary one, so each Home keeps one primary action. */
+function tryCard(m) {
+  if (tryFinished(m)) return '';
+  const T = tryOf(m), S = sutraOf(m);
+  return `<div class="md-card try-card"><span class="md-tag md-tag--coral">Try a trick</span><h2 class="mq-h3">${T.title}</h2>
+    <p class="door-line">${fx.t({ explorer: 'A magic trick for times 11. Two minutes.', challenger: `Two minutes: learn it from the sutra ${S.name}, then try three.`, pro: `Two minutes: one sutra, ${S.name}, one worked example and three to try.` })}</p>
+    <p class="door-acts"><a class="md-btn" href="#/try" data-try-open>Try a trick</a></p></div>`;
 }
 
 /* The Skill the Keep going card offers, or null. Challenger Home leaves it out when it is the Trick of the Star its
@@ -289,11 +323,14 @@ function keepGoingSkill(m) {
 const litStars = () => { const { lit } = store.starStates(); return SKY.PATH.filter(k => lit[k]).length; };
 function skyHome({ signal } = {}) {
   document.title = `Learn Vedic Math`;
-  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}${newHereHTML()}<div id="skyHome"></div>
+  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}${newHereHTML()}<div class="in-slot" id="installSlot"></div><div id="skyHome"></div>${tryCard(fx.mode())}
     <p class="mode-line">Mode: <b>${fx.MODES[fx.mode()].name}</b> <a href="#/me">Change</a></p></div></section>`;
   const back = (render.from || '').match(/^#\/star\/([\w-]+)\/(\d)$/);
   const out = skyView($('#skyHome'), { signal, focus: back ? `${back[1]}:${back[2]}` : null });
+  const tc = $('[data-try-open]'), m = fx.mode(), counted = () => metrics.tryStart(m); /* the Sky is this Player's Home, so it keeps the Try a trick card too */
+  if (tc) { if (signal) on(tc, 'click', counted, signal); else tc.onclick = counted; }
   homeTour(signal);
+  withInstall(m => m.mountNudge($('#installSlot'), signal), signal);
   return out;
 }
 /* All places: the Sky as a plain list (#/places) */
@@ -629,25 +666,28 @@ const dojoStars = t => (fx.mode() === 'explorer' ? '' : `<span class="dojo-stars
 function starView(trick, n, { signal } = {}, back = null) {
   const t = TRICKS.find(x => x.id === trick); if (!t || !(n >= 1 && n <= 3)) return dojoView();
   const from = render.from || '';
-  /* Try a trick's Star opens on the Trick worked once (openspec try-trick-teaches); in memory, once, so Play again,
-     a reload or the same Star from Home goes straight to the first question */
-  const intro = starView.introFor === `#/star/${trick}/${n}`; starView.introFor = null;
   /* For a Player whose home is the Sky, Back always goes to the Sky (which then focuses this Star) */
-  /* Opened from Home or the landing's Try a trick (openspec first-visit): Back goes home, not to the Dojo's long map */
-  back = back || (SKY.skyOn(store.player()) ? { href: '#/', label: 'Back to the Sky' } : from === '#/skill/v-' + trick ? { href: from, label: `Back to ${t.title}` } : /^#?\/?$/.test(from) && from !== '' ? { href: '#/', label: 'Back home' } : { href: '#/dojo', label: 'Back to the Dojo' });
+  /* Opened from Home or from the end of a Try a trick (openspec first-visit): Back goes home, not to the Dojo's long map */
+  back = back || (SKY.skyOn(store.player()) ? { href: '#/', label: 'Back to the Sky' } : from === '#/skill/v-' + trick ? { href: from, label: `Back to ${t.title}` } : (/^#?\/?$/.test(from) && from !== '') || from === '#/try' ? { href: '#/', label: 'Back home' } : { href: '#/dojo', label: 'Back to the Dojo' });
   document.title = `Star ${n}: ${t.title} · Learn Vedic Math`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs(['#/dojo', 'Dojo'], ['#/skill/v-' + trick, t.title], [null, `Star ${n}`])}</div></section>`;
   /* The round plays in the full-screen shell (openspec game-shell-and-calm); Back leaves the Star */
   const play = openShell(`Star ${n}: ${t.title}`, { signal, exit: 'Back', exitId: 'stExit', onExit: () => { location.hash = back.href; } });
   play.area.id = 'star';
-  return runStar(play.area, { trick, star: n, signal, back, again: () => mount(ctx => starView(trick, n, ctx, back)), findVideo: starVideo, intro });
+  return runStar(play.area, { trick, star: n, signal, back, again: () => mount(ctx => starView(trick, n, ctx, back)), findVideo: starVideo });
+}
+/* Try a trick (openspec try-trick-in-modes): the lesson of the Player's Mode, on one Sutra (js/try.js) */
+function tryView({ signal } = {}) {
+  const m = fx.mode() || 'challenger'; document.title = `Try a trick · Learn Vedic Math`;
+  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">${crumbs([null, 'Try a trick'])}<div id="tryRoot"></div></div></section>`;
+  if (signal) { wireSay(view, signal); runTry($('#tryRoot'), { mode: m, signal }); }
 }
 /* star-round's findVideo seam: the Trick's hand-matched video (null offline or when the list fails to load), opened
-   in the in-page player. open(opener) resolves when the player closes. */
+   in the in-page player, which counts the view when play is pressed. open(opener) resolves when the player closes. */
 async function starVideo(trick, mode) {
   const v = await W.videoForTrick(trick, mode);
-  return v && { title: v.title, src: W.embedSrc(v), open: opener => { store.bump('watched'); track('watch/' + v.kind, 'Watch: ' + v.title); return new Promise(done => openPlayer(v, opener, done)); } };
+  return v && { title: v.title, src: W.embedSrc(v), thumb: W.thumbSrc(v), open: opener => new Promise(done => openPlayer(v, opener, done)) };
 }
 
 /* ---------- Arena challenge tower ---------- */
@@ -671,7 +711,7 @@ function chapterView(c) {
     ${crumbs(['#/arena', 'Arena'], ['#/tower', 'Challenge tower'], [null, `Chapter ${c}`])}
     <span class="md-tag md-tag--coral">Chapter ${c} of ${LV.TOPICS.length}</span>
     <h1 class="md-heading">${tp.name}</h1>
-    <div class="fmt-legend">${Object.values(LV.FORMATS).map(f => `<span><b>${f.name}</b> ${f.how}</span>`).join('')}</div>
+    <div class="fmt-legend">${Object.values(LV.FORMATS).map(f => `<span><b>${f.name}</b> ${f.how}</span>`).join('')}</div><p class="listen-row">${listenBtn('formats', 'the round formats')}</p>
     ${levelMap(LV.PER_CHAPTER, n => ({ medal: store.medal(LV.challengeKey(lo + n)) }), n => `#/challenge/${lo + n}`)}
     <p class="mq-cta">${c > 1 ? `<a class="md-btn" href="#/tower/${c - 1}">&larr; Chapter ${c - 1}</a>` : ''}${c < LV.TOPICS.length ? `<a class="md-btn" href="#/tower/${c + 1}">Chapter ${c + 1} &rarr;</a>` : ''}</p>
   </div></section>`;
@@ -741,7 +781,7 @@ function sutrasView({ signal } = {}) {
     ${playShelf('sutras', 'A mystery from the old texts')}
     <div class="md-card history"><h2 class="mq-h3">Where Vedic math comes from</h2><p class="listen-row">${listenBtn('history', 'where Vedic math comes from')}</p>${HISTORY.map(h => `<p>${h}</p>`).join('')}
       <p class="mq-small" data-history-links hidden></p></div>
-    <div class="md-card history roots"><h2 class="mq-h3">Older roots: what you see in the background</h2><p>The 1965 sutras stand on a much older tradition of Indian mathematics. The moving background draws real pieces of it.</p><ul>${BG_NOTES.map(([h, b]) => `<li><b>${h}.</b> ${b}</li>`).join('')}</ul></div>
+    <div class="md-card history roots"><h2 class="mq-h3">Older roots: what you see in the background</h2><p>${ROOTS_INTRO}</p><ul>${BG_NOTES.map(n => `<li>${rootNote(n)}</li>`).join('')}</ul></div>
     <h2 class="mq-strand">The 16 sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => !c.sub).map(card).join('')}</div>
     <h2 class="mq-strand">The 13 sub-sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => c.sub).map(card).join('')}</div>
     ${versesHTML()}
@@ -1287,12 +1327,12 @@ document.addEventListener('click', e => {
   if (!b) return;
   e.preventDefault();
   W.loadVideos().then(({ VIDEOS }) => {
-    const v = VIDEOS.find(x => x.yt === b.dataset.watch); if (!v) return;
-    store.bump('watched'); track('watch/' + v.kind, 'Watch: ' + v.title);
-    openPlayer(v, b);
+    const v = VIDEOS.find(x => x.yt === b.dataset.watch); if (v) openPlayer(v, b);
   }).catch(() => {});
 });
 let playerDlg = null;
+/* The player opens on the facade (W.facade: this site's thumbnail behind a play button). Only when the Player presses
+   play is the YouTube frame written, the view counted and the one-minute timer started (watch-shelf spec, design D10). */
 function openPlayer(v, opener, onClose = null) {
   if (musicOn()) stopMusic();
   if (!playerDlg) {
@@ -1301,18 +1341,25 @@ function openPlayer(v, opener, onClose = null) {
     document.body.append(playerDlg);
     const close = () => playerDlg.close();
     playerDlg.querySelector('.vp-x').onclick = close;
-    playerDlg.addEventListener('click', ev => { if (ev.target === playerDlg) close(); });
+    playerDlg.addEventListener('click', ev => { if (ev.target === playerDlg) close(); else if (ev.target.closest('.vp-play')) playVideo(); });
     playerDlg.addEventListener('close', () => { clearTimeout(playerDlg._minute); playerDlg.querySelector('.vp-frame').innerHTML = ''; const done = playerDlg._onClose; playerDlg._onClose = null; if (playerDlg._opener && document.body.contains(playerDlg._opener)) playerDlg._opener.focus({ preventScroll: true }); if (done) done(); });
   }
-  playerDlg._opener = opener; playerDlg._onClose = onClose;
+  playerDlg._video = v; playerDlg._opener = opener; playerDlg._onClose = onClose;
   playerDlg.querySelector('#vpTitle').textContent = v.title;
   playerDlg.querySelector('.vp-desc').textContent = `${v.why} (${v.channel})`;
   // Open on YouTube: Pro only (Explorer and Challenger get no link that leaves the site)
   playerDlg.querySelector('.vp-foot').innerHTML = outLink(`https://www.youtube.com/watch?v=${v.yt}`, 'Open on YouTube', 'vp-yt');
   playerDlg.classList.toggle('tall', v.kind === 'short');
-  playerDlg.querySelector('.vp-frame').innerHTML = `<iframe src="${W.embedSrc(v)}" title="${esc(v.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+  playerDlg.querySelector('.vp-frame').innerHTML = W.facade(W.thumbSrc(v));
   playerDlg.showModal();
-  // Video learner: the player has stayed open for a whole minute (cancelled when it closes)
+  playerDlg.querySelector('.vp-play').focus({ preventScroll: true });
+}
+/* The play press: the privacy-enhanced frame replaces the facade and starts playing */
+function playVideo() {
+  const v = playerDlg._video;
+  store.bump('watched'); track('watch/' + v.kind, 'Watch: ' + v.title);
+  playerDlg.querySelector('.vp-frame').innerHTML = `<iframe src="${W.embedSrc(v)}" title="${esc(v.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+  // Video learner: the video has played for a whole minute (cancelled when the player closes)
   clearTimeout(playerDlg._minute); playerDlg._minute = setTimeout(() => { if (playerDlg.open) store.bump('watchedMinute'); }, 60000);
 }
 
@@ -1386,12 +1433,13 @@ function homeTour(signal) {
   const replay = tourAsked; tourAsked = false;
   if (!signal || !fx.mode()) return;
   if (!replay && !tourDue({ mode: fx.mode(), state: tourState(), hash: location.hash, fresh: store.sparks() === 0 })) return;
+  claimSlot('tour', signal); /* the tour is a prompt too: nothing else asks for attention while it is due or open (openspec change install-app) */
   later(() => {
     const has = sel => { const el = document.querySelector(sel); if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
     const steps = resolveTour(has, fx.mode());
-    if (!steps.length) return;
+    if (!steps.length) { releaseSlot('tour'); return; }
     setTourState('shown'); metrics.tourEvent('start');
-    startTour(steps, { signal, onEnd: outcome => { if (outcome === 'finish') { setTourState('done'); metrics.tourEvent('finish'); } else { setTourState('skipped'); metrics.tourEvent('skip'); } } });
+    startTour(steps, { signal, onEnd: outcome => { releaseSlot('tour'); if (outcome === 'finish') { setTourState('done'); metrics.tourEvent('finish'); } else { setTourState('skipped'); metrics.tourEvent('skip'); } } });
   }, 300, signal);
 }
 function guideView(section, { signal } = {}) {
@@ -1402,6 +1450,7 @@ function guideView(section, { signal } = {}) {
   const tryHTML = s => {
     const t = tryFor(s, mode); if (!t) return '';
     if (t.action === 'tour' && !m) return '';
+    if (t.action === 'install' && install && install.appHere()) return ''; /* the Installed app: nothing to install (checked again below once the module is here) */
     const main = t.action ? `<button type="button" class="md-btn md-btn--sm md-btn--primary gd-try" data-gd="${t.action}">${esc(t.label)}</button>` : `<a class="md-btn md-btn--sm md-btn--primary gd-try" href="${esc(t.href)}">${esc(t.label)}</a>`;
     return `<p class="gd-acts">${main}${t.more ? ` <a class="md-btn md-btn--sm" href="${esc(t.more.href)}">${esc(t.more.label)}</a>` : ''}</p>`;
   };
@@ -1426,6 +1475,7 @@ function guideView(section, { signal } = {}) {
   on(view, 'click', e => {
     const b = e.target.closest('[data-gd]'); if (!b) return;
     if (b.dataset.gd === 'tour') askTour();
+    else if (b.dataset.gd === 'install') withInstall(m => m.openGuide('guide'), signal);
     else if (b.dataset.gd === 'music') { e.stopPropagation(); window.scrollTo({ top: 0 }); const mb = $('#vmMBtn'); if (mb && mb.getAttribute('aria-expanded') !== 'true') mb.click(); const first = $('#vmMPanel [data-t]'); if (first) first.focus({ preventScroll: true }); }
   }, signal);
   /* #/guide/<section>: focus its heading now (so the router leaves focus there), scroll to it once the router is done */
@@ -1510,7 +1560,7 @@ function meView() {
     <div class="players">${store.allPlayers().map(q => `<div class="player${q.id === p.id ? ' on' : ''}">${avatar(q, 40)}<span><b>${esc(q.name)}</b><small>${q.mode ? fx.MODES[q.mode].name : 'No mode yet'}</small></span>${q.id === p.id ? '<em>Playing</em>' : `<button class="md-btn md-btn--sm" data-switch="${q.id}">Switch</button><button class="md-btn md-btn--sm" data-del="${q.id}" aria-label="Remove ${esc(q.name)}">Remove</button>`}</div>`).join('')}
       <button class="md-btn md-btn--sm" id="meAdd">${icon('plus')} Add a player</button></div>
     <h2 class="mq-strand">Settings</h2>
-    ${skySwitchHTML(p)}
+    ${skySwitchHTML(p)}${install ? install.meCardHTML() : '<div id="meInstallCard" hidden></div>'}
     <div class="me-set"><label><input type="checkbox" id="setSound" ${fx.soundOn() ? 'checked' : ''}> Sound effects</label><label><input type="checkbox" id="setVoice" ${fx.voiceOn() ? 'checked' : ''}> Read questions aloud</label></div>
     ${ambienceSettingsHTML()}
     <h3 class="mq-h3" id="calmH">Calm and motion</h3>
@@ -1548,6 +1598,8 @@ function meView() {
   fx.wireVoiceSettings(view, { player: p.id });
   wireAmbienceSettings(view);
   wireWorldBoards(view);
+  /* The Install guide's card (openspec change install-app): drawn above when the module is here, else put in its place once it is */
+  withInstall(m => { const c = $('#meInstallCard'); if (c) c.outerHTML = m.meCardHTML(); const mi = $('#meInstall'); if (mi) mi.onclick = () => m.openGuide('me'); });
 
   $('#pExport').onclick = async () => { const code = btoa(unescape(encodeURIComponent(store.exportData()))); try { await navigator.clipboard.writeText(code); msg('Backup code copied. Paste it somewhere safe.'); } catch (e) { prompt('Copy this backup code:', code); } };
   $('#pImport').onclick = () => { const code = prompt('Paste your backup code:'); if (!code) return; try { store.importData(decodeURIComponent(escape(atob(code.trim())))); msg('Progress restored.'); meView(); } catch (e) { msg('That code did not work. Check that it was copied in full.'); } };
@@ -1630,6 +1682,8 @@ metrics.returnCheck(); /* before the first route view: remembers this device's f
 modeFromLink();
 render();
 initAmbient();
+/* The install module, after the first paint (openspec change install-app, design D12); a load that fails is reported once */
+later(() => loadInstall().catch(e => console.error('install.js did not load', e)), 100, boot.signal);
 /* Offline: /sw.js (scope /play/, the game only) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
   const registerSW = () => navigator.serviceWorker.register('/sw.js', { scope: '/play/' }).catch(() => {});

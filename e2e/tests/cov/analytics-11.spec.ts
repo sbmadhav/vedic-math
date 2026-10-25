@@ -1,6 +1,6 @@
 import { test, expect, APP, open } from '../fixtures';
 
-/* analytics spec, Requirement "Try a trick and Find are counted": one test per scenario. The shared analytics.js is
+/* analytics spec, Requirement "Try a trick and Find are counted" (as modified by try-trick-in-modes): one test per scenario. The shared analytics.js is
    replaced by a stub that records window.siteTrack calls, so nothing is counted. */
 const STUB = `window.__events = window.__events || []; window.siteTrack = (path, title) => { window.__events.push([path, title]); };`;
 type Page = import('@playwright/test').Page;
@@ -12,15 +12,16 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('a new visitor', () => {
   test.use({ seedMode: null });
-  test("Try a trick: math/try/start is sent once, followed by the Star's route view", async ({ page }) => {
+  test('Try a trick: under the Pro card it sends math/try/start and math/try/mode/pro once each, then the route view math/view/try, and nothing names the Player', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('#tryBtn').click();
-    await page.locator('#stStart').click();
-    await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
-    const paths = (await events(page)).map(([p]) => p);
-    expect(paths.filter(p => p.startsWith('math/try/'))).toEqual(['math/try/start']);
-    const i = paths.indexOf('math/try/start');
-    expect(paths.slice(i + 1).find(p => p.startsWith('math/view/'))).toMatch(/^math\/view\/star\/[\w-]+\/star$/);
+    await page.locator('[data-try="pro"]').click();
+    await expect(page.locator('#tyStart')).toBeVisible();
+    const ev = await events(page), paths = ev.map(([p]) => p);
+    expect(paths.filter(p => p.startsWith('math/try/'))).toEqual(['math/try/start', 'math/try/mode/pro']);
+    const i = paths.indexOf('math/try/mode/pro');
+    expect(paths.slice(i + 1).find(p => p.startsWith('math/view/'))).toBe('math/view/try');
+    const name = await page.evaluate(() => JSON.parse(localStorage.getItem('vm.players')!).list[0].name as string);
+    expect(ev.some(([p, t]) => (p + ' ' + t).includes(name))).toBe(false);
   });
 });
 

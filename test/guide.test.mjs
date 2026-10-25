@@ -61,7 +61,7 @@ test('every Try it link, in every Mode, opens a real route with a real id', () =
   for (const mode of MODES) for (const s of sectionsFor(mode, N)) {
     const t = tryFor(s, mode); if (!t) continue;
     assert.ok(t.label && typeof t.label === 'string', `${s.id} has a label`);
-    if (t.action) { assert.ok(['tour', 'music'].includes(t.action), `${s.id}: ${t.action}`); continue; }
+    if (t.action) { assert.ok(['tour', 'music', 'install'].includes(t.action), `${s.id}: ${t.action}`); continue; }
     for (const h of [t.href, t.more && t.more.href].filter(Boolean)) { assert.ok(routed(h), `${mode} ${s.id}: ${h} is not a route`); assert.ok(real(h), `${mode} ${s.id}: ${h} names nothing real`); }
   }
 });

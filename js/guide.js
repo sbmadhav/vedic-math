@@ -38,7 +38,7 @@ export function sections(n) {
       tip: w('Lost? Tap Home. This guide is always in the menu.', 'Keyboard friendly: Tab moves between buttons, Enter checks an answer, and Escape closes any pop-up.'),
       try: { action: 'tour', label: w('Show me around', 'Take the tour') } },
 
-    { id: 'modes', group: 'start', art: 'modes', covers: [],
+    { id: 'modes', group: 'start', art: 'modes', covers: ['#/try'], /* Try a trick lives inside each Mode (openspec try-trick-in-modes) */
       title: 'Play modes',
       what: w('Explorer, Challenger and Pro are three ways to play. Explorer has big buttons and pictures.', 'Three modes set the words, the questions and your league on the leaderboards: Explorer (about 4 to 7), Challenger (about 8 to 12) and Pro (13 to adult). A mode says nothing about your real age.'),
       how: [
@@ -303,7 +303,7 @@ export function sections(n) {
         w('A grown-up can add it to the home screen.', 'To install, use your browser\'s Install app option, or Share then Add to Home Screen on iPhone and iPad.')
       ],
       tip: w('It gets new things by itself.', 'Updates arrive by themselves the next time you open it online.'),
-      try: null },
+      try: { action: 'install', label: w('How to add it', 'How to install') } },
 
     { id: 'parents', group: 'extras', art: 'shield', covers: [],
       title: w('For grown-ups', 'For parents and teachers', 'Privacy'),

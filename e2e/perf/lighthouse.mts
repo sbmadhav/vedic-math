@@ -1,8 +1,13 @@
 /* Lighthouse load timings of the game (openspec change react-typescript, performance-budget spec, task 0.4; the
    preview gate of task 1.8 reads the same pages and settings from tools/lighthouserc.json).
 
-   Run from e2e/: node perf/lighthouse.mts [base URL] [--runs N] [--json <file>]
+   Run from e2e/: node perf/lighthouse.mts [base URL] [--runs N] [--json <file>] [--production <url> --production-json <file>]
    (base URL defaults to BASE_URL or https://learnvedicmath.com; Node 22.19 or newer runs the TypeScript as it is).
+   With --production (the preview's perf job; openspec change perf-same-runner) production is measured in the same job
+   as a reference: every page on each host in turn with the same runs, settings and fixed server latency, the hosts'
+   order swapping on each page (perf/interleave.mts), and production's results written to their own file. Both hosts
+   then see the same runner, so its CPU speed, which moves blocking time about two to one between GitHub's runners,
+   cancels in tools/perf-compare.ts (docs/perf/baseline.md, "The same-runner reference").
 
    Lighthouse's mobile preset (its default): simulated slow 4G, 4x CPU slowdown, a Moto G Power sized screen,
    performance only, the median of each metric over N runs (5). Chromium is Playwright's, so no other browser install
@@ -22,6 +27,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:net';
 import { lanternData } from './lantern.mts';
+import { interleave } from './interleave.mts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const RC = JSON.parse(readFileSync(join(HERE, '..', '..', 'tools', 'lighthouserc.json'), 'utf8')) as {
@@ -33,10 +39,13 @@ const RC = JSON.parse(readFileSync(join(HERE, '..', '..', 'tools', 'lighthouserc
    answer: the metrics audit's timeToFirstByte; the server's response time when the worker answers the page);
    srt: the server's own response time (the server-response-time audit);
    lat: the origin's observed server latency (the network-server-latency audit), the value the simulation would have
-   used had it not been fixed; information only, it shows how far the host is from the fixed value */
-export type Metrics = { fcp: number; lcp: number; tbt: number; cls: number; si: number; ttfb: number; srt: number; lat: number };
-export const METRICS: (keyof Metrics)[] = ['fcp', 'lcp', 'tbt', 'cls', 'si', 'ttfb', 'srt', 'lat'];
-const AUDIT: Record<Exclude<keyof Metrics, 'ttfb'>, string> = {
+   used had it not been fixed; information only, it shows how far the host is from the fixed value;
+   bench: Lighthouse's benchmarkIndex of the machine on that run, its CPU speed measure (higher is faster); information
+   only (openspec change perf-gate-fcp): blocking time scales with the runner's speed, so a run says how fast its runner
+   was (docs/perf/baseline.md, "The Deep dive's blocking time"); the job's median is written as benchmarkIndex */
+export type Metrics = { fcp: number; lcp: number; tbt: number; cls: number; si: number; ttfb: number; srt: number; lat: number; bench: number };
+export const METRICS: (keyof Metrics)[] = ['fcp', 'lcp', 'tbt', 'cls', 'si', 'ttfb', 'srt', 'lat', 'bench'];
+const AUDIT: Record<Exclude<keyof Metrics, 'ttfb' | 'bench'>, string> = {
   fcp: 'first-contentful-paint', lcp: 'largest-contentful-paint', tbt: 'total-blocking-time',
   cls: 'cumulative-layout-shift', si: 'speed-index', srt: 'server-response-time', lat: 'network-server-latency',
 };
@@ -108,6 +117,7 @@ async function once(url: string, port: number, keepStorage: boolean, visit: 'fir
     if (typeof v !== 'number') throw new Error(`${url}: no ${audit} in the report`);
     out[k] = v;
   }
+  out.bench = lhr.environment.benchmarkIndex;
   // The repeat visit's page is answered by the service worker, so Lighthouse has no network time to first byte for it
   // (timeToFirstByte is missing): the worker's answer time, the server-response-time audit, stands in there and only
   // there. A first or returning visit always has one; a run without it fails and is made again (retried)
@@ -165,19 +175,30 @@ async function main(argv: string[]) {
   const runs = runOption === undefined ? RC.ci.collect.numberOfRuns : Number(runOption);
   if (!Number.isSafeInteger(runs) || runs < 1) throw new Error('--runs must be a positive integer');
   const json = opt('--json');
+  const production = opt('--production')?.replace(/\/$/, '');
+  const productionJson = opt('--production-json');
+  if ((production === undefined) !== (productionJson === undefined)) throw new Error('--production <url> and --production-json <file> go together');
   const base = (args[0] || process.env.BASE_URL || 'https://learnvedicmath.com').replace(/\/$/, '');
-  const result: Record<string, { path: string; visit: string; median: Metrics; runs: Metrics[] }> = {};
-  for (const p of RC.pages) {
-    const all = await page(base, p.path, p.visit, runs);
+  type Site = { base: string; json?: string; label: string; pages: Record<string, { path: string; visit: string; median: Metrics; runs: Metrics[] }> };
+  const sites: Site[] = [{ base, json, label: 'preview', pages: {} }];
+  if (production) sites.push({ base: production, json: productionJson, label: 'production', pages: {} });
+  // Each page on every site in turn (both on this runner, minutes apart), the sites' order swapping page by page
+  for (const { page: p, site } of interleave(RC.pages, sites)) {
+    const all = await page(site.base, p.path, p.visit, runs);
     const med = {} as Metrics;
     for (const k of METRICS) med[k] = round(k, median(all.map(r => r[k])));
-    result[p.name] = { path: p.path, visit: p.visit, median: med, runs: all };
-    console.log(`${p.name.padEnd(16)} ${p.visit.padEnd(9)} ${METRICS.map(k => `${k} ${med[k]}`).join('  ')}`);
+    site.pages[p.name] = { path: p.path, visit: p.visit, median: med, runs: all };
+    console.log(`${production ? site.label.padEnd(11) : ''}${p.name.padEnd(16)} ${p.visit.padEnd(9)} ${METRICS.map(k => `${k} ${med[k]}`).join('  ')}`);
   }
-  const out = { base, date: new Date().toISOString(), runs, lighthouse: (await import('lighthouse/package.json', { with: { type: 'json' } })).default.version, pages: result };
-  if (json) {
-    mkdirSync(dirname(json), { recursive: true });
-    writeFileSync(json, JSON.stringify(out, null, 1) + '\n');
+  const version = (await import('lighthouse/package.json', { with: { type: 'json' } })).default.version;
+  for (const site of sites) {
+    // The machine's speed over the whole job: the median benchmarkIndex of every run of every page on this site
+    const benchmarkIndex = Math.round(median(Object.values(site.pages).flatMap(p => p.runs.map(r => r.bench))));
+    const out = { base: site.base, date: new Date().toISOString(), runs, lighthouse: version, benchmarkIndex, pages: site.pages };
+    if (site.json) {
+      mkdirSync(dirname(site.json), { recursive: true });
+      writeFileSync(site.json, JSON.stringify(out, null, 1) + '\n');
+    }
   }
 }
 

@@ -7,10 +7,10 @@ Find where each Player's Practice should start with a short, untimed climb throu
 ## ADDED Requirements
 
 ### Requirement: Placement is offered after the Mode pick
-On a first visit to `/play/`, after a Player picks a Mode, the system SHALL offer Placement with one screen that says it takes about 3 minutes and has no clock, with a Start button and a "Skip, just play" button. Each new Player added on the device SHALL get the same offer after their Mode pick. The offer SHALL NOT appear again on its own after Start or Skip.
+On a first visit to `/learn/`, after a Player picks a Mode, the system SHALL offer Placement at `/learn/placement` with one screen that says it takes about 3 minutes and has no clock, with a Start button and a "Skip, just play" button. Each new Player added on the device SHALL get the same offer after their Mode pick. The offer SHALL NOT appear again on its own after Start or Skip.
 
 #### Scenario: New Player
-- **WHEN** a new visitor opens `/play/` and picks Challenger
+- **WHEN** a new visitor opens `/learn/` and picks Challenger
 - **THEN** the Placement offer appears with Start and "Skip, just play", before home
 
 #### Scenario: Another Player on the device
@@ -186,3 +186,17 @@ Placement SHALL work by keyboard and screen reader: each question's heading SHAL
 #### Scenario: Reduced motion
 - **WHEN** a Player with reduced motion climbs a step
 - **THEN** the staircase shows the new step and `document.getAnimations()` is empty
+
+### Requirement: Placement is drawn in the browser
+The page the server renders for `/learn/placement` SHALL hold the document, the header and the nav, and nothing that depends on the Player (no Mode wording, question, step, Placement level or Nickname). The offer, the climb and the result SHALL be drawn in the browser after start-up, in the space the server render kept, with no hydration warning.
+
+#### Scenario: Cold load
+- **WHEN** a placed Challenger Player opens `/learn/placement` in a new tab
+- **THEN** the HTML the server sent holds the header and nav but no Placement wording, step or grade, the offer is shown once the game has started, and the console shows no hydration warning
+
+### Requirement: The Mode pick comes before Placement
+Opening `/learn/placement` before any Mode is picked SHALL show the Mode picker first, and the Placement offer SHALL follow the Mode pick.
+
+#### Scenario: No Mode yet
+- **WHEN** a first-time visitor opens `/learn/placement`
+- **THEN** the Mode picker is shown, and the Placement offer follows the Mode pick

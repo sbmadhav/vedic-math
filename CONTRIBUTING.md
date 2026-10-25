@@ -26,7 +26,7 @@ Changes are made by the owner and the owner's own tooling: a branch from `main`,
 
 ## Local setup
 
-You need Python 3 and Node.js 22 or newer. There is no `npm install` for the app.
+You need Python 3, Node.js 22.19 or newer (`engines` in `package.json`) and pnpm (`corepack enable`). The app itself has no install step; `pnpm install` once at the root is for the checks.
 
 Build the site and serve it the way Cloudflare does:
 
@@ -42,12 +42,14 @@ Then open http://localhost:8124/ (the landing page) or http://localhost:8124/pla
 
 | Check | Command |
 |---|---|
-| The app builds (and the source has no cache stamps) | `python3 build.py --out /tmp/vm-site` |
-| Unit tests | `pnpm test` (after `corepack enable` and `pnpm install`) |
-| End-to-end tests | `cd e2e && pnpm exec playwright test` (after `corepack enable` and `pnpm install`) |
+| Type check | `pnpm typecheck` |
+| Lint (ESLint and stylelint) | `pnpm lint` |
+| Unit tests (Vitest) | `pnpm test` |
+| The app builds (and the source has no cache stamps) | `python3 build.py` (into `_site/`) |
+| End-to-end tests | `cd e2e && pnpm exec playwright test` |
 | Firestore rules tests (only when you change `cloud/`; needs Java) | `cd cloud/test && npm install && npm test` |
 
-The pre-commit hook runs the first two. CI runs them on every pull request and checks that the build holds no repo-only files. Cache stamps are added only by the CI deploy, never in git, so there is nothing to run or commit after editing `play/index.html`, `site/`, `math.css` or `js/`.
+The pre-commit hook runs the first four (the build into a throwaway directory). CI runs them on every pull request and checks that the build holds no repo-only files. A build inside the repo goes in a top-level folder whose name starts with `_` (`_site/`, `_dev/`, `_moved/`, or `--out _<name>`): git and ESLint ignore `_*/`, and `build.py` refuses any other place inside the repo. Every build but `--dev` stamps its output (versioned references and a stamped service worker), and that output is never committed: the source in git holds no cache stamps, so there is nothing to run or commit after editing `play/index.html`, `site/`, `math.css` or `js/`.
 
 ## Tests
 

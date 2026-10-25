@@ -51,6 +51,59 @@ for (const scheme of ['light', 'dark'] as const) {
   });
 }
 
+/* The Mode picker and Try a trick in each Mode (openspec try-trick-in-modes): the card, a question, a miss and the end */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, Try a trick`, () => {
+    test.use({ colorScheme: scheme });
+    test.describe('the Mode picker', () => {
+      test.use({ seedMode: null });
+      test('the Mode picker with a Try a trick under each card has no serious or critical axe violations', async ({ page }, testInfo) => {
+        chromiumOnly(testInfo);
+        await page.goto(APP);
+        await expect(page.locator('.mode-try')).toHaveCount(3);
+        expect(await serious(page)).toEqual([]);
+      });
+    });
+    for (const mode of ['explorer', 'challenger', 'pro'] as const) test.describe(mode, () => {
+      test.use({ seedMode: mode });
+      test(`#/try (${mode}) on its card, a question, a miss and the end has no serious or critical axe violations`, async ({ page }, testInfo) => {
+        chromiumOnly(testInfo);
+        await open(page, '#/try');
+        await page.waitForLoadState('networkidle');
+        expect(await serious(page, '#/try')).toEqual([]);
+        await page.locator('#tyStart').click();
+        expect(await serious(page, '#/try')).toEqual([]);
+        for (let k = 0; k < 3; k++) {
+          if (mode === 'explorer') { const c = page.locator('.pr-choice:not([disabled])'); await c.first().click(); if (!(await page.locator('#tyNext').count())) await c.first().click(); }
+          else { await page.locator('#tyIn').fill('1'); await page.keyboard.press('Enter'); }
+          if (k === 0) expect(await serious(page, '#/try')).toEqual([]);
+          await page.locator('#tyNext').click();
+        }
+        await expect(page.locator('.try-end')).toBeVisible();
+        expect(await serious(page, '#/try')).toEqual([]);
+      });
+    });
+  });
+}
+
+/* The Install nudge on Home and the Install guide (openspec change install-app), on iPhone Safari where both show */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, install`, () => {
+    test.use({ colorScheme: scheme, seedProgress: { days: { '2026-01-05': 3 } }, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1' });
+    test('Home with the Install nudge, then the Install guide open, has no serious or critical axe violations', async ({ page }, testInfo) => {
+      chromiumOnly(testInfo);
+      await open(page);
+      await expect(page.locator('#installSlot .in-nudge')).toBeVisible();
+      await page.waitForLoadState('networkidle');
+      expect(await serious(page, '#/')).toEqual([]);
+      await page.locator('#installSlot [data-in="go"]').click();
+      await expect(page.locator('dialog#installGuide')).toBeVisible();
+      await page.locator('dialog#installGuide .in-other summary').click();
+      expect(await serious(page, '#/')).toEqual([]);
+    });
+  });
+}
+
 /* A Star round (star-round spec 5.4): during a question and during a replay */
 for (const scheme of ['light', 'dark'] as const) {
   test.describe(`${scheme} scheme, Star`, () => {

@@ -8,9 +8,19 @@
    2. asks once, showing what will come over (built with textContent only; nothing from the payload becomes markup);
    3. if this device already has progress here, offers "Keep this device's", "Use the old site's" or "Keep both" (the
       old site's Players added next to these; one Player's progress is never merged with another's);
-   4. writes, records vm.migratedAt, and opens the game on the original route.
+   4. writes, records vm.migratedAt, and opens the game on the original route;
+   5. counts the visit's result once (RESULTS below), after the fragment is gone and never with anything else.
    applyHandoff and progressHere are pure (storage passed in), for test/handoff.test.mjs. */
-import { readFragment, decode, validatePayload, MAX_PLAYERS, PART_NAMES } from './handoff-schema.js';
+import { readFragment, decode, validatePayload, MAX_PAYLOAD, MAX_PLAYERS, PART_NAMES } from './handoff-schema.js';
+
+/* The one count this page sends (analytics spec, "Hand-off results are counted"): math/handoff/<result>, one per
+   visit, with result one of these and nothing else. accepted: Bring it, and Keep both (the old site's Players came in
+   and nothing here was lost); replaced: Use the old site's; kept: Keep this device's; declined: Not now; invalid: a
+   link that failed the checks; too-big: a link over a cap (the fragment, the payload, or 256 KB decompressed), or a
+   browser whose storage would not take the progress; popup: the "Bring my progress from sbmadhav.com" button (task
+   10.2, deferred until the export page exists). A visit with no payload in the link is not a hand-off and sends nothing.
+   test/handoff.test.mjs checks this list against the spec. */
+export const RESULTS = ['accepted', 'replaced', 'kept', 'declined', 'invalid', 'too-big', 'popup'];
 
 const PLAY_RE = /^vm\.play\.(p[0-9a-z]{1,12})\.([a-z][a-z0-9-]{0,31})$/;
 const json = (st, k) => { try { return JSON.parse(st.get(k)); } catch (e) { return null; } };
@@ -90,14 +100,37 @@ function restore(st, before) {
 }
 
 /* ---------- the page ---------- */
+/* Each Mode's word and the colour of its avatar tile, as js/fx.js MODES has them. fx.js is not imported here: it
+   brings the game's store and voice with it, and this page never runs the game. */
+const MODE = { explorer: ['Explorer', 'sun'], challenger: ['Challenger', 'sky'], pro: ['Pro', 'plum'] };
+/* One Player as a row (design audit): an avatar tile with the Nickname's first letter, the Nickname, and the Mode word
+   with the Sparks. textContent only: nothing from the payload becomes markup. A Player packed from the oldest format
+   has no Mode and reads as the Sparks alone. */
+export function playerRow(p, sparks, doc = document) {
+  const el = (tag, cls, text) => { const e = doc.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+  const [word, color] = Object.hasOwn(MODE, p.mode) ? MODE[p.mode] : [];
+  const avatar = el('span', 'ho-avatar' + (color ? ` ho-avatar--${color}` : ''), p.name.slice(0, 1));
+  avatar.setAttribute('aria-hidden', 'true');
+  const text = el('span');
+  text.append(el('span', 'ho-name', p.name), ' ', el('span', 'ho-meta', `${word ? word + ', ' : ''}${sparks.toLocaleString('en')} Spark${sparks === 1 ? '' : 's'}`));
+  const li = el('li', 'ho-player');
+  li.append(avatar, ' ', text); /* the space keeps the row readable before its styles load; a flex row never shows it */
+  return li;
+}
 const local = {
   get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
   set: (k, v) => localStorage.setItem(k, v),
   remove: k => { try { localStorage.removeItem(k); } catch (e) {} },
   keys: () => { try { return Object.keys(localStorage); } catch (e) { return []; } },
 };
-/* Fixed buckets only (analytics D11): math/handoff/<accepted|replaced|merged|kept|declined|invalid|error> */
-const track = (name, title) => { try { if (window.siteTrack) window.siteTrack(name, title); } catch (e) {} };
+/* Fixed words only, at most once per page load; never a name, a count or any part of the link */
+const TITLES = { accepted: 'brought', replaced: 'replaced this device', kept: 'kept this device', declined: 'not now', invalid: 'invalid link', 'too-big': 'did not fit', popup: 'popup opened' };
+let counted = false;
+function count(result) {
+  if (counted || !RESULTS.includes(result)) return;
+  counted = true;
+  try { if (window.siteTrack) window.siteTrack('math/handoff/' + result, 'Hand-off: ' + TITLES[result]); } catch (e) {}
+}
 const $ = id => document.getElementById(id);
 const show = id => { for (const s of ['ho-offer', 'ho-bad', 'ho-none', 'ho-error']) $(s).hidden = s !== id; };
 const sparksOf = r => Math.floor((r && (r.sparks || r.xp)) || 0);
@@ -107,24 +140,21 @@ async function start() {
   const raw = typeof window.lvmHandoff === 'string' ? window.lvmHandoff : '';
   delete window.lvmHandoff;
   if (location.hash) history.replaceState(null, '', location.pathname); // already done by the page; never leave it
-  const f = readFragment(raw);
-  if (!f || !f.d) { $('ho-title').textContent = 'Nothing to bring over'; show('ho-none'); return; }
-  let checked;
-  try { checked = f.v === '1' ? validatePayload(await decode(f.d)) : { ok: false }; } catch (e) { checked = { ok: false }; }
+  const f = raw ? readFragment(raw) : null; // null for a fragment over the cap: readFragment refuses nothing else
+  if (!raw || (f && !f.d)) { $('ho-title').textContent = 'Nothing to bring over'; show('ho-none'); return; }
+  let checked = { ok: false, big: !f || f.d.length > MAX_PAYLOAD };
+  if (!checked.big) {
+    try { checked = f.v === '1' ? validatePayload(await decode(f.d)) : { ok: false }; } catch (e) { checked = { ok: false, big: e.message === 'too big' }; }
+  }
   if (!checked.ok) {
     $('ho-title').textContent = 'Nothing to bring over';
     show('ho-bad');
-    track('math/handoff/invalid', 'Hand-off: invalid link');
+    count(checked.big ? 'too-big' : 'invalid');
     return;
   }
   const payload = checked.value, route = f.route;
   const list = $('ho-list');
-  for (const p of payload.players.list) {
-    const li = document.createElement('li');
-    const s = sparksOf(payload.records[p.id]);
-    li.textContent = `${p.name}: ${s.toLocaleString('en')} Spark${s === 1 ? '' : 's'}`;
-    list.append(li);
-  }
+  for (const p of payload.players.list) list.append(playerRow(p, sparksOf(payload.records[p.id])));
   if (payload.dropped && payload.dropped.length) {
     $('ho-dropped').textContent = `Too much to fit in one link, so these stay on the old site: ${payload.dropped.map(p => PART_NAMES[p]).join(', ')}.`;
     $('ho-dropped').hidden = false;
@@ -136,24 +166,27 @@ async function start() {
     if (here.list.length + payload.players.list.length > MAX_PLAYERS) $('ho-merge').hidden = true;
   }
   show('ho-offer');
-  const done = (choice, counted) => {
+  const done = (choice, result) => {
     try { applyHandoff(local, payload, choice); } catch (e) {
       // Nothing changed (applyHandoff put every key back). The count goes first, while the address holds no payload;
       // then the fragment returns to the address bar, so a reload after making room tries again.
-      track('math/handoff/error', 'Hand-off: could not save');
+      count('too-big');
       try { history.replaceState(null, '', location.pathname + raw); } catch (err) { /* the link still works from the old site */ }
+      // The heading says what happened and takes focus again, as the other states do (design audit)
+      $('ho-title').textContent = 'Progress not saved';
       show('ho-error');
+      $('ho-title').focus();
       return;
     }
-    counted();
+    count(result);
     play(route);
   };
   const click = (id, fn) => $(id).addEventListener('click', fn, { once: true });
-  click('ho-bring', () => done('replace', () => track('math/handoff/accepted', 'Hand-off: brought')));
-  click('ho-use', () => done('replace', () => track('math/handoff/replaced', 'Hand-off: replaced this device')));
-  click('ho-merge', () => done('both', () => track('math/handoff/merged', 'Hand-off: kept both')));
-  click('ho-not-now', () => { track('math/handoff/declined', 'Hand-off: not now'); play(route); });
-  click('ho-keep', () => { track('math/handoff/kept', 'Hand-off: kept this device'); play(route); });
+  click('ho-bring', () => done('replace', 'accepted'));
+  click('ho-use', () => done('replace', 'replaced'));
+  click('ho-merge', () => done('both', 'accepted'));
+  click('ho-not-now', () => { count('declined'); play(route); });
+  click('ho-keep', () => { count('kept'); play(route); });
   $('ho-title').focus();
 }
 
