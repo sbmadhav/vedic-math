@@ -3,8 +3,9 @@
    every line must be something the provider accepts in one request. */
 import test from './support/node-test.mjs';
 import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
-import { allExplanationLines, skillLines, trickLines, sutraDeepLines, guideCounts } from '../js/explain-lines.js';
+import { allExplanationLines, skillLines, skillPageLines, trickLines, sutraDeepLines, guideCounts } from '../js/explain-lines.js';
 import { normalize } from '../js/voice.js';
 import { SKILLS } from '../js/skills/index.js';
 import { TRICKS } from '../js/vedic.js';
@@ -21,6 +22,22 @@ test('every Skill, Trick, Sutra deep dive and game has its explanation listed', 
   for (const c of [...SUTRAS, ...SUBSUTRAS]) assert.ok(sutraDeepLines(c.name).length > 0, c.name);
   for (const g of GAMES) assert.ok(has.has(g.desc), g.id);
   assert.ok(lines.some(l => l.src.startsWith('guide:explorer')) && lines.some(l => l.src.startsWith('tour:pro')));
+});
+
+/* A recording can only match a list that never changes: two loads with different random draws list the same lines */
+test('the explanation lines are the same on every load (explanation-audio 4.6)', () => {
+  const load = seed => execFileSync(process.execPath, ['--input-type=module', '-e', `
+    let x = ${seed}; Math.random = () => (x = (x * 1103515245 + 12345) % 2147483648) / 2147483648;
+    const { allExplanationLines } = await import(${JSON.stringify(new URL('../js/explain-lines.js', import.meta.url).href)});
+    process.stdout.write(JSON.stringify(allExplanationLines()));`], { encoding: 'utf8', maxBuffer: 64 << 20 });
+  const a = JSON.parse(load(7)), b = JSON.parse(load(424242));
+  assert.deepEqual(b.filter((l, i) => l.text !== a[i]?.text).slice(0, 5), [], 'lines drawn at random cannot be recorded whole');
+  assert.equal(a.length, b.length);
+});
+
+test('a Skill page reads the lines its Skill records, and a Trick Skill reads when to use the Trick', () => {
+  for (const s of SKILLS) assert.deepEqual(skillPageLines(s), skillLines(s), s.id);
+  for (const t of TRICKS) assert.deepEqual(skillLines(SKILLS.find(s => s.trick === t.id)), [t.idea, t.when].filter(Boolean), t.id);
 });
 
 test('every line says something and fits one provider request (5,000 bytes)', () => {
