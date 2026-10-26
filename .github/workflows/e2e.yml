@@ -25,12 +25,13 @@ on:
 permissions:
   contents: read
 
-# One group per event, so a merge never cancels the daily or on-demand run (the full suite, with the scenario specs
-# and the video check). A newer push to main still cancels the run for an older push: both test what is live, and the
-# older run would test a site that changes under it. With the suite in shards a push run takes about 20 minutes, so
+# Pushes share one group; every daily or on-demand run (the full suite, with the scenario specs and the video check)
+# has a group of its own, so neither a merge nor another manual run (perhaps for another base_url) cancels or
+# replaces it. A newer push to main still cancels the run for an older push: both test what is live, and the older
+# run would test a site that changes under it. With the suite in shards a push run takes about 15 to 20 minutes, so
 # only pushes that land closer together than that cancel one another.
 concurrency:
-  group: e2e-${{ github.ref }}-${{ github.event_name }}
+  group: e2e-${{ github.ref }}-${{ github.event_name == 'push' && 'push' || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
@@ -235,7 +236,8 @@ jobs:
   # change perf-same-runner). A miss opens an issue with the numbers; the deploy stays.
   perf:
     needs: [deploy, e2e]
-    if: always() && github.event_name == 'push' && vars.CLOUDFLARE_ACCOUNT_ID != ''
+    # After the shards whatever their result, but only when the deploy job ran to the end
+    if: always() && needs.deploy.result == 'success' && github.event_name == 'push' && vars.CLOUDFLARE_ACCOUNT_ID != ''
     runs-on: ubuntu-latest
     timeout-minutes: 40
     permissions:
