@@ -16,6 +16,7 @@ import { makeSet } from '../js/arena.js';
 import { wholeSkills, fixedLines, STITCHED_K2 } from '../tools/voice/lines.mjs';
 import { allExplanationLines } from '../js/explain-lines.js';
 import { VIDEOS, LINKS } from '../js/videos.js';
+import { TEMPLATES, WRITTEN, storyFor } from '../js/stories.js';
 
 const MANIFEST = new URL('../tools/voice/manifest.json', import.meta.url);
 const manifest = existsSync(MANIFEST) ? JSON.parse(readFileSync(MANIFEST, 'utf8')) : null;
@@ -67,7 +68,8 @@ test('studio audio covers at least 99% of all lines', { skip: !manifest && 'noth
   const lines = new Set(manifest.lines), clips = new Set(manifest.clips); let all = 0, ok = 0;
   const check = t => { const w = normalize(t); if (!w) return; all++; if (covered(w, lines, clips)) ok++; };
   seeded('voice-coverage-all', () => {
-    for (const s of SKILLS) for (const lv of [1, 2, 3]) for (let i = 0; i < 100; i++) { let p; try { p = s.gen(lv); } catch (e) { continue; } spoken(p).forEach(check); }
+    /* Word problems (openspec word-problems) are left out here until the owner's re-record (its task 4.2): the todo below */
+    for (const s of SKILLS) for (const lv of [1, 2, 3]) for (let i = 0; i < 100; i++) { let p; try { p = s.gen(lv); } catch (e) { continue; } if (!p.story) spoken(p).forEach(check); }
   });
   for (const t of TRICKS) for (let n = 1; n <= KATAS_PER_TRICK; n += 5) kata(t.id, n).problems.forEach(p => spoken(p).forEach(check));
   for (const league of ['challenger', 'pro']) for (let d = 0; d < 5; d++) makeSet(league, 'voice-coverage-' + d).forEach(p => spoken(p).forEach(check));
@@ -81,4 +83,15 @@ test('every explanation line is recorded whole', { skip: !manifest && 'nothing r
   const lines = new Set(manifest.lines), miss = [];
   for (const { text, src } of allExplanationLines({ videos: VIDEOS, links: LINKS })) { const w = normalize(text); if (w && !lines.has(lineHash(manifest.voice, w))) miss.push(`${src}: ${w}`); }
   assert.deepEqual(miss.slice(0, 10), [], `${miss.length} explanation lines have no whole recording; re-run tools/voice/lines.mjs, record.mjs and publish.mjs`);
+});
+
+/* Word problems (openspec word-problems, design D11): spoken by the Built-in voice until the owner re-records with
+   tools/voice/lines.mjs, which lists them. Task 4.2 of that change removes the todo so this becomes a hard gate. */
+test('every Word problem line has studio audio', { skip: !manifest && 'nothing recorded yet (no tools/voice/manifest.json)', todo: 'until the word-problems 4.2 re-record' }, () => {
+  const lines = new Set(manifest.lines), clips = new Set(manifest.clips), miss = new Set();
+  seeded('voice-coverage-stories', () => {
+    for (const t of TEMPLATES) for (let i = 0; i < 50; i++) { const p = storyFor({ id: t.skills[0], grade: 3 }, t.mode); if (p) spoken(p).forEach(x => { const w = normalize(x); if (w && !covered(w, lines, clips)) miss.add(w); }); }
+  });
+  for (const w of WRITTEN) [w.q, w.ask, w.plan].forEach(x => { const n = normalize(x); if (n && !covered(n, lines, clips)) miss.add(n); });
+  assert.deepEqual([...miss].slice(0, 10), [], `${miss.size} Word problem lines have no studio audio; re-run tools/voice/lines.mjs, record.mjs and publish.mjs`);
 });

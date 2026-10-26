@@ -16,6 +16,7 @@ import * as AD from './adapt.js';
 import * as metrics from './metrics.js';
 import { tag as sutraTag, tags, fillTags } from './sutra-tag-slot.js'; /* js/sutra-tag.js loads on demand (#126 review) */
 import { listenBtn, stopListen } from './listen.js';
+import { trickStoryNow, starSlot, loadStories } from './story-plan.js';
 
 export const ROUND = 4;
 export const SPARK = { right: 10, comeback: 15, dare: 20 };
@@ -24,18 +25,29 @@ const shuffle = (arr, rand = Math.random) => { const a = arr.slice(); for (let i
 
 /* ---------- The engine ---------- */
 /* A new round. last: the keys the previous round on this Star dealt (they go to the back of the deck).
-   pool: the problems to deal from (default: the Star's band at this Rating, js/levels.js starPool). */
-export function starRound({ trick, star, rating = 1, last = [], pool = null, third = null, rand = Math.random } = {}) {
+   pool: the problems to deal from (default: the Star's band at this Rating, js/levels.js starPool).
+   story(p): a Word problem on p's own numbers, or null (openspec word-problems); storyAt: the main question (from 0)
+   it replaces, -1 for none. A rematch after a missed Word problem is a Word problem too; a Dare stays bare. */
+export function starRound({ trick, star, rating = 1, last = [], pool = null, third = null, rand = Math.random, story = null, storyAt = -1 } = {}) {
   const band = pool || starPool(trick, star, rating);
   const lastSigs = new Set(last.map(k => band.find(p => p.key === k)).filter(Boolean).map(sigOf));
   if (!pool) for (const k of last) { const s = sigOfKey(trick, k); if (s) lastSigs.add(s); }
   const mixed = shuffle(band, rand), fresh = mixed.filter(p => !lastSigs.has(sigOf(p))), old = mixed.filter(p => lastSigs.has(sigOf(p)));
   const deck = fresh.concat(old), qs = deck.slice(0, ROUND);
+  if (story && storyAt >= 0 && qs[storyAt]) { const w = story(qs[storyAt]); if (w) qs[storyAt] = w; }
   return {
-    trick, star, rand, band: deck, third, qs, k: 0, mode: 'main', current: qs[0], replayOf: null, sparks: 0, misses: 0,
+    trick, star, rand, story, storyAt, band: deck, third, qs, k: 0, mode: 'main', current: qs[0], replayOf: null, sparks: 0, misses: 0,
     usedKinds: new Set(), used: new Set(qs.map(sigOf)), dareOffered: false, dareDone: false, offerShown: false,
     results: qs.map(() => null), lit: false
   };
+}
+/* The story slot's Word problem when its question comes, if the deal could not make one (the stories were still
+   loading): a main question at storyAt that is still bare */
+export function withStory(st) {
+  if (!st.story || st.mode !== 'main' || st.k !== st.storyAt || !st.current || st.current.story) return st;
+  const w = st.story(st.current); if (!w) return st;
+  const qs = st.qs.slice(); qs[st.k] = w;
+  return { ...st, qs, current: w };
 }
 /* The keys this round deals (saved as the Star's last round when it starts) */
 export const roundKeys = st => st.qs.map(p => p.key);
@@ -48,7 +60,7 @@ export function pickRematch(st, missed) {
   if (!p) { st.third = st.third || starThird(st.trick, st.star); p = shuffle(st.third.filter(same), st.rand)[0]; }
   if (!p) p = st.band.find(unused) || st.band.find(x => sigOf(x) !== sigOf(missed)) || missed;
   st.used.add(sigOf(p));
-  return p;
+  return (missed.story && st.story && st.story(p)) || p;
 }
 
 const copy = st => ({ ...st, usedKinds: new Set(st.usedKinds), used: new Set(st.used), results: st.results.slice() });
@@ -124,7 +136,8 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
   const t = TRICKS.find(x => x.id === trick), skill = byId['v-' + trick], mode = fx.mode() || 'challenger', boxes = mode !== 'pro';
   const round = child(signal), rs = round.signal;
   const rating = AD.skillRating('v-' + trick, mode), dial = new AD.Dial(rating);
-  let st = starRound({ trick, star, rating, last: store.starLast(trick, star) });
+  /* Word problems (openspec word-problems): question 3 for Challenger, 2 for Pro, once the Player has 20 saved answers */
+  let st = starRound({ trick, star, rating, last: store.starLast(trick, star), story: p => trickStoryNow(trick, p, mode), storyAt: starSlot(mode, store.count('answers')) });
   store.setStarLast(trick, star, roundKeys(st)); /* saved at the start, so leaving mid-round still counts as the last round */
   const wasLit = store.starState(trick, star) === 'lit';
   let video = null, phase = null, entry = '', fields = [], active = 0, input = false, dialSaved = false, dareP = null, replaySkip = null, shown = 0;
@@ -219,9 +232,10 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
 
   /* ---------- Phases ---------- */
   function ask() {
+    st = withStory(st);
     const ps = newPhase(), p = st.current; entry = ''; fields = []; active = 0;
     const tag = st.mode === 'rematch' ? '<span class="star-tag star-tag--rematch">Rematch</span>' : st.mode === 'dare' ? '<span class="star-tag star-tag--dare">Dare</span>' : `<span class="star-tag">Question ${st.k + 1} of ${st.qs.length}</span>`;
-    main.innerHTML = `<div class="star-ask">${tag}<h2 class="star-q${said(p.q).length > 16 ? ' star-q--long' : ''}" id="stQ" tabindex="-1">${p.q}</h2>${entryHTML(p)}<p class="star-pop" id="stPop" aria-hidden="true"></p></div>`;
+    main.innerHTML = `<div class="star-ask">${tag}${p.story ? '<span class="star-story" id="stStory">Word problem</span>' : ''}<h2 class="star-q${p.story ? ' star-q--story' : said(p.q).length > 16 ? ' star-q--long' : ''}" id="stQ" tabindex="-1">${p.q}</h2>${entryHTML(p)}<p class="star-pop" id="stPop" aria-hidden="true"></p></div>`;
     pad.hidden = p.kind === 'choice'; pad.querySelectorAll('button').forEach(b => (b.disabled = false));
     if (st.mode === 'main' && canDare(st)) {
       if (!dareP) dareP = dareFor(trick, star, st.used);
@@ -242,7 +256,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     input = false; pad.querySelectorAll('button').forEach(b => (b.disabled = true));
     const p = st.current, was = st.mode;
     store.record('v-' + trick, ok, false, { sparks: false }); /* counts, mastery and quests; the Star pays its own Sparks */
-    metrics.answered('star', ok);
+    metrics.answered('star', ok); if (p.story) metrics.story('star', ok);
     const r = starAnswer(st, ok); st = r.state;
     for (const e of r.events) {
       if (e.dial !== undefined) dial.hit(e.dial); if (e.sparks) store.addSparks(e.sparks, 'star');
@@ -282,9 +296,9 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
   /* The Trick worked step by step on the missed question's own numbers, with Listen once every step is shown; Skip or
      Escape ends it at once */
   function replay(p, of) {
-    const ps = newPhase(), steps = t.steps(p.vals); let i = 0;
+    const ps = newPhase(), steps = (p.story && p.story.first ? [p.story.first] : []).concat(t.steps(p.vals)); let i = 0; /* a Word problem's replay starts with what it asks */
     dareBtn.hidden = true; pad.querySelectorAll('button').forEach(b => (b.disabled = true));
-    main.innerHTML = `<div class="star-replay"><span class="star-tag star-tag--trick">The Trick${sutraName() ? ` · <span lang="sa-Latn">${esc(sutraName())}</span>` : ''}</span><h2 class="star-q star-q--sm" id="stQ" tabindex="-1">${p.q}</h2>
+    main.innerHTML = `<div class="star-replay"><span class="star-tag star-tag--trick">The Trick${sutraName() ? ` · <span lang="sa-Latn">${esc(sutraName())}</span>` : ''}</span><h2 class="star-q ${p.story ? 'star-q--story' : 'star-q--sm'}" id="stQ" tabindex="-1">${p.q}</h2>
       <ol class="star-steps" id="stSteps"></ol><p class="star-acts"><button type="button" class="md-btn md-btn--sm" id="stRSkip">Skip</button></p></div>`;
     say(of === 'dare' ? 'Here is the Dare, step by step.' : 'Here is how the trick does it.', 'explain');
     const list = $('#stSteps'), done = () => {
@@ -355,5 +369,11 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
   }
 
   ask();
+  /* Word problems (openspec word-problems): the stories are usually here before question 2; if they arrive while the
+     story slot's question is on screen with nothing typed yet, it is asked again as the Word problem */
+  loadStories().then(() => {
+    if (rs.aborted || !input || entry || fields.some(Boolean)) return;
+    const w = withStory(st); if (w !== st) { st = w; ask(); }
+  }).catch(() => {});
   return { destroy: () => { saveDial(); round.abort(); } };
 }

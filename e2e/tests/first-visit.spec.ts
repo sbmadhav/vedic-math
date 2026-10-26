@@ -163,6 +163,7 @@ test.describe('Home: three doors first', () => {
     await expect(page.locator('.home-doors .door')).toHaveCount(3);
     await page.locator('#homeMore summary').click();
     await expect(page.locator('#homeMore')).toHaveAttribute('open', '');
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('vm.homeMore'))).toBe('1'); /* the toggle event stores it after the click: wait for it before leaving */
     await open(page, '#/');
     await expect(page.locator('#homeMore')).toHaveAttribute('open', '');
     expect(appErrors(issues)).toEqual([]);

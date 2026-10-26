@@ -49,13 +49,23 @@ test.describe('motion allowed', () => {
   });
 
   test('a right answer in a Star twinkles with a few sparkles; lighting the Star is a true win with the big confetti', async ({ page }) => {
+    test.setTimeout(120_000); // the burst is counted in frames, and a slow browser paints few a second (below)
     await watchFx(page);
     await lightStar(page, async () => {
       await expect.poll(async () => (await fx(page)).sparkles).toBeGreaterThan(0);
       expect((await fx(page)).confetti).toBe(0);
     });
     await expect.poll(async () => (await fx(page)).confetti).toBeGreaterThanOrEqual(1);
-    await expect(page.locator('canvas.fx-confetti')).toHaveCount(0, { timeout: 5000 }); // the burst ends and removes itself
+    // The burst ends and removes itself. It lasts 110 animation frames (js/celebrate.js), so the check counts frames,
+    // not seconds: about 1.9 s at 60 a second, but headless WebKit on Linux paints it at about 21 a second alone
+    // (5.2 s) and fewer beside two other browsers (past 15 s), and a 5 s wait failed there on every run
+    const frames = await page.evaluate(() => new Promise<number>(done => {
+      let n = 0;
+      const step = () => { if (!document.querySelector('canvas.fx-confetti') || ++n > 200) done(n); else requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    }));
+    expect(frames, 'animation frames until the burst removed itself').toBeLessThanOrEqual(130);
+    await expect(page.locator('canvas.fx-confetti')).toHaveCount(0);
   });
 
   test('turning on Pause motion stops the big confetti at once', async ({ page }) => {

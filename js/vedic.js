@@ -362,5 +362,5 @@ export function problemFor(t, vals) {
 
 export const TRICK_SKILLS = TRICKS.map(t => ({
   id: 'v-' + t.id, grade: 'V', strand: 'tricks', title: t.title, kid: t.kid, idea: t.idea, method: [t.when, ...t.steps(t.random()).map(s => s.say).slice(0, 2)], trick: t.id,
-  gen() { let vals; do { vals = t.random(); } while (t.valid(vals)); return problemFor(t, vals); }
+  gen() { let vals; do { vals = t.random(); } while (t.valid(vals)); return { ...problemFor(t, vals), vals }; } /* vals: the numbers, which a Word problem keeps (openspec word-problems) */
 }));

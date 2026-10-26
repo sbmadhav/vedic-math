@@ -39,7 +39,7 @@ _Avoid_: opt-in, consent screen, parental gate
 ## Learning
 
 **Skill**:
-One topic in the learning map, from counting to calculus. There are 135.
+One topic in the learning map, from counting to calculus. There are 136.
 _Avoid_: lesson, topic, unit
 
 **Trick**:
@@ -89,6 +89,10 @@ _Avoid_: phonetic spelling, transliteration (that is the IAST)
 **Sutra ambience**:
 Very quiet sound on the Sutra pages: a soft bowl strike when a page opens (on by default), an optional low hum, or an opt-in chanted Om instead. Never over Calm music (if the music is already playing, it is the ambience), silent with Sound effects off, Calm or Pause motion, and it stops when the Player leaves the Sutra pages or the tab.
 _Avoid_: background music, chanting (unless the Om is meant)
+
+**Word problem**:
+A question told as a short everyday story (a shop, a kitchen, a game, a trip) whose answer is one number. A share of every Mode's Practice questions and one question of a Star round are Word problems, more as the Mode grows: picture stories for Explorer, one and two steps for Challenger, multi-step real-life problems for Pro. Its first hint asks "What is it asking?"; no hint gives the answer. (`word-problems` change.)
+_Avoid_: story question, puzzle, real-world problem (in copy, Explorer's label is "Story time")
 
 **Kata**:
 A fixed practice problem for one Trick, numbered from easy to hard. Stars draw their questions from them; a Kata has no rating of its own.

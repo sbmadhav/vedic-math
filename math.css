@@ -172,6 +172,9 @@ a.sutra-tag-a:hover .sutra-tag-n, a.sutra-tag-a:focus-visible .sutra-tag-n { tex
 .mq-q, .pr-q { font: 600 1.45rem/1.5 var(--display); margin: 6px 0 10px; overflow-wrap: anywhere; }
 .pr-q { font-size: clamp(1.35rem, 3.6vw, 1.8rem); }
 .mq-q.long, .pr-q.long { font: 600 1.15rem/1.55 var(--font-sans); }
+/* Word problems (openspec word-problems): the label over the story, and the story in the body font so it reads like text */
+.pr-story { margin-top: var(--space-2); }
+.pr-q.pr-q--story { font: 600 1.2rem/1.55 var(--font-sans); max-width: 40em; }
 .mq-viz { margin: 10px 0 14px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 .mq-steps { margin: 6px 0 10px; padding-left: 1.3em; }
 .mq-steps li { margin: 5px 0; }
@@ -1021,6 +1024,8 @@ html.motion-paused .wb-card .md-switch .md-knob, body.calm .wb-card .md-switch .
 .star-q sup { font-size: .45em; vertical-align: .9em; color: var(--coral-strong); }
 .star-q--long { font-size: clamp(1.3rem, 4.5vw, 1.9rem); line-height: 1.3; }
 .star-q--sm { font-size: clamp(1.8rem, 7vw, 2.6rem); }
+.star-story { display: inline-flex; margin-left: var(--space-2); padding: 4px 12px; border-radius: var(--radius-pill); font-weight: 800; font-size: 13px; background: var(--teal); color: var(--on-accent); }
+.star-q.star-q--story { font: 600 clamp(1.1rem, 3.6vw, 1.45rem)/1.5 var(--font-sans); letter-spacing: 0; text-align: start; max-width: 36em; margin-inline: auto; }
 .star-boxes { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .star-boxes span { width: clamp(40px, 10vw, 56px); height: clamp(50px, 12vw, 66px); display: grid; place-items: center; border-radius: var(--radius-sm); border: 2px dashed var(--edge); font: 700 clamp(1.6rem, 6vw, 2.2rem)/1 var(--display); background: var(--card); }
 .star-boxes span.f { border-style: solid; background: color-mix(in srgb, var(--sky) 16%, var(--card)); }
@@ -1383,7 +1388,7 @@ html.motion-paused .play-card, body.calm .play-card { transition: none; } html.m
 /* ---------- Mathematics in Sanskrit verse (openspec sanskrit-verses): Sutras page and deep dives. Tokens only.
    Devanagari uses the device's own fonts (no download): Noto on Android and Linux, Kohinoor on Apple, Nirmala on Windows. */
 .verses { margin-top: var(--space-6); }
-.verse-group { margin-top: var(--space-5); }
+.verse-group { margin-top: var(--space-5); content-visibility: auto; contain-intrinsic-block-size: auto 3000px; } /* at the end of the Sutras page, under an open Deep dive too: a group off screen skips its layout and paint until it nears the screen (#129 perf); auto keeps its last size */
 .verse-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: var(--space-4); align-items: start; margin-top: var(--space-3); }
 .verse { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); min-width: 0; scroll-margin-top: 170px; overflow-wrap: anywhere; }
 .verse:hover { transform: none; }
