@@ -18,7 +18,7 @@ What that means for every decision below:
 2. **Learning happens inside a game.** The Sky is the world, Stars are its levels, a mistake is followed at once by the lesson on the Player's own numbers and a Comeback that pays more than a first right answer.
 3. **Help is a friend, not a button.** The Nikhilam Family notice when a Player is stuck and give a clue, the method or an example on other numbers, never the answer. Bolt is the teacher.
 4. **The math fits the child.** Placement finds the Player's level, the Reading band fits the words and the answers to how they read, and Mode stays a free choice.
-5. **Honest and private by design.** The sutras come from Bharati Krishna Tirtha's 1965 book, not the Vedas. Nothing from a Player under 13 goes online.
+5. **Honest and private by design.** The sutras come from Bharati Krishna Tirtha's 1965 book, not the Vedas. No Score, Sparks total or identity from a Player under 13 goes online; every visit sends only anonymous counts.
 
 The north star stays the **Magic moment**: a Trick learned and then used correctly in a timed round. The Hook still says it in one line: "Become the human calculator."
 
