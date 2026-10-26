@@ -50,8 +50,10 @@ function newId(taken) {
    none) or 'both' (the old site's Players are added; this device's settings win). Returns the Players written.
    All or nothing: every write and removal is planned first, every key it touches is saved as it was, and if any write
    fails (a full storage throws QuotaExceededError) every touched key is put back exactly as it was before the error is
-   rethrown, so this device never ends up with its progress gone and the import half written. */
-export function applyHandoff(st, payload, choice, now = Date.now()) {
+   rethrown, so this device never ends up with its progress gone and the import half written.
+   moved: false when the payload is a backup code restored on the Me page (js/store.js), which is not a move from the
+   old site, so vm.migratedAt is left alone. */
+export function applyHandoff(st, payload, choice, now = Date.now(), moved = true) {
   const here = progressHere(st);
   const uids = json(st, 'vm.cloudUids') || {};
   const withIdentity = new Set(Object.keys(uids));
@@ -79,7 +81,7 @@ export function applyHandoff(st, payload, choice, now = Date.now()) {
   const incoming = payload.players.list.map(p => ({ ...p, id: rename[p.id] }));
   const list = choice === 'both' ? [...here.list, ...incoming] : incoming;
   plan.push(['vm.players', JSON.stringify({ active: rename[payload.players.active], list })]);
-  plan.push(['vm.migratedAt', String(now)]);
+  if (moved) plan.push(['vm.migratedAt', String(now)]);
 
   const before = new Map();
   for (const [k] of plan) if (!before.has(k)) before.set(k, st.get(k));
@@ -92,11 +94,11 @@ export function applyHandoff(st, payload, choice, now = Date.now()) {
   return incoming;
 }
 
-/* Puts every saved key back: first removes the ones that did not exist (the import's own keys free their space), then
-   writes the old values, which fitted before */
+/* Puts every saved key back: first removes every key the plan touched (the import's own writes free their space, and no
+   key holds a new, larger value while an old one goes back in), then writes the old values, which fitted together before */
 function restore(st, before) {
-  for (const [k, v] of before) if (v === null) st.remove(k);
-  for (const [k, v] of before) if (v !== null) { try { st.set(k, v); } catch (e) { /* cannot happen: the value fitted before */ } }
+  for (const [k] of before) st.remove(k);
+  for (const [k, v] of before) if (v !== null) { try { st.set(k, v); } catch (e) { /* cannot happen: the old values fitted together before */ } }
 }
 
 /* ---------- the page ---------- */
@@ -190,4 +192,5 @@ async function start() {
   $('ho-title').focus();
 }
 
-if (typeof document !== 'undefined' && document.getElementById('handoff')) start();
+/* Only on the import page itself (js/store.js imports this module for applyHandoff; unit tests give it a bare document) */
+if (typeof document !== 'undefined' && typeof document.getElementById === 'function' && document.getElementById('handoff')) start();

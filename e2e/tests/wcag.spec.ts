@@ -100,7 +100,10 @@ test.describe('Pause motion (2.2.2)', () => {
     await page.reload();
     await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
     await expect(page.locator('canvas.vm-bg')).toBeAttached({ timeout: 10_000 });
-    expect(await bgMoving(page)).toBe(false);
+    /* The reload restores the scroll position, and the still frame re-composes once that scroll settles (to stay clear
+       behind the text where it now is); after that it holds */
+    await expect.poll(() => bgMoving(page)).toBe(false);
+    expect(await bgMoving(page), 'and it stays still').toBe(false);
     // Applied before paint: the class is there from the first script, and the switch says so
     await expect(page.locator('html')).toHaveClass(/motion-paused/);
     await expect(page.locator('#setMotion')).toHaveAttribute('aria-checked', 'true');

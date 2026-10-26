@@ -1,28 +1,36 @@
-# Contributing to Learn Vedic Math
+# Contributing to Vedic Math for Everyone
 
-Draft awaiting the owner: the cutoff commit and the go-ahead (learnvedicmath task 12.3, design D16).
-
-Thanks for taking the time to help. Learn Vedic Math is a free learning game for every age, at https://learnvedicmath.com/.
+Thanks for taking the time to help. Learn Vedic Math is a free learning game for every age, at https://learnvedicmath.com/. Fixes and better explanations are very welcome.
 
 ## What is welcome
 
-Reports. Say where you saw it (Mode, Skill or game) and what it should say:
-
-- Content corrections: a wrong answer, a sutra explained incorrectly, a step that skips too much, a typo.
-- Bugs in lessons, Katas, the Arena, games, quests and Boards.
+- Content corrections: a wrong answer, a sutra explained incorrectly, a step that skips too much, a typo. Please say where you saw it (mode, skill or game) and what it should say.
+- Bug fixes in lessons, the Dojo, the Arena, games, quests and leaderboards.
 - Accessibility: keyboard play, screen reader labels, contrast, reduced motion.
-
-While this repo is public, open an issue. At any time, write to hello@learnvedicmath.com. Security problems go to security@learnvedicmath.com, never to an issue: see [SECURITY.md](SECURITY.md).
+- New practice items or tests for an existing skill.
 
 ## What is not
 
-Code from outside the project. After the cutoff commit named in [LICENSE](LICENSE), the code and content are proprietary, and the repo goes private once the owner says so (design D13 and D16), so pull requests from outside are not accepted. The owner may take a small fix by exception; by sending one you agree the owner may use it under the repository's licence, and you are credited in the commit.
+- Ads, trackers, sign-ups or anything that collects personal data. Players are often children.
+- New third-party scripts or services, unless discussed in an issue first.
+- Changes to the vendored design system (`vendor/design-system/`). It is a pinned copy of [sbmadhav/design-system](https://github.com/sbmadhav/design-system); change it there, then vendor the new version here.
+- A kid mode switch in the header. The play modes (Explorer, Challenger, Pro) set the wording here.
 
-Also not, in any change: ads, trackers, sign-ups or anything that collects personal data (Players are often children); new third-party scripts or services; changes to the vendored design system (`vendor/design-system/`, a pinned copy of [sbmadhav/design-system](https://github.com/sbmadhav/design-system): change it there, then vendor the new version here); a kid mode switch in the header (the play modes, Explorer, Challenger and Pro, set the wording).
+Big ideas (a new game, a new grade band) are best raised in an issue first.
 
 ## How a change gets merged
 
-Changes are made by the owner and the owner's own tooling: a branch from `main`, the checks below, then a pull request against `main` with the checklist filled in. Every pull request needs passing checks (the `check` job in `.github/workflows/ci.yml`), every review conversation resolved and the owner's approval. `main` deploys straight to the live app, so the branch is protected: no direct pushes, no force pushes. Workflows from forks wait for the owner's approval before they run.
+1. Fork the repo and create a branch from `main`.
+2. Make the change and run the checks below.
+3. Open a pull request against `main` and fill in the checklist.
+
+Every pull request needs:
+
+- an approving review from the owner (@sbmadhav, the code owner of every file),
+- passing checks (the `check` job in `.github/workflows/ci.yml`),
+- every review conversation resolved.
+
+Nothing merges without the owner's approval. `main` deploys straight to the live app, so the branch is protected: no direct pushes from contributors, no force pushes. Workflows from forks wait for the owner's approval before they run.
 
 ## Local setup
 
@@ -76,6 +84,6 @@ The build publishes every file it is not told to skip. If you add a file that is
 
 Do not open a public issue. See [SECURITY.md](SECURITY.md).
 
-## Licence
+## License
 
-Code and content up to the cutoff commit named in [LICENSE](LICENSE) are MIT; everything after it is all rights reserved unless a file says otherwise. What is never licensed, and the third-party notices, are in [LICENSE-CONTENT.md](LICENSE-CONTENT.md) and [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+By contributing, you agree that your contribution is licensed under the [MIT License](LICENSE), the same license as the rest of this repo.

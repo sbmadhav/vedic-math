@@ -48,5 +48,6 @@ The game is moving to React Router v7 (framework mode, server-rendered on Cloudf
 - `docs/agent/offline.md`: the service worker (scope `/play/`, caches `lvm-*`), precache list, sounds, how to retire it.
 - `docs/agent/play-experiences.md`: the twelve experiences under `js/play/`, their module shape, kit, analytics and Math Lens.
 - `docs/agent/studio-voice.md`: the prerecorded read aloud voice, its release archive, the recording tools and the spend guard.
+- `docs/agent/family-helpers.md`: the Nikhilam Family helpers (Shunya, Nava, Eka): the switch, the modules, the round events, the line table rules, what is never sent.
 - `docs/agent/leaderboards.md`: Firebase, rules and the browser client.
 - `docs/agent/language-and-decisions.md`: the glossary, ADRs, `docs/PLAN.md` and the OpenSpec workflow.
