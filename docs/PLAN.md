@@ -18,7 +18,7 @@ What that means for every decision below:
 2. **Learning happens inside a game.** The Sky is the world, Stars are its levels, a mistake is followed at once by the lesson on the Player's own numbers and a Comeback that pays more than a first right answer.
 3. **Help is a friend, not a button.** The Nikhilam Family notice when a Player is stuck and give a clue, the method or an example on other numbers, never the answer. Bolt is the teacher.
 4. **The math fits the child.** Placement finds the Player's level, the Reading band fits the words and the answers to how they read, and Mode stays a free choice.
-5. **Honest and private by design.** The sutras come from Bharati Krishna Tirtha's 1965 book, not the Vedas. No Score, Sparks total or identity from a Player under 13 goes online; every visit sends only anonymous counts.
+5. **Honest and private by design.** The sutras come from Bharati Krishna Tirtha's 1965 book, not the Vedas. No Score, Sparks total or identity from a Player under 13 goes online; for every Player, a visit's analytics are anonymous counts and fixed-word events, and the features named below (Friend Duels, voice, talking with the Family for 13 and over) send only what their sections list.
 
 The north star stays the **Magic moment**: a Trick learned and then used correctly in a timed round. The Hook still says it in one line: "Become the human calculator."
 
@@ -79,7 +79,7 @@ Change `family-helpers` (#131), approved by the owner 2026-10-21; talking with t
 | 3d | Listening: push-to-talk in Pro, and an opt-in mode that only listens for help phrases | Planned |
 | 3e | The Family as 3D characters on React Three Fiber | Planned, after the Sky (ADR 0013) |
 
-**Talking with the Family (D15, D18).** Never for a Player whose Age answer is under 13 ([ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)). Bolt joins the three and answers every why or how. One call per turn to Claude Haiku 4.5 on our own Worker route returns at most two short replies. Four checked actions (an example on other numbers, pointing at a part of the question, the Sutra, a pose), none of which shows the answer. Clues are limited, like Duolingo's hearts: 3 per question (proposed), and at zero the speakers explain the method in general; talk about the method or the Sutra is free. Only the Skill id, the question's numbers and this Visit's words are sent; no Nickname, no id, nothing kept. Contact details are stripped in the browser, a server check swaps a bad reply for a scripted line, Turnstile runs once per visit, about 20 turns an hour per address, and spend is capped at $5 a day and $50 a month. Text only at first. **CopilotKit was weighed and rejected** (293 to 732 KB gzipped client, a 1 MB Worker runtime, full history and telemetry by default).
+**Talking with the Family (D15, D18).** Never for a Player whose Age answer is under 13 ([ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)). Bolt joins the three and answers every why or how. One call per turn to Claude Haiku 4.5 on our own Worker route returns at most two short replies. Four checked actions (an example on other numbers, pointing at a part of the question, the Sutra, a pose), none of which shows the answer. Clues are limited, like Duolingo's hearts: 3 per question (proposed), and at zero the speakers explain the method in general; talk about the method or the Sutra is free. Only the Skill id, the question's numbers, this Visit's words and a short-lived session ticket from Turnstile are sent; no Nickname, no Player id, nothing kept. Contact details are stripped in the browser (the Worker does not re-check them), a server check swaps a bad reply for a scripted line, Turnstile runs once per visit, about 20 turns an hour per address, and spend is capped at $5 a day and $50 a month. Text only at first. **CopilotKit was weighed and rejected** (293 to 732 KB gzipped client, a 1 MB Worker runtime, full history and telemetry by default).
 
 ## 4. Fit the child: Placement and Reading bands
 
@@ -191,7 +191,7 @@ The owner, 2026-10-17: "Make that a fun website but it will more like an eventua
 - **Interface in WebGL**, a 3D game engine, a hand-written WebGL engine, or 3D in any first load (ADR 0011, 0013).
 - **A Rust backend** (ADR 0010) or a second cloud vendor for real-time play (ADR 0009).
 - **Calling a speech provider from the browser**, a general text-to-speech endpoint, or any free text sent for voice (ADR 0014).
-- **Anything online for under-13 Players**: no World boards, no Random Duels, no talking with the Family, no grown-up override until a verifiable consent method exists, as its own change and ADR.
+- **Anything online for under-13 Players beyond Friend Duels**: Friend Duels are open to them with no lasting identifier and results on the device; no World boards, no Random Duels, no talking with the Family, no grown-up override until a verifiable consent method exists, as its own change and ADR.
 - **Chat between Players** of any kind; Duels have preset Reactions only.
 - **Always-on listening**: listening only looks for help phrases, opt-in, and never stores audio or words.
 - **Paid plans, checkout, parent accounts and ads** until the lawyer review, and ads never.
