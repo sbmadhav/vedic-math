@@ -12,7 +12,7 @@ This plan rebases the Oct 13 review and action plan (a six-persona age panel plu
 
 - **Big idea: "Become the human calculator."** Learn a trick in 60 seconds, then out-race your phone, your parents and your friends. Every feature serves one loop: **Dare → Reveal → Prove → Race → Brag → Return**.
 - **Primary audience for the next 90 days:** ages 9 to 14 and their parent. Explorer (about 4 to 7) and Pro (13 to adult) get targeted fixes, no new tracks.
-- **Next 3 weeks:** fix the 12 trust bugs, add the Age answer before anything from a Player goes online (in every Mode; under-13 Players use Device boards only, [ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)), instrument hash routes, then ship "Beat the calculator" as the Hook.
+- **Next 3 weeks:** fix the 12 trust bugs, add the Age answer before a Score, weekly Sparks total or identity from a Player goes online (in every Mode; under-13 Players use Device boards only, [ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)), instrument hash routes, then ship "Beat the calculator" as the Hook.
 - **Gates are real-kid sessions first, metrics second.** Traffic is too low for percentage gates to be more than directional.
 
 ## Where things stand
@@ -57,7 +57,7 @@ Also in Phase 0:
 - **View cleanup contract.** Every view returns `{ destroy }` and gets an `AbortSignal` for each listener, timer and animation-frame loop. This removes the root cause of bugs 1, 2 and 7 instead of patching each one.
 - **Age answer for World boards** ([ADR 0001](adr/0001-parent-step-follows-the-age-answer.md); its Parent step is superseded by [ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)). Ask one neutral age question at the end of the first Ranked round, before a Score or weekly Sparks total could be posted; until it is answered only the Device board is shown. Players under 13, in any Mode, keep everything on the device: Device boards only, no Parent step, because a toggle on the device is not verifiable parental consent under the amended COPPA Rule and a persistent identifier counts as personal information. A Player 13 or over sees a World board after a Show World board tap and gets an identity only at the first post ([ADR 0002](adr/0002-no-identity-until-the-first-post.md)). Get a legal read before any paid plan or promoting the site to schools.
 - **No identity until the first post** ([ADR 0002](adr/0002-no-identity-until-the-first-post.md)). Viewing World boards reads without signing in; the anonymous ID is created only when something is actually posted.
-- **Parent note says exactly what is sent.** Sparks from all play, Practice included, adds up to one weekly total that is posted; Practice Scores never leave the device. Update `parentNote()` and `cloud/README.md` together.
+- **Parent note says exactly what is sent.** For a Player 13 or over, Sparks from all play, Practice included, adds up to one weekly total that is posted (a World board post, so it can be the first post that creates the anonymous identity); a Player under 13 posts nothing; Practice Scores never leave the device. Update `parentNote()` and `cloud/README.md` together.
 - **Pro Arena becomes mental arithmetic.** Replace algebra and logs in the Pro Arena sets with 2 × 2 digits, squares, percents, near-base products and division. Extend Ratings to Arena and Practice.
 - **Honest framing everywhere.** Footer and share text say "sutras from Bharati Krishna Tirtha's 1965 book", never "from the Vedas".
 - **Analytics.** Count hash routes as page views, plus anonymous `q_answered`, `round_end`, `first_win`, `share_click` and `return_d7` events through `window.siteTrack`. No user IDs.
@@ -136,7 +136,7 @@ The north star is **weekly magic moments**: a trick learned and then used correc
 ## Privacy and integrity (every phase)
 
 - Generated nicknames only; links and share text carry only the nickname and a score.
-- Nothing from a Player under 13 goes online, in every Mode (by the Age answer, never by Mode): Device boards only, the Parent step retired ([ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)).
+- No Score, Sparks total or identity from a Player under 13 goes online, in every Mode (by the Age answer, never by Mode): Device boards only, the Parent step retired; like every Player's, their visits send only anonymous page counts and fixed-word events (no IDs, nothing typed) ([ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)).
 - No user IDs in analytics: cookieless, aggregate events only (GoatCounter from this site and Cloudflare Web Analytics; PostHog only cookieless, in a later change; never Google Analytics: change `learnvedicmath`, design D11).
 - `parentNote()` and `cloud/README.md` always describe exactly what is sent and kept.
 - Honest Vedic framing on every surface, share cards included. Sanskrit names come from `js/sutras.js` only.
@@ -146,7 +146,7 @@ The north star is **weekly magic moments**: a trick learned and then used correc
 - **Stay vanilla JS** with the view cleanup contract (recommended over Preact + htm or a framework rewrite: smallest change, fixes the root cause, keeps the build-free code).
 - **Seed everything with versions** (`v2:daily:2026-10-20`), so editing a generator never silently changes today's challenge. The same seeds power challenge links, the Daily Sutra and the fair Duel.
 - **Every behavior change ships with a test:** node tests in `test/`, Playwright specs in `e2e/`.
-- **Hosting:** Cloudflare Workers static assets at learnvedicmath.com, deployed by CI from `main`, real response headers, nothing loaded from another site before a Player acts (plays a video, opens or posts to a World board) ([ADR 0004](adr/0004-host-on-cloudflare-workers.md)); the move from sbmadhav.com runs in three phases with the Hand-off on the device, no server in any of it ([ADR 0005](adr/0005-phased-move-and-progress-hand-off.md); change `learnvedicmath`).
+- **Hosting:** Cloudflare Workers static assets at learnvedicmath.com, deployed by CI from `main`, real response headers, before a Player acts (plays a video, opens or posts to a World board) only analytics reach another site (GoatCounter counts and Cloudflare Web Analytics, after the page is idle) ([ADR 0004](adr/0004-host-on-cloudflare-workers.md)); the move from sbmadhav.com runs in three phases with the Hand-off on the device, no server in any of it ([ADR 0005](adr/0005-phased-move-and-progress-hand-off.md); change `learnvedicmath`).
 
 ## Risks
 
