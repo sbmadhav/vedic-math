@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 824419,
+  "total": 824460,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -75,7 +75,7 @@
    "/js/landing-sky.js": 261,
    "/js/levels.js": 5012,
    "/js/lib.js": 1707,
-   "/js/life.js": 1069,
+   "/js/life.js": 1103,
    "/js/listen.js": 1335,
    "/js/mental.js": 2128,
    "/js/metrics.js": 4136,
@@ -151,8 +151,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 24311,
-   "/play/": 4046,
-   "/sw.js": 6242,
+   "/play/": 4057,
+   "/sw.js": 6238,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },

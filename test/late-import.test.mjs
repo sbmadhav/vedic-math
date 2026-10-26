@@ -12,7 +12,6 @@ const setup = t => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const logged = [];
   t.mock.method(console, 'error', (...a) => { logged.push(a[0]); });
-  t.after(() => { window.dispatchEvent(new Event('pageshow')); });
   return logged;
 };
 
@@ -50,21 +49,31 @@ test('a failure followed by pagehide within the grace time is quiet (WebKit reje
   assert.deepEqual(logged, []);
 });
 
-test('a failure after pagehide is quiet', async t => {
+/* A load still in flight, failed by the test */
+const inFlight = () => { let reject; const p = new Promise((_, r) => { reject = r; }); return { load: () => p, fail: () => reject(new TypeError('Importing a module script failed.')) }; };
+
+test('a load that fails after pagehide is quiet', async t => {
   const logged = setup(t);
+  const f = inFlight();
+  const cut = lateImport(f.load, 'sutra-tag.js');
   window.dispatchEvent(new Event('pagehide'));
-  await lateImport(fail, 'sutra-tag.js');
+  f.fail();
+  await cut;
   t.mock.timers.tick(GRACE);
   assert.deepEqual(logged, []);
 });
 
-test('back from the page cache (pageshow), a failure reports again', async t => {
+test('back from the page cache, a load the leaving cut off stays quiet and a new load reports again', async t => {
   const logged = setup(t);
+  const f = inFlight();
+  const cut = lateImport(f.load, 'old.js');
   window.dispatchEvent(new Event('pagehide'));
   window.dispatchEvent(new Event('pageshow'));
-  await lateImport(fail, 'x.js');
+  f.fail();
+  await cut;
+  await lateImport(fail, 'new.js');
   t.mock.timers.tick(GRACE);
-  assert.deepEqual(logged, ['x.js did not load']);
+  assert.deepEqual(logged, ['new.js did not load']);
 });
 
 test('a failure whose signal aborted, before or during the grace time, is quiet', async t => {
