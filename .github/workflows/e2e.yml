@@ -149,11 +149,15 @@ jobs:
 
   # The background's frame cost (tests/background-perf.spec.ts, @frame-cost) is measured with nothing else running:
   # with three workers on a four-core runner the other browsers preempt the timed frame, and its p95 read 3.6 to
-  # 6.6 ms for a drawing that costs about 1 ms there (docs/agent/e2e.md). A runner of its own, beside the shards.
+  # 6.6 ms for a drawing that costs about 1 ms there (docs/agent/e2e.md). A runner of its own, beside the shards, in
+  # the same image (installing chromium's libraries with apt took 2 to 12 minutes here).
   frame-cost:
     name: Frame cost of the background, alone on the runner (chromium)
     needs: deploy
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.deploy.outputs.playwright }}-noble
+      options: --ipc=host
     timeout-minutes: 15
     defaults:
       run:
@@ -169,11 +173,10 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install the e2e package and chromium
+      - name: Install the e2e package
         run: |
           corepack enable
           pnpm install --frozen-lockfile --filter e2e
-          pnpm exec playwright install --with-deps chromium
 
       - name: Frame cost (@frame-cost, one worker)
         run: pnpm exec playwright test --project=chromium --grep @frame-cost --workers=1
