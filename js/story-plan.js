@@ -14,7 +14,7 @@ let S = null, loading = null;
 /* js/stories.js calls this when it runs; storiesNow() is then its API ({ hasStory, storyFor, skillStory, trickStory }) */
 export function register(api) { S = api; }
 export const storiesNow = () => S;
-export const loadStories = () => (S ? Promise.resolve(S) : (loading ||= import('./stories.js').then(() => S)));
+export const loadStories = () => (S ? Promise.resolve(S) : (loading ||= import('./stories.js').then(() => S, e => { loading = null; throw e; }))); /* a failed load (offline) is tried again on the next call */
 
 /* Is question k (from 1) of a round a Word problem slot in this Mode? */
 export function isSlot(mode, k) { const s = SLOTS[mode] || SLOTS.challenger; return k >= s.first && (k - s.first) % s.every === 0; }

@@ -47,7 +47,7 @@
 
 ## Risks / Trade-offs
 
-- **Bytes.** `js/stories.js` is precached like every module, 10,080 bytes Brotli, plus 1,676 for `js/story-plan.js` (first load 807,349 to 820,657 bytes, measured on `main` after #126). Only `story-plan.js` is in the first paint's import graph; `stories.js` loads after the paint; the baseline grows with the reason (`docs/perf/baseline.json` `firstLoad.changes`).
+- **Bytes.** `js/stories.js` is precached like every module, 10,070 bytes Brotli, plus 1,723 for `js/story-plan.js` (first load 807,349 to 820,904 bytes, measured on `main` after #126). Only `story-plan.js` is in the first paint's import graph; `stories.js` loads after the paint; the baseline grows with the reason (`docs/perf/baseline.json` `firstLoad.changes`).
 - **Built-in voice for new lines.** Explorer stories sound different from recorded questions until the re-record. Accepted by the owner's rule for this change (no new recordings, no paid voice); task 4.2 is the owner's.
 - **Tests that read questions.** Specs that answer by reading the question on screen keep working because a new Player's first 20 answers are bare (D3); specs about Word problems seed 20 answers.
 - **The 20-answer wait** delays the first Word problem for a brand new Player by a few minutes. Tunable (`RULES.after` in `js/stories.js`).

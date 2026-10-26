@@ -117,7 +117,7 @@ export const TEMPLATES = [
   } },
   { id: 'e-seats', mode: 'explorer', skills: ['2-sub100', '2-add1000'], gen(r) {
     const a = ri(r, 30, 60), b = ri(r, 11, a - 6);
-    return { q: `A bus has ${a} seats. ${b} children get on and sit down. How many seats are still empty?`, ask: 'How many seats nobody is sitting in.', plan: `Count up from ${b} to ${a}.`, answer: a - b, unit: 'seats', viz: V.tenFrame(b, 0, Math.ceil(a / 10)), steps: [`${a} ${M} ${b} = ${a - b}`, `${a - b} seats are empty.`] };
+    return { q: `A bus has ${a} seats. ${b} children get on and sit down. How many seats are still empty?`, ask: 'How many seats nobody is sitting in.', plan: `Count up from ${b} to ${a}.`, answer: a - b, unit: 'seats', viz: V.tenFrame(b, 0, Math.ceil(a / 10), a), steps: [`${a} ${M} ${b} = ${a - b}`, `${a - b} seats are empty.`] };
   } },
 
   /* ---------- Challenger: one and two steps ---------- */

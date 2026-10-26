@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 820657,
+  "total": 820904,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -128,10 +128,10 @@
    "/js/sky-view.js": 4458,
    "/js/sky.js": 3762,
    "/js/slokas.js": 16068,
-   "/js/star.js": 8674,
+   "/js/star.js": 8768,
    "/js/store.js": 5753,
-   "/js/stories.js": 10080,
-   "/js/story-plan.js": 1676,
+   "/js/stories.js": 10070,
+   "/js/story-plan.js": 1723,
    "/js/sutra-ambience.js": 4169,
    "/js/sutra-details.js": 13423,
    "/js/sutra-tag-slot.js": 703,
@@ -141,7 +141,7 @@
    "/js/try.js": 4416,
    "/js/vedic.js": 9857,
    "/js/videos.js": 20537,
-   "/js/viz.js": 5745,
+   "/js/viz.js": 5848,
    "/js/voice-index.js": 213,
    "/js/voice-plan.js": 2458,
    "/js/voice-worker.js": 877,
@@ -149,8 +149,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 23976,
-   "/play/": 4036,
-   "/sw.js": 6234,
+   "/play/": 4034,
+   "/sw.js": 6249,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -222,7 +222,7 @@
     "date": "2026-10-26",
     "pr": 151,
     "from": 807349,
-    "to": 820657,
+    "to": 820904,
     "why": "Word problems (openspec change word-problems): js/stories.js (the story templates, hand-written stories and Star wrappers) and js/story-plan.js (the slot plan, labels and the two Word problem Skills' first story), both precached like every module; stories.js is loaded after the first paint, so only story-plan.js is in the static graph of /js/app.js; plus the new Skill 8-reallife, the label styles in math.css, two metrics functions and the Practice and Star wiring; measured on main after #126"
    }
   ]

@@ -135,7 +135,6 @@ const pickOne = a => a[Math.floor(Math.random() * a.length)];
 export function runStar(root, { trick, star, signal, back = { href: '#/dojo', label: 'Back to the Dojo' }, again = null, findVideo = async () => null, onEnd = null } = {}) {
   const t = TRICKS.find(x => x.id === trick), skill = byId['v-' + trick], mode = fx.mode() || 'challenger', boxes = mode !== 'pro';
   const round = child(signal), rs = round.signal;
-  loadStories().catch(() => {}); /* Word problems (openspec word-problems): here before question 2 */
   const rating = AD.skillRating('v-' + trick, mode), dial = new AD.Dial(rating);
   /* Word problems (openspec word-problems): question 3 for Challenger, 2 for Pro, once the Player has 20 saved answers */
   let st = starRound({ trick, star, rating, last: store.starLast(trick, star), story: p => trickStoryNow(trick, p, mode), storyAt: starSlot(mode, store.count('answers')) });
@@ -370,5 +369,11 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
   }
 
   ask();
+  /* Word problems (openspec word-problems): the stories are usually here before question 2; if they arrive while the
+     story slot's question is on screen with nothing typed yet, it is asked again as the Word problem */
+  loadStories().then(() => {
+    if (rs.aborted || !input || entry || fields.some(Boolean)) return;
+    const w = withStory(st); if (w !== st) { st = w; ask(); }
+  }).catch(() => {});
   return { destroy: () => { saveDial(); round.abort(); } };
 }

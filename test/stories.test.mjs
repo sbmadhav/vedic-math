@@ -199,3 +199,11 @@ test('a Star\'s story slot is filled when its question comes, if the deal could 
   assert.ok(st.current.story && st.qs[1].story, 'question 2 is a Word problem when it comes');
   assert.equal(withStory(st), st, 'once only');
 });
+
+test('the bus picture draws exactly the bus\'s seats, with the children in them', () => {
+  for (const p of draws(S.TEMPLATES.find(t => t.id === 'e-seats'), 200)) {
+    const [a, b] = nums(p.q);
+    assert.equal((p.viz.match(/class="vz-cell"/g) || []).length, a, p.q);
+    assert.equal((p.viz.match(/vz-dot/g) || []).length, b, p.q);
+  }
+});
