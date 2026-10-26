@@ -1,4 +1,4 @@
-import { test, expect, APP, open, appErrors } from './fixtures';
+import { test, expect, APP, open, appErrors, mod } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
 import { fakeAudio } from './audio-fake';
 
@@ -298,7 +298,8 @@ test.describe('Home', () => {
     expect((await events(page)).filter(([p]) => p.startsWith('math/sutra_tag/'))).toEqual([['math/sutra_tag/home', 'Sutra tag: home']]);
   });
   test('Challenger: the Sutra door is drawn whole with the first paint, so nothing moves when js/sutra-tag.js arrives', async ({ page }) => {
-    await page.route(/\/js\/sutra-tag\.js/, r => r.abort()); /* the module never arrives */
+    const tagPath = new URL(await mod(page, 'sutra-tag'), 'http://x').pathname; /* the module's path wherever the build serves it */
+    await page.route(u => u.pathname === tagPath, r => r.abort()); /* the module never arrives */
     await open(page);
     const door = page.locator('.home-doors .door').first();
     await expect(door.locator('.sutra-tag .sutra-tag-n')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
