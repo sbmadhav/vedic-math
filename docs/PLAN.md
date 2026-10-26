@@ -12,7 +12,7 @@ This plan rebases the Oct 13 review and action plan (a six-persona age panel plu
 
 - **Big idea: "Become the human calculator."** Learn a trick in 60 seconds, then out-race your phone, your parents and your friends. Every feature serves one loop: **Dare → Reveal → Prove → Race → Brag → Return**.
 - **Primary audience for the next 90 days:** ages 9 to 14 and their parent. Explorer (about 4 to 7) and Pro (13 to adult) get targeted fixes, no new tracks.
-- **Next 3 weeks:** fix the 12 trust bugs, add the Age answer before anything from a Player goes online (in every Mode; under-13 Players use Device boards only, [ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)), instrument hash routes, then ship "Beat the calculator" as the Hook.
+- **Next 3 weeks:** fix the 12 trust bugs, add the Age answer before a Score, weekly Sparks total or identity from a Player goes online (in every Mode; under-13 Players use Device boards only, [ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)), instrument hash routes, then ship "Beat the calculator" as the Hook.
 - **Gates are real-kid sessions first, metrics second.** Traffic is too low for percentage gates to be more than directional.
 
 ## Where things stand
