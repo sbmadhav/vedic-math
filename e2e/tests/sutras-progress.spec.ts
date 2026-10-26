@@ -60,6 +60,10 @@ test.describe('Explorer', () => {
     await expect(face(page, 's1').locator('.sutra-prog small')).toHaveText('0 of 3 tricks practiced');
     await expect(page.locator('header .mq-nav a[href="#/sutras"]')).toHaveAttribute('aria-current', 'true');
   });
+  test('the Guide sends Explorer to Sutras in the menu', async ({ page }) => {
+    await open(page, '#/guide/sutras');
+    await expect(page.locator('#gd-sutras .gd-how li').first()).toHaveText('Tap Sutras in the menu.');
+  });
 });
 
 test('Challenger menu: Home, Sutras, Learn, Dojo, Arena, Games, Watch, Guide, Find', async ({ page }) => {

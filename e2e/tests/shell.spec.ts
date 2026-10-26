@@ -160,6 +160,10 @@ test.describe('the moving background', () => {
     await open(page, '#/me');
     const canvas = page.locator('canvas.vm-bg');
     await expect(canvas).toHaveCount(1, { timeout: 5000 });
+    /* Scrolled to the switch first: a still frame re-composes once a scroll settles (180 ms), to stay clear behind the
+       text where it now is, and a click that scrolls would start that inside the second compared below */
+    await page.locator('#setCalm').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(500);
     await page.locator('#setCalm').click();
     await page.waitForTimeout(100);
     const a = await canvas.evaluate(c => (c as HTMLCanvasElement).toDataURL());

@@ -151,6 +151,7 @@ test.describe('Home: three doors first', () => {
     await open(page, '#/');
     await expect(page.locator('#homeMore')).toHaveAttribute('open', '');
     await page.locator('#homeMore summary').click();
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('vm.homeMore'))).toBe('0'); /* the toggle event stores it after the click: wait for it before the reload */
     await page.reload();
     await expect(page.locator('h1.home-h')).toBeVisible();
     await expect(page.locator('#homeMore')).not.toHaveAttribute('open', /.*/);

@@ -1,4 +1,4 @@
-import { test, expect, APP, open, chromiumOnly, heldClock, type Page } from './fixtures';
+import { test, expect, APP, open, chromiumOnly, heldClock, pinStoryDay, type Page } from './fixtures';
 
 /* The background sky (prototype; js/sky-scene.js, js/sky-bg.js): the full scene on the landing page and the app home,
    a quiet one elsewhere, one featured story at a time, a still frame under no motion, a paused loop in a hidden tab,
@@ -188,6 +188,8 @@ test.describe('still frame', () => {
   /* The suite's default is reduced motion */
   test('reduced motion: one composed frame on the landing page and home, with the day\'s story complete where there is room', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.goto(APP);
+    await pinStoryDay(page, 'nakshatras'); // a day whose story has room for its caption on home at this size
     for (const url of ['/?home', APP]) {
       await page.goto(url);
       await expect(sky(page)).toHaveAttribute('data-still', '1', { timeout: 10_000 });
@@ -197,7 +199,7 @@ test.describe('still frame', () => {
       const s = await state(page);
       // A story never sits in a hero and never shows a title-only plaque (design audit), so the landing's dense first
       // screen holds none at this size; the home has room for one with its full caption under its cards
-      if (url === APP) { expect(s.phase, url).toBe('still'); expect(s.story, url).not.toBe(''); expect(s.cap, 'with its caption').toBeTruthy(); }
+      if (url === APP) { expect(s.phase, url).toBe('still'); expect(s.story, url).toBe('nakshatras'); expect(s.cap, 'with its caption').toBeTruthy(); }
       else expect(['still', 'gap'], url).toContain(s.phase);
     }
   });

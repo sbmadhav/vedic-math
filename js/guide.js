@@ -161,7 +161,7 @@ export function sections(n) {
       title: w('Sutra cards', 'Sutra cards and deep dives'),
       what: w('Cards with short math sayings. Flip them to collect them.', `The ${n.sutras} sutras and ${n.subsutras} sub-sutras from Bharati Krishna Tirtha's 1965 book: short word formulas, each a whole method in a phrase, as cards to collect.`),
       how: [
-        w('Sutras is not in the Explorer menu, so use the button below.', 'Open Sutras from the menu bar.'),
+        w('Tap Sutras in the menu.', 'Open Sutras from the menu bar.'), /* Sutras is in Explorer's menu (openspec change sutras-first) */
         w('Tap a card to flip it. That collects it!', 'Tap a card to flip it and collect it (5 Sparks the first time).'),
         w('Learn more shows a moving picture that explains it.', 'Learn more opens a deep dive: an animated diagram, why it works, worked examples, where it is used and Try it yourself buttons.'),
         w('Close it with the X button.', 'Move to the next sutra with the buttons at the bottom. Close with the X button or Escape.'),
