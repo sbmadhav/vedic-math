@@ -11,4 +11,4 @@
 - [ ] Tested in Daybreak (light) and Deep Space (dark), each play mode, and at 390px wide
 - [ ] Content corrections: I checked the math and explained the fix above
 - [ ] No em dashes in anything I wrote
-- [ ] Licensing: I have read the Licence section of CONTRIBUTING.md (code is proprietary from the cutoff commit named in LICENSE; earlier commits stay MIT)
+- [ ] I agree my contribution is licensed under the MIT License (see CONTRIBUTING.md)
