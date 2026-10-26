@@ -146,7 +146,7 @@ The north star is **weekly magic moments**: a trick learned and then used correc
 - **Stay vanilla JS** with the view cleanup contract (recommended over Preact + htm or a framework rewrite: smallest change, fixes the root cause, keeps the build-free code).
 - **Seed everything with versions** (`v2:daily:2026-10-20`), so editing a generator never silently changes today's challenge. The same seeds power challenge links, the Daily Sutra and the fair Duel.
 - **Every behavior change ships with a test:** node tests in `test/`, Playwright specs in `e2e/`.
-- **Hosting:** Cloudflare Workers static assets at learnvedicmath.com, deployed by CI from `main`, real response headers, nothing loaded from another site before a Player acts (plays a video, opens or posts to a World board) ([ADR 0004](adr/0004-host-on-cloudflare-workers.md)); the move from sbmadhav.com runs in three phases with the Hand-off on the device, no server in any of it ([ADR 0005](adr/0005-phased-move-and-progress-hand-off.md); change `learnvedicmath`).
+- **Hosting:** Cloudflare Workers static assets at learnvedicmath.com, deployed by CI from `main`, real response headers, before a Player acts (plays a video, opens or posts to a World board) only analytics reach another site (GoatCounter counts and Cloudflare Web Analytics, after the page is idle) ([ADR 0004](adr/0004-host-on-cloudflare-workers.md)); the move from sbmadhav.com runs in three phases with the Hand-off on the device, no server in any of it ([ADR 0005](adr/0005-phased-move-and-progress-hand-off.md); change `learnvedicmath`).
 
 ## Risks
 
