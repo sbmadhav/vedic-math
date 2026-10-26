@@ -44,7 +44,7 @@ function poolItem(pool, league, level, d) {
   if (p.kind !== 'num' || !Number.isInteger(p.answer) || Math.abs(p.answer) > 99999) return null;
   return item(p, league, d === undefined ? { skill: s.id } : { skill: s.id, d });
 }
-const mentalItem = (family, d) => { const p = mentalQ(family, d); return item(p, 'pro', { family: p.family, d: p.d }); };
+const mentalItem = (family, d) => { const p = mentalQ(family, d); return item(p, 'pro', { family: p.family, d: p.d, ...(p.sutra ? { sutra: p.sutra } : {}) }); };
 
 /* n Arena items for a League (or the proV1 pool). seedText makes the set the same for everyone; null draws at random.
    Pro: the families take turns in a seeded order, and difficulty rises evenly from ramp[0] to ramp[1]. */
@@ -95,7 +95,7 @@ function physicalKeys(root, allowed, max, rs, submit) {
   }, rs);
 }
 
-/* Arena round. opts: { league, day, dial, signal, onEnd({ score, right, wrong, bestCombo }) }.
+/* Arena round. opts: { league, day, dial, signal, onEnd({ score, right, wrong, bestCombo, answered }) }; answered: [{ item, ok }].
    day (YYYY-MM-DD): a daily round, dailySet(league, day), the same for everyone; dial (js/adapt.js Dial) only
    records the answers. No day: a Practice round, where dial picks each next question's difficulty and moves with
    every answer (openspec arena spec). The round runs under a child of signal, aborted when it ends or by destroy(),
@@ -109,6 +109,7 @@ export function runArena(root, { league, day = null, dial, signal, onEnd, untime
   const at = () => (set ? set[i % set.length] : cur);
   const round = child(signal), rs = round.signal;
   let i = 0, score = 0, right = 0, wrong = 0, combo = 0, bestCombo = 0, over = false;
+  const answered = []; /* every answered question and whether it was right: the round review (openspec change sutras-first) */
   const clock = untimed ? `<div class="ar-time"><small>Question</small><b id="arNum">1/${UNTIMED_QS}</b></div>` : `<div class="ar-time"><small>Time</small><b id="arTime">${ROUND_SECS}</b></div>`;
   root.innerHTML = `<div class="ar${untimed ? ' ar--untimed' : ''}">
     <div class="ar-top"><div class="ar-score"><small>Score</small><b id="arScore">0</b></div><div class="ar-combo" id="arCombo" aria-live="polite"></div>${clock}</div>
@@ -135,6 +136,7 @@ export function runArena(root, { league, day = null, dial, signal, onEnd, untime
     if (over) return;
     const p = at(), ok = checkOne({ kind: 'num', answer: p.answer }, String(v)).ok;
     if (dial) dial.hit(ok);
+    answered.push({ item: p, ok });
     if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); const gain = 10 + Math.min(combo - 1, 10) * 2; score += gain; right++; sfx('ok'); pop('+' + gain, true); }
     else { combo = 0; wrong++; sfx('no'); pop(String(p.answer), false); }
     /* The pop is visual only; screen readers get one short status message per answer (WCAG 4.1.3) */
@@ -146,7 +148,7 @@ export function runArena(root, { league, day = null, dial, signal, onEnd, untime
     if (untimed) $('#arNum').textContent = `${i + 1}/${UNTIMED_QS}`;
     if (!set) cur = draw(); show();
   };
-  const end = () => { if (over) return; over = true; round.abort(); onEnd({ score, right, wrong, bestCombo, untimed }); };
+  const end = () => { if (over) return; over = true; round.abort(); onEnd({ score, right, wrong, bestCombo, untimed, answered: answered.slice() }); };
   on(root, 'click', e => {
     const c = e.target.closest('.ar-choice'); if (c) return answer(c.dataset.v);
     const k = e.target.closest('.ar-key'); if (!k) return; sfx('tap');

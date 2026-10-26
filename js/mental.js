@@ -58,15 +58,29 @@ const DIV = [
 ];
 
 const step = (ladder, d) => ladder[Math.max(DMIN, Math.min(DMAX, Math.round(d))) - 1]();
+/* The Sutra card that answers a question in a line, from its own numbers (openspec change sutras-first, design "The
+   Sutra map"), or null when none does: Antyayordaśake'pi (u8) for the same tens with units adding to 10, Ekādhikena
+   Pūrveṇa (s1) for a square ending in 5, Yāvadūnam (s10) for a square within 20 of 100, Nikhilaṃ (s2) for products near
+   a base, else Ūrdhva-Tiryagbhyām (s3) for products and squares. Percents and divisions name none. No Math.random here,
+   so a seeded daily set is the same with or without it. */
+export function sutraOfProduct(a, b) {
+  if (Math.floor(a / 10) === Math.floor(b / 10) && (a % 10) + (b % 10) === 10) return 'u8';
+  return 's3';
+}
+export function sutraOfSquare(n) {
+  if (n % 10 === 5) return 's1';
+  if (Math.abs(n - 100) <= 20) return 's10';
+  return 's3';
+}
 const MAKERS = {
-  mul2x2: d => { const [a, b] = step(MUL, d); return { q: `${a} &times; ${b} = ?`, answer: a * b }; },
-  square: d => { const n = step(SQ, d); return { q: `${n}<sup>2</sup> = ?`, answer: n * n }; },
-  percent: d => { const [p, n] = step(PCT, d); return { q: `What is ${p}% of ${n}?`, answer: Math.round((p * 10 * n) / 1000) }; },
-  nearBase: d => { const [a, b] = step(NEAR, d); return { q: `${a} &times; ${b} = ?`, answer: a * b }; },
-  divide: d => { const [k, n] = step(DIV, d); return { q: `${k * n} &divide; ${k} = ?`, answer: n }; }
+  mul2x2: d => { const [a, b] = step(MUL, d); return { q: `${a} &times; ${b} = ?`, answer: a * b, sutra: sutraOfProduct(a, b) }; },
+  square: d => { const n = step(SQ, d); return { q: `${n}<sup>2</sup> = ?`, answer: n * n, sutra: sutraOfSquare(n) }; },
+  percent: d => { const [p, n] = step(PCT, d); return { q: `What is ${p}% of ${n}?`, answer: Math.round((p * 10 * n) / 1000), sutra: null }; },
+  nearBase: d => { const [a, b] = step(NEAR, d); return { q: `${a} &times; ${b} = ?`, answer: a * b, sutra: 's2' }; },
+  divide: d => { const [k, n] = step(DIV, d); return { q: `${k * n} &divide; ${k} = ?`, answer: n, sutra: null }; }
 };
 
-/* One question: { q (HTML), answer (whole number), family, d } */
+/* One question: { q (HTML), answer (whole number), sutra (a Sutra card id or null), family, d } */
 export function mentalQ(family, d) {
   const make = MAKERS[family]; if (!make) throw new Error('unknown family ' + family);
   const lv = Math.max(DMIN, Math.min(DMAX, Math.round(d)));
