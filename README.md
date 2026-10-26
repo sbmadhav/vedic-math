@@ -97,7 +97,7 @@ Swap a voice with `SHUNYA=`, `NAVA=` or `EKA=` set to another Chirp 3 HD voice n
 
 ## Contributing
 
-Reports of a wrong answer, a confusing explanation or an accessibility problem are welcome; code from outside the project is not accepted since the cutoff commit named in `LICENSE`. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to report, and [SECURITY.md](SECURITY.md) to report a security problem privately.
+Reports of a wrong answer, a confusing explanation or an accessibility problem are welcome; code from outside the project is not accepted after the cutoff commit named in `LICENSE`. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to report, and [SECURITY.md](SECURITY.md) to report a security problem privately.
 
 ## License
 
