@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 808996,
+  "total": 808989,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -67,7 +67,7 @@
    "/js/games.js": 12393,
    "/js/gamify.js": 3873,
    "/js/guide-art.js": 2484,
-   "/js/guide.js": 10424,
+   "/js/guide.js": 10456,
    "/js/handoff-schema.js": 6616,
    "/js/handoff.js": 4229,
    "/js/install-rules.js": 2226,
@@ -148,8 +148,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 23919,
-   "/play/": 4025,
-   "/sw.js": 6249,
+   "/play/": 4014,
+   "/sw.js": 6221,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -221,8 +221,8 @@
     "date": "2026-10-26",
     "pr": 129,
     "from": 807349,
-    "to": 808996,
-    "why": "Sutras first, part 2: progress per Sutra (js/sutra-progress.js, new, 1,066 bytes) as a line and meter on each Sutra card and on the Deep dive (js/app.js, math.css), Sutra scholar listed to Explorer (js/gamify.js), and Sutras first in the menu and Find in every Mode (js/find.js, js/guide.js, js/play/catalog.js, play/index.html); no tag is drawn by a static import of js/sutra-tag.js (the #126 code split stays); measured on main as of #126, so that code is the only growth"
+    "to": 808989,
+    "why": "Sutras first, part 2: progress per Sutra (js/sutra-progress.js, new, 1,066 bytes) as a line and meter on each Sutra card and on the Deep dive (js/app.js, math.css), Sutra scholar listed to Explorer (js/gamify.js), and Sutras first in the menu, Find and the Guide in every Mode (js/find.js, js/guide.js, js/play/catalog.js, play/index.html); no tag is drawn by a static import of js/sutra-tag.js (the #126 code split stays); measured on main as of #126, so that code is the only growth"
    }
   ]
  },
