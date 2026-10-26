@@ -29,6 +29,7 @@ import { boltHTML } from './bolt.js';
 import { FAMILY_SVG } from './family.js';
 import { familyRound } from './family-hook.js';
 import { runStar } from './star.js';
+import { storyPlan, loadStories, storiesNow, LABEL as STORY_LABEL } from './story-plan.js';
 import { runTry, tryFor as tryOf, sutraOf, finished as tryFinished } from './try.js';
 import * as SKY from './sky.js';
 import { skyView, placesHTML } from './sky-view.js';
@@ -410,6 +411,14 @@ function skillView(id, { signal } = {}) {
   if (trick) mountAnimator(trick, signal); else showExample(s);
   if (trick && signal) wireSay(view, signal);
   fillWatch($('[data-watch-for]'), s, trick, signal);
+  /* A Word problem Skill waits the few milliseconds its stories take to load (openspec word-problems), so its first
+     question is one of them; every other Skill starts at once (its first question is never a Word problem) */
+  if (s.stories && !storiesNow()) {
+    let run = null; $('#practice').innerHTML = '<p class="mq-small">Getting the stories ready&hellip;</p>';
+    loadStories().then(() => { if (!signal || !signal.aborted) run = practice($('#practice'), () => s, { signal }); }).catch(() => { if (!signal || !signal.aborted) run = practice($('#practice'), () => s, { signal }); });
+    return { destroy: () => run && run.destroy() };
+  }
+  loadStories().catch(() => {});
   return practice($('#practice'), () => s, { signal });
 }
 /* "Watch it explained": a placeholder filled once the list loads (fillWatch), so the page never waits on it */
@@ -448,18 +457,20 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
      It picks each question's generator level (AD.levelFor) and is saved as the Skill Rating every 10 answers and
      when the session ends (openspec ratings spec). Mastery is recorded as before. */
   const dials = new Map(), mode = fx.mode();
+  /* Word problems (openspec word-problems): a share of the questions by Mode, once the Player has 20 saved answers */
+  const tales = storyPlan(mode || 'challenger', { answered: () => store.count('answers') });
   const dialFor = id => { if (!dials.has(id)) dials.set(id, new AD.Dial(AD.skillRating(id, mode))); return dials.get(id); };
   const saveDial = id => { const d = dials.get(id); if (!d || d.n < 4) return; AD.saveRating('skill:' + id, d); dials.set(id, new AD.Dial(d.d)); };
   const next = () => {
     if (question) question.abort();
     question = child(session.signal);
-    s = pickSkill(); const level = AD.levelFor(dialFor(s.id).lv); p = withPlain(s, s.gen(level)); tries = 0; hints = 0; done = false;
+    s = pickSkill(); const level = AD.levelFor(dialFor(s.id).lv), bare = s.gen(level); p = withPlain(s, tales.next(s, bare) || bare); tries = 0; hints = 0; done = false;
     // Explorer mode: no typing; small whole-number answers become big buttons
     if (explorer && p.kind === 'num' && Number.isInteger(p.answer) && p.answer >= 0 && p.answer <= 200) { const near = [...new Set([p.answer + 1, p.answer - 1, p.answer + 2, p.answer + 10, p.answer - 2].filter(v => v >= 0))]; p = { ...p, kind: 'choice', choices: [p.answer, ...shuffle(near).slice(0, 3)].sort((a, b) => a - b).map(String), answer: String(p.answer) }; }
     const keyset = p.kind === 'expr' ? KEYS.alg : p.kind === 'set' ? KEYS.set : p.kind === 'ineq' ? KEYS.ineq : p.kind === 'complex' ? KEYS.complex : p.kind === 'num' && !['K', 1, 2].includes(s.grade) ? KEYS.basic : null;
     root.innerHTML = `
       <div class="pr-head"><span class="pr-meter">${ring(store.mastery(s.id), 36)}<span><small>${mix ? `<a href="#/skill/${s.id}">${both(s.title, s.kid)}</a>` : 'Your turn'}</small><b id="prPct">${pct(store.mastery(s.id))}% mastery</b></span></span><span class="pr-run" id="prRun">${run >= 2 ? `<b>${run}</b> in a row` : ''}</span>${lives ? `<span class="pr-lives" role="img" aria-label="${life} lives left">${'<i class="on"></i>'.repeat(life)}${'<i></i>'.repeat(lives - life)}</span>` : ''}<span class="pr-score" role="img" aria-label="${right} of ${total} right this session">${right}/${total}</span></div>
-      <div class="pr-q${plain(p.q).length > 60 ? ' long' : ''}" id="prQ" data-level="${level}">${p.q}</div>
+      ${p.story ? `<span class="md-tag md-tag--teal pr-story" id="prStory">${STORY_LABEL[mode] || STORY_LABEL.challenger}</span>` : ''}<div class="pr-q${plain(p.q).length > 60 ? ' long' : ''}${p.story ? ' pr-q--story' : ''}" id="prQ" data-level="${level}">${p.q}</div>
       ${p.viz ? `<div class="mq-viz">${p.viz}</div>` : ''}
       <form class="pr-form" id="prForm" autocomplete="off">${answerUI(p)}${keyset ? `<div class="pr-keys" role="group" aria-label="Symbol keys">${keyset.map(k => `<button type="button" class="pr-key" data-k="${esc(k)}">${esc(k)}</button>`).join('')}</div>` : ''}
         <div class="pr-actions"><button class="md-btn md-btn--primary" id="prCheck">Check</button><button type="button" class="md-btn md-btn--sm" id="prHint">Hint</button><button type="button" class="md-btn md-btn--sm" id="prShow">Show me</button>${'speechSynthesis' in window ? `<button type="button" class="md-btn md-btn--sm" id="prHear">${icon('speaker')} Hear it</button>` : ''}${fam.askHTML}</div>
@@ -477,6 +488,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
     /* For the Rating, only a first try with no hint counts as right */
     const dial = dialFor(s.id); dial.hit(ok && tries === 1 && !hints); if (dial.n >= 10) saveDial(s.id);
     metrics.answered(lives ? 'run' : 'practice', ok); /* untimed play only: no per-answer events in timed rounds */
+    if (p.story) metrics.story(lives ? 'run' : 'practice', ok);
     if (r.justMastered) track('mastered/' + s.id, 'Mastered: ' + s.title);
     $('#prPct', root).textContent = `${pct(store.mastery(s.id))}% mastery`; root.querySelector('.pr-meter .ring').outerHTML = ring(store.mastery(s.id), 36);
     const sc = root.querySelector('.pr-score'); sc.textContent = `${right}/${total}`; sc.setAttribute('aria-label', `${right} of ${total} right this session`); $('#prRun', root).innerHTML = run >= 2 ? `<b>${run}</b> in a row` : '';
@@ -507,7 +519,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
       else if (tries === 2) { hints = Math.max(hints, 1); const h = p.hints[Math.min(1, p.hints.length - 1)] || p.hints[0]; say((res.msg ? res.msg + ' ' : '') + `Hint: ${h}`, 'no'); if (explorer && h) fx.speak(h, true); } // read the hint that is shown
       else { reveal(); say('That one was tricky. See how it works, then try the next one.', 'no'); finish(false); }
     }, qs);
-    on($('#prHint', root), 'click', () => { if (done) return; const h = p.hints[Math.min(hints, p.hints.length - 1)]; hints++; say(`Hint: ${h}`); if (explorer) fx.speak(h, true); fam.note({ type: 'hint' }); }, qs);
+    on($('#prHint', root), 'click', () => { if (done) return; const h = p.hints[Math.min(hints, p.hints.length - 1)]; if (p.story && hints === 0) metrics.storyAsking(); hints++; say(`Hint: ${h}`); if (explorer) fx.speak(h, true); fam.note({ type: 'hint' }); }, qs);
     on($('#prShow', root), 'click', () => { if (done) return; tries = Math.max(tries, 3); reveal(); say('Read the steps, then try the next one.'); finish(false); }, qs);
     const hear = $('#prHear', root); if (hear) on(hear, 'click', () => fx.speakQuestion(p, true), qs);
     root.querySelectorAll('.pr-choice').forEach(b => on(b, 'click', () => { if (done) return; root.querySelectorAll('.pr-choice').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); $('#prForm', root).requestSubmit(); }, qs));
@@ -536,7 +548,7 @@ function mixView(g, isRun = false, { signal } = {}) {
     <h1 class="md-heading">${isRun ? 'Endless run' : 'Endless practice'}: ${gradeLabel(g)}</h1>
     <p class="md-lede">${isRun ? `Questions from every skill in this level, forever. You have 3 lives: how far can you go? Your best: <b>${store.best('run-' + g)}</b>.` : 'Questions from the whole level, all mixed up and never-ending, favoring skills in progress. Mixing topics is harder, and that is exactly why it makes learning stick.'}</p>
     <div class="mq-practice md-card" id="practice"></div></div></section>`;
-  let lastId = null;
+  let lastId = null; loadStories().catch(() => {});
   return practice($('#practice'), () => {
     const going = list.filter(s => store.started(s.id) && !store.mastered(s.id)), pool = (going.length >= 2 && Math.random() < .7 ? going : list).filter(s => s.id !== lastId);
     const s = pick(pool.length ? pool : list); lastId = s.id; return s;
@@ -1747,6 +1759,8 @@ render();
 initAmbient();
 /* The install module, after the first paint (openspec change install-app, design D12); a load that fails is reported once */
 later(() => loadInstall().catch(e => console.error('install.js did not load', e)), 100, boot.signal);
+/* Word problems (openspec word-problems): the story templates load after the first paint, like install.js */
+later(() => loadStories().catch(e => console.error('stories.js did not load', e)), 150, boot.signal);
 /* The Sutra tag module, a second after the page has loaded, so a view that draws a tag has it at once (#126 review) */
 const preloadTags = () => later(() => loadTags().catch(e => console.error('sutra-tag.js did not load', e)), 1000, boot.signal);
 if (document.readyState === 'complete') preloadTags(); else on(window, 'load', preloadTags, boot.signal, { once: true });

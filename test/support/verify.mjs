@@ -184,6 +184,11 @@ const SOLVERS = [
   [re('(\\d+) rows of (\\d+)\\. How many dots in all\\?'), m => R(BigInt(m[1]) * BigInt(m[2]))],
   [re('\\w+ buys (\\d+) packs of \\w+ with (\\d+) in each pack, then gives away (\\d+)\\. How many are left\\?'), m => R(BigInt(m[1]) * BigInt(m[2]) - BigInt(m[3]))],
   [re('How many tens are in (\\d+)\\?'), m => R(BigInt(m[1]) / 10n)],
+  /* Two-step word problems (openspec word-problems: the Challenger stories 3-twostep draws from) */
+  [re('\\w+ buys (\\d+) packs of \\w+ with (\\d+) in each pack, then gives (\\d+) to friends\\. How many \\w+ are left\\?'), m => R(BigInt(m[1]) * BigInt(m[2]) - BigInt(m[3]))],
+  [re('(\\d+) \\w+ are shared equally among (\\d+) friends\\. How many \\w+ does each friend get\\?'), m => R(BigInt(m[1]), BigInt(m[2]))],
+  [re('\\w+ buys a [\\w ]+ for (\\d+) \\w+ and a [\\w ]+ for (\\d+) \\w+, and pays with 1,?000 \\w+\\. How much change does \\w+ get\\?'), m => R(1000n - BigInt(m[1]) - BigInt(m[2]))],
+  [re('A bus leaves at (\\d+):(\\d+) and arrives at (\\d+):(\\d+)\\. How many minutes is the trip\\?'), m => R(BigInt(m[3]) * 60n + BigInt(m[4]) - BigInt(m[1]) * 60n - BigInt(m[2]))],
   [re('What is the value of the digit (\\d) in (\\d+)\\?'), m => { const s = m[2], i = s.indexOf(m[1]); if (s.split(m[1]).length !== 2) return { ambiguous: true, why: `the digit ${m[1]} appears more than once in ${s}` }; return R(BigInt(m[1]) * 10n ** BigInt(s.length - 1 - i)); }],
   [re('\\w+ shares (\\d+) \\w+ equally among (\\d+) friends\\. How many does each friend get\\?'), m => R(BigInt(m[1]), BigInt(m[2]))],
   [re('Write (.+) as a decimal\\.'), m => value(m[1])],
