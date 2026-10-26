@@ -364,7 +364,8 @@ export const GAMES = [
       };
       deal();
     } },
-  { id: 'check-it', modes: ['challenger', 'pro'], title: 'Answer checker', kid: 'Spot the mistake', color: 'coral', secs: 60, perQ: 14,
+  /* sutra: the Sutra card whose method the game teaches and how (openspec change sutras-first, js/sutra-tag.js) */
+  { id: 'check-it', modes: ['challenger', 'pro'], title: 'Answer checker', kid: 'Spot the mistake', color: 'coral', secs: 60, perQ: 14, sutra: { id: 's15', relation: 'idea' },
     desc: 'Is the answer right or wrong? Use the digit sum check (casting out nines) to decide in seconds. The products get bigger as you get them right.',
     run(area, ctx) {
       const { dial } = ctx; let cur; const q = el('div', { class: 'g-q' }), row = el('div', { class: 'g-duel', role: 'group', 'aria-label': 'Right or wrong' }), tip = el('p', { class: 'g-tip', 'aria-live': 'polite' }); area.append(q, row, tip);

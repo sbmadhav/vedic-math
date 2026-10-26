@@ -14,6 +14,7 @@ import * as store from './store.js';
 import * as fx from './fx.js';
 import * as AD from './adapt.js';
 import * as metrics from './metrics.js';
+import { tag as sutraTag, tags, fillTags } from './sutra-tag-slot.js'; /* js/sutra-tag.js loads on demand (#126 review) */
 import { listenBtn, stopListen } from './listen.js';
 import { trickStoryNow, starSlot, loadStories } from './story-plan.js';
 
@@ -142,11 +143,12 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
   const wasLit = store.starState(trick, star) === 'lit';
   let video = null, phase = null, entry = '', fields = [], active = 0, input = false, dialSaved = false, dareP = null, replaySkip = null, shown = 0;
   Promise.resolve().then(() => findVideo(trick, mode)).then(v => { if (!rs.aborted) video = v || null; }).catch(() => {});
+  const sutraName = () => (tags() ? tags().trickSutraName(trick) : ''); /* the Sutra the replay names (openspec change sutras-first); the header's tag has asked for its module by then */
   const videoAvailable = () => !!(video && video.src) && navigator.onLine !== false;
   const saveDial = () => { if (dialSaved) return; dialSaved = true; AD.saveRating('skill:v-' + trick, dial); };
 
   root.innerHTML = `<div class="star-round${fx.noMotion() ? ' still' : ''}">
-    <header class="star-top"><div><span class="md-tag md-tag--plum">Star ${star} of 3</span><h1 class="md-heading star-h">${esc(t.title)}</h1></div>
+    <header class="star-top"><div><span class="md-tag md-tag--plum">Star ${star} of 3</span><h1 class="md-heading star-h">${esc(t.title)}</h1>${sutraTag('trickTagHTML', trick, { mode, link: false, cls: 'star-sutra' })}</div>
       <button type="button" class="md-btn md-btn--sm" id="stSkip">Skip this Star</button></header>
     <div class="star-hud"><span class="star-dots" id="stDots" role="img"></span>
       <span class="star-meter">${SPARK_SVG}<span class="star-bar" id="stMeter" role="progressbar" aria-label="Sparks to light this Star" aria-valuemin="0" aria-valuemax="${TARGET}" aria-valuenow="0" aria-valuetext="0 of ${TARGET} Sparks"><i></i></span><b class="star-meter-n" id="stMeterN" aria-hidden="true">0/${TARGET}</b></span></div>
@@ -161,6 +163,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
       </div>
     </div></div>`;
   const $ = s => root.querySelector(s), main = $('#stMain'), stage = $('#stStage'), boltEl = $('.star-bolt'), pad = $('#stPad'), dareBtn = $('#stDare');
+  fillTags(root, rs); /* the header's Sutra tag, if its module was not here yet */
   const say = (html, p = null) => { $('#stSay').innerHTML = html; if (p) pose(boltEl, p); };
   const hud = () => {
     const v = Math.min(TARGET, st.sparks), bar = $('#stMeter');
@@ -296,7 +299,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
   function replay(p, of) {
     const ps = newPhase(), steps = (p.story && p.story.first ? [p.story.first] : []).concat(t.steps(p.vals)); let i = 0; /* a Word problem's replay starts with what it asks */
     dareBtn.hidden = true; pad.querySelectorAll('button').forEach(b => (b.disabled = true));
-    main.innerHTML = `<div class="star-replay"><span class="star-tag star-tag--trick">The Trick</span><h2 class="star-q ${p.story ? 'star-q--story' : 'star-q--sm'}" id="stQ" tabindex="-1">${p.q}</h2>
+    main.innerHTML = `<div class="star-replay"><span class="star-tag star-tag--trick">The Trick${sutraName() ? ` · <span lang="sa-Latn">${esc(sutraName())}</span>` : ''}</span><h2 class="star-q ${p.story ? 'star-q--story' : 'star-q--sm'}" id="stQ" tabindex="-1">${p.q}</h2>
       <ol class="star-steps" id="stSteps"></ol><p class="star-acts"><button type="button" class="md-btn md-btn--sm" id="stRSkip">Skip</button></p></div>`;
     say(of === 'dare' ? 'Here is the Dare, step by step.' : 'Here is how the trick does it.', 'explain');
     const list = $('#stSteps'), done = () => {
@@ -354,8 +357,9 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     const line = skipped ? (litNow ? 'A lit Star stays lit.' : 'Come back to it any time. Lighting it later clears the mark.')
       : lit ? (nowLit ? 'It shines in your sky now.' : 'Still shining. Every round still earns Sparks.')
       : litNow ? 'It stays lit. Every round still earns Sparks.' : `${need} more Sparks to light it.`;
-    main.innerHTML = `<div class="star-end"><h2 class="star-end-h" id="stQ" tabindex="-1">${head}</h2><p class="star-end-sp"><span class="fx-sparks">+${st.sparks} Sparks</span></p><p>${line}</p>
+    main.innerHTML = `<div class="star-end"><h2 class="star-end-h" id="stQ" tabindex="-1">${head}</h2><p class="star-end-sp"><span class="fx-sparks">+${st.sparks} Sparks</span></p><p>${line}</p>${sutraTag('trickTagHTML', trick, { mode, surface: 'star' })}
       <p class="star-acts"><button type="button" class="md-btn md-btn--primary" id="stAgain">Play again</button><a class="md-btn" href="${esc(back.href)}" id="stBack">${esc(back.label)}</a></p></div>`;
+    fillTags(main, rs);
     say(lit ? 'You did it!' : skipped ? 'Okay. On to the next one when you are ready.' : 'Good practice. Every miss teaches.', lit ? 'cheer' : 'idle');
     if (!skipped) fx.announce(`${head}. ${st.sparks} Sparks earned. ${line}`);
     fx.rollSparks(main, rs);

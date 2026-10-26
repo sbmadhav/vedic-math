@@ -156,6 +156,16 @@ test('Pro daily sets before MENTAL_FROM are unchanged, so this week\'s Boards ne
   assert.ok(dailySet('pro', '2026-10-19').every(p => p.family), 'Monday 2026-10-19 uses the mental families');
 });
 
+/* openspec change sutras-first: naming each Pro question's Sutra draws no random numbers, so the questions, answers,
+   choices and ramp of a Pro daily round are the same as before (hashes from main before the change, sutra left out) */
+test('Pro daily sets keep their questions now that each names its Sutra', () => {
+  const PRO = { '2026-10-19': 'be95319ca0297335', '2026-10-21': '65cd2d1e795e6f98', '2026-11-02': 'fa586411872e8d11' };
+  for (const [day, h] of Object.entries(PRO)) assert.equal(sha(dailySet('pro', day).map(({ sutra, ...rest }) => rest)), h, day);
+  const set = dailySet('pro', '2026-10-21');
+  assert.ok(set.filter(p => p.family === 'nearBase').every(p => p.sutra === 's2'));
+  assert.ok(set.filter(p => p.family === 'percent' || p.family === 'divide').every(p => !('sutra' in p)));
+});
+
 test('Pro daily sets for 30 dates: only mental families, a fixed non-decreasing ramp, the same for everyone', () => {
   const start = new Date(MENTAL_FROM + 'T12:00:00');
   for (let k = 0; k < 30; k++) {

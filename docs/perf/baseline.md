@@ -10,9 +10,9 @@ The numbers of the live game before the migration to React (openspec change `rea
 - **Re-measured:** the Lighthouse timings except blocking time on 2026-10-26 (issue #117), on commit `60a0585`; see "Re-measured on 2026-10-26" under Load.
 - **Re-measuring:** run `perf.yml` by hand (Actions, "Perf baseline", optional `base_url`). Locally, from the repository root: `python3 build.py --out _site --voice off` (the mode production builds in while R2 is not set up), then `node tools/budget.ts _site`. From `e2e/`: `node perf/lighthouse.mts` and `pnpm exec playwright test -c perf/playwright.config.ts`.
 
-## First load: 776,579 bytes (Brotli)
+## First load: 807,349 bytes (Brotli)
 
-The Brotli-compressed size (quality 11) of everything a first visit to `/play/` requests before the first tap, counting each unique file once: 758.4 KB in 129 files, the budget since #122. The live site measured 744,827 bytes (727.4 KB) in 122 files; what merged since (the sky background #110 and #111, phase 1's #114, the Home redo #116) and #115's own edits brought it here (see the table at the end). `tools/budget.ts` reads it from a build:
+The Brotli-compressed size (quality 11) of everything a first visit to `/play/` requests before the first tap, counting each unique file once: 788.4 KB in 137 files, the budget since #126 (the Sutra tag loads on demand: `js/sutra-tag.js` is precached but not in the static module graph). The live site measured 744,827 bytes (727.4 KB) in 122 files; what merged since (the sky background #110 and #111, phase 1's #114, the Home redo #116) and #115's own edits brought it here (see the table at the end). `tools/budget.ts` reads it from a build:
 - the page itself;
 - every file the page links or loads (styles, the design system, the header script, fonts it preloads, icons, the manifest);
 - the static module graph of `/js/app.js`;
@@ -23,11 +23,11 @@ Today's `PRECACHE` already holds every module of the import map. So the number i
 
 | Biggest files | Brotli |
 |---|---|
-| `/js/app.js` | 41.7 KB |
+| `/js/app.js` | 45.5 KB |
 | `/fonts/nunito-sans-latin-wght-normal.woff2` | 30.3 KB |
+| `/math.css` | 23.3 KB |
 | `/fonts/space-grotesk-latin-wght-normal.woff2` | 21.8 KB |
 | `/fonts/jetbrains-mono-latin-500-normal.woff2` | 21.3 KB |
-| `/math.css` | 20.6 KB |
 | `/icons/icon-512.png` | 20.4 KB |
 | `/js/videos.js` | 20.0 KB |
 
@@ -148,4 +148,5 @@ The baseline is run 1. Task 0.4's repeatability check: the same job runs the scr
 | 2026-10-24 | #128 | 776,579 to 780,836 bytes | Try a trick inside each Mode (`js/try.js`, the picker and Home cards); `baseline.json` only. |
 | 2026-10-24 | family-helpers | 781,931 to 797,717 bytes | The Nikhilam Family helpers (openspec change `family-helpers`, task 2.10): four new modules (`js/family-helpers.js`, `js/family-hook.js`, `js/family-lines.js`, `js/family-view.js`), counted because every module is precached, though the overlay, engine and line table load only for a Player who turned the switch on in Me; `js/family.js` gains each friend's art; the calls in `js/app.js` and `js/star.js`, the Me switch, the `math.css` layer tokens and styles, `metrics.js` and `handoff-schema.js` grow a little; measured on `main` after #138 (781,931). |
 | 2026-10-25 | family-helpers | 785,198 to 801,153 bytes | Re-measured after merging `main` with #141 (785,198) and #143 (no change to the baseline on `main`): the Family helpers as in the row above, plus the #131 review fixes in `js/family-view.js` (+102 bytes: a right answer or a round's end stops the idle timer, no Visit opens over a round that already ended, and each Player gets their own coach); `baseline.json` only. |
-| 2026-10-26 | #151 | 801,153 to 814,351 bytes | Word problems (openspec change `word-problems`, task 5.1): the new `js/stories.js` (story templates by Mode, the hand-written stories and the Star wrappers, 10,080 bytes) and `js/story-plan.js` (the slot plan, labels and the two Word problem Skills' first story, 1,676 bytes), both precached like every module; `stories.js` loads after the first paint, so only `story-plan.js` joins the static graph of `/js/app.js`; the Real-life problems Skill in `js/skills/upper.js`, the Practice and Star round wiring (`js/app.js`, `js/star.js`), the label styles in `math.css`, the word problem counts in `js/metrics.js`, and the tower filter in `js/levels.js`; `baseline.json` only. |
+| 2026-10-26 | #126 | 801,153 to 807,349 bytes | Sutras first, part 1: the Sutra tag on the Trick page, Star, Try a trick, Katas, Arena, Watch and games (`js/app.js`, `js/star.js`, `js/arena.js`, `js/mental.js`, `js/try.js`, `math.css`) and the Sutra cards' kid lines (`js/sutras.js`). The tag now loads on demand (owner, 2026-10-26, from the review): `js/sutra-tag.js` (2,823 bytes) left the static import graph of `js/app.js` and counts here only because it is precached for offline. The views draw tags through `js/sutra-tag-slot.js` (new, 703 bytes), which holds a tag's place until the module is here; `js/app.js` loads the module a second after the page has loaded. The static module graph is 1,768 bytes smaller than with the tag imported statically (295,631 to 293,863 bytes, still 57 modules); the total is 1,227 bytes over that version (806,122) for the slot module, its calls and the placeholder styles. Measured after merging `main` with #131 (801,153). |
+| 2026-10-26 | #151 | 807,349 to 820,657 bytes | Word problems (openspec change `word-problems`, task 5.1): the new `js/stories.js` (story templates by Mode, the hand-written stories and the Star wrappers, 10,080 bytes) and `js/story-plan.js` (the slot plan, labels and the two Word problem Skills' first story, 1,676 bytes), both precached like every module; `stories.js` loads after the first paint, so only `story-plan.js` joins the static graph of `/js/app.js`; the Real-life problems Skill in `js/skills/upper.js`, the Practice and Star round wiring (`js/app.js`, `js/star.js`), the label styles in `math.css`, the word problem counts in `js/metrics.js`, and the tower filter in `js/levels.js`; `baseline.json` only; measured on `main` after #126. |
