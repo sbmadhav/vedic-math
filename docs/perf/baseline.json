@@ -225,67 +225,74 @@
     "path": "/play/",
     "visit": "first",
     "median": {
-     "fcp": 1923,
-     "lcp": 5420,
+     "fcp": 2198,
+     "lcp": 5550,
      "tbt": 46,
      "cls": 0.001,
-     "si": 1923,
-     "ttfb": 479,
-     "srt": 70
+     "si": 2198,
+     "ttfb": 474,
+     "srt": 44
     }
    },
    "play-repeat": {
     "path": "/play/",
     "visit": "repeat",
     "median": {
-     "fcp": 831,
+     "fcp": 826,
      "lcp": 1260,
      "tbt": 42,
      "cls": 0.007,
-     "si": 831,
-     "ttfb": 50,
-     "srt": 50
+     "si": 826,
+     "ttfb": 24,
+     "srt": 24
     }
    },
    "arena": {
     "path": "/play/#/arena",
     "visit": "returning",
     "median": {
-     "fcp": 2096,
-     "lcp": 5544,
+     "fcp": 2203,
+     "lcp": 5670,
      "tbt": 57,
      "cls": 0.007,
-     "si": 2096,
-     "ttfb": 500,
-     "srt": 58
+     "si": 2203,
+     "ttfb": 485,
+     "srt": 35
     }
    },
    "games": {
     "path": "/play/#/games",
     "visit": "returning",
     "median": {
-     "fcp": 1952,
-     "lcp": 5647,
+     "fcp": 1900,
+     "lcp": 5580,
      "tbt": 61,
      "cls": 0.007,
-     "si": 1952,
-     "ttfb": 508,
-     "srt": 77
+     "si": 1900,
+     "ttfb": 484,
+     "srt": 41
     }
    },
    "deep-dive": {
     "path": "/play/#/sutras/s1",
     "visit": "returning",
     "median": {
-     "fcp": 2258,
-     "lcp": 5667,
+     "fcp": 2127,
+     "lcp": 5760,
      "tbt": 159,
      "cls": 0.007,
-     "si": 2640,
-     "ttfb": 498,
-     "srt": 43
+     "si": 2621,
+     "ttfb": 483,
+     "srt": 38
     }
    }
+  },
+  "remeasured": {
+   "date": "2026-10-26",
+   "issue": 117,
+   "site": "https://learnvedicmath.com",
+   "commit": "60a0585",
+   "how": "each Lighthouse median except tbt is the median of five jobs' medians of production on the code live since #131 deployed (60a0585): perf.yml on main, runs 40283115632, 40284102353 and 40285113881 (benchmarkIndex 3038, 4075, 3003), the post-deploy check of 60a0585 (e2e.yml, issue #117) and the production side of #136's perf job (2026-10-26 07:27 UTC); tbt and the interactions keep the 2026-10-21 run (docs/perf/baseline.md, Re-measured on 2026-10-26)"
   }
  },
  "interactions": {
