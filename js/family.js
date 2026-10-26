@@ -30,3 +30,18 @@ export const FAMILY_SVG = `<svg class="lv-family" viewBox="-6 -14 108 86" role="
         <path class="lv-spark lv-spark--c" d="M96 -10Q96 -7 99 -7Q96 -7 96 -4Q96 -7 93 -7Q96 -7 96 -10Z" fill="var(--plum)" stroke="var(--plum)" stroke-width="1" stroke-linejoin="round"/>
         <path class="lv-spark lv-spark--d" d="M0 -9Q0 -6 3 -6Q0 -6 0 -3Q0 -6 -3 -6Q0 -6 0 -9Z" fill="var(--sun)" stroke="var(--sun)" stroke-width="1" stroke-linejoin="round"/>
       </svg>`;
+
+/* Each friend on their own, for the Family helpers (openspec family-helpers): the same paths and tokens as the brand
+   drawing above, cut out of it so the two never drift, framed to stand on a shadow. Decorative: what a friend says is
+   text in the bubble, so the art is hidden from assistive technology. data-pose drives the CSS poses (math.css,
+   "Family helpers"): idle, talk, wave, cheer, think. */
+export const FRIEND_IDS = ['shunya', 'nava', 'eka'];
+export const FRIEND_POSES = ['idle', 'talk', 'wave', 'cheer', 'think'];
+const CUT = { eka: ['lv-f-one', '0 1 34 64', [17, 62, 9]], shunya: ['lv-f-zero', '29 20 34 45', [46, 62, 10]], nava: ['lv-f-nine', '58 2 37 64', [82, 63, 8]] };
+const groupOf = cls => (FAMILY_SVG.match(new RegExp(`<g class="${cls}">([\\s\\S]*?)</g>`)) || [])[1] || '';
+export function friendSVG(id, pose = 'idle') {
+  if (!CUT[id]) throw new RangeError(`family.js: unknown friend ${id}`);
+  if (!FRIEND_POSES.includes(pose)) throw new RangeError(`family.js: unknown pose ${pose}`);
+  const [cls, box, [cx, cy, rx]] = CUT[id];
+  return `<svg class="fh-art fh-art--${id}" viewBox="${box}" aria-hidden="true" focusable="false" data-pose="${pose}"><ellipse class="fh-shadow" cx="${cx}" cy="${cy}" rx="${rx}" ry="2.2" fill="var(--ink)" opacity=".12"/><g class="fh-body">${groupOf(cls)}</g></svg>`;
+}

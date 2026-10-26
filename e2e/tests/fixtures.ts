@@ -147,6 +147,17 @@ export async function mod(page: Page, name: string): Promise<string> {
   return moduleUrl(await moduleMap(page, page.url().startsWith('http') ? page.url() : BASE), name);
 }
 
+/** The still frame draws the day's story (js/sky-bg.js: the day number modulo the story list), and on a given screen
+    some stories have room for their drawing but not its caption. A test that needs a story with its caption fixes the
+    date (timers and frames still run) at noon UTC on a day that draws `id`, so it passes on every day of the week.
+    Call it on a page of the game; the next navigation draws that story. */
+export async function pinStoryDay(page: Page, id: string) {
+  const ids: string[] = await page.evaluate(async () => (await e2eMod('sky-scene')).STORIES.map((s: { id: string }) => s.id));
+  const i = ids.indexOf(id);
+  expect(i, `the story ${id} is in the list`).toBeGreaterThanOrEqual(0);
+  await page.clock.setFixedTime((20000 - (20000 % ids.length) + i) * 864e5 + 432e5);
+}
+
 /** Installs e2eMod in every page of a context. The context fixture does it for the test's own context; a spec that
     makes another context (browser.newContext) calls it there too. */
 export async function installModules(ctx: BrowserContext, baseURL?: string) {

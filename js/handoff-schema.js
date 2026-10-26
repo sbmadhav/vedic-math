@@ -11,12 +11,14 @@
    Payload: { v: 1, from, at, players: { active, list }, records: { <id>: record }, play?: { <id>: { <key>: value } },
    settings: { <key>: string }, dropped?: [part] }, as JSON, gzip, base64url. The fragment is
    #v=1&d=<payload>&r=<hash route>. The packer cleans what it reads (sanitize*: unknown fields and out-of-range values
-   are left behind), and the importer accepts only a payload that already matches exactly (validatePayload). Nothing
-   here touches the DOM, and no value is ever evaluated. Self-contained: no imports, so the old origin needs only this
-   file and the packer. */
+   are left behind), and the importer accepts only a payload that already matches exactly (validatePayload). The Me
+   page's backup code (js/store.js) is the same payload as JSON text, from FROM_BACKUP and with no size cap, and
+   Restore from code checks it the same way. Nothing here touches the DOM, and no value is ever evaluated.
+   Self-contained: no imports, so the old origin needs only this file and the packer. */
 
 export const VERSION = 1;
-export const FROM = 'sbmadhav.com';
+export const FROM = 'sbmadhav.com';            // a hand-off from the old site (the moved page, the export page)
+export const FROM_BACKUP = 'learnvedicmath.com'; // a backup code made on this site (the Me page)
 export const MAX_PAYLOAD = 32 * 1024;   // characters of base64url in the fragment (browsers allow far longer URLs)
 export const MAX_JSON = 256 * 1024;     // bytes after decompression; decoding stops past this
 export const MAX_PLAYERS = 12;
@@ -53,6 +55,7 @@ export const EXCLUDED = [
   'vm.metrics', 'vm.firstSeen',                    // analytics milestones start fresh
   'vm.migratedAt',                                 // written by the hand-off itself, on each side
   'vm.voiceName', 'vm.naturalVoice', 'vm.naturalVoiceId', // this device's speech engine and its 100 MB download
+  'vm.familyMute', 'vm.familyHi',                 // the Family helpers' Not now and greeting, for one browser session (sessionStorage)
   'vm.install',                                    // the Install nudge's schedule (openspec change install-app): this site's app, not the old one
 ];
 /* Parts the packer may leave out, biggest first, to fit MAX_PAYLOAD; the import page names them */
@@ -159,7 +162,7 @@ export function validatePayload(x) {
     if (!isObj(x)) throw new Error('not an object');
     for (const k of Object.keys(x)) if (!['v', 'from', 'at', 'players', 'records', 'play', 'settings', 'dropped'].includes(k)) throw new Error(`unknown key ${k.slice(0, 40)}`);
     if (x.v !== VERSION) throw new Error('unknown version');
-    if (x.from !== FROM) throw new Error('unknown source');
+    if (x.from !== FROM && x.from !== FROM_BACKUP) throw new Error('unknown source');
     if (!okTime(x.at)) throw new Error('bad time');
     const P = x.players;
     if (!isObj(P) || Object.keys(P).some(k => k !== 'active' && k !== 'list') || !Array.isArray(P.list)) throw new Error('bad players');
@@ -265,8 +268,8 @@ export function readDevice(get, keys, { now = Date.now(), random = Math.random }
   return { players: { active, list: players }, records, play, settings };
 }
 
-/* The payload object for a device, without the parts named in drop */
-export function payloadOf(device, drop = [], at = Date.now()) {
+/* The payload object for a device, without the parts named in drop; from names the side that made it */
+export function payloadOf(device, drop = [], at = Date.now(), from = FROM) {
   const records = {};
   for (const [id, r] of Object.entries(device.records)) {
     const c = { ...r };
@@ -276,7 +279,7 @@ export function payloadOf(device, drop = [], at = Date.now()) {
     if (drop.includes('skyLast') && c.sky) { c.sky = { ...c.sky }; delete c.sky.last; }
     records[id] = c;
   }
-  const out = { v: VERSION, from: FROM, at, players: device.players, records };
+  const out = { v: VERSION, from, at, players: device.players, records };
   if (!drop.includes('play') && Object.keys(device.play || {}).length) out.play = device.play;
   out.settings = device.settings;
   if (drop.length) out.dropped = OPTIONAL.filter(p => drop.includes(p));

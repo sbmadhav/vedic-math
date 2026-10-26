@@ -1,7 +1,8 @@
 import { test, expect, open } from './fixtures';
 
-/* A backup code is outside data. Restoring one keeps only numbers where the record holds numbers, so a crafted
-   code cannot put markup on the Me page, the home strip, the Endless Run or the Arena lobby. */
+/* A backup code is outside data. An old single-Player code is read the way the hand-off packer reads a device: only
+   numbers where the record holds numbers, so a crafted code cannot put markup on the Me page, the home strip, the
+   Endless Run or the Arena lobby. It is written only after the Restore prompt's choice (progress-handoff spec). */
 const X = '<img src=x class=injected onerror=alert(1)>';
 
 test.describe('restoring a crafted backup code', () => {
@@ -14,12 +15,18 @@ test.describe('restoring a crafted backup code', () => {
     const code = Buffer.from(JSON.stringify({ data }), 'utf8').toString('base64');
     const dialogs: string[] = [];
     page.on('dialog', d => { dialogs.push(d.type()); d.type() === 'prompt' ? d.accept(code) : d.dismiss(); });
+    const before = await page.evaluate(() => localStorage.getItem('mathquest.v1.p1'));
     await page.locator('#pImport').click();
+    // The prompt lists what the code holds (textContent: the markup is text at most) and writes nothing until Bring it
+    await expect(page.locator('#pOfferList li')).toHaveText([/^[A-Z][a-z]+ [A-Z][a-z]+ \d\d: 0 Sparks$/]);
+    await expect(page.locator('img.injected')).toHaveCount(0);
+    expect(await page.evaluate(() => localStorage.getItem('mathquest.v1.p1'))).toBe(before);
+    await page.locator('#pBring').click();
     await expect(page.locator('.me-head')).toContainText('0 Sparks');
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1')!));
-    expect(saved.sparks).toBe(0);
+    expect(saved.sparks ?? 0).toBe(0);
     expect(saved.best).toEqual({ 'run-2': 7 });
-    expect(saved.last).toBeNull();
+    expect(saved.last ?? null).toBeNull();
     for (const hash of ['#/', '#/me', '#/run/1', '#/arena']) {
       await page.goto('/play/' + hash);
       await expect(page.locator('main')).toBeVisible();
