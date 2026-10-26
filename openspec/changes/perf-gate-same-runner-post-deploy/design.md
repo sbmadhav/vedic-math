@@ -23,7 +23,7 @@ Chosen: (a). It is the same idea the owner chose for pull requests (`perf-same-r
 ### D2. Which commit is pinned
 
 Options weighed:
-- (a) **`main` when this change is built**, recorded in `baseline.json` (`reference.commit`, date, reason) and moved only with a reason, like the baseline's timings. The first post-deploy check then compares production with the same code, so it starts green, and anything later counts from there.
+- (a) **`main` when this change is built**, recorded in `baseline.json` (`reference.commit`, date, reason) and moved only with a reason, like the baseline's timings. The commit named is the `main` tip the pull request is last merged with before it lands (its base), not its own merge commit, which does not exist yet when `baseline.json` is written. That is the same game: the pull request changes CI, tools and docs only, none of the files a Player downloads, so production after the merge serves what the reference builds. The pull request is brought up to date with `main` right before it lands, so no other merge sits between the two. The first post-deploy check then compares production with the same code, so it starts green, and anything later counts from there.
 - (b) The commit the baseline's blocking time describes (`1401890`, 2026-10-21). Exactly the baseline's code, but it predates the sky, the Install guide, Try a trick, the Family helpers and Sutras first, which the pull request gates accepted; the first check would likely miss on work the owner already took.
 
 Chosen: (a). When the pin moves, `baseline.md` records the commit, the reason and, for information, the reference's medians on the job that moved it.

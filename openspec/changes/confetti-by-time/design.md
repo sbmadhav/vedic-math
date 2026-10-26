@@ -20,7 +20,7 @@ Chosen: (a). The constant is written as `110 * 1000 / 60` with a comment, so its
 ### D2. A timer ends the burst; frames only draw
 
 Options weighed:
-- (a) **`later(end, 1833, ctl.signal)`** from `js/life.js`: the burst ends on time even when the browser draws no frames (a hidden or throttled tab), so `bursting` is freed for the next true win. A hidden tab may run timers late by up to about a second, which no one sees.
+- (a) **`later(end, 1833, ctl.signal)`** from `js/life.js`: the burst ends on time even when the browser draws no frames (a hidden or throttled tab), so `bursting` is freed for the next true win. A hidden tab may run timers late by up to about a second, which no one sees; the spec bounds the end at 3,000 ms after the start, which covers that and a busy main thread.
 - (b) Check the elapsed time inside the frame loop and stop there. One mechanism, but in a tab with no frames the canvas and `bursting` stay until the tab is shown again.
 - (c) Both (the loop stops itself once past the time, and the timer as a backstop). Two ways to end the same burst, for no gain over (a): the timer's abort already stops the loop.
 
@@ -40,11 +40,11 @@ Chosen: (a). `elapsed` is the frame's `now` (the `requestAnimationFrame` time `l
 The e2e check must hold on every project, including WebKit on Linux beside two other browsers, where frames are slow and the machine is busy.
 
 Options weighed:
-- (a) **Time it inside the page**: the init script's `MutationObserver` (already counting `fx-confetti`) records `performance.now()` when the canvas is added and when it is removed; the spec reads both and expects the length to be between 1,750 ms and 3,000 ms. The lower bound catches a burst cut short (a 120 Hz frame count would read about 900 ms); the upper bound is well under today's 5.2 s on WebKit and leaves room for a busy runner's late timer.
+- (a) **Time it inside the page**: the init script's `MutationObserver` (already counting `fx-confetti`) records `performance.now()` when the canvas is added and when it is removed; the spec reads both and expects the length to be between 1,800 ms and 3,000 ms. The upper bound is the spec's; the lower bound is the spec's 1,833 ms less a margin for the browsers' coarsened `performance.now()`, and it catches a burst cut short (a 120 Hz frame count would read about 900 ms). The upper bound is well under today's 5.2 s on WebKit and leaves room for a busy runner's late timer.
 - (b) Poll from Playwright (`toHaveCount(0, { timeout })`). Its polling and round trips add up to a few hundred milliseconds of noise, and it cannot see a burst that is too short.
 - (c) Keep counting frames (#149). The thing being fixed is that frames are the wrong unit.
 
-Chosen: (a). The frame rate is set by an init script that wraps `requestAnimationFrame` before the app loads: a slow device delivers frames every 48 ms (about 21 a second, WebKit on Linux), a 120 Hz screen every 8 ms, and a tab with no frames delivers none for the burst's whole length. Under each, the burst lasts 1,750 to 3,000 ms and the canvas is gone after it; with no frames, a second true win straight after it draws its own burst (`bursting` was freed). The 120 s test budget #149 added goes back to the default.
+Chosen: (a). The frame rate is set by an init script that wraps `requestAnimationFrame` before the app loads: a slow device delivers frames every 48 ms (about 21 a second, WebKit on Linux), a 120 Hz screen every 8 ms, and a tab with no frames delivers none for the burst's whole length. Under each, the burst lasts 1,800 to 3,000 ms and the canvas is gone after it; with no frames, a second true win straight after it draws its own burst (`bursting` was freed). The 120 s test budget #149 added goes back to the default. Playwright has no way to hide a page, so a hidden tab itself is not tested: holding back every frame is what a hidden tab does to the burst, and the browser's late timers there fall inside the 3,000 ms bound. The path is checked with fixed pieces (the same start positions, speeds, angles and spins at both frame rates) in `test/celebrate.test.mjs`, not with the random ones a burst makes.
 
 ## Risks
 

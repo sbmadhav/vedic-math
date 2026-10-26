@@ -5,8 +5,8 @@ Waits for the owner's approval of this plan. One pull request, stacked on `perf-
 ## 1. The reference
 
 - [ ] 1.1 Owner: if the `preview` environment limits its deployment branches, add `main` (Settings, Environments, preview). Nothing else changes for the token.
-- [ ] 1.2 `docs/perf/baseline.json`: `reference` with `commit` (`main` when this is built, design D2), `date`, `alias` (`perf-ref`) and `why`; `tools/test/perf-compare.test.ts` reads it in one case.
-- [ ] 1.3 `.github/workflows/e2e.yml`, job `perf`: `environment: preview`; check out `reference.commit` into a second directory, `python3 build.py --preview --out <dir>` with production's voice mode, and `wrangler versions upload --preview-alias perf-ref` from `deploy/` with the preview token's checks as in `preview.yml`; the alias URL read from wrangler's output. On any failure, the job carries on with the baseline alone (design D3). Record the build and upload minutes here.
+- [ ] 1.2 `docs/perf/baseline.json`: `reference` with `commit` (the `main` tip the pull request is last merged with right before it lands, design D2; the pull request changes no file a Player downloads), `date`, `alias` (`perf-ref`) and `why`; `tools/test/perf-compare.test.ts` reads it in one case.
+- [ ] 1.3 `.github/workflows/e2e.yml`, job `perf`: `environment: preview`; check out `reference.commit` into a second directory, `python3 build.py --preview --out <dir>` with production's voice mode, and `wrangler versions upload --preview-alias perf-ref` from `deploy/` with the preview token's checks as in `preview.yml`; the alias URL read from wrangler's output; the upload comes before any measurement. On any failure, the job carries on with the baseline alone (design D3). Record the build and upload minutes here.
 
 ## 2. Measuring and the gate
 
