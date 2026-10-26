@@ -1,6 +1,7 @@
 /* Grades 6 to 8: ratios, percents, integers, expressions, equations, geometry and linear relationships. */
 import { ri, rnz, pick, shuffle, gcd, lcm, simp, fr, frRaw, neg, paren, round, poly, polyText, term, sup, PEOPLE, THINGS } from '../lib.js';
 import * as V from '../viz.js';
+import { skillStory } from '../stories.js';
 
 export default [
   /* ---------- Grade 6 ---------- */
@@ -255,5 +256,10 @@ export default [
       const r = ri(1, 9), h = ri(2, 15), t = pick(['cyl', 'cone', 'sph']), v = t === 'cyl' ? Math.PI * r * r * h : t === 'cone' ? Math.PI * r * r * h / 3 : 4 / 3 * Math.PI * r ** 3;
       return { q: `Find the volume of a ${t === 'cyl' ? 'cylinder' : t === 'cone' ? 'cone' : 'sphere'} with radius ${r}${t === 'sph' ? '' : ' and height ' + h}. Round to 2 decimal places.`, kind: 'num', answer: round(v, 2), tol: 0.02,
         hints: [t === 'cyl' ? '&pi;r<sup>2</sup>h' : t === 'cone' ? '&frac13;&pi;r<sup>2</sup>h' : '<span class="fr"><span>4</span><span>3</span></span>&pi;r<sup>3</sup>'], steps: [`${round(v, 2)}`] };
-    } }
+    } },
+  /* A Word problem Skill (openspec word-problems, design D10): multi-step real life, Pro's style, and the hand-written stories */
+  { id: '8-reallife', grade: 8, strand: 'ratio', title: 'Real-life problems', kid: 'Real-life puzzles', tower: false,
+    idea: 'Real problems hide the math in a story. Find what it asks, plan the steps, then let a trick do the arithmetic fast.',
+    method: ['Read it and ask: what is it asking?', 'Plan the steps and pick the numbers that matter.', 'Solve each step; a Vedic trick often makes one of them quick.'],
+    gen() { return skillStory('8-reallife', 'pro'); } }
 ];

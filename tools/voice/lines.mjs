@@ -23,6 +23,7 @@ import { makeSet } from '../../js/arena.js';
 import { STUDIO } from '../../js/voice-index.js';
 import { allExplanationLines } from '../../js/explain-lines.js';
 import { VIDEOS, LINKS } from '../../js/videos.js';
+import { TEMPLATES, WRITTEN, storyFor } from '../../js/stories.js';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const OUT = fileURLToPath(new URL('./out/', import.meta.url));
@@ -81,6 +82,10 @@ function main() {
   for (const t of TRICKS) for (let n = 1; n <= KATAS_PER_TRICK; n++) kata(t.id, n).problems.forEach(p => withSteps(p).forEach(x => addClips(x, 'tricks')));
   for (let d = 0; d < 40; d++) { makeSet('challenger', 'lines-' + d).forEach(p => spoken(p).forEach(t => addClips(t, 'tricks'))); makeSet('pro', 'lines-' + d).forEach(p => spoken(p).forEach(t => addClips(t, 'tricks'))); }
   for (let id = 1; id <= CHALLENGE_COUNT; id += 3) challengeSet(challenge(id), 30).forEach(p => spoken(p).forEach(t => addClips(t, 'tricks')));
+  /* Word problems (openspec word-problems, design D11): names and settings vary too much to record whole, so their
+     frames go into the clip packs, Explorer's into core */
+  for (const t of TEMPLATES) for (let k = 0; k < N; k++) { const p = storyFor({ id: t.skills[0], grade: 3 }, t.mode); if (p) withSteps(p).forEach(x => addClips(x, t.mode === 'explorer' ? 'core' : t.mode === 'challenger' ? 'g3-5' : 'g6-8')); }
+  for (const w of WRITTEN) [w.q, w.ask, w.plan, ...w.steps].forEach(x => addClips(x, 'g6-8'));
 
   const wholeChars = [...whole.keys()].reduce((a, w) => a + w.length, 0);
   const clipChars = [...clips.keys()].reduce((a, id) => a + clipText(id).length, 0);
