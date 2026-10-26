@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 820904,
+  "total": 822609,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -48,7 +48,7 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 47014,
+   "/js/app.js": 47301,
    "/js/arena.js": 5392,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -62,12 +62,12 @@
    "/js/family-lines.js": 2624,
    "/js/family-view.js": 4196,
    "/js/family.js": 1528,
-   "/js/find.js": 6645,
+   "/js/find.js": 6694,
    "/js/fx.js": 4003,
    "/js/games.js": 12393,
-   "/js/gamify.js": 3843,
+   "/js/gamify.js": 3873,
    "/js/guide-art.js": 2484,
-   "/js/guide.js": 10402,
+   "/js/guide.js": 10456,
    "/js/handoff-schema.js": 6616,
    "/js/handoff.js": 4229,
    "/js/install-rules.js": 2226,
@@ -79,7 +79,7 @@
    "/js/listen.js": 1335,
    "/js/mental.js": 2128,
    "/js/metrics.js": 4136,
-   "/js/play/catalog.js": 1756,
+   "/js/play/catalog.js": 1783,
    "/js/play/exp/apprentice-core.js": 7279,
    "/js/play/exp/apprentice.js": 3914,
    "/js/play/exp/art-core.js": 5199,
@@ -134,6 +134,7 @@
    "/js/story-plan.js": 1723,
    "/js/sutra-ambience.js": 4169,
    "/js/sutra-details.js": 13423,
+   "/js/sutra-progress.js": 1066,
    "/js/sutra-tag-slot.js": 703,
    "/js/sutra-tag.js": 2823,
    "/js/sutras.js": 4223,
@@ -148,9 +149,9 @@
    "/js/voice.js": 14365,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 23976,
-   "/play/": 4034,
-   "/sw.js": 6249,
+   "/math.css": 24154,
+   "/play/": 4045,
+   "/sw.js": 6252,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -224,6 +225,13 @@
     "from": 807349,
     "to": 820904,
     "why": "Word problems (openspec change word-problems): js/stories.js (the story templates, hand-written stories and Star wrappers) and js/story-plan.js (the slot plan, labels and the two Word problem Skills' first story), both precached like every module; stories.js is loaded after the first paint, so only story-plan.js is in the static graph of /js/app.js; plus the new Skill 8-reallife, the label styles in math.css, two metrics functions and the Practice and Star wiring; measured on main after #126"
+   },
+   {
+    "date": "2026-10-26",
+    "pr": 129,
+    "from": 820904,
+    "to": 822609,
+    "why": "Sutras first, part 2: progress per Sutra (js/sutra-progress.js, new, 1,066 bytes) as a line and meter on each Sutra card and on the Deep dive (js/app.js, math.css), Sutra scholar listed to Explorer (js/gamify.js), and Sutras first in the menu, Find and the Guide in every Mode (js/find.js, js/guide.js, js/play/catalog.js, play/index.html); no tag is drawn by a static import of js/sutra-tag.js (the #126 code split stays); and content-visibility: auto on each verse group at the end of the Sutras page (math.css), so the groups off screen under an open Deep dive skip layout and paint: without it the Deep dive's blocking time read 200 ms against production's 174 in the perf job (limit 199). Measured on main as of #151, so that code is the only growth"
    }
   ]
  },

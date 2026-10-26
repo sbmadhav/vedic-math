@@ -46,6 +46,7 @@ import { listenBtn, wireListen } from './listen.js';
 import { sayButton, respellHTML, devaHTML, wireSay } from './say.js';
 import { sutraAmbience, ambienceButton, wireAmbience, settingsHTML as ambienceSettingsHTML, wireSettings as wireAmbienceSettings } from './sutra-ambience.js';
 import { tag as sutraTag, tags, loadTags, fillTags } from './sutra-tag-slot.js'; /* js/sutra-tag.js loads on demand (#126 review) */
+import { progressOf, progressLine, trickLine } from './sutra-progress.js';
 import { claim as claimSlot, release as releaseSlot } from './prompt-slot.js';
 
 /* Installing the app (openspec change install-app): js/install.js and its rules load after the first view has painted
@@ -576,7 +577,7 @@ function dojoView() {
     <div class="dojo-path">${bp.map((b, i) => `<section class="dojo-belt${b.earned ? ' earned' : ''}">
       <h2 class="dojo-h"><span class="belt-swatch" style="--belt:${b.color}" aria-hidden="true"></span>${b.name}${ex ? '' : `<small>${b.lit}/${gm.STARS_PER_BELT} Stars</small>`}</h2>
       <div class="dojo-nodes">${b.tricks.map(id => { const t = TRICKS.find(x => x.id === id), sid = 'v-' + id, [cls, lab] = status(sid); return `<div class="dojo-cell"><a class="dojo-node mq-${cls}" href="#/skill/${sid}">${ring(store.mastery(sid), 52)}<span><b>${t.title}</b><em>${lab}</em></span></a>${sutraTag('trickTagHTML', id, { mode: fx.mode(), size: 'mini', surface: 'dojo' })}<a class="dojo-katas" href="#/katas/${id}">${icon('belt')} Katas ${store.katasDoneWhere(`k:${id}:`)}/${LV.KATAS_PER_TRICK} done</a>${dojoStars(t)}</div>`; }).join('')}</div></section>`).join('')}</div>
-    <p class="mq-cta">${ex ? '' : `<a class="md-btn" href="#/sutras">Read about all 29 sutras</a> `}<a class="md-btn" href="#/arena">Test your speed in the Arena</a></p>
+    <p class="mq-cta"><a class="md-btn" href="#/sutras">Read about all 29 sutras</a> <a class="md-btn" href="#/arena">Test your speed in the Arena</a></p>
   </div></section>`;
 }
 
@@ -790,27 +791,31 @@ function challengeView(id, { signal } = {}) {
 const sutraId = (c, sub) => (sub ? 'u' : 's') + c.n;
 const ALL_SUTRAS = [...SUTRAS.map(c => ({ ...c, sub: false, id: 's' + c.n })), ...SUBSUTRAS.map(c => ({ ...c, sub: true, id: 'u' + c.n }))];
 let sutraAmb = null; /* the Sutra ambience of the Sutra page on screen (js/sutra-ambience.js) */
+/* Sutra progress (openspec change sutras-first): read-only readers over this Player's records; nothing is written or sent */
+const PROGRESS_READ = { started: id => store.started(id), mastered: id => store.mastered(id), starState: (t, n) => store.starState(t, n), katasDone: t => store.katasDoneWhere(`k:${t}:`), collected: c => gm.collectedCard(c) };
+const sutraProgress = c => progressOf(c, PROGRESS_READ, { katasPer: LV.KATAS_PER_TRICK });
+const progressMeter = (p, m) => `<span class="sutra-prog"><span class="mq-bar sutra-prog-bar" aria-hidden="true"><i style="width:${pct(p.share(m))}%"></i></span><small>${progressLine(p, m)}</small></span>`;
 function sutrasView({ signal } = {}) {
   document.title = `The sutras · Learn Vedic Math`;
   store.markSeen('sutras');
-  const got = ALL_SUTRAS.filter(gm.collectedCard).length;
+  const got = ALL_SUTRAS.filter(gm.collectedCard).length, m = fx.mode() || 'challenger';
   /* The Say it button is the card's sibling of the flip button (a button cannot sit in a button), in its top corner */
   const card = c => { const have = gm.collectedCard(c); return `<article class="sutra-card${have ? ' got' : ''}" data-id="${c.id}" data-name="${esc(c.name)}">
-    ${sayButton(c.id, { cls: 'say-btn--card' })}<button class="sutra-face" aria-expanded="false"><span class="sutra-n">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n}</span><b lang="sa-Latn">${c.name}</b>${respellHTML(c.id)}<i>${c.meaning}</i>${have ? '<span class="sutra-got">Collected</span>' : '<span class="sutra-tap">Tap to flip</span>'}</button>
+    ${sayButton(c.id, { cls: 'say-btn--card' })}<button class="sutra-face" aria-expanded="false"><span class="sutra-n">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n}</span><b lang="sa-Latn">${c.name}</b>${respellHTML(c.id)}<i>${c.meaning}</i>${m === 'explorer' ? `<span class="sutra-kid">${esc(c.kid)}</span>` : ''}${progressMeter(sutraProgress(c), m)}${have ? '<span class="sutra-got">Collected</span>' : '<span class="sutra-tap">Tap to flip</span>'}</button>
     <div class="sutra-back"><span>${c.plain}</span>${c.example ? `<code>${c.example}</code>` : ''}
       <span class="sutra-acts"><a class="sutra-more" href="#/sutras/${c.id}">Learn more ${icon('play')}</a>${listenBtn('sutra-card:' + c.id, c.meaning)}<button type="button" class="sutra-flipback" aria-label="Flip back">${icon('loop')}</button></span></div></article>`; };
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs([null, 'Sutras'])}
     <div class="sutra-top"><span class="md-tag md-tag--plum">Deep dive</span>${ambienceButton()}</div>
     <h1 class="md-heading">The 16 sutras and 13 sub-sutras</h1>
-    <p class="md-lede">Each sutra is a short word formula that packs a whole method into a phrase. Flip a card for the short version, then open <b>Learn more</b> for the full story: animated diagrams, why it works, worked examples and further reading. You have collected <b>${got} of ${ALL_SUTRAS.length}</b>.</p>
+    <p class="md-lede">${m === 'explorer' ? `Each sutra is a tiny math rule with a long name. Tap the speaker to hear the name, flip a card to see the rule, and open <b>Learn more</b> to watch it work. You have collected <b>${got} of ${ALL_SUTRAS.length}</b>.` : `Each sutra is a short word formula that packs a whole method into a phrase. Flip a card for the short version, then open <b>Learn more</b> for the full story: animated diagrams, why it works, worked examples and further reading. Each card shows how far you are with its tricks. You have collected <b>${got} of ${ALL_SUTRAS.length}</b>.`}</p>
     <div class="mq-bar mq-bar--big sutra-bar"><i style="width:${pct(got / ALL_SUTRAS.length)}%"></i></div>
+    <h2 class="mq-strand">The 16 sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => !c.sub).map(card).join('')}</div>
+    <h2 class="mq-strand">The 13 sub-sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => c.sub).map(card).join('')}</div>
     ${playShelf('sutras', 'A mystery from the old texts')}
     <div class="md-card history"><h2 class="mq-h3">Where Vedic math comes from</h2><p class="listen-row">${listenBtn('history', 'where Vedic math comes from')}</p>${HISTORY.map(h => `<p>${h}</p>`).join('')}
       <p class="mq-small" data-history-links hidden></p></div>
     <div class="md-card history roots"><h2 class="mq-h3">Older roots: what you see in the background</h2><p>${ROOTS_INTRO}</p><ul>${BG_NOTES.map(n => `<li>${rootNote(n)}</li>`).join('')}</ul></div>
-    <h2 class="mq-strand">The 16 sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => !c.sub).map(card).join('')}</div>
-    <h2 class="mq-strand">The 13 sub-sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => c.sub).map(card).join('')}</div>
     ${versesHTML()}
   </div></section>`;
   const flip = (art, open) => { art.classList.toggle('flipped', open); art.querySelector('.sutra-face').setAttribute('aria-expanded', String(open)); fx.sfx('tap'); if (open) { collect(art.dataset.name); art.classList.add('got'); art.querySelector('.sutra-more').focus({ preventScroll: true }); } else art.querySelector('.sutra-face').focus({ preventScroll: true }); };
@@ -898,7 +903,7 @@ let sutraDlg = null, sutraScene = null, sutraFrom = null, openedInPage = false; 
 const reducedMotion = () => fx.noMotion();
 function sutraHTML(c) {
   const d = DETAILS[c.name], i = ALL_SUTRAS.indexOf(c), prev = ALL_SUTRAS[i - 1], next = ALL_SUTRAS[i + 1];
-  const tricks = c.tricks.map(t => TRICKS.find(x => x.id === t)).filter(Boolean);
+  const tricks = c.tricks.map(t => TRICKS.find(x => x.id === t)).filter(Boolean), mode = fx.mode() || 'challenger', prog = sutraProgress(c);
   // Learn more: videos play in the page for every Mode; pages on other sites only for Pro
   const reads = d.read.map(([label, to]) => (typeof to === 'object' ? playBtn(to.yt, `${icon('play')}<span>${esc(label)}</span>`) : outLink(to, `${icon('link')}<span>${esc(label)}</span>`))).filter(Boolean);
   // The close button (with the Ambience toggle beside it) and the prev / next footer stay pinned while the deep dive scrolls under them
@@ -913,7 +918,7 @@ function sutraHTML(c) {
       <ol class="sd-ex" aria-labelledby="sdExH">${d.examples.map(([q, a], k) => `<li><details${k ? '' : ' open'}><summary><span class="sd-exn">Example ${k + 1} of ${d.examples.length}</span><b>${q}</b></summary><p>${a}</p></details></li>`).join('')}</ol>
       ${slokasFor(c.id).map(v => `<div class="sd-verse"><h3>In Sanskrit verse: ${esc(v.title)}</h3><p class="verse-deva" lang="sa">${esc(v.deva).split('\n').join('<br>')}</p><p class="verse-iast" lang="sa-Latn">${esc(v.iast).split('\n').join('<br>')}</p><p>${esc(v.meaning)}</p><p class="mq-small">${esc(v.note)} More verses are at the end of the Sutras page.</p></div>`).join('')}
       <div class="sd-h"><h3>Where it is used</h3>${listenBtn(`sutra:${c.id}:uses`, 'where it is used')}</div><p class="sd-uses">${d.uses.map(u => `<span>${u}</span>`).join('')}</p>
-      ${tricks.length ? `<h3>Try it yourself</h3><p class="sd-try">${tricks.map(t => `<a class="md-btn md-btn--sm md-btn--primary" href="#/skill/v-${t.id}">${icon('bolt')} ${t.title}</a>`).join(' ')}</p>` : ''}
+      ${tricks.length ? `<h3>Try it yourself</h3><p class="mq-small sd-prog">${progressLine(prog, mode)}</p><ul class="sd-try">${tricks.map(t => `<li><a class="md-btn md-btn--sm md-btn--primary" href="#/skill/v-${t.id}">${icon('bolt')} ${t.title}</a><small>${trickLine(prog.each.find(e => e.id === t.id), mode)}</small></li>`).join('')}</ul>` : ''}
       ${reads.length ? `<h3>Learn more</h3><div class="rel-links">${reads.join('')}</div>` : ''}
     </div>
   </div>

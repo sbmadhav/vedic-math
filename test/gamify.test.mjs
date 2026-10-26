@@ -260,8 +260,8 @@ test('belt badge texts say to light Stars, never to master the tricks', () => {
 
 /* Explorer is not offered Stars or Sutra cards (star-round spec), so the Me page lists the badges that need them
    only once earned (openspec explorer-belts) */
-test('badgesFor: Explorer is not listed the belt and Sutra scholar badges until earned; Challenger and Pro see every badge', () => {
-  const gated = ['belt-white', 'belt-green', 'belt-black', 'sutras'];
+test('badgesFor: Explorer is not listed the belt badges until earned, and sees Sutra scholar; Challenger and Pro see every badge', () => {
+  const gated = ['belt-white', 'belt-green', 'belt-black']; /* Sutra scholar is in every Mode (openspec change sutras-first) */
   const ids = l => l.map(b => b.id);
   for (const id of gated) assert.deepEqual(gm.BADGES.find(b => b.id === id).modes, ['challenger', 'pro'], id);
   for (const b of gm.BADGES) if (!gated.includes(b.id)) assert.equal(b.modes, undefined, `${b.id} is open to every Mode`);

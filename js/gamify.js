@@ -38,8 +38,8 @@ function keepBelts() { const { lit } = store.starStates(), kept = store.keptBelt
    and after a backup is restored. Stars it lights send no event and earn no Sparks. */
 export function migrate() { if (store.upgrade(migrateSky)) { keepBelts(); checkBadges(); } }
 
-/* Badges: id, name, how to earn, test. `modes` names the Modes that are offered the way to earn it (Belts and
-   Sutra cards are not offered in Explorer); badgesFor lists such a badge to other Modes only once it is earned. */
+/* Badges: id, name, how to earn, test. `modes` names the Modes that are offered the way to earn it (Belts are not
+   offered in Explorer; Sutra cards are, since the sutras-first change); badgesFor lists such a badge to other Modes only once it is earned. */
 const masteredCount = () => SKILLS.filter(s => store.mastered(s.id)).length;
 /* A Sutra card is collected by mastering one of its tricks or by reading its card */
 export const collectedCard = c => c.tricks.some(t => store.mastered('v-' + t)) || store.seen('sutra:' + c.name);
@@ -66,7 +66,7 @@ export const BADGES = [
   { id: 'duel', name: 'Party host', how: 'Finish a Party Mode game with family or friends.', test: () => store.count('duelsDone') >= 1 },
   { id: 'games', name: 'Game explorer', how: 'Play every game once.', test: () => GAMES.every(g => store.seen('game:' + g.id)) },
   { id: 'days7', name: 'Week warrior', how: 'Practice 7 days in a row.', test: () => store.streakDays() >= 7 },
-  { id: 'sutras', name: 'Sutra scholar', how: 'Collect 10 Sutra cards.', test: () => collectedCount() >= 10, modes: BIG },
+  { id: 'sutras', name: 'Sutra scholar', how: 'Collect 10 Sutra cards.', test: () => collectedCount() >= 10 }, /* every Mode has Sutra cards (openspec change sutras-first) */
   { id: 'watch', name: 'Video learner', how: 'Watch a video in the player for a whole minute.', test: () => store.count('watchedMinute') >= 1 },
   /* Title badges keep their old ids (level5, level10), so badges earned before Sparks stay earned */
   { id: 'level5', name: 'Sum Sprinter', how: 'Reach the Sum Sprinter Title (1000 Sparks).', test: () => store.sparks() >= 1000 },
