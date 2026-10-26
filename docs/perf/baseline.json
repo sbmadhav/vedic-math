@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 801153,
+  "total": 807349,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -48,8 +48,8 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 45683,
-   "/js/arena.js": 5327,
+   "/js/app.js": 46573,
+   "/js/arena.js": 5392,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
    "/js/celebrate.js": 3080,
@@ -64,7 +64,7 @@
    "/js/family.js": 1528,
    "/js/find.js": 6645,
    "/js/fx.js": 4003,
-   "/js/games.js": 12325,
+   "/js/games.js": 12393,
    "/js/gamify.js": 3843,
    "/js/guide-art.js": 2484,
    "/js/guide.js": 10402,
@@ -77,7 +77,7 @@
    "/js/lib.js": 1707,
    "/js/life.js": 838,
    "/js/listen.js": 1335,
-   "/js/mental.js": 1729,
+   "/js/mental.js": 2128,
    "/js/metrics.js": 3993,
    "/js/play/catalog.js": 1756,
    "/js/play/exp/apprentice-core.js": 7279,
@@ -128,13 +128,15 @@
    "/js/sky-view.js": 4458,
    "/js/sky.js": 3762,
    "/js/slokas.js": 16068,
-   "/js/star.js": 7988,
+   "/js/star.js": 8208,
    "/js/store.js": 5753,
    "/js/sutra-ambience.js": 4169,
    "/js/sutra-details.js": 13423,
-   "/js/sutras.js": 3866,
+   "/js/sutra-tag-slot.js": 703,
+   "/js/sutra-tag.js": 2823,
+   "/js/sutras.js": 4223,
    "/js/tour.js": 2215,
-   "/js/try.js": 4325,
+   "/js/try.js": 4416,
    "/js/vedic.js": 9820,
    "/js/videos.js": 20516,
    "/js/viz.js": 5745,
@@ -144,9 +146,9 @@
    "/js/voice.js": 14365,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 23317,
-   "/play/": 3965,
-   "/sw.js": 6214,
+   "/math.css": 23849,
+   "/play/": 4006,
+   "/sw.js": 6221,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -206,6 +208,13 @@
     "from": 785198,
     "to": 801153,
     "why": "family-helpers step 2: the Nikhilam Family as study friends behind a Me switch (js/family.js, js/family-hook.js, js/family-helpers.js, js/family-view.js and js/family-lines.js in the precache; the page imports the Family modules only when the switch is on), plus 102 bytes of review fixes in js/family-view.js; measured on main as of #141, #143 and #147, so that code is the only growth"
+   },
+   {
+    "date": "2026-10-26",
+    "pr": 126,
+    "from": 801153,
+    "to": 807349,
+    "why": "Sutras first, part 1: the Sutra tag on the Trick page, Star, Try a trick, Katas, Arena, Watch and games, and the Sutra cards' kid lines (js/sutras.js). The tag loads on demand (owner, 2026-10-26, from the review): js/sutra-tag.js (2,823 bytes) is out of the static import graph of js/app.js and counts here only as a precached file; the views draw through js/sutra-tag-slot.js (new, 703 bytes), which holds the tag's place until the module is here and is loaded a second after the page has loaded. The static graph is 1,768 bytes smaller than with the tag imported statically (295,631 to 293,863 bytes, 57 modules); the total grows 1,227 bytes over that version (806,122) for the slot module, its calls and the placeholder styles. Growth over main: js/app.js, js/star.js, js/arena.js, js/mental.js, js/try.js, math.css; measured on main as of #131, so that code is the only growth"
    }
   ]
  },
@@ -216,67 +225,74 @@
     "path": "/play/",
     "visit": "first",
     "median": {
-     "fcp": 1923,
-     "lcp": 5420,
+     "fcp": 2198,
+     "lcp": 5550,
      "tbt": 46,
      "cls": 0.001,
-     "si": 1923,
-     "ttfb": 479,
-     "srt": 70
+     "si": 2198,
+     "ttfb": 474,
+     "srt": 44
     }
    },
    "play-repeat": {
     "path": "/play/",
     "visit": "repeat",
     "median": {
-     "fcp": 831,
+     "fcp": 826,
      "lcp": 1260,
      "tbt": 42,
      "cls": 0.007,
-     "si": 831,
-     "ttfb": 50,
-     "srt": 50
+     "si": 826,
+     "ttfb": 24,
+     "srt": 24
     }
    },
    "arena": {
     "path": "/play/#/arena",
     "visit": "returning",
     "median": {
-     "fcp": 2096,
-     "lcp": 5544,
+     "fcp": 2203,
+     "lcp": 5670,
      "tbt": 57,
      "cls": 0.007,
-     "si": 2096,
-     "ttfb": 500,
-     "srt": 58
+     "si": 2203,
+     "ttfb": 485,
+     "srt": 35
     }
    },
    "games": {
     "path": "/play/#/games",
     "visit": "returning",
     "median": {
-     "fcp": 1952,
-     "lcp": 5647,
+     "fcp": 1900,
+     "lcp": 5580,
      "tbt": 61,
      "cls": 0.007,
-     "si": 1952,
-     "ttfb": 508,
-     "srt": 77
+     "si": 1900,
+     "ttfb": 484,
+     "srt": 41
     }
    },
    "deep-dive": {
     "path": "/play/#/sutras/s1",
     "visit": "returning",
     "median": {
-     "fcp": 2258,
-     "lcp": 5667,
+     "fcp": 2127,
+     "lcp": 5760,
      "tbt": 159,
      "cls": 0.007,
-     "si": 2640,
-     "ttfb": 498,
-     "srt": 43
+     "si": 2621,
+     "ttfb": 483,
+     "srt": 38
     }
    }
+  },
+  "remeasured": {
+   "date": "2026-10-26",
+   "issue": 117,
+   "site": "https://learnvedicmath.com",
+   "commit": "60a0585",
+   "how": "each Lighthouse median except tbt is the median of five jobs' medians of production on the code live since #131 deployed (60a0585): perf.yml on main, runs 40283115632, 40284102353 and 40285113881 (benchmarkIndex 3038, 4075, 3003), the post-deploy check of 60a0585 (e2e.yml, issue #117) and the production side of #136's perf job (2026-10-26 07:27 UTC); tbt and the interactions keep the 2026-10-21 run (docs/perf/baseline.md, Re-measured on 2026-10-26)"
   }
  },
  "interactions": {

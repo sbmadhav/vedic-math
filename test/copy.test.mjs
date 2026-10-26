@@ -32,9 +32,19 @@ test('no copy claims the sutras come from the Vedas or calls them the Vedic sutr
   assert.deepEqual(hits, []);
 });
 
+const emDashLines = files => files.flatMap(f => readFileSync(f, 'utf8').split('\n').map((l, i) => [l, i]).filter(([l]) => /—|&mdash;/.test(l)).map(([, i]) => `${relative(root, f)}:${i + 1}`));
+
 test('no em dashes', () => {
-  const hits = FILES.flatMap(f => readFileSync(f, 'utf8').split('\n').map((l, i) => [l, i]).filter(([l]) => /—|&mdash;/.test(l)).map(([, i]) => `${relative(root, f)}:${i + 1}`));
-  assert.deepEqual(hits, []);
+  assert.deepEqual(emDashLines(FILES), []);
+});
+
+/* The repo's own documents keep the copy rule too (openspec change learnvedicmath, tasks 12.1 and 12.3 to 12.5):
+   the security policy, contributing and licence files, the README, the glossary, the plan and the OpenSpec context */
+const DOCS = ['SECURITY.md', 'CONTRIBUTING.md', 'LICENSE', 'LICENSE-CONTENT.md', 'THIRD-PARTY-NOTICES.md', 'README.md', 'GLOSSARY.md',
+  'docs/PLAN.md', 'openspec/config.yaml', '.github/pull_request_template.md'].map(f => join(root, f));
+
+test('no em dashes in the repo documents', () => {
+  assert.deepEqual(emDashLines(DOCS), []);
 });
 
 test('the footer credits the 1965 book', () => {
