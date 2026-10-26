@@ -10,7 +10,7 @@ Everything published in sbmadhav/vedic-math up to commit `<cutoff sha>` (`<cutof
 
 ## After the cutoff: all rights reserved
 
-After the cutoff commit, new files and post-cutoff changes are proprietary unless a file says otherwise. In particular, all rights are reserved for:
+After the cutoff commit, new and changed files are proprietary unless a file says otherwise. In particular, all rights are reserved for:
 
 - the lessons, Kata and Worked example text, Deep dives and every other learning text;
 - Bolt, the Nikhilam Family and all other art, the icons and the name Learn Vedic Math;
