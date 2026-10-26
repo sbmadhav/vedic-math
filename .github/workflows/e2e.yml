@@ -36,18 +36,27 @@ concurrency:
 jobs:
   # On a push, CI deploys the stamped build. Wait once, here, until the live game shell, worker and entry module match
   # this commit's build (the shell pins every module hash, sw.js carries the cache VERSION); the shards start after.
-  # The daily and on-demand runs test what is live and pass straight through.
+  # The daily and on-demand runs test what is live and pass straight through. It also names the Playwright version
+  # e2e/package.json pins, for the shards' container image.
   deploy:
     name: Wait for the deploy
     # Nothing is live on learnvedicmath.com until the owner's Cloudflare setup (repository variable CLOUDFLARE_ACCOUNT_ID)
     if: vars.CLOUDFLARE_ACCOUNT_ID != '' || inputs.base_url != ''
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      playwright: ${{ steps.pw.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: github.event_name == 'push'
         with:
           persist-credentials: false
+
+      - name: The Playwright version e2e/package.json pins
+        id: pw
+        run: |
+          v=$(node -p "require('./e2e/package.json').devDependencies['@playwright/test']")
+          echo "$v" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "::error::@playwright/test is not pinned to an exact version: $v"; exit 1; }
+          echo "version=$v" >> "$GITHUB_OUTPUT"
 
       # Node before the deploy wait: build.py turns app/src/sw/sw.ts into sw.js with Node's type stripper (22.13+)
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -72,18 +81,25 @@ jobs:
           done
           echo "::warning::The live site still differs from this commit after about 15 minutes. Testing what is live."
 
-  # The suite in four shards on four runners (Playwright --shard). In one job it took 28 to 29 minutes after a push and
+  # The suite in six shards on six runners (Playwright --shard). In one job it took 28 to 29 minutes after a push and
   # 43 to 46 minutes daily (with the scenario specs), past the old 50-minute limit once setup and the deploy wait were
-  # added. Each shard runs every project (chromium, webkit, mobile) on its quarter of the tests.
+  # added. Each shard runs every project (chromium, webkit, mobile) on its sixth of the tests; shards are not equal in
+  # time (four shards took 5.6 to 18.6 minutes daily), so six keep the longest well inside the limit.
+  # They run in Playwright's own image, with the browsers and their system libraries already installed: installing
+  # them with apt on each runner (--with-deps) took 40 seconds to over 30 minutes from the Azure Ubuntu mirror, and a
+  # shard ran out of time there.
   e2e:
-    name: e2e (shard ${{ matrix.shard }} of 4)
+    name: e2e (shard ${{ matrix.shard }} of 6)
     needs: deploy
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.deploy.outputs.playwright }}-noble
+      options: --ipc=host
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6]
     defaults:
       run:
         working-directory: e2e
@@ -104,16 +120,14 @@ jobs:
           corepack enable
           pnpm install --frozen-lockfile --filter e2e
 
-      - run: pnpm exec playwright install --with-deps chromium webkit
-
       # The daily run and a manual run also check every Watch shelf video on YouTube (tests/videos.live.spec.ts,
       # tagged @live-videos, chromium only) and run the scenario coverage specs in tests/cov (chromium only, see
       # playwright.config.ts); the run after a push leaves both out. The background's frame cost (@frame-cost) runs
       # in its own job below. Each shard writes a blob report; the report job merges them into one HTML report.
-      - name: Playwright tests (shard ${{ matrix.shard }} of 4)
+      - name: Playwright tests (shard ${{ matrix.shard }} of 6)
         env:
           E2E_SKIP_COV: ${{ github.event_name == 'push' && '1' || '' }}
-        run: pnpm exec playwright test --shard=${{ matrix.shard }}/4 --reporter=list,github,blob --grep-invert "${{ github.event_name == 'push' && '@live-videos|@frame-cost' || '@frame-cost' }}"
+        run: pnpm exec playwright test --shard=${{ matrix.shard }}/6 --reporter=list,github,blob --grep-invert "${{ github.event_name == 'push' && '@live-videos|@frame-cost' || '@frame-cost' }}"
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}
