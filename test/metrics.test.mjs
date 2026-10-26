@@ -328,3 +328,12 @@ test('js/say.js counts through metrics.say() only, and turning the ambience off 
   assert.deepEqual(callSites(say).map(c => `${c.fn}(${c.args})`), ['metrics.say()']);
   assert.deepEqual(callSites(amb), [], 'the ambience sends nothing (owner decision 5)');
 });
+
+/* ---------- Word problems (openspec word-problems, design D12) ---------- */
+test('story(): math/story/<practice|run|star>/<right|miss>, story/asking, fixed words only', () => {
+  clear();
+  for (const a of M.STORY_AREAS) { M.story(a, true); M.story(a, false); }
+  M.story('arena', true); M.story('practice/x', true); M.storyAsking();
+  assert.deepEqual(paths(), ['math/story/practice/right', 'math/story/practice/miss', 'math/story/run/right', 'math/story/run/miss', 'math/story/star/right', 'math/story/star/miss', 'math/story/asking']);
+  for (const [, t] of sent) assert.match(t, /^Vedic Math: word problem( hint)?$/);
+});

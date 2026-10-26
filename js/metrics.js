@@ -200,6 +200,13 @@ export function family(kind) { if (FAMILY_EVENTS.includes(kind)) send('family/' 
 export function familyVisit(level, cheer = false) { family(cheer ? 'cheer' : 'visit/' + level); }
 export function say() { send('say/sutra', 'Say a Sutra name'); }
 
+/* ---------- Word problems (openspec change word-problems, design D12) ----------
+   A Word problem finished in Practice, an Endless run or a Star round (right on any try, or not), and a "What is it
+   asking?" hint shown. Fixed words only: never the story, the Skill, a name, a number or anything typed. */
+export const STORY_AREAS = ['practice', 'run', 'star'];
+export function story(area, ok) { if (STORY_AREAS.includes(area)) send(`story/${area}/${ok ? 'right' : 'miss'}`, 'Vedic Math: word problem'); }
+export function storyAsking() { send('story/asking', 'Vedic Math: word problem hint'); }
+
 /* ---------- Installing the app (openspec change install-app) ---------- */
 /* Fixed words only: never the browser, the platform or how many times the nudge was put off. wizard_open names which
    entry point opened the Install guide, one of INSTALL_FROM. */

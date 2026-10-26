@@ -4,16 +4,19 @@
 const svg = (w, h, label, body, cls = '') => `<svg class="vz ${cls}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${label}" style="max-width:${w}px">${body}</svg>`;
 const T = (x, y, s, cls = 'vz-t', anchor = 'middle') => `<text x="${x}" y="${y}" class="${cls}" text-anchor="${anchor}" dominant-baseline="middle">${s}</text>`;
 
-/* Ten frame: a filled (coral), b filled (teal), rest empty. Two frames when total > 10. */
-export function tenFrame(a, b = 0, frames = null) {
+/* Ten frame: a filled (coral), b filled (teal), rest empty. Two frames when total > 10. cells: draw only that many cells
+   (the last frame partial), for a picture of exactly so many places, such as a bus's seats */
+export function tenFrame(a, b = 0, frames = null, cells = null) {
   const total = a + b, nf = frames || Math.max(1, Math.ceil(total / 10)), cs = 34, gap = 14;
   const w = 5 * cs + 8, h = nf * (2 * cs + 8) + (nf - 1) * gap;
   let body = '';
   for (let f = 0; f < nf; f++) {
     const oy = f * (2 * cs + 8 + gap);
-    body += `<rect x="1" y="${oy + 1}" width="${5 * cs + 6}" height="${2 * cs + 6}" rx="8" class="vz-frame"/>`;
+    const n = cells === null ? 10 : Math.min(10, cells - f * 10); if (n <= 0) continue;
+    body += `<rect x="1" y="${oy + 1}" width="${(n > 5 ? 5 : n) * cs + 6}" height="${(n > 5 ? 2 : 1) * cs + 6}" rx="8" class="vz-frame"/>`;
     for (let i = 0; i < 10; i++) {
       const k = f * 10 + i, x = 4 + (i % 5) * cs, y = oy + 4 + Math.floor(i / 5) * cs;
+      if (cells !== null && k >= cells) continue;
       body += `<rect x="${x}" y="${y}" width="${cs}" height="${cs}" class="vz-cell"/>`;
       if (k < total) body += `<circle cx="${x + cs / 2}" cy="${y + cs / 2}" r="${cs / 2 - 5}" class="${k < a ? 'vz-coral' : 'vz-teal'} vz-dot"/>`;
     }
