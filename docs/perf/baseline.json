@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 822609,
+  "total": 824217,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -48,7 +48,7 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 47301,
+   "/js/app.js": 48265,
    "/js/arena.js": 5392,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -135,8 +135,9 @@
    "/js/sutra-ambience.js": 4169,
    "/js/sutra-details.js": 13423,
    "/js/sutra-progress.js": 1066,
+   "/js/sutra-tag-core.js": 1902,
    "/js/sutra-tag-slot.js": 703,
-   "/js/sutra-tag.js": 2823,
+   "/js/sutra-tag.js": 1405,
    "/js/sutras.js": 4223,
    "/js/tour.js": 2215,
    "/js/try.js": 4416,
@@ -149,9 +150,9 @@
    "/js/voice.js": 14365,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 24154,
-   "/play/": 4045,
-   "/sw.js": 6252,
+   "/math.css": 24311,
+   "/play/": 4046,
+   "/sw.js": 6254,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -232,6 +233,13 @@
     "from": 820904,
     "to": 822609,
     "why": "Sutras first, part 2: progress per Sutra (js/sutra-progress.js, new, 1,066 bytes) as a line and meter on each Sutra card and on the Deep dive (js/app.js, math.css), Sutra scholar listed to Explorer (js/gamify.js), and Sutras first in the menu, Find and the Guide in every Mode (js/find.js, js/guide.js, js/play/catalog.js, play/index.html); no tag is drawn by a static import of js/sutra-tag.js (the #126 code split stays); and content-visibility: auto on each verse group at the end of the Sutras page (math.css), so the groups off screen under an open Deep dive skip layout and paint: without it the Deep dive's blocking time read 200 ms against production's 174 in the perf job (limit 199). Measured on main as of #151, so that code is the only growth"
+   },
+   {
+    "date": "2026-10-26",
+    "pr": 133,
+    "from": 822609,
+    "to": 824217,
+    "why": "Sutras first, part 3: Home leads with the Sutras (the Sutra door, \"Your sutras\" on Challenger and Pro Home, \"A sutra to say\" on Explorer Home; js/app.js, math.css); Home's Sutra door draws its tag with the first paint from js/sutra-tag-core.js (new, 1,902 bytes: the Sutra map, the kind words and tagHTML, moved out of js/sutra-tag.js, which shrinks from 2,823 to 1,405 bytes and still loads on demand): the placeholder it had before moved the doors when js/sutra-tag.js arrived (layout shift 0.034 against 0.007 on the repeat visit in the perf job) and the early module load put the repeat visit's blocking time at 90 ms against production's 64 (limit 89); Home's Sutra links count their tag event at once from the static SURFACES. measured on main as of #129, so that code is the only growth"
    }
   ]
  },
