@@ -107,12 +107,13 @@ test('for one release xp and weekXp mirror Sparks, so a rollback keeps the total
 test('restoring a backup code made before the update turns its XP into Sparks', async () => {
   family();
   const store = await boot();
+  await store.loadBackup();
   store.importData(JSON.stringify({ player: { name: 'Swift Tiger 42' }, data: v2(900, 20, { 'a:3': 3, 'k:by11:4': 1 }) }));
   assert.equal(store.sparks(), 900);
   assert.equal(store.weekSparks(), 20);
   assert.equal(store.medal('a:3'), 3);
   assert.equal(store.kataDone('k:by11:4'), true);
-  const back = JSON.parse(store.exportData()).data;
+  const back = JSON.parse(store.exportData()).records.p1;
   assert.equal(back.sparks, 900);
   assert.equal(back.v, 3);
 });

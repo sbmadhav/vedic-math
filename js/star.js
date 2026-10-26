@@ -117,8 +117,9 @@ const pickOne = a => a[Math.floor(Math.random() * a.length)];
 /* Plays one Star round in root. trick: a Trick id; star: 1 to 3; signal: the view's (everything stops when it aborts).
    back: { href, label } for the end screen's way out; again(): Play again; findVideo(trickId, mode): a Promise of
    { title, src, open? } (src: an embeddable video URL; open(opener): plays it elsewhere and resolves when closed) or null.
+   onEnd({ misses, lit, skipped }): called once the end screen shows (the Family helpers, openspec family-helpers).
    Returns { destroy }, which saves the Rating. */
-export function runStar(root, { trick, star, signal, back = { href: '#/dojo', label: 'Back to the Dojo' }, again = null, findVideo = async () => null } = {}) {
+export function runStar(root, { trick, star, signal, back = { href: '#/dojo', label: 'Back to the Dojo' }, again = null, findVideo = async () => null, onEnd = null } = {}) {
   const t = TRICKS.find(x => x.id === trick), skill = byId['v-' + trick], mode = fx.mode() || 'challenger', boxes = mode !== 'pro';
   const round = child(signal), rs = round.signal;
   const rating = AD.skillRating('v-' + trick, mode), dial = new AD.Dial(rating);
@@ -346,6 +347,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     if (lit) { fx.confetti(110); fx.sfx('level'); } /* a Star lit is a true win: the big confetti */
     on($('#stAgain'), 'click', () => { if (again) again(); }, rs);
     $('#stQ').focus({ preventScroll: true });
+    if (onEnd) try { onEnd({ misses: st.misses, lit, skipped }); } catch (e) {} /* the Family helpers come after the round (openspec family-helpers) */
   }
 
   ask();

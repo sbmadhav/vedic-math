@@ -96,6 +96,12 @@ test('answers in a Try a trick are counted under the try area, and #/try has its
   assert.deepEqual(paths().filter(p => p.startsWith('math/q_answered/')), ['math/q_answered/try/right', 'math/q_answered/try/miss']);
   assert.equal(M.routePath('#/try'), 'try');
 });
+/* ---------- Family helpers (openspec family-helpers, analytics delta) ---------- */
+test('Family helper events are fixed words only: the Visit level, cheer, ask, show_me, not_now', () => {
+  clear(); M.familyVisit(1); M.familyVisit(3); M.familyVisit(2, true); M.familyVisit(4); M.family('ask'); M.family('show_me'); M.family('not_now'); M.family('v-sq5'); M.family('Swift Tiger 42');
+  assert.deepEqual(paths(), ['math/family/visit/1', 'math/family/visit/3', 'math/family/cheer', 'math/family/ask', 'math/family/show_me', 'math/family/not_now']);
+  assert.ok(sent.every(([p, t]) => PATH.test(p) && t === 'Vedic Math: Family helpers'));
+});
 test('modeLink sends math/landing/mode/<Mode> for a Mode only, with a fixed title', () => {
   clear(); M.modeLink('pro'); M.modeLink('explorer'); M.modeLink('wizard'); M.modeLink('Swift Tiger 42'); M.modeLink(undefined);
   assert.deepEqual(paths(), ['math/landing/mode/pro', 'math/landing/mode/explorer']);
@@ -254,6 +260,7 @@ const ALLOWED = new Set([
   'asSky',                     // route views: true when home showed the Sky (a fixed word, sky)
   'from',                      // the Install guide's entry point (metrics.install checks it against INSTALL_FROM)
   'ok', "lives ? '' : ''", 'fx.MODES[fx.mode()].league', // right or miss; 'run' or 'practice'; the League
+  'v.level', 'cheer',          // a Family helper Visit's level (1 to 3) and whether it is a cheer; metrics.family checks FAMILY_EVENTS
   'result', 'TITLES[result]', // the import page's hand-off result and its title (js/handoff.js count: one of RESULTS, a fixed set the analytics spec lists; test/handoff.test.mjs pins it)
 ]);
 /* Every call of track(, siteTrack( and metrics.<fn>( with its argument text */

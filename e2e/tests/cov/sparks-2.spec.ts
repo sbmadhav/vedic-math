@@ -64,7 +64,9 @@ test.describe('restoring a backup code saved before the update', () => {
     const code = Buffer.from(JSON.stringify(old), 'utf8').toString('base64');
     page.once('dialog', d => d.accept(code));
     await page.locator('#pImport').click();
-    // (the Me view re-renders right after "Progress restored.", so the restored totals are what is checked)
+    // Restore from code asks first (progress-handoff spec): nothing played here yet, so Bring it; the page reloads
+    await expect(page.locator('#pOfferList li')).toHaveText(['Swift Tiger 42: 900 Sparks']);
+    await page.locator('#pBring').click();
     await expect(page.locator('.me-head')).toContainText('Digit Dasher · 900 Sparks');
     await expect(page.locator('.me-head')).not.toContainText(/\bXP\b/);
     const d = await saved(page);
