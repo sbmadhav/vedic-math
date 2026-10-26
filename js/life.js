@@ -52,3 +52,11 @@ export function child(signal) {
   ctl.signal.addEventListener('abort', () => signal.removeEventListener('abort', pass), { once: true });
   return ctl;
 }
+
+/* lateImport(load, name, signal): a module loaded after first paint. WebKit rejects one a reload cuts off before
+   pagehide, so a failure is logged GRACE ms later unless the page was left or signal aborted by then */
+export const GRACE = 1000;
+const PAGE = new AbortController().signal;
+let left = 0;
+if (typeof window != 'undefined' && window.addEventListener) { on(window, 'pagehide', () => { left = 1; }, PAGE); on(window, 'pageshow', () => { left = 0; }, PAGE); }
+export const lateImport = (load, name, signal) => Promise.resolve().then(load).catch(e => later(() => left || signal?.aborted || console.error(name + ' did not load', e), GRACE, PAGE));
