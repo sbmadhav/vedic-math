@@ -173,7 +173,7 @@ The loop every feature serves: **Dare, Reveal, Prove, Race, Brag, Return**.
 ## 10. Privacy and integrity (every step)
 
 - **The Age answer decides, never the Mode.** It is asked once, neutrally, at the end of the first Ranked round before a Score or weekly Sparks total could be posted (up front once Placement or the grade question ships), and never leaves the device. A Player under 13 uses Device boards only and posts nothing, in every Mode; nothing for them loads Firebase ([ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)). A Player 13 or over sees a World board after a Show World board tap.
-- **No identity until the first post** ([ADR 0002](adr/0002-no-identity-until-the-first-post.md)); viewing a World board needs none, and voice, Duels and talking with the Family never create one.
+- **No identity until the first post** ([ADR 0002](adr/0002-no-identity-until-the-first-post.md)), a Score or the weekly Sparks total; viewing a World board needs none, and voice, Duels and talking with the Family never create one.
 - **The Grade answer stays on the device** ([ADR 0008](adr/0008-grade-answer-stays-on-device.md)).
 - Generated Nicknames only; share text carries only the Nickname and a Score.
 - Analytics are cookieless and aggregate: GoatCounter from this site and Cloudflare Web Analytics, fixed event words, no user IDs, never Google Analytics.
