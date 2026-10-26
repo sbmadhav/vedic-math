@@ -210,7 +210,7 @@
    },
    {
     "date": "2026-10-26",
-    "pr": "word-problems",
+    "pr": 151,
     "from": 801153,
     "to": 812655,
     "why": "Word problems (openspec change word-problems): js/stories.js, the story templates, hand-written stories and slot plan (precached like every module; imported by the Skills, Practice and the Star round), the new Skill 8-reallife, the label styles in math.css, two metrics functions and the Practice and Star wiring"
