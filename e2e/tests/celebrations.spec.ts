@@ -55,7 +55,10 @@ test.describe('motion allowed', () => {
       expect((await fx(page)).confetti).toBe(0);
     });
     await expect.poll(async () => (await fx(page)).confetti).toBeGreaterThanOrEqual(1);
-    await expect(page.locator('canvas.fx-confetti')).toHaveCount(0, { timeout: 5000 }); // the burst ends and removes itself
+    // The burst ends and removes itself. It lasts 110 animation frames (js/celebrate.js): about 1.9 s at 60 frames a
+    // second, but headless WebKit on Linux paints it at about 21 a second (5.2 s, past the old 5 s wait), so the wait
+    // allows 15 s
+    await expect(page.locator('canvas.fx-confetti')).toHaveCount(0, { timeout: 15_000 });
   });
 
   test('turning on Pause motion stops the big confetti at once', async ({ page }) => {

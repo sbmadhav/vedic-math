@@ -25,35 +25,36 @@ on:
 permissions:
   contents: read
 
-# A newer push cancels the run for an older push, but never the daily or on-demand run (the full suite, with the
-# scenario specs and the video check): one group per event, so a merge during a full run no longer cancels it
+# One group per event, so a merge never cancels the daily or on-demand run (the full suite, with the scenario specs
+# and the video check). A newer push to main still cancels the run for an older push: both test what is live, and the
+# older run would test a site that changes under it. With the suite in shards a push run takes about 20 minutes, so
+# only pushes that land closer together than that cancel one another.
 concurrency:
   group: e2e-${{ github.ref }}-${{ github.event_name }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
-  e2e:
+  # On a push, CI deploys the stamped build. Wait once, here, until the live game shell, worker and entry module match
+  # this commit's build (the shell pins every module hash, sw.js carries the cache VERSION); the shards start after.
+  # The daily and on-demand runs test what is live and pass straight through.
+  deploy:
+    name: Wait for the deploy
     # Nothing is live on learnvedicmath.com until the owner's Cloudflare setup (repository variable CLOUDFLARE_ACCOUNT_ID)
     if: vars.CLOUDFLARE_ACCOUNT_ID != '' || inputs.base_url != ''
     runs-on: ubuntu-latest
-    timeout-minutes: 50
-    defaults:
-      run:
-        working-directory: e2e
-    env:
-      BASE_URL: ${{ inputs.base_url || 'https://learnvedicmath.com' }}
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: github.event_name == 'push'
         with:
           persist-credentials: false
 
       # Node before the deploy wait: build.py turns app/src/sw/sw.ts into sw.js with Node's type stripper (22.13+)
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: github.event_name == 'push'
         with:
           node-version: '22'
 
-      # On a push, CI deploys the stamped build. Wait until the live game shell, worker and entry module match this
-      # commit's build (the shell pins every module hash, sw.js carries the cache VERSION).
       - name: Wait for the deploy
         if: github.event_name == 'push'
         run: |
@@ -71,6 +72,32 @@ jobs:
           done
           echo "::warning::The live site still differs from this commit after about 15 minutes. Testing what is live."
 
+  # The suite in four shards on four runners (Playwright --shard). In one job it took 28 to 29 minutes after a push and
+  # 43 to 46 minutes daily (with the scenario specs), past the old 50-minute limit once setup and the deploy wait were
+  # added. Each shard runs every project (chromium, webkit, mobile) on its quarter of the tests.
+  e2e:
+    name: e2e (shard ${{ matrix.shard }} of 4)
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    defaults:
+      run:
+        working-directory: e2e
+    env:
+      BASE_URL: ${{ inputs.base_url || 'https://learnvedicmath.com' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
       # pnpm workspaces (openspec change react-typescript, task 1.1): corepack runs the pnpm version package.json pins
       - name: Install the e2e package
         run: |
@@ -82,25 +109,92 @@ jobs:
       # The daily run and a manual run also check every Watch shelf video on YouTube (tests/videos.live.spec.ts,
       # tagged @live-videos, chromium only) and run the scenario coverage specs in tests/cov (chromium only, see
       # playwright.config.ts); the run after a push leaves both out. The background's frame cost (@frame-cost) runs
-      # on its own below.
-      - name: Playwright tests
-        id: suite
+      # in its own job below. Each shard writes a blob report; the report job merges them into one HTML report.
+      - name: Playwright tests (shard ${{ matrix.shard }} of 4)
         env:
           E2E_SKIP_COV: ${{ github.event_name == 'push' && '1' || '' }}
-        run: pnpm exec playwright test --grep-invert "${{ github.event_name == 'push' && '@live-videos|@frame-cost' || '@frame-cost' }}"
+        run: pnpm exec playwright test --shard=${{ matrix.shard }}/4 --reporter=list,github,blob --grep-invert "${{ github.event_name == 'push' && '@live-videos|@frame-cost' || '@frame-cost' }}"
 
-      # The background's frame cost (tests/background-perf.spec.ts, @frame-cost) is measured with nothing else running:
-      # with three workers on a four-core runner the other browsers preempt the timed frame, and its p95 read 3.6 to
-      # 6.6 ms for a drawing that costs about 1 ms there (docs/agent/e2e.md). Its own output folders keep the suite's
-      # traces and report in the artifact. Runs whenever the suite ran, passed or not.
-      - name: Frame cost of the background, alone on the runner (chromium)
-        if: ${{ !cancelled() && (steps.suite.outcome == 'success' || steps.suite.outcome == 'failure') }}
-        env:
-          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report/frame-cost
-        run: pnpm exec playwright test --project=chromium --grep @frame-cost --workers=1 --output test-results/frame-cost
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: blob-report-${{ matrix.shard }}
+          path: e2e/blob-report
+          retention-days: 2
+
+  # The background's frame cost (tests/background-perf.spec.ts, @frame-cost) is measured with nothing else running:
+  # with three workers on a four-core runner the other browsers preempt the timed frame, and its p95 read 3.6 to
+  # 6.6 ms for a drawing that costs about 1 ms there (docs/agent/e2e.md). A runner of its own, beside the shards.
+  frame-cost:
+    name: Frame cost of the background, alone on the runner (chromium)
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: e2e
+    env:
+      BASE_URL: ${{ inputs.base_url || 'https://learnvedicmath.com' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      - name: Install the e2e package and chromium
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile --filter e2e
+          pnpm exec playwright install --with-deps chromium
+
+      - name: Frame cost (@frame-cost, one worker)
+        run: pnpm exec playwright test --project=chromium --grep @frame-cost --workers=1
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
+        with:
+          name: playwright-report-frame-cost
+          path: e2e/playwright-report
+          retention-days: 14
+
+  # One HTML report for the run, merged from the shards' blob reports, kept when a shard failed (as the single job's
+  # report was)
+  report:
+    name: Merge the shards' reports
+    needs: e2e
+    if: ${{ !cancelled() && needs.e2e.result == 'failure' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: e2e
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      - name: Install the e2e package
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile --filter e2e
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: blob-report-*
+          path: e2e/all-blob-reports
+          merge-multiple: true
+
+      - name: Merge into one HTML report
+        run: pnpm exec playwright merge-reports --reporter html ./all-blob-reports
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-report
           path: e2e/playwright-report
@@ -108,11 +202,11 @@ jobs:
 
   # The load and interaction checks on production after each deploy (openspec change react-typescript,
   # performance-budget spec, task 1.8): the same measurements as the preview's perf job, against
-  # https://learnvedicmath.com once the e2e job has seen the deploy go live, compared with docs/perf/baseline.json
+  # https://learnvedicmath.com once the deploy job has seen the deploy go live and the e2e shards are done, compared with docs/perf/baseline.json
   # (production has no second host to measure as a same-runner reference, so the baseline stays its reference; openspec
   # change perf-same-runner). A miss opens an issue with the numbers; the deploy stays.
   perf:
-    needs: e2e
+    needs: [deploy, e2e]
     if: always() && github.event_name == 'push' && vars.CLOUDFLARE_ACCOUNT_ID != ''
     runs-on: ubuntu-latest
     timeout-minutes: 40
