@@ -163,13 +163,15 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 
 ## 12. Docs and copy
 
-- [ ] 12.1 `SECURITY.md`: scope `https://learnvedicmath.com/`, contact `security@learnvedicmath.com` and the advisory form (while public).
+- [x] 12.1 `SECURITY.md`: scope `https://learnvedicmath.com/`, contact `security@learnvedicmath.com` and the advisory form (while public).
+  - Done 2026-10-23: scope is everything at https://learnvedicmath.com/ (pages and headers, `/import/` and the Moved page, the Worker's `/_csp` route, the vendored SDK and other self-served code, `js/cloud.js`, `cloud/firestore.rules`, `cloud/setup.sh`); contact `security@learnvedicmath.com`, the address in the live `/.well-known/security.txt` (confirmed with curl), with the GitHub advisory form while the repo is public and a note that it stops working once private (D13). `test/copy.test.mjs` scans the repo documents for em dashes too.
 - [x] 12.2 `GLOSSARY.md`: Hand-off, Moved page, Export page, Landing page; Parent step marked retired; World board and Device board wording for under-13 Players. (Proposed entries are added by this change's planning PR.)
   - Done 2026-10-21 (audit; PR #52, PR #86): `GLOSSARY.md` has Hand-off, Moved page, Export page, Landing page, Parent step (retired), and World board and Device board say under-13 Players see the Device board only.
 - [ ] 12.3 `LICENSE-CONTENT.md`, `LICENSE` header and `CONTRIBUTING.md` (D16), after open question 4. Verify: copy tests (no em dashes).
-- [ ] 12.4 `docs/PLAN.md`: hosting, Boards and analytics sections point to this change and ADRs 0004 to 0006.
-- [ ] 12.5 `openspec/config.yaml` context: new domain, Cloudflare, self-hosted SDK, under-13 device-only.
-  - Checked 2026-10-21: `openspec/config.yaml` names the domain and Cloudflare Workers, but still says under-13 Players post "without the Parent step" and does not mention the self-hosted SDK as the source; open.
+- [x] 12.4 `docs/PLAN.md`: hosting, Boards and analytics sections point to this change and ADRs 0004 to 0006.
+  - Done 2026-10-23: a pointer paragraph under the title; a Hosting row and the World leaderboards, Analytics and Privacy rows of "Where things stand"; the Phase 0 Age answer item, the Phase 3 App Check and TTL items, "Privacy and integrity", a Hosting bullet in "Technical approach" and the child-privacy risk, each naming the change and the ADR (0004 hosting, 0005 the move, 0006 under-13 Boards; D11 and D14 for analytics and the Firebase project). The framework lines belong to the react-typescript change and are untouched.
+- [x] 12.5 `openspec/config.yaml` context: new domain, Cloudflare, self-hosted SDK, under-13 device-only.
+  - Done 2026-10-23: the domain, Workers static assets with previews and the `/_csp` Worker, the three-phase move (ADR 0005), self-served design system, fonts, Firebase SDK and `count.js` with `THIRD_PARTIES` as the one list of outside hosts, the Age answer deciding alone (under 13: Device boards only, nothing posted, ADR 0006; 13 and over: a tap, then an identity at the first post, ADR 0002), 30-day expiry, cookieless analytics (D11) and the security contact. The react-typescript stack paragraph (task 0.5) is kept word for word; `openspec validate learnvedicmath --strict` passes.
 - [ ] 12.6 Manual checks recorded in this file before launch: COOP on `/import/` keeps the popup link in Chromium and WebKit; YouTube plays with `strict-origin-when-cross-origin`; `auto-trailing-slash` serves `/play` and `/import`; the Report-Only policy does not break anything.
   - Part checked 2026-10-21: `curl -sI https://learnvedicmath.com/play` and `/import` answer 307 to `/play/` and `/import/`; `videos.live.spec.ts` (285 passed, chromium) plays every video in a frame with `referrerpolicy="strict-origin-when-cross-origin"`; the live suite passes with the Report-Only policy sent on every page. Open: the COOP popup check needs the export page (16.2).
 
