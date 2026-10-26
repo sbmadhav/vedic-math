@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 812655,
+  "total": 812692,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -130,7 +130,7 @@
    "/js/slokas.js": 16068,
    "/js/star.js": 8285,
    "/js/store.js": 5753,
-   "/js/stories.js": 10475,
+   "/js/stories.js": 10493,
    "/js/sutra-ambience.js": 4169,
    "/js/sutra-details.js": 13423,
    "/js/sutras.js": 3866,
@@ -146,8 +146,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 23430,
-   "/play/": 3981,
-   "/sw.js": 6181,
+   "/play/": 3977,
+   "/sw.js": 6204,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -212,7 +212,7 @@
     "date": "2026-10-26",
     "pr": 151,
     "from": 801153,
-    "to": 812655,
+    "to": 812692,
     "why": "Word problems (openspec change word-problems): js/stories.js, the story templates, hand-written stories and slot plan (precached like every module; imported by the Skills, Practice and the Star round), the new Skill 8-reallife, the label styles in math.css, two metrics functions and the Practice and Star wiring"
    }
   ]
