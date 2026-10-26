@@ -120,6 +120,17 @@ jobs:
           corepack enable
           pnpm install --frozen-lockfile --filter e2e
 
+      # The one font a spec names that the image lacks and ubuntu-latest has: Math Lens's fake camera draws its digits in
+      # DejaVu Sans Mono (tests/play-lens.spec.ts), and the image's fallback monospace read as 4791 or 47271
+      - name: DejaVu fonts, as on ubuntu-latest
+        working-directory: .
+        run: |
+          for i in 1 2 3; do
+            timeout 300 sh -c 'apt-get update -qq && apt-get install -y -qq --no-install-recommends fonts-dejavu-core' && exit 0
+            echo "Try $i to install fonts-dejavu-core failed."
+          done
+          exit 1
+
       # The daily run and a manual run also check every Watch shelf video on YouTube (tests/videos.live.spec.ts,
       # tagged @live-videos, chromium only) and run the scenario coverage specs in tests/cov (chromium only, see
       # playwright.config.ts); the run after a push leaves both out. The background's frame cost (@frame-cost) runs
