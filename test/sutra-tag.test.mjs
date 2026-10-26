@@ -123,3 +123,32 @@ test('games: only the Answer checker names a Sutra, and only its idea', () => {
 test('no em dashes in tags', () => {
   for (const t of TRICKS) for (const mode of ['explorer', 'challenger', 'pro']) assert.doesNotMatch(trickTagHTML(t.id, { mode, size: 'full' }), /—|&mdash;/);
 });
+
+/* On demand (#126 review): js/sutra-tag.js is not in the static import graph of js/app.js; js/sutra-tag-slot.js draws a
+   placeholder of the tag's size until the module is here, then the module's own tag */
+test('js/sutra-tag.js is outside the static import graph of js/app.js', async () => {
+  const { readFileSync } = await import('node:fs');
+  const STATIC = /(?:^|[;\n}])\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|[;\n}])\s*import\s*['"]([^'"]+)['"]/g;
+  const seen = new Set(), queue = ['app.js'];
+  while (queue.length) {
+    const f = queue.pop(); if (seen.has(f)) continue; seen.add(f);
+    const src = readFileSync(new URL('../js/' + f, import.meta.url), 'utf8');
+    for (const m of src.matchAll(STATIC)) { const s = m[1] || m[2]; if (s && s.startsWith('./')) queue.push(new URL(s, 'file:///js/' + f).pathname.slice(4)); }
+  }
+  assert.ok(seen.has('sutra-tag-slot.js'));
+  assert.ok(!seen.has('sutra-tag.js'), 'a static import of js/sutra-tag.js puts it back on first load');
+});
+
+test('a tag before its module is a placeholder of its size and kind; after, the module draws it', async () => {
+  const slot = await import('../js/sutra-tag-slot.js');
+  assert.equal(slot.tags(), null);
+  const ph = slot.tag('trickTagHTML', 'sq5', { mode: 'challenger', size: 'full', surface: 'trick', cls: 'mq-sutra' });
+  assert.match(ph, /^<div class="sutra-tag sutra-tag--full sutra-tag-slot mq-sutra" data-tag-slot="[^"]+" aria-hidden="true"><\/div>$/);
+  assert.match(slot.tag('tagHTML', 's2', { size: 'mini' }), /^<span class="sutra-tag sutra-tag--mini sutra-tag-slot"/);
+  assert.match(slot.tag('trickTagHTML', 'from9', { surface: 'katas' }), /^<p class="sutra-tag sutra-tag--line sutra-tag-slot"/);
+  const args = JSON.parse(ph.match(/data-tag-slot="([^"]+)"/)[1].replace(/&quot;/g, '"').replace(/&amp;/g, '&'));
+  assert.deepEqual(args, ['trickTagHTML', 'sq5', { mode: 'challenger', size: 'full', surface: 'trick', cls: 'mq-sutra' }]);
+  const m = await slot.loadTags();
+  assert.equal(slot.tags(), m);
+  assert.equal(slot.tag('trickTagHTML', 'sq5', { mode: 'pro', size: 'full' }), trickTagHTML('sq5', { mode: 'pro', size: 'full' }));
+});

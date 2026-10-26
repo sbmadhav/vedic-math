@@ -93,6 +93,41 @@ test('Katas list and a Kata: the tag is under the heading, and on the result', a
   await expect(tag.locator('.sutra-tag-m')).toHaveText('All from 9 and the last from 10');
 });
 
+/* The tag module loads on demand (#126 review): until js/sutra-tag.js is here a view holds the tag's place, and a view
+   left before it arrives draws nothing late */
+const holdTags = async (page: Page) => {
+  let release!: () => void; const held = new Promise<void>(r => { release = r; });
+  await page.route(/\/js\/sutra-tag\.js(\?.*)?$/, async route => { await held; await route.continue(); });
+  return release;
+};
+test('Before its module arrives the Katas page holds the tag\'s place, then shows the same tag there', async ({ page }) => {
+  const release = await holdTags(page);
+  await open(page, '#/katas/from9');
+  const slot = page.locator('#view h1 + .sutra-tag-slot');
+  await expect(slot).toHaveAttribute('aria-hidden', 'true');
+  const before = await page.locator('#view .md-lede').boundingBox();
+  expect((await slot.boundingBox())!.height).toBeGreaterThan(15);
+  release();
+  const tag = page.locator('#view h1 + .sutra-tag:not(.sutra-tag-slot)');
+  await expect(tag.locator('b[lang="sa-Latn"]')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
+  await expect(tag.locator('a.sutra-tag-a')).toHaveAttribute('href', '#/sutras/s2');
+  await expect(page.locator('#view .sutra-tag-slot')).toHaveCount(0);
+  const after = await page.locator('#view .md-lede').boundingBox();
+  if ((page.viewportSize()?.width ?? 0) >= 700) expect(Math.abs(after!.y - before!.y)).toBeLessThanOrEqual(1); /* one line wide: nothing below moves */
+});
+test('A view left before the tag module arrives draws no tag late', async ({ page }) => {
+  const release = await holdTags(page);
+  await open(page, '#/katas/from9');
+  await expect(page.locator('#view .sutra-tag-slot')).toHaveCount(1);
+  await page.evaluate(() => { location.hash = '#/learn'; });
+  await expect(page.locator('#view .sutra-tag-slot')).toHaveCount(0);
+  release();
+  await page.evaluate(() => new Promise(r => setTimeout(r, 300)));
+  await expect(page.locator('#view .sutra-tag')).toHaveCount(0);
+  await page.evaluate(() => { location.hash = '#/katas/from9'; });
+  await expect(page.locator('#view h1 + .sutra-tag b[lang="sa-Latn"]')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ'); /* here now: drawn at once */
+});
+
 test('A Kata result carries the tag as a link', async ({ page }) => {
   await open(page, '#/kata/from9/1');
   for (let k = 0; k < 12 && !(await page.locator('.lv-result').count()); k++) {

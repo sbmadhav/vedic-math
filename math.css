@@ -161,6 +161,11 @@ a.sutra-tag-a:hover .sutra-tag-n, a.sutra-tag-a:focus-visible .sutra-tag-n { tex
 .vp-foot .sutra-tag { margin: 0 0 var(--space-2); } .vp-foot .sutra-tag-a { color: var(--ink); font-weight: 400; }
 .watch-tags .tagv--sutra { font-weight: 600; }
 .mq-game .sutra-tag--mini { margin: 0 0 var(--space-1); }
+/* A tag's placeholder until js/sutra-tag.js is here (js/sutra-tag-slot.js): about one tag's height, so the tag moves
+   little or nothing when it arrives (a line tag on one line, a full tag as on a wide screen) */
+.sutra-tag-slot { min-height: 1.4em; }
+.sutra-tag--mini.sutra-tag-slot { min-height: 1.45em; vertical-align: top; }
+.sutra-tag--full.sutra-tag-slot { min-height: 7.2rem; } /* plus its padding */
 .mq-method { margin: 0; padding-left: 1.3em; }
 .mq-method li { margin: 4px 0; }
 .mq-example { margin-top: 6px; }

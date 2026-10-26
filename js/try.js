@@ -9,7 +9,7 @@ import { TRICKS } from './vedic.js';
 import { SUTRAS } from './sutras.js';
 import { checkOne } from './check.js';
 import { on, child } from './life.js';
-import { trickTagHTML } from './sutra-tag.js';
+import { tag as sutraTag, fillTags } from './sutra-tag-slot.js'; /* js/sutra-tag.js loads on demand (#126 review) */
 import * as store from './store.js';
 import * as fx from './fx.js';
 import * as metrics from './metrics.js';
@@ -103,11 +103,12 @@ export function runTry(root, { mode, signal }) {
     /* The Sutra block is the Trick's Sutra tag (js/sutra-tag.js, openspec sutras-first): the kind word, the name as a
        link to the Deep dive, this card's own meaning line, Say it and the Respelling, then the why line */
     main.innerHTML = `<p class="md-lede try-lede">${T.lede}</p>
-      ${trickTagHTML(T.trick, { mode, size: 'full', surface: 'try', mean: T.mean, cls: 'try-sutra', extra: `<p class="try-why">${T.why}</p>` })}
+      ${sutraTag('trickTagHTML', T.trick, { mode, size: 'full', surface: 'try', mean: T.mean, cls: 'try-sutra', extra: `<p class="try-why">${T.why}</p>` })}
       <h2 class="try-k">Worked example: ${T.q(T.example).replace(/ = \?$/, '')}</h2>
       ${stepsHTML(T.example)}
       <p class="try-acts"><button type="button" class="md-btn md-btn--primary" id="tyStart" aria-describedby="tyH">${T.start}</button></p>
       <p class="mq-small try-src">Then ${QUESTIONS} questions like it. From Bharati Krishna Tirtha's 1965 book.</p>`;
+    fillTags(main, ps);
     fx.announce(`Try a trick: ${T.title}. A worked example, then ${T.start}.`);
     const go = () => { if (ps.aborted) return; ask(); };
     startNow = go; on($('#tyStart'), 'click', go, ps);
