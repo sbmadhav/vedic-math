@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 823879,
+  "total": 824217,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -48,7 +48,7 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 48430,
+   "/js/app.js": 48265,
    "/js/arena.js": 5392,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -135,8 +135,9 @@
    "/js/sutra-ambience.js": 4169,
    "/js/sutra-details.js": 13423,
    "/js/sutra-progress.js": 1066,
+   "/js/sutra-tag-core.js": 1902,
    "/js/sutra-tag-slot.js": 703,
-   "/js/sutra-tag.js": 2823,
+   "/js/sutra-tag.js": 1405,
    "/js/sutras.js": 4223,
    "/js/tour.js": 2215,
    "/js/try.js": 4416,
@@ -150,8 +151,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 24311,
-   "/play/": 4040,
-   "/sw.js": 6241,
+   "/play/": 4046,
+   "/sw.js": 6254,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -237,8 +238,8 @@
     "date": "2026-10-26",
     "pr": 133,
     "from": 822609,
-    "to": 823879,
-    "why": "Sutras first, part 3: Home leads with the Sutras (the Sutra door, \"Your sutras\" on Challenger and Pro Home, \"A sutra to say\" on Explorer Home; js/app.js, math.css); no new file. The Sutra door's tag goes through js/sutra-tag-slot.js like every tag, and Home reads each Trick's Sutra id from js/vedic.js, so js/sutra-tag.js stays out of the static import graph (#126); a click on one of Home's Sutra links before that module is here loads it and then sends the tag event; measured on main as of #129, so that code is the only growth"
+    "to": 824217,
+    "why": "Sutras first, part 3: Home leads with the Sutras (the Sutra door, \"Your sutras\" on Challenger and Pro Home, \"A sutra to say\" on Explorer Home; js/app.js, math.css); Home's Sutra door draws its tag with the first paint from js/sutra-tag-core.js (new, 1,902 bytes: the Sutra map, the kind words and tagHTML, moved out of js/sutra-tag.js, which shrinks from 2,823 to 1,405 bytes and still loads on demand): the placeholder it had before moved the doors when js/sutra-tag.js arrived (layout shift 0.034 against 0.007 on the repeat visit in the perf job) and the early module load put the repeat visit's blocking time at 90 ms against production's 64 (limit 89); Home's Sutra links count their tag event at once from the static SURFACES. measured on main as of #129, so that code is the only growth"
    }
   ]
  },

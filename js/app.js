@@ -45,7 +45,8 @@ import { guideCounts, rootNote } from './explain-lines.js';
 import { listenBtn, wireListen } from './listen.js';
 import { sayButton, respellHTML, devaHTML, wireSay } from './say.js';
 import { sutraAmbience, ambienceButton, wireAmbience, settingsHTML as ambienceSettingsHTML, wireSettings as wireAmbienceSettings } from './sutra-ambience.js';
-import { tag as sutraTag, tags, loadTags, fillTags } from './sutra-tag-slot.js'; /* js/sutra-tag.js loads on demand (#126 review) */
+import { tag as sutraTag, loadTags, fillTags } from './sutra-tag-slot.js'; /* js/sutra-tag.js loads on demand (#126 review) */
+import { tagHTML, sutraOfTrick, SURFACES as TAG_SURFACES } from './sutra-tag-core.js'; /* its core, static: Home's Sutra door (#133 perf) */
 import { progressOf, progressLine, trickLine } from './sutra-progress.js';
 import { claim as claimSlot, release as releaseSlot } from './prompt-slot.js';
 
@@ -272,11 +273,11 @@ function home(ctx = {}, { tiles = false } = {}) {
     const belt = gm.currentBelt(), bp = gm.beltProgress(), earned = bp.filter(b => b.earned).length, next = bp.find(b => !b.earned), nk = SKY.suggested(store.starStates(), SKY.startBeltOf(store.player())), ns = nk && SKY.parseKey(nk), nt = ns && TRICKS.find(t => t.id === ns.trick);
     /* The Sutra door first in both Modes (openspec change sutras-first): the next Star on Bolt's path shown as its
        Sutra, with Play this Star (the one primary button), Learn the sutra and the Dojo's belts. Then the Arena and the
-       Skill map. The tag is text here: Learn the sutra is the door's link to the Deep dive. It goes through sutraTag
-       like every tag (js/sutra-tag.js loads on demand, #126 review); the Sutra's id comes from js/vedic.js. */
-    const ss = nt && trickSutraId(nt.id);
+       Skill map. The tag is text here: Learn the sutra is the door's link to the Deep dive. It is drawn with the first
+       paint from js/sutra-tag-core.js, so no placeholder moves the doors when js/sutra-tag.js arrives (#133 perf). */
+    const st = nt && sutraOfTrick(nt.id), ss = st && st.id;
     const sutraDoor = `<div class="md-card door dojo-card sutra-door"><span class="md-tag md-tag--plum">${fx.t({ challenger: 'Your next sutra', pro: 'Next sutra' })}</span>
-      ${ss ? sutraTag('trickTagHTML', nt.id, { mode: m, link: false, cls: 'sutra-door-tag' }) : `<h2 class="mq-h3">${nt ? 'Your next Star' : 'Every Star is lit. Legend!'}</h2>`}
+      ${st ? tagHTML(st.id, { mode: m, relation: st.relation, link: false, cls: 'sutra-door-tag' }) : `<h2 class="mq-h3">${nt ? 'Your next Star' : 'Every Star is lit. Legend!'}</h2>`}
       ${nt ? `<p>Next Star: <b>${nt.title}, Star ${ns.n}</b></p>` : ''}
       <p class="door-acts">${nt ? `<a class="md-btn md-btn--primary" href="#/star/${nt.id}/${ns.n}">Play this Star</a> ` : ''}${ss ? `<a class="md-btn" href="#/sutras/${ss}" data-tag="home">Learn the sutra</a> ` : ''}<a class="md-btn" href="#/dojo">Open the Dojo</a></p>
       <p class="door-line">${fx.t({ challenger: 'A sutra is a short rule that does a whole sum in a line or two. A Star is a two-minute round of four questions on one of its tricks.', pro: 'A sutra is a one-line rule from Bharati Krishna Tirtha\'s 1965 book that replaces a long method. A Star is a two-minute round of four questions on one of its tricks.' })}</p>
@@ -309,17 +310,13 @@ function home(ctx = {}, { tiles = false } = {}) {
   if (m === 'pro') loadBoard($('#homeBoard'), `daily-${cloud.dayId()}-pro`, 5);
   const sc = $('.sutra-say'); if (sc && ctx.signal) wireSay(sc, ctx.signal); /* Say it on Explorer's Sutra card: wired on the card, which every redraw replaces, so a redraw within the view adds no second listener */
   homeTour(ctx.signal);
-  fillTags(view, ctx.signal); /* the Sutra door's tag, also when home() runs outside mount() */
   withInstall(m => m.mountNudge($('#installSlot'), ctx.signal), ctx.signal); /* the Install nudge's one place on Home (openspec change install-app) */
 }
 
 /* "Your sutras" on Challenger and Pro Home (openspec change sutras-first, sutra-progress spec): the Sutra of the next
    Star and up to three others the Player has started, in Bolt's path order, each a link to its Deep dive with its
    progress, and a link to all 29. Read from the device only. */
-const SUTRA_IDS = new Set([...SUTRAS.map(c => 's' + c.n), ...SUBSUTRAS.map(c => 'u' + c.n)]);
-/* The id of the Sutra a Trick uses, or null: the same Sutra js/sutra-tag.js's sutraOfTrick names, read from js/vedic.js so Home needs no tag module */
-const trickSutraId = id => { const t = TRICKS.find(x => x.id === id); return t && SUTRA_IDS.has(t.sutraId) ? t.sutraId : null; };
-const PATH_SUTRAS = [...new Set(BELTS.flatMap(b => b.tricks).map(trickSutraId).filter(Boolean))];
+const PATH_SUTRAS = [...new Set(BELTS.flatMap(b => b.tricks).map(id => (sutraOfTrick(id) || {}).id).filter(Boolean))];
 function yourSutras(m, nextId) {
   const begun = PATH_SUTRAS.filter(id => id !== nextId && sutraProgress(ALL_SUTRAS.find(c => c.id === id)).begun).slice(0, 3);
   const ids = [...(nextId ? [nextId] : []), ...begun]; if (!ids.length) return '';
@@ -1394,13 +1391,10 @@ function watchView({ signal } = {}) {
 const watchSutra = v => { const t = v.tricks.length && TRICKS.find(x => x.id === v.tricks[0]), c = t && ALL_SUTRAS.find(x => x.id === t.sutraId); return v.tricks.length ? (c ? `<span class="tagv tagv--sutra" lang="sa-Latn">${esc(c.name)}</span>` : '<span class="tagv">Trick</span>') : ''; };
 /* Play buttons ([data-watch], a YouTube id) open the in-page player; Pro links ([data-link]) open a new tab.
    A followed Sutra tag (openspec change sutras-first, analytics spec) sends one anonymous event naming only its
-   surface, one of the fixed words in SURFACES of js/sutra-tag.js. Home's own Sutra links (data-tag="home") are drawn
-   without that module, so a click before it is here loads it first and then sends the event. */
-const tagSurface = (T, link) => T && T.SURFACES.find(x => x === link.dataset.tag);
+   surface, one of the fixed words in SURFACES (js/sutra-tag-core.js, static, so Home's own Sutra links count at once). */
 document.addEventListener('click', e => {
-  const link = e.target.closest('a[data-tag]'), T = tags(), surface = link && tagSurface(T, link);
+  const link = e.target.closest('a[data-tag]'), surface = link && TAG_SURFACES.find(x => x === link.dataset.tag);
   if (surface) { track('sutra_tag/' + surface, 'Sutra tag: ' + surface); return; }
-  if (link && !T) loadTags().then(M => { const surface = tagSurface(M, link); if (surface) track('sutra_tag/' + surface, 'Sutra tag: ' + surface); }, () => {});
   const b = e.target.closest('[data-watch]'), a = !b && e.target.closest('a[data-link]');
   if (a) { store.bump('watched'); track('watch/link', 'Watch: link'); return; }
   if (!b) return;

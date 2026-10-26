@@ -297,6 +297,13 @@ test.describe('Home', () => {
     await expect(page).toHaveURL(/\/play\/(#\/)?$/);
     expect((await events(page)).filter(([p]) => p.startsWith('math/sutra_tag/'))).toEqual([['math/sutra_tag/home', 'Sutra tag: home']]);
   });
+  test('Challenger: the Sutra door is drawn whole with the first paint, so nothing moves when js/sutra-tag.js arrives', async ({ page }) => {
+    await page.route(/\/js\/sutra-tag\.js/, r => r.abort()); /* the module never arrives */
+    await open(page);
+    const door = page.locator('.home-doors .door').first();
+    await expect(door.locator('.sutra-tag .sutra-tag-n')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
+    await expect(door.locator('.sutra-tag-slot')).toHaveCount(0);
+  });
 
   test.describe('a Challenger with a Star lit on two other Sutras', () => {
     test.use({ seedProgress: { v: 3, skills: {}, sky: { lit: { 'sq5:1': 1, 'by11:1': 1 }, skipped: {}, last: {} } } });
