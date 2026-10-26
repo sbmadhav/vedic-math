@@ -14,11 +14,15 @@ In Practice (a Skill page, Endless practice and an Endless run) the system SHALL
 - **THEN** the second question is a Word problem
 
 ### Requirement: A new Player's first answers stay bare
-A Word problem SHALL be shown only once the Player has at least 20 saved answers. Until then every question SHALL stay bare, and a Word problem that falls due SHALL wait for the next question.
+Outside the Word problem Skills (which the Player opens to read stories), a Word problem SHALL be shown only once the Player has at least 20 saved answers. Until then every other question SHALL stay bare, and a Word problem that falls due SHALL wait for the next question.
 
 #### Scenario: A new Player
 - **WHEN** a new Challenger with no saved answers answers the first four questions of Practice on Times tables with strategies
 - **THEN** none of them is a Word problem
+
+#### Scenario: A new Player who picks a Word problem Skill
+- **WHEN** a new Challenger with no saved answers opens Two-step word problems
+- **THEN** its first question is a Word problem
 
 ### Requirement: A due Word problem waits for a Skill with stories
 When the Skill on screen has no Word problem, the next question whose Skill has one SHALL be the Word problem, and a round on a Skill with none SHALL show none.

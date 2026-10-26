@@ -15,7 +15,7 @@ import * as fx from './fx.js';
 import * as AD from './adapt.js';
 import * as metrics from './metrics.js';
 import { listenBtn, stopListen } from './listen.js';
-import { trickStory, starSlot } from './stories.js';
+import { trickStoryNow, starSlot, loadStories } from './story-plan.js';
 
 export const ROUND = 4;
 export const SPARK = { right: 10, comeback: 15, dare: 20 };
@@ -35,10 +35,18 @@ export function starRound({ trick, star, rating = 1, last = [], pool = null, thi
   const deck = fresh.concat(old), qs = deck.slice(0, ROUND);
   if (story && storyAt >= 0 && qs[storyAt]) { const w = story(qs[storyAt]); if (w) qs[storyAt] = w; }
   return {
-    trick, star, rand, story, band: deck, third, qs, k: 0, mode: 'main', current: qs[0], replayOf: null, sparks: 0, misses: 0,
+    trick, star, rand, story, storyAt, band: deck, third, qs, k: 0, mode: 'main', current: qs[0], replayOf: null, sparks: 0, misses: 0,
     usedKinds: new Set(), used: new Set(qs.map(sigOf)), dareOffered: false, dareDone: false, offerShown: false,
     results: qs.map(() => null), lit: false
   };
+}
+/* The story slot's Word problem when its question comes, if the deal could not make one (the stories were still
+   loading): a main question at storyAt that is still bare */
+export function withStory(st) {
+  if (!st.story || st.mode !== 'main' || st.k !== st.storyAt || !st.current || st.current.story) return st;
+  const w = st.story(st.current); if (!w) return st;
+  const qs = st.qs.slice(); qs[st.k] = w;
+  return { ...st, qs, current: w };
 }
 /* The keys this round deals (saved as the Star's last round when it starts) */
 export const roundKeys = st => st.qs.map(p => p.key);
@@ -126,9 +134,10 @@ const pickOne = a => a[Math.floor(Math.random() * a.length)];
 export function runStar(root, { trick, star, signal, back = { href: '#/dojo', label: 'Back to the Dojo' }, again = null, findVideo = async () => null, onEnd = null } = {}) {
   const t = TRICKS.find(x => x.id === trick), skill = byId['v-' + trick], mode = fx.mode() || 'challenger', boxes = mode !== 'pro';
   const round = child(signal), rs = round.signal;
+  loadStories().catch(() => {}); /* Word problems (openspec word-problems): here before question 2 */
   const rating = AD.skillRating('v-' + trick, mode), dial = new AD.Dial(rating);
   /* Word problems (openspec word-problems): question 3 for Challenger, 2 for Pro, once the Player has 20 saved answers */
-  let st = starRound({ trick, star, rating, last: store.starLast(trick, star), story: p => trickStory(trick, p, mode), storyAt: starSlot(mode, store.count('answers')) });
+  let st = starRound({ trick, star, rating, last: store.starLast(trick, star), story: p => trickStoryNow(trick, p, mode), storyAt: starSlot(mode, store.count('answers')) });
   store.setStarLast(trick, star, roundKeys(st)); /* saved at the start, so leaving mid-round still counts as the last round */
   const wasLit = store.starState(trick, star) === 'lit';
   let video = null, phase = null, entry = '', fields = [], active = 0, input = false, dialSaved = false, dareP = null, replaySkip = null, shown = 0;
@@ -221,6 +230,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
 
   /* ---------- Phases ---------- */
   function ask() {
+    st = withStory(st);
     const ps = newPhase(), p = st.current; entry = ''; fields = []; active = 0;
     const tag = st.mode === 'rematch' ? '<span class="star-tag star-tag--rematch">Rematch</span>' : st.mode === 'dare' ? '<span class="star-tag star-tag--dare">Dare</span>' : `<span class="star-tag">Question ${st.k + 1} of ${st.qs.length}</span>`;
     main.innerHTML = `<div class="star-ask">${tag}${p.story ? '<span class="star-story" id="stStory">Word problem</span>' : ''}<h2 class="star-q${p.story ? ' star-q--story' : said(p.q).length > 16 ? ' star-q--long' : ''}" id="stQ" tabindex="-1">${p.q}</h2>${entryHTML(p)}<p class="star-pop" id="stPop" aria-hidden="true"></p></div>`;

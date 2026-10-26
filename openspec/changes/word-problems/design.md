@@ -21,7 +21,7 @@
 
 **D2. How many, by Mode.** A round's questions are counted from 1. Explorer: questions 5, 15, 25 and so on (1 in 10). Challenger: 3, 8, 13 (1 in 5). Pro: 2, 5, 8 (1 in 3). The first comes early in a round so a short session still meets one. In a Star round the same positions apply to the 4 main questions: question 3 for Challenger, question 2 for Pro. Reading bands are not on `main`; when `age-bands` lands, a Player with the Early band gets Explorer's share and picture stories in any Mode (a follow-up task there, not here).
 
-**D3. A new Player's first answers stay bare.** Word problems join once the Player has 20 answers saved (their answer count, the one the Daily quests use). The Hook and a new Player's first minutes are quick wins on bare numbers; reading comes once the Trick is known. A due Word problem waits, it is not lost.
+**D3. A new Player's first answers stay bare.** Word problems join once the Player has 20 answers saved (their answer count, the one the Daily quests use). The Hook and a new Player's first minutes are quick wins on bare numbers; reading comes once the Trick is known. A due Word problem waits, it is not lost. The wait is for the share mixed into other Skills: a Player who opens a Word problem Skill (`3-twostep`, `8-reallife`) chose stories, so those ask them from the first question, as `3-twostep` always has.
 
 **D4. A due slot waits for a Skill that has stories.** Not every Skill has a story (counting dots, factoring, limits). When a slot comes on such a Skill, the next question whose Skill has one is the Word problem; a session on a Skill with none never shows one. In a Star round the Trick decides once: Tricks whose answer is not one number or whose numbers do not make a natural story (dividing by 9, digit sums, decimals of 1/19, divisibility, the equation Tricks) keep bare questions.
 
@@ -33,7 +33,7 @@
 
 **D8. Settings that travel.** Shops, cooking, sport, trips, school, gardens, parks. Money in rupees or dollars, written as words ("97 rupees", never a symbol), chosen per story. Metric units only (m, km, g, kg, L, minutes, hours). First names from a fixed list from many cultures (`NAMES` in `js/stories.js`), and never the Player's Nickname or anything typed. No holidays, no local sports rules, no prices that need a country.
 
-**D9. Generated templates first, a few written by hand.** One pure module, `js/stories.js`, with no DOM and no network: each template is a function of a random source (tests pass a seeded one) returning a problem in the shape every round already uses (`q`, `answer`, `unit`, `hints`, `steps`, `viz`) plus `story` (`{ id, mode, trick }`). Eight hand-written stories, each with fixed numbers and its own wording, give Pro depth; `8-reallife` mixes them in, and one in four of Pro's Practice slots on a Skill a written story fits uses one.
+**D9. Generated templates first, a few written by hand.** One pure module, `js/stories.js`, with no DOM and no network: each template is a function of a random source (tests pass a seeded one) returning a problem in the shape every round already uses (`q`, `answer`, `unit`, `hints`, `steps`, `viz`) plus `story` (`{ id, mode, trick }`). Eight hand-written stories, each with fixed numbers and its own wording, give Pro depth; `8-reallife` mixes them in, and one in four of Pro's Practice slots on a Skill a written story fits uses one. The templates stay off the first paint: `js/story-plan.js` (the slot plan and labels, no imports) is in the static graph, and `js/stories.js` loads after the page has painted and registers there. Until it is here no Word problem is mixed in (a due one waits), a Star fills its story slot when that question comes, and a Word problem Skill's page waits the few milliseconds before its first question.
 
 **D10. Word problem Skills.** `3-twostep` keeps its id and draws from the Challenger two-step stories. A new Skill `8-reallife`, "Real-life problems" (kid name "Real-life puzzles"), grade 8, strand Ratios and percents, asks only Pro's multi-step and hand-written stories. Grade 8 is in both Challenger's and Pro's grade range. The Skill map grows to 136.
 
@@ -47,7 +47,7 @@
 
 ## Risks / Trade-offs
 
-- **Bytes.** `js/stories.js` is precached like every module, 10,493 bytes Brotli (first load 801,153 to 812,692 bytes); the baseline grows with the reason (`docs/perf/baseline.json` `firstLoad.changes`).
+- **Bytes.** `js/stories.js` is precached like every module, 10,080 bytes Brotli, plus 1,676 for `js/story-plan.js` (first load 801,153 to 814,351 bytes). Only `story-plan.js` is in the first paint's import graph; `stories.js` loads after the paint; the baseline grows with the reason (`docs/perf/baseline.json` `firstLoad.changes`).
 - **Built-in voice for new lines.** Explorer stories sound different from recorded questions until the re-record. Accepted by the owner's rule for this change (no new recordings, no paid voice); task 4.2 is the owner's.
 - **Tests that read questions.** Specs that answer by reading the question on screen keep working because a new Player's first 20 answers are bare (D3); specs about Word problems seed 20 answers.
 - **The 20-answer wait** delays the first Word problem for a brand new Player by a few minutes. Tunable (`RULES.after` in `js/stories.js`).

@@ -1,7 +1,7 @@
 /* Grades 3 to 5: multiplication strategies, division, fractions, decimals, area, volume and the coordinate plane. */
 import { ri, pick, shuffle, gcd, lcm, simp, fr, frRaw, mixed, factors, isPrime, round, PEOPLE, THINGS, ordinal, denomName } from '../lib.js';
 import * as V from '../viz.js';
-import { skillStory } from '../stories.js';
+import { skillStoryNow } from '../story-plan.js';
 
 /* Strategy hint for a times fact, built from facts a learner already knows */
 export function factStrategy(a, b) {
@@ -93,10 +93,10 @@ export default [
       return { q: `What is the ${area ? 'area' : 'perimeter'} of the rectangle? (${area ? 'square units' : 'units'})`, say: `A rectangle is ${w} units long and ${h} units wide. What is its ${area ? 'area, in square units' : 'perimeter, in units'}?`, viz: V.rect(w, h, { grid: lv === 1 && w * h <= 60 }), kind: 'num', answer: area ? w * h : 2 * (w + h),
         hints: [area ? `${h} rows of ${w} squares.` : `Go around: ${w} + ${h} + ${w} + ${h}.`], steps: [area ? `${w} &times; ${h} = ${w * h}` : `2 &times; (${w} + ${h}) = ${2 * (w + h)}`] };
     } },
-  { id: '3-twostep', grade: 3, strand: 'mult', title: 'Two-step word problems', kid: 'Story puzzles',
+  { id: '3-twostep', grade: 3, strand: 'mult', title: 'Two-step word problems', kid: 'Story puzzles', stories: true,
     idea: 'Find what the question asks, then solve one small step at a time.',
     method: ['Underline the question.', 'Solve the first step.', 'Use that answer for the second step.'],
-    gen() { return skillStory('3-twostep', 'challenger'); } }, /* the Challenger stories (openspec word-problems, D10) */
+    gen() { return skillStoryNow('3-twostep', 'challenger'); } }, /* the Challenger stories (openspec word-problems, D10) */
 
   /* ---------- Grade 4 ---------- */
   { id: '4-mult2', grade: 4, strand: 'mult', title: 'Multi-digit multiplication', kid: 'Box method',

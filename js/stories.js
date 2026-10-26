@@ -11,12 +11,10 @@
 import { TRICKS } from './vedic.js';
 import * as V from './viz.js';
 
-/* Tunable (D2, D3, D9): when the first Word problem comes in a round and how often after, by Mode; the saved answers a
-   Player needs first; the share of Pro slots that use a hand-written story when one fits the Skill */
-export const SLOTS = { explorer: { first: 5, every: 10 }, challenger: { first: 3, every: 5 }, pro: { first: 2, every: 3 } };
-export const RULES = { after: 20, written: 0.25 };
-export const LABEL = { explorer: 'Story time', challenger: 'Word problem', pro: 'Word problem' };
-export const ASK = 'What is it asking?';
+/* When a round asks one, and the labels, live in js/story-plan.js (in the first paint's graph); this module loads after
+   the first paint and registers itself there. Re-exported so tests and tools read one place. */
+import { SLOTS, RULES, LABEL, ASK, isSlot, starSlot, storyPlan, register } from './story-plan.js';
+export { SLOTS, RULES, LABEL, ASK, isSlot, starSlot, storyPlan };
 
 export const NAMES = ['Aisha', 'Mateo', 'Priya', 'Kenji', 'Amara', 'Liam', 'Zara', 'Diego', 'Mei', 'Kofi', 'Sofia', 'Arjun', 'Noor', 'Yuki', 'Tomas', 'Ada', 'Ravi', 'Leila', 'Sipho', 'Hana', 'Omar', 'Ines'];
 export const MONEY = ['rupees', 'dollars'];
@@ -111,7 +109,7 @@ export const TEMPLATES = [
   } },
   { id: 'e-shop', mode: 'explorer', skills: ['2-add100', '2-money'], gen(r) {
     const c = pk(r, MONEY), a = ri(r, 1, 4) * 10 + ri(r, 1, 9), b = ri(r, 1, 4) * 10 + ri(r, 1, 9), [x, y] = [pk(r, ['pencil', 'ball', 'toy car', 'book']), pk(r, ['eraser', 'kite', 'cup', 'hat'])];
-    return { q: `A ${x} costs ${a} ${c}. A ${y} costs ${b} ${c}. How many ${c} for both?`, ask: `How much the ${x} and the ${y} cost together.`, plan: 'Add the tens first, then add the ones.', answer: a + b, unit: c, steps: [`${a} + ${b} = ${a + b}`, `Both cost ${a + b} ${c}.`] };
+    return { q: `A ${x} costs ${a} ${c}. A ${y} costs ${b} ${c}. How many ${c} for both?`, ask: `How much the ${x} and the ${y} cost together.`, plan: 'Add the tens first, then add the ones.', answer: a + b, unit: c, viz: V.baseTen(a) + V.baseTen(b), steps: [`${a} + ${b} = ${a + b}`, `Both cost ${a + b} ${c}.`] };
   } },
   { id: 'e-groups', mode: 'explorer', skills: ['2-arrays', '2-skip', '3-mult'], gen(r) {
     const [many, one, th] = pk(r, GROUPS), n = ri(r, 2, 5), c = ri(r, 2, 5);
@@ -119,7 +117,7 @@ export const TEMPLATES = [
   } },
   { id: 'e-seats', mode: 'explorer', skills: ['2-sub100', '2-add1000'], gen(r) {
     const a = ri(r, 30, 60), b = ri(r, 11, a - 6);
-    return { q: `A bus has ${a} seats. ${b} children get on and sit down. How many seats are still empty?`, ask: 'How many seats nobody is sitting in.', plan: `Count up from ${b} to ${a}.`, answer: a - b, unit: 'seats', steps: [`${a} ${M} ${b} = ${a - b}`, `${a - b} seats are empty.`] };
+    return { q: `A bus has ${a} seats. ${b} children get on and sit down. How many seats are still empty?`, ask: 'How many seats nobody is sitting in.', plan: `Count up from ${b} to ${a}.`, answer: a - b, unit: 'seats', viz: V.tenFrame(b, 0, Math.ceil(a / 10)), steps: [`${a} ${M} ${b} = ${a - b}`, `${a - b} seats are empty.`] };
   } },
 
   /* ---------- Challenger: one and two steps ---------- */
@@ -280,27 +278,4 @@ export function skillStory(id, mode, r = Math.random) {
   return draw(pk(r, of), r, { grade: null });
 }
 
-/* ---------- When a round asks one (D2, D3, D4) ---------- */
-/* Is question k (from 1) of a round a Word problem slot in this Mode? */
-export function isSlot(mode, k) { const s = SLOTS[mode] || SLOTS.challenger; return k >= s.first && (k - s.first) % s.every === 0; }
-/* The Star round's main question (from 0) that is a Word problem: question 3 for Challenger, 2 for Pro; none for
-   Explorer (no Stars) or before the Player's first 20 answers */
-export function starSlot(mode, answered) {
-  if (answered < RULES.after || mode === 'explorer' || !SLOTS[mode]) return -1;
-  return SLOTS[mode].first - 1;
-}
-/* One Practice round's plan. answered(): the Player's saved answers. next(skill, bare) is called once per question,
-   in order, and returns the Word problem to ask instead of bare, or null. A slot that falls on a Skill with no story, or
-   before the 20th answer, waits for the next question. */
-export function storyPlan(mode, { answered = () => 0, r = Math.random } = {}) {
-  let k = 0, due = false;
-  return {
-    next(skill, bare) {
-      k++; if (isSlot(mode, k)) due = true;
-      if (bare && bare.story) { due = false; return null; } /* a Word problem Skill's own question already is one */
-      if (!due || answered() < RULES.after || !hasStory(skill)) return null;
-      const p = storyFor(skill, mode, { bare, r }); if (p) due = false;
-      return p;
-    }
-  };
-}
+register({ hasStory, storyFor, skillStory, trickStory });

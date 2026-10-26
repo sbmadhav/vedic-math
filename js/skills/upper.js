@@ -1,7 +1,7 @@
 /* Grades 6 to 8: ratios, percents, integers, expressions, equations, geometry and linear relationships. */
 import { ri, rnz, pick, shuffle, gcd, lcm, simp, fr, frRaw, neg, paren, round, poly, polyText, term, sup, PEOPLE, THINGS } from '../lib.js';
 import * as V from '../viz.js';
-import { skillStory } from '../stories.js';
+import { skillStoryNow } from '../story-plan.js';
 
 export default [
   /* ---------- Grade 6 ---------- */
@@ -258,8 +258,8 @@ export default [
         hints: [t === 'cyl' ? '&pi;r<sup>2</sup>h' : t === 'cone' ? '&frac13;&pi;r<sup>2</sup>h' : '<span class="fr"><span>4</span><span>3</span></span>&pi;r<sup>3</sup>'], steps: [`${round(v, 2)}`] };
     } },
   /* A Word problem Skill (openspec word-problems, design D10): multi-step real life, Pro's style, and the hand-written stories */
-  { id: '8-reallife', grade: 8, strand: 'ratio', title: 'Real-life problems', kid: 'Real-life puzzles', tower: false,
+  { id: '8-reallife', grade: 8, strand: 'ratio', title: 'Real-life problems', kid: 'Real-life puzzles', tower: false, stories: true,
     idea: 'Real problems hide the math in a story. Find what it asks, plan the steps, then let a trick do the arithmetic fast.',
     method: ['Read it and ask: what is it asking?', 'Plan the steps and pick the numbers that matter.', 'Solve each step; a Vedic trick often makes one of them quick.'],
-    gen() { return skillStory('8-reallife', 'pro'); } }
+    gen() { return skillStoryNow('8-reallife', 'pro'); } }
 ];

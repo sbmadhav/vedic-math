@@ -29,7 +29,7 @@ import { boltHTML } from './bolt.js';
 import { FAMILY_SVG } from './family.js';
 import { familyRound } from './family-hook.js';
 import { runStar } from './star.js';
-import { storyPlan, LABEL as STORY_LABEL } from './stories.js';
+import { storyPlan, loadStories, storiesNow, LABEL as STORY_LABEL } from './story-plan.js';
 import { runTry, tryFor as tryOf, sutraOf, finished as tryFinished } from './try.js';
 import * as SKY from './sky.js';
 import { skyView, placesHTML } from './sky-view.js';
@@ -408,6 +408,14 @@ function skillView(id, { signal } = {}) {
   if (trick) mountAnimator(trick, signal); else showExample(s);
   if (trick && signal) wireSay(view, signal);
   fillWatch($('[data-watch-for]'), s, trick, signal);
+  /* A Word problem Skill waits the few milliseconds its stories take to load (openspec word-problems), so its first
+     question is one of them; every other Skill starts at once (its first question is never a Word problem) */
+  if (s.stories && !storiesNow()) {
+    let run = null; $('#practice').innerHTML = '<p class="mq-small">Getting the stories ready&hellip;</p>';
+    loadStories().then(() => { if (!signal || !signal.aborted) run = practice($('#practice'), () => s, { signal }); }).catch(() => { if (!signal || !signal.aborted) run = practice($('#practice'), () => s, { signal }); });
+    return { destroy: () => run && run.destroy() };
+  }
+  loadStories().catch(() => {});
   return practice($('#practice'), () => s, { signal });
 }
 /* "Watch it explained": a placeholder filled once the list loads (fillWatch), so the page never waits on it */
@@ -537,7 +545,7 @@ function mixView(g, isRun = false, { signal } = {}) {
     <h1 class="md-heading">${isRun ? 'Endless run' : 'Endless practice'}: ${gradeLabel(g)}</h1>
     <p class="md-lede">${isRun ? `Questions from every skill in this level, forever. You have 3 lives: how far can you go? Your best: <b>${store.best('run-' + g)}</b>.` : 'Questions from the whole level, all mixed up and never-ending, favoring skills in progress. Mixing topics is harder, and that is exactly why it makes learning stick.'}</p>
     <div class="mq-practice md-card" id="practice"></div></div></section>`;
-  let lastId = null;
+  let lastId = null; loadStories().catch(() => {});
   return practice($('#practice'), () => {
     const going = list.filter(s => store.started(s.id) && !store.mastered(s.id)), pool = (going.length >= 2 && Math.random() < .7 ? going : list).filter(s => s.id !== lastId);
     const s = pick(pool.length ? pool : list); lastId = s.id; return s;
@@ -1726,6 +1734,8 @@ render();
 initAmbient();
 /* The install module, after the first paint (openspec change install-app, design D12); a load that fails is reported once */
 later(() => loadInstall().catch(e => console.error('install.js did not load', e)), 100, boot.signal);
+/* Word problems (openspec word-problems): the story templates load after the first paint, like install.js */
+later(() => loadStories().catch(e => console.error('stories.js did not load', e)), 150, boot.signal);
 /* Offline: /sw.js (scope /play/, the game only) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
   const registerSW = () => navigator.serviceWorker.register('/sw.js', { scope: '/play/' }).catch(() => {});

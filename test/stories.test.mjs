@@ -75,12 +75,12 @@ test('read, plan, solve: two hints, the first asks what it is asking, and no hin
   for (let i = 0; i < 200; i++) { const p = byId['8-reallife'].gen(1); check(p, p.story.id); }
 });
 
-test('styles grow with the Mode: Pro plans name two or more steps, Explorer has a picture or a price', () => {
+test('styles grow with the Mode: Pro plans name two or more steps, every Explorer story has a picture', () => {
   for (const t of S.TEMPLATES.filter(x => x.mode === 'pro')) for (const p of draws(t, 50)) {
     if (t.id === 'p-ladder') continue; /* one formula, three moves: square, add, root */
     assert.match(p.hints[1], /^(Two|Three) steps/, `${t.id}: ${p.hints[1]}`);
   }
-  for (const t of S.TEMPLATES.filter(x => x.mode === 'explorer')) for (const p of draws(t, 50)) assert.ok(p.viz || p.unit, `${t.id}: no picture`);
+  for (const t of S.TEMPLATES.filter(x => x.mode === 'explorer')) for (const p of draws(t, 50)) assert.ok(p.viz, `${t.id}: no picture`);
   for (const w of S.WRITTEN) assert.match(w.plan, /steps|Share/, w.id);
 });
 
@@ -179,4 +179,23 @@ test('a missed Word problem in a Star: the rematch is a Word problem, and its re
   let b = starRound({ trick: 'sq5', star: 1, rating: 5, rand: rng(4), story, storyAt: 1 });
   b = starAnswer(b, false).state; b = starNext(b).state;
   assert.ok(!b.current.story, 'a rematch after a bare miss stays bare');
+});
+
+/* ---------- Off the first paint (js/story-plan.js) ---------- */
+test('the templates are not in the first paint\'s import graph: only js/story-plan.js is, and it imports nothing', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = f => readFileSync(new URL(`../js/${f}`, import.meta.url), 'utf8');
+  for (const f of ['app.js', 'star.js', 'skills/middle.js', 'skills/upper.js']) assert.ok(!/from '\.{1,2}\/stories\.js'/.test(src(f)), `${f} imports stories.js statically`);
+  assert.ok(!/^import /m.test(src('story-plan.js')), 'story-plan.js has no static import');
+});
+
+test('a Star\'s story slot is filled when its question comes, if the deal could not (the stories were loading)', async () => {
+  const { withStory } = await import('../js/star.js');
+  let ready = false; const late = p => (ready ? S.trickStory('sq5', p) : null);
+  let st = starRound({ trick: 'sq5', star: 1, rating: 5, rand: rng(5), story: late, storyAt: 1 });
+  assert.ok(st.qs.every(p => !p.story), 'nothing at the deal');
+  st = starAnswer(st, true).state; ready = true;
+  st = withStory(st);
+  assert.ok(st.current.story && st.qs[1].story, 'question 2 is a Word problem when it comes');
+  assert.equal(withStory(st), st, 'once only');
 });
