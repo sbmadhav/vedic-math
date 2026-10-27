@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 824457,
+  "total": 824500,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -52,7 +52,7 @@
    "/js/arena.js": 5392,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
-   "/js/celebrate.js": 3305,
+   "/js/celebrate.js": 3367,
    "/js/check.js": 2946,
    "/js/cloud-config.js": 588,
    "/js/cloud.js": 4437,
@@ -151,8 +151,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 24311,
-   "/play/": 4060,
-   "/sw.js": 6255,
+   "/play/": 4050,
+   "/sw.js": 6246,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -245,8 +245,8 @@
     "date": "2026-10-27",
     "pr": 157,
     "from": 824217,
-    "to": 824457,
-    "why": "The big confetti on time (openspec change confetti-by-time): js/celebrate.js ends the burst with a life.js timer after CONFETTI_MS (1,833 ms, 110 frames of a 60 Hz screen) and draws each piece with confettiAt, the old per-frame path written as a function of elapsed time, so a slow browser, a 120 Hz screen and a tab that draws no frames all see the same 1.8 s burst (+225 bytes); /play/ and /sw.js move by their stamps (+15)"
+    "to": 824500,
+    "why": "The big confetti on time (openspec change confetti-by-time): js/celebrate.js ends the burst with a life.js timer after CONFETTI_MS (1,833 ms, 110 frames of a 60 Hz screen), ends a burst past its length when a tab whose timer was held back is shown again (visibilitychange, #157 review), and draws each piece with confettiAt, the old per-frame path written as a function of elapsed time, so a slow browser, a 120 Hz screen and a tab that draws no frames all see the same 1.8 s burst (+287 bytes); the stamps in /play/ and /sw.js are 4 bytes smaller"
    }
   ]
  },

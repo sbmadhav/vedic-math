@@ -13,7 +13,7 @@
    - lengths are times, not frame counts, so every screen sees the same burst.
    - colours are tokens (classes in math.css; the confetti canvas reads the token values).
    This module touches only the DOM and localStorage, so js/fx.js (the app) and js/play/kit.js (the experiences) share it. */
-import { later, loop, onAbort } from './life.js';
+import { later, loop, on, onAbort } from './life.js';
 
 /* The app's one motion rule (fx.noMotion, kit.reducedMotion): reduced motion, Pause motion (html.motion-paused) or Calm (vm.calm) */
 export const still = () => (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches)
@@ -130,9 +130,10 @@ export function confetti(n = 70) {
   const ctl = new AbortController(); bursting = ctl;
   const untrack = keep(() => ctl.abort());
   onAbort(ctl.signal, () => { c.remove(); untrack(); if (bursting === ctl) bursting = null; });
-  /* ends on time even with no frames drawn */
-  later(() => ctl.abort(), CONFETTI_MS, ctl.signal);
+  /* ends on time even with no frames drawn; a tab shown again after its timer was held back ends it then */
   const t0 = performance.now();
+  later(() => ctl.abort(), CONFETTI_MS, ctl.signal);
+  on(document, 'visibilitychange', () => { if (performance.now() - t0 >= CONFETTI_MS) ctl.abort(); }, ctl.signal);
   loop(now => {
     g.clearRect(0, 0, W, H);
     for (const p of ps) { const q = confettiAt(p, now - t0); g.save(); g.translate(q.x, q.y); g.rotate(q.a); g.fillStyle = p.c; g.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * .6); g.restore(); }

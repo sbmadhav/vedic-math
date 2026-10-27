@@ -121,6 +121,66 @@ test.describe('motion allowed', () => {
     await expectTimedBurst(page, 1);
   });
 
+  test('a tab shown again after the browser held back its timer removes a burst that is past its length', async ({ page }) => {
+    // What a browser may do to a hidden tab: the burst's 1,833 ms timer (js/celebrate.js CONFETTI_MS) never runs
+    await page.addInitScript(() => {
+      const set = window.setTimeout;
+      window.setTimeout = ((fn: TimerHandler, ms?: number, ...rest: unknown[]) =>
+        (ms !== undefined && ms > 1833 && ms < 1834 ? 0 : set(fn, ms, ...rest))) as typeof window.setTimeout;
+    });
+    await watchFx(page);
+    await page.goto(APP);
+    await page.evaluate(async () => (await e2eMod('celebrate')).confetti(70));
+    await page.waitForTimeout(2200);
+    await expect(page.locator('canvas.fx-confetti'), 'the held-back timer has not ended it').toHaveCount(1);
+    await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+    await expect(page.locator('canvas.fx-confetti')).toHaveCount(0, { timeout: 500 });
+    await page.evaluate(async () => (await e2eMod('celebrate')).confetti(70));
+    await expect.poll(async () => (await fx(page)).confetti).toBe(2);
+  });
+
+  /* The same path at any frame rate (openspec celebrations, "The big confetti moves at the same speed on every
+     screen"): the same pieces (Math.random fixed while the burst starts) drawn with frames every 1000/60, 48 and 8 ms
+     are at the same places at 1,000 ms. The frames are delivered by the test at exact times from the burst's start. */
+  test('the same pieces are at the same places after 1 s at 60, 21 and 120 frames a second', async ({ page }) => {
+    await page.goto(APP);
+    const at1s = async (every: number) => {
+      const drawn = await page.evaluate(async (ms: number) => {
+        const C = await e2eMod('celebrate');
+        const raf = window.requestAnimationFrame, now = performance.now, random = Math.random;
+        const queue: FrameRequestCallback[] = [];
+        let seed = 7;
+        const T = now.call(performance);
+        window.requestAnimationFrame = cb => { queue.push(cb); return queue.length; };
+        Math.random = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+        performance.now = () => T;
+        try { C.confetti(30); } finally { Math.random = random; performance.now = now; }
+        const g = document.querySelector<HTMLCanvasElement>('canvas.fx-confetti')!.getContext('2d')!;
+        let frame: number[][] = [];
+        const translate = g.translate.bind(g);
+        g.translate = (x: number, y: number) => { frame.push([x, y]); translate(x, y); };
+        for (let t = 0; ; t = Math.min(1000, t + ms)) {
+          frame = [];
+          queue.splice(0).forEach(cb => cb(T + t));
+          if (t >= 1000) break;
+        }
+        window.requestAnimationFrame = raf;
+        return frame;
+      }, every);
+      await expect(page.locator('canvas.fx-confetti')).toHaveCount(0, { timeout: 5000 }); // the burst ends on its own timer
+      return drawn;
+    };
+    const sixty = await at1s(1000 / 60), slow = await at1s(48), fast = await at1s(8);
+    expect(sixty).toHaveLength(30);
+    for (const other of [slow, fast]) {
+      expect(other).toHaveLength(30);
+      other.forEach(([x, y], i) => {
+        expect(Math.abs(x - sixty[i][0]), `piece ${i} x`).toBeLessThan(0.01);
+        expect(Math.abs(y - sixty[i][1]), `piece ${i} y`).toBeLessThan(0.01);
+      });
+    }
+  });
+
   test('turning on Pause motion stops the big confetti at once', async ({ page }) => {
     await watchFx(page);
     await lightStar(page);
