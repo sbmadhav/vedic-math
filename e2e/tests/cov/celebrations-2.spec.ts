@@ -105,9 +105,9 @@ test('A hidden tab the browser suspends: the burst is removed as soon as the tab
   await expect.poll(async () => (await bursts(page)).length).toBe(1);
   await page.waitForTimeout(2200);
   expect((await bursts(page))[0].removed, 'still there while the tab runs no code').toBeNull();
-  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
-  await expect(page.locator('canvas.fx-confetti')).toHaveCount(0);
-  expect((await bursts(page))[0].removed).not.toBeNull();
+  // Gone in the same task as the event, not later
+  expect(await page.evaluate(() => { document.dispatchEvent(new Event('visibilitychange')); return document.querySelectorAll('canvas.fx-confetti').length; }), 'canvases right after the tab is shown').toBe(0);
+  await expect.poll(async () => (await bursts(page))[0].removed).not.toBeNull();
 });
 
 /* The same pieces (Math.random fixed while the burst starts) drawn by the real loop with frames delivered at exact
