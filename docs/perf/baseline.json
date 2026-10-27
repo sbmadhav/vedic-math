@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 824217,
+  "total": 824457,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -52,7 +52,7 @@
    "/js/arena.js": 5392,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
-   "/js/celebrate.js": 3080,
+   "/js/celebrate.js": 3305,
    "/js/check.js": 2946,
    "/js/cloud-config.js": 588,
    "/js/cloud.js": 4437,
@@ -151,8 +151,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 24311,
-   "/play/": 4046,
-   "/sw.js": 6254,
+   "/play/": 4060,
+   "/sw.js": 6255,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -240,6 +240,13 @@
     "from": 822609,
     "to": 824217,
     "why": "Sutras first, part 3: Home leads with the Sutras (the Sutra door, \"Your sutras\" on Challenger and Pro Home, \"A sutra to say\" on Explorer Home; js/app.js, math.css); Home's Sutra door draws its tag with the first paint from js/sutra-tag-core.js (new, 1,902 bytes: the Sutra map, the kind words and tagHTML, moved out of js/sutra-tag.js, which shrinks from 2,823 to 1,405 bytes and still loads on demand): the placeholder it had before moved the doors when js/sutra-tag.js arrived (layout shift 0.034 against 0.007 on the repeat visit in the perf job) and the early module load put the repeat visit's blocking time at 90 ms against production's 64 (limit 89); Home's Sutra links count their tag event at once from the static SURFACES. measured on main as of #129, so that code is the only growth"
+   },
+   {
+    "date": "2026-10-27",
+    "pr": null,
+    "from": 824217,
+    "to": 824457,
+    "why": "The big confetti on time (openspec change confetti-by-time): js/celebrate.js ends the burst with a life.js timer after CONFETTI_MS (1,833 ms, 110 frames of a 60 Hz screen) and draws each piece with confettiAt, the old per-frame path written as a function of elapsed time, so a slow browser, a 120 Hz screen and a tab that draws no frames all see the same 1.8 s burst (+225 bytes); /play/ and /sw.js move by their stamps (+15)"
    }
   ]
  },

@@ -5,18 +5,58 @@ import { test, expect, APP, open } from './fixtures';
    motion, Pause motion or Calm, and the screen that follows still comes. */
 type Page = import('@playwright/test').Page;
 
-/* Counts every confetti canvas and sparkle layer the page adds, however short-lived */
+/* Counts every confetti canvas and sparkle layer the page adds, however short-lived, and times each burst inside the
+   page (performance.now() when its canvas is added and when it is removed), so Playwright's polling adds no noise */
+type Burst = { added: number; removed: number | null };
+type Fx = { confetti: number; sparkles: number; bursts: Burst[] };
 async function watchFx(page: Page) {
   await page.addInitScript(() => {
-    const seen = ((globalThis as any).__fx = { confetti: 0, sparkles: 0 });
-    new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => {
-      const c = (n as Element).classList; if (!c) return;
-      if (c.contains('fx-confetti')) seen.confetti++;
-      if (c.contains('fx-sparkles')) seen.sparkles++;
-    }))).observe(document, { childList: true, subtree: true });
+    const seen = ((globalThis as any).__fx = { confetti: 0, sparkles: 0, bursts: [] as Burst[] });
+    const live = new Map<Node, Burst>();
+    new MutationObserver(ms => {
+      const now = performance.now();
+      ms.forEach(m => {
+        m.addedNodes.forEach(n => {
+          const c = (n as Element).classList; if (!c) return;
+          if (c.contains('fx-confetti')) { seen.confetti++; const b = { added: now, removed: null }; seen.bursts.push(b); live.set(n, b); }
+          if (c.contains('fx-sparkles')) seen.sparkles++;
+        });
+        m.removedNodes.forEach(n => { const b = live.get(n); if (b) { b.removed = now; live.delete(n); } });
+      });
+    }).observe(document, { childList: true, subtree: true });
   });
 }
-const fx = (page: Page): Promise<{ confetti: number; sparkles: number }> => page.evaluate(() => (globalThis as any).__fx);
+const fx = (page: Page): Promise<{ confetti: number; sparkles: number }> =>
+  page.evaluate(() => { const { confetti, sparkles } = (globalThis as any).__fx as Fx; return { confetti, sparkles }; });
+const bursts = (page: Page): Promise<Burst[]> => page.evaluate(() => ((globalThis as any).__fx as Fx).bursts);
+
+/* The big confetti lasts 1,833 ms on every screen (openspec celebrations): burst i removes itself, and its canvas was
+   on the page between 1,800 ms (1,833 less the browsers' coarsened clocks) and 3,000 ms */
+async function expectTimedBurst(page: Page, i: number) {
+  await expect.poll(async () => (await bursts(page))[i]?.removed ?? null, { message: `burst ${i + 1} removes itself`, timeout: 10_000 }).not.toBeNull();
+  const b = (await bursts(page))[i];
+  const ms = b.removed! - b.added;
+  expect(ms, `burst ${i + 1} lasted (ms)`).toBeGreaterThanOrEqual(1800);
+  expect(ms, `burst ${i + 1} lasted (ms)`).toBeLessThanOrEqual(3000);
+  await expect(page.locator('canvas.fx-confetti')).toHaveCount(0);
+}
+
+/* Paces the page's animation frames before the app loads: a frame every `every` ms (48 is about 21 a second, a slow
+   browser such as headless WebKit on Linux; 8 is a 120 Hz screen), or none at all (0), which is what a hidden tab
+   does to the burst. Playwright's own checks run in their own world and are not paced. */
+async function paceFrames(page: Page, every: number) {
+  await page.addInitScript((ms: number) => {
+    const queue = new Map<number, FrameRequestCallback>();
+    let id = 0;
+    window.requestAnimationFrame = cb => { queue.set(++id, cb); return id; };
+    window.cancelAnimationFrame = n => { queue.delete(n); };
+    if (ms > 0) setInterval(() => {
+      const now = performance.now(), due = [...queue.values()];
+      queue.clear();
+      due.forEach(cb => { try { cb(now); } catch (e) { setTimeout(() => { throw e; }); } });
+    }, ms);
+  }, every);
+}
 
 /* Square numbers ending in 5: every question is n² */
 const sq = async (page: Page) => { const n = Number((await page.locator('#stQ').innerHTML()).match(/^(\d+)<sup>2<\/sup>/)![1]); return String(n * n); };
@@ -49,23 +89,36 @@ test.describe('motion allowed', () => {
   });
 
   test('a right answer in a Star twinkles with a few sparkles; lighting the Star is a true win with the big confetti', async ({ page }) => {
-    test.setTimeout(120_000); // the burst is counted in frames, and a slow browser paints few a second (below)
     await watchFx(page);
     await lightStar(page, async () => {
       await expect.poll(async () => (await fx(page)).sparkles).toBeGreaterThan(0);
       expect((await fx(page)).confetti).toBe(0);
     });
     await expect.poll(async () => (await fx(page)).confetti).toBeGreaterThanOrEqual(1);
-    // The burst ends and removes itself. It lasts 110 animation frames (js/celebrate.js), so the check counts frames,
-    // not seconds: about 1.9 s at 60 a second, but headless WebKit on Linux paints it at about 21 a second alone
-    // (5.2 s) and fewer beside two other browsers (past 15 s), and a 5 s wait failed there on every run
-    const frames = await page.evaluate(() => new Promise<number>(done => {
-      let n = 0;
-      const step = () => { if (!document.querySelector('canvas.fx-confetti') || ++n > 200) done(n); else requestAnimationFrame(step); };
-      requestAnimationFrame(step);
-    }));
-    expect(frames, 'animation frames until the burst removed itself').toBeLessThanOrEqual(130);
-    await expect(page.locator('canvas.fx-confetti')).toHaveCount(0);
+    // The burst lasts a time, not a number of frames (js/celebrate.js CONFETTI_MS), so it is timed on every browser
+    await expectTimedBurst(page, 0);
+  });
+
+  /* The same length whatever the frame rate (openspec celebrations, "The big confetti lasts the same time on every screen") */
+  for (const [name, every] of [['a slow browser (a frame every 48 ms)', 48], ['a 120 Hz screen (a frame every 8 ms)', 8]] as const) {
+    test(`in ${name}, lighting a Star gives a burst of about 1.8 s that removes itself`, async ({ page }) => {
+      await paceFrames(page, every);
+      await watchFx(page);
+      await lightStar(page);
+      await expectTimedBurst(page, 0);
+      expect((await fx(page)).confetti).toBe(1);
+    });
+  }
+
+  test('in a tab that draws no frames, the burst still removes itself on time and the next true win draws its own', async ({ page }) => {
+    await paceFrames(page, 0);
+    await watchFx(page);
+    await lightStar(page);
+    await expectTimedBurst(page, 0);
+    // One burst at a time was freed: the next true win's own confetti call draws a second burst
+    await page.evaluate(async () => (await e2eMod('celebrate')).confetti(70));
+    await expect.poll(async () => (await fx(page)).confetti).toBe(2);
+    await expectTimedBurst(page, 1);
   });
 
   test('turning on Pause motion stops the big confetti at once', async ({ page }) => {
