@@ -53,7 +53,7 @@ import './voice-plan.js'; /* a level sooner (docs/perf/baseline.md) */
    The browser's install prompt can arrive before that: it is caught here and handed to initInstall. withInstall(fn,
    signal) runs fn with the module once it is here, unless signal (the view's) has aborted by then. */
 const boot = new AbortController(); /* the page's lifetime: never aborted */
-/* Off the first load's critical path (docs/perf/baseline.md); a failed load is tried again */
+/* Off the first load's critical path (docs/perf/baseline.md); a failed load is asked for again */
 const onDemand = load => { let p; return () => (p ||= load().catch(e => { p = null; throw e; })); };
 const loadArena = onDemand(() => import('./arena.js')), loadTour = onDemand(() => import('./tour.js')), loadKit = onDemand(() => import('./play/kit.js'));
 const withArena = (area, signal, fn) => loadArena().then(A => { if (!signal.aborted) fn(A); }, () => { if (!signal.aborted) area.innerHTML = '<p class="md-lede">The round did not load. Check your connection and try again.</p>'; });
