@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 824733,
+  "total": 825003,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -48,7 +48,7 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 48490,
+   "/js/app.js": 48487,
    "/js/arena.js": 5392,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -75,7 +75,7 @@
    "/js/landing-sky.js": 261,
    "/js/levels.js": 5012,
    "/js/lib.js": 1707,
-   "/js/life.js": 838,
+   "/js/life.js": 1103,
    "/js/listen.js": 1335,
    "/js/mental.js": 2128,
    "/js/metrics.js": 4136,
@@ -136,7 +136,7 @@
    "/js/sutra-details.js": 13423,
    "/js/sutra-progress.js": 1066,
    "/js/sutra-tag-core.js": 1902,
-   "/js/sutra-tag-slot.js": 703,
+   "/js/sutra-tag-slot.js": 707,
    "/js/sutra-tag.js": 1405,
    "/js/sutras.js": 4223,
    "/js/tour.js": 2215,
@@ -151,8 +151,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 24311,
-   "/play/": 4048,
-   "/sw.js": 6256,
+   "/play/": 4051,
+   "/sw.js": 6257,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -243,10 +243,17 @@
    },
    {
     "date": "2026-10-27",
-    "pr": 157,
+    "pr": 156,
     "from": 824472,
-    "to": 824733,
-    "why": "The big confetti on time (openspec change confetti-by-time): js/celebrate.js ends the burst with a life.js timer after CONFETTI_MS (1,833 ms, 110 frames of a 60 Hz screen), ends a burst past its length when a tab whose timer was held back is shown again (visibilitychange, #157 review), and draws each piece with confettiAt, the old per-frame path written as a function of elapsed time, so a slow browser, a 120 Hz screen and a tab that draws no frames all see the same 1.8 s burst (js/celebrate.js +287 bytes; the stamped /js/app.js -30, /play/ -2 and /sw.js +6, with no change to their source; +261 in all); measured on main as of #158"
+    "to": 824709,
+    "why": "A late import cut off by a page change or reload no longer logs an error: lateImport in js/life.js (+265 bytes) logs a failure a second later unless a pagehide came since the load began (WebKit rejects the import before pagehide), and the late loads in js/app.js (install.js, stories.js, and after the load event sutra-tag.js, arena.js, tour.js and play/kit.js) and js/sutra-tag-slot.js use it. No new file. Measured on main as of #158, so that code is the only growth"
+   },
+   {
+    "date": "2026-10-27",
+    "pr": 157,
+    "from": 824709,
+    "to": 825003,
+    "why": "confetti-by-time: celebrations last a fixed time (js/celebrate.js); measured on main as of #156 and #158; file deltas: /js/celebrate.js +287, /sw.js +7, +294 in all"
    }
   ]
  },
