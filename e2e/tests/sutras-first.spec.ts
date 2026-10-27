@@ -101,9 +101,15 @@ const holdTags = async (page: Page) => {
   await page.route(/\/js\/sutra-tag\.js(\?.*)?$/, async route => { await held; await route.continue(); });
   return release;
 };
+/* Not open(): WebKit holds the load event for an import started before it (the Katas page asks for the tag module
+   while it first draws), and this one is held, so wait for the page's view instead (as load.spec.ts does) */
+const openHeld = async (page: Page, hash: string) => {
+  await page.goto(`${APP}${hash}`, { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
+};
 test('Before its module arrives the Katas page holds the tag\'s place, then shows the same tag there', async ({ page }) => {
   const release = await holdTags(page);
-  await open(page, '#/katas/from9');
+  await openHeld(page, '#/katas/from9');
   const slot = page.locator('#view h1 + .sutra-tag-slot');
   await expect(slot).toHaveAttribute('aria-hidden', 'true');
   const before = await page.locator('#view .md-lede').boundingBox();
@@ -118,7 +124,7 @@ test('Before its module arrives the Katas page holds the tag\'s place, then show
 });
 test('A view left before the tag module arrives draws no tag late', async ({ page }) => {
   const release = await holdTags(page);
-  await open(page, '#/katas/from9');
+  await openHeld(page, '#/katas/from9');
   await expect(page.locator('#view .sutra-tag-slot')).toHaveCount(1);
   await page.evaluate(() => { location.hash = '#/learn'; });
   await expect(page.locator('#view .sutra-tag-slot')).toHaveCount(0);

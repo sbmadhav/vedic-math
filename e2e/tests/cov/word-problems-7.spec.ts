@@ -25,8 +25,12 @@ test('Offline: answering a Word problem and moving to the next one makes no requ
   await open(page, '#/skill/3-twostep');
   await expect(label(page)).toHaveText('Word problem');
   await page.waitForLoadState('networkidle'); /* the Install guide's modules load 100 ms after boot (not a Word problem's) */
+  /* and a second after load the app preloads the Sutra tag, Arena, tour and play kit modules (js/app.js preloadTags),
+     not a Word problem's either: wait until each has arrived with what it imports (the same module instances) */
+  await page.evaluate(() => Promise.all(['sutra-tag', 'arena', 'tour', 'play/kit'].map(n => e2eMod(n))));
   const asked: string[] = [];
-  page.on('request', r => { if (!ANALYTICS.test(r.url())) asked.push(r.url()); });
+  /* WebKit posts the stricter Report-Only policy's reports to /_csp: the browser's, not a request the game makes */
+  page.on('request', r => { if (!ANALYTICS.test(r.url()) && new URL(r.url()).pathname !== '/_csp') asked.push(r.url()); });
   await skip(page, 3);
   await expect(label(page)).toHaveText('Word problem');
   await box(page).locator('#prHint').click();
