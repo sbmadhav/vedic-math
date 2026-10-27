@@ -15,4 +15,4 @@ Approved by the owner on 2026-10-27. One pull request, with the e2e changes in t
 
 ## 3. Release
 
-- [ ] 3.1 After release: `openspec archive confetti-by-time -y`, and in the same commit `e2e/tests/cov/celebrations-2.spec.ts`, one test per scenario of the two new requirements (the path scenario through `e2eMod('celebrate')` in `page.evaluate`; `docs/agent/e2e.md`).
+- [x] 3.1 After release: `openspec archive confetti-by-time -y`, and in the same commit `e2e/tests/cov/celebrations-2.spec.ts`, one test per scenario of the two new requirements (the path scenario through `e2eMod('celebrate')` in `page.evaluate`; `docs/agent/e2e.md`). Done 2026-10-27: released in PR #157 (merged into `main`, deployed by CI); `openspec archive confetti-by-time -y`; `e2e/tests/cov/celebrations-2.spec.ts` has one test per scenario (the three frame rates and no frames, each timing a Star's burst under paced frames; the path scenario drawing the same 30 seeded pieces through `e2eMod('celebrate')` at 60 and 21 frames a second); `openspec validate --all --strict` passes.
