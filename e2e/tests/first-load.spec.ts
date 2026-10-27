@@ -51,3 +51,21 @@ test('An Arena round started before js/arena.js is here starts once it arrives',
   await page.goto(`${APP}#/learn`); /* leave before the round ends: nothing is posted */
   expect(appErrors(issues), 'console errors').toEqual([]);
 });
+
+test('An Arena left before js/arena.js arrives starts no round when it does', async ({ page, issues }) => {
+  let release!: () => void; const held = new Promise<void>(r => { release = r; });
+  const arenaPath = new URL(await mod(page, 'arena'), 'http://x').pathname;
+  await page.route(url => url.pathname === arenaPath, async route => { await held; await route.continue(); });
+  await open(page, '#/arena');
+  await page.locator('#arGo').click();
+  await expect(page.locator('.ar-count')).toBeVisible();
+  await page.waitForTimeout(2600); /* past the countdown, the round waiting for its module */
+  await page.evaluate(() => { location.hash = '#/learn'; });
+  await expect(page.locator('#view h1')).toHaveText('Pick a level');
+  release();
+  await page.evaluate(() => new Promise(r => setTimeout(r, 500)));
+  await expect(page.locator('#arQ')).toHaveCount(0);
+  await expect(page.locator('html.play-open')).toHaveCount(0);
+  await expect(page.locator('#view h1')).toHaveText('Pick a level');
+  expect(appErrors(issues), 'console errors').toEqual([]);
+});
