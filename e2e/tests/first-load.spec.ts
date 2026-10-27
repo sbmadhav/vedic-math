@@ -63,7 +63,8 @@ test('An Arena left before js/arena.js arrives starts no round when it does', as
   await page.evaluate(() => { location.hash = '#/learn'; });
   await expect(page.locator('#view h1')).toHaveText('Pick a level');
   release();
-  await page.evaluate(() => new Promise(r => setTimeout(r, 500)));
+  /* The same module instance the app waits on: once it (and js/mental.js) has loaded, the app's waiting round has had its turn */
+  await page.evaluate(async () => { await e2eMod('arena'); await new Promise(r => requestAnimationFrame(() => r(null))); });
   await expect(page.locator('#arQ')).toHaveCount(0);
   await expect(page.locator('html.play-open')).toHaveCount(0);
   await expect(page.locator('#view h1')).toHaveText('Pick a level');
