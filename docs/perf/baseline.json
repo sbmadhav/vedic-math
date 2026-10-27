@@ -257,74 +257,74 @@
     "path": "/play/",
     "visit": "first",
     "median": {
-     "fcp": 2198,
-     "lcp": 5550,
+     "fcp": 2067,
+     "lcp": 5400,
      "tbt": 46,
      "cls": 0.001,
-     "si": 2198,
-     "ttfb": 474,
-     "srt": 44
+     "si": 2067,
+     "ttfb": 485,
+     "srt": 64
     }
    },
    "play-repeat": {
     "path": "/play/",
     "visit": "repeat",
     "median": {
-     "fcp": 826,
-     "lcp": 1260,
+     "fcp": 859,
+     "lcp": 1268,
      "tbt": 42,
      "cls": 0.007,
-     "si": 826,
-     "ttfb": 24,
-     "srt": 24
+     "si": 859,
+     "ttfb": 25,
+     "srt": 25
     }
    },
    "arena": {
     "path": "/play/#/arena",
     "visit": "returning",
     "median": {
-     "fcp": 2203,
-     "lcp": 5670,
+     "fcp": 1991,
+     "lcp": 5490,
      "tbt": 57,
      "cls": 0.007,
-     "si": 2203,
-     "ttfb": 485,
-     "srt": 35
+     "si": 1991,
+     "ttfb": 490,
+     "srt": 45
     }
    },
    "games": {
     "path": "/play/#/games",
     "visit": "returning",
     "median": {
-     "fcp": 1900,
-     "lcp": 5580,
+     "fcp": 2210,
+     "lcp": 5460,
      "tbt": 61,
      "cls": 0.007,
-     "si": 1900,
-     "ttfb": 484,
-     "srt": 41
+     "si": 2210,
+     "ttfb": 493,
+     "srt": 51
     }
    },
    "deep-dive": {
     "path": "/play/#/sutras/s1",
     "visit": "returning",
     "median": {
-     "fcp": 2127,
-     "lcp": 5760,
+     "fcp": 2347,
+     "lcp": 5730,
      "tbt": 159,
      "cls": 0.007,
-     "si": 2621,
-     "ttfb": 483,
-     "srt": 38
+     "si": 3222,
+     "ttfb": 495,
+     "srt": 39
     }
    }
   },
   "remeasured": {
-   "date": "2026-10-26",
+   "date": "2026-10-27",
    "issue": 117,
    "site": "https://learnvedicmath.com",
-   "commit": "60a0585",
-   "how": "each Lighthouse median except tbt is the median of five jobs' medians of production on the code live since #131 deployed (60a0585): perf.yml on main, runs 40283115632, 40284102353 and 40285113881 (benchmarkIndex 3038, 4075, 3003), the post-deploy check of 60a0585 (e2e.yml, issue #117) and the production side of #136's perf job (2026-10-26 07:27 UTC); tbt and the interactions keep the 2026-10-21 run (docs/perf/baseline.md, Re-measured on 2026-10-26)"
+   "commit": "1c1fd52",
+   "how": "each Lighthouse median except tbt is the median of five jobs' medians of production on the code live since #158 deployed (1c1fd52): perf.yml on main, runs 40527550058, 40529109103 and 40531520153 (benchmarkIndex 2477, 2505, 2478), the post-deploy check of 1c1fd52 (e2e.yml run 40526690798, 2488) and the production side of #156's perf job (run 40528435128, 2461); tbt and the interactions keep the 2026-10-21 run (docs/perf/baseline.md, Re-measured on 2026-10-27). The 2026-10-26 re-measure (commit 60a0585, five jobs) read lcp 5550 / 1260 / 5670 / 5580 / 5760 ms"
   }
  },
  "interactions": {
