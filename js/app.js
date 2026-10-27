@@ -17,7 +17,6 @@ import * as store from './store.js';
 import * as fx from './fx.js';
 import * as gm from './gamify.js';
 import * as cloud from './cloud.js';
-import { runArena, runChallenge } from './arena.js';
 import * as LV from './levels.js';
 import { LEVELS, LEVELS_PER_GAME, levelMedal, boardGame } from './games.js';
 import * as AD from './adapt.js';
@@ -36,11 +35,9 @@ import { skyView, placesHTML } from './sky-view.js';
 import { openShell } from './shell.js';
 import { PLAY, SECTIONS, playFor, playIn, playOpen } from './play/catalog.js';
 import { ICONS as PLAY_ICONS } from './play/icons.js';
-import { place as playPlace, suspendAudio as playQuiet } from './play/kit.js';
 import { GROUPS, sectionsFor, tryFor, say, resolveTour, tourDue, tourState, setTourState } from './guide.js';
 import { sectionLines, buildIndex, rank, countOf, kindLabel } from './find.js';
 import { artFor } from './guide-art.js';
-import { startTour } from './tour.js';
 import { guideCounts, rootNote } from './explain-lines.js';
 import { listenBtn, wireListen } from './listen.js';
 import { sayButton, respellHTML, devaHTML, wireSay } from './say.js';
@@ -49,12 +46,17 @@ import { tag as sutraTag, loadTags, fillTags } from './sutra-tag-slot.js'; /* js
 import { tagHTML, sutraOfTrick, SURFACES as TAG_SURFACES } from './sutra-tag-core.js'; /* its core, static: Home's Sutra door (#133 perf) */
 import { progressOf, progressLine, trickLine } from './sutra-progress.js';
 import { claim as claimSlot, release as releaseSlot } from './prompt-slot.js';
+import './voice-plan.js'; /* a level sooner (docs/perf/baseline.md) */
 
 /* Installing the app (openspec change install-app): js/install.js and its rules load after the first view has painted
    (loadInstall, 100 ms after boot), so they are not in the static import graph the first paint waits for (design D12).
    The browser's install prompt can arrive before that: it is caught here and handed to initInstall. withInstall(fn,
    signal) runs fn with the module once it is here, unless signal (the view's) has aborted by then. */
 const boot = new AbortController(); /* the page's lifetime: never aborted */
+/* Off the first load's critical path (docs/perf/baseline.md); a failed load is asked for again */
+const onDemand = load => { let p; return () => (p ||= load().catch(e => { p = null; throw e; })); };
+const loadArena = onDemand(() => import('./arena.js')), loadTour = onDemand(() => import('./tour.js')), loadKit = onDemand(() => import('./play/kit.js'));
+const withArena = (area, signal, fn) => loadArena().then(A => { if (!signal.aborted) fn(A); }, () => { if (!signal.aborted) area.innerHTML = '<p class="md-lede">The round did not load. Check your connection and try again.</p>'; });
 let install = null, installLoad = null, earlyPrompt = null; const installQueue = [];
 function loadInstall() {
   return installLoad ||= import('./install.js').then(m => {
@@ -786,14 +788,14 @@ function challengeView(id, { signal } = {}) {
   let run = null, play = null;
   const stop = () => { const r = run, p = play; run = play = null; if (p) p.close(); if (r) r.abort(); };
   $('#chGo').onclick = () => {
-    stop(); run = child(signal);
+    stop(); run = child(signal); loadArena().catch(() => {});
     play = openShell(`Challenge ${id}: ${F.name}`, { signal: run.signal, exitId: 'chStop', onExit: stop, focusBack: () => $('#chGo') });
     const area = play.area;
     let n = 3; area.innerHTML = `<div class="ar-count" aria-live="assertive">${n}</div>`; fx.sfx('tick');
     const count = child(run.signal); /* the countdown stops when it reaches 0, on Stop or when the view is left */
     every(() => { n--; if (n === 0) { count.abort(); fx.sfx('ok'); go(area, run.signal); } else { area.firstChild.textContent = n; fx.sfx('tick'); } }, 650, count.signal);
   };
-  const go = (area, rsig) => {
+  const go = (area, rsig) => withArena(area, rsig, ({ runChallenge }) => {
     track('challenge/' + ch.format, 'Challenge ' + id); metrics.roundStart('tower');
     /* Calm: the tower is Practice, so no clock. Sprint and Time attack Medals are measured against the clock. */
     const untimed = fx.calmOn(), clockMedal = ch.format === 'sprint' || ch.format === 'timeattack';
@@ -809,7 +811,7 @@ function challengeView(id, { signal } = {}) {
       if (play) play.setExit('Back');
       const h = area.querySelector('h2'); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
     } });
-  };
+  });
 }
 
 /* ---------- Sutras: deep dive and card collection ---------- */
@@ -1127,7 +1129,7 @@ function arenaView({ signal } = {}) {
   let run = null, play = null;
   const stop = () => { const r = run, p = play; run = play = null; if (p) p.close(); if (r) r.abort(); };
   const countdown = () => {
-    stop(); run = child(signal);
+    stop(); run = child(signal); loadArena().catch(() => {});
     const old = shell.querySelector('.ar-result'); if (old) old.remove(); /* the last result goes; the new one shows in the shell */
     play = openShell(type === 'daily' ? 'Arena: daily challenge' : 'Arena: Practice', { signal: run.signal, exitId: 'arStop', onExit: stop, focusBack: () => $('#arGo', shell) });
     const area = play.area, rsig = run.signal;
@@ -1135,7 +1137,7 @@ function arenaView({ signal } = {}) {
     const count = child(rsig); /* leaving or stopping during the countdown means the round never starts */
     every(() => { n--; if (n === 0) { count.abort(); fx.sfx('ok'); start(area, rsig); } else { area.firstChild.textContent = n; fx.sfx('tick'); } }, 700, count.signal);
   };
-  const start = (area, rsig) => {
+  const start = (area, rsig) => withArena(area, rsig, ({ runArena }) => {
     track('arena/' + league + '/' + type, 'Arena round'); metrics.roundStart('arena');
     /* Practice: the Dial picks each question. Daily: it only records the answers (the questions are the same for everyone).
        Untimed: the Practice round with no clock, chosen or (for a Practice round) set by Calm. The daily round keeps its clock. */
@@ -1169,7 +1171,7 @@ function arenaView({ signal } = {}) {
       const done = $('#arDone', area); done.onclick = back; done.focus({ preventScroll: true });
       fx.rollSparks(area, rsig);
     } });
-  };
+  });
   lobby();
 }
 
@@ -1208,12 +1210,12 @@ function playView(hash, { signal }) {
       <p><a class="md-btn md-btn--primary" href="${sec.href}">Back to ${sec.label}</a></p></div></section>`;
     return;
   }
-  playPlace.back = sec;
   view.classList.add('px-view', `px-view--${e.id}`);
-  onAbort(signal, () => { view.classList.remove('px-view', `px-view--${e.id}`); playQuiet(); });
+  onAbort(signal, () => { view.classList.remove('px-view', `px-view--${e.id}`); loadKit().then(k => k.suspendAudio(), () => {}); });
   view.innerHTML = `<div class="md-wrap px-loading" aria-busy="true">Opening ${e.title}...</div>`;
-  Promise.all([import(`./play/exp/${e.id}.js`), playCss('base'), playCss(e.id)]).then(([mod]) => {
+  Promise.all([import(`./play/exp/${e.id}.js`), playCss('base'), playCss(e.id), loadKit()]).then(([mod, , , kit]) => {
     if (signal.aborted) return;
+    kit.place.back = sec;
     view.innerHTML = '';
     mod.mount({ root: view, signal, params, exp: e });
     /* Like render(): focus the heading after a route change, not on the first page load */
@@ -1515,8 +1517,11 @@ function homeTour(signal) {
     const has = sel => { const el = document.querySelector(sel); if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
     const steps = resolveTour(has, fx.mode());
     if (!steps.length) { releaseSlot('tour'); return; }
-    setTourState('shown'); metrics.tourEvent('start');
-    startTour(steps, { signal, onEnd: outcome => { releaseSlot('tour'); if (outcome === 'finish') { setTourState('done'); metrics.tourEvent('finish'); } else { setTourState('skipped'); metrics.tourEvent('skip'); } } });
+    loadTour().then(({ startTour }) => {
+      if (signal.aborted) return;
+      setTourState('shown'); metrics.tourEvent('start');
+      startTour(steps, { signal, onEnd: outcome => { releaseSlot('tour'); if (outcome === 'finish') { setTourState('done'); metrics.tourEvent('finish'); } else { setTourState('skipped'); metrics.tourEvent('skip'); } } });
+    }, () => releaseSlot('tour'));
   }, 300, signal);
 }
 function guideView(section, { signal } = {}) {
@@ -1792,7 +1797,10 @@ later(() => lateImport(loadInstall, 'install.js'), 100, boot.signal);
 /* Word problems (openspec word-problems): the story templates load after the first paint, like install.js */
 later(() => lateImport(loadStories, 'stories.js'), 150, boot.signal);
 /* The Sutra tag module, a second after the page has loaded, so a view that draws a tag has it at once (#126 review) */
-const preloadTags = () => later(() => lateImport(loadTags, 'sutra-tag.js'), 1000, boot.signal);
+const preloadTags = () => later(() => {
+  lateImport(loadTags, 'sutra-tag.js');
+  lateImport(loadArena, 'arena.js'); lateImport(loadTour, 'tour.js'); lateImport(loadKit, 'play/kit.js');
+}, 1000, boot.signal);
 if (document.readyState === 'complete') preloadTags(); else on(window, 'load', preloadTags, boot.signal, { once: true });
 /* Offline: /sw.js (scope /play/, the game only) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {

@@ -48,10 +48,10 @@ test('a returning player loads home with no console errors or failed requests', 
   expect(issues.failed, 'failed requests').toEqual([]);
 });
 
-/* The late imports (js/install.js after boot, js/stories.js after first paint, js/sutra-tag.js a second after load) are
-   not in the first paint's import graph. A reload while one is still loading cuts it off; that is the page being left,
+/* The late imports (js/install.js after boot, js/stories.js after first paint, and a second after load js/sutra-tag.js,
+   js/arena.js, js/tour.js and js/play/kit.js) are not in the first paint's import graph. A reload while one is still loading cuts it off; that is the page being left,
    not a failure, so nothing is logged (lateImport in js/life.js). Each is held in flight until the reload has started. */
-for (const name of ['install', 'stories', 'sutra-tag']) {
+for (const name of ['install', 'stories', 'sutra-tag', 'arena', 'tour', 'play/kit']) {
   test(`a reload while ${name}.js is still loading logs no console error`, async ({ page, issues }) => {
     const path = new URL(await mod(page, name), 'http://x').pathname;
     let hold = true, seen: () => void = () => {};

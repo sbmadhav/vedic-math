@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 824460,
+  "total": 824709,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -48,7 +48,7 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 48244,
+   "/js/app.js": 48487,
    "/js/arena.js": 5392,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -151,8 +151,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 24311,
-   "/play/": 4057,
-   "/sw.js": 6238,
+   "/play/": 4051,
+   "/sw.js": 6250,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -240,6 +240,13 @@
     "from": 822609,
     "to": 824217,
     "why": "Sutras first, part 3: Home leads with the Sutras (the Sutra door, \"Your sutras\" on Challenger and Pro Home, \"A sutra to say\" on Explorer Home; js/app.js, math.css); Home's Sutra door draws its tag with the first paint from js/sutra-tag-core.js (new, 1,902 bytes: the Sutra map, the kind words and tagHTML, moved out of js/sutra-tag.js, which shrinks from 2,823 to 1,405 bytes and still loads on demand): the placeholder it had before moved the doors when js/sutra-tag.js arrived (layout shift 0.034 against 0.007 on the repeat visit in the perf job) and the early module load put the repeat visit's blocking time at 90 ms against production's 64 (limit 89); Home's Sutra links count their tag event at once from the static SURFACES. measured on main as of #129, so that code is the only growth"
+   },
+   {
+    "date": "2026-10-27",
+    "pr": 156,
+    "from": 824472,
+    "to": 824709,
+    "why": "A late import cut off by a page change or reload no longer logs an error: lateImport in js/life.js (+265 bytes) logs a failure a second later unless a pagehide came since the load began (WebKit rejects the import before pagehide), and the late loads in js/app.js (install.js, stories.js, and after the load event sutra-tag.js, arena.js, tour.js and play/kit.js) and js/sutra-tag-slot.js use it. No new file. Measured on main as of #158, so that code is the only growth"
    }
   ]
  },
