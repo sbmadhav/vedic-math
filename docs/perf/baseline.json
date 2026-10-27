@@ -243,7 +243,7 @@
    },
    {
     "date": "2026-10-27",
-    "pr": null,
+    "pr": 157,
     "from": 824217,
     "to": 824457,
     "why": "The big confetti on time (openspec change confetti-by-time): js/celebrate.js ends the burst with a life.js timer after CONFETTI_MS (1,833 ms, 110 frames of a 60 Hz screen) and draws each piece with confettiAt, the old per-frame path written as a function of elapsed time, so a slow browser, a 120 Hz screen and a tab that draws no frames all see the same 1.8 s burst (+225 bytes); /play/ and /sw.js move by their stamps (+15)"
