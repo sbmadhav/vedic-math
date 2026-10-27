@@ -156,24 +156,30 @@ test.describe('motion allowed', () => {
         performance.now = () => T;
         try { C.confetti(30); } finally { Math.random = random; performance.now = now; }
         const g = document.querySelector<HTMLCanvasElement>('canvas.fx-confetti')!.getContext('2d')!;
-        let frame: number[][] = [];
+        let frame: number[][] = [], first: number[][] = [];
         const translate = g.translate.bind(g);
         g.translate = (x: number, y: number) => { frame.push([x, y]); translate(x, y); };
         for (let t = 0; ; t = Math.min(1000, t + ms)) {
           frame = [];
           queue.splice(0).forEach(cb => cb(T + t));
+          if (t === 0) first = frame;
           if (t >= 1000) break;
         }
         window.requestAnimationFrame = raf;
-        return frame;
+        return { first, last: frame };
       }, every);
       await expect(page.locator('canvas.fx-confetti')).toHaveCount(0, { timeout: 5000 }); // the burst ends on its own timer
       return drawn;
     };
-    const sixty = await at1s(1000 / 60), slow = await at1s(48), fast = await at1s(8);
-    expect(sixty).toHaveLength(30);
-    for (const other of [slow, fast]) {
-      expect(other).toHaveLength(30);
+    const runs = [await at1s(1000 / 60), await at1s(48), await at1s(8)];
+    // Each piece moved from where the first frame (at the burst's start) drew it, so a loop stuck at one time fails
+    for (const { first, last } of runs) {
+      expect(first).toHaveLength(30);
+      expect(last).toHaveLength(30);
+      last.forEach(([x, y], i) => expect(Math.hypot(x - first[i][0], y - first[i][1]), `piece ${i} moved (px)`).toBeGreaterThan(20));
+    }
+    const sixty = runs[0].last;
+    for (const other of runs.slice(1).map(r => r.last)) {
       other.forEach(([x, y], i) => {
         expect(Math.abs(x - sixty[i][0]), `piece ${i} x`).toBeLessThan(0.01);
         expect(Math.abs(y - sixty[i][1]), `piece ${i} y`).toBeLessThan(0.01);
