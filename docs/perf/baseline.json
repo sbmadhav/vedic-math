@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 825003,
+  "total": 825099,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -142,7 +142,7 @@
    "/js/tour.js": 2215,
    "/js/try.js": 4416,
    "/js/vedic.js": 9857,
-   "/js/videos.js": 20537,
+   "/js/videos.js": 20615,
    "/js/viz.js": 5848,
    "/js/voice-index.js": 213,
    "/js/voice-plan.js": 2458,
@@ -151,8 +151,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 24311,
-   "/play/": 4051,
-   "/sw.js": 6257,
+   "/play/": 4060,
+   "/sw.js": 6266,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -254,6 +254,13 @@
     "from": 824709,
     "to": 825003,
     "why": "confetti-by-time: celebrations last a fixed time (js/celebrate.js); measured on main as of #156 and #158; file deltas: /js/celebrate.js +287, /sw.js +7, +294 in all"
+   },
+   {
+    "date": "2026-10-27",
+    "pr": 160,
+    "from": 825003,
+    "to": 825099,
+    "why": "One Watch shelf video for the duplex Trick (tecmath HWF1y5FfGXo): js/videos.js is precached, so its new entry counts (+78 bytes); the stamps in /play/ and /sw.js +9 each, with no change to their source; +96 in all; measured on main as of #157"
    }
   ]
  },

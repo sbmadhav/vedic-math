@@ -46,3 +46,13 @@ Batch 1 (Tricks), 2026-10-15: 23 videos from the approved channels, each checked
 Batch 2 (kindergarten to grade 5 Skills), 2026-10-17: 130 videos from the approved channels, 70 for Explorer and 60 for Challenger, 118 of them made for kids and 8 of them Shorts, each checked the same way. Every one of the 50 Skills from kindergarten to grade 5 now has two or more hand-matched videos, and every kindergarten to grade 2 Skill has two or more for Explorer (`test/videos.test.mjs` holds this). Explorer's shelf goes from 2 videos to 72.
 
 Batch 3 (grades 6 to 8 Skills), 2026-10-17: 112 videos from the approved channels, 3 to 5 for each of the 29 grade 6 to 8 Skills, checked the same way (oEmbed 200; length, captions and made-for-kids from the watch page; embedded playback at the site's origin; captions read). No approved channel had a video that meets the bar for the six Tricks above: tecmath's squaring videos use the nearest ten, not the duplex, and the divisibility by 7 videos double and subtract instead of using the osculator.
+
+Trick top-up, 2026-10-27: every approved channel searched again for the six Tricks above, each candidate checked the same way. One passes: tecmath's "Square ANY number up to 1000" (`HWF1y5FfGXo`, 10:19) teaches the duplex (square each digit, twice the cross product in the middle, add), so `duplex` now has a video. The other five still have none on an approved channel:
+- `by9s`: the only full lesson, mindpowermath's (`SGPhyFRnxAg`), runs 13:08; MooMooMath's nines tricks stop at one- and two-digit numbers times 9.
+- `osculator`: Math with Mr. J and MooMooMath teach double the last digit and subtract, a different rule; mindpowermath's divisibility lessons run 12:52 and 43:19.
+- `zero-sum`, `ratio-zero`: no approved channel teaches them. Glover's equation videos are about straight lines.
+- `add-sub`: tecmath's simultaneous equation tricks use cross-multiplication; mindpowermath's runs 24:34.
+
+Videos on channels not yet approved that pass the other checks are listed for the owner in the top-up pull request: 98thPercentile (`by9s`), Bu-Math Explorations (`osculator`, for 13 only), Scholarsight (`zero-sum`) and MathsCore (`add-sub`, `ratio-zero`).
+
+`hour-half-hour-song` (`MaVgBjVh4b8`) failed the daily check once on 2026-10-27 with a 10 second load timeout, not a YouTube error. On the same day oEmbed answered 200, the watch page said it plays embedded, and the live check passed 3 times in 3, so it stays.
