@@ -257,7 +257,7 @@
    },
    {
     "date": "2026-10-27",
-    "pr": "videos-fill-tricks",
+    "pr": 160,
     "from": 825003,
     "to": 825099,
     "why": "One Watch shelf video for the duplex Trick (tecmath HWF1y5FfGXo): js/videos.js is precached, so its new entry counts (+78 bytes); the stamps in /play/ and /sw.js +9 each, with no change to their source; +96 in all; measured on main as of #157"
