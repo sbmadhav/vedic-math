@@ -22,7 +22,7 @@ import { LEVELS, LEVELS_PER_GAME, levelMedal, boardGame } from './games.js';
 import * as AD from './adapt.js';
 import { initAmbient, bgOn, setBg, setBgLevel, BG_NOTES, stop as stopMusic, isPlaying as musicOn } from './ambient.js';
 import { levelFor, ROOTS_INTRO } from './sky-scene.js';
-import { on, later, every, child, onAbort } from './life.js';
+import { on, later, every, child, onAbort, lateImport } from './life.js';
 import * as metrics from './metrics.js';
 import { boltHTML } from './bolt.js';
 import { FAMILY_SVG } from './family.js';
@@ -1793,13 +1793,13 @@ modeFromLink();
 render();
 initAmbient();
 /* The install module, after the first paint (openspec change install-app, design D12); a load that fails is reported once */
-later(() => loadInstall().catch(e => console.error('install.js did not load', e)), 100, boot.signal);
+later(() => lateImport(loadInstall, 'install.js'), 100, boot.signal);
 /* Word problems (openspec word-problems): the story templates load after the first paint, like install.js */
-later(() => loadStories().catch(e => console.error('stories.js did not load', e)), 150, boot.signal);
+later(() => lateImport(loadStories, 'stories.js'), 150, boot.signal);
 /* The Sutra tag module, a second after the page has loaded, so a view that draws a tag has it at once (#126 review) */
 const preloadTags = () => later(() => {
-  loadTags().catch(e => console.error('sutra-tag.js did not load', e));
-  [loadArena, loadTour, loadKit].forEach(load => load().catch(() => {}));
+  lateImport(loadTags, 'sutra-tag.js');
+  lateImport(loadArena, 'arena.js'); lateImport(loadTour, 'tour.js'); lateImport(loadKit, 'play/kit.js');
 }, 1000, boot.signal);
 if (document.readyState === 'complete') preloadTags(); else on(window, 'load', preloadTags, boot.signal, { once: true });
 /* Offline: /sw.js (scope /play/, the game only) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */

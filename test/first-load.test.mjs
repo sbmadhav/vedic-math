@@ -31,5 +31,5 @@ test('js/app.js imports js/voice-plan.js itself, after its other imports, so the
 test('js/app.js loads each of them on demand, and again after the page has loaded', () => {
   const app = src('app.js');
   for (const f of ['arena.js', 'tour.js', 'play/kit.js']) assert.ok(app.includes(`import('./${f}')`), `js/app.js loads js/${f} on demand`);
-  assert.match(app, /\[loadArena, loadTour, loadKit\]\.forEach/);
+  for (const [load, f] of [['loadArena', 'arena.js'], ['loadTour', 'tour.js'], ['loadKit', 'play/kit.js']]) assert.ok(app.includes(`lateImport(${load}, '${f}')`), `js/app.js loads js/${f} after the page has loaded, through lateImport`);
 });
