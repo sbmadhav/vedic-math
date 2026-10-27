@@ -127,7 +127,7 @@ Each Mode SHALL have its own Try a trick at `#/try`, which opens the one of the 
 - **THEN** the Mode is Explorer and "The 11 sandwich" opens, naming Ūrdhva-Tiryagbhyām, with no Star, Belt or Star count anywhere in it
 
 ### Requirement: Try a trick on Home
-Each Mode's Home SHALL show a Try a trick card, after the three doors in Challenger and Pro and after the picture tiles in Explorer, until the Player has finished that Mode's Try a trick on this device. Its button SHALL open `#/try` and SHALL NOT be a primary button.
+Each Mode's Home SHALL show a Try a trick card, after the three doors in Challenger and Pro (after the Sky map when the Sky is the Home) and after the picture tiles in Explorer, until the Player has finished that Mode's Try a trick on this device. Its button SHALL open `#/try` and SHALL NOT be a primary button.
 
 #### Scenario: From Home
 - **WHEN** a new Pro Player who picked the Pro card presses the Try a trick card's button on Home

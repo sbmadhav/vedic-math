@@ -90,6 +90,26 @@ test('A tab that draws no frames: the burst is removed between 1,833 and 3,000 m
   await expectTimedBurst(page, 1);
 });
 
+/* A suspended tab runs no code: the burst's removal timer is held back (never fires) and no frame is drawn, as
+   while the browser had the hidden tab stopped; the tab shown again ends the burst at once */
+test('A hidden tab the browser suspends: the burst is removed as soon as the tab runs again or becomes visible', async ({ page }) => {
+  await paceFrames(page, 0);
+  await watchBursts(page);
+  await page.goto(APP);
+  await page.evaluate(async () => {
+    const C = await e2eMod('celebrate');
+    const st = window.setTimeout;
+    (window as any).setTimeout = (fn: TimerHandler, ms?: number, ...a: unknown[]) => (ms ?? 0) >= 1000 ? 0 : st(fn, ms, ...a);
+    try { C.confetti(30); } finally { window.setTimeout = st; }
+  });
+  await expect.poll(async () => (await bursts(page)).length).toBe(1);
+  await page.waitForTimeout(2200);
+  expect((await bursts(page))[0].removed, 'still there while the tab runs no code').toBeNull();
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await expect(page.locator('canvas.fx-confetti')).toHaveCount(0);
+  expect((await bursts(page))[0].removed).not.toBeNull();
+});
+
 /* The same pieces (Math.random fixed while the burst starts) drawn by the real loop with frames delivered at exact
    times from the burst's start, every 1000/60 ms and every 48 ms: each piece's place at 1,000 ms, read from the
    canvas's translate calls */
