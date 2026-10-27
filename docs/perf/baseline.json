@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 824709,
+  "total": 825003,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -52,7 +52,7 @@
    "/js/arena.js": 5392,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
-   "/js/celebrate.js": 3080,
+   "/js/celebrate.js": 3367,
    "/js/check.js": 2946,
    "/js/cloud-config.js": 588,
    "/js/cloud.js": 4437,
@@ -152,7 +152,7 @@
    "/manifest.webmanifest": 605,
    "/math.css": 24311,
    "/play/": 4051,
-   "/sw.js": 6250,
+   "/sw.js": 6257,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -247,6 +247,13 @@
     "from": 824472,
     "to": 824709,
     "why": "A late import cut off by a page change or reload no longer logs an error: lateImport in js/life.js (+265 bytes) logs a failure a second later unless a pagehide came since the load began (WebKit rejects the import before pagehide), and the late loads in js/app.js (install.js, stories.js, and after the load event sutra-tag.js, arena.js, tour.js and play/kit.js) and js/sutra-tag-slot.js use it. No new file. Measured on main as of #158, so that code is the only growth"
+   },
+   {
+    "date": "2026-10-27",
+    "pr": 157,
+    "from": 824709,
+    "to": 825003,
+    "why": "confetti-by-time: celebrations last a fixed time (js/celebrate.js); measured on main as of #156 and #158; file deltas: /js/celebrate.js +287, /sw.js +7, +294 in all"
    }
   ]
  },

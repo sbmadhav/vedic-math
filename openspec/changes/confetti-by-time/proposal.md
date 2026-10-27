@@ -1,6 +1,6 @@
 # Proposal
 
-Status: plan only, waiting for the owner's approval. Nothing here is built; merging this plan is not that approval.
+Status: approved by the owner on 2026-10-27; built in the pull request on branch `confetti-by-time` (tasks 1 and 2). Task 3 (the archive and its coverage spec) follows the release.
 
 ## Why
 
