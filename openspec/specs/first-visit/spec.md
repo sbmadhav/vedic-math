@@ -36,7 +36,7 @@ Nothing in the app SHALL set a Mode guess any more. When a Player record still h
 - **THEN** the Player's Mode is Challenger with no guess, and `math/mode/challenger` is sent as for a card pick
 
 ### Requirement: Back from a Star opened from Home goes Home
-A Star opened from Home or from the end of a Try a trick SHALL offer "Back home" as its way out, returning to Home. A Star opened from the Dojo, a Trick page or by link SHALL keep its present Back (the Dojo, the Trick, or the Sky).
+A Star opened from Home or from the end of a Try a trick SHALL offer "Back home" as its way out, returning to Home (for a Player whose Home is the Sky, the Sky requirement "Back to the Sky" applies: the label reads Back to the Sky and it still returns to Home). A Star opened from the Dojo, a Trick page or by link SHALL keep its present Back (the Dojo, the Trick, or the Sky).
 
 #### Scenario: After the trial
 - **WHEN** a Challenger who finished Try a trick presses Play Star 1 on its end card and leaves the Star round with its Back control
