@@ -10,8 +10,6 @@
    .md-header--tabs the nav moves to its own rows below 1180px and wraps, so every tab stays on screen (a sideways-scrolling
    row hid Sutras, Watch and Guide off the right edge of a phone with no sign they were there). Here: the game's Find tab,
    the music pill and the Player chip. */
-.skip { position: absolute; left: -9999px; top: 8px; z-index: 99; background: var(--card); color: var(--ink); padding: var(--space-2) var(--space-3-5); border: 2px solid var(--edge); border-radius: var(--radius-pill); }
-.skip:focus { left: 12px; }
 main:focus { outline: none; }
 h1:focus, h2:focus, [tabindex="-1"]:focus-visible { outline: none !important; }
 .mq-nav { gap: 2px; }

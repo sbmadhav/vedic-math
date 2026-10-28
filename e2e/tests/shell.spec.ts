@@ -78,8 +78,8 @@ test.describe('the Arena round fills the screen', () => {
   test('the rest of the page is inert while the shell is open, and leaving the result focuses Start', async ({ page }) => {
     await heldClock(page);
     await arenaPractice(page, true);
-    const inert = () => page.evaluate(() => ({ view: [...document.querySelectorAll('#view > :not(.play-shell)')].every(n => (n as HTMLElement).inert), header: (document.querySelector('body > header') as HTMLElement).inert, footer: (document.querySelector('body > footer') as HTMLElement).inert }));
-    expect(await inert()).toEqual({ view: true, header: true, footer: true });
+    const inert = () => page.evaluate(() => ({ view: [...document.querySelectorAll('#view > :not(.play-shell)')].every(n => (n as HTMLElement).inert), header: (document.querySelector('body > header') as HTMLElement).inert, footer: (document.querySelector('body > footer') as HTMLElement).inert, skip: (document.querySelector('body > .md-skip') as HTMLElement).inert }));
+    expect(await inert()).toEqual({ view: true, header: true, footer: true, skip: true });
     await page.clock.fastForward(61_000);
     await page.clock.runFor(100);
     await expect(page.locator('.play-shell .ar-result')).toBeVisible();
@@ -87,7 +87,7 @@ test.describe('the Arena round fills the screen', () => {
     await page.locator('#arDone').click();
     await expect(page.locator('.play-shell')).toHaveCount(0);
     await expect(page.locator('#arGo')).toBeFocused();
-    expect(await inert()).toEqual({ view: false, header: false, footer: false });
+    expect(await inert()).toEqual({ view: false, header: false, footer: false, skip: false });
     // The result stays in the lobby, and Stop during a round also returns to Start
     await expect(page.locator('#arShell .ar-result')).toBeVisible();
     await page.locator('#arGo').click();

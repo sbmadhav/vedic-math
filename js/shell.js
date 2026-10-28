@@ -39,7 +39,7 @@ export function openShell(title, { signal, onExit = null, exit = 'Stop', exitId 
   exitBtn.id = exitId; exitBtn.textContent = exit;
 
   /* Everything but the shell is inert: the rest of the view, the site header, the footer and the skip link */
-  const others = [...view.children, ...document.querySelectorAll('body > header, body > footer, body > .skip')].filter(n => n !== el && !n.inert);
+  const others = [...view.children, ...document.querySelectorAll('body > header, body > footer, body > .md-skip')].filter(n => n !== el && !n.inert);
   others.forEach(n => (n.inert = true));
   const y = window.scrollY || 0, root = document.documentElement;
   root.classList.add('play-open');
