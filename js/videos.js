@@ -300,10 +300,10 @@ export const VIDEOS = [
     modes: ['challenger'], skills: ['3-area'], tricks: [], madeForKids: true, captions: true, checked: '2026-10-17',
     why: 'Area counts the square units that cover a shape: a rectangle\'s is length times width.' },
   { id: 'two-step-song', title: 'Multi-step word problems song', channel: 'Numberock', yt: '_Vzd16NqR_U', duration: 250, kind: 'video',
-    modes: ['challenger'], skills: ['3-twostep'], tricks: [], madeForKids: true, captions: true, checked: '2026-10-17',
+    modes: ['challenger'], skills: ['3-twostep', '8-reallife'], tricks: [], madeForKids: true, captions: true, checked: '2026-10-17',
     why: '44 miles plus 80 is 124, and 200 minus 124 leaves 76: one step at a time.' },
   { id: 'two-step-markers', title: 'Two-step word problems', channel: 'Khan Academy', yt: 'IW8qg7eZOTo', duration: 230, kind: 'video',
-    modes: ['challenger'], skills: ['3-twostep'], tricks: [], madeForKids: false, captions: true, checked: '2026-10-17',
+    modes: ['challenger'], skills: ['3-twostep', '8-reallife'], tricks: [], madeForKids: false, captions: true, checked: '2026-10-17',
     why: '450 markers, 163 more donated, then 278 lost: add, then subtract, with a strip diagram.' },
   { id: 'long-multiplication-song', title: 'Long multiplication song', channel: 'Numberock', yt: '9dYXfZZsbzc', duration: 181, kind: 'video',
     modes: ['challenger'], skills: ['4-mult2'], tricks: [], madeForKids: true, captions: true, checked: '2026-10-17',
@@ -511,6 +511,10 @@ export const VIDEOS = [
   { id: 'cube-roots-tecmath', title: 'tecmath: Cube roots of perfect cubes', channel: 'tecmath', yt: '5yOadRCaxOY', duration: 519, kind: 'video',
     modes: ['challenger'], skills: [], tricks: ['cuberoot'], madeForKids: false, captions: true, checked,
     why: 'Each last digit of a cube comes from one last digit of the root, and the thousands give the tens: the cube root of 21952 is 28.' },
+  /* Trick top-up, checked 2026-10-27 */
+  { id: 'duplex-tecmath', title: 'tecmath: Square two- and three-digit numbers digit by digit', channel: 'tecmath', yt: 'HWF1y5FfGXo', duration: 619, kind: 'video',
+    modes: ['challenger'], skills: ['6-exp'], tricks: ['duplex'], madeForKids: false, captions: true, checked: '2026-10-27',
+    why: 'Square each digit, then put twice the digits multiplied in the middle and add: 67 squared is 4489, and 512 squared is 262144.' },
 
   /* ---------- Pro ---------- */
   { id: 'expand-simplify', title: 'Eddie Woo: Expand and simplify expressions', channel: 'Eddie Woo', yt: 'EAyI-yiXaek', duration: 92, kind: 'video',
@@ -691,7 +695,7 @@ export const VIDEOS = [
     modes: ['challenger'], skills: ['7-prop'], tricks: [], madeForKids: false, captions: true, checked: '2026-10-17',
     why: '8/36 = 10/x by scaling numerator and denominator alike, or by cross multiplying; x is 45.' },
   { id: 'proportion-words-moomoo', title: 'Proportions in word problems', channel: 'MooMooMath and Science', yt: 'MkkZaiz_Nps', duration: 236, kind: 'video',
-    modes: ['challenger'], skills: ['7-prop'], tricks: [], madeForKids: false, captions: true, checked: '2026-10-17',
+    modes: ['challenger'], skills: ['7-prop', '8-reallife'], tricks: [], madeForKids: false, captions: true, checked: '2026-10-17',
     why: 'Cooks to servers is 2 to 5 and there are 42 in all: set up part over total and find 12 cooks and 30 servers.' },
   { id: 'percent-change-mrj', title: 'Percent of change', channel: 'Math with Mr. J', yt: 'jAcDJDjQk2g', duration: 265, kind: 'video',
     modes: ['challenger'], skills: ['7-pctchange'], tricks: [], madeForKids: false, captions: true, checked: '2026-10-17',

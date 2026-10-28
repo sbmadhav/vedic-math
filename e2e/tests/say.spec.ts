@@ -60,7 +60,8 @@ test('the Trick page of div9 (Nikhilaṃ, division by 9) plays the Sutra 2 clip'
   await fakeAudio(page);
   const urls = soundRequests(page);
   await open(page, '#/skill/v-div9');
-  await expect(page.locator('.mq-sutra b[lang="sa-Latn"]')).toHaveText('Nikhilaṃ (division by 9)');
+  await expect(page.locator('.mq-sutra .sutra-tag-k')).toHaveText('A special case of');
+  await expect(page.locator('.mq-sutra b[lang="sa-Latn"]')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
   await page.locator('.mq-sutra').getByRole('button', { name: 'Hear how to say Nikhilaṃ Navataścaramaṃ Daśataḥ' }).click();
   await expect.poll(() => urls[0]).toBe('/sounds/sutras/s2.m4a');
 });
@@ -140,7 +141,7 @@ test('names say their language, and every Say it button is at least 44 by 44', a
   await open(page, '#/places');
   await expect(page.locator('.places-h > span').first()).toHaveAttribute('lang', 'sa-Latn');
   await open(page, '#/katas/sq5');
-  await expect(page.locator('#view .md-tag--plum').first()).toHaveAttribute('lang', 'sa-Latn');
+  await expect(page.locator('#view .sutra-tag b').first()).toHaveAttribute('lang', 'sa-Latn'); /* the Katas list's Sutra tag (openspec change sutras-first) */
 });
 
 test('at 320 px wide the deep dive with its Say it button does not scroll sideways', async ({ page }) => {

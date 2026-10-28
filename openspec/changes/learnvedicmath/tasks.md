@@ -51,7 +51,7 @@ Tasks marked **[OWNER]** can only be done by the owner (accounts, payments, DNS,
 - [x] 2.4 `build.py` fails on any `sbmadhav.com` reference in a published file except the export-page URL, any `https://` module import, and any third-party host not in `THIRD_PARTIES` (D10). Verify: build tests with one failing case each.
 - [x] 2.5 `wrangler.jsonc` as in D1, wrangler pinned in a new `deploy/package.json`; `_config.yml` `exclude:` gains `wrangler.jsonc`, `worker/`, `deploy/`, `vendor/**/SHA256SUMS`, `tools/`, `site/` sources (the build renders them). Verify: `npx wrangler deploy --dry-run` from `deploy/` succeeds; CI's repo-only check lists the new paths.
   - Dry run passes locally with wrangler 4.151.2 (also in CI). `run_worker_first` accepts the path array; `wrangler dev` applies `_headers`, `_redirects` and auto-trailing-slash (`/play` answers 307 to `/play/`).
-- [x] 2.6 Update `CLAUDE.md` (paths, no Explore rule, `/js/analytics.js`, Cloudflare deploy, `wrangler dev`, the moved target, the new cache prefix), `README.md` and `CONTRIBUTING.md`.
+- [x] 2.6 Update `AGENTS.md` (paths, no Explore rule, `/js/analytics.js`, Cloudflare deploy, `wrangler dev`, the moved target, the new cache prefix), `README.md` and `CONTRIBUTING.md`.
 
 ## 3. Vendored assets and theme
 

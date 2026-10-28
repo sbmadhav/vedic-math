@@ -29,7 +29,7 @@ export function sections(n) {
       title: w('Find your way', 'Getting around'),
       what: w('The menu at the top takes you to every part of the app.', 'The menu bar at the top takes you to every part of the app. Your Me page is the round avatar at its right end.'),
       how: [
-        w('Tap Home, Learn, Arena, Games, Watch, Guide or Find in the menu.', 'Pick Home, Learn, Dojo, Arena, Games, Sutras, Watch, Guide or Find in the menu bar. Hover a name to see what is there.'),
+        w('Tap Home, Sutras, Learn, Arena, Games, Watch, Guide or Find in the menu.', 'Pick Home, Sutras, Learn, Dojo, Arena, Games, Watch, Guide or Find in the menu bar. Hover a name to see what is there.'), /* the menu order (openspec change sutras-first: Sutras first, in every Mode) */
         w('On a phone, slide the menu sideways to see the rest.', 'On a phone, swipe the menu bar sideways to reach the music button and your Me page.'),
         w('Daybreak makes the page light. Deep Space makes it dark.', 'Daybreak (light) and Deep Space (dark) at the top change the colors; System follows your device.'),
         w('The links above a page title take you back a step.', 'The trail of links above each page title (Vedic Math / Games / ...) takes you back a step.'),
@@ -161,7 +161,7 @@ export function sections(n) {
       title: w('Sutra cards', 'Sutra cards and deep dives'),
       what: w('Cards with short math sayings. Flip them to collect them.', `The ${n.sutras} sutras and ${n.subsutras} sub-sutras from Bharati Krishna Tirtha's 1965 book: short word formulas, each a whole method in a phrase, as cards to collect.`),
       how: [
-        w('Sutras is not in the Explorer menu, so use the button below.', 'Open Sutras from the menu bar.'),
+        w('Tap Sutras in the menu.', 'Open Sutras from the menu bar.'), /* Sutras is in Explorer's menu (openspec change sutras-first) */
         w('Tap a card to flip it. That collects it!', 'Tap a card to flip it and collect it (5 Sparks the first time).'),
         w('Learn more shows a moving picture that explains it.', 'Learn more opens a deep dive: an animated diagram, why it works, worked examples, where it is used and Try it yourself buttons.'),
         w('Close it with the X button.', 'Move to the next sutra with the buttons at the bottom. Close with the X button or Escape.'),

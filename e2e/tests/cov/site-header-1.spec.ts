@@ -29,7 +29,7 @@ test('Game header: brand, the game nav, color scheme, Music and the Player chip 
   await expect(page.locator('body > header .md-brand')).toHaveAttribute('href', '/?home');
   await expect(page.locator('body > header .md-brand')).toContainText('Learn Vedic Math');
   const tabs = await page.locator('header .mq-nav a:visible').allInnerTexts();
-  expect(tabs.map(t => t.trim())).toEqual(['Home', 'Learn', 'Dojo', 'Arena', 'Games', 'Sutras', 'Watch', 'Guide', 'Find']);
+  expect(tabs.map(t => t.trim())).toEqual(['Home', 'Sutras', 'Learn', 'Dojo', 'Arena', 'Games', 'Watch', 'Guide', 'Find'] /* Sutras first (openspec change sutras-first) */);
   const tops = await page.evaluate(() => ['.md-brand', '.mq-nav', '#themeBtn', '#vmMBtn', '#mqChip a']
     .map(s => { const r = document.querySelector(s)!.getBoundingClientRect(); return Math.round(r.top + r.height / 2); }));
   for (const t of tops) expect(Math.abs(t - tops[0])).toBeLessThanOrEqual(2);

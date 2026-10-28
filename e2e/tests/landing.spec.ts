@@ -13,7 +13,7 @@ test.describe('a first visit', () => {
     page.on('request', r => asked.push(r.url()));
     await page.goto('/');
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.locator('main h1')).toHaveText('Math tricks you can do in your head');
+    await expect(page.locator('main h1')).toHaveText('Math in your head, the sutra way');
     await expect(page.getByRole('img', { name: 'The Nikhilam Family: the Devanagari digits one, zero and nine' })).toBeVisible();
     await expect(page.locator('.lv-bolt')).toHaveCount(0);
     for (const m of ['Explorer', 'Challenger', 'Pro']) await expect(page.locator('.lv-modes')).toContainText(m);
@@ -31,7 +31,8 @@ test.describe('a first visit', () => {
     await page.goto('/');
     const start = page.locator('main a.lv-play');
     await expect(start).toHaveText('Start learning');
-    await expect(page.locator('main h2').first()).toHaveText('Pick how you learn');
+    await expect(page.locator('main h2').first()).toHaveText('One short rule, one line of work');
+    await expect(page.locator('#lv-modes-h')).toHaveText('Pick how you learn');
     await start.click();
     await expect(page).toHaveURL(/\/play\/$/);
     await expect(page.locator('.mode-pick .mode-card')).toHaveCount(3);
@@ -214,7 +215,7 @@ test.describe('reduced motion', () => {
 
 /* The Mode cards (openspec change landing-modes-and-return): each card is a link into the game in its Mode, named by
    its call to action, and the game drops the query once it has set the Mode. */
-const CARDS = [['explorer', 'Explorer', 'What do you want to play?'], ['challenger', 'Challenger', 'Ready to get faster?'], ['pro', 'Pro', 'Train your mental math']] as const;
+const CARDS = [['explorer', 'Explorer', 'What do you want to play?'], ['challenger', 'Challenger', 'Learn a sutra, then use it'], ['pro', 'Pro', 'Mental math, the sutra way']] as const;
 const activeMode = (page: import('@playwright/test').Page) => page.evaluate(() => { const p = JSON.parse(localStorage.getItem('vm.players') || '{}'); return ((p.list || []).find((x: any) => x.id === p.active) || {}).mode ?? null; });
 
 test.describe('Mode cards on a first visit', () => {
@@ -241,7 +242,7 @@ test.describe('Mode cards on a first visit', () => {
     await expect(card).toBeFocused();
     expect(await card.evaluate(el => getComputedStyle(el).outlineStyle)).toBe('solid');
     await page.keyboard.press('Enter');
-    await expect(page.locator('h1.home-h')).toHaveText('Train your mental math');
+    await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
   });
 });
 
@@ -308,4 +309,61 @@ test.describe('welcome back', () => {
     await expect(page.locator('main h1 img')).toHaveCount(0);
     await expect(page.locator('main h1')).toContainText('Welcome back, <img');
   });
+});
+
+/* The sutras and the method (openspec change sutras-first, landing-pages "The landing page leads with the Sutras and
+   the method" and "Three Sutras one tap from their Deep dives"): right after the hero, in plain HTML. */
+test.describe('the sutras and the method', () => {
+  test.use({ seedMode: null });
+
+  test('One short rule, one line of work: 98 × 97 both ways, three Sutra cards with a meaning and an example each, linking to their Deep dives, and the honest origin line', async ({ page }) => {
+    await page.goto('/');
+    const sec = page.locator('section.lv-sutras');
+    const hero = (await page.locator('section.lv-hero').boundingBox())!, s = (await sec.boundingBox())!, modes = (await page.locator('#lv-modes-h').boundingBox())!;
+    expect(s.y).toBeGreaterThanOrEqual(hero.y + hero.height);
+    expect(modes.y).toBeGreaterThanOrEqual(s.y + s.height);
+    await expect(sec.locator('h2')).toHaveText('One short rule, one line of work');
+    await expect(sec.locator('.md-lede')).toHaveText('A sutra is a short rule that turns a long sum into a step or two you can do in your head. Every trick here is built on one of them.');
+    const ways = sec.locator('.lv-way');
+    await expect(ways.locator('figcaption')).toHaveText(['The school way', 'The sutra way: Nikhilaṃ']);
+    await expect(ways.nth(0).locator('.lv-steps li')).toHaveText(['98 × 7 = 686', '98 × 90 = 8820', '686 + 8820 = 9506']);
+    await expect(ways.nth(1).locator('.lv-steps li')).toHaveText(['98 is 2 below 100, and 97 is 3 below.', '98 − 3 = 95, and 2 × 3 = 06.', 'So the answer is 9506.']);
+    const cards = sec.locator('a.lv-sutra');
+    await expect(cards).toHaveCount(3);
+    await expect(cards.locator('b[lang="sa-Latn"]')).toHaveText(['Ekādhikena Pūrveṇa', 'Nikhilaṃ Navataścaramaṃ Daśataḥ', 'Ūrdhva-Tiryagbhyām']);
+    await expect(cards.locator('.lv-sutra-m')).toHaveText(['By one more than the one before', 'All from 9 and the last from 10', 'Vertically and crosswise']);
+    await expect(cards.locator('.lv-sutra-ex')).toHaveText(['65²: 6 × 7 = 42, then 25, so 4225', '1000 − 368: 9 − 3, 9 − 6, 10 − 8, so 632', '21 × 13: 2, then 2 × 3 + 1 × 1 = 7, then 3, so 273']);
+    for (const [i, id] of ['s1', 's2', 's3'].entries()) await expect(cards.nth(i)).toHaveAttribute('href', `/play/#/sutras/${id}`);
+    await expect(cards.first()).toHaveAccessibleName(/Ekādhikena Pūrveṇa.*By one more than the one before.*See how it works/);
+    const note = sec.locator('.lv-sutras-note');
+    await expect(note).toContainText("The 16 sutras and 13 sub-sutras are from Bharati Krishna Tirtha's book Vedic Mathematics, published in 1965. They are not found in the Vedas; each one is ordinary algebra you can check.");
+    await expect(note.getByRole('link', { name: 'See all 29 sutras' })).toHaveAttribute('href', '/play/#/sutras');
+  });
+
+  test('a Sutra card opens its Deep dive in the game, with no Mode picker and no Mode stored', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('a.lv-sutra[href="/play/#/sutras/s3"]').click();
+    await expect(page).toHaveURL(/\/play\/#\/sutras\/s3$/);
+    await expect(page.locator('dialog.sutra-modal #sdTitle')).toHaveText('Ūrdhva-Tiryagbhyām');
+    await expect(page.locator('.mode-pick')).toHaveCount(0);
+    expect(await page.evaluate(() => { const p = JSON.parse(localStorage.getItem('vm.players') || 'null'); return p && p.list && p.list[0] ? p.list[0].mode : null; }) ?? null).toBeNull();
+  });
+});
+
+test.describe('JavaScript off, the sutras and the method', () => {
+  test.use({ javaScriptEnabled: false, seedMode: null });
+  test('/ shows One short rule, one line of work with both ways and the three Sutra cards', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.lv-sutras h2')).toHaveText('One short rule, one line of work');
+    await expect(page.locator('.lv-sutras .lv-way')).toHaveCount(2);
+    await expect(page.locator('.lv-sutras a.lv-sutra')).toHaveCount(3);
+    await expect(page.locator('.lv-sutras')).toContainText('9506');
+  });
+});
+
+test('welcome back keeps the sutras section under its own hero', async ({ page }) => {
+  await page.goto('/?home');
+  await expect(page.locator('main h1')).toHaveText('Welcome back, Swift Tiger 42');
+  await expect(page.locator('.lv-sutras h2')).toHaveText('One short rule, one line of work');
+  await expect(page.locator('main :is(h1, h2)').nth(1)).toHaveText('One short rule, one line of work');
 });

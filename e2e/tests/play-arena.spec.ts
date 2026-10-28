@@ -169,6 +169,7 @@ test('Daily Number: an early finish reports Sparks only with a star, and focus m
 
 test('Daily Number: a corrupt saved move resets that target instead of failing to open', async ({ page, issues }) => {
   await open(page, '#/arena/daily-number');
+  // No wait for the late imports first: a reload that cuts one off logs nothing (lateImport in js/life.js, load.spec.ts)
   await page.evaluate(() => {
     const t = new Date(), day = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
     const fresh = () => ({ moves: [], done: false });

@@ -12,7 +12,7 @@ import { GAMES, LEVELS_PER_GAME } from '../js/games.js';
 import { SUTRAS, SUBSUTRAS } from '../js/sutras.js';
 import * as LV from '../js/levels.js';
 
-const N = { skills: 114, tricks: TRICKS.length, belts: BELTS.length, katasPer: LV.KATAS_PER_TRICK, kataCount: LV.KATA_COUNT, sutras: SUTRAS.length, subsutras: SUBSUTRAS.length,
+const N = { skills: 115, tricks: TRICKS.length, belts: BELTS.length, katasPer: LV.KATAS_PER_TRICK, kataCount: LV.KATA_COUNT, sutras: SUTRAS.length, subsutras: SUBSUTRAS.length,
   games: GAMES.length, levelsPerGame: LEVELS_PER_GAME, chapters: LV.TOPICS.length, perChapter: LV.PER_CHAPTER, challenges: LV.CHALLENGE_COUNT, badges: 24, videoMinutes: 12, starsPerBelt: 9 };
 const ALL = sections(N);
 const appSrc = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');

@@ -67,8 +67,8 @@ Re-planned 2026-10-21 onto the React and TypeScript stack (`react-typescript` ta
 
 - [ ] 7.1 The parent note (its React view) and `cloud/README.md` (a "Duels" section: what is sent, kept and for how long; no Firebase involved beyond a token the page already holds, checked and dropped). Verify: the copy test checks the parent-note scenarios word for word; e2e reads it on the Me page.
 - [ ] 7.2 Privacy policy and retention drafts in `docs/legal/`: add Friend Duels (D14 table), Turnstile and Cloudflare as processors, the access proof, the internal-operations disclosure; new `docs/legal/duel-dpia.md`. **[OWNER]** lawyer review (task 0.4).
-- [ ] 7.3 `docs/agent/rooms.md`: the room engine and the Duel (architecture, protocol summary, local runs, secrets, the off switches, the report digest, load tests, the deploy rule for the protocol version window, Cloudflare Access steps), listed in `CLAUDE.md`'s index.
-- [ ] 7.4 `CLAUDE.md`: the rooms rules in one or two lines ("never test against the production Duel service", the off switches), details in `docs/agent/rooms.md`. `GLOSSARY.md`: the Duel entries lose "proposed" for Friend Duels when phase 1 ships.
+- [ ] 7.3 `docs/agent/rooms.md`: the room engine and the Duel (architecture, protocol summary, local runs, secrets, the off switches, the report digest, load tests, the deploy rule for the protocol version window, Cloudflare Access steps), listed in `AGENTS.md`'s index.
+- [ ] 7.4 `AGENTS.md` Guardrails: "never test against the production Duel service" and the off switches in one or two lines; a rule for how room code is written goes in `CODING_STANDARDS.md`; details in `docs/agent/rooms.md`. `GLOSSARY.md`: the Duel entries lose "proposed" for Friend Duels when phase 1 ships.
 
 ## 8. Load tests for phase 1 (D20)
 

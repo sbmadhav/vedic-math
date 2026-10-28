@@ -1,159 +1,217 @@
 # Vedic Math for Everyone: Product Plan
 
-Updated Oct 23, 2026 · Owner: Madhav Srinivasan
+Updated 2026-10-25 · Owner: Madhav Srinivasan
 
-Terms are defined in [GLOSSARY.md](../GLOSSARY.md); decisions are in [docs/adr/](adr/).
+Terms are defined in [GLOSSARY.md](../GLOSSARY.md); decisions are in [docs/adr/](adr/); every behavior change is an OpenSpec change in `openspec/changes/`. Statuses below are **shipped** (on `main` and live), **in a PR** (open pull request), **planned** (a change or task exists, not built), and **owner** (waiting on something only the owner can do).
 
-The move to its own site, https://learnvedicmath.com/, is the `learnvedicmath` change (`openspec/changes/learnvedicmath/`): hosting ([ADR 0004](adr/0004-host-on-cloudflare-workers.md)), the move in three phases with the Hand-off on the device ([ADR 0005](adr/0005-phased-move-and-progress-hand-off.md)), Boards for Players under 13 ([ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)) and analytics (its design D11). The hosting, Boards and analytics lines below point there.
+## The vision, in the owner's words
 
-This plan rebases the Oct 13 review and action plan (a six-persona age panel plus an adversarial plan review) onto what has shipped since. The diagnosis carries over; the order of work changes, because world leaderboards and adaptive games are already live.
+> "Make math fun even better than Duolingo. Best in the world. So it has to be a unique way to learn." (2026-10-20)
 
-## TL;DR
+> "It is important to make the sutras and the new method the focus of the app." (2026-10-21)
 
-- **Big idea: "Become the human calculator."** Learn a trick in 60 seconds, then out-race your phone, your parents and your friends. Every feature serves one loop: **Dare → Reveal → Prove → Race → Brag → Return**.
-- **Primary audience for the next 90 days:** ages 9 to 14 and their parent. Explorer (about 4 to 7) and Pro (13 to adult) get targeted fixes, no new tracks.
-- **Next 3 weeks:** fix the 12 trust bugs, add the Age answer before anything from a Player goes online (in every Mode; under-13 Players use Device boards only, [ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)), instrument hash routes, then ship "Beat the calculator" as the Hook.
-- **Gates are real-kid sessions first, metrics second.** Traffic is too low for percentage gates to be more than directional.
+> "I want this to be more interactive, like the kids are inside a game, instead of tasks and tabs... teaching should be more instant. made a mistake, learn and earn. Incentivize the learners to make mistakes, try harder things keep making mistakes and learning. like different levels in a game." (2026-10-15)
+
+What that means for every decision below:
+
+1. **The Sutras are the product.** A Player learns the Sutra way (98 × 97 is 95 | 06, not two rows and an add), sees which Sutra a method comes from, and grows Sutra by Sutra. Speed and Scores serve that, never the other way round.
+2. **Learning happens inside a game.** The Sky is the world, Stars are its levels, a mistake is followed at once by the lesson on the Player's own numbers and a Comeback that pays more than a first right answer.
+3. **Help is a friend, not a button.** The Nikhilam Family notice when a Player is stuck and give a clue, the method or an example on other numbers, never the answer. Bolt is the teacher.
+4. **The math fits the child.** Placement finds the Player's level, the Reading band fits the words and the answers to how they read, and Mode stays a free choice.
+5. **Honest and private by design.** The sutras come from Bharati Krishna Tirtha's 1965 book, not the Vedas. No Score, Sparks total or identity from a Player under 13 goes online; for every Player, a visit's analytics are anonymous counts and fixed-word events, and the features named below (Friend Duels, voice, talking with the Family for 13 and over) send only what their sections list.
+
+The north star stays the **Magic moment**: a Trick learned and then used correctly in a timed round. The Hook still says it in one line: "Become the human calculator."
 
 ## Where things stand
 
-| Area | Oct 13 review | Now |
+| Area | Status |
+| --- | --- |
+| Trust bugs (the 12 from the Oct 13 review) | **Shipped**, all 12, with the view cleanup contract, by 2026-10-15 (archived changes `answer-checking-fixes`, `quests-and-badges-fixes`, `view-cleanup-contract`, `fair-duel`, `copy-and-honest-framing`) |
+| The game world (Star Quest) | **Shipped**: Sparks ([ADR 0003](adr/0003-sparks-replace-xp.md)), Star rounds with Comebacks and Dares, the Sky home, Belts, Calm, celebrations, twelve Play experiences ([star-quest.md](star-quest.md)) |
+| Content | **Shipped**: 135 Skills, 21 Tricks, 29 Sutra deep dives with pronunciation and Verses, 1,050 Katas, 14 games, 285 videos on the Watch shelf, Try a trick inside each Mode on one Sutra (#128) |
+| Sutras first | **In a PR**: Sutra tags (#126), Sutra progress and Sutras first in the menu (#129), Home and the landing page lead with the Sutras (#133) |
+| Family helpers | **In a PR** (#131): the scripted Family behind an off-by-default switch in Me. The React port, recorded voices and talking with the Family are planned |
+| learnvedicmath.com | **Shipped**: live on Cloudflare Workers since 2026-10-20 (#82), the old address hands progress over (#99), Learn not Play (#107), the Nikhilam Family brand (#101), the YouTube facade (#135). Boards are Device boards only until the new Firebase project exists (**owner**, task 1.8) |
+| Studio voice | **Shipped in the repo, not heard on the site**: the site plays the Built-in voice until R2 is set up (**owner**, learnvedicmath 7.8) |
+| React and TypeScript | Phase 1 **shipped** (#114, #115: workspaces, strict TypeScript, Vitest, lint, budgets). Phase 2 **in a PR** (#127), held for Workers Paid (**owner**, task 0.8) |
+| Install as an app | **Shipped** (#132): manifest, Install guide, Install nudge. Owner device checks left (`install-app` 7.1 to 7.4) |
+| Performance budgets | **Shipped**: first load may not grow past `docs/perf/baseline.json`; previews run load and interaction checks against production in the same job (#115, #130, #134, #139) |
+| Placement, Reading bands, online Duels, more 3D | **Planned**, re-planned for React (#120, #123, #124, #125), built after the migration |
+| Real-kid sessions | **Not yet run.** No gate below has been passed by observed sessions |
+
+**Keep and amplify:** the two tries, then hint, then worked reveal; the trick animator; the honest history of the sutras; privacy by design. Every persona's best moment in the Oct 13 panel was seeing a Trick work (75² is 7 × 8, then 25). Nobody's best moment was a badge.
+
+## 1. Sutras first
+
+The owner's "new method" is the **Sutra way**. A Player should never meet a method without its Sutra.
+
+| Piece | Status |
+| --- | --- |
+| A Sutra tag (kind, name, meaning, one link to its Deep dive) wherever a method is taught: Star rounds, Katas, the Arena, Watch, the Answer checker | In a PR (#126) |
+| Sutra progress, worked out on the device from mastery, Stars, Katas and cards; Sutras first in the menu | In a PR (#129) |
+| Home and the landing page open on the Sutras | In a PR (#133) |
+| Try a trick: one short lesson per Mode, each on one Sutra | Shipped (#128) |
+| Every explanation can be heard (`explanation-audio`) | In progress: 8 of 15 tasks, the rest in #143 and owner listening |
+
+## 2. The game: Stars, Comebacks, levels
+
+Star Quest is the shape of "learn inside a game": the Sky is the world, each Sutra a Constellation, each Trick three Stars of rising difficulty. A miss replays the Trick on the Player's own number, then a rematch; a Comeback pays 15 Sparks against 10 for a first right answer; a Dare pays double and costs nothing. Every Star is open and skipping is marked, never punished. All of this is shipped; the decisions are in [star-quest.md](star-quest.md).
+
+Still to do here:
+
+- **Star Quest on phones** is redone when the Star view moves to React (`react-typescript` 7.2; the owner signs off from phone screenshots). Planned.
+- **The Hook** ("Square 85 before the calculator does") opens the first Star that Placement points to. It moved from `hook-first-star` into `placement`. Planned.
+
+## 3. The Nikhilam Family: study friends, with Bolt as the teacher
+
+Change `family-helpers` (#131), approved by the owner 2026-10-21; talking with the Family settled 2026-10-24 (design D15, D18).
+
+- **Who.** Shunya (Zero, funny), Nava (Nine, witty) and Eka (One, a little serious, names the Sutra). Fellow students who learned from Bolt. Their tone follows the Reading band. Bolt stays the teacher in Star rounds and the Arena.
+- **When.** A Help signal (2 misses in a row on one Skill, 3 in a round, about 20 seconds idle, Hint pressed twice, leaving early after misses) can start a Visit: one friend for a first stumble, two for repeated trouble, all three for a real block. At most one Visit every 3 minutes unless asked, never mid-question in a timed race, never over the question, the answer or the buttons.
+- **Never the answer.** A hint, the method, or a worked example on other numbers. The answer comes only through the round's own Show me.
+
+| Step | What | Status |
 | --- | --- | --- |
-| Overall (age panel) | 5.9/10; motivation to return 4.7/10 | Unchanged until Phase 0 ships |
-| World leaderboards | "Coming soon" | Live on Firebase: Arena daily and weekly, a daily and weekly board per game, weekly Sparks (formerly XP). Rules enforce the nickname word list, score caps, date bounds, query limits. App Check registered, not enforced. On learnvedicmath.com the Boards start fresh in a new Firebase project with App Check enforced and entries that expire after 30 days (change `learnvedicmath`, design D14); Players under 13 use Device boards only and the Parent step is retired ([ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)). The site launched with Device boards only until the project exists (tasks 1.8 and 8.5). |
-| Difficulty fit | Wrong for 5 of 6 personas | Games adapt on a 1 to 20 Rating (right answers raise it, misses lower it), start by Mode (Explorer 1, Challenger 5, Pro 9), remember each Player's Rating, and score by difficulty. The Arena and Practice use Ratings too: an Arena Rating per League sets where Arena Practice rounds start and adapt, and a Rating per Skill picks each Practice question's generator level (1 to 3). Daily Arena rounds stay identical for a League on a fixed difficulty ramp. The Pro Arena is mental arithmetic only (2-digit products, squares, percents, near-base products, division), with Pro daily rounds switching over on Monday 2026-10-19 so no Board mixes question sets. |
-| Repeats | Many | No repeats within a game round |
-| Offline | Root service worker could mix module versions | Own repo and service worker, every module pinned with a `?v=` hash |
-| Hosting | GitHub Pages at sbmadhav.com/vedic-math/, sharing the design system, fonts and analytics with the main site; no response headers | https://learnvedicmath.com/ on Cloudflare Workers static assets, deployed by CI from `main`, with real response headers and everything served from its own origin (change `learnvedicmath`, [ADR 0004](adr/0004-host-on-cloudflare-workers.md)). The old address hands progress over on the device, in three phases ([ADR 0005](adr/0005-phased-move-and-progress-hand-off.md)). |
-| Trust bugs | 12 open | 12 open (verified in code, see Phase 0) |
-| Analytics | Hash routes not counted | On learnvedicmath.com: GoatCounter with its own site code, `count.js` served from this site by `js/analytics.js`, plus Cloudflare Web Analytics for page loads and Core Web Vitals (change `learnvedicmath`, design D11). Events keep their `math/...` names through `window.siteTrack`; no user IDs, never Google Analytics. Route counting is still the Phase 0 item below. |
-| Privacy | Plan required a parent gate before any online feature | The Age answer decides, in every Mode: a Player 13 or over posts under an anonymous identity created at the first post ([ADR 0002](adr/0002-no-identity-until-the-first-post.md)); a Player under 13 uses Device boards only and posts nothing ([ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)). |
+| 1 and 2 | Prototype, then the scripted Family in Practice, Katas and the Star end screen, behind "Try the Nikhilam Family helpers" in Me | In a PR (#131) |
+| 3a | Port into the React root layout | Planned, after `react-typescript` phase 2 (owner task 0.8) |
+| 3b | Recorded voices (Shunya Puck, Nava Leda, Eka Charon; text until then) | Owner: samples, voice pick, recording |
+| 3c | **Talking with the Family**, for Players 13 and over only, opt-in | Planned (D15, D18, ADR 0015 proposed in #131) |
+| 3d | Listening: push-to-talk in Pro, and an opt-in mode that only listens for help phrases | Planned |
+| 3e | The Family as 3D characters on React Three Fiber | Planned, after the Sky (ADR 0013) |
 
-**Keep and amplify:** content depth (135 skills, 21 tricks, 29 sutra deep dives, 1,050 katas, 1,000 tower challenges, 14 games with 72 levels each), the two tries, then hint, then worked reveal scaffold, the trick animator, honest history of the sutras, and privacy by design.
+**Talking with the Family (D15, D18).** Never for a Player whose Age answer is under 13 ([ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)). Bolt joins the three and answers every why or how. One call per turn to Claude Haiku 4.5 on our own Worker route returns at most two short replies. Four checked actions (an example on other numbers, pointing at a part of the question, the Sutra, a pose), none of which shows the answer. Clues are limited, like Duolingo's hearts: 3 per question (proposed), and at zero the speakers explain the method in general; talk about the method or the Sutra is free. Only the Skill id, the question's numbers, this Visit's words and a short-lived session ticket from Turnstile are sent; no Nickname, no Player id, nothing kept. Contact details are stripped in the browser (the Worker does not re-check them), a server check swaps a bad reply for a scripted line, Turnstile runs once per browser session (again when its 30-minute ticket expires), about 20 turns an hour per address, and spend is capped at $5 a day and $50 a month. Text only at first. **CopilotKit was weighed and rejected** (293 to 732 KB gzipped client, a 1 MB Worker runtime, full history and telemetry by default).
 
-**Panel insight that drives everything:** every persona's best moment was seeing a trick work (75² = 7 × 8, then 25). Nobody's best moment was XP or a badge.
+## 4. Fit the child: Placement and Reading bands
 
-## Phase 0: trust, privacy and instruments (about 1.5 weeks)
+Both are re-planned for React (#123) and built after the migration, in this order (`react-typescript` D3).
 
-All items are S (under a day). Line numbers are as of commit `97181d9`.
+- **Placement** (`placement`, [ADR 0007](adr/0007-placement-level-sets-practice-only.md)). After the Mode pick, an optional untimed climb of up to about 12 questions finds a Placement level (a school grade, K to 12). It sets where Practice, Stars and the suggested Skills start, never the League, Ranked rounds or Boards, so failing it on purpose gains nothing. Explorer answers with 3 big choices and hears every question. Retake any time from Me; it can only raise saved Ratings. Planned.
+- **Reading bands** (`age-bands`, [ADR 0008](adr/0008-grade-answer-stays-on-device.md)). One question, "What grade are you in?", sets one of three Reading bands (about 4 to 6, 7 to 9, 10 and up) in every Mode: read aloud, wording, picture or typed answers, timers, number of choices, Bolt's and the Family's tone. Never math difficulty. The Grade answer stays on the device and is never in any request; an age given instead is also the Age answer. Planned.
 
-| # | Fix | Where | Who it hurts |
-| --- | --- | --- | --- |
-| 1 | Arena keypad enters every tap twice from round 2: the click listener is added to the same root on every round. | `js/arena.js:66`, `:140` | Everyone in the Arena |
-| 2 | Practice symbol keys and the hint link repeat once per answered question: same cause. | `js/app.js:311` | Ages 11 and up |
-| 3 | Mixed numbers like `1 3/4` are marked wrong. Normalize `a b/c` to `a+b/c` before stripping spaces. | `js/check.js` `normalize()` | Grades 3 to 5 |
-| 4 | Fraction answers display as rounded decimals (1.666667). Render fractions for fraction skills. | `js/app.js` reveal | Grades 3 to 5 |
-| 5 | Factoring answer key reads `(x+-1)(x+-2)`. Normalize signs and drop `1x`. | `js/skills/high.js:25` | Teens |
-| 6 | Quests show 0.9999/1 on day 1 (baseline `0.0001`) and are keyed by position. Use a 0 baseline, key by id, floor the display, rotate from a pool. | `js/gamify.js:57`, `:66` | Everyone |
-| 7 | Some games show the previous explanation under the new question. Hold the answered item for 1.2s. | `js/games.js` | Everyone |
-| 8 | Typing `44*72` counts as an answer. Accept plain numbers only for arithmetic skills. | `js/check.js` | All stats |
-| 9 | Duel deals each player a different question; Explorer Duel shows no dots. Deal the same question to both sides and render `viz`. | `js/arena.js:86` | Families |
-| 10 | Badges for pressing Start or opening a page. Award on completion or correct use. | `js/app.js` | Ages 11 and up |
-| 11 | Game prompts render at 15px grey. Scope the selector to `.g-shell .g-q`. | `math.css` | Ages 4 to 7 |
-| 12 | Copy bugs: "Welcome back" on a first visit, "3th", the hundredths grid, a Numberblocks match on "Dis*count*s", and the footer's "traditional Vedic mathematics sutras". | `js/app.js:120`, `js/skills/middle.js`, `index.html:58` | Trust |
+## 5. Play together: online Duels, then Live sessions
 
-Also in Phase 0:
+- **Same-screen Duel**: shipped (`fair-duel`; both sides get the same question).
+- **Online Duels** (`duel-online`, [ADR 0009](adr/0009-cloudflare-durable-objects-for-realtime-play.md), re-planned in #124). Phase 1, Friend Duels by a 6-letter Duel code, for every Player. Phase 2, Random Duels in the same League, for Players whose Age answer is 13 or over. A Durable Object referee deals the same question to both at the same moment and decides who was right first. No chat and no typed text, only preset Reactions; generated Nicknames; Report and Block. Under-13 results stay on the device. Planned; **owner** approval (task 0.0), open questions and the lawyer's answer (0.4) first, on Workers Paid.
+- **Live sessions** (`react-typescript` 12.4): a grown-up host starts a quiz, Players join by code, scores update live, on the same room engine as Duels. A new change after `duel-online` is approved. Planned.
 
-- **View cleanup contract.** Every view returns `{ destroy }` and gets an `AbortSignal` for each listener, timer and animation-frame loop. This removes the root cause of bugs 1, 2 and 7 instead of patching each one.
-- **Age answer for World boards** ([ADR 0001](adr/0001-parent-step-follows-the-age-answer.md); its Parent step is superseded by [ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)). Ask one neutral age question at the end of the first Ranked round, before a Score or weekly Sparks total could be posted; until it is answered only the Device board is shown. Players under 13, in any Mode, keep everything on the device: Device boards only, no Parent step, because a toggle on the device is not verifiable parental consent under the amended COPPA Rule and a persistent identifier counts as personal information. A Player 13 or over sees a World board after a Show World board tap and gets an identity only at the first post ([ADR 0002](adr/0002-no-identity-until-the-first-post.md)). Get a legal read before any paid plan or promoting the site to schools.
-- **No identity until the first post** ([ADR 0002](adr/0002-no-identity-until-the-first-post.md)). Viewing World boards reads without signing in; the anonymous ID is created only when something is actually posted.
-- **Parent note says exactly what is sent.** Sparks from all play, Practice included, adds up to one weekly total that is posted; Practice Scores never leave the device. Update `parentNote()` and `cloud/README.md` together.
-- **Pro Arena becomes mental arithmetic.** Replace algebra and logs in the Pro Arena sets with 2 × 2 digits, squares, percents, near-base products and division. Extend Ratings to Arena and Practice.
-- **Honest framing everywhere.** Footer and share text say "sutras from Bharati Krishna Tirtha's 1965 book", never "from the Vedas".
-- **Analytics.** Count hash routes as page views, plus anonymous `q_answered`, `round_end`, `first_win`, `share_click` and `return_d7` events through `window.siteTrack`. No user IDs.
-- **Regression net.** Node tests for `check.js` (mixed numbers, signs, plain-number rule) and seeded generators. Playwright specs in this repo's `e2e/` for 2 Arena rounds, 5 Practice questions and day-1 quests.
-- **Layout shift.** `#view { min-height: 100svh }` to bring mobile CLS from 0.33 to under 0.1.
+## 6. Technical direction
 
-**Gate A:** no P0 bugs open, events flowing, baselines recorded.
+### React Router v7 and TypeScript on Cloudflare Workers ([ADR 0012](adr/0012-react-and-typescript-for-the-game.md))
 
-## Hook test (runs alongside Phase 0)
+The earlier plan said "Stay vanilla JS" and "Framework rewrite: not doing in 2026". Both are withdrawn. On 2026-10-18 and 2026-10-20 the owner chose React 19 and strict TypeScript, with React Router v7 in framework mode rendered on the server in our Cloudflare Worker, because the template-string views invite cross-site scripting (about 120 `innerHTML` assignments) and every planned feature would add more of them. Not Next.js: it is built for Vercel, whose Hobby plan forbids commercial use.
 
-Paper or Figma prototype of "Beat the calculator" with 3 to 5 kids aged 9 to 14, parent present. Run it after bugs 1 to 6 are fixed so the test measures the idea, not the bugs. Record time to the first "whoa" and unprompted replays.
+- The move is one view at a time: Legacy views and React views share one router, each migration PR names its Locked views and changes no behavior, and the Playwright suite stays green.
+- Game paths move from `/play/#/...` to `/learn/...`; old links redirect forever.
+- Player data stays on the device: routes have no server loaders, and anything that reads the Player renders in the browser.
+- Progress: 20 of 76 tasks. Phase 1 shipped; phase 2 (#127) waits for **Workers Paid** (owner task 0.8), because the Free plan's 10 ms CPU per request is too tight for a React render.
 
-**If kids shrug:** change the hook before Phase 1, not after.
+### 3D decoration with three.js ([ADR 0011](adr/0011-webgl-only-for-decoration.md), [ADR 0013](adr/0013-three-js-for-3d-decoration.md))
 
-## Phase 1: the magic moment (weeks 3 to 5)
+On 2026-10-15 the owner said "I dont want full 3D game rendering that will be a lot". That view changed on 2026-10-17 and 10-18 ("We need to add Three.js as well for things like illustrations and sky view"), and on 10-21 the owner asked for the Family to become detailed React Three Fiber characters too. What made it acceptable is that it is not a 3D game: the game stays HTML, and 3D is decoration only (no information, no input), through React Three Fiber, loaded late on the routes that show it, outside every first load, under 170 KB Brotli, paused in a hidden tab, a still frame under Calm or reduced motion, and the 2D drawing as the fallback. Order: the Sky (inside `react-typescript` phase 7), then Sutra deep-dive illustrations, game effects and Mandala (`gpu-effects`, re-planned in #125; **owner** approval, task 0.0), then the 3D Family.
 
-The game-world direction (Star Quest) and its decisions so far are in `docs/star-quest.md`, with a playable prototype in `docs/prototypes/star-quest/`. Settle its open questions before writing Phase 1 changes; it may absorb some items below.
+### Server voice with an R2 cache ([ADR 0014](adr/0014-server-side-voice-synthesis-with-an-r2-cache.md))
 
-| Item | Effort | What it does | Tradeoff |
-| --- | --- | --- | --- |
-| Beat the calculator Hook | M | First screen dares "Square 85 before the calculator does". The player loses, sees a 20-second reveal, then wins 3 times. The mode question comes after. | The race must be honest (0.45s per key plus "="), using only problems humans really win |
-| Placement | S | One step after the Hook: the Age answer, a grade picker and 3 quick items set the starting Rating for every game and the Belt. League stays equal to Mode. Replaces the separate "light placement" and "full adaptive placement" items, since games already adapt. | Coarse, but the Rating corrects it within a round |
-| Trick page: When, Why, Prove it | S | Rename "How it works" to "When to use it". Pull the proof and scene from `DETAILS[sutra].why`. Add 3 check items before speed drills. | Keep it to 3 items so it never feels like a quiz wall |
-| Mistake Museum | S | Every round ends with missed items and a link to the right trick. Replaying them clears them for Sparks. | One more screen per round |
-| Game shell and Calm mode | M | Full-screen fixed layout for every timed activity, keypad always visible on phones and Chromebooks. Calm toggle (no clocks, ghost race) and A/A+ text size. | Touches every game; needs the Phase 0 tests first |
-| Explorer narration | S | Explorer gets only Explorer sets and every prompt is read aloud. | Needs a content tag per skill set |
+Fixed lines are recorded in the Studio voice (Chirp 3 HD, Aoede) and served from R2. Sentences with a question's own numbers become Server lines: the game sends a template id and numbers, never free text; the Worker voices each sentence once, keeps it in R2 forever, and a Durable Object ledger caps spend at $5 a day and $150 a month. The Built-in voice takes over at the cap, offline or when slow. Turnstile and a per-address limit will cover it (family-helpers D18). Planned as `react-typescript` phase 8; needs R2 (learnvedicmath 7.8), the Google key as a Cloudflare secret (11.7) and Workers Paid.
 
-**Gate B:** 5 observed kid sessions where most players get a first win within 90 seconds and choose to play a second round. Directional metrics: `first_win` under 90s, round-2 completion.
+### Hosting, install and speed
 
-## Phase 2: brag and return (weeks 6 to 9)
+- **learnvedicmath.com** on Cloudflare Workers static assets ([ADR 0004](adr/0004-host-on-cloudflare-workers.md)), deployed by CI from `main`, with real response headers. Before a Player acts (plays a video, opens or posts to a World board), only analytics reach another site (GoatCounter counts and Cloudflare Web Analytics, after the page is idle). The old address moves in three phases with the Hand-off on the device ([ADR 0005](adr/0005-phased-move-and-progress-hand-off.md)); Phase B is live.
+- **Install as an app**: shipped (#132). The service worker stays hand-written, scoped to the game.
+- **Performance budgets**: first load may not grow (758,499 bytes on `main` when last set) and previews are compared with production in the same job. The baseline (2026-10-21) is far from the goal: first contentful paint 1,923 ms, largest 5,420 ms. `render-performance` (re-planned in #120; **owner** approval) adds the absolute budgets: first contentful paint under 1.5 s on a mid phone over 4G, under 150 KB of compressed JS before play.
+- **Backend**: TypeScript Workers, Durable Objects for live rooms, R2 for voice; Rust only if a profile shows the need ([ADR 0010](adr/0010-typescript-not-rust-for-the-backend-now.md)). Firebase stays for Boards for now.
+- **Every behavior change ships with a test**: Vitest and node tests, Playwright specs in `e2e/`, one coverage spec per live scenario.
+- **Seeds carry versions** (`v2:daily:2026-10-20`) so editing a generator never silently changes today's challenge.
 
-| Item | Effort | What it does | Tradeoff |
-| --- | --- | --- | --- |
-| Challenge-a-friend link | S to M | `#/c/<seed>/<score>/<nickname>` replays the same seeded questions. Share card via canvas and `navigator.share`. Posts to the existing boards when allowed. | Link scores can be faked; boards keep their own rules |
-| Daily Sutra | S | One 10-question set per local date, first attempt counts, Wordle-style share grid. Its own daily board on the existing rules. | Same-day replays are labeled practice |
-| Fair same-screen Duel | S | Builds on Phase 0 bug 9: keyboard sides (QWER and UIOP), handicap by mode for parent vs kid. | Narrow audience |
-| Spaced warm-up | M | Leitner boxes per trick and fact. Mastery rings fade based on `last`. Home shows "Today: 12 items, 3 min". | Needs per-answer timing; mastery can feel lost |
-| Sutra cards earned by use | S | A card unlocks after 5 correct uses of its trick. The only collection system. | Slower to collect |
+## 7. Build order
 
-**Gate C:** kids or parents share without being asked in observed sessions, and returns after 7 days trend up from the baseline.
+Each step starts only when the one before it allows; owner blockers are in the next section.
 
-## Phase 3: grow the boards (only after Gate C)
+1. Merge what is in review: Sutras first (#126, #129, #133), Family helpers (#131), launch docs (#136), backup codes (#141), explanation audio (#143).
+2. `react-typescript` phases 2 to 6 (the shell on Workers, then every view), after Workers Paid. Phase 8, the server voice, can start after phase 2.
+3. `placement`, then `age-bands`, then `render-performance`.
+4. `duel-online` (Friend Duels, then Random Duels), then Live sessions.
+5. The Sky in 3D (`react-typescript` phase 7), then `gpu-effects`, then the 3D Family.
+6. Family helpers step 3 runs alongside from step 2: the React port, the recording, talking with the Family, listening.
 
-- Friend boards from challenge links and weekly leagues.
-- Enforce App Check for Firestore and Authentication after a week of clean metrics. On learnvedicmath.com this comes with the new Firebase project (change `learnvedicmath`, design D14, owner task 1.8).
-- Turn on TTL (needs the Blaze plan and a budget alert), then restore the 30-day deletion promise in `parentNote()`. Same: the new project runs on Blaze with a $5 budget, the rules never list an expired entry, and the copy says "stops being shown after 30 days and is then deleted automatically" (design D14, owner answer L3).
-- A Cloud Function that replays seeds to verify scores, only if cheating is actually seen.
+## 8. Waiting on the owner
 
-## Not doing in 2026
-
-- Classroom tools: teacher dashboard, CCSS tags, CSV export.
-- Other languages.
-- New audience tracks: adult interview, SAT, teen swipe feed.
-- Extra reward systems: sticker book, animal buddy, cosmetics, boss battles, streak freeze.
-- Framework rewrite or a bundler. Revisit lazy routes (`import()` per route) only if mobile LCP stays above 4s after Phase 0.
-
-## Measurement
-
-The north star is **weekly magic moments**: a trick learned and then used correctly in a timed race.
-
-| Metric | Definition | Role |
+| Blocker | What it unblocks | Task |
 | --- | --- | --- |
-| Time to first win | Share of new sessions with `first_win` under 90s, bucketed | Directional, Phase 1 |
-| Round-2 completion | `round_end` with round 2 or later / `round2_start` | Directional, Phase 1 |
-| Share rate | `share_click` / `round_end` | Directional, Phase 2 |
-| D1 and D7 return | Any return on day 1, and on days 7 to 13, fired once per device | Directional, Phase 2 |
-| Retained accuracy | Spaced-review accuracy 7 days after mastery | Learning quality |
-| Speed gain | Median seconds per answer per trick, week 1 vs week 4 | Tracking only |
+| Workers Paid ($5 a month) | React phase 2 in production, the server voice, talking with the Family, Duels | `react-typescript` 0.8 |
+| New Firebase project (Blaze, $5 budget, App Check) | World boards on learnvedicmath.com | `learnvedicmath` 1.8, then 8.5 and 8.7 |
+| R2 bucket on `voice.learnvedicmath.com` | The Studio voice heard on the site; Server lines | `learnvedicmath` 7.8 |
+| Voice recording runs | The re-record (about 394 lines), new Worked examples, the Family's voices | `better-voice` 2.6, `learnvedicmath` 7.5 and 7.6, `explanation-audio` 4.6, `family-helpers` |
+| Licence cutoff commit and go-ahead | MIT up to the cutoff, proprietary after it (draft in #136) | `learnvedicmath` 12.3 |
+| Lawyer review | Promoting the site, schools, any paid plan, Friend Duels | `learnvedicmath` 13.1, `duel-online` 0.4 |
+| Approvals | Building `duel-online`, `render-performance`, `gpu-effects`; the go for talking with the Family | each change's 0.0 |
+| Account settings | GoatCounter site code, DNSSEC, CAA, the `www` rule, an uptime monitor | `learnvedicmath` 1.4, 1.6, 1.9, 1.13, 5.5 |
+| Repo and voice storage questions (P1 to P8) | Going private, where voice archives live | not yet recorded |
+
+## 9. Gates: real kids first
+
+The loop every feature serves: **Dare, Reveal, Prove, Race, Brag, Return**.
+
+- **Gate A** (trust and instruments): the 12 bugs are fixed and the events exist (`first_win`, `round_end`, `share_click`, `return_d7`, route views). Left: analytics on learnvedicmath.com needs its GoatCounter code (owner), then baselines are recorded.
+- **Gate B** (the Magic moment): 5 observed sessions where most Players get a first win within 90 seconds and choose a second round. Run it on the Hook and the first Star after Placement ships, not on a prototype of an idea that has since changed.
+- **Gate C** (brag and return): kids or parents share without being asked, and returns after 7 days trend up. Online Duels and challenge links are measured here.
 
 **Rules**
 
-- **Real kids decide the gates.** 5 observed 30-minute sessions with 9 to 14 year olds before each gate, parent present, consent given, no face recording. These outrank the AI panel and the metrics.
-- **Metrics are directional** until a cohort has a few hundred new players. Note the known undercount (cleared storage, device switches) next to every baseline.
-- **Gate-fail rule:** a missed gate gets one 2-week fix pass on the biggest drop. Missed again, change the hook instead of moving on. Overrides need a written reason.
+- **Real kids decide the gates.** 5 observed 30-minute sessions with 9 to 14 year olds before each gate, parent present, consent given, no face recording. These outrank any AI panel and the metrics.
+- **Metrics are directional** until a cohort has a few hundred new Players; note the undercount (cleared storage, device switches) next to every baseline.
+- **Gate-fail rule:** a missed gate gets one 2-week fix pass on the biggest drop. Missed again, change the Hook instead of moving on. Overrides need a written reason.
 
-## Privacy and integrity (every phase)
+| Metric | Definition | Role |
+| --- | --- | --- |
+| Time to first win | Share of new sessions with `first_win` under 90 s | Gate B |
+| Round-2 completion | `round_end` with round 2 or later over `round2_start` | Gate B |
+| Share rate | `share_click` over `round_end` | Gate C |
+| D1 and D7 return | Any return on day 1, and on days 7 to 13, once per device | Gate C |
+| Retained accuracy | Accuracy 7 days after mastery | Learning quality |
+| Speed gain | Median seconds per answer per Trick, week 1 against week 4 | Tracking only |
 
-- Generated nicknames only; links and share text carry only the nickname and a score.
-- Nothing from a Player under 13 goes online, in every Mode (by the Age answer, never by Mode): Device boards only, the Parent step retired ([ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)).
-- No user IDs in analytics: cookieless, aggregate events only (GoatCounter from this site and Cloudflare Web Analytics; PostHog only cookieless, in a later change; never Google Analytics: change `learnvedicmath`, design D11).
-- `parentNote()` and `cloud/README.md` always describe exactly what is sent and kept.
-- Honest Vedic framing on every surface, share cards included. Sanskrit names come from `js/sutras.js` only.
+## 10. Privacy and integrity (every step)
 
-## Technical approach
+- **The Age answer decides, never the Mode.** It is asked once, neutrally, at the end of the first Ranked round before a Score or weekly Sparks total could be posted (up front once Placement or the grade question ships), and never leaves the device. A Player under 13 uses Device boards only and posts nothing, in every Mode; nothing for them loads Firebase ([ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)). A Player 13 or over sees a World board after a Show World board tap.
+- **No identity until the first post** ([ADR 0002](adr/0002-no-identity-until-the-first-post.md)), a Score or the weekly Sparks total; viewing a World board needs none, and voice, Duels and talking with the Family never create one.
+- **The Grade answer stays on the device** ([ADR 0008](adr/0008-grade-answer-stays-on-device.md)).
+- Generated Nicknames only; share text carries only the Nickname and a Score.
+- Analytics are cookieless and aggregate: GoatCounter from this site and Cloudflare Web Analytics, fixed event words, no user IDs, never Google Analytics.
+- `parentNote()`, `cloud/README.md` and the privacy policy say exactly what is sent, and change before anything new is sent (Server lines, Duels, talking with the Family).
+- Honest framing on every surface, share cards included; Sanskrit names come from `js/sutras.js` only.
 
-- **Stay vanilla JS** with the view cleanup contract (recommended over Preact + htm or a framework rewrite: smallest change, fixes the root cause, keeps the build-free code).
-- **Seed everything with versions** (`v2:daily:2026-10-20`), so editing a generator never silently changes today's challenge. The same seeds power challenge links, the Daily Sutra and the fair Duel.
-- **Every behavior change ships with a test:** node tests in `test/`, Playwright specs in `e2e/`.
-- **Hosting:** Cloudflare Workers static assets at learnvedicmath.com, deployed by CI from `main`, real response headers, nothing loaded from another site before a Player acts (plays a video, opens or posts to a World board) ([ADR 0004](adr/0004-host-on-cloudflare-workers.md)); the move from sbmadhav.com runs in three phases with the Hand-off on the device, no server in any of it ([ADR 0005](adr/0005-phased-move-and-progress-hand-off.md); change `learnvedicmath`).
+## 11. Later: a family and classroom plan
+
+The owner, 2026-10-17: "Make that a fun website but it will more like an eventual for profit thing." learnvedicmath.com is meant to carry a paid family or classroom plan one day ([ADR 0004](adr/0004-host-on-cloudflare-workers.md)); that is why it is on its own domain and host. Nothing is designed yet: no pricing, no checkout, no parent accounts. **A lawyer reviews first**: the privacy policy and terms, whether the site is "primarily directed to children", Friend Duels, and any verifiable parental consent method. No ads, ever.
+
+## Not doing
+
+- **Next.js, Vercel**, or any framework adapter between React and the Worker (ADR 0012). No big-bang rewrite, no micro-frontends, no Redux, Zustand, Tailwind, CSS-in-JS or Workbox.
+- **CopilotKit** or any hosted chat runtime for the Family (family-helpers D18).
+- **Interface in WebGL**, a 3D game engine, a hand-written WebGL engine, or 3D in any first load (ADR 0011, 0013).
+- **A Rust backend** (ADR 0010) or a second cloud vendor for real-time play (ADR 0009).
+- **Calling a speech provider from the browser**, a general text-to-speech endpoint, or any free text sent for voice (ADR 0014).
+- **Anything online for under-13 Players beyond Friend Duels**: Friend Duels are open to them with no lasting identifier and results on the device; no World boards, no Random Duels, no talking with the Family, no grown-up override until a verifiable consent method exists, as its own change and ADR.
+- **Chat between Players** of any kind; Duels have preset Reactions only.
+- **Always-on listening**: listening only looks for help phrases, opt-in, and never stores audio or words.
+- **Paid plans, checkout, parent accounts and ads** until the lawyer review, and ads never.
+- **Classroom tools in 2026**: teacher dashboard, curriculum tags, CSV export. Live sessions are the one classroom-shaped feature planned.
+- **Other languages** in 2026.
+- **New audience tracks**: adult interview, SAT, teen swipe feed.
+- **Extra reward systems**: sticker book, pets, cosmetics, boss battles, streak freeze. Bolt and the Family are never pets.
+- **The Mistake Museum**: the in-Star replay and rematch replaced it.
+- **Kid voices** for now, and a separate repo for the voices.
 
 ## Risks
 
 | Risk | Mitigation |
 | --- | --- |
-| Kids shrug at beating the calculator | Hook test during Phase 0, before building it |
-| Solo time alongside a full-time role | Phase 0 plus the hook is the minimum (about 3 weeks); Phase 2 social features wait for Gate B |
-| Child privacy on live boards | Age answer in Phase 0; under-13 Players use Device boards only ([ADR 0006](adr/0006-under-13-players-use-device-boards-only.md)); legal read before any paid plan or school outreach |
-| Cheating on public boards | Rules already cap scores and rate-limit; enforce App Check; Cloud Function only if needed |
-| AI panel overstates or misses fun | Real-kid sessions gate every phase |
+| Kids shrug at the Hook or the Sky | Gate B with real kids before the next step; the gate-fail rule |
+| The Family become Clippy | Never over the question, one-tap close, "Not now" mutes for the session, at most one Visit every 3 minutes, off by default until phone checks |
+| A model gives the answer or hears something personal | Fixed instructions, the server check with a scripted fallback, contact details stripped in the browser, 13 and over only, nothing kept |
+| The migration stalls feature work | One view at a time, Locked views only; content changes never wait |
+| First load grows with React and 3D | The build fails on growth; 3D is never in a first load |
+| Spend runs away | Server ledgers ($5 a day and $150 a month for voice, $5 and $50 for talking), Google budget alerts as the outer stop |
+| Child privacy | ADRs 0002, 0006 and 0008; the lawyer before promotion, schools or a paid plan |
+| Cheating on public boards | Rules cap Scores and rate-limit; App Check enforced on the new project; the Duel referee is the server |
+| Solo time alongside a full-time role | Owner tasks are listed in one table; agents build in parallel, the owner approves |

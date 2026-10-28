@@ -1,4 +1,5 @@
-import { test, expect, APP, open, chromiumOnly } from './fixtures';
+import type { Route } from '@playwright/test';
+import { test, expect, APP, open, mod, chromiumOnly } from './fixtures';
 
 /* First load, page metadata, and the site's own files: the pinned design system, the theme, fonts, icons and manifest,
    all served by learnvedicmath.com (openspec change learnvedicmath, site-assets spec). */
@@ -41,10 +42,43 @@ test.describe('first visit', () => {
 
 test('a returning player loads home with no console errors or failed requests', async ({ page, issues }) => {
   await open(page);
-  await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
+  await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
   await page.waitForLoadState('networkidle');
   expect(issues.console, 'console errors').toEqual([]);
   expect(issues.failed, 'failed requests').toEqual([]);
+});
+
+/* The late imports (js/install.js after boot, js/stories.js after first paint, and a second after load js/sutra-tag.js,
+   js/arena.js, js/tour.js and js/play/kit.js) are not in the first paint's import graph. A reload while one is still loading cuts it off; that is the page being left,
+   not a failure, so nothing is logged (lateImport in js/life.js). Each is held in flight until the reload has started. */
+for (const name of ['install', 'stories', 'sutra-tag', 'arena', 'tour', 'play/kit']) {
+  test(`a reload while ${name}.js is still loading logs no console error`, async ({ page, issues }) => {
+    const path = new URL(await mod(page, name), 'http://x').pathname;
+    let hold = true, seen: () => void = () => {};
+    const asked = new Promise<void>(r => { seen = r; });
+    const held: Route[] = [];
+    await page.route(u => u.pathname === path, route => {
+      if (!hold) return route.continue();
+      held.push(route); seen();
+    });
+    // Not open(): WebKit holds the load event for an import started before it, and this one is held
+    await page.goto(APP, { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('h1.home-h')).toBeVisible();
+    await asked;
+    hold = false;
+    await page.reload();
+    for (const r of held) await r.abort().catch(() => {}); /* the old page's request: gone with it */
+    await expect(page.locator('h1.home-h')).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    expect(issues.console, 'console errors').toEqual([]);
+  });
+}
+
+test('a late import that fails while the page stays still reports, as before', async ({ page, issues }) => {
+  const path = new URL(await mod(page, 'install'), 'http://x').pathname;
+  await page.route(u => u.pathname === path, route => route.abort('failed'));
+  await open(page);
+  await expect.poll(() => issues.console.some(m => m.includes('install.js did not load'))).toBe(true);
 });
 
 test.describe('the site\'s own files', () => {

@@ -10,9 +10,10 @@
    - transforms and opacity only (the individual translate, scale and rotate properties, so an element's own CSS
      transform is untouched), on fixed layers or on the element itself: no layout shift.
    - timers and frames go through js/life.js; Web Animations need neither, and are cancelled when `signal` aborts.
+   - lengths are times, not frame counts, so every screen sees the same burst.
    - colours are tokens (classes in math.css; the confetti canvas reads the token values).
    This module touches only the DOM and localStorage, so js/fx.js (the app) and js/play/kit.js (the experiences) share it. */
-import { loop, onAbort } from './life.js';
+import { later, loop, on, onAbort } from './life.js';
 
 /* The app's one motion rule (fx.noMotion, kit.reducedMotion): reduced motion, Pause motion (html.motion-paused) or Calm (vm.calm) */
 export const still = () => (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches)
@@ -110,6 +111,14 @@ export function rollSparks(root, signal) {
 }
 
 /* ---------- Big: true wins only ---------- */
+/* 110 frames of a 60 Hz screen, its old length in frames */
+const FRAME = 1000 / 60;
+export const CONFETTI_MS = 110 * 1000 / 60;
+/* Piece p at `ms`: where the old steps per 60 Hz frame (x += vx; y += vy; vy += .35; vx *= .99; a += s) put it */
+export function confettiAt(p, ms) {
+  const f = Math.max(0, ms) / FRAME;
+  return { x: p.x + p.vx * (1 - .99 ** f) / .01, y: p.y + p.vy * f + .35 * f * (f - 1) / 2, a: p.a + p.s * f };
+}
 let bursting = null;
 export function confetti(n = 70) {
   if (typeof document === 'undefined' || still() || bursting) return; /* one burst at a time: wins that land together share it */
@@ -121,10 +130,12 @@ export function confetti(n = 70) {
   const ctl = new AbortController(); bursting = ctl;
   const untrack = keep(() => ctl.abort());
   onAbort(ctl.signal, () => { c.remove(); untrack(); if (bursting === ctl) bursting = null; });
-  let f = 0;
-  loop(() => {
+  /* ends on time even with no frames drawn; a tab shown again after its timer was held back ends it then */
+  const t0 = performance.now();
+  later(() => ctl.abort(), CONFETTI_MS, ctl.signal);
+  on(document, 'visibilitychange', () => { if (performance.now() - t0 >= CONFETTI_MS) ctl.abort(); }, ctl.signal);
+  loop(now => {
     g.clearRect(0, 0, W, H);
-    for (const p of ps) { p.x += p.vx; p.y += p.vy; p.vy += .35; p.vx *= .99; p.a += p.s; g.save(); g.translate(p.x, p.y); g.rotate(p.a); g.fillStyle = p.c; g.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * .6); g.restore(); }
-    if (++f >= 110) { ctl.abort(); return false; }
+    for (const p of ps) { const q = confettiAt(p, now - t0); g.save(); g.translate(q.x, q.y); g.rotate(q.a); g.fillStyle = p.c; g.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * .6); g.restore(); }
   }, ctl.signal);
 }

@@ -52,7 +52,7 @@ test.describe('the Mode picker', () => {
     await expect(page).toHaveURL(/#\/try$/);
     await expect(page.locator('#tyH')).toHaveText('Square numbers ending in 5');
     await expect(page.locator('.try-sutra b')).toHaveText('Ekādhikena Pūrveṇa');
-    await expect(page.locator('.try-sutra .mq-sutra-mean')).toHaveText('By one more than the one before');
+    await expect(page.locator('.try-sutra .sutra-tag-m')).toHaveText('By one more than the one before');
     await expect(page.locator('.try-sutra .say-btn')).toBeVisible();
     await expect(page.locator('.try-k')).toHaveText('Worked example: 352');
     await expect(page.locator('.try-steps .star-step')).toHaveCount(3);
@@ -78,7 +78,7 @@ test.describe('the Mode picker', () => {
     await page.keyboard.press('Enter');
     await expect(page.locator('#tyH')).toHaveText('Multiply numbers near 100');
     await expect(page.locator('.try-sutra b')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
-    await expect(page.locator('.try-sutra .mq-sutra-mean')).toHaveText('All from 9 and the last from 10');
+    await expect(page.locator('.try-sutra .sutra-tag-m')).toHaveText('All from 9 and the last from 10');
     await expect(page.locator('.try-why')).toContainText('distance from 100');
     await expect(page.locator('.try-steps .star-step').last()).toContainText('So 97 × 96 = 9312.');
     await expect(page.locator('#tyStart')).toBeFocused();
@@ -96,7 +96,7 @@ test.describe('the Mode picker', () => {
     await page.locator('[data-try="explorer"]').click();
     await expect(page.locator('#tyH')).toHaveText('The 11 sandwich');
     await expect(page.locator('.try-sutra b')).toHaveText('Ūrdhva-Tiryagbhyām');
-    await expect(page.locator('.try-sutra .mq-sutra-mean')).toHaveText('Its name means straight down and across.');
+    await expect(page.locator('.try-sutra .sutra-tag-m')).toHaveText('Its name means straight down and across.');
     await expect(page.locator('.try-steps .star-step').first()).toContainText('Split 23 into 2 and 3.');
     await expect(page.locator('.try-steps .star-step').last()).toContainText('23 × 11 = 253.');
     await expect(page.locator('#tyStart')).toHaveText('My turn');
@@ -149,7 +149,7 @@ test.describe('Challenger', () => {
     await expect(page).toHaveURL(/#\/star\/sq5\/1$/);
     await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
     await page.locator('#stExit').click();
-    await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
+    await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
   });
 
   test('Home shows the Try a trick card after the doors, with no primary button, until it is finished', async ({ page }) => {
@@ -192,9 +192,9 @@ test.describe('Pro', () => {
     expect((await events(page)).filter(e => e.startsWith('math/q_answered/'))).toEqual(['math/q_answered/try/miss']);
   });
 
-  test('Home: the card button opens the Pro Try a trick, and Play today\'s round stays the only primary button', async ({ page }) => {
+  test('Home: the card button opens the Pro Try a trick, and Play this Star stays the only primary button (the Sutra door leads since openspec change sutras-first)', async ({ page }) => {
     await open(page);
-    await expect(page.locator('#view .md-btn--primary')).toHaveText(["Play today's round"]);
+    await expect(page.locator('#view .md-btn--primary')).toHaveText(['Play this Star']);
     await page.locator('.try-card a').click();
     await expect(page.locator('#tyH')).toHaveText('Multiply numbers near 100');
   });

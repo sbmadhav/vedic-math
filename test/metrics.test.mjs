@@ -260,6 +260,7 @@ const ALLOWED = new Set([
   'asSky',                     // route views: true when home showed the Sky (a fixed word, sky)
   'from',                      // the Install guide's entry point (metrics.install checks it against INSTALL_FROM)
   'ok', "lives ? '' : ''", 'fx.MODES[fx.mode()].league', // right or miss; 'run' or 'practice'; the League
+  'surface',                   // a followed Sutra tag's surface: one of the fixed words in js/sutra-tag.js SURFACES
   'v.level', 'cheer',          // a Family helper Visit's level (1 to 3) and whether it is a cheer; metrics.family checks FAMILY_EVENTS
   'result', 'TITLES[result]', // the import page's hand-off result and its title (js/handoff.js count: one of RESULTS, a fixed set the analytics spec lists; test/handoff.test.mjs pins it)
 ]);
@@ -326,4 +327,13 @@ test('js/say.js counts through metrics.say() only, and turning the ambience off 
   const say = readFileSync(new URL('../js/say.js', import.meta.url), 'utf8'), amb = readFileSync(new URL('../js/sutra-ambience.js', import.meta.url), 'utf8');
   assert.deepEqual(callSites(say).map(c => `${c.fn}(${c.args})`), ['metrics.say()']);
   assert.deepEqual(callSites(amb), [], 'the ambience sends nothing (owner decision 5)');
+});
+
+/* ---------- Word problems (openspec word-problems, design D12) ---------- */
+test('story(): math/story/<practice|run|star>/<right|miss>, story/asking, fixed words only', () => {
+  clear();
+  for (const a of M.STORY_AREAS) { M.story(a, true); M.story(a, false); }
+  M.story('arena', true); M.story('practice/x', true); M.storyAsking();
+  assert.deepEqual(paths(), ['math/story/practice/right', 'math/story/practice/miss', 'math/story/run/right', 'math/story/run/miss', 'math/story/star/right', 'math/story/star/miss', 'math/story/asking']);
+  for (const [, t] of sent) assert.match(t, /^Vedic Math: word problem( hint)?$/);
 });

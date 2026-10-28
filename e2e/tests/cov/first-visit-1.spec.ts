@@ -50,7 +50,7 @@ test.describe('a new visitor', () => {
     await expect(page.locator('#stExit')).toBeVisible();
     await page.locator('#stExit').click();
     await expect(page).toHaveURL(new RegExp(`${APP.replace(/\//g, '\\/')}#\\/$`));
-    await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
+    await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
   });
 });
 
@@ -62,24 +62,27 @@ test('From the Dojo: a Star opened from the Dojo still goes back to the Dojo', a
   await expect(page).toHaveURL(/#\/dojo$/);
 });
 
-test('A new Challenger: on a 390 px screen the first three actions are Play this Star, Open the Dojo and the Arena door, and the Star is explained', async ({ page }) => {
+test('A new Challenger: on a 390 px screen the first actions are Play this Star, Learn the sutra and Open the Dojo, then the Arena door; the Sutra door names Nikhilaṃ and its line says what a Sutra and a Star are (openspec change sutras-first)', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await open(page);
   const acts = await actions(page), i = acts.indexOf('Play this Star');
   expect(i).toBeGreaterThanOrEqual(0);
-  expect(acts[i + 1]).toBe('Open the Dojo');
-  expect(acts[i + 2]).toMatch(/^Race in the Arena/);
-  await expect(page.locator('.dojo-card .door-line')).toContainText('A Star is a two-minute round of four questions on one speed trick');
+  expect(acts[i + 1]).toBe('Learn the sutra');
+  expect(acts[i + 2]).toBe('Open the Dojo');
+  expect(acts[i + 3]).toMatch(/^Race in the Arena/);
+  await expect(page.locator('.home-doors .door').first().locator('.sutra-tag-n')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
+  await expect(page.locator('.sutra-door .door-line')).toHaveText('A sutra is a short rule that does a whole sum in a line or two. A Star is a two-minute round of four questions on one of its tricks.');
   await expect(page.locator('#view .md-btn--primary')).toHaveText(['Play this Star']);
 });
 
 test.describe('Pro', () => {
   test.use({ seedMode: 'pro' });
-  test("Pro: the Arena door with Play today's round, the Dojo door and the Skill map door come before the leaderboard card", async ({ page }) => {
+  test('Pro: the Sutra door with Play this Star comes first, then the Arena door and the Skill map door, all before the leaderboard card (openspec change sutras-first)', async ({ page }) => {
     await open(page);
     const doors = page.locator('.home-doors .door');
-    await expect(doors.nth(0).locator('.md-btn--primary')).toHaveText("Play today's round");
-    await expect(doors.nth(1)).toHaveAttribute('href', '#/dojo');
+    await expect(doors.nth(0)).toHaveClass(/sutra-door/);
+    await expect(doors.nth(0).locator('.md-btn--primary')).toHaveText('Play this Star');
+    await expect(doors.nth(1)).toHaveAttribute('href', '#/arena');
     await expect(doors.nth(2)).toHaveAttribute('href', '#/learn');
     const board = (await page.locator('.board-card').boundingBox())!, last = (await doors.nth(2).boundingBox())!;
     expect(board.y).toBeGreaterThanOrEqual(last.y + last.height);
@@ -111,9 +114,16 @@ test('Quests card: its last line says Sparks are the points earned for right ans
 
 test.describe('Explorer', () => {
   test.use({ seedMode: 'explorer' });
-  test('Explorer: eight picture tiles with nothing folded away', async ({ page }) => {
+  test('Explorer: eight picture tiles with nothing folded away, and above them a Sutra card with its name, Say it, an Explorer meaning and a link to its Deep dive (openspec change sutras-first)', async ({ page }) => {
     await open(page);
     await expect(page.locator('.play-grid--big .play-tile')).toHaveCount(8);
     await expect(page.locator('#homeMore')).toHaveCount(0);
+    const card = page.locator('.sutra-say');
+    await expect(card.locator('.sutra-say-name b[lang="sa-Latn"]')).not.toBeEmpty();
+    await expect(card.getByRole('button', { name: /^Hear how to say / })).toBeVisible();
+    await expect(card.locator('.sutra-say-kid')).not.toBeEmpty();
+    await expect(card.getByRole('link', { name: 'See how it works' })).toHaveAttribute('href', /^#\/sutras\/(s1|s14|s2|u8|u12)$/);
+    const c = (await card.boundingBox())!, tiles = (await page.locator('.play-grid--big').boundingBox())!;
+    expect(c.y + c.height).toBeLessThanOrEqual(tiles.y);
   });
 });

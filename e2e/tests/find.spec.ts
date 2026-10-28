@@ -21,7 +21,7 @@ test('Find in the menu bar opens the page with the box focused and Find current;
   await expect(page.locator('#findIn')).toBeFocused();
   await expect(page.locator('.mq-nav a[href="#/find"]')).toHaveAttribute('aria-current', 'true');
   await expect(page.locator('#findOut h2')).toHaveText('Browse');
-  await expect(hits(page).locator('b')).toHaveText(['Home', 'Learn', 'Dojo', 'Arena', 'Games', 'Sutras', 'Watch', 'Me', 'Guide']);
+  await expect(hits(page).locator('b')).toHaveText(['Home', 'Sutras', 'Learn', 'Dojo', 'Arena', 'Games', 'Watch', 'Me', 'Guide']);
   for (const h of await hits(page).all()) expect((await h.locator('small').innerText()).length).toBeGreaterThan(20);
   await expect(page.locator('#view')).not.toContainText(/\u2014/);
   expect(appErrors(issues)).toEqual([]);
@@ -156,10 +156,10 @@ test('questions and phrases: a share of the words, Best match for questions, Pla
 
 test.describe('Explorer', () => {
   test.use({ seedMode: 'explorer' });
-  test('sees Explorer words and only what it can open: no Dojo experience, no Challenger game, no Dojo or Sutras in the browse list', async ({ page }) => {
+  test('sees Explorer words and only what it can open: no Dojo experience, no Challenger game, no Dojo in the browse list, and the Sutras right after Home (openspec change sutras-first)', async ({ page }) => {
     await open(page, '#/find');
     await expect(page.locator('#view h1')).toHaveText('What do you want to find?');
-    await expect(hits(page).locator('b')).toHaveText(['Home', 'Learn', 'Arena', 'Games', 'Watch', 'Me', 'Guide']);
+    await expect(hits(page).locator('b')).toHaveText(['Home', 'Sutras', 'Learn', 'Arena', 'Games', 'Watch', 'Me', 'Guide']);
     await page.locator('#findIn').fill('spell');
     await expect(page.locator('#findCount')).toHaveText('Nothing matched');
     await page.locator('#findIn').fill('sprint');
@@ -179,7 +179,7 @@ test.describe('no Mode yet', () => {
     await open(page, '#/find');
     await expect(page.locator('#findIn')).toBeVisible();
     await expect(page.locator('.mode-pick')).toHaveCount(0);
-    await expect(hits(page).locator('b')).toContainText(['Dojo', 'Sutras']);
+    await expect(hits(page).locator('b')).toContainText(['Sutras', 'Dojo']);
   });
   test('a result followed before a Mode opens the mode picker, then that result once a Mode is picked', async ({ page }) => {
     await open(page, '#/find');

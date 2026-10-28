@@ -39,7 +39,7 @@ _Avoid_: opt-in, consent screen, parental gate
 ## Learning
 
 **Skill**:
-One topic in the learning map, from counting to calculus. There are 135.
+One topic in the learning map, from counting to calculus. There are 136.
 _Avoid_: lesson, topic, unit
 
 **Trick**:
@@ -49,6 +49,18 @@ _Avoid_: shortcut, hack, strategy
 **Sutra**:
 One of the short named rules from Bharati Krishna Tirtha's 1965 book. Tricks are grouped under the Sutra they come from.
 _Avoid_: formula, verse, Vedic sutra (never "from the Vedas")
+
+**Sutra way**:
+Working a sum with one Sutra's short rule in a line or two, the method the app teaches in place of school's long one (98 × 97: 95 | 06, not two rows and an add). The owner's "new method" (`sutras-first` change).
+_Avoid_: Vedic method (it sounds like it is from the Vedas), shortcut, hack
+
+**Sutra tag**:
+The line that names the Sutra a Trick, Star, Try a trick, Kata, Arena question, video or game uses: its kind word (Sutra, Sub-sutra, Special case of, Uses the idea of), its name and its meaning in the Mode's words, as one link to its Deep dive. Never spoken. The map and the words are in `js/sutra-tag.js` (`sutras-first` change).
+_Avoid_: badge (a badge is earned), label, chip
+
+**Sutra progress**:
+How far a Player is with one Sutra, worked out on the device from its Tricks' mastery, Stars lit, Katas done and whether its card is collected. A Sutra is started once one of its Tricks is practiced (it has a Skill record), one of its Stars is lit or one of its Katas is done; a collected card alone does not start it. Never stored on its own and never sent (`sutras-first` change).
+_Avoid_: sutra score, sutra level, mastery (that is one Skill's)
 
 **Verse** (śloka):
 A genuine Sanskrit verse, prose rule (sūtra) or Vedic mantra about mathematics from an older text, shown in Mathematics in Sanskrit verse at the end of the Sutras page (`js/slokas.js`). Verses are not the source of the Sutras; the only verse in the 1965 book (gopī bhāgya, π/10) is the Swami's own.
@@ -77,6 +89,10 @@ _Avoid_: phonetic spelling, transliteration (that is the IAST)
 **Sutra ambience**:
 Very quiet sound on the Sutra pages: a soft bowl strike when a page opens (on by default), an optional low hum, or an opt-in chanted Om instead. Never over Calm music (if the music is already playing, it is the ambience), silent with Sound effects off, Calm or Pause motion, and it stops when the Player leaves the Sutra pages or the tab.
 _Avoid_: background music, chanting (unless the Om is meant)
+
+**Word problem**:
+A question told as a short everyday story (a shop, a kitchen, a game, a trip) whose answer is one number. A share of every Mode's Practice questions and one question of a Star round are Word problems, more as the Mode grows: picture stories for Explorer, one and two steps for Challenger, multi-step real-life problems for Pro. Its first hint asks "What is it asking?"; no hint gives the answer. (`word-problems` change.)
+_Avoid_: story question, puzzle, real-world problem (in copy, Explorer's label is "Story time")
 
 **Kata**:
 A fixed practice problem for one Trick, numbered from easy to hard. Stars draw their questions from them; a Kata has no rating of its own.
@@ -167,8 +183,12 @@ A Mode set by the earlier Try a trick rather than picked (`modeGuess` on the Pla
 _Avoid_: default mode, auto mode
 
 **Door**:
-One of the three cards at the top of Challenger and Pro Home (Challenger: the next Star, the Arena, the Skill map; Pro: the Arena, the Dojo, the Skill map), each with one plain line that says what its word means. The other tiles wait under **More ways to play**.
+One of the three cards at the top of Challenger and Pro Home, in both Modes the **Sutra door**, the Arena and the Skill map, each with one plain line that says what its word means. The other tiles wait under **More ways to play**.
 _Avoid_: tile (that is what is under More ways to play), hero, CTA
+
+**Sutra door**:
+The first Door on Challenger and Pro Home (`sutras-first`): the next Star on Bolt's path shown as its Sutra's tag, "Next Star: <Trick>, Star n", Play this Star (Home's one primary button), Learn the sutra (its Deep dive), Open the Dojo with the belts in its foot, and one line saying what a Sutra and a Star are. After the doors, **Your sutras** lists the next Star's Sutra and up to three the Player has started, each with its Sutra progress. Explorer Home has no doors; its **A sutra to say** card names one Sutra a day with Say it and its Explorer meaning.
+_Avoid_: Dojo door, Dojo card (the belts now sit in the Sutra door's foot)
 
 **Find**:
 The page at `#/find` (menu bar, after Guide; the `/` key) with one box over every named thing: sections, Play modes, grades, Skills, Tricks, Sutras, games, play experiences, guide sections and videos, by name or a plain word. Results match a share of the words typed (question words like how and what are ignored), more words matched first. Built in the page from the catalogs (`js/find.js`); nothing typed is stored or sent. Its browse list gives each section's one-line description, the same line the menu shows as a tooltip.

@@ -11,7 +11,7 @@ test('Keyboard: the Pro card shows the focus ring and Enter opens the Pro Home',
   await expect(card).toBeFocused();
   expect(await card.evaluate(el => getComputedStyle(el).outlineStyle)).toBe('solid');
   await page.keyboard.press('Enter');
-  await expect(page.locator('h1.home-h')).toHaveText('Train your mental math');
+  await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
 });
 
 test('A phone: at 375 px the cards sit in one column, each at least 44 px tall, and nothing scrolls sideways', async ({ page }) => {

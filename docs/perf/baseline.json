@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 801153,
+  "total": 825099,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -48,11 +48,11 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 45683,
-   "/js/arena.js": 5327,
+   "/js/app.js": 48487,
+   "/js/arena.js": 5392,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
-   "/js/celebrate.js": 3080,
+   "/js/celebrate.js": 3367,
    "/js/check.js": 2946,
    "/js/cloud-config.js": 588,
    "/js/cloud.js": 4437,
@@ -62,24 +62,24 @@
    "/js/family-lines.js": 2624,
    "/js/family-view.js": 4196,
    "/js/family.js": 1528,
-   "/js/find.js": 6645,
+   "/js/find.js": 6694,
    "/js/fx.js": 4003,
-   "/js/games.js": 12325,
-   "/js/gamify.js": 3843,
+   "/js/games.js": 12393,
+   "/js/gamify.js": 3873,
    "/js/guide-art.js": 2484,
-   "/js/guide.js": 10402,
+   "/js/guide.js": 10456,
    "/js/handoff-schema.js": 6616,
    "/js/handoff.js": 4229,
    "/js/install-rules.js": 2226,
    "/js/install.js": 7143,
    "/js/landing-sky.js": 261,
-   "/js/levels.js": 4935,
+   "/js/levels.js": 5012,
    "/js/lib.js": 1707,
-   "/js/life.js": 838,
+   "/js/life.js": 1103,
    "/js/listen.js": 1335,
-   "/js/mental.js": 1729,
-   "/js/metrics.js": 3993,
-   "/js/play/catalog.js": 1756,
+   "/js/mental.js": 2128,
+   "/js/metrics.js": 4136,
+   "/js/play/catalog.js": 1783,
    "/js/play/exp/apprentice-core.js": 7279,
    "/js/play/exp/apprentice.js": 3914,
    "/js/play/exp/art-core.js": 5199,
@@ -121,32 +121,38 @@
    "/js/skills/early.js": 5459,
    "/js/skills/high.js": 9385,
    "/js/skills/index.js": 1084,
-   "/js/skills/middle.js": 6258,
-   "/js/skills/upper.js": 7871,
+   "/js/skills/middle.js": 6208,
+   "/js/skills/upper.js": 8118,
    "/js/sky-bg.js": 10972,
    "/js/sky-scene.js": 6249,
    "/js/sky-view.js": 4458,
    "/js/sky.js": 3762,
    "/js/slokas.js": 16068,
-   "/js/star.js": 7988,
+   "/js/star.js": 8768,
    "/js/store.js": 5753,
+   "/js/stories.js": 10070,
+   "/js/story-plan.js": 1723,
    "/js/sutra-ambience.js": 4169,
    "/js/sutra-details.js": 13423,
-   "/js/sutras.js": 3866,
+   "/js/sutra-progress.js": 1066,
+   "/js/sutra-tag-core.js": 1902,
+   "/js/sutra-tag-slot.js": 707,
+   "/js/sutra-tag.js": 1405,
+   "/js/sutras.js": 4223,
    "/js/tour.js": 2215,
-   "/js/try.js": 4325,
-   "/js/vedic.js": 9820,
-   "/js/videos.js": 20516,
-   "/js/viz.js": 5745,
+   "/js/try.js": 4416,
+   "/js/vedic.js": 9857,
+   "/js/videos.js": 20615,
+   "/js/viz.js": 5848,
    "/js/voice-index.js": 213,
    "/js/voice-plan.js": 2458,
    "/js/voice-worker.js": 877,
    "/js/voice.js": 14365,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 23317,
-   "/play/": 3965,
-   "/sw.js": 6214,
+   "/math.css": 24311,
+   "/play/": 4060,
+   "/sw.js": 6266,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -206,6 +212,55 @@
     "from": 785198,
     "to": 801153,
     "why": "family-helpers step 2: the Nikhilam Family as study friends behind a Me switch (js/family.js, js/family-hook.js, js/family-helpers.js, js/family-view.js and js/family-lines.js in the precache; the page imports the Family modules only when the switch is on), plus 102 bytes of review fixes in js/family-view.js; measured on main as of #141, #143 and #147, so that code is the only growth"
+   },
+   {
+    "date": "2026-10-26",
+    "pr": 126,
+    "from": 801153,
+    "to": 807349,
+    "why": "Sutras first, part 1: the Sutra tag on the Trick page, Star, Try a trick, Katas, Arena, Watch and games, and the Sutra cards' kid lines (js/sutras.js). The tag loads on demand (owner, 2026-10-26, from the review): js/sutra-tag.js (2,823 bytes) is out of the static import graph of js/app.js and counts here only as a precached file; the views draw through js/sutra-tag-slot.js (new, 703 bytes), which holds the tag's place until the module is here and is loaded a second after the page has loaded. The static graph is 1,768 bytes smaller than with the tag imported statically (295,631 to 293,863 bytes, 57 modules); the total grows 1,227 bytes over that version (806,122) for the slot module, its calls and the placeholder styles. Growth over main: js/app.js, js/star.js, js/arena.js, js/mental.js, js/try.js, math.css; measured on main as of #131, so that code is the only growth"
+   },
+   {
+    "date": "2026-10-26",
+    "pr": 151,
+    "from": 807349,
+    "to": 820904,
+    "why": "Word problems (openspec change word-problems): js/stories.js (the story templates, hand-written stories and Star wrappers) and js/story-plan.js (the slot plan, labels and the two Word problem Skills' first story), both precached like every module; stories.js is loaded after the first paint, so only story-plan.js is in the static graph of /js/app.js; plus the new Skill 8-reallife, the label styles in math.css, two metrics functions and the Practice and Star wiring; measured on main after #126"
+   },
+   {
+    "date": "2026-10-26",
+    "pr": 129,
+    "from": 820904,
+    "to": 822609,
+    "why": "Sutras first, part 2: progress per Sutra (js/sutra-progress.js, new, 1,066 bytes) as a line and meter on each Sutra card and on the Deep dive (js/app.js, math.css), Sutra scholar listed to Explorer (js/gamify.js), and Sutras first in the menu, Find and the Guide in every Mode (js/find.js, js/guide.js, js/play/catalog.js, play/index.html); no tag is drawn by a static import of js/sutra-tag.js (the #126 code split stays); and content-visibility: auto on each verse group at the end of the Sutras page (math.css), so the groups off screen under an open Deep dive skip layout and paint: without it the Deep dive's blocking time read 200 ms against production's 174 in the perf job (limit 199). Measured on main as of #151, so that code is the only growth"
+   },
+   {
+    "date": "2026-10-26",
+    "pr": 133,
+    "from": 822609,
+    "to": 824217,
+    "why": "Sutras first, part 3: Home leads with the Sutras (the Sutra door, \"Your sutras\" on Challenger and Pro Home, \"A sutra to say\" on Explorer Home; js/app.js, math.css); Home's Sutra door draws its tag with the first paint from js/sutra-tag-core.js (new, 1,902 bytes: the Sutra map, the kind words and tagHTML, moved out of js/sutra-tag.js, which shrinks from 2,823 to 1,405 bytes and still loads on demand): the placeholder it had before moved the doors when js/sutra-tag.js arrived (layout shift 0.034 against 0.007 on the repeat visit in the perf job) and the early module load put the repeat visit's blocking time at 90 ms against production's 64 (limit 89); Home's Sutra links count their tag event at once from the static SURFACES. measured on main as of #129, so that code is the only growth"
+   },
+   {
+    "date": "2026-10-27",
+    "pr": 156,
+    "from": 824472,
+    "to": 824709,
+    "why": "A late import cut off by a page change or reload no longer logs an error: lateImport in js/life.js (+265 bytes) logs a failure a second later unless a pagehide came since the load began (WebKit rejects the import before pagehide), and the late loads in js/app.js (install.js, stories.js, and after the load event sutra-tag.js, arena.js, tour.js and play/kit.js) and js/sutra-tag-slot.js use it. No new file. Measured on main as of #158, so that code is the only growth"
+   },
+   {
+    "date": "2026-10-27",
+    "pr": 157,
+    "from": 824709,
+    "to": 825003,
+    "why": "confetti-by-time: celebrations last a fixed time (js/celebrate.js); measured on main as of #156 and #158; file deltas: /js/celebrate.js +287, /sw.js +7, +294 in all"
+   },
+   {
+    "date": "2026-10-27",
+    "pr": 160,
+    "from": 825003,
+    "to": 825099,
+    "why": "One Watch shelf video for the duplex Trick (tecmath HWF1y5FfGXo): js/videos.js is precached, so its new entry counts (+78 bytes); the stamps in /play/ and /sw.js +9 each, with no change to their source; +96 in all; measured on main as of #157"
    }
   ]
  },
@@ -216,67 +271,74 @@
     "path": "/play/",
     "visit": "first",
     "median": {
-     "fcp": 1923,
-     "lcp": 5420,
+     "fcp": 2067,
+     "lcp": 5400,
      "tbt": 46,
      "cls": 0.001,
-     "si": 1923,
-     "ttfb": 479,
-     "srt": 70
+     "si": 2067,
+     "ttfb": 485,
+     "srt": 64
     }
    },
    "play-repeat": {
     "path": "/play/",
     "visit": "repeat",
     "median": {
-     "fcp": 831,
-     "lcp": 1260,
+     "fcp": 859,
+     "lcp": 1268,
      "tbt": 42,
      "cls": 0.007,
-     "si": 831,
-     "ttfb": 50,
-     "srt": 50
+     "si": 859,
+     "ttfb": 25,
+     "srt": 25
     }
    },
    "arena": {
     "path": "/play/#/arena",
     "visit": "returning",
     "median": {
-     "fcp": 2096,
-     "lcp": 5544,
+     "fcp": 1991,
+     "lcp": 5490,
      "tbt": 57,
      "cls": 0.007,
-     "si": 2096,
-     "ttfb": 500,
-     "srt": 58
+     "si": 1991,
+     "ttfb": 490,
+     "srt": 45
     }
    },
    "games": {
     "path": "/play/#/games",
     "visit": "returning",
     "median": {
-     "fcp": 1952,
-     "lcp": 5647,
+     "fcp": 2210,
+     "lcp": 5460,
      "tbt": 61,
      "cls": 0.007,
-     "si": 1952,
-     "ttfb": 508,
-     "srt": 77
+     "si": 2210,
+     "ttfb": 493,
+     "srt": 51
     }
    },
    "deep-dive": {
     "path": "/play/#/sutras/s1",
     "visit": "returning",
     "median": {
-     "fcp": 2258,
-     "lcp": 5667,
+     "fcp": 2347,
+     "lcp": 5730,
      "tbt": 159,
      "cls": 0.007,
-     "si": 2640,
-     "ttfb": 498,
-     "srt": 43
+     "si": 3222,
+     "ttfb": 495,
+     "srt": 39
     }
    }
+  },
+  "remeasured": {
+   "date": "2026-10-27",
+   "issue": 117,
+   "site": "https://learnvedicmath.com",
+   "commit": "1c1fd52",
+   "how": "each Lighthouse median except tbt is the median of five jobs' medians of production on the code live since #158 deployed (1c1fd52): perf.yml on main, runs 40527550058, 40529109103 and 40531520153 (benchmarkIndex 2477, 2505, 2478), the post-deploy check of 1c1fd52 (e2e.yml run 40526690798, 2488) and the production side of #156's perf job (run 40528435128, 2461); tbt and the interactions keep the 2026-10-21 run (docs/perf/baseline.md, Re-measured on 2026-10-27). The 2026-10-26 re-measure (commit 60a0585, five jobs) read lcp 5550 / 1260 / 5670 / 5580 / 5760 ms"
   }
  },
  "interactions": {

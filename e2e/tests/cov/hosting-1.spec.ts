@@ -20,7 +20,7 @@ test.describe('a first visit', () => {
   test.use({ seedMode: null, tourSeen: false });
   test('A first visit: / shows the first-visit version and localStorage is unchanged', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('main h1')).toHaveText('Math tricks you can do in your head');
+    await expect(page.locator('main h1')).toHaveText('Math in your head, the sutra way');
     await expect(page.locator('body')).not.toHaveAttribute('data-visit', 'back');
     expect((await page.evaluate(() => Object.keys(localStorage))).filter(k => k !== 'vm.sound')).toEqual([]);
   });
