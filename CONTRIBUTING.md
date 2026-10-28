@@ -1,7 +1,5 @@
 # Contributing to Learn Vedic Math
 
-Draft awaiting the owner: the cutoff commit and the go-ahead (learnvedicmath task 12.3, design D16).
-
 Thanks for taking the time to help. Learn Vedic Math is a free learning game for every age, at https://learnvedicmath.com/.
 
 ## What is welcome

@@ -1,12 +1,10 @@
 # Licence of the content and of new code
 
-Draft awaiting the owner: the cutoff commit, the go-ahead and the lawyer's read (learnvedicmath task 12.3, design D16, owner answer L4). Until then the placeholders below stay.
-
 This repository has two licences, split at one commit.
 
 ## Up to the cutoff commit: MIT
 
-Everything published in sbmadhav/vedic-math up to commit `<cutoff sha>` (`<cutoff date>`) stays under the MIT License in [LICENSE](LICENSE): the software (HTML, CSS, JavaScript, TypeScript, Python and other code) and the learning content the earlier notice called part of it (lessons, Katas, Worked examples, games). That grant cannot be withdrawn: anyone holding a copy from before the cutoff keeps the MIT rights to it.
+Everything published in sbmadhav/vedic-math up to commit `2a8b7a3d4da7888d8956a4314fcff0978a510fe0` (2026-10-28) stays under the MIT License in [LICENSE](LICENSE): the software (HTML, CSS, JavaScript, TypeScript, Python and other code) and the learning content the earlier notice called part of it (lessons, Katas, Worked examples, games). That grant cannot be withdrawn: anyone holding a copy from before the cutoff keeps the MIT rights to it.
 
 ## After the cutoff: all rights reserved
 
@@ -16,6 +14,8 @@ After the cutoff commit, new files and post-cutoff changes are proprietary unles
 - Bolt, the Nikhilam Family and all other art, the icons and the name Learn Vedic Math;
 - the Name clips and Studio voice clips recorded after the cutoff, and every other recording;
 - the code written or changed after the cutoff.
+
+A file that has both keeps its pre-cutoff text under MIT; only what was added or changed after the cutoff commit is proprietary. The git history is the record of which is which: compare the file with its version at the cutoff commit (`git diff 2a8b7a3d4da7888d8956a4314fcff0978a510fe0 -- <file>`, or `git blame`). A file added after the cutoff is proprietary as a whole. No per-file marker is needed; a file licensed otherwise says so in a notice of its own.
 
 You may read the code and run your own checkout to study it. You may not copy, publish, sell or build on it without written permission from the owner. Playing at https://learnvedicmath.com/ is free under the site's terms (https://learnvedicmath.com/terms/).
 
