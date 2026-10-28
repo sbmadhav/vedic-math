@@ -90,5 +90,5 @@ Every Mode (Explorer, Challenger, Pro) and every Player. What changes for each:
 - Rules: `cloud/firestore.rules`, `cloud/test/rules.test.js`, `cloud/setup.sh` (domains as parameters), `cloud/README.md`.
 - Tests: most of `test/` and `e2e/` (208 `/vedic-math` references in 73 files), `e2e/local-server.mjs`, `e2e/playwright.config.ts`, `e2e/tests/fixtures.ts` (the Firebase SDK pattern moves to `/vendor/firebase/`).
 - CI: `.github/workflows/ci.yml`, `.github/workflows/e2e.yml`, new `.github/workflows/preview.yml`, new `.github/dependabot.yml`.
-- Docs: `CLAUDE.md`, `README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `LICENSE-CONTENT.md`, `GLOSSARY.md`, `docs/adr/0004` to `0006`, `docs/legal/`, `docs/owner-setup-learnvedicmath.md`.
+- Docs: `AGENTS.md`, `README.md`, `SECURITY.md`, `CONTRIBUTING.md`, `LICENSE-CONTENT.md`, `GLOSSARY.md`, `docs/adr/0004` to `0006`, `docs/legal/`, `docs/owner-setup-learnvedicmath.md`.
 - Other repos: `sbmadhav.github.io` (links to the new domain, `/vm-export/` page, the root worker's `NETWORK_ONLY` list). No new repos: on GitHub Pro this repo goes private and keeps its Pages for the Phase C redirect (owner, L2).

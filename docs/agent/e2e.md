@@ -1,6 +1,6 @@
 # End-to-end tests (`e2e/`)
 
-Detail behind the testing rules in `CLAUDE.md`. Read this before adding or changing a Playwright spec.
+Detail behind the testing rules in `AGENTS.md`. Read this before adding or changing a Playwright spec.
 
 - Every change that affects behavior updates or adds the matching Playwright test in `e2e/` in the same commit. Run `cd e2e && pnpm exec playwright test` before pushing (`BASE_URL=http://localhost:8124` for a local server: `python3 build.py && node e2e/local-server.mjs 8124 _site` serves the build the way Cloudflare does, with `_headers`, `_redirects`, trailing slashes and the 404 page; `_dev` for a build without stamps; `npx wrangler dev` from `deploy/` for Cloudflare's own runtime). Pages are at `/` (landing) and `/play/` (the game, `APP` in `fixtures.ts`); modules at `/js/`.
 - Before the voice host (`https://voice.learnvedicmath.com/`) is live, set `E2E_VOICE_ORIGIN` to another copy of the voice files (for example `https://sbmadhav.com/vedic-math/voice` until Phase B); the fixtures answer the voice host from there. Without it, specs that read aloud see the host fail to resolve. A targeted run (`--project=chromium tests/<spec>.spec.ts`, or `-g "<test name>"`) is the normal loop; the full three-project suite is for the final check before a push.

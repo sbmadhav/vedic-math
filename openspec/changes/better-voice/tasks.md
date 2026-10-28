@@ -104,7 +104,7 @@ Part A (tasks 1) can ship on its own before part B.
 
 ## 5. Words and docs
 
-- [x] 5.1 `GLOSSARY.md`: Read aloud, Built-in voice, Studio voice, Natural voice (added with this proposal). `README.md` and `CLAUDE.md`: how to re-record and publish after a wording change, and that the audio archive lives in this repo's releases. `cloud/README.md` Privacy: one line saying read aloud plays files from this site and sends no text.
+- [x] 5.1 `GLOSSARY.md`: Read aloud, Built-in voice, Studio voice, Natural voice (added with this proposal). `README.md` and `AGENTS.md`: how to re-record and publish after a wording change, and that the audio archive lives in this repo's releases. `cloud/README.md` Privacy: one line saying read aloud plays files from this site and sends no text.
   - Verify: `test/copy.test.mjs` (no em dashes) passes over the new copy.
 - [x] 5.2 Delete `docs/prototypes/voice/` audio once the studio voice ships.
   - Kept until the owner's listening sign-off (6.1), so the comparison page still plays all four versions; delete the 65 samples (2.1 MB) right after.

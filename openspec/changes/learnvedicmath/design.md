@@ -71,7 +71,7 @@ See the proposal's Out of scope. Also: no framework, no bundler (the house rule 
 | `/manifest.webmanifest` | `manifest.webmanifest` | Scope `/play/` |
 | `/.well-known/security.txt`, `/robots.txt`, `/sitemap.xml`, `/404.html` | `site/` | Written or copied by the build |
 
-- `build.py` keeps one `BASE = "/"` and an `APP = "/play/"`; the import check becomes "relative or absolute path inside `/js/`". The CLAUDE.md rule "Every page URL starts with `/vedic-math/`" becomes "Module imports are relative or absolute paths inside `/js/`; the game is at `/play/`".
+- `build.py` keeps one `BASE = "/"` and an `APP = "/play/"`; the import check becomes "relative or absolute path inside `/js/`". The AGENTS.md rule "Every page URL starts with `/vedic-math/`" becomes "Module imports are relative or absolute paths inside `/js/`; the game is at `/play/`".
 - PR #47's on-demand stylesheets keep working: `play_css` keys change from `/vedic-math/css/...` to `/css/...`.
 - Why not keep `index.html` at the root and serve the game at `/`? Decision 2 puts a static landing page at `/`, and a separate shell at `/play/` keeps the landing page free of the 34-module graph.
 
@@ -132,7 +132,7 @@ Crawlers and first-time visitors (no storage) see the landing page. The script r
 - `theme/header.html` is derived from v2.1.0's `header.html` with two edits: no Explore button, and the brand's label says "Learn Vedic Math, home" and links to `/?home`. The pages compose it with the vendored `compose.py`; CI runs `compose.py --check` on every page. The header records the upstream version it came from.
 - Fonts: the five `woff2` files move to `fonts/` with their SIL Open Font License texts; one `@font-face` set in `theme/fonts.css` (the duplicate inline block in today's `index.html` goes, design-audit item 2); `index.html`s preload Nunito Sans and Fredoka.
 - Explore menu: removed with `/assets/explore.js`. Its Pause motion switch (WCAG 2.2.2, `html.motion-paused`) moves into the app: a switch on the Me page and in the music panel, saved on the device under `motion-paused`, applied before paint by the same inline script that applies the theme. `fx.motionOff()` keeps reading the class.
-- The CLAUDE.md rules about the Explore button and `/assets/explore.js` are removed; the rule about `/assets/analytics.js` becomes "`/js/analytics.js`".
+- The AGENTS.md rules about the Explore button and `/assets/explore.js` are removed; the rule about `/assets/analytics.js` becomes "`/js/analytics.js`".
 - No "Made by" credit line on any page (owner, L6). The operator is named only where the law needs it: the operator details in the privacy policy.
 
 ### D7. Service worker re-scoped
