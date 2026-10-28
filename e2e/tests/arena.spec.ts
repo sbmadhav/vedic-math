@@ -108,6 +108,11 @@ for (const scheme of ['light', 'dark'] as const) {
     expect(other).not.toEqual(want);
     await day.locator('[data-src="device"]').click();
     await expect(day.locator('[data-src="device"]')).toHaveCSS('background-color', want[0]);
+    // A keyboard focus ring is drawn inside the tab, where the control's rounded edge does not clip it
+    await page.keyboard.press('Tab');
+    await day.locator('[data-src="world"]').focus();
+    expect(await day.locator('[data-src="world"]').evaluate(e => e.matches(':focus-visible'))).toBe(true);
+    await expect(day.locator('[data-src="world"]')).toHaveCSS('outline-offset', '-3px');
   });
 }
 });

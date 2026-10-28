@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 825282,
+  "total": 825288,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -150,9 +150,9 @@
    "/js/voice.js": 14365,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 24358,
-   "/play/": 4057,
-   "/sw.js": 6260,
+   "/math.css": 24386,
+   "/play/": 4062,
+   "/sw.js": 6233,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -266,8 +266,8 @@
     "date": "2026-10-28",
     "pr": 168,
     "from": 825099,
-    "to": 825282,
-    "why": "design-audit-token-swaps: spacing, radius and shadow values that equal a design system token read var(--space-N), var(--radius-*) and var(--shadow-ledge), which are longer than the px values they replace (the same pixels); the skip link and Board tabs use the design system's .md-skip and .md-seg, and the local rules are gone; measured on main as of #165; file deltas: /math.css +47, css/play/*.css +136 (spells +25, tala +18, locks +17, art +16, party +14, scroll +13, lens +12, apprentice +10, wall +10, daily +9, ghosts +4, bets -12), /js/play/exp/wall.js +7, art.js +2, art-draw.js +2, /js/shell.js +2, /js/app.js -4, /play/ -3, /sw.js -6; +183 in all"
+    "to": 825288,
+    "why": "design-audit-token-swaps: spacing, radius and shadow values that equal a design system token read var(--space-N), var(--radius-*) and var(--shadow-ledge), which are longer than the px values they replace (the same pixels); the skip link and Board tabs use the design system's .md-skip and .md-seg, and the local rules are gone; measured on main as of #165; file deltas: /math.css +47, css/play/*.css +136 (spells +25, tala +18, locks +17, art +16, party +14, scroll +13, lens +12, apprentice +10, wall +10, daily +9, ghosts +4, bets -12), /js/play/exp/wall.js +7, art.js +2, art-draw.js +2, /js/shell.js +2, /js/app.js -4, /play/ -3, /sw.js -6; +183 in all; then the Board tabs' focus ring drawn inside the tab (CodeRabbit on #168): /math.css +28, /play/ +5, /sw.js -27, +6, so +189 in all"
    }
   ]
  },
