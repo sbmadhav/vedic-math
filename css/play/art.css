@@ -34,7 +34,7 @@
 .ms-sl b { font: 700 1.25rem/1 var(--font-display); color: var(--ink); margin-left: var(--space-1); }
 .ms-sl input { width: 100%; accent-color: var(--coral-strong); height: 28px; }
 .ms-drift { display: inline-flex; align-items: center; gap: var(--space-2); }
-.ms-drift-ic { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; border-top-color: transparent; }
+.ms-drift-ic { width: 12px; height: 12px; border-radius: var(--radius-round); border: 2px solid currentColor; border-top-color: transparent; }
 .ms-drift[aria-pressed="true"] { background: var(--teal); color: var(--on-accent); border-color: var(--edge); }
 .ms-drift[aria-pressed="true"] .ms-drift-ic { animation: ms-spin 1.4s linear infinite; }
 @keyframes ms-spin { to { transform: rotate(360deg); } }
@@ -43,7 +43,7 @@
 
 /* palettes: a little swatch from the same tokens the canvas uses */
 .ms-pal { display: inline-flex; align-items: center; gap: var(--space-1-5); padding: var(--space-1-5) var(--space-3) var(--space-1-5) var(--space-1-5); border-radius: var(--radius-pill); border: 2px solid var(--line); background: var(--card); color: var(--ink); font-weight: 700; font-size: .85rem; cursor: pointer; }
-.ms-pal i { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--edge); }
+.ms-pal i { width: 22px; height: 22px; border-radius: var(--radius-round); border: 2px solid var(--edge); }
 .ms-pal--dawn i { background: conic-gradient(var(--coral) 0 50%, var(--sun) 0); }
 .ms-pal--sea i { background: conic-gradient(var(--teal) 0 50%, var(--sun) 0); }
 .ms-pal--festival i { background: conic-gradient(var(--coral) 0 33%, var(--sun) 0 66%, var(--teal) 0); }
@@ -62,7 +62,7 @@
 .ms-meters span { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-top: var(--space-1-5); }
 .ms-meters i { font: 500 .78rem/1 var(--font-mono); font-style: normal; padding: var(--space-1) var(--space-1-5); border-radius: 6px; background: var(--card); border: 1px solid var(--line); }
 .ms-yes { color: var(--ink); }
-.ms-yes::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--teal); margin-right: var(--space-2); }
+.ms-yes::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: var(--radius-round); background: var(--teal); margin-right: var(--space-2); }
 
 /* tools */
 .ms-tools { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: flex-start; padding-top: var(--space-2); border-top: 2px dashed var(--line); }
@@ -89,7 +89,7 @@
 
 /* ---------- Nine (digital roots) ---------- */
 .ms-digits { gap: var(--space-1-5); }
-.ms-digit { width: 40px; height: 40px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--ink); font: 700 1.15rem/1 var(--font-display); cursor: pointer; }
+.ms-digit { width: 40px; height: 40px; border-radius: var(--radius-sm); border: 2px solid var(--line); background: var(--card); color: var(--ink); font: 700 1.15rem/1 var(--font-display); cursor: pointer; }
 .ms-digit[aria-pressed="true"] { background: var(--coral); color: var(--on-accent); border-color: var(--edge); box-shadow: var(--shadow-ledge); }
 
 /* ---------- Rope ---------- */
@@ -103,7 +103,7 @@
 .ms-table tr.is-now td { font-weight: 700; color: var(--coral-strong); }
 .ms-table tr.ms-true td { color: var(--teal-strong); font-weight: 700; border-bottom: 0; }
 .ms-mono { font-family: var(--font-mono); text-align: right; white-space: nowrap; }
-.ms-brush { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--edge); cursor: pointer; font: 700 .7rem/1 var(--font-sans); color: var(--ink); }
+.ms-brush { width: 40px; height: 40px; border-radius: var(--radius-round); border: 2px solid var(--edge); cursor: pointer; font: 700 .7rem/1 var(--font-sans); color: var(--ink); }
 .ms-brush--coral { background: var(--coral); } .ms-brush--sun { background: var(--sun); } .ms-brush--teal { background: var(--teal); } .ms-brush--ink { background: var(--ink); } .ms-brush--clear { background: var(--bg-alt); width: auto; padding: 0 var(--space-3); border-radius: var(--radius-pill); }
 .ms-brush[aria-checked="true"] { box-shadow: 0 0 0 3px var(--card), 0 0 0 6px var(--ink); }
 
@@ -113,7 +113,7 @@
 .ms-gi { display: flex; flex-direction: column; gap: var(--space-1-5); text-decoration: none; color: var(--ink); font-weight: 700; font-size: .85rem; }
 .ms-gi canvas { width: 100%; height: auto; aspect-ratio: 1; border-radius: var(--radius-md); border: 2px solid var(--line); transition: transform .18s, border-color .18s; }
 .ms-gi:hover canvas, .ms-gi:focus-visible canvas { transform: translateY(-3px); border-color: var(--coral); }
-.ms-gdel { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--edge); background: var(--card); color: var(--ink); cursor: pointer; font-size: 1rem; line-height: 1; }
+.ms-gdel { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; border-radius: var(--radius-round); border: 2px solid var(--edge); background: var(--card); color: var(--ink); cursor: pointer; font-size: 1rem; line-height: 1; }
 .ms-empty { text-align: left; }
 
 @media (max-width: 480px) {

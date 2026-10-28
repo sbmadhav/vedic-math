@@ -26,7 +26,7 @@
 .pt-namepick { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
 .pt-namepick select { font: 700 1rem/1.2 var(--font-sans); padding: 7px var(--space-2-5); border-radius: var(--radius-sm); border: 2px solid var(--edge); background: var(--card); color: var(--ink); }
 .pt-colors { display: flex; gap: var(--space-2); }
-.pt-sw { width: 36px; height: 36px; border-radius: 50%; background: var(--c); border: 3px solid var(--edge); cursor: pointer; padding: 0; }
+.pt-sw { width: 36px; height: 36px; border-radius: var(--radius-round); background: var(--c); border: 3px solid var(--edge); cursor: pointer; padding: 0; }
 .pt-sw[aria-checked="true"] { box-shadow: 0 0 0 3px var(--card), 0 0 0 6px var(--edge); }
 .pt-lvls { display: flex; flex-wrap: wrap; gap: var(--space-1-5); }
 .pt-lvls .md-chip { padding: var(--space-1-5) var(--space-3); font-size: .9rem; }

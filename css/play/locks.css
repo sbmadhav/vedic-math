@@ -27,7 +27,7 @@
 .lk-head { padding-bottom: var(--space-2); }
 .lk-levels { display: flex; gap: var(--space-1-5); overflow-x: auto; padding: 2px 2px var(--space-2-5); margin-bottom: var(--space-3); }
 .lk-lv { flex: none; display: inline-flex; align-items: center; gap: var(--space-1-5); padding: 5px var(--space-3) 5px 5px; border-radius: var(--radius-pill); border: 2px solid var(--line); color: var(--ink-muted); font-weight: 700; font-size: .85rem; text-decoration: none; background: var(--card); }
-.lk-lv i { font-style: normal; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--bg-alt); color: var(--ink); font-size: .8rem; }
+.lk-lv i { font-style: normal; display: grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-round); background: var(--bg-alt); color: var(--ink); font-size: .8rem; }
 .lk-lv.is-done i { background: var(--teal); color: var(--on-accent); }
 .lk-lv.is-now { border-color: var(--edge); color: var(--ink); }
 .lk-lv.is-now i { background: var(--ink); color: var(--bg); }
@@ -56,7 +56,7 @@
 .lk-in-val, .lk-out-val { font: 700 clamp(1rem, 5vw, 1.7rem)/1.1 var(--font-display); white-space: nowrap; }
 .lk-out-val { font-family: var(--font-mono); font-weight: 500; color: var(--sun); }
 .lk-out-val.is-pop { animation: lk-pop .4s ease; }
-.lk-bulb { width: 22px; height: 22px; border-radius: 50%; background: var(--ink-muted); margin: 2px 0; transition: background .3s, box-shadow .3s; }
+.lk-bulb { width: 22px; height: 22px; border-radius: var(--radius-round); background: var(--ink-muted); margin: 2px 0; transition: background .3s, box-shadow .3s; }
 .lk-machine.is-lit .lk-bulb { background: var(--sun); box-shadow: 0 0 18px 6px color-mix(in srgb, var(--sun) 70%, transparent); }
 .lk-machine--sun .lk-m-out .lk-out-val { font-size: clamp(.8rem, 3.4vw, 1.1rem); font-family: var(--font-sans); font-weight: 800; }
 
@@ -80,12 +80,12 @@
 .lk-offer:hover:not(:disabled) { transform: translateY(-2px); }
 .lk-offer:disabled { opacity: .35; box-shadow: none; cursor: default; }
 .lk-goal { display: flex; align-items: center; gap: var(--space-1-5); margin-bottom: var(--space-3); color: var(--ink-muted); font-weight: 700; font-size: .85rem; }
-.lk-goal i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--teal); }
+.lk-goal i { width: 16px; height: 16px; border-radius: var(--radius-round); border: 2px solid var(--teal); }
 .lk-goal i.is-on { background: var(--teal); animation: lk-pop .3s ease; }
 .lk-q { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: var(--space-3); font: 700 clamp(1.6rem, 7vw, 2.4rem)/1 var(--font-display); margin: var(--space-2) 0 var(--space-4); }
 .lk-q-arrow { color: var(--ink-muted); }
 .lk-q-typed { min-width: 4ch; text-align: center; padding: var(--space-2) var(--space-3-5); border-radius: var(--radius-md); border: 3px dashed var(--teal); font-family: var(--font-mono); font-weight: 500; color: var(--teal-strong); }
-.lk-timer { --t: 0; width: 34px; height: 34px; border-radius: 50%; background: conic-gradient(var(--line) calc(var(--t) * 360deg), var(--sun) 0); box-shadow: inset 0 0 0 7px var(--card); }
+.lk-timer { --t: 0; width: 34px; height: 34px; border-radius: var(--radius-round); background: conic-gradient(var(--line) calc(var(--t) * 360deg), var(--sun) 0); box-shadow: inset 0 0 0 7px var(--card); }
 .lk-timer.is-late { background: var(--line); }
 .lk-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); max-width: 320px; margin: 0 auto; }
 .lk-pad button { font: 700 1.4rem/1 var(--font-display); padding: var(--space-3-5) 0; border-radius: var(--radius-md); border: 2px solid var(--edge); background: var(--card); color: var(--ink); box-shadow: var(--shadow-ledge); cursor: pointer; }
@@ -94,7 +94,7 @@
 .lk-pad button:disabled, .lk-lampkeys button:disabled { opacity: .5; }
 .lk-lampkeys { display: flex; flex-wrap: wrap; gap: var(--space-3); justify-content: center; }
 .lk-lampkeys .md-btn { font-size: 1.05rem; padding: var(--space-3) var(--space-5); }
-.lk-mini-bulb { width: 16px; height: 16px; border-radius: 50%; background: var(--ink-muted); }
+.lk-mini-bulb { width: 16px; height: 16px; border-radius: var(--radius-round); background: var(--ink-muted); }
 .lk-mini-bulb.is-lit { background: var(--sun); box-shadow: 0 0 10px 2px color-mix(in srgb, var(--sun) 70%, transparent); }
 .lk-result { min-height: 2.6em; text-align: center; margin: var(--space-3) 0 0; }
 .lk-ok { color: var(--teal-strong); } .lk-no { color: var(--coral-strong); font-weight: 700; }

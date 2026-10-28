@@ -30,7 +30,7 @@
 .dn-near { min-height: 1.3em; font-size: .9rem; color: var(--ink-muted); margin-top: var(--space-2); }
 
 .dn-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(10px, 3vw, 18px); max-width: 340px; margin: 0 auto var(--space-4); }
-.dn-tile { aspect-ratio: 1; border-radius: 50%; border: 3px solid var(--edge); background: var(--card); color: var(--ink); font: 700 clamp(1.5rem, 7vw, 2rem)/1 var(--font-display); display: grid; place-items: center; cursor: pointer; box-shadow: var(--shadow-ledge); padding: 0; transition: transform .14s ease, background .18s, border-color .18s; }
+.dn-tile { aspect-ratio: 1; border-radius: var(--radius-round); border: 3px solid var(--edge); background: var(--card); color: var(--ink); font: 700 clamp(1.5rem, 7vw, 2rem)/1 var(--font-display); display: grid; place-items: center; cursor: pointer; box-shadow: var(--shadow-ledge); padding: 0; transition: transform .14s ease, background .18s, border-color .18s; }
 .dn-tile:hover:not(:disabled) { transform: translateY(-2px); }
 .dn-tile.is-sel { background: var(--teal); color: var(--on-accent); transform: scale(1.06); }
 .dn-tile.is-new { animation: dn-pop .45s cubic-bezier(.2, 1.5, .4, 1); border-color: var(--sun-strong); }

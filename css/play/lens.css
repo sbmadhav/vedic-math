@@ -40,7 +40,7 @@
 /* ---------- Camera ---------- */
 .ln-cam-intro p { max-width: 58ch; }
 .ln-privacy { display: flex; gap: var(--space-2-5); align-items: flex-start; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: color-mix(in srgb, var(--teal) 14%, var(--card)); border: 2px solid var(--teal); }
-.ln-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--teal); margin-top: .4em; box-shadow: 0 0 0 4px color-mix(in srgb, var(--teal) 30%, transparent); }
+.ln-dot { flex: none; width: 10px; height: 10px; border-radius: var(--radius-round); background: var(--teal); margin-top: .4em; box-shadow: 0 0 0 4px color-mix(in srgb, var(--teal) 30%, transparent); }
 .ln-cam { position: relative; border-radius: var(--radius-lg); overflow: hidden; background: var(--ink); border: 2px solid var(--edge); max-width: 720px; margin: 0 auto; }
 .ln-video { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: var(--ink); }
 .ln-aim { position: absolute; inset: 30% 10%; pointer-events: none; }
@@ -97,7 +97,7 @@
 /* ---------- Challenge tabs and card ---------- */
 .ln-tabs { list-style: none; margin: 0 0 var(--space-3); padding: 2px 2px var(--space-2); display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-width: thin; }
 .ln-tab { flex: none; display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3-5) var(--space-2) var(--space-2); border-radius: var(--radius-pill); border: 2px solid var(--line); background: var(--card); color: var(--ink); font: 700 .92rem/1.1 var(--font-sans); cursor: pointer; white-space: nowrap; }
-.ln-tab-n { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--bg-alt); font: 700 .85rem/1 var(--font-display); }
+.ln-tab-n { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: var(--radius-round); background: var(--bg-alt); font: 700 .85rem/1 var(--font-display); }
 .ln-tab[aria-selected="true"] { border-color: var(--edge); box-shadow: var(--shadow-ledge); }
 .ln-tab[aria-selected="true"] .ln-tab-n { background: var(--teal); color: var(--on-accent); }
 .ln-tab.is-done .ln-tab-n { background: var(--sun); color: var(--on-accent); }

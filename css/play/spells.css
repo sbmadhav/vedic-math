@@ -90,7 +90,7 @@
 .sp-trail.is-fizzle { opacity: .5; stroke: var(--ink-muted); stroke-dasharray: 3 9; transition: opacity .8s; }
 .sp-puff { fill: var(--ink-muted); opacity: 0; animation: sp-puff .9s ease-out forwards; }
 
-.sp-node { position: absolute; transform: translate(-50%, -50%); width: 17%; aspect-ratio: 1; min-width: 48px; max-width: 76px; border-radius: 50%; border: 3px solid var(--edge); background: var(--card); color: var(--ink);
+.sp-node { position: absolute; transform: translate(-50%, -50%); width: 17%; aspect-ratio: 1; min-width: 48px; max-width: 76px; border-radius: var(--radius-round); border: 3px solid var(--edge); background: var(--card); color: var(--ink);
   font: 700 clamp(1.4rem, 5.5vw, 2rem)/1 var(--font-display); display: grid; place-items: center; box-shadow: var(--shadow-ledge); cursor: pointer; padding: 0; transition: transform .15s ease, background .2s, border-color .2s; touch-action: none; }
 .sp-node.is-wide { width: 23%; max-width: 104px; border-radius: var(--radius-pill); aspect-ratio: 1.45; font-size: clamp(1.1rem, 4.6vw, 1.6rem); }
 .sp-node--base { width: 26%; max-width: 120px; aspect-ratio: 2.4; border-radius: var(--radius-sm); background: var(--sun); color: var(--on-accent); border-style: solid; font-size: clamp(1rem, 4vw, 1.4rem); }

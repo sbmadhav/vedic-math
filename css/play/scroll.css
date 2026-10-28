@@ -109,7 +109,7 @@ a.sc-ch:hover, a.sc-ch:focus-visible { transform: translateY(-3px); border-color
 .sc-story p { margin: 0 0 var(--space-3); }
 .sc-steps { display: flex; gap: var(--space-1-5); overflow-x: auto; padding: 2px 2px var(--space-2-5); margin-bottom: var(--space-3); }
 .sc-step { flex: none; display: inline-flex; align-items: center; gap: var(--space-1-5); padding: 5px var(--space-3) 5px 5px; border-radius: var(--radius-pill); border: 2px solid var(--line); color: var(--ink-muted); font: 700 .85rem/1.2 var(--font-sans); background: var(--card); cursor: pointer; }
-.sc-step i { font-style: normal; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--bg-alt); color: var(--ink); font-size: .8rem; }
+.sc-step i { font-style: normal; display: grid; place-items: center; width: 24px; height: 24px; border-radius: var(--radius-round); background: var(--bg-alt); color: var(--ink); font-size: .8rem; }
 .sc-step.is-done i { background: var(--sun); color: var(--on-accent); }
 .sc-step.is-now { border-color: var(--edge); color: var(--ink); }
 .sc-step.is-now i { background: var(--ink); color: var(--bg); }
@@ -155,7 +155,7 @@ a.sc-ch:hover, a.sc-ch:focus-visible { transform: translateY(-3px); border-color
 .sc-st.is-sum rect { fill: color-mix(in srgb, var(--teal) 25%, var(--card)); stroke: var(--teal-strong); }
 
 .sc-meter { display: inline-flex; gap: var(--space-1); }
-.sc-meter i { font-style: normal; display: grid; place-items: center; min-width: 30px; height: 30px; border-radius: 8px; font: 500 .85rem/1 var(--font-mono); border: 2px solid var(--edge); }
+.sc-meter i { font-style: normal; display: grid; place-items: center; min-width: 30px; height: 30px; border-radius: var(--radius-xs); font: 500 .85rem/1 var(--font-mono); border: 2px solid var(--edge); }
 .sc-meter .sc-m-G { background: var(--sun); color: var(--on-accent); min-width: 46px; }
 .sc-meter .sc-m-L { background: var(--card); color: var(--ink); }
 .sc-meter.is-small i { height: 22px; min-width: 22px; font-size: .72rem; border-width: 1.5px; } .sc-meter.is-small .sc-m-G { min-width: 34px; }
