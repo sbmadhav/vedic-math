@@ -510,9 +510,7 @@ a.door .play-ic { width: 44px; height: 44px; } .door--coral .play-ic { backgroun
 .sutra-flipback svg { width: 18px; height: 18px; }
 
 /* Leaderboards */
-.lb-tabs { display: inline-flex; border: 2px solid var(--edge); border-radius: var(--radius-pill); overflow: hidden; margin-bottom: var(--space-2-5); }
-.lb-tabs button { border: 0; background: var(--card); color: var(--ink); font: 700 13px/1 var(--font-sans); padding: var(--space-2) var(--space-3); cursor: pointer; }
-.lb-tabs button[aria-selected="true"] { background: var(--ink); color: var(--bg); }
+.lb-tabs { margin-bottom: var(--space-2-5); } /* the World and This device tabs: the design system's .md-seg */
 .lb-src { margin: 0 0 var(--space-2); } .lb-why { margin-top: var(--space-2); } .lb-show { margin: var(--space-2-5) 0 0; }
 .lb { list-style: none; margin: 0 0 var(--space-3); padding: 0; display: grid; gap: var(--space-1-5); }
 .lb li { display: flex; align-items: center; gap: var(--space-2-5); padding: var(--space-1-5) var(--space-2-5); border-radius: var(--radius-md); background: color-mix(in srgb, var(--ink) 4%, var(--card)); }

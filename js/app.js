@@ -1034,7 +1034,7 @@ async function loadBoard(el, board, n = 10) {
     el.innerHTML = `<p class="lb-src mq-small"><b>This device</b></p><div class="lb-body">${device()}</div>${why}`;
     return;
   }
-  el.innerHTML = `<div class="lb-tabs" role="tablist"><button role="tab" aria-selected="false" data-src="world">World</button><button role="tab" aria-selected="true" data-src="device">This device</button></div><div class="lb-body"></div>`;
+  el.innerHTML = `<div class="md-seg lb-tabs" role="tablist"><button role="tab" aria-selected="false" data-src="world">World</button><button role="tab" aria-selected="true" data-src="device">This device</button></div><div class="lb-body"></div>`;
   const body = $('.lb-body', el);
   let shown = 0; // the latest tab picked: a World answer that arrives after another pick is dropped
   const show = async src => {

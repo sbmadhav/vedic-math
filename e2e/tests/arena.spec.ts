@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, heldClock, appErrors, typeAnswer, showWorld, needsWorldBoards } from './fixtures';
+import { test, expect, APP, open, cloudLog, heldClock, appErrors, typeAnswer, showWorld, needsWorldBoards, mod } from './fixtures';
 
 /* Arena rounds start and take answers. Every test leaves before the 60 second round ends,
    so no score is ever submitted (and the fake SDK would record it if one were). */
@@ -83,6 +83,33 @@ test('a World answer that arrives after This device was picked leaves the Device
   await day.locator('[data-src="world"]').click();
   await expect(day.locator('.lb-body')).toContainText('Late World Row');
 });
+/* The World and This device tabs are the design system's segmented control (.md-seg; design audit fix plan, part A):
+   the picked tab is filled with the scheme's ink. The served config has no Firebase project until task 8.5, so this
+   test serves a stand-in config; the fake SDK answers every call and nothing leaves the page. */
+for (const scheme of ['light', 'dark'] as const) {
+  test(`the World and This device tabs are the design system's segmented control (${scheme})`, async ({ page }) => {
+    const config = new URL(await mod(page, 'cloud-config'), 'http://x').pathname;
+    await page.route(u => u.pathname === config, r => r.fulfill({ contentType: 'text/javascript', body: "export const FIREBASE = { apiKey: 'e2e', authDomain: 'e2e.invalid', projectId: 'e2e-fake', appId: 'e2e' };\nexport const appCheckSiteKey = '';\nexport const appCheckProvider = 'enterprise';\n" }));
+    await page.emulateMedia({ colorScheme: scheme });
+    await open(page, '#/arena');
+    const day = page.locator('#lbDay');
+    await showWorld(page, '#lbDay');
+    await expect(day.locator('.md-seg[role="tablist"] [role="tab"]')).toHaveCount(2);
+    const [want, picked, other] = await page.evaluate(() => {
+      const probe = document.createElement('i');
+      probe.style.backgroundColor = 'var(--ink)'; probe.style.color = 'var(--bg)';
+      document.body.append(probe);
+      const p = getComputedStyle(probe), c = (s: string) => { const e = getComputedStyle(document.querySelector(`#lbDay ${s}`)!); return [e.backgroundColor, e.color]; };
+      const out = [[p.backgroundColor, p.color], c('[data-src="world"]'), c('[data-src="device"]')];
+      probe.remove();
+      return out;
+    });
+    expect(picked).toEqual(want);
+    expect(other).not.toEqual(want);
+    await day.locator('[data-src="device"]').click();
+    await expect(day.locator('[data-src="device"]')).toHaveCSS('background-color', want[0]);
+  });
+}
 });
 
 test('challenge tower: challenge 1 starts and takes an answer', async ({ page }) => {
