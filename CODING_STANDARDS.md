@@ -10,7 +10,7 @@ How code, copy and tests are written here, each rule with its reason.
 
 ## Pages: chrome, wording and analytics
 
-- A page's chrome is the composed header and the analytics script, `<script src="/js/analytics.js" defer>` before `</body>`, and nothing more: no kid mode switch, Explore menu or "Made by" credit.
+- Every page uses the composed header and loads `<script src="/js/analytics.js" defer>` before `</body>`. The header carries no kid mode switch, and no page has an Explore menu or a "Made by" credit.
 - The play modes (Explorer, Challenger, Pro) set the wording, page-locally (`js/fx.js`). The site-wide `kidmode` setting belongs to the portfolio, so the game leaves it untouched.
 - Record notable actions with `window.siteTrack('area/action', 'Readable title')`. What it sends is bounded by the analytics guardrail in `AGENTS.md`.
 
