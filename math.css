@@ -553,7 +553,7 @@ a.door .play-ic { width: 44px; height: 44px; } .door--coral .play-ic { backgroun
 .ar-hidden { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
 .vm-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .ar-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); max-width: 320px; margin: var(--space-3-5) auto 0; }
-.ar-key { min-height: 56px; border: 2px solid var(--edge); border-radius: var(--radius-md); background: var(--card); color: var(--ink); font: 700 1.5rem/1 var(--display); cursor: pointer; box-shadow: 0 3px 0 var(--ledge); touch-action: manipulation; }
+.ar-key { min-height: 56px; border: 2px solid var(--edge); border-radius: var(--radius-md); background: var(--card); color: var(--ink); font: 700 1.5rem/1 var(--display); cursor: pointer; box-shadow: var(--shadow-ledge); touch-action: manipulation; }
 .ar-key:active { transform: translateY(3px); box-shadow: none; }
 @media (pointer: fine) { .ar-pad { max-width: 260px; } .ar-key { min-height: 44px; font-size: 1.2rem; } }
 .ar-pop { position: absolute; left: 50%; top: 40%; transform: translate(-50%, 0); font: 700 2rem/1 var(--display); opacity: 0; pointer-events: none; }
@@ -844,7 +844,7 @@ html.motion-paused .vv-bar i, body.calm .vv-bar i { transition: none; }
 
 /* ===== Levels: katas, challenge tower, game levels ===== */
 .lv-map { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: var(--space-2-5); margin: var(--space-3-5) 0 var(--space-1-5); }
-.lv-node { position: relative; display: grid; justify-items: center; gap: 2px; padding: var(--space-2-5) var(--space-1) var(--space-2); border: 2px solid var(--edge); border-radius: var(--radius-md); background: var(--card); color: var(--ink); text-decoration: none; box-shadow: 0 3px 0 var(--ledge); transition: transform .12s; }
+.lv-node { position: relative; display: grid; justify-items: center; gap: 2px; padding: var(--space-2-5) var(--space-1) var(--space-2); border: 2px solid var(--edge); border-radius: var(--radius-md); background: var(--card); color: var(--ink); text-decoration: none; box-shadow: var(--shadow-ledge); transition: transform .12s; }
 .lv-node b { font: 700 1.15rem/1 var(--display); }
 .lv-node:hover { transform: translateY(-2px); }
 .lv-node.done { background: color-mix(in srgb, var(--sun) 22%, var(--card)); }
@@ -891,7 +891,7 @@ html.motion-paused .vv-bar i, body.calm .vv-bar i { transition: none; }
 
 /* New games */
 .g-pairs { display: grid; grid-template-columns: repeat(var(--cols, 4), 1fr); gap: var(--space-2-5); max-width: 640px; margin: 0 auto; }
-.g-card { min-height: 84px; border: 2px solid var(--edge); border-radius: var(--radius-md); background: var(--plum); color: var(--ink); cursor: pointer; padding: var(--space-1-5); perspective: 600px; box-shadow: 0 3px 0 var(--ledge); font: inherit; }
+.g-card { min-height: 84px; border: 2px solid var(--edge); border-radius: var(--radius-md); background: var(--plum); color: var(--ink); cursor: pointer; padding: var(--space-1-5); perspective: 600px; box-shadow: var(--shadow-ledge); font: inherit; }
 .g-card-in { display: block; opacity: 0; font: 600 1rem/1.25 var(--display); transition: opacity .2s; }
 .g-card.up, .g-card.got { background: var(--card); } .g-card.up .g-card-in, .g-card.got .g-card-in { opacity: 1; }
 .g-card.got { border-color: var(--teal-strong); background: color-mix(in srgb, var(--teal) 18%, var(--card)); }
@@ -1064,7 +1064,7 @@ html.motion-paused .wb-card .md-switch .md-knob, body.calm .wb-card .md-switch .
 .star-dare-t b { font: 700 1.6rem/1.1 var(--display); }
 .star-dare-t small { font-weight: 700; color: var(--ink-muted); font-size: 13px; }
 .star-dare-k { font: 800 12px/1 var(--font-sans); letter-spacing: .06em; text-transform: uppercase; color: var(--plum-strong); }
-@keyframes dareGlow { 50% { box-shadow: 0 3px 0 var(--ledge), 0 0 22px 4px color-mix(in srgb, var(--sun) 55%, transparent); } }
+@keyframes dareGlow { 50% { box-shadow: var(--shadow-ledge), 0 0 22px 4px color-mix(in srgb, var(--sun) 55%, transparent); } }
 .star-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
 .star-pad[hidden] { display: none; }
 .star-key { height: clamp(46px, 7vh, 64px); border-radius: var(--radius-md); border: 2px solid var(--edge); background: var(--card); color: var(--ink); font: 700 1.6rem/1 var(--display); box-shadow: 0 4px 0 var(--ledge); cursor: pointer; touch-action: manipulation; transition: transform .08s, box-shadow .08s; }
