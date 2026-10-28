@@ -205,7 +205,9 @@ a.sutra-tag-a:hover .sutra-tag-n, a.sutra-tag-a:focus-visible .sutra-tag-n { tex
 .pr-say.no .md-bubble { border-color: var(--coral-strong); background: color-mix(in srgb, var(--coral) 10%, var(--card)); }
 .pr-say.win .md-bubble { border-color: var(--sun-strong); background: color-mix(in srgb, var(--sun) 24%, var(--card)); font-weight: 700; }
 .bolt { width: 42px; height: 42px; flex: none; }
+/* Bolt glows in Deep Space, whether the system picked it or the Player did */
 :root[data-theme="dark"] .bolt { filter: drop-shadow(0 0 10px rgba(240,140,119,.22)); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bolt { filter: drop-shadow(0 0 10px rgba(240,140,119,.22)); } }
 .pr-sparks { font: 500 13px/1 var(--font-mono); color: var(--teal-strong); margin-left: var(--space-1-5); }
 .linkbtn { background: none; border: 0; padding: 0; color: var(--sky-strong); font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
 .pr-sol { margin-top: var(--space-3-5); padding: var(--space-3-5) var(--space-4); border-radius: var(--radius-md); border: 1px dashed var(--edge); background: color-mix(in srgb, var(--sky) 8%, var(--card)); }
