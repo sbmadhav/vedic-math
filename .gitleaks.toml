@@ -15,11 +15,13 @@ paths = ['''^js/cloud-config\.js$''']
 regexTarget = "line"
 regexes = ['''^\s*apiKey:\s*["']AIza[0-9A-Za-z_-]{35}["'],?\s*$''']
 
-# The Cloudflare Web Analytics site token is sent by every page's beacon. Only its one line in js/analytics.js.
+# The Cloudflare Web Analytics site token is sent by every page's beacon. Only its one line in js/analytics.js, to
+# the end of the line: after the token only a comment with no quote or = may follow, so a second key on that line is
+# still found.
 [[allowlists]]
 description = "Cloudflare Web Analytics site token, public by design"
 targetRules = ["generic-api-key"]
 condition = "AND"
 paths = ['''^js/analytics\.js$''']
 regexTarget = "line"
-regexes = ['''^\s*const CF_TOKEN = '[0-9a-f]{32}';''']
+regexes = ['''^\s*const CF_TOKEN = '[0-9a-f]{32}';\s*(//[^'"`=]*)?$''']
