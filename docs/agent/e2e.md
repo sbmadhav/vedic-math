@@ -1,6 +1,6 @@
 # End-to-end tests (`e2e/`)
 
-Detail behind the testing rules in `AGENTS.md`.
+Detail behind the testing guardrail in `AGENTS.md` and the Tests rule in `CODING_STANDARDS.md`.
 
 - The local server (`node e2e/local-server.mjs 8124 _site`, "Checks before a push" in `AGENTS.md`) serves the build the way Cloudflare does, with `_headers`, `_redirects`, trailing slashes and the 404 page; serve `_dev` for a build without stamps, or run `npx wrangler dev` from `deploy/` for Cloudflare's own runtime. Pages are at `/` (landing) and `/play/` (the game, `APP` in `fixtures.ts`); modules at `/js/`.
 - Before the voice host (`https://voice.learnvedicmath.com/`) is live, set `E2E_VOICE_ORIGIN` to another copy of the voice files (for example `https://sbmadhav.com/vedic-math/voice` until Phase B); the fixtures answer the voice host from there. Without it, specs that read aloud see the host fail to resolve. A targeted run (`--project=chromium tests/<spec>.spec.ts`, or `-g "<test name>"`) is the normal loop; the full three-project suite is for the final check before a push.

@@ -1,6 +1,6 @@
 # The Nikhilam Family helpers
 
-Detail behind the rules in `AGENTS.md`. The decisions are in `openspec/changes/family-helpers/design.md` (D1 to D17, owner-approved 2026-10-21); the words are in `GLOSSARY.md` (Family helper, Shunya, Nava, Eka, Visit, Help signal).
+The decisions are in `openspec/changes/family-helpers/design.md` (D1 to D17, owner-approved 2026-10-21); the words are in `GLOSSARY.md` (Family helper, Shunya, Nava, Eka, Visit, Help signal).
 
 - **Who.** Shunya (the Zero, funny), Nava (the Nine, witty) and Eka (the One, names the Sutra) are the Player's fellow students, never teachers and never pets; Bolt stays the teacher and they credit him ("Bolt showed us this one"). They give a hint, the method or a worked example on other numbers, never the answer to the Player's question.
 - **The switch.** Off for everyone until a Player turns on "Try the Nikhilam Family helpers" in Me (`player.family`, `FAMILY_DEFAULT = false` in `js/family-helpers.js`); then "When they help" (`player.familyHelp`: `always`, `ask`, `off`). `js/family-hook.js` reads both and loads `js/family-view.js` only when they are on, so a Player who left the switch off loads nothing more. Releasing the Family is task 3.9: flip the default and remove the try switch.

@@ -1,6 +1,6 @@
 # Tasks
 
-Re-planned 2026-10-21 for React Router framework mode with server rendering (`react-typescript` task 12.1). Build order (`react-typescript` design D3): after `react-typescript` is archived, then `placement` and `age-bands`, this change, then `duel-online`, Live sessions and `gpu-effects`. Tasks marked **[OWNER]** need the owner. "Verify:" says how a task is checked. Every code task keeps `pnpm typecheck`, `pnpm lint`, `pnpm test`, `python3 build.py --out _site` (with its budget gates) and the Playwright suite green, and updates the matching e2e spec in the same commit (AGENTS.md).
+Re-planned 2026-10-21 for React Router framework mode with server rendering (`react-typescript` task 12.1). Build order (`react-typescript` design D3): after `react-typescript` is archived, then `placement` and `age-bands`, this change, then `duel-online`, Live sessions and `gpu-effects`. Tasks marked **[OWNER]** need the owner. "Verify:" says how a task is checked. Every code task keeps `pnpm typecheck`, `pnpm lint`, `pnpm test`, `python3 build.py --out _site` (with its budget gates) and the Playwright suite green, and updates the matching e2e spec in the same commit (CODING_STANDARDS.md).
 
 ## 0. Before building
 
@@ -66,5 +66,5 @@ Re-planned 2026-10-21 for React Router framework mode with server rendering (`re
 
 - [ ] 9.1 Re-run the full baseline (1.2, 1.3) and add an "after" section to `docs/perf/baseline.md` with the change in each number; record the field numbers (1.5) again after a week.
 - [ ] 9.2 Every absolute assertion and byte line fails pull requests; none is still reported only. For any that cannot be met, ask the owner (open question 4) before closing. Verify: `tools/lighthouserc.json` has no `failing: false`, and `tools/budget.ts` prints no line as missed.
-- [ ] 9.3 Update `AGENTS.md` (the hooks `useIdle` and `useInView`, `AppLink`, the core precache table in `app/src/routes.ts`, `tools/subset-fonts.py`) and `_config.yml` `exclude:` for any new repo-only file.
+- [ ] 9.3 Update `CODING_STANDARDS.md` (the hooks `useIdle` and `useInView`, `AppLink`), `docs/agent/offline.md` (the core precache table in `app/src/routes.ts`), `docs/agent/build-and-checks.md` (`tools/subset-fonts.py`) and `_config.yml` `exclude:` for any new repo-only file.
 - [ ] 9.4 `openspec validate render-performance --strict`; after release and one week of field data with no regression, archive with `/opsx:archive`.

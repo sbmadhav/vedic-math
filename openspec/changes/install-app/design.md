@@ -2,7 +2,7 @@
 
 ## Context
 
-- The game is a Legacy view app at `/play/` (`js/app.js`, hash routes), migrating to React Router at `/learn/` (`react-typescript`). Modules in `js/` are served as written, with an import map; there is no bundler until phase 2, so new code for the Legacy views is JavaScript in `js/` (AGENTS.md: "New code is TypeScript, and React for views" applies to `app/`; a Legacy module that `js/app.js` imports today cannot be TypeScript).
+- The game is a Legacy view app at `/play/` (`js/app.js`, hash routes), migrating to React Router at `/learn/` (`react-typescript`). Modules in `js/` are served as written, with an import map; there is no bundler until phase 2, so new code for the Legacy views is JavaScript in `js/` (CODING_STANDARDS.md: "New code is TypeScript, and React for views" applies to `app/`; a Legacy module that `js/app.js` imports today cannot be TypeScript).
 - `manifest.webmanifest` (learnvedicmath D7, site-assets spec "Its own installable app") has name, short name, `id` `/play/`, `start_url` `/play/?source=pwa`, scope `/play/`, standalone, the Nikhilam Family icons (192, 512, maskable 512, SVG) and the Daybreak background. `e2e/tests/load.spec.ts` already checks Chromium's installability on `/play/`.
 - `app/src/sw/sw.ts` registers with scope `/play/`, answers every navigation under `/play/` network first with the saved shell as the fallback, and `build.py` precaches every import-map module and every manifest icon with its hash.
 - The design system's `header.js` keeps the one `<meta name="theme-color">` on the current `--bg` after it loads (deferred).
