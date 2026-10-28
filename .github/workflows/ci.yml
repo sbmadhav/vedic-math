@@ -161,7 +161,11 @@ jobs:
           --exclude-rule javascript.express.security.injection.raw-html-format.raw-html-format
           --exclude-rule typescript.react.security.audit.react-unsanitized-method.react-unsanitized-method
 
-      # Runs even when Semgrep failed (a finding or a rules download), so every run has a secret scan result
+      # Runs even when Semgrep failed (a finding or a rules download), so every run has a secret scan result.
+      # --log-opts replaces gitleaks' own git log options (it keeps only -p -U0), so they are repeated here
+      # (--full-history --all --diff-filter=tuxdb, sources/git.go in 8.30.1) and -m added: git log shows no patch for
+      # a merge commit without it, and a key typed while resolving a conflict would pass unseen. Each finding prints
+      # as rule, file, line and commit only (the template below), never the line's text.
       - name: gitleaks
         if: ${{ !cancelled() }}
         env:
@@ -174,7 +178,10 @@ jobs:
           echo "$GITLEAKS_SHA256  /tmp/$f" | sha256sum -c -
           tar -xzf "/tmp/$f" -C /tmp gitleaks
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          /tmp/gitleaks detect --no-banner --redact --verbose --source . --config .gitleaks.toml
+          printf '%s\n' '{{- range . }}' '{{ .RuleID }} {{ .File }}:{{ .StartLine }} commit {{ .Commit }}' '{{- end }}' > /tmp/findings.tmpl
+          /tmp/gitleaks detect --no-banner --redact --source . --config .gitleaks.toml \
+            --log-opts="--full-history --all --diff-filter=tuxdb -m" \
+            --report-format template --report-template /tmp/findings.tmpl --report-path -
 
   # Studio voice (design D17): on every push to main, copy any new files of the release named by js/voice-index.js to
   # the R2 bucket behind https://voice.learnvedicmath.com/ (checked against the archive's SHA-256 and their own hashed
