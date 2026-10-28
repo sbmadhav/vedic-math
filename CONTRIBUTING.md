@@ -20,7 +20,7 @@ Also not, in any change: ads, trackers, sign-ups or anything that collects perso
 
 ## How a change gets merged
 
-Changes are made by the owner and the owner's own tooling: a branch from `main`, the checks below, then a pull request against `main` with the checklist filled in. Every pull request needs passing checks (the `check` job in `.github/workflows/ci.yml`), every review conversation resolved and the owner's approval. `main` deploys straight to the live app, so the branch is protected: no direct pushes, no force pushes. Workflows from forks wait for the owner's approval before they run.
+Changes are made by the owner and the owner's own tooling: a branch from `main`, the checks below, then a pull request against `main` with the checklist filled in. Every pull request needs passing checks (the `check` job in `.github/workflows/ci.yml`), every review conversation resolved and the owner's approval. `main` deploys straight to the live app, so the branch is protected: no direct pushes, no force pushes. A pull request from a fork gets no preview (`.github/workflows/preview.yml` skips it), and any other workflow it starts waits for the owner's approval before it runs.
 
 ## Local setup
 
