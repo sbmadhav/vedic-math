@@ -1,0 +1,16 @@
+# gitleaks (ci.yml, job scan; openspec change learnvedicmath, design D12): the default rules, less two values that
+# are public by design and sent to every browser that opens the site.
+[extend]
+useDefault = true
+
+# The Firebase web config (apiKey and the rest) is public: what a browser may do is decided by cloud/firestore.rules,
+# App Check and the key's referrer list, never by keeping the key secret (docs/agent/leaderboards.md).
+[[allowlists]]
+description = "Firebase web config, public by design"
+paths = ['''^js/cloud-config\.js$''']
+
+# The Cloudflare Web Analytics site token is sent by every page's beacon.
+[[allowlists]]
+description = "Cloudflare Web Analytics site token, public by design"
+regexTarget = "line"
+regexes = ['''const CF_TOKEN = ''']
