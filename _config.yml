@@ -4,6 +4,7 @@
 # published from vendor/design-system/ at /ds/.
 exclude:
   - AGENTS.md
+  - CODING_STANDARDS.md
   - README.md
   - GLOSSARY.md
   - CONTRIBUTING.md

@@ -366,7 +366,7 @@ The app runs under `<StrictMode>` in development, so effects that do not clean u
 - **drei helpers that fetch from CDNs** (`Environment` presets, default fonts for `Text`). Mitigation: ESLint `no-restricted-imports` for those helpers; the CSP blocks them anyway; `third-party.spec.ts` covers 3D routes.
 - **Merge pain with feature and content branches.** Mitigation: D12 locks, short-lived migration PRs, B6 for content files, and phase 1 PRs that rename and convert in separate commits so `git` follows renames.
 - **The Playwright suite drifting to fit the code.** Mitigation: D10's rule that a migration PR changes selectors and URL forms only, listed in the PR description and checked in review; the N8 helper lands alone, before any build change.
-- **Learning curve.** Mitigation: `AGENTS.md` gains the component, hook, server-safety and CSS rules; the first moved views (Guide, Watch) are the examples later PRs copy.
+- **Learning curve.** Mitigation: `CODING_STANDARDS.md` gains the component, hook, server-safety and CSS rules; the first moved views (Guide, Watch) are the examples later PRs copy.
 
 ## Migration plan
 
