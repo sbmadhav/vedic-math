@@ -1011,7 +1011,7 @@ html.motion-paused .wb-card .md-switch .md-knob, body.calm .wb-card .md-switch .
 .star-say:empty { visibility: hidden; }
 .star-main { display: grid; justify-items: center; text-align: center; }
 .star-ask, .star-replay, .star-end, .star-offer { display: grid; justify-items: center; gap: var(--space-3); width: 100%; }
-.star-tag { display: inline-flex; padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); font-weight: 800; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; background: var(--bg-alt); color: var(--ink-muted); }
+.star-tag { display: inline-flex; padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); font-weight: 700; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; background: var(--bg-alt); color: var(--ink-muted); }
 .star-tag--rematch { background: var(--plum); color: var(--on-accent); }
 .star-tag--dare { background: var(--sun); color: var(--on-accent); }
 .star-tag--trick { background: var(--teal); color: var(--on-accent); text-transform: none; letter-spacing: 0; }
@@ -1059,7 +1059,7 @@ html.motion-paused .wb-card .md-switch .md-knob, body.calm .wb-card .md-switch .
 .star-dare-t { display: grid; gap: 2px; flex: 1; }
 .star-dare-t b { font: 700 1.6rem/1.1 var(--display); }
 .star-dare-t small { font-weight: 700; color: var(--ink-muted); font-size: 13px; }
-.star-dare-k { font: 800 12px/1 var(--font-sans); letter-spacing: .06em; text-transform: uppercase; color: var(--plum-strong); }
+.star-dare-k { font: 700 12px/1 var(--font-sans); letter-spacing: .06em; text-transform: uppercase; color: var(--plum-strong); }
 @keyframes dareGlow { 50% { box-shadow: var(--shadow-ledge), 0 0 22px 4px color-mix(in srgb, var(--sun) 55%, transparent); } }
 .star-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); }
 .star-pad[hidden] { display: none; }
