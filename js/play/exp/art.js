@@ -20,10 +20,10 @@ const tabOf = k => (k === 'altar' ? 'rope' : k);
 const WALL = { phone: [1170, 2532], desktop: [2560, 1440], square: [2048, 2048] };
 const clockOf = ens => (ens.ctx ? () => ens.ctx.currentTime : () => globalThis.performance.now() / 1000);
 
-/* Theme colors for canvas, read from tokens */
+/* Theme colors and the display font for canvas, read from tokens */
 function readPal() {
   const c = n => A.parseColor(token(n));
-  return { bg: c('--bg'), ink: c('--ink'), muted: c('--ink-muted'), line: c('--line'), coral: c('--coral'), sun: c('--sun'), teal: c('--teal'), dark: isDark() };
+  return { bg: c('--bg'), ink: c('--ink'), muted: c('--ink-muted'), line: c('--line'), coral: c('--coral'), sun: c('--sun'), teal: c('--teal'), dark: isDark(), font: token('--font-display') || 'sans-serif' };
 }
 /* A palette for a wallpaper background: night or day, built from the two ends of the current theme */
 function wallPal(pal, bg) {
@@ -376,7 +376,7 @@ export function mount({ root, signal, params }) {
     const fit = (w, h, minX, maxX, minY, maxY) => { const s = Math.min((w * 0.84) / (maxX - minX), (h * 0.84) / (maxY - minY)), ox = w / 2 - ((minX + maxX) / 2) * s, oy = h / 2 - ((minY + maxY) / 2) * s; return { s, to: ([x, y]) => [ox + x * s, oy + y * s], from: ([x, y]) => [(x - ox) / s, (y - oy) / s] }; };
     const C = pal => ({ ink: A.rgba(pal.ink), soft: A.rgba(pal.ink, 0.12), coral: A.rgba(pal.coral), sun: A.rgba(pal.sun), teal: A.rgba(pal.teal), fill: c => A.rgba(pal[c], pal.dark ? 0.32 : 0.28) });
     const poly = (g, pts, fill, stroke, lw = 2) => { g.beginPath(); pts.forEach((p, i) => (i ? g.lineTo(...G.to(p)) : g.moveTo(...G.to(p)))); g.closePath(); if (fill) { g.fillStyle = fill; g.fill(); } if (stroke) { g.strokeStyle = stroke; g.lineWidth = lw; g.stroke(); } };
-    const text = (g, s, [x, y], pal, size = 15, align = 'center') => { g.fillStyle = A.rgba(pal.ink); g.font = `600 ${size}px Fredoka, "Nunito Sans", sans-serif`; g.textAlign = align; g.textBaseline = 'middle'; g.fillText(s, x, y); };
+    const text = (g, s, [x, y], pal, size = 15, align = 'center') => { g.fillStyle = A.rgba(pal.ink); g.font = `600 ${size}px ${pal.font}`; g.textAlign = align; g.textBaseline = 'middle'; g.fillText(s, x, y); };
     const view = stageCanvas(cv, signal, (g, w, h, pal) => {
       const c = C(pal);
       if (scene === 'altar') { G = D.altar(g, w, h, pal, altarPiece, { hover }); return; }
@@ -640,7 +640,7 @@ function exportCanvas(p, [W, H], pal) {
   g.save(); g.translate((W - side) / 2, (H - side) / 2 - (W < H ? H * 0.04 : 0));
   DRAW[p.k](g, side, side, pal, p, { scale });
   g.restore();
-  g.fillStyle = A.rgba(pal.muted, 0.9); g.font = `600 ${Math.round(Math.min(W, H) * 0.022)}px Fredoka, "Nunito Sans", sans-serif`; g.textAlign = 'center';
+  g.fillStyle = A.rgba(pal.muted, 0.9); g.font = `600 ${Math.round(Math.min(W, H) * 0.022)}px ${pal.font}`; g.textAlign = 'center';
   g.fillText(`${A.describe(p)} · Vedic Math`, W / 2, H - Math.min(W, H) * (W < H ? 0.1 : 0.05));
   return cv;
 }

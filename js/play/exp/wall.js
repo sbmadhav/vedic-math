@@ -327,24 +327,24 @@ function cardCanvas(c) {
   const g = gridFor(c.g, c.gp), painted = new Set(c.cells), cv = document.createElement('canvas');
   const Wd = 720, H = 900; cv.width = Wd; cv.height = H;
   const x = cv.getContext('2d');
-  const col = n => token(n) || 'gray';
+  const col = n => token(n) || 'gray', display = token('--font-display') || 'sans-serif', sans = token('--font-sans') || 'sans-serif';
   x.fillStyle = col('--bg'); x.fillRect(0, 0, Wd, H);
   x.fillStyle = col('--sun'); x.fillRect(0, 0, Wd, 14);
-  x.fillStyle = col('--ink'); x.font = '700 40px Fredoka, sans-serif'; x.textBaseline = 'top';
+  x.fillStyle = col('--ink'); x.font = `700 40px ${display}`; x.textBaseline = 'top';
   wrapText(x, W.nameOf(c.name), 48, 50, Wd - 96, 46);
   const top = 170, size = 480, n = g.layout === 'tri' ? g.rows : Math.max(g.cols, g.rows), u = size / n, left = (Wd - (g.layout === 'tri' ? g.rows : g.cols) * u) / 2;
-  x.font = `600 ${Math.max(9, u * 0.36)}px "Nunito Sans", sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.font = `600 ${Math.max(9, u * 0.36)}px ${sans}`; x.textAlign = 'center'; x.textBaseline = 'middle';
   for (const cl of g.cells) {
     const cx = g.layout === 'tri' ? Wd / 2 + (cl.k - cl.r / 2) * u - u / 2 : left + cl.c * u, cy = top + cl.r * u, on_ = painted.has(cl.i);
     x.fillStyle = on_ ? col('--sun') : col('--bg-alt'); roundRect(x, cx + 2, cy + 2, u - 4, u - 4, Math.min(8, u / 5)); x.fill();
     x.fillStyle = on_ ? col('--on-accent') : col('--ink-muted'); x.fillText(String(cl.n), cx + u / 2, cy + u / 2);
   }
-  x.textAlign = 'left'; x.textBaseline = 'top'; x.fillStyle = col('--ink'); x.font = '700 28px "Nunito Sans", sans-serif';
+  x.textAlign = 'left'; x.textBaseline = 'top'; x.fillStyle = col('--ink'); x.font = `700 28px ${sans}`;
   const yEnd = wrapText(x, W.ruleText(c.rule), 48, top + size + 40, Wd - 96, 36);
   const pat = c.p && W.patternById(c.p);
-  x.fillStyle = pat ? col('--coral-strong') : col('--teal-strong'); x.font = '800 22px "Nunito Sans", sans-serif';
+  x.fillStyle = pat ? col('--coral-strong') : col('--teal-strong'); x.font = `800 22px ${sans}`;
   x.fillText(pat ? `Discovery: ${pat.title}` : c.test?.ok ? `Conjecture: held for ${c.test.tested} tests, not yet proved` : `Conjecture: broken by ${c.test?.counter ?? '?'}`, 48, yEnd + 52);
-  x.fillStyle = col('--ink-muted'); x.font = '600 22px "Nunito Sans", sans-serif';
+  x.fillStyle = col('--ink-muted'); x.font = `600 22px ${sans}`;
   x.fillText('Pattern Wall · learnvedicmath.com', 48, H - 56);
   return cv;
 }
