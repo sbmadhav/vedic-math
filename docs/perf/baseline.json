@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 825099,
+  "total": 829915,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -48,7 +48,7 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 48487,
+   "/js/app.js": 50378,
    "/js/arena.js": 5392,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -56,6 +56,7 @@
    "/js/check.js": 2946,
    "/js/cloud-config.js": 588,
    "/js/cloud.js": 4437,
+   "/js/connectors.js": 1891,
    "/js/explain-lines.js": 2325,
    "/js/family-helpers.js": 5263,
    "/js/family-hook.js": 775,
@@ -68,7 +69,7 @@
    "/js/gamify.js": 3873,
    "/js/guide-art.js": 2484,
    "/js/guide.js": 10456,
-   "/js/handoff-schema.js": 6616,
+   "/js/handoff-schema.js": 6682,
    "/js/handoff.js": 4229,
    "/js/install-rules.js": 2226,
    "/js/install.js": 7143,
@@ -128,7 +129,7 @@
    "/js/sky-view.js": 4458,
    "/js/sky.js": 3762,
    "/js/slokas.js": 16068,
-   "/js/star.js": 8768,
+   "/js/star.js": 8950,
    "/js/store.js": 5753,
    "/js/stories.js": 10070,
    "/js/story-plan.js": 1723,
@@ -141,7 +142,7 @@
    "/js/sutras.js": 4223,
    "/js/tour.js": 2215,
    "/js/try.js": 4416,
-   "/js/vedic.js": 9857,
+   "/js/vedic.js": 10059,
    "/js/videos.js": 20615,
    "/js/viz.js": 5848,
    "/js/voice-index.js": 213,
@@ -150,9 +151,9 @@
    "/js/voice.js": 14365,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 24311,
+   "/math.css": 24904,
    "/play/": 4060,
-   "/sw.js": 6266,
+   "/sw.js": 6257,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -261,6 +262,13 @@
     "from": 825003,
     "to": 825099,
     "why": "One Watch shelf video for the duplex Trick (tecmath HWF1y5FfGXo): js/videos.js is precached, so its new entry counts (+78 bytes); the stamps in /play/ and /sw.js +9 each, with no change to their source; +96 in all; measured on main as of #157"
+   },
+   {
+    "date": "2026-10-29",
+    "pr": null,
+    "from": 825099,
+    "to": 829915,
+    "why": "working-memory-scaffolds: the answer slots for Tricks built in parts (js/app.js, js/star.js, js/vedic.js, math.css) and the digit connectors (js/connectors.js, loaded on first use but precached, so it counts), and the Trophy case on Me; file deltas: /js/app.js +1891, /js/connectors.js +1891 (new), /js/handoff-schema.js +66, /js/star.js +182, /js/vedic.js +202, /math.css +593, /sw.js -9, +4816 in all"
    }
   ]
  },
