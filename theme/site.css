@@ -129,3 +129,22 @@ html[data-lv-wait] .lv-landing main { visibility: hidden; animation: lv-show 0s 
 .lv-sutra-go { margin-top: auto; font-weight: 700; color: var(--sky-strong); }
 .lv-sutras-note { margin-top: var(--space-5); }
 .lv-sutras-note a { color: var(--sky-strong); font-weight: 700; }
+
+/* Grown-up pages: the three-point summary on /parents/ and the warm-up box on /teachers/ (UX audit 2026-10-29, task 1.2).
+   Nothing moves: no hover lift, no animation. */
+.lv-facts { list-style: none; margin: var(--space-5) 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+@media (max-width: 700px) { .lv-facts { grid-template-columns: 1fr; } }
+.lv-fact { display: flex; align-items: flex-start; gap: var(--space-3); min-width: 0; padding: var(--space-4); border: 2px solid var(--edge); border-top-width: 6px; border-radius: var(--radius-lg); background: var(--card); color: var(--ink); font-size: 15px; line-height: 1.45; }
+.lv-fact strong { display: block; margin-bottom: var(--space-1); font-family: var(--font-display); font-size: 1.1rem; line-height: 1.25; }
+.lv-fact-ic { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: var(--radius-round); color: var(--on-accent); }
+.lv-fact--sky { border-top-color: var(--sky); } .lv-fact--sky .lv-fact-ic { background: var(--sky); }
+.lv-fact--plum { border-top-color: var(--plum); } .lv-fact--plum .lv-fact-ic { background: var(--plum); }
+.lv-fact--sun { border-top-color: var(--sun); } .lv-fact--sun .lv-fact-ic { background: var(--sun); }
+.lv-callout { margin: var(--space-6) 0 0; padding: var(--space-5); border: 2px solid var(--edge); border-left: 8px solid var(--coral); border-radius: var(--radius-lg); background: var(--card); }
+.lv-page .lv-callout h2 { margin-top: 0 !important; }
+.lv-callout-go { margin: var(--space-4) 0; }
+.lv-page .lv-callout-go a.md-btn { color: var(--on-accent); min-height: 48px; font-size: 1.05rem; }
+.lv-page .lv-callout-go a.md-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+.lv-callout-note { margin: 0; color: var(--ink-muted); font-size: 15px; }
+@media (prefers-reduced-motion: reduce) { .lv-page .lv-callout-go a.md-btn:hover, .lv-page .lv-callout-go a.md-btn:active { transform: none; } }
+html.motion-paused .lv-page .lv-callout-go a.md-btn:is(:hover, :active), html.calm .lv-page .lv-callout-go a.md-btn:is(:hover, :active) { transform: none; }
