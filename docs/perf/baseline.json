@@ -264,7 +264,7 @@
    },
    {
     "date": "2026-10-29",
-    "pr": null,
+    "pr": 173,
     "from": 825099,
     "to": 826733,
     "why": "word-problems-more: Only Word problems on a level's Endless practice page and the Arena's Word problems round (js/app.js mixView, practice and arenaView; the new route in js/metrics.js and js/guide.js; js/arena.js runArena deal and count, storyItem; js/stories.js roundStory and hasStory by Mode; js/story-plan.js the choice words; the Arena story styles in math.css, and the play shell's picture box, which drew Explorer Arena pictures 0 px wide); js/stories.js still loads after the first paint; measured on main as of #166; file deltas: /js/app.js +920, /js/arena.js +293, /js/guide.js +3, /js/metrics.js +10, /js/stories.js +230, /js/story-plan.js +84, /math.css +111, /play/ -6, /sw.js -11, +1634 in all"
