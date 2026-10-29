@@ -566,8 +566,9 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
 /* Memory lock answer slots (openspec working-memory-scaffolds, split-answer spec): a Trick that writes its answer as a
    left part and a right part (p.parts) gets a slot for each, for Challenger and Pro outside Word problems. The left part
    locks (Enter or Lock), checking joins the two, and the one box stays a tap away (saved on this device as vm.split). */
-const splitPref = () => { try { return localStorage.getItem('vm.split') !== 'one'; } catch (e) { return true; } };
-const setSplitPref = two => { try { if (two) localStorage.removeItem('vm.split'); else localStorage.setItem('vm.split', 'one'); } catch (e) {} };
+let splitHere = true; /* the choice for this page when storage is blocked, so the switch still works */
+const splitPref = () => { try { return localStorage.getItem('vm.split') !== 'one'; } catch (e) { return splitHere; } };
+const setSplitPref = two => { splitHere = two; try { if (two) localStorage.removeItem('vm.split'); else localStorage.setItem('vm.split', 'one'); } catch (e) {} };
 const canSplit = p => !!(p.parts && p.kind === 'num' && !p.story && fx.mode() && fx.mode() !== 'explorer');
 const slotsHTML = () => `<div class="pr-split" role="group" aria-label="Your answer in two parts" aria-describedby="prSplitNote">
     <label class="pr-slot"><span>Left part</span><input class="ans-in pr-slot-in" data-slot="l" inputmode="numeric" spellcheck="false" autocapitalize="off"></label>

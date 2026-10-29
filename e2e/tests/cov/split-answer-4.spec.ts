@@ -32,3 +32,20 @@ test('"Type it in one box" switches to the single box for this and later questio
   await expect(slots(page.locator('#practice')).left).toBeFocused();
   expect(await page.evaluate(() => localStorage.getItem('vm.split'))).toBeNull();
 });
+
+test('with storage blocked for the choice, the switch still works on this page', async ({ page }) => {
+  await page.addInitScript(() => {
+    const get = Storage.prototype.getItem, set = Storage.prototype.setItem;
+    Storage.prototype.getItem = function (k: string) { if (k === 'vm.split') throw new Error('blocked'); return get.call(this, k); };
+    Storage.prototype.setItem = function (k: string, v: string) { if (k === 'vm.split') throw new Error('blocked'); return set.call(this, k, v); };
+  });
+  await open(page, '#/skill/v-near-base');
+  const box = page.locator('#practice');
+  await box.getByRole('button', { name: 'Type it in one box' }).click();
+  await expect(box.getByRole('textbox', { name: 'Your answer' })).toBeVisible();
+  await box.locator('#prShow').click();
+  await box.locator('#prCheck').click();
+  await expect(box.getByRole('textbox', { name: 'Your answer' })).toBeVisible(); // the next question too
+  await box.getByRole('button', { name: 'Split into parts' }).click();
+  await expect(slots(box).left).toBeVisible();
+});
