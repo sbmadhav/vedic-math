@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 826955,
+  "total": 828167,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -48,7 +48,7 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 49407,
+   "/js/app.js": 48597,
    "/js/arena.js": 5685,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -56,7 +56,7 @@
    "/js/check.js": 2946,
    "/js/cloud-config.js": 588,
    "/js/cloud.js": 4437,
-   "/js/explain-lines.js": 2325,
+   "/js/explain-lines.js": 2541,
    "/js/family-helpers.js": 5263,
    "/js/family-hook.js": 775,
    "/js/family-lines.js": 2624,
@@ -73,6 +73,7 @@
    "/js/install-rules.js": 2226,
    "/js/install.js": 7143,
    "/js/landing-sky.js": 261,
+   "/js/ledes.js": 1794,
    "/js/levels.js": 5012,
    "/js/lib.js": 1707,
    "/js/life.js": 1103,
@@ -151,8 +152,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 24422,
-   "/play/": 4059,
-   "/sw.js": 6255,
+   "/play/": 4060,
+   "/sw.js": 6266,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -271,10 +272,17 @@
    },
    {
     "date": "2026-10-29",
-    "pr": 173,
+    "pr": 170,
     "from": 825299,
-    "to": 826955,
-    "why": "word-problems-more: Only Word problems on a level's Endless practice page and the Arena's Word problems round (js/app.js mixView, practice and arenaView; the new route in js/metrics.js and js/guide.js; js/arena.js runArena deal and count, storyItem; js/stories.js roundStory and hasStory by Mode; js/story-plan.js the choice words; the Arena story styles in math.css, and the play shell's picture box, which drew Explorer Arena pictures 0 px wide); js/stories.js still loads after the first paint; measured on main as of #171; file deltas: /js/app.js +920, /js/arena.js +293, /js/guide.js +3, /js/metrics.js +10, /js/stories.js +230, /js/story-plan.js +84, /math.css +111, /play/ +8, /sw.js -3, +1656 in all"
+    "to": 826479,
+    "why": "explanation-audio 4.2: the page introductions are data in the new js/ledes.js, so their fixed lines can be recorded whole (the strings moved out of js/app.js; a new precached module costs its own compression overhead), and the Older roots card has a Listen button; file deltas: /js/app.js -840, /js/explain-lines.js +216, /js/ledes.js +1794, /play/ +16, /sw.js -6, +1180 in all; measured on main as of #169"
+   },
+   {
+    "date": "2026-10-29",
+    "pr": 173,
+    "from": 826479,
+    "to": 828167,
+    "why": "word-problems-more: Only Word problems on a level's Endless practice page and the Arena's Word problems round (js/app.js mixView, practice and arenaView; the new route in js/metrics.js and js/guide.js; js/arena.js runArena deal and count, storyItem; js/stories.js roundStory and hasStory by Mode; js/story-plan.js the choice words; the Arena story styles in math.css, and the play shell's picture box, which drew Explorer Arena pictures 0 px wide); js/stories.js still loads after the first paint; measured on main as of #170 and #171; file deltas: /js/app.js +950, /js/arena.js +293, /js/guide.js +3, /js/metrics.js +10, /js/stories.js +230, /js/story-plan.js +84, /math.css +111, /play/ -7, /sw.js +14, +1688 in all"
    }
   ]
  },
