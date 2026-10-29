@@ -84,7 +84,7 @@ test('every Listen key resolves to recorded lines in every Mode', () => {
 test('the keys the app draws exist', () => {
   const src = (f) => readFileSync(new URL(`../js/${f}`, import.meta.url), 'utf8');
   const app = src('app.js');
-  for (const k of ["'skill:' + s.id", "'sutra-card:' + c.id", '`sutra:${c.id}:plain`', '`sutra:${c.id}:why`', '`sutra:${c.id}:examples`', '`sutra:${c.id}:uses`', "'history'", "'guide:' + s.id", "'game:' + g.id", "'formats'"])
+  for (const k of ["'skill:' + s.id", "'sutra-card:' + c.id", '`sutra:${c.id}:plain`', '`sutra:${c.id}:why`', '`sutra:${c.id}:examples`', '`sutra:${c.id}:uses`', "'history'", "'guide:' + s.id", "'game:' + g.id", "'formats'", "'roots'"])
     assert.ok(app.includes(`listenBtn(${k}`), k);
   assert.match(src('tour.js'), /listenBtn\('tour'/);
   assert.match(src('star.js'), /listenBtn\('from:\.star-step > p'/); // the Star replay's steps (worked steps: clips)
@@ -106,4 +106,5 @@ test('quest labels, format rules and the Older roots notes are listed for the st
   assert.equal(rootsLines()[0], ROOTS_INTRO);
   assert.equal(rootsLines().length, BG_NOTES.length + 1);
   for (const t of rootsLines()) assert.ok(by('roots').has(t), t);
+  assert.deepEqual(linesForKey('roots'), rootsLines()); // the Sutras page's Listen button reads them (task 4.5)
 });
