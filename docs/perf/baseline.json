@@ -265,7 +265,7 @@
    },
    {
     "date": "2026-10-29",
-    "pr": null,
+    "pr": 174,
     "from": 825099,
     "to": 830114,
     "why": "play-nav-by-mode: the menu by Mode (js/nav.js, new and statically imported), the Arcade page, Learn's Sutras card, the Calm and sound control in the header and the play shell, Find's help card and Ctrl K; measured on main as of #166; file deltas: /js/app.js +1704, /js/nav.js +1554, /js/ambient.js +603, /math.css +556, /js/guide.js +187, /js/find.js +162, /js/shell.js +96, /play/ +75, +5015 in all"
