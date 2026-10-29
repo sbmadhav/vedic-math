@@ -1,6 +1,7 @@
 import type { BrowserContext, Page, Route } from '@playwright/test';
 import { test, expect, APP, open, cloudLog, chromiumOnly, FIREBASE_SDK, FIREBASE_AUTH, FIRESTORE, showWorld, needsWorldBoards } from './fixtures';
 import { fakeAudio, audioLog } from './audio-fake';
+import { fillAnswer } from './split-kit';
 
 /* Offline: /sw.js (scope /play/) saves the app after one visit, so every route, the
    Dojo and the games keep working without a connection, and the leaderboards fall back to this device.
@@ -174,7 +175,7 @@ test('a Dojo kata and a game play offline, and the progress persists', async ({ 
   await expect(page.locator('#view h1')).toContainText('Kata 1');
   const answers = await page.evaluate(async () => (await e2eMod('levels')).kata('sq5', 1).problems.map((p: { answer: unknown }) => String(p.answer)));
   for (const a of answers) {
-    await page.locator('#kata .ans-in').fill(a);
+    await fillAnswer(page.locator('#kata'), a); /* the two slots of a Trick built in parts (openspec working-memory-scaffolds) */
     await page.locator('#kGo').click();
     await expect(page.locator('#kSay')).toHaveClass(/\bok\b/);
     await page.locator('#kGo').click();

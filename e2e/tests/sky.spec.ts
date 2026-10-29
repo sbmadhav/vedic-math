@@ -191,7 +191,7 @@ test.describe('Belt copy with the Sky off', () => {
     await expect(card).toContainText('Next Star: Multiply by 11, Star 2');
     await expect(card.getByRole('link', { name: 'Play this Star' })).toHaveAttribute('href', '#/star/by11/2');
     await open(page, '#/me');
-    await expect(page.locator('.me-stats')).toContainText('4 of 63 Stars lit');
+    await expect(page.locator('.trophy--stars')).toContainText('4 of 63 Stars lit'); /* in the Trophy case (openspec working-memory-scaffolds) */
     await expect(page.locator('.badge-grid')).toContainText('Light all 9 white belt Stars.');
     await expect(page.locator('.badge-grid')).not.toContainText('Master the 3');
   });

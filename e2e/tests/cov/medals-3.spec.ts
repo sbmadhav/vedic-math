@@ -1,4 +1,5 @@
 import { test, expect, open, APP } from '../fixtures';
+import { fillAnswer } from '../split-kit';
 
 /* medals spec, Requirement "Katas are done or not done":
    - Finishing a Kata: 5 of 6 right in Kata 3 -> done, 35 Sparks, no stars, Kata 4 opens
@@ -25,7 +26,7 @@ async function play(page: Page, trick: string, n: number, miss: number) {
   const probs = await kataProblems(page, trick, n);
   expect(probs.every(p => p.kind === 'num')).toBe(true);
   for (let i = 0; i < probs.length; i++) {
-    await page.locator('#kata .ans-in').fill(i === miss ? '-12345' : String(probs[i].answer));
+    await fillAnswer(page.locator('#kata'), i === miss ? '-12345' : String(probs[i].answer)); /* the two slots of a Trick built in parts (openspec working-memory-scaffolds) */
     await page.locator('#kGo').click();
     await expect(page.locator('#kSay')).toHaveClass(i === miss ? /\bno\b/ : /\bok\b/);
     await page.locator('#kGo').click();
