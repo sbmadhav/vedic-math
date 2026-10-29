@@ -272,7 +272,7 @@
    },
    {
     "date": "2026-10-29",
-    "pr": null,
+    "pr": 175,
     "from": 825299,
     "to": 830148,
     "why": "working-memory-scaffolds: the answer slots for Tricks built in parts (js/app.js, js/star.js, js/vedic.js, math.css) and the digit connectors (js/connectors.js, loaded on first use but precached, so it counts), and the Trophy case on Me; file deltas: /js/app.js +1891, /js/connectors.js +1891 (new), /js/handoff-schema.js +66, /js/star.js +182, /js/vedic.js +202, /math.css +593, /play/ +14, /sw.js +10, +4849 in all; measured on main as of #171"
