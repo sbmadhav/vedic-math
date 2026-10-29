@@ -48,6 +48,14 @@
   <div class="md-wrap lv-page">
     <h1>For parents</h1>
     <p class="md-lede">Learn Vedic Math is a free place to learn math, for ages 4 to adult. A child can use it without telling us anything about themselves. Here is what that means in practice.</p>
+    <!-- The three-point summary (UX audit 2026-10-29, task 1.2): each claim is exactly what docs/legal/privacy-policy.md
+         and docs/adr/0006 say. "No accounts": nobody signs up or in; "Under 13": canPost() is device-only for them;
+         "Free, no ads": the privacy policy's "We never show ads, and never sell or rent any information". -->
+    <ul class="lv-facts" aria-label="In short">
+      <li class="lv-fact lv-fact--sky"><span class="lv-fact-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M4.5 20c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></span><span><strong>No accounts needed</strong> No sign-up and no sign-in, and we never ask for an email. Each Player gets a made-up Nickname.</span></li>
+      <li class="lv-fact lv-fact--plum"><span class="lv-fact-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M8.5 12l2.5 2.5 4.5-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><strong>Under 13: nothing is posted online</strong> Their scores stay on this device's board, in every Mode.</span></li>
+      <li class="lv-fact lv-fact--sun"><span class="lv-fact-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg></span><span><strong>Free, with no ads</strong> We never show ads, and we never sell or rent any information.</span></li>
+    </ul>
     <h2>What stays on your device</h2>
     <p>Each Player on the device has a made-up Nickname (like "Swift Otter 42", nobody types it), an avatar color, a Mode and the answer to one age question. Progress, the Device board and settings are saved in this browser. We cannot see any of it, and it is not sent to us. You can see and remove it on the game's Me page, or by clearing this site's data in the browser.</p>
     <h2>Players under 13 post nothing</h2>
@@ -57,7 +65,7 @@
       <li>Our host, Cloudflare, receives the device's IP address to deliver the pages, like any website.</li>
       <li>Two analytics tools, GoatCounter and Cloudflare Web Analytics, count visits and fixed event names without cookies and without any ID. They send nothing when your browser sends Do Not Track or Global Privacy Control.</li>
       <li>A video comes from YouTube (Google) only after a Player presses play. The picture before play comes from our own site.</li>
-      <li>Players 13 and older who post to a World board send a made-up Nickname, an avatar color, a score and the time to Google Firebase. Each entry stops being shown after 30 days and is then deleted automatically.</li>
+      <li>World boards are switched off on this site for now, so today no score is sent anywhere. When they are switched on, Players 13 and older who post to a World board send a made-up Nickname, an avatar color, a score and the time to Google Firebase. Each entry stops being shown after 30 days and is then deleted automatically.</li>
     </ul>
     <p>The full list, with the reasons and how long things are kept, is in the <a href="/privacy/">privacy policy</a>.</p>
     <h2>Questions and deletion</h2>

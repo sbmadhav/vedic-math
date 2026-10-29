@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 826733,
+  "total": 826955,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -142,7 +142,7 @@
    "/js/tour.js": 2215,
    "/js/try.js": 4416,
    "/js/vedic.js": 9857,
-   "/js/videos.js": 20615,
+   "/js/videos.js": 20832,
    "/js/viz.js": 5848,
    "/js/voice-index.js": 213,
    "/js/voice-plan.js": 2458,
@@ -151,7 +151,7 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 24422,
-   "/play/": 4054,
+   "/play/": 4059,
    "/sw.js": 6255,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
@@ -264,10 +264,17 @@
    },
    {
     "date": "2026-10-29",
-    "pr": 173,
+    "pr": "videos-new-channels",
     "from": 825099,
-    "to": 826733,
-    "why": "word-problems-more: Only Word problems on a level's Endless practice page and the Arena's Word problems round (js/app.js mixView, practice and arenaView; the new route in js/metrics.js and js/guide.js; js/arena.js runArena deal and count, storyItem; js/stories.js roundStory and hasStory by Mode; js/story-plan.js the choice words; the Arena story styles in math.css, and the play shell's picture box, which drew Explorer Arena pictures 0 px wide); js/stories.js still loads after the first paint; measured on main as of #166; file deltas: /js/app.js +920, /js/arena.js +293, /js/guide.js +3, /js/metrics.js +10, /js/stories.js +230, /js/story-plan.js +84, /math.css +111, /play/ -6, /sw.js -11, +1634 in all"
+    "to": 825299,
+    "why": "Two Watch shelf videos from newly approved channels (98thPercentile PR2SGZHOaps for by9s, MathsCore LmX9HeJzO_E for ratio-zero): js/videos.js is precached, so its new entries count (+217 bytes); the stamps in /play/ and /sw.js -9 and -8, with no change to their source; +200 in all; measured on main as of #166"
+   },
+   {
+    "date": "2026-10-29",
+    "pr": 173,
+    "from": 825299,
+    "to": 826955,
+    "why": "word-problems-more: Only Word problems on a level's Endless practice page and the Arena's Word problems round (js/app.js mixView, practice and arenaView; the new route in js/metrics.js and js/guide.js; js/arena.js runArena deal and count, storyItem; js/stories.js roundStory and hasStory by Mode; js/story-plan.js the choice words; the Arena story styles in math.css, and the play shell's picture box, which drew Explorer Arena pictures 0 px wide); js/stories.js still loads after the first paint; measured on main as of #171; file deltas: /js/app.js +920, /js/arena.js +293, /js/guide.js +3, /js/metrics.js +10, /js/stories.js +230, /js/story-plan.js +84, /math.css +111, /play/ +8, /sw.js -3, +1656 in all"
    }
   ]
  },

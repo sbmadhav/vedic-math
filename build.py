@@ -40,7 +40,8 @@ What the build does (target site):
 - The first-load budget (tools/budget.ts): the Brotli size of everything a first visit to /play/ requests before the
   first tap, printed on every build and failing above docs/perf/baseline.json (not for --dev).
 
-It fails on: stamps in the source; a CSP <meta>, an inline event handler or a javascript: URL in a page; a module
+It fails on: stamps in the source; a CSP <meta>, an inline event handler or a javascript: URL in a page; text in
+[square brackets] a reader would see on a page (a draft's placeholder); a module
 import it cannot pin (bare, outside /js/, or https://); a header that differs from theme/header.html; a vendored file
 that does not match its SHA256SUMS; a vendored or font file without an entry in THIRD-PARTY-NOTICES.md; a /vedic-math/
 path outside _redirects; a reference to sbmadhav.com other than the export page; a third-party host in neither
@@ -478,6 +479,18 @@ def render_includes(name, html):
     return INCLUDE_MD.sub(sub, html)
 
 
+PLACEHOLDER = re.compile(r"\[[^\[\]]+\]")  # any length, across line breaks
+
+
+def placeholders(html):
+    """Text in [square brackets] a reader would see on a page: a draft's placeholder left in published text (UX audit
+    task 1.1). Scripts, styles, comments and tags are dropped first, and a Markdown link is already an <a> by now."""
+    text = re.sub(r"<(script|style)\b.*?</\1>", "", html, flags=re.S | re.I)
+    text = re.sub(r"<!--.*?-->", "", text, flags=re.S)
+    text = re.sub(r"<[^>]+>", "", text)
+    return PLACEHOLDER.findall(htmllib.unescape(text))
+
+
 def csp_hashes(html):
     out = []
     for m in INLINE_SCRIPT.finditer(html):
@@ -631,6 +644,9 @@ def build_site(args, out):
         elif rel != "site/404.html":
             fail(f"{rel}: has no <!-- md-header --> block; every page uses the site header ({HEADER})")
         pages[page_url(rel)] = [render_includes(rel, html).replace("{{year}}", str(today.year)), "play" if rel == "play/index.html" else "site"]
+        if left := placeholders(pages[page_url(rel)][0]):
+            fail(f"{rel}: shows the placeholder {left[0]}; a published page never shows a draft's [bracketed] text "
+                 "(reword it, or move it to the draft's \"(remove before publishing)\" section)")
 
     # Every static import is a relative or absolute path inside /js/. A bare specifier would fail without the map, a path
     # outside the folder would not be pinned, and a full URL would run code from another site.
