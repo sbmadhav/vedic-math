@@ -252,11 +252,12 @@ const written = w => make(w.id, 'pro', w);
 /* ---------- Which story fits a Skill (D4, D5) ---------- */
 const ORDER = { explorer: ['explorer', 'challenger', 'pro'], challenger: ['challenger', 'explorer', 'pro'], pro: ['pro', 'challenger', 'explorer'] };
 const fits = id => TEMPLATES.filter(t => t.skills.includes(id));
-/* Does this Skill have any Word problem? (a Trick Skill has one when its Trick has a story) */
-export function hasStory(skill) {
+/* Does this Skill have any Word problem? (a Trick Skill has one when its Trick has a story) With a Mode: one that Mode
+   is asked (the hand-written stories are Pro's), as Only Word problems needs (openspec word-problems-more D2). */
+export function hasStory(skill, mode = null) {
   if (!skill) return false;
   if (skill.trick && hasTrickStory(skill.trick)) return true;
-  return fits(skill.id).length > 0 || WRITTEN.some(w => w.skills.includes(skill.id));
+  return fits(skill.id).length > 0 || ((!mode || mode === 'pro') && WRITTEN.some(w => w.skills.includes(skill.id)));
 }
 /* A Word problem for the Skill on screen in this Mode, or null. bare: the question the round would ask, whose numbers a
    Trick Skill's story keeps. */

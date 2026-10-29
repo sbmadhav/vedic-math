@@ -9,6 +9,8 @@ export const SLOTS = { explorer: { first: 5, every: 10 }, challenger: { first: 3
 export const RULES = { after: 20, written: 0.25 };
 export const LABEL = { explorer: 'Story time', challenger: 'Word problem', pro: 'Word problem' };
 export const ASK = 'What is it asking?';
+/* The words of the choice that asks only Word problems (openspec word-problems-more, design D1) */
+export const ONLY = { explorer: 'Only stories', challenger: 'Only Word problems', pro: 'Only Word problems' };
 
 let S = null, loading = null;
 /* js/stories.js calls this when it runs; storiesNow() is then its API ({ hasStory, storyFor, skillStory, trickStory }) */

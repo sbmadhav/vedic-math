@@ -11,7 +11,7 @@ The Endless practice page of a level that has at least one Skill with a Word pro
 
 #### Scenario: Back to the mix
 - **WHEN** that Player picks Mixed
-- **THEN** the first question is not a Word problem, as in today's mix
+- **THEN** Practice asks bare questions again, and a Word problem only on Two-step word problems, as today's mix does for a Player with no saved answers
 
 #### Scenario: An Explorer asks for only stories
 - **WHEN** an Explorer opens Endless practice for Grade 1 and picks Only stories

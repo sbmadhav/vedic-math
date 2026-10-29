@@ -207,3 +207,14 @@ test('the bus picture draws exactly the bus\'s seats, with the children in them'
     assert.equal((p.viz.match(/vz-dot/g) || []).length, b, p.q);
   }
 });
+
+/* Only Word problems (openspec word-problems-more, design D2): every Skill a Mode's choice picks gives a story in it */
+test('hasStory(skill, mode) names only Skills whose stories that Mode is asked, and each gives one every time', () => {
+  const r = rng(31);
+  for (const mode of ['explorer', 'challenger', 'pro']) for (const s of SKILLS) {
+    if (!S.hasStory(s, mode)) { if (S.hasStory(s)) assert.ok(mode !== 'pro', `${s.id}: Pro has every story`); continue; }
+    for (let i = 0; i < 40; i++) { const bare = s.gen(2); if (bare.story) continue; assert.ok(S.storyFor(s, mode, { bare, r }), `${mode} ${s.id}: no story`); }
+  }
+  assert.equal(S.hasStory(byId['6-eval'], 'challenger'), false, 'a Skill only the hand-written (Pro) stories fit');
+  assert.equal(S.hasStory(byId['6-eval'], 'pro'), true);
+});

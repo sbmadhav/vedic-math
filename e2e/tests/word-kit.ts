@@ -72,3 +72,9 @@ export async function recordSpeech(page: Page) {
 }
 export const said = (page: Page) => page.evaluate(() => ((window as any).__said as string[]).join(' '));
 export const spoken = (page: Page, html: string) => page.evaluate(async h => (await e2eMod('voice')).normalize(h) as string, html);
+
+/* ---------- Only Word problems (openspec change word-problems-more) ---------- */
+export const onlyChoice = (page: Page, only: boolean) => page.locator(`#mixOnly [data-only="${only ? 1 : 0}"]`);
+/** The Skill a mixed Practice question is from (the link over it) */
+export const skillOf = async (page: Page) => ((await box(page).locator('.pr-meter small a').getAttribute('href')) || '').replace('#/skill/', '');
+
