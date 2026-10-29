@@ -515,6 +515,10 @@ export const VIDEOS = [
   { id: 'duplex-tecmath', title: 'tecmath: Square two- and three-digit numbers digit by digit', channel: 'tecmath', yt: 'HWF1y5FfGXo', duration: 619, kind: 'video',
     modes: ['challenger'], skills: ['6-exp'], tricks: ['duplex'], madeForKids: false, captions: true, checked: '2026-10-27',
     why: 'Square each digit, then put twice the digits multiplied in the middle and add: 67 squared is 4489, and 512 squared is 262144.' },
+  /* New channels, checked 2026-10-29 */
+  { id: 'by9s-98thpercentile', title: '98thPercentile: Multiply by 9, 99 or 999', channel: '98thPercentile', yt: 'PR2SGZHOaps', duration: 263, kind: 'video',
+    modes: ['challenger'], skills: ['4-mult2'], tricks: ['by9s'], madeForKids: false, captions: true, checked: '2026-10-29',
+    why: 'One less than the number on the left, the rest up to 10, 100 or 1000 on the right: 99 times 76 is 7524, and 999 times 145 is 144855.' },
 
   /* ---------- Pro ---------- */
   { id: 'expand-simplify', title: 'Eddie Woo: Expand and simplify expressions', channel: 'Eddie Woo', yt: 'EAyI-yiXaek', duration: 92, kind: 'video',
@@ -551,6 +555,10 @@ export const VIDEOS = [
   { id: 'working-base-glover', title: 'Nikhilam with a working base', channel: 'James Glover', yt: 'mM2hJIMXb4c', duration: 611, kind: 'video',
     modes: ['pro'], skills: [], tricks: ['sub-base'], madeForKids: false, captions: true, checked,
     why: 'Bases such as 50, 20 and 250, scaling the left part, and an area picture of why it works.' },
+  /* New channels, checked 2026-10-29 */
+  { id: 'ratio-zero-mathscore', title: 'MathsCore: If one is in ratio, the other is zero', channel: 'MathsCore', yt: 'LmX9HeJzO_E', duration: 310, kind: 'video',
+    modes: ['pro'], skills: ['8-systems'], tricks: ['ratio-zero'], madeForKids: false, captions: true, checked: '2026-10-29',
+    why: 'When the y numbers are in the same ratio as the answers, x is zero: 2x + 4y = 8 and 3x + 8y = 16 give y = 2.' },
   /* ---------- Batch 3: grades 6 to 8 (Skills), checked 2026-10-17 ---------- */
   /* Challenger (some also Pro) */
   { id: 'ratios-rates-antics', title: 'Ratios and rates', channel: 'mathantics', yt: 'RQ2nYUBVvqI', duration: 529, kind: 'video',
