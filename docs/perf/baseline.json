@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 829915,
+  "total": 830148,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -143,7 +143,7 @@
    "/js/tour.js": 2215,
    "/js/try.js": 4416,
    "/js/vedic.js": 10059,
-   "/js/videos.js": 20615,
+   "/js/videos.js": 20832,
    "/js/viz.js": 5848,
    "/js/voice-index.js": 213,
    "/js/voice-plan.js": 2458,
@@ -152,8 +152,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 24904,
-   "/play/": 4060,
-   "/sw.js": 6257,
+   "/play/": 4065,
+   "/sw.js": 6268,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -265,10 +265,17 @@
    },
    {
     "date": "2026-10-29",
-    "pr": null,
+    "pr": "videos-new-channels",
     "from": 825099,
-    "to": 829915,
-    "why": "working-memory-scaffolds: the answer slots for Tricks built in parts (js/app.js, js/star.js, js/vedic.js, math.css) and the digit connectors (js/connectors.js, loaded on first use but precached, so it counts), and the Trophy case on Me; file deltas: /js/app.js +1891, /js/connectors.js +1891 (new), /js/handoff-schema.js +66, /js/star.js +182, /js/vedic.js +202, /math.css +593, /sw.js -9, +4816 in all"
+    "to": 825299,
+    "why": "Two Watch shelf videos from newly approved channels (98thPercentile PR2SGZHOaps for by9s, MathsCore LmX9HeJzO_E for ratio-zero): js/videos.js is precached, so its new entries count (+217 bytes); the stamps in /play/ and /sw.js -9 and -8, with no change to their source; +200 in all; measured on main as of #166"
+   },
+   {
+    "date": "2026-10-29",
+    "pr": null,
+    "from": 825299,
+    "to": 830148,
+    "why": "working-memory-scaffolds: the answer slots for Tricks built in parts (js/app.js, js/star.js, js/vedic.js, math.css) and the digit connectors (js/connectors.js, loaded on first use but precached, so it counts), and the Trophy case on Me; file deltas: /js/app.js +1891, /js/connectors.js +1891 (new), /js/handoff-schema.js +66, /js/star.js +182, /js/vedic.js +202, /math.css +593, /play/ +14, /sw.js +10, +4849 in all; measured on main as of #171"
    }
   ]
  },
