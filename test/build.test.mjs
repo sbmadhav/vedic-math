@@ -366,7 +366,7 @@ test('no published page shows a [bracketed] placeholder, and the legal pages kee
   build();
   const pages = walk(out).filter(f => f.endsWith('.html'));
   assert.ok(pages.length >= 8, 'every page is checked');
-  const hits = pages.flatMap(f => (pageText(readFileSync(f, 'utf8')).match(/\[[^\]\n]{1,300}\]/g) || []).map(m => `${relative(out, f)}: ${m}`));
+  const hits = pages.flatMap(f => (pageText(readFileSync(f, 'utf8')).match(/\[[^[\]]+\]/g) || []).map(m => `${relative(out, f)}: ${m}`));
   assert.deepEqual(hits, []);
   for (const p of ['privacy/index.html', 'privacy/retention/index.html', 'terms/index.html']) {
     const html = read(p);
@@ -378,6 +378,9 @@ test('no published page shows a [bracketed] placeholder, and the legal pages kee
 test('the build fails on a [bracketed] placeholder in a page or in the Markdown it includes', () => {
   withEdit('docs/legal/terms.md', s => s.replace('## 8. Contact', '## 8. Contact\n\nGoverning law: [lawyer].'), () => fails(tryBuild(), /site\/terms\/index\.html: shows the placeholder \[lawyer\]/));
   withEdit('site/teachers/index.html', s => s.replace('</main>', '<p>Last updated: [date]</p>\n</main>'), () => fails(tryBuild(), /site\/teachers\/index\.html: shows the placeholder \[date\]/));
+  // At any length and across a line break
+  withEdit('site/parents/index.html', s => s.replace('</main>', '<p>Write to [postal\naddress].</p>\n</main>'), () => fails(tryBuild(), /site\/parents\/index\.html: shows the placeholder \[postal\naddress\]/));
+  withEdit('site/teachers/index.html', s => s.replace('</main>', `<p>[${'x'.repeat(400)}]</p>\n</main>`), () => fails(tryBuild(), /site\/teachers\/index\.html: shows the placeholder \[x{400}\]/));
   // A Markdown link is a link, and a section to remove before publishing may hold placeholders
   withEdit('docs/legal/terms.md', s => s + '\n## Notes (remove before publishing)\n\n[owner name]\n', () => build());
 });

@@ -138,6 +138,7 @@ test.describe('pages for grown-ups', () => {
     await page.goto('/teachers/');
     const box = page.getByRole('region', { name: "A 5-minute warm-up for today's class" });
     await expect(box).toContainText('the same ones for every Player in the same Mode today');
+    await expect(box).toContainText('With Calm on, the Arena starts on an untimed round: pick Daily challenge for the 60-second race.');
     await box.getByRole('link', { name: 'Open the Arena' }).click();
     await expect(page).toHaveURL(/\/play\/#\/arena$/);
     await expect(page.locator('#view h1')).toHaveText('60 seconds. Same questions for everyone.');
@@ -158,7 +159,7 @@ test.describe('pages for grown-ups', () => {
     for (const url of ['/parents/', '/teachers/', '/privacy/', '/privacy/retention/', '/privacy/security/', '/terms/', '/licenses/']) {
       await page.goto(url);
       const text = await page.locator('body').innerText();
-      expect(text.match(/\[[^\]\n]{1,300}\]/g), url).toBeNull();
+      expect(text.match(/\[[^[\]]+\]/g), url).toBeNull();
       expect(text, url).not.toMatch(/Open items|remove before publishing|to confirm/);
     }
   });

@@ -479,7 +479,7 @@ def render_includes(name, html):
     return INCLUDE_MD.sub(sub, html)
 
 
-PLACEHOLDER = re.compile(r"\[[^\]\n]{1,300}\]")
+PLACEHOLDER = re.compile(r"\[[^\[\]]+\]")  # any length, across line breaks
 
 
 def placeholders(html):
