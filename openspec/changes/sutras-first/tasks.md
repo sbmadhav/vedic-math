@@ -40,19 +40,22 @@ The owner asked for this on 2026-10-21 ("It is important to make the sutras and 
 
 ## 6. Home leads with the Sutras (PR 3)
 
-- [ ] 6.1 Challenger and Pro: the Sutra door first, the Arena and the Skill map doors, "Your sutras", then the Player strip; new headings. Verify: `e2e/tests/sutras-first.spec.ts`, the first-visit specs updated where the doors changed.
-- [ ] 6.2 Explorer: "A sutra to say" above the tiles. Verify: `e2e/tests/sutras-first.spec.ts`, `e2e/tests/cov/first-visit-2.spec.ts`.
-- [ ] 6.3 Home fits a phone: Play this Star on screen at 390 by 844; no sideways scroll at 320 px. Verify: the find-and-home-polish specs.
-- [ ] 6.4 Coverage specs: `e2e/tests/cov/sutra-progress-3.spec.ts`, `first-visit-4.spec.ts`.
+- [x] 6.1 Challenger and Pro: the Sutra door first, the Arena and the Skill map doors, "Your sutras", then the Player strip; new headings. Verify: `e2e/tests/sutras-first.spec.ts` ("Home"), `first-visit.spec.ts` and `cov/first-visit-1.spec.ts` updated where the doors changed; the heading strings in `modes`, `landing`, `celebrations`, `load`, `routes`, `sky`, `try-trick`, `cov/first-visit-3`, `cov/landing-pages-2/3/5`, `cov/quests-2`, `cov/sky-1`.
+- [x] 6.2 Explorer: "A sutra to say" above the tiles. Verify: `e2e/tests/sutras-first.spec.ts` (one Sutra a day under a faked clock, Say it, the Deep dive, the home tag event), the Explorer test in `cov/first-visit-1.spec.ts` (the changed "Explorer" scenario lives there, not in `first-visit-2`).
+- [x] 6.3 Home fits a phone: Play this Star on screen at 390 by 844; no sideways scroll at 320 px. Verify: `cov/first-visit-2.spec.ts` (Home fits a phone), `sutras-first.spec.ts` (Challenger and Pro at 390 by 844; 320 px in both schemes with axe on the Sutra cards).
+- [x] 6.4 Coverage specs: `e2e/tests/cov/sutra-progress-3.spec.ts`, `first-visit-5.spec.ts` (`-4` is taken by `try-trick-in-modes`).
 
 ## 7. The landing page leads with the Sutras (PR 3)
 
-- [ ] 7.1 `site/index.html`, `theme/site.css`: the hero headline, "One short rule, one line of work" with both ways and three Sutra cards linking to their Deep dives, the honest origin line. Verify: `e2e/tests/landing.spec.ts`, `test/copy.test.mjs`.
-- [ ] 7.2 Coverage specs: `e2e/tests/cov/landing-pages-8.spec.ts`; `landing-pages-*` updated for the new hero and order.
+- [x] 7.1 `site/index.html`, `theme/site.css`: the hero headline, "One short rule, one line of work" with both ways and three Sutra cards linking to their Deep dives, the honest origin line. Verify: `e2e/tests/landing.spec.ts` ("the sutras and the method", JavaScript off, welcome back), `hero.spec.ts`, `test/copy.test.mjs` (no Vedic-source claim; the 1965 credit).
+- [x] 7.2 Coverage specs: `e2e/tests/cov/landing-pages-8.spec.ts`; `landing-pages-6`, `-7` and `hosting-1` updated for the new hero and order.
 
 ## 8. Docs and after release
 
-- [x] 8.0 The first-load budget: `docs/perf/baseline.json` grows by the new modules (PR 1: +4,881 bytes Brotli, `js/sutra-tag.js` and the tags in `js/app.js`, `js/star.js`, `math.css`; 767,625 bytes once `try-trick-in-modes` is merged in, with the tag on its Try a trick card. PR 2: +1,634 bytes, `js/sutra-progress.js`, the card meters and the Guide's menu line, 769,259 bytes). Each pull request re-measures after its last edit. Verify: `python3 build.py --voice off` passes.
+- [x] 8.0 The first-load budget: `docs/perf/baseline.json` grows by the new modules; each pull request re-measures after its last edit. Verify: `python3 build.py --voice off` passes.
+  PR 1: +4,881 bytes Brotli, `js/sutra-tag.js` and the tags in `js/app.js`, `js/star.js`, `math.css`; 767,625 bytes once `try-trick-in-modes` (#128, with main's #130) is merged in, with the tag on its Try a trick card.
+  PR 2: +1,634 bytes, `js/sutra-progress.js`, the card meters and the Guide's menu line; 769,259 bytes.
+  PR 3: +1,063 bytes, the Sutra door, "Your sutras" and Explorer's card in `js/app.js` (+908) and `math.css` (+147), with the stamped `sw.js` and page; 770,322 bytes, measured on the build with parts 1 and 2 at their reviewed tips.
 
 - [x] 8.1 `GLOSSARY.md`: Sutra tag, Sutra way, Sutra progress; Sutra and Home entries. Verify: `openspec validate sutras-first --strict`.
 - [ ] 8.2 After release: archive this change after `learnvedicmath` and `landing-modes-and-return` (their `landing-pages` and header requirements come first).

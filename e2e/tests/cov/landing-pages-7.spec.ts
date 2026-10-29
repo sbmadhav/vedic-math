@@ -1,12 +1,12 @@
 import { test, expect } from '../fixtures';
 
 /* landing-pages, Requirements "The landing page" (scenario Page order) and "Learning is the top-level word"
-   (scenario Landing labels), as changed by landing-modes-and-return. */
+   (scenario Landing labels), as changed by landing-modes-and-return and sutras-first. */
 test.use({ seedMode: null });
 
-test('Page order: hero, Pick how you learn, What you learn, Where the tricks come from, For grown-ups', async ({ page }) => {
+test('Page order: hero, One short rule, one line of work, Pick how you learn, What you learn, Where the tricks come from, For grown-ups', async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('main :is(h1, h2)')).toHaveText(['Math tricks you can do in your head', 'Pick how you learn', 'What you learn', 'Where the tricks come from', 'For grown-ups']);
+  await expect(page.locator('main :is(h1, h2)')).toHaveText(['Math in your head, the sutra way', 'One short rule, one line of work', 'Pick how you learn', 'What you learn', 'Where the tricks come from', 'For grown-ups']);
 });
 
 test('Landing labels: Start learning, Pick how you learn, and Learn in the header and footer', async ({ page }) => {

@@ -61,6 +61,7 @@ test('the Star video is hand-matched to the Trick only, made for kids first, sho
   // with the real list (loaded on demand)
   const v = await videoForTrick('sq5', 'challenger');
   assert.ok(v && v.tricks.includes('sq5') && v.modes.some(m => MODE_SEES.challenger.includes(m)));
+  assert.equal((await videoForTrick('duplex', 'challenger'))?.id, 'duplex-tecmath', 'the duplex Trick has its video');
 });
 
 test('length buckets at 119, 120, 300, 480 and 719 seconds; nothing from 12 minutes', () => {

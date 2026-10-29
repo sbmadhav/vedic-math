@@ -55,7 +55,7 @@
       <!-- The hero says as little as it can (openspec landing-pages "The landing page"): one headline, one short line
            and one big Start learning button. Everything else is below it. -->
       <div class="lv-hero-t">
-        <h1 class="lv-title">Math tricks you can do in your head</h1>
+        <h1 class="lv-title">Math in your head, the sutra way</h1>
         <p class="lv-sub">Free, for ages 4 to adult.</p>
         <p class="lv-cta-row"><a class="lv-play" href="/play/">Start learning<svg class="lv-play-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a></p>
       </div>
@@ -92,6 +92,34 @@
         <path class="lv-spark lv-spark--c" d="M96 -10Q96 -7 99 -7Q96 -7 96 -4Q96 -7 93 -7Q96 -7 96 -10Z" fill="var(--plum)" stroke="var(--plum)" stroke-width="1" stroke-linejoin="round"/>
         <path class="lv-spark lv-spark--d" d="M0 -9Q0 -6 3 -6Q0 -6 0 -3Q0 -6 -3 -6Q0 -6 0 -9Z" fill="var(--sun)" stroke="var(--sun)" stroke-width="1" stroke-linejoin="round"/>
       </svg>
+    </div>
+  </section>
+
+  <!-- The sutras and the method first (openspec change sutras-first, landing-pages "The landing page leads with the
+       Sutras and the method"): what a sutra is, one sum both ways, and three sutras that open their Deep dives in the
+       game (#/sutras/<id> opens without a Mode). Plain HTML, so it reads the same with JavaScript off. -->
+  <section class="md-section lv-sutras" aria-labelledby="lv-sutras-h">
+    <div class="md-wrap">
+      <h2 class="md-heading" id="lv-sutras-h">One short rule, one line of work</h2>
+      <p class="md-lede">A sutra is a short rule that turns a long sum into a step or two you can do in your head. Every trick here is built on one of them.</p>
+      <div class="lv-ways">
+        <figure class="lv-way">
+          <figcaption>The school way</figcaption>
+          <p class="lv-sum">98 &times; 97</p>
+          <ol class="lv-steps"><li>98 &times; 7 = 686</li><li>98 &times; 90 = 8820</li><li>686 + 8820 = <b>9506</b></li></ol>
+        </figure>
+        <figure class="lv-way lv-way--sutra">
+          <figcaption>The sutra way: <span lang="sa-Latn">Nikhilaṃ</span></figcaption>
+          <p class="lv-sum">98 &times; 97</p>
+          <ol class="lv-steps"><li>98 is 2 below 100, and 97 is 3 below.</li><li>98 &minus; 3 = 95, and 2 &times; 3 = 06.</li><li>So the answer is <b>9506</b>.</li></ol>
+        </figure>
+      </div>
+      <ul class="lv-sutra-cards">
+        <li><a class="lv-sutra" href="/play/#/sutras/s1"><b lang="sa-Latn">Ekādhikena Pūrveṇa</b><span class="lv-sutra-m">By one more than the one before</span><span class="lv-sutra-ex">65&sup2;: 6 &times; 7 = 42, then 25, so 4225</span><span class="lv-sutra-go">See how it works</span></a></li>
+        <li><a class="lv-sutra" href="/play/#/sutras/s2"><b lang="sa-Latn">Nikhilaṃ Navataścaramaṃ Daśataḥ</b><span class="lv-sutra-m">All from 9 and the last from 10</span><span class="lv-sutra-ex">1000 &minus; 368: 9 &minus; 3, 9 &minus; 6, 10 &minus; 8, so 632</span><span class="lv-sutra-go">See how it works</span></a></li>
+        <li><a class="lv-sutra" href="/play/#/sutras/s3"><b lang="sa-Latn">Ūrdhva-Tiryagbhyām</b><span class="lv-sutra-m">Vertically and crosswise</span><span class="lv-sutra-ex">21 &times; 13: 2, then 2 &times; 3 + 1 &times; 1 = 7, then 3, so 273</span><span class="lv-sutra-go">See how it works</span></a></li>
+      </ul>
+      <p class="lv-sutras-note">The 16 sutras and 13 sub-sutras are from Bharati Krishna Tirtha's book <i>Vedic Mathematics</i>, published in 1965. They are not found in the Vedas; each one is ordinary algebra you can check. <a href="/play/#/sutras">See all 29 sutras</a></p>
     </div>
   </section>
 

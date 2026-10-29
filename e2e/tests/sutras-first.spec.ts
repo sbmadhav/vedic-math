@@ -1,5 +1,6 @@
-import { test, expect, APP, open } from './fixtures';
+import { test, expect, APP, open, appErrors, mod } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
+import { fakeAudio } from './audio-fake';
 
 /* openspec change sutras-first: Sutra tags where methods are taught, one tap to the Deep dive and back, a Deep dive
    without a Mode, and the tag event. The shared analytics.js is replaced by a stub that records window.siteTrack. */
@@ -100,9 +101,15 @@ const holdTags = async (page: Page) => {
   await page.route(/\/js\/sutra-tag\.js(\?.*)?$/, async route => { await held; await route.continue(); });
   return release;
 };
+/* Not open(): WebKit holds the load event for an import started before it (the Katas page asks for the tag module
+   while it first draws), and this one is held, so wait for the page's view instead (as load.spec.ts does) */
+const openHeld = async (page: Page, hash: string) => {
+  await page.goto(`${APP}${hash}`, { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
+};
 test('Before its module arrives the Katas page holds the tag\'s place, then shows the same tag there', async ({ page }) => {
   const release = await holdTags(page);
-  await open(page, '#/katas/from9');
+  await openHeld(page, '#/katas/from9');
   const slot = page.locator('#view h1 + .sutra-tag-slot');
   await expect(slot).toHaveAttribute('aria-hidden', 'true');
   const before = await page.locator('#view .md-lede').boundingBox();
@@ -117,7 +124,7 @@ test('Before its module arrives the Katas page holds the tag\'s place, then show
 });
 test('A view left before the tag module arrives draws no tag late', async ({ page }) => {
   const release = await holdTags(page);
-  await open(page, '#/katas/from9');
+  await openHeld(page, '#/katas/from9');
   await expect(page.locator('#view .sutra-tag-slot')).toHaveCount(1);
   await page.evaluate(() => { location.hash = '#/learn'; });
   await expect(page.locator('#view .sutra-tag-slot')).toHaveCount(0);
@@ -267,3 +274,151 @@ for (const scheme of ['light', 'dark'] as const) {
     }
   });
 }
+
+/* Home leads with the Sutras (openspec change sutras-first, design decision 7; first-visit and sutra-progress specs):
+   Challenger and Pro open with the Sutra door, then "Your sutras", then the Player strip; Explorer gets "A sutra to say". */
+test.describe('Home', () => {
+  test('Challenger: the Sutra door names the next Star\'s Sutra as text; Learn the sutra opens its Deep dive with one home tag event, and closing it returns Home', async ({ page }) => {
+    await stubAnalytics(page);
+    await open(page);
+    const door = page.locator('.home-doors .door').first();
+    await expect(door).toHaveClass(/sutra-door/);
+    await expect(door.locator('.md-tag')).toHaveText('Your next sutra');
+    const tag = door.locator('.sutra-tag');
+    await expect(tag.locator('.sutra-tag-k')).toHaveText('Sutra');
+    await expect(tag.locator('.sutra-tag-n')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
+    await expect(tag.locator('.sutra-tag-m')).toHaveText('All from 9 and the last from 10');
+    await expect(tag.locator('a')).toHaveCount(0);
+    await expect(door).toContainText('Next Star: Subtract from 100, 1000, 10000, Star 1');
+    await expect(door.getByRole('link', { name: 'Play this Star' })).toHaveAttribute('href', '#/star/from9/1');
+    await expect(door.locator('.belts-mini .belt-mini')).toHaveCount(7);
+    const learn = door.getByRole('link', { name: 'Learn the sutra' });
+    await expect(learn).toHaveAttribute('href', '#/sutras/s2');
+    await learn.click();
+    const dlg = page.locator('dialog.sutra-modal');
+    await expect(dlg.locator('#sdTitle')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
+    await dlg.locator('.sd-x').click();
+    await expect(dlg).not.toBeVisible();
+    await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
+    await expect(page).toHaveURL(/\/play\/(#\/)?$/);
+    expect((await events(page)).filter(([p]) => p.startsWith('math/sutra_tag/'))).toEqual([['math/sutra_tag/home', 'Sutra tag: home']]);
+  });
+  test('Challenger: the Sutra door is drawn whole with the first paint, so nothing moves when js/sutra-tag.js arrives', async ({ page }) => {
+    const tagPath = new URL(await mod(page, 'sutra-tag'), 'http://x').pathname; /* the module's path wherever the build serves it */
+    await page.route(u => u.pathname === tagPath, r => r.abort()); /* the module never arrives */
+    await open(page);
+    const door = page.locator('.home-doors .door').first();
+    await expect(door.locator('.sutra-tag .sutra-tag-n')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
+    await expect(door.locator('.sutra-tag-slot')).toHaveCount(0);
+  });
+
+  test.describe('a Challenger with a Star lit on two other Sutras', () => {
+    test.use({ seedProgress: { v: 3, skills: {}, sky: { lit: { 'sq5:1': 1, 'by11:1': 1 }, skipped: {}, last: {} } } });
+    test('"Your sutras": the next Star\'s Sutra first, then the started ones in Bolt\'s path order, each a link to its Deep dive with its progress', async ({ page }) => {
+      await open(page);
+      const rows = page.locator('.your-sutras a.your-sutra');
+      await expect(rows).toHaveCount(3);
+      await expect(rows.locator('b[lang="sa-Latn"]')).toHaveText(['Nikhilaṃ Navataścaramaṃ Daśataḥ', 'Ūrdhva-Tiryagbhyām', 'Ekādhikena Pūrveṇa']);
+      await expect(rows.locator('.sutra-prog small')).toHaveText(['0 of 9 Stars lit', '1 of 9 Stars lit', '1 of 9 Stars lit']);
+      await expect(rows.nth(1)).toHaveAttribute('href', '#/sutras/s3');
+      await expect(rows.first()).toHaveAccessibleName(/the sutra of your next Star/);
+      await rows.nth(2).click();
+      await expect(page.locator('dialog.sutra-modal #sdTitle')).toHaveText('Ekādhikena Pūrveṇa');
+    });
+  });
+
+  test.describe('Pro', () => {
+    test.use({ seedMode: 'pro' });
+    test('the Sutra door leads with its 1965 line and the belts, the Arena is the second door, and "Your sutras" counts Stars and mastery', async ({ page }) => {
+      await open(page);
+      const doors = page.locator('.home-doors .door');
+      await expect(doors.nth(0).locator('.md-tag')).toHaveText('Next sutra');
+      await expect(doors.nth(0).locator('.door-line')).toContainText("A sutra is a one-line rule from Bharati Krishna Tirtha's 1965 book that replaces a long method.");
+      await expect(doors.nth(0)).toContainText('0 of 7 belts, 0 of 63 Stars');
+      await expect(doors.nth(1)).toHaveAttribute('href', '#/arena');
+      await expect(page.locator('.your-sutras a.your-sutra .sutra-prog small').first()).toHaveText('0 of 9 Stars lit · 0 of 3 Tricks mastered');
+      await expect(page.locator('#view .md-btn--primary')).toHaveText(['Play this Star']);
+    });
+  });
+
+  test.describe('Explorer', () => {
+    test.use({ seedMode: 'explorer' });
+    test('"A sutra to say": one Sutra a day from the five with a plain-number idea, with Say it, its Explorer meaning, and See how it works to its Deep dive', async ({ page }) => {
+      await stubAnalytics(page);
+      const SAY = ['s1', 's14', 's2', 'u8', 'u12'], NAMES: Record<string, string> = { s1: 'Ekādhikena Pūrveṇa', s14: 'Ekanyūnena Pūrveṇa', s2: 'Nikhilaṃ Navataścaramaṃ Daśataḥ', u8: "Antyayordaśake'pi", u12: 'Vilokanam' };
+      const day = Math.floor(Date.UTC(2026, 9, 22) / 86400000); /* the local day number of 2026-10-22, as Home counts days */
+      await page.clock.install({ time: new Date(2026, 9, 22, 12) });
+      await open(page);
+      const card = page.locator('.sutra-say'), today = SAY[day % SAY.length];
+      await expect(card.locator('.md-tag')).toHaveText('A sutra to say');
+      await expect(card.locator('.sutra-say-name b[lang="sa-Latn"]')).toHaveText(NAMES[today]);
+      await expect(card.locator('.sutra-say-name [data-say]')).toHaveAttribute('aria-label', `Hear how to say ${NAMES[today]}`);
+      await expect(card.locator('.say-resp')).toBeVisible();
+      const kid: string = await page.evaluate(async id => { const S = await e2eMod('sutras'); return [...S.SUTRAS.map((c: any) => ({ ...c, id: 's' + c.n })), ...S.SUBSUTRAS.map((c: any) => ({ ...c, id: 'u' + c.n }))].find((c: any) => c.id === id).kid; }, today);
+      await expect(card.locator('.sutra-say-kid')).toHaveText(kid);
+      const go = card.getByRole('link', { name: 'See how it works' });
+      await expect(go).toHaveAttribute('href', `#/sutras/${today}`);
+      const c = (await card.boundingBox())!, tiles = (await page.locator('.play-grid--big').boundingBox())!;
+      expect(c.y + c.height).toBeLessThanOrEqual(tiles.y);
+      await go.click();
+      await expect(page.locator('dialog.sutra-modal #sdTitle')).toHaveText(NAMES[today]);
+      expect((await events(page)).filter(([p]) => p.startsWith('math/sutra_tag/'))).toEqual([['math/sutra_tag/home', 'Sutra tag: home']]);
+      /* the next day brings the next Sutra of the five */
+      await page.clock.setSystemTime(new Date(2026, 9, 23, 12));
+      await open(page);
+      await expect(card.locator('.sutra-say-name b[lang="sa-Latn"]')).toHaveText(NAMES[SAY[(day + 1) % SAY.length]]);
+    });
+
+    test('Say it still plays after the Read questions aloud switch redraws Home, and a second tap stops it', async ({ page, issues }) => {
+      await fakeAudio(page);
+      await open(page);
+      const vb = page.locator('#voiceBtn');
+      const was = await vb.getAttribute('aria-pressed'); /* on by default in Explorer; either way the switch flips it and redraws Home */
+      const flipped = was === 'true' ? 'false' : 'true';
+      await vb.click();
+      await expect(vb).toHaveAttribute('aria-pressed', flipped);
+      const say = page.locator('.sutra-say [data-say]');
+      await say.click();
+      await expect(say).toHaveAttribute('aria-pressed', 'true');
+      await say.click(); /* one listener: a second tap stops the clip instead of starting it again */
+      await expect(say).toHaveAttribute('aria-pressed', 'false');
+      await vb.click(); /* and the switch still works both ways */
+      await expect(vb).toHaveAttribute('aria-pressed', was!);
+      expect(appErrors(issues), 'page errors').toEqual([]);
+    });
+  });
+
+  for (const mode of ['challenger', 'pro'] as const) {
+    test.describe(`${mode} on a 390 px phone`, () => {
+      test.use({ seedMode: mode, viewport: { width: 390, height: 844 } });
+      test('Play this Star is on screen, the Player strip with Sparks follows the doors and "Your sutras", and nothing scrolls sideways', async ({ page }) => {
+        await open(page);
+        const play = page.locator('#view .md-btn--primary');
+        await expect(play).toHaveText('Play this Star');
+        const b = (await play.boundingBox())!;
+        expect(b.y + b.height).toBeLessThanOrEqual(844);
+        const doors = (await page.locator('.home-doors').boundingBox())!, yours = (await page.locator('.your-sutras').boundingBox())!, strip = (await page.locator('.me-strip').boundingBox())!;
+        expect(yours.y).toBeGreaterThanOrEqual(doors.y + doors.height);
+        expect(strip.y).toBeGreaterThanOrEqual(yours.y + yours.height);
+        expect(await noSideScroll(page)).toBe(true);
+      });
+    });
+  }
+
+  for (const scheme of ['light', 'dark'] as const) {
+    for (const mode of ['explorer', 'challenger', 'pro'] as const) {
+      test.describe(`${mode} at 320 px in ${scheme === 'light' ? 'Daybreak' : 'Deep Space'}`, () => {
+        test.use({ seedMode: mode });
+        test('Home does not scroll sideways, and axe finds nothing serious in its Sutra cards', async ({ page }) => {
+          await page.emulateMedia({ colorScheme: scheme });
+          await page.setViewportSize({ width: 320, height: 720 });
+          await open(page);
+          expect(await noSideScroll(page)).toBe(true);
+          const axe = mode === 'explorer' ? new AxeBuilder({ page }).include('.sutra-say') : new AxeBuilder({ page }).include('.sutra-door').include('.your-sutras');
+          const r = await axe.analyze();
+          expect(r.violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => v.id)).toEqual([]);
+        });
+      });
+    }
+  }
+});
