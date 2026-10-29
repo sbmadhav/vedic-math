@@ -17,13 +17,12 @@ import * as store from './store.js';
 import * as fx from './fx.js';
 import * as gm from './gamify.js';
 import * as cloud from './cloud.js';
-import { runArena, runChallenge } from './arena.js';
 import * as LV from './levels.js';
 import { LEVELS, LEVELS_PER_GAME, levelMedal, boardGame } from './games.js';
 import * as AD from './adapt.js';
 import { initAmbient, bgOn, setBg, setBgLevel, BG_NOTES, stop as stopMusic, isPlaying as musicOn } from './ambient.js';
 import { levelFor, ROOTS_INTRO } from './sky-scene.js';
-import { on, later, every, child, onAbort } from './life.js';
+import { on, later, every, child, onAbort, lateImport } from './life.js';
 import * as metrics from './metrics.js';
 import { boltHTML } from './bolt.js';
 import { FAMILY_SVG } from './family.js';
@@ -36,24 +35,28 @@ import { skyView, placesHTML } from './sky-view.js';
 import { openShell } from './shell.js';
 import { PLAY, SECTIONS, playFor, playIn, playOpen } from './play/catalog.js';
 import { ICONS as PLAY_ICONS } from './play/icons.js';
-import { place as playPlace, suspendAudio as playQuiet } from './play/kit.js';
 import { GROUPS, sectionsFor, tryFor, say, resolveTour, tourDue, tourState, setTourState } from './guide.js';
 import { sectionLines, buildIndex, rank, countOf, kindLabel } from './find.js';
 import { artFor } from './guide-art.js';
-import { startTour } from './tour.js';
 import { guideCounts, rootNote } from './explain-lines.js';
 import { listenBtn, wireListen } from './listen.js';
 import { sayButton, respellHTML, devaHTML, wireSay } from './say.js';
 import { sutraAmbience, ambienceButton, wireAmbience, settingsHTML as ambienceSettingsHTML, wireSettings as wireAmbienceSettings } from './sutra-ambience.js';
-import { tag as sutraTag, tags, loadTags, fillTags } from './sutra-tag-slot.js'; /* js/sutra-tag.js loads on demand (#126 review) */
+import { tag as sutraTag, loadTags, fillTags } from './sutra-tag-slot.js'; /* js/sutra-tag.js loads on demand (#126 review) */
+import { tagHTML, sutraOfTrick, SURFACES as TAG_SURFACES } from './sutra-tag-core.js'; /* its core, static: Home's Sutra door (#133 perf) */
 import { progressOf, progressLine, trickLine } from './sutra-progress.js';
 import { claim as claimSlot, release as releaseSlot } from './prompt-slot.js';
+import './voice-plan.js'; /* a level sooner (docs/perf/baseline.md) */
 
 /* Installing the app (openspec change install-app): js/install.js and its rules load after the first view has painted
    (loadInstall, 100 ms after boot), so they are not in the static import graph the first paint waits for (design D12).
    The browser's install prompt can arrive before that: it is caught here and handed to initInstall. withInstall(fn,
    signal) runs fn with the module once it is here, unless signal (the view's) has aborted by then. */
 const boot = new AbortController(); /* the page's lifetime: never aborted */
+/* Off the first load's critical path (docs/perf/baseline.md); a failed load is asked for again */
+const onDemand = load => { let p; return () => (p ||= load().catch(e => { p = null; throw e; })); };
+const loadArena = onDemand(() => import('./arena.js')), loadTour = onDemand(() => import('./tour.js')), loadKit = onDemand(() => import('./play/kit.js'));
+const withArena = (area, signal, fn) => loadArena().then(A => { if (!signal.aborted) fn(A); }, () => { if (!signal.aborted) area.innerHTML = '<p class="md-lede">The round did not load. Check your connection and try again.</p>'; });
 let install = null, installLoad = null, earlyPrompt = null; const installQueue = [];
 function loadInstall() {
   return installLoad ||= import('./install.js').then(m => {
@@ -255,7 +258,7 @@ function home(ctx = {}, { tiles = false } = {}) {
   const cont = last ? `<a class="mq-continue" href="#/skill/${last.id}">${ring(store.mastery(last.id), 40)}<span><small>Keep going</small><b>${both(last.title, last.kid)}</b></span><span class="mq-go" aria-hidden="true">&rarr;</span></a>` : '';
   let body = '';
   if (m === 'explorer') {
-    body = `<div class="play-grid play-grid--big">
+    body = `${sutraToSay()}<div class="play-grid play-grid--big">
       ${tile('#/game/balloons', 'Balloon pop', 'Count and pop', 'coral', 'balloon')}
       ${tile('#/skill/k-count', 'How many dots?', 'Count with ten frames', 'sun', 'dots')}
       ${tile('#/game/more-less', 'Which has more?', 'Big or small', 'teal', 'scale')}
@@ -268,42 +271,66 @@ function home(ctx = {}, { tiles = false } = {}) {
     <p class="mq-cta"><button class="md-btn" id="voiceBtn" aria-pressed="${fx.voiceOn()}">${icon('speaker')} Read questions aloud: ${fx.voiceOn() ? 'on' : 'off'}</button> <a class="md-btn" href="#/watch">${icon('play')} Watch and sing</a></p>`;
   } else {
     /* Three doors first (openspec first-visit), each with one plain line that says what its word means; the rest of the
-       tiles wait under More ways to play. Challenger leads with the next Star, Pro with today's Arena round. */
+       tiles wait under More ways to play. */
     const belt = gm.currentBelt(), bp = gm.beltProgress(), earned = bp.filter(b => b.earned).length, next = bp.find(b => !b.earned), nk = SKY.suggested(store.starStates(), SKY.startBeltOf(store.player())), ns = nk && SKY.parseKey(nk), nt = ns && TRICKS.find(t => t.id === ns.trick);
-    const starCard = `<div class="md-card door dojo-card"><span class="md-tag md-tag--plum">Dojo</span><h2 class="mq-h3">${belt ? `You hold the ${belt.name}` : 'Earn your white belt'}</h2>
-      ${nt ? `<p>Next Star: <b>${nt.title}, Star ${ns.n}</b></p>` : '<p>Every Star is lit. Legend!</p>'}
-      <p class="door-acts">${nt ? `<a class="md-btn md-btn--primary" href="#/star/${nt.id}/${ns.n}">Play this Star</a> ` : ''}<a class="md-btn" href="#/dojo">Open the Dojo</a></p>
-      <p class="door-line">A Star is a two-minute round of four questions on one speed trick. Light it to earn your belt in the Dojo, where the tricks live.</p>
+    /* The Sutra door first in both Modes (openspec change sutras-first): the next Star on Bolt's path shown as its
+       Sutra, with Play this Star (the one primary button), Learn the sutra and the Dojo's belts. Then the Arena and the
+       Skill map. The tag is text here: Learn the sutra is the door's link to the Deep dive. It is drawn with the first
+       paint from js/sutra-tag-core.js, so no placeholder moves the doors when js/sutra-tag.js arrives (#133 perf). */
+    const st = nt && sutraOfTrick(nt.id), ss = st && st.id;
+    const sutraDoor = `<div class="md-card door dojo-card sutra-door"><span class="md-tag md-tag--plum">${fx.t({ challenger: 'Your next sutra', pro: 'Next sutra' })}</span>
+      ${st ? tagHTML(st.id, { mode: m, relation: st.relation, link: false, cls: 'sutra-door-tag' }) : `<h2 class="mq-h3">${nt ? 'Your next Star' : 'Every Star is lit. Legend!'}</h2>`}
+      ${nt ? `<p>Next Star: <b>${nt.title}, Star ${ns.n}</b></p>` : ''}
+      <p class="door-acts">${nt ? `<a class="md-btn md-btn--primary" href="#/star/${nt.id}/${ns.n}">Play this Star</a> ` : ''}${ss ? `<a class="md-btn" href="#/sutras/${ss}" data-tag="home">Learn the sutra</a> ` : ''}<a class="md-btn" href="#/dojo">Open the Dojo</a></p>
+      <p class="door-line">${fx.t({ challenger: 'A sutra is a short rule that does a whole sum in a line or two. A Star is a two-minute round of four questions on one of its tricks.', pro: 'A sutra is a one-line rule from Bharati Krishna Tirtha\'s 1965 book that replaces a long method. A Star is a two-minute round of four questions on one of its tricks.' })}</p>
       <div class="belts-mini">${bp.map(b => `<span class="belt-mini${b.earned ? ' on' : ''}" style="--belt:${b.color}" title="${b.name}"></span>`).join('')}</div>
-      ${next ? `<p class="mq-small">${next.name}: ${next.lit} of ${gm.STARS_PER_BELT} Stars lit</p>` : ''}</div>`;
-    const arenaCard = `<div class="md-card door"><span class="md-tag md-tag--coral">Arena</span><h2 class="mq-h3">Today's round</h2>
-      <p class="door-line">Sixty seconds of mental arithmetic: products, squares and percents. Every Pro gets the same questions today, and the best scores go on the leaderboard.</p>
-      <p class="door-acts"><a class="md-btn md-btn--primary" href="#/arena">Play today's round</a></p></div>`;
+      <p class="mq-small">${belt ? `You hold the ${belt.name}.` : 'Light Stars to earn your white belt.'}${next ? ` ${next.name}: ${next.lit} of ${gm.STARS_PER_BELT} Stars lit` : ''}${m === 'pro' ? ` · ${earned} of ${BELTS.length} belts, ${litStars()} of ${SKY.PATH.length} Stars` : ''}</p></div>`;
     const door = (href, title, line, color, ic) => `<a class="md-card door door--${color}" href="${href}"><span class="play-ic" aria-hidden="true">${icon(ic)}</span><b>${title}</b><span class="door-line">${line}</span></a>`;
     const doors = m === 'challenger'
-      ? starCard + door('#/arena', 'Race in the Arena', 'Sixty seconds, the same questions for every Challenger today, and a leaderboard at the end.', 'coral', 'trophy') + door('#/learn', 'Learn a skill', 'Skills by grade, from counting to calculus, each with a hint and a worked answer.', 'sun', 'map')
-      : arenaCard + door('#/dojo', 'Train a trick in the Dojo', `${earned} of ${BELTS.length} belts · ${litStars()} of ${SKY.PATH.length} Stars lit. A Star is a two-minute round of four questions on one speed trick.`, 'plum', 'belt') + door('#/learn', 'Skill map', 'Algebra, geometry and calculus, each skill with a hint and a worked answer.', 'sky', 'map');
+      ? sutraDoor + door('#/arena', 'Race in the Arena', 'Sixty seconds, the same questions for every Challenger today, and a leaderboard at the end.', 'coral', 'trophy') + door('#/learn', 'Learn a skill', 'Skills by grade, from counting to calculus, each with a hint and a worked answer.', 'sun', 'map')
+      : sutraDoor + door('#/arena', "Today's Arena round", 'Sixty seconds of mental arithmetic: products, squares and percents. Every Pro gets the same questions today, and the best scores go on the leaderboard.', 'coral', 'trophy') + door('#/learn', 'Skill map', 'Algebra, geometry and calculus, each skill with a hint and a worked answer.', 'sky', 'map');
     const more = m === 'challenger'
       ? [tile('#/arena/party', 'Party Mode', 'Two to four players, one screen', 'sky', 'duel'), tile('#/games', 'Games', 'Times sprint, target, fractions', 'teal', 'game'), tile('#/sutras', 'Sutra cards', 'Collect all 29', 'plum', 'cards'), tile('#/watch', 'Watch and learn', 'Best trick videos', 'coral', 'play')]
       : [tile('#/sutras', 'Sutra deep dive', `${gm.collectedCount()} of ${SUTRAS.length + SUBSUTRAS.length} cards collected`, 'sun', 'cards'), tile('#/arena/party', 'Party Mode', 'Family math night', 'coral', 'duel'), tile('#/games', 'Puzzles and games', 'Hit the target and more', 'teal', 'game'), tile('#/watch', 'Watch shelf', '3Blue1Brown, Numberphile, more', 'sky', 'play')];
     const board = m === 'pro' ? `<div class="md-card board-card"><span class="md-tag md-tag--coral">Arena</span><h2 class="mq-h3">Today's leaderboard</h2><div id="homeBoard" class="lb-wrap"><p class="mq-small">Loading…</p></div>${parentNote()}</div>` : '';
-    body = `<div class="home-doors">${doors}</div>${tryCard(m)}${board ? `<div class="home-2">${questsHTML()}${board}</div>` : questsHTML()}
+    body = `<div class="home-doors">${doors}</div>${tryCard(m)}${yourSutras(m, ss)}${heroStats()}${board ? `<div class="home-2">${questsHTML()}${board}</div>` : questsHTML()}
       <details class="mq-more home-more" id="homeMore"${fx.homeMoreOpen() ? ' open' : ''}><summary>More ways to play</summary><div class="play-grid">${more.join('')}</div></details>`;
   }
+  /* Home leads with the Sutras (openspec change sutras-first): Explorer keeps the Player strip on top; Challenger and Pro
+     show it after the doors and "Your sutras" */
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
-    ${heroStats()}
-    <h1 class="md-heading home-h">${fx.t({ explorer: 'What do you want to play?', challenger: 'Ready to get faster?', pro: 'Train your mental math' })}</h1>
+    ${m === 'explorer' ? heroStats() : ''}
+    <h1 class="md-heading home-h">${fx.t({ explorer: 'What do you want to play?', challenger: 'Learn a sutra, then use it', pro: 'Mental math, the sutra way' })}</h1>
     <p class="mode-line">Mode: <b>${fx.MODES[m].name}</b>${store.modeGuessed() ? ', our guess for a first try' : ''} <a href="#/me">Change</a></p>
     ${newHereHTML()}<div class="in-slot" id="installSlot"></div>${cont}${body}
   </div></section>`;
-  const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); mount(c => home(c, { tiles })); }; /* a fresh view signal, so the Install nudge and the tour mount again */
+  const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); mount(c => home(c, { tiles })); }; /* a fresh view signal, so the Install nudge, the tour and Say it on Explorer's Sutra card mount again */
   const hm = $('#homeMore'), keepMore = () => fx.setHomeMoreOpen(hm.open); /* remembered on this device */
   if (hm) { if (ctx.signal) on(hm, 'toggle', keepMore, ctx.signal); else hm.ontoggle = keepMore; } /* home() also runs with no view signal (an unknown Skill falls back to it): then a property on an element of this view */
   const tc = $('[data-try-open]'), counted = () => metrics.tryStart(m); /* the Try a trick card counts as a Try a trick pressed */
   if (tc) { if (ctx.signal) on(tc, 'click', counted, ctx.signal); else tc.onclick = counted; }
   if (m === 'pro') loadBoard($('#homeBoard'), `daily-${cloud.dayId()}-pro`, 5);
+  const sc = $('.sutra-say'); if (sc && ctx.signal) wireSay(sc, ctx.signal); /* Say it on Explorer's Sutra card: wired on the card, which every redraw replaces, so a redraw within the view adds no second listener */
   homeTour(ctx.signal);
   withInstall(m => m.mountNudge($('#installSlot'), ctx.signal), ctx.signal); /* the Install nudge's one place on Home (openspec change install-app) */
+}
+
+/* "Your sutras" on Challenger and Pro Home (openspec change sutras-first, sutra-progress spec): the Sutra of the next
+   Star and up to three others the Player has started, in Bolt's path order, each a link to its Deep dive with its
+   progress, and a link to all 29. Read from the device only. */
+const PATH_SUTRAS = [...new Set(BELTS.flatMap(b => b.tricks).map(id => (sutraOfTrick(id) || {}).id).filter(Boolean))];
+function yourSutras(m, nextId) {
+  const begun = PATH_SUTRAS.filter(id => id !== nextId && sutraProgress(ALL_SUTRAS.find(c => c.id === id)).begun).slice(0, 3);
+  const ids = [...(nextId ? [nextId] : []), ...begun]; if (!ids.length) return '';
+  const row = id => { const c = ALL_SUTRAS.find(x => x.id === id), p = sutraProgress(c); return `<li><a class="your-sutra" href="#/sutras/${id}" data-tag="home"><b lang="sa-Latn">${esc(c.name)}</b><span class="sutra-tag-m">${esc(m === 'explorer' ? c.kid : c.meaning)}</span>${progressMeter(p, m)}${id === nextId ? '<span class="md-sr-only">, the sutra of your next Star</span>' : ''}</a></li>`; };
+  return `<div class="md-card your-sutras"><h2 class="mq-h3">Your sutras</h2><ul class="your-sutras-list">${ids.map(row).join('')}</ul><p class="door-acts"><a class="md-btn md-btn--sm" href="#/sutras">See all ${ALL_SUTRAS.length} sutras</a></p></div>`;
+}
+/* Explorer Home's "A sutra to say" (openspec change sutras-first): one Sutra a day, from those with a plain-number idea,
+   with Say it (its Name clip, after a tap) and its Explorer meaning */
+const SAY_SUTRAS = ['s1', 's14', 's2', 'u8', 'u12'];
+function sutraToSay() {
+  const d = new Date(), day = Math.floor((d.getTime() - d.getTimezoneOffset() * 60000) / 86400000), id = SAY_SUTRAS[day % SAY_SUTRAS.length], c = ALL_SUTRAS.find(x => x.id === id);
+  return `<div class="md-card sutra-say"><span class="md-tag md-tag--plum">A sutra to say</span><p class="sutra-say-name"><b lang="sa-Latn">${esc(c.name)}</b>${sayButton(id)}</p>${respellHTML(id, 'p')}<p class="sutra-say-kid">${esc(c.kid)}</p><p class="door-acts"><a class="md-btn" href="#/sutras/${id}" data-tag="home">See how it works</a></p></div>`;
 }
 
 /* Home's Try a trick card (openspec try-trick-in-modes): the Mode's own Try a trick, until the Player has finished it on
@@ -367,8 +394,8 @@ function learnView() {
   </div></section>`;
 }
 
-function gradeView(g) {
-  const G = gradeOf(g); if (!G) return home();
+function gradeView(g, { signal } = {}) {
+  const G = gradeOf(g); if (!G) return home({ signal });
   if (g !== 'V') store.setGrade(g);
   document.title = `${G.pro} · Learn Vedic Math`;
   const list = skillsFor(g), st = gradeStats(g), strands = Object.keys(STRANDS).filter(k => list.some(s => s.strand === k));
@@ -388,7 +415,7 @@ function gradeView(g) {
 
 /* ---------- Skill: lesson plus practice ---------- */
 function skillView(id, { signal } = {}) {
-  const s = byId[id]; if (!s) return home();
+  const s = byId[id]; if (!s) return home({ signal });
   document.title = `${s.title} · Learn Vedic Math`;
   const S = STRANDS[s.strand], trick = s.trick && TRICKS.find(t => t.id === s.trick);
   const back = trick ? ['#/dojo', 'Dojo'] : ['#/grade/' + s.grade, gradeLabel(s.grade)];
@@ -541,7 +568,7 @@ function answerUI(p) {
 }
 
 function mixView(g, isRun = false, { signal } = {}) {
-  const G = gradeOf(g); if (!G) return home();
+  const G = gradeOf(g); if (!G) return home({ signal });
   document.title = `${isRun ? 'Endless run' : 'Endless practice'}, ${G.pro} · Learn Vedic Math`;
   const list = skillsFor(g);
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
@@ -761,14 +788,14 @@ function challengeView(id, { signal } = {}) {
   let run = null, play = null;
   const stop = () => { const r = run, p = play; run = play = null; if (p) p.close(); if (r) r.abort(); };
   $('#chGo').onclick = () => {
-    stop(); run = child(signal);
+    stop(); run = child(signal); loadArena().catch(() => {});
     play = openShell(`Challenge ${id}: ${F.name}`, { signal: run.signal, exitId: 'chStop', onExit: stop, focusBack: () => $('#chGo') });
     const area = play.area;
     let n = 3; area.innerHTML = `<div class="ar-count" aria-live="assertive">${n}</div>`; fx.sfx('tick');
     const count = child(run.signal); /* the countdown stops when it reaches 0, on Stop or when the view is left */
     every(() => { n--; if (n === 0) { count.abort(); fx.sfx('ok'); go(area, run.signal); } else { area.firstChild.textContent = n; fx.sfx('tick'); } }, 650, count.signal);
   };
-  const go = (area, rsig) => {
+  const go = (area, rsig) => withArena(area, rsig, ({ runChallenge }) => {
     track('challenge/' + ch.format, 'Challenge ' + id); metrics.roundStart('tower');
     /* Calm: the tower is Practice, so no clock. Sprint and Time attack Medals are measured against the clock. */
     const untimed = fx.calmOn(), clockMedal = ch.format === 'sprint' || ch.format === 'timeattack';
@@ -784,7 +811,7 @@ function challengeView(id, { signal } = {}) {
       if (play) play.setExit('Back');
       const h = area.querySelector('h2'); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
     } });
-  };
+  });
 }
 
 /* ---------- Sutras: deep dive and card collection ---------- */
@@ -1102,7 +1129,7 @@ function arenaView({ signal } = {}) {
   let run = null, play = null;
   const stop = () => { const r = run, p = play; run = play = null; if (p) p.close(); if (r) r.abort(); };
   const countdown = () => {
-    stop(); run = child(signal);
+    stop(); run = child(signal); loadArena().catch(() => {});
     const old = shell.querySelector('.ar-result'); if (old) old.remove(); /* the last result goes; the new one shows in the shell */
     play = openShell(type === 'daily' ? 'Arena: daily challenge' : 'Arena: Practice', { signal: run.signal, exitId: 'arStop', onExit: stop, focusBack: () => $('#arGo', shell) });
     const area = play.area, rsig = run.signal;
@@ -1110,7 +1137,7 @@ function arenaView({ signal } = {}) {
     const count = child(rsig); /* leaving or stopping during the countdown means the round never starts */
     every(() => { n--; if (n === 0) { count.abort(); fx.sfx('ok'); start(area, rsig); } else { area.firstChild.textContent = n; fx.sfx('tick'); } }, 700, count.signal);
   };
-  const start = (area, rsig) => {
+  const start = (area, rsig) => withArena(area, rsig, ({ runArena }) => {
     track('arena/' + league + '/' + type, 'Arena round'); metrics.roundStart('arena');
     /* Practice: the Dial picks each question. Daily: it only records the answers (the questions are the same for everyone).
        Untimed: the Practice round with no clock, chosen or (for a Practice round) set by Calm. The daily round keeps its clock. */
@@ -1144,7 +1171,7 @@ function arenaView({ signal } = {}) {
       const done = $('#arDone', area); done.onclick = back; done.focus({ preventScroll: true });
       fx.rollSparks(area, rsig);
     } });
-  };
+  });
   lobby();
 }
 
@@ -1183,12 +1210,12 @@ function playView(hash, { signal }) {
       <p><a class="md-btn md-btn--primary" href="${sec.href}">Back to ${sec.label}</a></p></div></section>`;
     return;
   }
-  playPlace.back = sec;
   view.classList.add('px-view', `px-view--${e.id}`);
-  onAbort(signal, () => { view.classList.remove('px-view', `px-view--${e.id}`); playQuiet(); });
+  onAbort(signal, () => { view.classList.remove('px-view', `px-view--${e.id}`); loadKit().then(k => k.suspendAudio(), () => {}); });
   view.innerHTML = `<div class="md-wrap px-loading" aria-busy="true">Opening ${e.title}...</div>`;
-  Promise.all([import(`./play/exp/${e.id}.js`), playCss('base'), playCss(e.id)]).then(([mod]) => {
+  Promise.all([import(`./play/exp/${e.id}.js`), playCss('base'), playCss(e.id), loadKit()]).then(([mod, , , kit]) => {
     if (signal.aborted) return;
+    kit.place.back = sec;
     view.innerHTML = '';
     mod.mount({ root: view, signal, params, exp: e });
     /* Like render(): focus the heading after a route change, not on the first page load */
@@ -1366,9 +1393,9 @@ function watchView({ signal } = {}) {
 const watchSutra = v => { const t = v.tricks.length && TRICKS.find(x => x.id === v.tricks[0]), c = t && ALL_SUTRAS.find(x => x.id === t.sutraId); return v.tricks.length ? (c ? `<span class="tagv tagv--sutra" lang="sa-Latn">${esc(c.name)}</span>` : '<span class="tagv">Trick</span>') : ''; };
 /* Play buttons ([data-watch], a YouTube id) open the in-page player; Pro links ([data-link]) open a new tab.
    A followed Sutra tag (openspec change sutras-first, analytics spec) sends one anonymous event naming only its
-   surface, one of the fixed words in SURFACES of js/sutra-tag.js (a tag link is drawn only once that module is here). */
+   surface, one of the fixed words in SURFACES (js/sutra-tag-core.js, static, so Home's own Sutra links count at once). */
 document.addEventListener('click', e => {
-  const link = e.target.closest('a[data-tag]'), T = tags(), surface = link && T && T.SURFACES.find(x => x === link.dataset.tag);
+  const link = e.target.closest('a[data-tag]'), surface = link && TAG_SURFACES.find(x => x === link.dataset.tag);
   if (surface) { track('sutra_tag/' + surface, 'Sutra tag: ' + surface); return; }
   const b = e.target.closest('[data-watch]'), a = !b && e.target.closest('a[data-link]');
   if (a) { store.bump('watched'); track('watch/link', 'Watch: link'); return; }
@@ -1490,8 +1517,11 @@ function homeTour(signal) {
     const has = sel => { const el = document.querySelector(sel); if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
     const steps = resolveTour(has, fx.mode());
     if (!steps.length) { releaseSlot('tour'); return; }
-    setTourState('shown'); metrics.tourEvent('start');
-    startTour(steps, { signal, onEnd: outcome => { releaseSlot('tour'); if (outcome === 'finish') { setTourState('done'); metrics.tourEvent('finish'); } else { setTourState('skipped'); metrics.tourEvent('skip'); } } });
+    loadTour().then(({ startTour }) => {
+      if (signal.aborted) return;
+      setTourState('shown'); metrics.tourEvent('start');
+      startTour(steps, { signal, onEnd: outcome => { releaseSlot('tour'); if (outcome === 'finish') { setTourState('done'); metrics.tourEvent('finish'); } else { setTourState('skipped'); metrics.tourEvent('skip'); } } });
+    }, () => releaseSlot('tour'));
   }, 300, signal);
 }
 function guideView(section, { signal } = {}) {
@@ -1763,11 +1793,14 @@ modeFromLink();
 render();
 initAmbient();
 /* The install module, after the first paint (openspec change install-app, design D12); a load that fails is reported once */
-later(() => loadInstall().catch(e => console.error('install.js did not load', e)), 100, boot.signal);
+later(() => lateImport(loadInstall, 'install.js'), 100, boot.signal);
 /* Word problems (openspec word-problems): the story templates load after the first paint, like install.js */
-later(() => loadStories().catch(e => console.error('stories.js did not load', e)), 150, boot.signal);
+later(() => lateImport(loadStories, 'stories.js'), 150, boot.signal);
 /* The Sutra tag module, a second after the page has loaded, so a view that draws a tag has it at once (#126 review) */
-const preloadTags = () => later(() => loadTags().catch(e => console.error('sutra-tag.js did not load', e)), 1000, boot.signal);
+const preloadTags = () => later(() => {
+  lateImport(loadTags, 'sutra-tag.js');
+  lateImport(loadArena, 'arena.js'); lateImport(loadTour, 'tour.js'); lateImport(loadKit, 'play/kit.js');
+}, 1000, boot.signal);
 if (document.readyState === 'complete') preloadTags(); else on(window, 'load', preloadTags, boot.signal, { once: true });
 /* Offline: /sw.js (scope /play/, the game only) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {

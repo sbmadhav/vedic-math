@@ -1,0 +1,20 @@
+# Tasks
+
+Waits for the owner's approval of this plan. One pull request, stacked on `perf-same-runner` (its scripts and rules are reused). The pull request's own preview perf job is unchanged; the post-deploy job is proven by its first run on `main` after merge (task 3.2).
+
+## 1. The reference
+
+- [ ] 1.1 Owner: if the `preview` environment limits its deployment branches, add `main` (Settings, Environments, preview). Nothing else changes for the token.
+- [ ] 1.2 `docs/perf/baseline.json`: `reference` with `commit` (the `main` tip the pull request is last merged with right before it lands, design D2; the pull request changes no file a Player downloads), `date`, `alias` (`perf-ref`) and `why`; `tools/test/perf-compare.test.ts` reads it in one case.
+- [ ] 1.3 `.github/workflows/e2e.yml`, job `perf`: `environment: preview`; check out `reference.commit` into a second directory, `python3 build.py --preview --out <dir>` with production's voice mode, and `wrangler versions upload --preview-alias perf-ref` from `deploy/` with the preview token's checks as in `preview.yml`; the alias URL read from wrangler's output; the upload comes before any measurement. On any failure, the job carries on with the baseline alone (design D3). Record the build and upload minutes here.
+
+## 2. Measuring and the gate
+
+- [ ] 2.1 `e2e/perf/lighthouse.mts` and `tools/perf-compare.ts`: `--reference` and `--reference-json` (the existing `--production` options kept as the same option), and `--reference-label` for the column (design D4); without them the behavior is unchanged. Verify: `tools/test/perf-compare.test.ts`: the slow-runner case after a deploy passes (196 on production, 190 on the reference, baseline 159, limit 215), 26 ms over the reference fails, largest contentful paint still from the baseline, the label in the table, the fallback note, both existing table layouts unchanged; `pnpm test`.
+- [ ] 2.2 `e2e.yml`, job `perf`: Lighthouse on production and the reference page by page (`--reference`), the interaction timings on the reference and then production, the compare step with `--reference`, a miss measured once more on both hosts (only the kind that missed, as `preview.yml` does), the first run kept in the artifact (`results/first`), and the issue text saying what was compared. `preview.yml`: unchanged, or the option's new name only.
+
+## 3. The record and checks
+
+- [ ] 3.1 `docs/perf/baseline.md` ("The post-deploy reference": what is pinned, why, how it moves, the cost; and the open largest contentful paint item of design D5), `docs/agent/build-and-checks.md`, the workflows' comments.
+- [ ] 3.2 Checks: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `python3 build.py --out /tmp/vm-site`, `openspec validate perf-gate-same-runner-post-deploy --strict`. After merge, the first post-deploy job on `main` uploads the reference, measures both hosts and posts the table with the Reference column; its minutes, both `benchmarkIndex` values and the Deep dive's numbers are recorded here. If its CPU lines pass, #117 gets a comment with the result, and stays open only for the largest contentful paint item.
+- [ ] 3.3 After release: `openspec archive perf-gate-same-runner-post-deploy -y` once `react-typescript`'s, `perf-gate-fcp`'s and `perf-same-runner`'s `performance-budget` deltas are in `openspec/specs/`, with the coverage specs for the new scenarios in `e2e/tests/cov/` (they test `tools/perf-compare.ts` with recorded numbers, never the live site).

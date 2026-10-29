@@ -16,7 +16,7 @@ test.describe('a first visit', () => {
 
   test('Counted: /play/?mode=pro sets Pro and sends one math/landing/mode/pro, naming no Player', async ({ page }) => {
     await page.goto(`${APP}?mode=pro`);
-    await expect(page.locator('h1.home-h')).toHaveText('Train your mental math');
+    await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
     expect(await mode(page)).toBe('pro');
     await expect.poll(async () => (await events(page)).filter(e => e.startsWith('math/landing/'))).toEqual(['math/landing/mode/pro Vedic Math: landing mode card']);
     const name = await page.evaluate(() => JSON.parse(localStorage.getItem('vm.players')!).list[0].name);
