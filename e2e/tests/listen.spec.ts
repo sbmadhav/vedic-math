@@ -268,10 +268,19 @@ test.describe('Listen', () => {
     await open(page, '#/sutras');
     const n = await st.recordKey('roots');
     expect(n).toBe(8);
+    const want: string[] = await page.evaluate(async v => {
+      const { lineHash } = await e2eMod('voice-plan');
+      const { normalize } = await e2eMod('voice');
+      const { linesForKey } = await e2eMod('explain-lines');
+      return linesForKey('roots').map((t: string) => lineHash(v, normalize(t)));
+    }, VOICE);
+    const asked: string[] = []; // the recordings asked for, in order (each line has its own file)
+    page.on('request', r => { const m = r.url().match(/voice\.learnvedicmath\.com\/l\/([0-9a-f]{14})\.m4a/); if (m) asked.push(m[1]); });
     const btn = page.getByRole('button', { name: 'Listen: older roots' });
     await btn.click();
     await expect(btn).toHaveAttribute('aria-pressed', 'true');
     await expect.poll(async () => (await vlog(page)).filter(e => e === 'studio:line').length, { timeout: 20_000 }).toBe(n);
+    expect(asked).toEqual(want); // the intro, then each note, in the card's order
     await expect(btn).toHaveAttribute('aria-pressed', 'false', { timeout: 10_000 });
     expect(await spoken(page)).toEqual([]);
   });
