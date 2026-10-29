@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 825099,
+  "total": 826733,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -48,8 +48,8 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 48487,
-   "/js/arena.js": 5392,
+   "/js/app.js": 49407,
+   "/js/arena.js": 5685,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
    "/js/celebrate.js": 3367,
@@ -67,7 +67,7 @@
    "/js/games.js": 12393,
    "/js/gamify.js": 3873,
    "/js/guide-art.js": 2484,
-   "/js/guide.js": 10456,
+   "/js/guide.js": 10459,
    "/js/handoff-schema.js": 6616,
    "/js/handoff.js": 4229,
    "/js/install-rules.js": 2226,
@@ -78,7 +78,7 @@
    "/js/life.js": 1103,
    "/js/listen.js": 1335,
    "/js/mental.js": 2128,
-   "/js/metrics.js": 4136,
+   "/js/metrics.js": 4146,
    "/js/play/catalog.js": 1783,
    "/js/play/exp/apprentice-core.js": 7279,
    "/js/play/exp/apprentice.js": 3914,
@@ -130,8 +130,8 @@
    "/js/slokas.js": 16068,
    "/js/star.js": 8768,
    "/js/store.js": 5753,
-   "/js/stories.js": 10070,
-   "/js/story-plan.js": 1723,
+   "/js/stories.js": 10300,
+   "/js/story-plan.js": 1807,
    "/js/sutra-ambience.js": 4169,
    "/js/sutra-details.js": 13423,
    "/js/sutra-progress.js": 1066,
@@ -150,9 +150,9 @@
    "/js/voice.js": 14365,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 24311,
-   "/play/": 4060,
-   "/sw.js": 6266,
+   "/math.css": 24422,
+   "/play/": 4054,
+   "/sw.js": 6255,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -261,6 +261,13 @@
     "from": 825003,
     "to": 825099,
     "why": "One Watch shelf video for the duplex Trick (tecmath HWF1y5FfGXo): js/videos.js is precached, so its new entry counts (+78 bytes); the stamps in /play/ and /sw.js +9 each, with no change to their source; +96 in all; measured on main as of #157"
+   },
+   {
+    "date": "2026-10-29",
+    "pr": null,
+    "from": 825099,
+    "to": 826733,
+    "why": "word-problems-more: Only Word problems on a level's Endless practice page and the Arena's Word problems round (js/app.js mixView, practice and arenaView; the new route in js/metrics.js and js/guide.js; js/arena.js runArena deal and count, storyItem; js/stories.js roundStory and hasStory by Mode; js/story-plan.js the choice words; the Arena story styles in math.css, and the play shell's picture box, which drew Explorer Arena pictures 0 px wide); js/stories.js still loads after the first paint; measured on main as of #166; file deltas: /js/app.js +920, /js/arena.js +293, /js/guide.js +3, /js/metrics.js +10, /js/stories.js +230, /js/story-plan.js +84, /math.css +111, /play/ -6, /sw.js -11, +1634 in all"
    }
   ]
  },

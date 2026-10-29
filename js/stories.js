@@ -279,4 +279,16 @@ export function skillStory(id, mode, r = Math.random) {
   return draw(pk(r, of), r, { grade: null });
 }
 
-register({ hasStory, storyFor, skillStory, trickStory });
+/* A Word problem of a Mode's style for a round that has no Skill on screen: the Arena's Word problems round (openspec
+   word-problems-more, design D4). Pro mixes the hand-written stories in as Pro Practice does. Every answer is a whole
+   number (the Arena keypad takes nothing else). */
+export function roundStory(mode, r = Math.random) {
+  const of = TEMPLATES.filter(t => t.mode === (ORDER[mode] ? mode : 'challenger'));
+  for (let i = 0; i < 20; i++) {
+    const p = mode === 'pro' && r() < RULES.written ? written(pk(r, WRITTEN)) : draw(pk(r, of), r, { grade: null });
+    if (Number.isInteger(p.answer) && p.answer >= 0) return p;
+  }
+  return written(WRITTEN[0]);
+}
+
+register({ hasStory, storyFor, skillStory, trickStory, roundStory });

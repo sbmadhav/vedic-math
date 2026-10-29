@@ -208,6 +208,24 @@ test('the bus picture draws exactly the bus\'s seats, with the children in them'
   }
 });
 
+/* ---------- Any round (openspec word-problems-more, design D4): the Arena's Word problems round ---------- */
+test('roundStory gives each Mode its own style, a whole-number answer the keypad takes, and hints that keep the answer back', () => {
+  const r = rng(29), modeOf = id => (id.startsWith('w-') ? 'pro' : S.TEMPLATES.find(t => t.id === id).mode);
+  for (const mode of ['explorer', 'challenger', 'pro']) {
+    let written = 0;
+    for (let i = 0; i < N; i++) {
+      const p = S.roundStory(mode, r);
+      assert.equal(modeOf(p.story.id), mode, `${mode}: ${p.story.id}`);
+      assert.ok(Number.isInteger(p.answer) && p.answer >= 0 && String(p.answer).length <= 7, `${p.story.id}: ${p.answer}`);
+      assert.ok(p.hints[0].startsWith(S.ASK) && S.clean(p), `${p.story.id}: a hint shows the answer`);
+      if (mode === 'explorer') assert.ok(p.viz, `${p.story.id}: an Explorer story is drawn`);
+      if (p.story.id.startsWith('w-')) written++;
+    }
+    if (mode === 'pro') assert.ok(written > N * 0.15 && written < N * 0.35, `written stories ${written} of ${N}`);
+    else assert.equal(written, 0);
+  }
+});
+
 /* Only Word problems (openspec word-problems-more, design D2): every Skill a Mode's choice picks gives a story in it */
 test('hasStory(skill, mode) names only Skills whose stories that Mode is asked, and each gives one every time', () => {
   const r = rng(31);

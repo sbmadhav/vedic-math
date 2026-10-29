@@ -279,6 +279,21 @@ for (const scheme of ['light', 'dark'] as const) {
   });
 }
 
+/* The Arena's Word problems round in the play shell (openspec word-problems-more): the label, the story and the unit */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, Word problems round`, () => {
+    test.use({ colorScheme: scheme });
+    test('the Arena Word problems round has no serious or critical axe violations', async ({ page }, testInfo) => {
+      chromiumOnly(testInfo);
+      await open(page, '#/arena');
+      await page.locator('[data-t="words"]').click();
+      await page.locator('#arGo').click();
+      await expect(page.locator('#arStory')).toBeVisible({ timeout: 6000 });
+      expect(await serious(page, 'shell')).toEqual([]);
+    });
+  });
+}
+
 /* The sutra deep dive (openspec sutra-examples): worked examples all open, scrolled to the middle so the pinned
    footer and close button sit over the content, at desktop and phone widths, both schemes */
 for (const scheme of ['light', 'dark'] as const) {

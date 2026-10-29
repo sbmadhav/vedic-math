@@ -73,8 +73,27 @@ export async function recordSpeech(page: Page) {
 export const said = (page: Page) => page.evaluate(() => ((window as any).__said as string[]).join(' '));
 export const spoken = (page: Page, html: string) => page.evaluate(async h => (await e2eMod('voice')).normalize(h) as string, html);
 
-/* ---------- Only Word problems (openspec change word-problems-more) ---------- */
+/* ---------- Only Word problems and the Arena Word problems round (openspec change word-problems-more) ---------- */
 export const onlyChoice = (page: Page, only: boolean) => page.locator(`#mixOnly [data-only="${only ? 1 : 0}"]`);
 /** The Skill a mixed Practice question is from (the link over it) */
 export const skillOf = async (page: Page) => ((await box(page).locator('.pr-meter small a').getAttribute('href')) || '').replace('#/skill/', '');
 
+/** Records the answer of each story the Arena round deals (js/stories.js roundStory), so a spec can answer it right */
+export async function watchRoundStories(page: Page) {
+  await page.evaluate(async () => {
+    const P = await e2eMod('story-plan'); await P.loadStories();
+    const api = P.storiesNow(), real = api.roundStory, w = window as any;
+    w.__storyAnswers = [];
+    api.roundStory = (...a: unknown[]) => { const p = real(...a); w.__storyAnswers.push(p.answer); return p; };
+  });
+}
+/** The answer to the Arena story on screen: the last one dealt */
+export const roundAnswer = (page: Page) => page.evaluate(() => { const a = (window as any).__storyAnswers as number[]; return String(a[a.length - 1]); });
+/** Starts the Arena's Word problems round from the lobby; chip: the Mode's word on it */
+export async function startWordRound(page: Page, chip = 'Word problems') {
+  await page.locator('[data-t="words"]').click();
+  await expect(page.locator('[data-t="words"]')).toHaveText(chip);
+  await expect(page.locator('[data-t="words"]')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('#arGo').click();
+  await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
+}

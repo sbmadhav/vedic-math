@@ -28,7 +28,7 @@ import { boltHTML } from './bolt.js';
 import { FAMILY_SVG } from './family.js';
 import { familyRound } from './family-hook.js';
 import { runStar } from './star.js';
-import { storyPlan, loadStories, storiesNow, LABEL as STORY_LABEL, ONLY as STORY_ONLY } from './story-plan.js';
+import { storyPlan, loadStories, storiesNow, LABEL as STORY_LABEL, ONLY as STORY_ONLY, ROUND as STORY_ROUND } from './story-plan.js';
 import { runTry, tryFor as tryOf, sutraOf, finished as tryFinished } from './try.js';
 import * as SKY from './sky.js';
 import { skyView, placesHTML } from './sky-view.js';
@@ -1118,8 +1118,9 @@ store.on(type => { if (type === 'sparks') queueSparksPost(); });
 function arenaView({ signal } = {}) {
   document.title = `Arena · Learn Vedic Math`;
   const league = fx.MODES[fx.mode()].league, day = cloud.dayId(), wk = cloud.weekId();
-  /* Round type: daily (Ranked, always timed), practice (timed, untimed in Calm) or untimed (Practice, no clock).
-     With Calm on, the untimed Practice round is picked until the Player picks another this visit. */
+  /* Round type: daily (Ranked, always timed), practice (timed, untimed in Calm), untimed (Practice, no clock) or words
+     (Word problems, Practice with no clock: openspec word-problems-more). With Calm on, the untimed Practice round is
+     picked until the Player picks another this visit. */
   let type = fx.calmOn() ? 'untimed' : 'daily';
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs([null, 'Arena'])}
@@ -1137,7 +1138,7 @@ function arenaView({ signal } = {}) {
     pro: `Arena Rating: <b>${arenaRating()}</b>/20. Practice rounds start there and adapt to every answer; the daily round is the same for everyone.`
   })}</small>`;
   const lobby = (result = '') => {
-    shell.innerHTML = `${result}<div class="g-optrow" role="group" aria-label="Round type"><button class="md-chip" aria-pressed="${type === 'daily'}" data-t="daily">Daily challenge</button><button class="md-chip" aria-pressed="${type === 'practice'}" data-t="practice">Practice round</button><button class="md-chip" aria-pressed="${type === 'untimed'}" data-t="untimed">Practice, no clock</button></div>
+    shell.innerHTML = `${result}<div class="g-optrow" role="group" aria-label="Round type"><button class="md-chip" aria-pressed="${type === 'daily'}" data-t="daily">Daily challenge</button><button class="md-chip" aria-pressed="${type === 'practice'}" data-t="practice">Practice round</button><button class="md-chip" aria-pressed="${type === 'untimed'}" data-t="untimed">Practice, no clock</button><button class="md-chip" aria-pressed="${type === 'words'}" data-t="words">${STORY_ROUND[mode] || STORY_ROUND.challenger}</button></div>
       ${fx.calmOn() ? '<p class="ar-calm" id="arCalmNote">The daily challenge is a timed race for everyone. Practice has no clock in Calm.</p>' : ''}
       <p class="g-best">League: <b>${fx.MODES[fx.mode()].name}</b> · Your best today: <b>${store.best('arena-' + day)}</b><br>${arenaRatingLine()}</p>
       <button class="md-btn md-btn--primary ar-go" id="arGo">${icon('bolt')} Start</button>
@@ -1152,7 +1153,7 @@ function arenaView({ signal } = {}) {
   let run = null, play = null;
   const stop = () => { const r = run, p = play; run = play = null; if (p) p.close(); if (r) r.abort(); };
   const countdown = () => {
-    stop(); run = child(signal); loadArena().catch(() => {});
+    stop(); run = child(signal); loadArena().catch(() => {}); if (type === 'words') loadStories().catch(() => {});
     const old = shell.querySelector('.ar-result'); if (old) old.remove(); /* the last result goes; the new one shows in the shell */
     play = openShell(type === 'daily' ? 'Arena: daily challenge' : 'Arena: Practice', { signal: run.signal, exitId: 'arStop', onExit: stop, focusBack: () => $('#arGo', shell) });
     const area = play.area, rsig = run.signal;
@@ -1160,16 +1161,22 @@ function arenaView({ signal } = {}) {
     const count = child(rsig); /* leaving or stopping during the countdown means the round never starts */
     every(() => { n--; if (n === 0) { count.abort(); fx.sfx('ok'); start(area, rsig); } else { area.firstChild.textContent = n; fx.sfx('tick'); } }, 700, count.signal);
   };
-  const start = (area, rsig) => withArena(area, rsig, ({ runArena }) => {
+  /* The Word problems round's questions: one story after another of the Mode's style, never the same template twice in a
+     row (js/stories.js roundStory). Its stories load after the first paint, like Practice's. */
+  const storyDeal = (A, S) => { let last = null; return () => { let p = null; for (let k = 0; k < 6 && (!p || p.story.id === last); k++) p = S.roundStory(mode || 'challenger'); last = p.story.id; return A.storyItem(p, league, STORY_LABEL[mode] || STORY_LABEL.challenger); }; };
+  const start = (area, rsig) => withArena(area, rsig, A => {
+    const words = type === 'words';
+    if (words && !storiesNow()) { loadStories().then(() => { if (!rsig.aborted) start(area, rsig); }, () => { if (!rsig.aborted) area.innerHTML = '<p class="md-lede">The stories did not load. Check your connection and try again.</p>'; }); return; }
     track('arena/' + league + '/' + type, 'Arena round'); metrics.roundStart('arena');
     /* Practice: the Dial picks each question. Daily: it only records the answers (the questions are the same for everyone).
-       Untimed: the Practice round with no clock, chosen or (for a Practice round) set by Calm. The daily round keeps its clock. */
+       Untimed: the Practice round with no clock, chosen or (for a Practice round) set by Calm. The daily round keeps its clock.
+       Word problems: no clock, its own questions, and the Arena Rating left as it was (word-problems-more design D5). */
     const before = arenaRating(), dial = new AD.Dial(AD.rating(rKey, mode));
-    const untimed = type === 'untimed' || (type === 'practice' && fx.calmOn());
-    runArena(area, { league, day: type === 'daily' ? day : null, dial, signal: rsig, untimed, onEnd: async r => {
+    const untimed = words || type === 'untimed' || (type === 'practice' && fx.calmOn());
+    A.runArena(area, { league, day: type === 'daily' ? day : null, dial: words ? null : dial, signal: rsig, untimed, ...(words ? { deal: storyDeal(A, storiesNow()), count: A.STORY_QS } : {}), onEnd: async r => {
       metrics.roundEnd('arena', league);
-      const after = Math.round(AD.saveRating(rKey, dial) || before);
-      const moved = dial.n < 4 ? '' : fx.t({
+      const after = words ? before : Math.round(AD.saveRating(rKey, dial) || before);
+      const moved = words || dial.n < 4 ? '' : fx.t({
         explorer: after > before ? ` Your Arena Rating went up to ${after}!` : after < before ? ` Your Arena Rating is ${after} now.` : '',
         challenger: after > before ? ` Arena Rating up to ${after}.` : after < before ? ` Arena Rating now ${after}.` : '',
         pro: after > before ? ` Arena Rating up to ${after}.` : after < before ? ` Arena Rating down to ${after}.` : ''
