@@ -261,6 +261,36 @@ test.describe('Listen', () => {
     await expect.poll(async () => (await spoken(page)).join(' ')).toBe(want.join(' ')); // the device voice says a line sentence by sentence
   });
 
+  /* explanation-audio 4.5: the Sutras page's "Older roots" card reads its intro, then each note as the list shows it */
+  test('the Older roots card reads its notes in the studio voice once they are recorded', async ({ page }) => {
+    await needsStudioVoice(page);
+    const st = await setup(page);
+    await open(page, '#/sutras');
+    const n = await st.recordKey('roots');
+    expect(n).toBe(8);
+    const btn = page.getByRole('button', { name: 'Listen: older roots' });
+    await btn.click();
+    await expect(btn).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(async () => (await vlog(page)).filter(e => e === 'studio:line').length, { timeout: 20_000 }).toBe(n);
+    await expect(btn).toHaveAttribute('aria-pressed', 'false', { timeout: 10_000 });
+    expect(await spoken(page)).toEqual([]);
+  });
+
+  test('the Older roots card reads what it shows with the device voice when none is recorded', async ({ page }) => {
+    await setup(page);
+    await open(page, '#/sutras');
+    const [want, shown] = await page.evaluate(async () => {
+      const { normalize } = await e2eMod('voice');
+      const { linesForKey } = await e2eMod('explain-lines');
+      const card = document.querySelector('.md-card.roots')!;
+      return [linesForKey('roots').map((t: string) => normalize(t)), [...card.querySelectorAll('p:not(.listen-row), li')].map(el => normalize(el.innerHTML))];
+    });
+    expect(want).toEqual(shown); // the button reads the words on the card
+    await page.getByRole('button', { name: 'Listen: older roots' }).click();
+    await expect.poll(async () => (await spoken(page)).join(' ')).toBe(want.join(' '));
+    expect((await events(page)).filter(e => e.startsWith('math/listen'))).toEqual(['math/listen/explanation']);
+  });
+
   /* explanation-audio 4.1: the Star replay's steps, once they are all shown; ending the replay stops it */
   test('a Star replay reads its steps once they are all shown, and Escape stops it', async ({ page }) => {
     await setup(page, { endAfter: 4000 });

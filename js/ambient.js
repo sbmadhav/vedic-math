@@ -13,7 +13,6 @@ const setPref = (k, v) => { try { localStorage.setItem('vm.' + k, v); } catch (e
    The full scene on the app home, a quieter one elsewhere (setBgLevel, called by the router). The Moving background
    switch decides whether it is drawn at all; no motion draws it still. */
 import { BG_NOTES } from './sky-scene.js';
-export { BG_NOTES };
 let bg = null, bgLevel = 'full';
 export const bgOn = () => pref('bg', '1') === '1';
 export function setBg(on) { setPref('bg', on ? '1' : '0'); if (on) startBg(); else stopBg(); }
