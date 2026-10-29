@@ -107,10 +107,43 @@ test.describe('pages for grown-ups', () => {
     await expect(page.locator('main a[href="/privacy/"]')).toBeVisible();
   });
 
+  /* The summary above the fold (UX audit 2026-10-29, task 1.2): three claims, each one the privacy policy makes */
+  for (const [width, height] of [[320, 640], [1280, 720]] as const) {
+    test(`/parents/ at ${width}px opens with the three-point summary above the fold`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await page.goto('/parents/');
+      const facts = page.getByRole('list', { name: 'In short' });
+      await expect(facts.locator('li strong')).toHaveText(['No accounts needed', 'Under 13: nothing is posted online', 'Free, with no ads']);
+      const box = (await facts.locator('li strong').first().boundingBox())!;
+      expect(box.y + box.height).toBeLessThanOrEqual(height);
+      if (width >= 1280) {
+        const rows = new Set(await facts.locator('li').evaluateAll(els => els.map(e => Math.round(e.getBoundingClientRect().top))));
+        expect(rows.size, 'the three sit side by side on a wide screen').toBe(1);
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    });
+  }
+
+  test('/parents/ says World boards are off while this site serves no Firebase config', async ({ page }) => {
+    await page.goto('/parents/');
+    await expect(page.locator('main')).toContainText('World boards are switched off on this site for now, so today no score is sent anywhere.');
+  });
+
   test('/teachers/ promises no school plan', async ({ page }) => {
     await page.goto('/teachers/');
     await expect(page.locator('main')).toContainText('There is no school or classroom plan yet');
     await expect(page.locator('main')).toContainText('separate written agreement');
+    await expect(page.locator('main')).toContainText('There are no class accounts or class leaderboards');
+  });
+
+  test('/teachers/ has a 5-minute warm-up whose button opens the Arena', async ({ page }) => {
+    await page.goto('/teachers/');
+    const box = page.getByRole('region', { name: "A 5-minute warm-up for today's class" });
+    await expect(box).toContainText('the same ones for every Player in the same Mode today');
+    await expect(box).toContainText('With Calm on, the Arena starts on an untimed round: pick Daily challenge for the 60-second race.');
+    await box.getByRole('link', { name: 'Open the Arena' }).click();
+    await expect(page).toHaveURL(/\/play\/#\/arena$/);
+    await expect(page.locator('#view h1')).toHaveText('60 seconds. Same questions for everyone.');
   });
 
   test('/privacy/ and /terms/ show the policy with its last-updated line, and nothing meant only for the lawyer', async ({ page }) => {
@@ -121,6 +154,16 @@ test.describe('pages for grown-ups', () => {
     await expect(page.locator('main')).toContainText('privacy@learnvedicmath.com');
     await page.goto('/terms/');
     await expect(page.locator('main')).toContainText('Last updated:');
+  });
+
+  /* No draft placeholder is ever shown (UX audit 2026-10-29, task 1.1; build.py fails on one too) */
+  test('no grown-up page shows text in [square brackets] or a note meant for the owner', async ({ page }) => {
+    for (const url of ['/parents/', '/teachers/', '/privacy/', '/privacy/retention/', '/privacy/security/', '/terms/', '/licenses/']) {
+      await page.goto(url);
+      const text = await page.locator('body').innerText();
+      expect(text.match(/\[[^[\]]+\]/g), url).toBeNull();
+      expect(text, url).not.toMatch(/Open items|remove before publishing|to confirm/);
+    }
   });
 
   test('no page shows the Explore menu, a "Made by" credit or a link to sbmadhav.com', async ({ page }) => {
@@ -135,6 +178,18 @@ test.describe('pages for grown-ups', () => {
     // The site's own host is allowed: a pull request preview is served from <name>.sbmadhav.workers.dev
     const own = new URL(page.url()).host;
     expect([...hosts].filter(h => h !== own && /sbmadhav/.test(h))).toEqual([]);
+  });
+});
+
+/* The warm-up button on a device with no Player yet: the Mode picker comes first, then the Arena it asked for */
+test.describe('the teachers warm-up on a new device', () => {
+  test.use({ seedMode: null });
+  test('picks a Mode first, then opens the Arena', async ({ page }) => {
+    await page.goto('/teachers/');
+    await page.getByRole('link', { name: 'Open the Arena' }).click();
+    await expect(page.locator('.mode-pick .mode-card')).toHaveCount(3);
+    await page.locator('.mode-card[data-mode="challenger"]').click();
+    await expect(page.locator('#view h1')).toHaveText('60 seconds. Same questions for everyone.');
   });
 });
 
