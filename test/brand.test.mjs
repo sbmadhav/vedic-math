@@ -46,7 +46,13 @@ test('the landing hero is the Nikhilam Family, drawn with tokens, named for scre
   assert.ok(!/#[0-9a-f]{3,8}\b/i.test(hero[0]), 'no hex colours: tokens only, so both schemes work');
   for (const t of ['--sky', '--sun', '--coral', '--ink', '--on-accent']) assert.ok(hero[0].includes(`var(${t})`), `the hero uses ${t}`);
   for (const c of ['lv-f-one', 'lv-f-zero', 'lv-f-nine']) assert.ok(hero[0].includes(`class="${c}"`), `the hero draws ${c}`);
-  assert.ok(!/lv-bolt|--bolt-(body|accent|belly|screen|line)|aria-label="Bolt/.test(html), 'Bolt is not on the landing page');
+  /* Bolt is shown only in Inside the game (openspec change landing-interactive-hero), decorative, never in the hero */
+  const heroSection = html.match(/<section class="md-section lv-hero">[\s\S]*?<\/section>/)[0];
+  assert.ok(!/lv-bolt|--bolt-(body|accent|belly|line)|Bolt/.test(heroSection), 'Bolt is not in the landing hero');
+  assert.ok(!/aria-label="Bolt/.test(html), 'Bolt is never named as an image');
+  const outside = html.replace(/<section class="md-section lv-inside"[\s\S]*?<\/section>/, '');
+  assert.ok(!/lv-bolt|--bolt-screen/.test(outside), 'Bolt art is only in Inside the game');
+  assert.match(html, /<svg class="lv-feat-art lv-bolt-art" viewBox="[^"]+" aria-hidden="true"/, 'Bolt in Inside the game is decorative');
 });
 
 test('the app home hero draws the same Nikhilam Family as the landing page, and it holds still under no motion', async () => {
@@ -79,8 +85,8 @@ test('each Family helper is cut from the hero drawing (openspec family-helpers):
   }
 });
 
-test('every grown-up page is free of Bolt art: Bolt stays inside the game', () => {
-  for (const p of pages.filter(f => f.startsWith('site'))) {
+test('every grown-up page is free of Bolt art: Bolt stays inside the game (the landing page shows him only in Inside the game, above)', () => {
+  for (const p of pages.filter(f => f.startsWith('site') && f !== 'site/index.html')) {
     assert.ok(!/lv-bolt|--bolt-(body|accent|belly|screen|line)|Bolt, the friendly robot/.test(src(p)), p);
   }
 });

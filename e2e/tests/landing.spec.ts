@@ -15,7 +15,9 @@ test.describe('a first visit', () => {
     await expect(page).toHaveURL(/\/$/);
     await expect(page.locator('main h1')).toHaveText('Math in your head, the sutra way');
     await expect(page.getByRole('img', { name: 'The Nikhilam Family: the Devanagari digits one, zero and nine' })).toBeVisible();
-    await expect(page.locator('.lv-bolt')).toHaveCount(0);
+    // Bolt is inside the game section, never in the hero (landing-interactive-hero)
+    await expect(page.locator('section.lv-hero')).not.toContainText('Bolt');
+    await expect(page.locator('section.lv-hero .lv-bolt-art')).toHaveCount(0);
     for (const m of ['Explorer', 'Challenger', 'Pro']) await expect(page.locator('.lv-modes')).toContainText(m);
     await expect(page.locator('main')).toContainText("Bharati Krishna Tirtha's 1965 book");
     await expect(page.locator('main')).toContainText('They are not found in the Vedas.');
@@ -325,7 +327,7 @@ test.describe('the sutras and the method', () => {
     await expect(sec.locator('h2')).toHaveText('One short rule, one line of work');
     await expect(sec.locator('.md-lede')).toHaveText('A sutra is a short rule that turns a long sum into a step or two you can do in your head. Every trick here is built on one of them.');
     const ways = sec.locator('.lv-way');
-    await expect(ways.locator('figcaption')).toHaveText(['The school way', 'The sutra way: Nikhilaṃ']);
+    await expect(ways.locator('figcaption')).toHaveText(['The school way', 'The sutra way Multiply numbers near 10, 100 or 1000 Nikhilaṃ Navataścaramaṃ Daśataḥ']);
     await expect(ways.nth(0).locator('.lv-steps li')).toHaveText(['98 × 7 = 686', '98 × 90 = 8820', '686 + 8820 = 9506']);
     await expect(ways.nth(1).locator('.lv-steps li')).toHaveText(['98 is 2 below 100, and 97 is 3 below.', '98 − 3 = 95, and 2 × 3 = 06.', 'So the answer is 9506.']);
     const cards = sec.locator('a.lv-sutra');
@@ -334,7 +336,8 @@ test.describe('the sutras and the method', () => {
     await expect(cards.locator('.lv-sutra-m')).toHaveText(['By one more than the one before', 'All from 9 and the last from 10', 'Vertically and crosswise']);
     await expect(cards.locator('.lv-sutra-ex')).toHaveText(['65²: 6 × 7 = 42, then 25, so 4225', '1000 − 368: 9 − 3, 9 − 6, 10 − 8, so 632', '21 × 13: 2, then 2 × 3 + 1 × 1 = 7, then 3, so 273']);
     for (const [i, id] of ['s1', 's2', 's3'].entries()) await expect(cards.nth(i)).toHaveAttribute('href', `/play/#/sutras/${id}`);
-    await expect(cards.first()).toHaveAccessibleName(/Ekādhikena Pūrveṇa.*By one more than the one before.*See how it works/);
+    await expect(cards.locator('.lv-trick')).toHaveText(['Square numbers ending in 5', 'Subtract from 100, 1000, 10000', 'Multiply any two numbers in one line']);
+    await expect(cards.first()).toHaveAccessibleName(/Square numbers ending in 5.*Ekādhikena Pūrveṇa.*By one more than the one before.*See how it works/);
     const note = sec.locator('.lv-sutras-note');
     await expect(note).toContainText("The 16 sutras and 13 sub-sutras are from Bharati Krishna Tirtha's book Vedic Mathematics, published in 1965. They are not found in the Vedas; each one is ordinary algebra you can check.");
     await expect(note.getByRole('link', { name: 'See all 29 sutras' })).toHaveAttribute('href', '/play/#/sutras');
