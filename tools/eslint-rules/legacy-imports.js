@@ -1,5 +1,5 @@
 /* lvm/legacy-imports (openspec change react-typescript, task 1.7): the one rule the legacy js/ files are linted for,
-   the import rule python3 build.py enforces (CLAUDE.md): every static import or export ... from is a relative or
+   the import rule python3 build.py enforces (CODING_STANDARDS.md, Modules): every static import or export ... from is a relative or
    absolute path that stays inside /js/. A bare specifier would not be covered by the import map, a path outside /js/
    would not be pinned, and a full URL would run code from another site. Dynamic import() is not checked (runtime URLs
    such as the vendored Firebase SDK are allowed there, marked with a @vite-ignore comment). */

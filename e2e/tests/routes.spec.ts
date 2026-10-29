@@ -130,7 +130,7 @@ test('a sutra card flips, then Learn more opens the dialog and Back closes it', 
 
 test('an unknown route falls back to home', async ({ page }) => {
   await page.goto(`${APP}#/no-such-page`);
-  await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
+  await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
 });
 
 /* view-lifecycle spec: leaving a page stops everything it started */

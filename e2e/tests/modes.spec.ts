@@ -4,8 +4,8 @@ import { test, expect, APP } from './fixtures';
 
 const MODES = [
   { id: 'explorer', name: 'Explorer', heading: 'What do you want to play?', kid: true },
-  { id: 'challenger', name: 'Challenger', heading: 'Ready to get faster?', kid: true },
-  { id: 'pro', name: 'Pro', heading: 'Train your mental math', kid: false },
+  { id: 'challenger', name: 'Challenger', heading: 'Learn a sutra, then use it', kid: true },
+  { id: 'pro', name: 'Pro', heading: 'Mental math, the sutra way', kid: false },
 ] as const;
 
 test.describe('mode picker', () => {
@@ -116,7 +116,7 @@ test.describe('the Sky switch', () => {
     test.use({ seedMode: 'pro' });
     test('turning it on shows the Sky at #/, a second Player still gets the tile home, and turning it off restores it', async ({ page }) => {
       await page.goto(APP);
-      await expect(page.locator('h1.home-h')).toHaveText('Train your mental math');
+      await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
       await page.goto(`${APP}#/me`);
       const sw = page.getByRole('switch', { name: 'Try the new Sky' });
       await expect(sw).toHaveAttribute('aria-checked', 'false');
@@ -132,7 +132,7 @@ test.describe('the Sky switch', () => {
       await page.goto(`${APP}#/me`);
       await page.locator('#meAdd').click();
       await page.locator('.mode-card[data-mode="pro"]').click();
-      await expect(page.locator('h1.home-h')).toHaveText('Train your mental math');
+      await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
       // Back to the first Player: still the Sky; turning it off brings the tile home back
       await page.goto(`${APP}#/me`);
       await page.locator('[data-switch="p1"]').click();
@@ -142,7 +142,7 @@ test.describe('the Sky switch', () => {
       await page.getByRole('switch', { name: 'Try the new Sky' }).click();
       await expect(page.getByRole('switch', { name: 'Try the new Sky' })).toHaveAttribute('aria-checked', 'false');
       await page.goto(APP);
-      await expect(page.locator('h1.home-h')).toHaveText('Train your mental math');
+      await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
     });
   });
 });

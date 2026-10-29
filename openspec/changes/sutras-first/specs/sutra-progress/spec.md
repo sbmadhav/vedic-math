@@ -30,3 +30,7 @@ Challenger and Pro Home SHALL show a "Your sutras" card after the doors: the Sut
 #### Scenario: A new Challenger
 - **WHEN** a new Challenger Player opens Home
 - **THEN** "Your sutras" lists the Sutra of the next Star with "0 of n Stars lit" and a link to see all 29 sutras
+
+#### Scenario: A started Sutra is listed, a collected card alone is not
+- **WHEN** a Challenger who has practiced Square numbers ending in 5 without lighting a Star, and collected the Ūrdhva-Tiryagbhyām card without practicing any of its Tricks, opens Home
+- **THEN** "Your sutras" lists the Sutra of the next Star, then Ekādhikena Pūrveṇa with "0 of 9 Stars lit", and not Ūrdhva-Tiryagbhyām

@@ -50,7 +50,7 @@ test.describe('motion allowed', () => {
     test('Picking a Mode is not a win: no big confetti is drawn, and Home opens', async ({ page }) => {
       await watchFx(page);
       await freshVisit(page, 'challenger');
-      await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
+      await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
       expect((await fx(page)).confetti).toBe(0);
     });
 
@@ -61,7 +61,7 @@ test.describe('motion allowed', () => {
       const animated = (await fx(page)).animated;
       expect(animated.some(c => c.includes('mode-card'))).toBe(true); // the pop
       for (const digit of ['lv-f-one', 'lv-f-zero', 'lv-f-nine']) expect(animated.some(c => c.includes(digit))).toBe(true); // the cheer
-      await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
+      await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
       await expect(page.locator('.fx-sparkles')).toHaveCount(0);
     });
   });
@@ -165,7 +165,7 @@ for (const [name, use, key] of STILL) {
       test.use({ seedMode: null });
       test(`Picking a Mode with no motion (${name}): Pro Home opens at once, with no sparkles and no confetti`, async ({ page }) => {
         await freshVisit(page, 'pro');
-        await expect(page.locator('h1.home-h')).toHaveText('Train your mental math');
+        await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
         const seen = await fx(page);
         expect([seen.confetti, seen.sparkles]).toEqual([0, 0]);
       });

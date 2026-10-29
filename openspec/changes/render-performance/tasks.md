@@ -1,6 +1,6 @@
 # Tasks
 
-Re-planned 2026-10-21 for React Router framework mode with server rendering (`react-typescript` task 12.1). Build order (`react-typescript` design D3): after `react-typescript` is archived, then `placement` and `age-bands`, this change, then `duel-online`, Live sessions and `gpu-effects`. Tasks marked **[OWNER]** need the owner. "Verify:" says how a task is checked. Every code task keeps `pnpm typecheck`, `pnpm lint`, `pnpm test`, `python3 build.py --out _site` (with its budget gates) and the Playwright suite green, and updates the matching e2e spec in the same commit (CLAUDE.md).
+Re-planned 2026-10-21 for React Router framework mode with server rendering (`react-typescript` task 12.1). Build order (`react-typescript` design D3): after `react-typescript` is archived, then `placement` and `age-bands`, this change, then `duel-online`, Live sessions and `gpu-effects`. Tasks marked **[OWNER]** need the owner. "Verify:" says how a task is checked. Every code task keeps `pnpm typecheck`, `pnpm lint`, `pnpm test`, `python3 build.py --out _site` (with its budget gates) and the Playwright suite green, and updates the matching e2e spec in the same commit (CODING_STANDARDS.md).
 
 ## 0. Before building
 
@@ -23,7 +23,7 @@ Re-planned 2026-10-21 for React Router framework mode with server rendering (`re
 - [ ] 2.2 `tools/lighthouserc.json` absolute assertions (FCP < 1500 ms, LCP < 2500 ms, CLS <= 0.1, TBT <= 200 ms, TTFB < 800 ms on server-rendered pages, median of 5), each with a `failing` flag per page, visit and metric, false where the start measurement misses it, switched on only when both perf measurements meet it by the margin (100 ms on paints and time to first byte, 25 ms on blocking time, layout shift at 0.08 or less; D2 item 4); `tools/perf-compare.ts` applies them next to `react-typescript`'s tolerances and lists missed limits in the comment. Verify: Vitest for `tools/perf-compare.ts`: a failing assertion missed fails, a reported one missed does not, and both appear in the table; a limit met in one measurement only, or by less than the tolerance, is not switched on; the repeat visit switching on leaves the first visit reported; a deliberately slowed preview (a 2 s blocking script on a throwaway branch) fails the check on a page whose assertion is failing.
 - [ ] 2.3 The ratchet: `tools/perf-compare.ts` prints, for every number a pull request improves beyond its tolerance, the line to record in `docs/perf/baseline.json`; `tools/budget.ts` does the same for the first-load total. Verify: Vitest: an improved median produces the line; a pull request that improves and does not record it gets a warning in the comment.
 - [ ] 2.4 The perf job in `preview.yml` compares `budget.json` with `main`'s and comments growth over 5 KB of JS or CSS before play (old size, new size, the file that grew); `e2e.yml`'s production run opens an issue on a missed failing limit. Pin every action by SHA. Verify: a test pull request adding 7 KB to the root route gets the comment; the job is a required check.
-- [ ] 2.5 Update `CLAUDE.md` (the absolute budgets, the ratchet, how to read the perf comment, how a budget may change) and `GLOSSARY.md` (Performance budget: the no-regression ceiling and the ratchet next to the M5 limits).
+- [ ] 2.5 Update `docs/agent/build-and-checks.md` (the absolute budgets, the ratchet, how to read the perf comment, how a budget may change) and `GLOSSARY.md` (Performance budget: the no-regression ceiling and the ratchet next to the M5 limits).
 
 ## 3. Compression and caching (D3)
 
@@ -66,5 +66,5 @@ Re-planned 2026-10-21 for React Router framework mode with server rendering (`re
 
 - [ ] 9.1 Re-run the full baseline (1.2, 1.3) and add an "after" section to `docs/perf/baseline.md` with the change in each number; record the field numbers (1.5) again after a week.
 - [ ] 9.2 Every absolute assertion and byte line fails pull requests; none is still reported only. For any that cannot be met, ask the owner (open question 4) before closing. Verify: `tools/lighthouserc.json` has no `failing: false`, and `tools/budget.ts` prints no line as missed.
-- [ ] 9.3 Update `CLAUDE.md` (the hooks `useIdle` and `useInView`, `AppLink`, the core precache table in `app/src/routes.ts`, `tools/subset-fonts.py`) and `_config.yml` `exclude:` for any new repo-only file.
+- [ ] 9.3 Update `CODING_STANDARDS.md` (the hooks `useIdle` and `useInView`, `AppLink`), `docs/agent/offline.md` (the core precache table in `app/src/routes.ts`), `docs/agent/build-and-checks.md` (`tools/subset-fonts.py`) and `_config.yml` `exclude:` for any new repo-only file.
 - [ ] 9.4 `openspec validate render-performance --strict`; after release and one week of field data with no regression, archive with `/opsx:archive`.

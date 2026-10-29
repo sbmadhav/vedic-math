@@ -43,7 +43,7 @@ test.describe('the Sky on', () => {
       localStorage.setItem('vm.players', JSON.stringify(v));
     });
     await page.reload();
-    await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
+    await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
     await expect(page.locator('.sky')).toHaveCount(0);
   });
 });
