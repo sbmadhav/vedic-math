@@ -55,4 +55,17 @@ Trick top-up, 2026-10-27: every approved channel searched again for the six Tric
 
 Videos on channels not yet approved that pass the other checks are listed for the owner in the top-up pull request: 98thPercentile (`by9s`), Bu-Math Explorations (`osculator`, for 13 only), Scholarsight (`zero-sum`) and MathsCore (`add-sub`, `ratio-zero`).
 
+New channels, 2026-10-29 (the owner's decision on that list). The 20 channels the owner approved first are the ones batch 1 (#31) drew from; these change that list:
+- **98thPercentile, approved.** Live online classes for kindergarten to grade 12; short whiteboard lessons with every product written out. Sample: `PR2SGZHOaps`.
+- **MathsCore, approved video by video only.** Its Vedic Math Sutra series is uneven: the Sutra 5 video fails the bar, and so does the Sutra 7 video (below). Every other MathsCore video needs the owner's sign-off, as an unapproved channel's would.
+- **Scholarsight, declined:** `i6agwNlm1l8` (for `zero-sum`) has a description that calls the method an "ancient sutra", the reason TED-Ed was dropped.
+- **Bu-Math Explorations, declined:** `TxWmcjIB8uA` (for `osculator`) comes from a channel of 396 subscribers with machine-sounding narration, so no track record.
+
+The three videos the owner approved were checked again the same way (oEmbed 200; length, captions and made-for-kids from the watch page; embedded playback at the site's origin; captions read; the worked examples read off the frames). One went in as approved, one was swapped for the same lesson from the same channel, and one was dropped:
+- `ratio-zero`: MathsCore's Sutra 6 (`LmX9HeJzO_E`, 5:10) goes in for Pro. When the y numbers are in the ratio of the right-hand sides, x is 0: 2x + 4y = 8 and 3x + 8y = 16 give y = 2, and 12x + 78y = 12 and 16x + 96y = 16 give x = 1. (The practice pairs in its description are each one line written twice; the video does not use them.)
+- `by9s`: 98thPercentile's `K1BRRJK2Wx4` (3:20, made for kids) ends with its outro before it puts the two parts together, so it writes 7 and 2, 75 and 24, 144 and 855 but never a product (72, 7524 or 144855). The channel's full upload of the same lesson, `PR2SGZHOaps` (4:23, not made for kids), finishes it: 99 × 76 = 7524 and 999 × 145 = 144855. That one goes in for Challenger. Its 10:00 lesson (`o0K8ej61AFk`) was left out: the narration slips (it says 99 take away 15 the wrong way round, and switches 99 and 999 mid-example) and its second half teaches a different method.
+- `add-sub`: MathsCore's Sutra 7 (`OfmlkFSzxtU`, 5:46) was dropped. Its final answers are right (x = 1, y = 3; x = 6, y = 2), but its first example's slide subtracts (x + 3y) − (3x + y) and writes −2x − 2y = 4 (it is −2x + 2y = 4), then takes out −2 to get x − y = −2, which does not follow from the line above.
+
+What the six Tricks have now: `duplex` (tecmath), `by9s` (98thPercentile, beside the nines table Short) and `ratio-zero` (MathsCore) have a lesson; `osculator`, `zero-sum` and `add-sub` still have none that meets the bar.
+
 `hour-half-hour-song` (`MaVgBjVh4b8`) failed the daily check once on 2026-10-27 with a 10 second load timeout, not a YouTube error. On the same day oEmbed answered 200, the watch page said it plays embedded, and the live check passed 3 times in 3, so it stays.
