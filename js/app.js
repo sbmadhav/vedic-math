@@ -37,6 +37,7 @@ import { PLAY, SECTIONS, playFor, playIn, playOpen } from './play/catalog.js';
 import { ICONS as PLAY_ICONS } from './play/icons.js';
 import { GROUPS, sectionsFor, tryFor, say, resolveTour, tourDue, tourState, setTourState } from './guide.js';
 import { sectionLines, buildIndex, rank, countOf, kindLabel } from './find.js';
+import { setOf as navSetOf, navHTML } from './nav.js';
 import { artFor } from './guide-art.js';
 import { guideCounts, rootNote } from './explain-lines.js';
 import { listenBtn, wireListen } from './listen.js';
@@ -102,6 +103,7 @@ const routes = [
   [/^#\/skill\/([\w-]+)$/, (m, ctx) => skillView(m[1], ctx)],
   [/^#\/mix\/(\w+)$/, (m, ctx) => mixView(m[1], false, ctx)],
   [/^#\/run\/(\w+)$/, (m, ctx) => mixView(m[1], true, ctx)],
+  [/^#\/arcade$/, (m, ctx) => arcadeView(ctx)],
   [/^#\/(dojo|tricks)$/, (m, ctx) => dojoView(ctx)],
   [/^#\/katas\/([\w-]+)$/, (m, ctx) => katasView(m[1], ctx)],
   [/^#\/kata\/([\w-]+)\/(\d+)$/, (m, ctx) => kataView(m[1], +m[2], ctx)],
@@ -112,7 +114,7 @@ const routes = [
   [/^#\/challenge\/(\d+)$/, (m, ctx) => challengeView(+m[1], ctx)],
   [/^#\/sutras$/, (m, ctx) => sutrasView(ctx)],
   /* A Deep dive reached from another page of the app (a Sutra tag) closes back to that page; from outside, to the Sutras page */
-  [/^#\/sutras\/(\w+)$/, (m, ctx) => { const inApp = !!render.from && render.from !== location.hash; sutrasView(ctx); openSutra(m[1], inApp); }],
+  [/^#\/sutras\/(\w+)$/, (m, ctx) => { const inApp = !!render.from && render.from !== location.hash && !/^#\/star\//.test(render.from); sutrasView(ctx); openSutra(m[1], inApp); }], /* back from a Star its Try it yourself started: closing goes to the Sutras page, never back into the round */
   [/^#\/arena$/, (m, ctx) => arenaView(ctx)],
   [/^#\/duel$/, () => { location.replace('#/arena/party'); }], /* Duel became Party Mode (openspec play-experiences) */
   [/^#\/games$/, (m, ctx) => gamesView(ctx)],
@@ -164,9 +166,9 @@ function render() {
   const asSky = !picker && /^#?\/?$/.test(h) && SKY.skyOn(store.player()); /* home showed the Sky: the route view is sky */
   setBgLevel(levelFor(h, { picker, sky: asSky })); /* the full background sky on the Mode picker and home, a quiet one elsewhere */
   if ((location.hash || '#/') === h) metrics.view(h, knownId, picker, asSky); /* one anonymous route view (analytics spec); a view that redirected is counted when its target renders */
-  const lines = Object.fromEntries(sectionLines(fx.mode()).map(l => [l.href, l.plain])); /* one plain line per menu item (openspec site-header) */
-  document.querySelectorAll('.mq-nav a[href]').forEach(a => { a.setAttribute('aria-current', String(h === a.getAttribute('href') || (!!a.dataset.match && new RegExp(a.dataset.match).test(h)))); const line = lines[a.getAttribute('href')]; if (line) a.title = line; });
+  syncNav(h);
   chip();
+  if (navSay) { const words = navSay; navSay = null; fx.speak(words); } /* an Explorer tab's name, after the view it opened has drawn (render stops every voice first) */
   /* Focus the new view's heading, unless the view already put focus somewhere in itself (the Sky, back from a Star) */
   const head = view.querySelector('h1, h2'); if (head) { head.setAttribute('tabindex', '-1'); if (render.n++ && !view.contains(document.activeElement)) head.focus({ preventScroll: true }); }
   if (render.n > 1) window.scrollTo({ top: 0 });
@@ -174,12 +176,33 @@ function render() {
 render.n = 0;
 window.addEventListener('hashchange', render);
 
+/* ---------- The menu by Mode (openspec change play-nav-by-mode, js/nav.js) ----------
+   Challenger and Pro: Home, Learn, Arcade, Watch and the Find trigger; Explorer: Play, Learn and Me as big picture tabs.
+   The page holds the Challenger and Pro links as its first paint; the Mode's set is drawn when it differs. Each link
+   is marked current on the routes its zone holds and carries its section's one plain line as its tooltip. */
+const navEl = $('.mq-nav');
+const MAC = (() => { try { return /Mac|iP(hone|ad|od)/.test(navigator.platform || navigator.userAgent || ''); } catch (e) { return false; } })();
+let navSay = null; /* words an Explorer tab says once the view it opens has drawn */
+function syncNav(h = location.hash || '#/') {
+  if (!navEl) return;
+  const m = fx.mode(), set = navSetOf(m);
+  if (navEl.dataset.set !== set) { if (navEl.dataset.set || set !== 'big') navEl.innerHTML = navHTML(set); navEl.dataset.set = set; navEl.classList.toggle('mq-nav--x', set === 'explorer'); }
+  const kbd = navEl.querySelector('.nav-kbd'); if (kbd && MAC) kbd.textContent = '\u2318 K';
+  const lines = Object.fromEntries(sectionLines(m).map(l => [l.href, l.plain]));
+  navEl.querySelectorAll('a[href]').forEach(a => { a.setAttribute('aria-current', String(h === a.getAttribute('href') || (!!a.dataset.match && new RegExp(a.dataset.match).test(h)))); const line = lines[a.getAttribute('href')]; if (line) a.title = line; });
+}
+/* An Explorer tab says its name when Read aloud is on: after the route it opens has drawn, or at once on its own page */
+if (navEl) on(navEl, 'click', e => {
+  const a = e.target.closest('a[data-say]'); if (!a || !fx.voiceOn()) return;
+  if ((location.hash || '#/') === a.getAttribute('href')) fx.speak(a.dataset.say); else navSay = a.dataset.say;
+}, boot.signal);
+
 /* Player chip in the nav: avatar and the bar to the next Title (no number) */
 function chip() {
   const el = $('#mqChip'); if (!el) return; const p = store.player(), T = gm.titleInfo();
   el.innerHTML = `<a href="#/me" class="mq-chip">${avatar(p, 30)}<span class="md-sr-only">${esc(p.name)}, ${T.title}</span><span class="mq-chip-t"><span class="mq-sparkbar"><i style="width:${pct(T.pct)}%"></i></span></span></a>`;
 }
-store.on(type => { if (type === 'sparks' || type === 'player') chip(); });
+store.on(type => { if (type === 'sparks' || type === 'player') chip(); if (type === 'player') syncNav(); });
 /* The bar to the next Title, as a progressbar with its Sparks in words */
 function titleBar(T, cls = 'mq-sparkbar mq-sparkbar--big') {
   const text = T.next ? `${T.into} of ${T.need} Sparks to ${T.next}` : 'Top Title reached';
@@ -191,16 +214,17 @@ function modePicker({ signal } = {}) {
   document.title = `Learn Vedic Math`;
   const p = store.player();
   /* The hero says as little as it can (openspec try-trick-in-modes): one headline, one short line and the Nikhilam
-     Family (js/family.js). Then the Mode cards, each with its own Try a trick under it: no Mode is guessed. */
+     Family (js/family.js). Then one question, who is playing, with the three Mode cards as its only buttons (openspec
+     change play-nav-by-mode: one step at a time; each Mode's Try a trick waits on its Home). No Mode is guessed. */
   view.innerHTML = `<section class="md-section mq-hero"><div class="md-wrap">
     <div class="mq-hero-in"><div class="mq-hero-t">
       <h1 class="md-heading">Fast, fun math for <span class="hl-word">every</span> brain</h1>
       <p class="md-lede mq-hero-sub">One trick, two minutes, no sign-up.</p>
     </div>${FAMILY_SVG}</div>
     <h2 class="mq-h3 pick-h">Pick who is playing</h2>
-    <div class="mode-pick">${Object.entries(fx.MODES).map(([id, m]) => `<div class="mode-opt"><button class="mode-card mode-card--${m.color}" data-mode="${id}"><span class="mode-ic" aria-hidden="true">${modeIcon(id)}</span><b>${m.name}</b><small>${m.ages}</small><span>${m.blurb}</span></button><button type="button" class="md-btn md-btn--primary mode-try" data-try="${id}" aria-label="Try a trick as ${m.name}">Try a trick<svg class="mode-try-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>`).join('')}</div>
+    <div class="mode-pick">${Object.entries(fx.MODES).map(([id, m]) => `<button class="mode-card mode-card--${m.color}" data-mode="${id}"><span class="mode-ic" aria-hidden="true">${modeIcon(id)}</span><b>${m.name}</b><small>${m.ages}</small><span>${m.blurb}</span><span class="mode-go" aria-hidden="true">Start as ${m.name}<svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>`).join('')}</div>
     <p class="mq-note">Playing as <b>${esc(p.name)}</b>. Nicknames are made up for you, so no real names are ever needed. You can change who is playing any time.</p>
-    <p class="mq-note gd-pickhelp">Not sure where to start? <a href="#/guide">See how it works</a> or <a href="#/find">find something by name</a>.</p>
+    <p class="mq-note gd-pickhelp">Not sure which? <a href="#/guide">See how it works</a>.</p>
   </div></section>`;
   /* Picking a Mode is an everyday moment, not a win (openspec celebrations): the card pops, a few sparkles fly and the
      family cheers, then Home opens. Under no motion Home opens at once. */
@@ -213,17 +237,6 @@ function modePicker({ signal } = {}) {
     fx.pop(b, signal); fx.sparkle(b, { n: 10 }); fx.cheer(view.querySelector('.lv-family'), signal);
     later(go, 560, signal);
   }, signal));
-  /* A card's Try a trick (openspec try-trick-in-modes): picks that Mode, as its card does, and opens that Mode's
-     Try a trick at #/try */
-  view.querySelectorAll('[data-try]').forEach(b => on(b, 'click', () => {
-    if (picked) return; picked = true;
-    fx.setMode(b.dataset.try); gm.startDay(); openTry(b.dataset.try);
-  }, signal));
-}
-/* Opens the Try a trick of the Player's Mode, counted once (math/try/start and math/try/mode/<mode>) */
-function openTry(mode) {
-  metrics.tryStart(mode); modePicker.pending = null;
-  if (location.hash === '#/try') render(); else location.hash = '#/try';
 }
 /* Where a Mode card goes: the page the visitor asked for before picking (a Find result, a link), when it is a route
    in this app the picked Mode can open (one of its Find entries), else Home. Kept in memory only, never stored. */
@@ -268,7 +281,8 @@ function home(ctx = {}, { tiles = false } = {}) {
       ${tile('#/skill/k-shapes', 'Shape detective', 'Name that shape', 'teal', 'shape')}
       ${tile('#/arena', 'Race the clock', 'Tap fast!', 'coral', 'bolt')}
     </div>${tryCard(m)}
-    <p class="mq-cta"><button class="md-btn" id="voiceBtn" aria-pressed="${fx.voiceOn()}">${icon('speaker')} Read questions aloud: ${fx.voiceOn() ? 'on' : 'off'}</button> <a class="md-btn" href="#/watch">${icon('play')} Watch and sing</a></p>`;
+    <p class="mq-cta"><button class="md-btn" id="voiceBtn" aria-pressed="${fx.voiceOn()}">${icon('speaker')} Read questions aloud: ${fx.voiceOn() ? 'on' : 'off'}</button> <a class="md-btn" href="#/watch">${icon('play')} Watch and sing</a></p>
+    <nav class="home-places" aria-label="More places"><span>More places:</span> <a class="md-chip" href="#/games">All games</a> <a class="md-chip" href="#/sutras">The sutras</a> <a class="md-chip" href="#/guide">How to play</a> <a class="md-chip" href="#/find">Find</a></nav>`; /* Explorer's menu has three tabs (openspec change play-nav-by-mode), so the places it left out are a tap away here */
   } else {
     /* Three doors first (openspec first-visit), each with one plain line that says what its word means; the rest of the
        tiles wait under More ways to play. */
@@ -388,10 +402,18 @@ function learnView() {
     <span class="md-tag md-tag--sky">Skill map</span>
     <h1 class="md-heading">Pick a level</h1>
     <p class="md-lede">${SKILLS.length - TRICKS.length} skills from counting to calculus. Each has a picture-first lesson, endless practice and hints that teach the strategy. Fill every ring to level up.</p>
+    ${learnSutras()}
     <h2 class="mq-strand">Suggested for ${m.name}</h2><div class="mq-grades">${mine.map(card).join('')}</div>
     <h2 class="mq-strand">Speed tricks</h2><div class="mq-grades">${card(gradeOf('V'))}</div>
     <details class="mq-more"><summary>All other levels</summary><div class="mq-grades">${rest.map(card).join('')}</div></details>
   </div></section>`;
+}
+
+/* Learn holds the Sutras too (openspec change play-nav-by-mode): one card to the 29 Sutras with the Player's cards
+   collected, above the levels, so the menu needs no Sutras tab and the Sutras still come first */
+function learnSutras() {
+  const got = ALL_SUTRAS.filter(gm.collectedCard).length, ex = fx.mode() === 'explorer';
+  return `<a class="md-card door door--plum learn-sutras" href="#/sutras"><span class="play-ic" aria-hidden="true">${icon('cards')}</span><b>${ex ? 'The sutras: tiny rules with long names' : 'Start with the sutras'}</b><span class="door-line">${esc(sectionLines(fx.mode()).find(l => l.href === '#/sutras').plain)}.</span><small class="mq-small">${got} of ${ALL_SUTRAS.length} cards collected</small></a>`;
 }
 
 function gradeView(g, { signal } = {}) {
@@ -431,12 +453,20 @@ function skillView(id, { signal } = {}) {
         <h2 class="mq-h3">How it works</h2>
         <ol class="mq-method">${(trick ? [trick.when] : s.method).map(m => `<li>${m}</li>`).join('')}</ol>
         ${trick ? starsHTML(trick) + animatorHTML(trick) : `<div class="mq-example" id="example"></div>`}
+        <p class="lesson-next"><button type="button" class="md-btn" id="practiceNow">${icon('bolt')} ${fx.t({ explorer: 'Now you try', challenger: 'Practice it now', pro: 'Practice it now' })}</button></p>
         ${videosFor(s, trick)}
       </article>
       <div class="mq-practice md-card" id="practice"></div>
     </div>
   </div></section>`;
   if (trick) mountAnimator(trick, signal); else showExample(s);
+  /* The lesson ends in its practice (openspec change play-nav-by-mode, audit task 3.4): Practice it now brings this
+     Skill's own practice into view and puts the answer in reach */
+  if (signal) on($('#practiceNow'), 'click', () => {
+    const box = $('#practice'); if (!box) return;
+    box.scrollIntoView({ block: 'start', behavior: fx.noMotion() ? 'auto' : 'smooth' });
+    const f = box.querySelector('input:not([type="hidden"]), .pr-choice, button'); if (f) f.focus({ preventScroll: true });
+  }, signal);
   if (trick && signal) wireSay(view, signal);
   fillWatch($('[data-watch-for]'), s, trick, signal);
   /* A Word problem Skill waits the few milliseconds its stories take to load (openspec word-problems), so its first
@@ -588,6 +618,31 @@ function mixView(g, isRun = false, { signal } = {}) {
   }, signal });
 }
 
+/* ---------- Arcade (openspec change play-nav-by-mode): the menu's zone for playing ----------
+   One page with a card for each place to play, each with its section's plain line: the Dojo (solo practice of the
+   Tricks, not in Explorer), the Arena (the daily timed race) and Games, then Party Mode and the challenge tower. The
+   places keep their own routes; this page only reaches them. */
+function arcadeView() {
+  document.title = `Arcade · Learn Vedic Math`;
+  const m = fx.mode() || 'challenger', ex = m === 'explorer', lines = Object.fromEntries(sectionLines(m).map(l => [l.href, l.plain]));
+  const bp = gm.beltProgress(), belts = bp.filter(b => b.earned).length;
+  const door = (href, title, line, color, ic, extra = '') => `<a class="md-card door door--${color}" href="${href}"><span class="play-ic" aria-hidden="true">${icon(ic)}</span><b>${title}</b><span class="door-line">${line}</span>${extra}</a>`;
+  const doors = [
+    ex ? '' : door('#/dojo', fx.t({ challenger: 'Dojo: solo practice', pro: 'Dojo: solo practice' }), lines['#/dojo'], 'plum', 'belt', `<small class="mq-small">${belts} of ${BELTS.length} belts · ${litStars()} of ${SKY.PATH.length} Stars lit</small>`),
+    door('#/arena', fx.t({ explorer: 'Race the clock', challenger: 'Arena: the daily race', pro: 'Arena: the daily race' }), lines['#/arena'], 'coral', 'trophy'),
+    door('#/games', fx.t({ explorer: 'Games', challenger: 'Games', pro: 'Games and puzzles' }), lines['#/games'], 'teal', 'game')
+  ].join('');
+  const more = [tile('#/arena/party', 'Party Mode', 'Two to four players, one screen', 'sky', 'duel'), ex ? '' : tile('#/tower', 'Challenge tower', `${LV.CHALLENGE_COUNT.toLocaleString('en-US')} Arena challenges`, 'sun', 'trophy')].join('');
+  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
+    ${crumbs([null, 'Arcade'])}
+    <span class="md-tag md-tag--coral">Arcade</span>
+    <h1 class="md-heading">${fx.t({ explorer: 'What do you want to play?', challenger: 'Pick how to play', pro: 'Practice, race or play' })}</h1>
+    <p class="md-lede">${fx.t({ explorer: 'Race the clock or play a game.', challenger: 'Practice a trick on your own, race everyone in today\'s Arena, or play a game. Every right answer earns Sparks.', pro: 'Solo practice of the Tricks, the daily sixty-second race with its leaderboard, and number games. Every right answer earns Sparks.' })}</p>
+    <div class="home-doors arcade-doors">${doors}</div>
+    <h2 class="mq-strand">More ways to play</h2><div class="play-grid">${more}</div>
+  </div></section>`;
+}
+
 /* ---------- Dojo: belts of speed tricks ---------- */
 function dojoView() {
   document.title = `Vedic Dojo · Learn Vedic Math`;
@@ -718,7 +773,7 @@ function starView(trick, n, { signal } = {}, back = null) {
   const from = render.from || '';
   /* For a Player whose home is the Sky, Back always goes to the Sky (which then focuses this Star) */
   /* Opened from Home or from the end of a Try a trick (openspec first-visit): Back goes home, not to the Dojo's long map */
-  back = back || (SKY.skyOn(store.player()) ? { href: '#/', label: 'Back to the Sky' } : from === '#/skill/v-' + trick ? { href: from, label: `Back to ${t.title}` } : (/^#?\/?$/.test(from) && from !== '') || from === '#/try' ? { href: '#/', label: 'Back home' } : { href: '#/dojo', label: 'Back to the Dojo' });
+  back = back || (/^#\/sutras\/\w+$/.test(from) ? { href: from, label: 'Back to the sutra' } : SKY.skyOn(store.player()) ? { href: '#/', label: 'Back to the Sky' } : from === '#/skill/v-' + trick ? { href: from, label: `Back to ${t.title}` } : (/^#?\/?$/.test(from) && from !== '') || from === '#/try' ? { href: '#/', label: 'Back home' } : { href: '#/dojo', label: 'Back to the Dojo' });
   document.title = `Star ${n}: ${t.title} · Learn Vedic Math`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs(['#/dojo', 'Dojo'], ['#/skill/v-' + trick, t.title], [null, `Star ${n}`])}</div></section>`;
@@ -945,11 +1000,18 @@ function sutraHTML(c) {
       <ol class="sd-ex" aria-labelledby="sdExH">${d.examples.map(([q, a], k) => `<li><details${k ? '' : ' open'}><summary><span class="sd-exn">Example ${k + 1} of ${d.examples.length}</span><b>${q}</b></summary><p>${a}</p></details></li>`).join('')}</ol>
       ${slokasFor(c.id).map(v => `<div class="sd-verse"><h3>In Sanskrit verse: ${esc(v.title)}</h3><p class="verse-deva" lang="sa">${esc(v.deva).split('\n').join('<br>')}</p><p class="verse-iast" lang="sa-Latn">${esc(v.iast).split('\n').join('<br>')}</p><p>${esc(v.meaning)}</p><p class="mq-small">${esc(v.note)} More verses are at the end of the Sutras page.</p></div>`).join('')}
       <div class="sd-h"><h3>Where it is used</h3>${listenBtn(`sutra:${c.id}:uses`, 'where it is used')}</div><p class="sd-uses">${d.uses.map(u => `<span>${u}</span>`).join('')}</p>
-      ${tricks.length ? `<h3>Try it yourself</h3><p class="mq-small sd-prog">${progressLine(prog, mode)}</p><ul class="sd-try">${tricks.map(t => `<li><a class="md-btn md-btn--sm md-btn--primary" href="#/skill/v-${t.id}">${icon('bolt')} ${t.title}</a><small>${trickLine(prog.each.find(e => e.id === t.id), mode)}</small></li>`).join('')}</ul>` : ''}
+      ${tricks.length ? `<h3>Try it yourself</h3><p class="mq-small sd-prog">${progressLine(prog, mode)}</p><ul class="sd-try">${tricks.map(t => `<li><a class="md-btn md-btn--sm md-btn--primary" href="${practiceHref(t.id, mode)}">${icon('bolt')} ${t.title}</a><small>${trickLine(prog.each.find(e => e.id === t.id), mode)}</small><a class="sd-how" href="#/skill/v-${t.id}">See how the trick works</a></li>`).join('')}</ul>` : ''}
       ${reads.length ? `<h3>Learn more</h3><div class="rel-links">${reads.join('')}</div>` : ''}
     </div>
   </div>
   <footer class="sd-foot">${prev ? `<a class="md-btn md-btn--sm sd-prev" href="#/sutras/${prev.id}" data-swap aria-label="Previous: ${esc(prev.name)}">&larr; <span lang="sa-Latn">${prev.name}</span></a>` : '<span></span>'}${next ? `<a class="md-btn md-btn--sm sd-next" href="#/sutras/${next.id}" data-swap aria-label="Next: ${esc(next.name)}"><span lang="sa-Latn">${next.name}</span> &rarr;</a>` : ''}</footer>`;
+}
+/* A Deep dive's Try it yourself starts a practice round on that exact Trick (openspec change play-nav-by-mode, audit
+   task 3.4): the Trick's first Star not yet lit in Challenger and Pro, else its page, whose practice starts at once
+   (Explorer, which has no Stars, and a Trick with every Star lit) */
+function practiceHref(trick, mode) {
+  const n = mode === 'explorer' ? 0 : [1, 2, 3].find(k => store.starState(trick, k) !== 'lit');
+  return n ? `#/star/${trick}/${n}` : `#/skill/v-${trick}`;
 }
 function openSutra(id, fromPage) {
   const c = ALL_SUTRAS.find(x => x.id === id); if (!c) return;
@@ -1585,11 +1647,13 @@ function findView({ signal } = {}) {
   const input = $('#findIn'), out = $('#findOut'), count = $('#findCount');
   let index = buildIndex({ mode: m, counts: guideCounts(), videos: findVideos || [] });
   if (!findVideos) W.loadVideos().then(({ VIDEOS }) => { if (signal.aborted) return; findVideos = VIDEOS; index = buildIndex({ mode: m, counts: guideCounts(), videos: VIDEOS }); if (input.value.trim()) draw(); }).catch(() => {});
+  /* Find is the menu's help too (openspec change play-nav-by-mode): with the box empty, the guide and the tour come first */
+  const help = () => `<div class="md-card find-help"><p class="door-acts"><b>${ex ? 'How does it work?' : 'Need help?'}</b> <a class="md-btn md-btn--sm" href="#/guide">${ex ? 'How to play' : 'Read the guide'}</a>${fx.mode() ? ` <button type="button" class="md-btn md-btn--sm" data-find-tour>${ex ? 'Show me around' : 'Take the tour'}</button>` : ''}</p></div>`;
   const browse = () => `<h2 class="mq-strand">${ex ? 'Places to go' : 'Browse'}</h2><ul class="find-list">${sectionLines(m).filter(l => l.href !== '#/find').map(l => `<li><a class="find-hit" href="${l.href}"><b>${l.label}</b><small>${l.plain}</small></a></li>`).join('')}</ul>`;
   const hitHTML = e => `<li>${e.yt ? `<button type="button" class="find-hit plays" data-watch="${esc(e.yt)}"><b>${esc(e.title)}</b><small>${esc(e.sub)}</small></button>` : `<a class="find-hit" href="${esc(e.href)}"><b>${esc(e.title)}</b><small>${esc(e.sub)}</small></a>`}</li>`;
   function draw() {
     const q = input.value.trim();
-    if (!q) { count.textContent = ''; out.innerHTML = browse(); return; }
+    if (!q) { count.textContent = ''; out.innerHTML = help() + browse(); return; }
     const groups = rank(index, q), n = countOf(groups);
     count.textContent = n ? `${n} ${n === 1 ? 'result' : 'results'}` : 'Nothing matched';
     out.innerHTML = n ? groups.map(g => `<section class="find-group${g.kind === 'top' ? ' find-group--top' : ''}"><h2 class="mq-strand">${kindLabel(g.kind, m)}</h2><ul class="find-list">${g.items.map(hitHTML).join('')}</ul></section>`).join('')
@@ -1601,15 +1665,17 @@ function findView({ signal } = {}) {
     if (e.key === 'ArrowDown') { const first = out.querySelector('.find-hit'); if (first) { e.preventDefault(); first.focus(); } }
     else if (e.key === 'Escape' && input.value) { e.preventDefault(); input.value = ''; draw(); }
   }, signal);
-  on(out, 'click', e => { if (e.target.closest('.find-group .find-hit')) metrics.findGo(); }, signal); /* a ranked result only, never the browse list; a fixed event: never the text or the result */
+  on(out, 'click', e => { if (e.target.closest('.find-group .find-hit')) metrics.findGo(); if (e.target.closest('[data-find-tour]')) askTour(); }, signal); /* a ranked result only, never the browse list; a fixed event: never the text or the result */
   draw();
   input.focus({ preventScroll: true });
 }
-/* The / key opens Find from any page (openspec find), unless the Player is typing or a dialog or menu is open */
+/* The / key opens Find from any page (openspec find), unless the Player is typing or a dialog or menu is open; Ctrl K
+   (Cmd K on a Mac) opens it too, even from a text field (openspec change play-nav-by-mode), but not over a dialog */
 document.addEventListener('keydown', e => {
-  if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = String(e.key || '').toLowerCase(), combo = k === 'k' && (e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey;
+  if (!combo && (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey)) return;
   const t = e.target, typing = t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
-  if (typing || document.querySelector('dialog[open]') || document.querySelector('header [aria-expanded="true"]')) return; /* a header menu (Music) is open; an expanded control in the view, like a flipped Sutra card, does not count */
+  if ((typing && !combo) || document.querySelector('dialog[open]') || document.querySelector('header [aria-expanded="true"]') || document.querySelector('.play-shell')) return; /* a header menu (Calm and sound) is open, or a round fills the screen; an expanded control in the view, like a flipped Sutra card, does not count */
   e.preventDefault();
   if ((location.hash || '#/') === '#/find') { const i = $('#findIn'); if (i) i.focus(); } else location.hash = '#/find';
 });

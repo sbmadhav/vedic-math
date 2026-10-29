@@ -14,7 +14,7 @@ test.beforeEach(async ({ page }) => {
 
 test('Try a trick answer: the first question answered right sends one math/q_answered/try/right, then the first math/first_win', async ({ page }) => {
   await page.goto(APP);
-  await page.locator('[data-try="challenger"]').click();
+  await page.locator('.mode-card[data-mode="challenger"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
   await page.locator('#tyStart').click();
   await page.locator('#tyIn').fill('625');
   await page.keyboard.press('Enter');

@@ -22,33 +22,34 @@ test.beforeEach(async ({ page }) => {
 test.describe('the Mode picker', () => {
   test.use({ seedMode: null });
 
-  test('a Try a trick under each Mode card, named with its Mode, and no other Try a trick', async ({ page, issues }) => {
+  /* The three Mode cards are the picker's only buttons; each Mode's Try a trick waits on its Home (openspec change play-nav-by-mode) */
+  test('no Try a trick on the picker: three Mode cards, each ending in Start as its Mode', async ({ page, issues }) => {
     await page.goto(APP);
     await expect(page.locator('.pick-h')).toHaveText('Pick who is playing');
     await expect(page.locator('#tryBtn')).toHaveCount(0);
     await expect(page.locator('.mq-hero-t button, .mq-hero-t a')).toHaveCount(0);
     for (const [i, m] of (['Explorer', 'Challenger', 'Pro'] as const).entries()) {
-      const opt = page.locator('.mode-opt').nth(i);
-      await expect(opt.locator('.mode-card b')).toHaveText(m);
-      await expect(opt.getByRole('button', { name: `Try a trick as ${m}` })).toBeVisible();
+      const card = page.locator('.mode-pick .mode-card').nth(i);
+      await expect(card.locator('b')).toHaveText(m);
+      await expect(card.locator('.mode-go')).toHaveText(`Start as ${m}`);
     }
-    await expect(page.getByRole('button', { name: /Try a trick/ })).toHaveCount(3);
+    await expect(page.getByRole('button', { name: /Try a trick/ })).toHaveCount(0);
     expect(appErrors(issues)).toEqual([]);
   });
 
   for (const [w, h] of [[320, 568], [375, 667], [390, 844], [768, 1024], [1280, 720]] as const) {
-    test(`at ${w}x${h} nothing scrolls sideways and every Try a trick is at least 44 px tall`, async ({ page }) => {
+    test(`at ${w}x${h} nothing scrolls sideways and every Mode card is at least 44 px tall`, async ({ page }) => {
       await page.setViewportSize({ width: w, height: h });
       await page.goto(APP);
-      for (const b of await page.locator('.mode-try').all()) expect((await b.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      for (const b of await page.locator('.mode-pick .mode-card').all()) expect((await b.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(w);
-      if (w === 390) { const b = (await page.locator('[data-try="explorer"]').boundingBox())!; expect(b.y + b.height).toBeLessThanOrEqual(h); }
+      if (w === 390) { const b = (await page.locator('.mode-card[data-mode="explorer"] .mode-go').boundingBox())!; expect(b.y + b.height).toBeLessThanOrEqual(h); }
     });
   }
 
   test('Challenger: picks the Mode with no guess, counts it, and teaches Ekādhikena Pūrveṇa on 35²', async ({ page, issues }) => {
     await page.goto(APP);
-    await page.locator('[data-try="challenger"]').click();
+    await page.locator('.mode-card[data-mode="challenger"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
     await expect(page).toHaveURL(/#\/try$/);
     await expect(page.locator('#tyH')).toHaveText('Square numbers ending in 5');
     await expect(page.locator('.try-sutra b')).toHaveText('Ekādhikena Pūrveṇa');
@@ -72,9 +73,11 @@ test.describe('the Mode picker', () => {
     expect(appErrors(issues)).toEqual([]);
   });
 
-  test('Pro by keyboard: Enter on the card\'s Try a trick, Enter to start, the answer box takes focus and Enter checks', async ({ page }) => {
+  test('Pro by keyboard: Enter on the Pro card, Enter on Home\'s Try a trick, Enter to start, the answer box takes focus and Enter checks', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('[data-try="pro"]').focus();
+    await page.locator('.mode-card[data-mode="pro"]').focus();
+    await page.keyboard.press('Enter');
+    await page.locator('[data-try-open]').focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('#tyH')).toHaveText('Multiply numbers near 100');
     await expect(page.locator('.try-sutra b')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
@@ -93,7 +96,7 @@ test.describe('the Mode picker', () => {
 
   test('Explorer: the 11 sandwich under Ūrdhva-Tiryagbhyām, three big buttons, and no Star anywhere', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('[data-try="explorer"]').click();
+    await page.locator('.mode-card[data-mode="explorer"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
     await expect(page.locator('#tyH')).toHaveText('The 11 sandwich');
     await expect(page.locator('.try-sutra b')).toHaveText('Ūrdhva-Tiryagbhyām');
     await expect(page.locator('.try-sutra .sutra-tag-m')).toHaveText('Its name means straight down and across.');

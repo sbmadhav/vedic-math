@@ -1,6 +1,7 @@
 import { test, expect, APP, open } from '../fixtures';
 
-/* first-visit spec, the Requirements added by openspec change try-trick-in-modes: "Try a trick inside each Mode", "Try a trick on Home", "Try a trick teaches its Sutra first",
+/* first-visit spec, the Requirements added by openspec change try-trick-in-modes: "Try a trick inside each Mode" (from
+   Home since openspec change play-nav-by-mode: "Try a trick inside each Mode, from Home"), "Try a trick on Home", "Try a trick teaches its Sutra first",
    "Trying it", "The end of a Try a trick", "Try a trick is reachable by keyboard and screen reader" and "Try a trick
    holds still and says nothing new": one test per scenario. */
 type Page = import('@playwright/test').Page;
@@ -15,34 +16,36 @@ async function finishChallenger(page: Page) {
 test.describe('a new visitor', () => {
   test.use({ seedMode: null });
 
-  test('Challenger from the picker: the Mode is Challenger and squares ending in 5 open, naming Ekādhikena Pūrveṇa', async ({ page }) => {
+  test('Challenger from Home: the Mode is Challenger and squares ending in 5 open, naming Ekādhikena Pūrveṇa', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('[data-try="challenger"]').click();
+    await page.locator('.mode-card[data-mode="challenger"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
     await expect(page.locator('#tyH')).toHaveText('Square numbers ending in 5');
     await expect(page.locator('.try-sutra b')).toHaveText('Ekādhikena Pūrveṇa');
     expect((await player(page)).mode).toBe('challenger');
   });
 
-  test('Pro from the picker: the Mode is Pro and multiplying near 100 opens, naming Nikhilaṃ Navataścaramaṃ Daśataḥ', async ({ page }) => {
+  test('Pro from Home: the Mode is Pro and multiplying near 100 opens, naming Nikhilaṃ Navataścaramaṃ Daśataḥ', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('[data-try="pro"]').click();
+    await page.locator('.mode-card[data-mode="pro"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
     await expect(page.locator('#tyH')).toHaveText('Multiply numbers near 100');
     await expect(page.locator('.try-sutra b')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
     expect((await player(page)).mode).toBe('pro');
   });
 
-  test('Explorer from the picker: the Mode is Explorer and the 11 sandwich opens, naming Ūrdhva-Tiryagbhyām, with no Star, Belt or Star count', async ({ page }) => {
+  test('Explorer from Home: the Mode is Explorer and the 11 sandwich opens, naming Ūrdhva-Tiryagbhyām, with no Star, Belt or Star count', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('[data-try="explorer"]').click();
+    await page.locator('.mode-card[data-mode="explorer"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
     await expect(page.locator('#tyH')).toHaveText('The 11 sandwich');
     await expect(page.locator('.try-sutra b')).toHaveText('Ūrdhva-Tiryagbhyām');
     expect((await player(page)).mode).toBe('explorer');
     expect(await page.locator('#tryRoot').innerText()).not.toMatch(/\bStars?\b|\bBelts?\b/);
   });
 
-  test('Keyboard: Try a trick under the Pro card and Enter open the first question with its answer box focused; Enter checks it', async ({ page }) => {
+  test('Keyboard: Try a trick from Pro Home and Enter open the first question with its answer box focused; Enter checks it', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('[data-try="pro"]').focus();
+    await page.locator('.mode-card[data-mode="pro"]').focus();
+    await page.keyboard.press('Enter');
+    await page.locator('[data-try-open]').focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('#tyStart')).toBeFocused();
     await page.keyboard.press('Enter');

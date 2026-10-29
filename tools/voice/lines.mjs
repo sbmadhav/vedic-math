@@ -3,7 +3,7 @@
    Writes tools/voice/out/lines.json (git-ignored):
    - whole: every line of the Skills recorded whole (K to 2, except three-digit adding and comparing), enumerated until
      WHOLE_QUIET draws in a row add nothing new, plus every fixed line the app speaks (literal speak() calls, praise,
-     the Balloon pop prompts and counts);
+     the Balloon pop prompts and counts) and the names Explorer's menu tabs say (js/nav.js NAV_LINES);
    - clips: every number clip in both takes, and every word frame seen while sampling every other source (all Skills,
      all Katas, which Stars deal, Arena sets for each League, towers), each assigned to the first pack that needs it.
    - explanations (openspec explanation-audio): every line js/explain-lines.js lists (Skill ideas and methods, Trick
@@ -24,6 +24,7 @@ import { STUDIO } from '../../js/voice-index.js';
 import { allExplanationLines } from '../../js/explain-lines.js';
 import { VIDEOS, LINKS } from '../../js/videos.js';
 import { TEMPLATES, WRITTEN, storyFor } from '../../js/stories.js';
+import { NAV_LINES } from '../../js/nav.js';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const OUT = fileURLToPath(new URL('./out/', import.meta.url));
@@ -58,6 +59,7 @@ function main() {
   const whole = new Map(); // words -> source
   const addWhole = (t, src) => { const w = normalize(t); if (w && !whole.has(w)) whole.set(w, src); };
   for (const t of fixedLines()) addWhole(t, 'fixed');
+  for (const t of NAV_LINES) addWhole(t, 'nav'); /* Explorer's menu tabs say their names (openspec change play-nav-by-mode) */
   for (const { text, src } of allExplanationLines({ videos: VIDEOS, links: LINKS })) addWhole(text, 'explain:' + src);
   for (const s of wholeSkills()) {
     let quiet = 0, before = whole.size;

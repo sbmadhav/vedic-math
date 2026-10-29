@@ -18,10 +18,10 @@ test('Keyboard: Escape on any step closes the tour and records it as skipped', a
   expect(await page.evaluate(() => localStorage.getItem('vm.tour'))).toBe('skipped');
 });
 
-test('Phone: on a 390px screen the Guide step scrolls the menu bar to its link and keeps the card on screen', async ({ page }) => {
+test('Phone: on a 390px screen the Guide step points at the Find trigger, and the trigger and the whole card are on screen', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 780 });
   await page.goto(APP);
-  await page.locator('.mode-card[data-mode="explorer"]').click();
+  await page.locator('.mode-card[data-mode="challenger"]').click(); /* the Find trigger is the menu's help (openspec change play-nav-by-mode) */
   const dlg = tour(page);
   await expect(dlg).toBeVisible();
   // Next through the steps to the Guide step; a tour with more than 8 steps or no guide step fails here, not at the timeout
@@ -29,7 +29,7 @@ test('Phone: on a 390px screen the Guide step scrolls the menu bar to its link a
     expect(i, 'the tour has a guide step within 8 steps').toBeLessThan(8);
     await dlg.locator('[data-act="next"]').click();
   }
-  for (const box of [await page.locator('.mq-nav a[href="#/guide"]').boundingBox(), await dlg.locator('.tour-card').boundingBox()]) {
+  for (const box of [await page.locator('.mq-nav .nav-find').boundingBox(), await dlg.locator('.tour-card').boundingBox()]) {
     expect(box).not.toBeNull();
     expect(box!.x).toBeGreaterThanOrEqual(0); expect(box!.y).toBeGreaterThanOrEqual(0);
     expect(box!.x + box!.width).toBeLessThanOrEqual(390); expect(box!.y + box!.height).toBeLessThanOrEqual(780);

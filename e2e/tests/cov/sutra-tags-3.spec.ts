@@ -23,9 +23,9 @@ test('The end screen links: when the round ends, its tag is a link to #/sutras/s
 
 test.describe('a new visitor', () => {
   test.use({ seedMode: null });
-  test("Try a trick's card: under the Pro card, the card's Sutra block is the tag Sutra Nikhilaṃ with its meaning and Say it, a link to #/sutras/s2", async ({ page }) => {
+  test("Try a trick's card: from Pro Home, the card's Sutra block is the tag Sutra Nikhilaṃ with its meaning and Say it, a link to #/sutras/s2", async ({ page }) => {
     await page.goto(APP);
-    await page.locator('.mode-try[data-try="pro"]').click();
+    await page.locator('.mode-card[data-mode="pro"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
     const tag = page.locator('.try-sutra.sutra-tag--full');
     await expect(tag.locator('.sutra-tag-k')).toHaveText('Sutra');
     await expect(tag.locator('b[lang="sa-Latn"]')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');

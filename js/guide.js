@@ -25,17 +25,17 @@ export const GROUPS = [
 export function sections(n) {
   const fmt = x => Number(x).toLocaleString('en-US');
   return [
-    { id: 'around', group: 'start', art: 'nav', covers: ['#/', '#/guide', '#/guide/around'],
+    { id: 'around', group: 'start', art: 'nav', covers: ['#/', '#/guide', '#/guide/around', '#/arcade'], /* the Arcade is a zone of the menu (openspec change play-nav-by-mode) */
       title: w('Find your way', 'Getting around'),
-      what: w('The menu at the top takes you to every part of the app.', 'The menu bar at the top takes you to every part of the app. Your Me page is the round avatar at its right end.'),
+      what: w('Three big buttons at the top: Play, Learn and Me.', 'The menu bar at the top has four places and Find: Home, Learn, Arcade and Watch. Your Me page is the round avatar at its right end.'),
       how: [
-        w('Tap Home, Sutras, Learn, Arena, Games, Watch, Guide or Find in the menu.', 'Pick Home, Sutras, Learn, Dojo, Arena, Games, Watch, Guide or Find in the menu bar. Hover a name to see what is there.'), /* the menu order (openspec change sutras-first: Sutras first, in every Mode) */
-        w('On a phone, slide the menu sideways to see the rest.', 'On a phone, swipe the menu bar sideways to reach the music button and your Me page.'),
+        w('Play is for games and races. Learn is for skills and the sutras. Me is your page. With Read aloud on, each button says its name.', 'Learn holds the sutras and the Skill map. Arcade holds the Dojo, the Arena and Games. Hover a name to see what is there.'), /* the menu by Mode (openspec change play-nav-by-mode) */
+        w('More places, under the games on Play, opens all games, the sutras, this guide and Find.', 'Find, at the end of the menu bar, finds anything by name and opens this guide. Press Ctrl K (Cmd K on a Mac) to open it from any page.'),
         w('Daybreak makes the page light. Deep Space makes it dark.', 'Daybreak (light) and Deep Space (dark) at the top change the colors; System follows your device.'),
         w('The links above a page title take you back a step.', 'The trail of links above each page title (Vedic Math / Games / ...) takes you back a step.'),
         w('Bolt, at the top left, opens the front page of this website.', 'Learn Vedic Math, at the top left, opens the front page of the site, with the pages for grown-ups.')
       ],
-      tip: w('Lost? Tap Home. This guide is always in the menu.', 'Keyboard friendly: Tab moves between buttons, Enter checks an answer, and Escape closes any pop-up.'),
+      tip: w('Lost? Tap Play. This guide is under More places.', 'Keyboard friendly: Tab moves between buttons, Enter checks an answer, and Escape closes any pop-up.'),
       try: { action: 'tour', label: w('Show me around', 'Take the tour') } },
 
     { id: 'modes', group: 'start', art: 'modes', covers: ['#/try'], /* Try a trick lives inside each Mode (openspec try-trick-in-modes) */
@@ -65,7 +65,7 @@ export function sections(n) {
       title: w('Find anything', 'Find'),
       what: w('Type a word and Find shows the games, skills and videos with that word.', 'One box that searches every skill, trick, sutra, game, way to play, video and guide section by name or by a plain word.'),
       how: [
-        w('Tap Find in the menu, or the magnifying glass.', 'Pick Find in the menu bar, or press the / key on any page.'),
+        w('Tap Find under More places on Play.', 'Pick Find at the end of the menu bar, or press Ctrl K (Cmd K on a Mac) or the / key on any page.'),
         w('Type a word like balloons or ten.', 'Type a name or a plain word: squares, take away, fractions, leaderboard, nickname, privacy.'),
         w('Tap what you want. Videos play right there.', 'Results come in groups; Enter opens the first one, and a video plays in place.'),
         w('Type nothing to see every place you can go.', 'With nothing typed, Find lists every section with one line saying what is there.')
@@ -77,7 +77,7 @@ export function sections(n) {
       title: w('Me and badges', 'Me page and badges'),
       what: w('Your own page: your name, your color and your badges.', `Your profile: nickname, avatar color, Title, ${n.badges} badges, progress by level and settings.`),
       how: [
-        w('Tap your round picture at the top right to open Me.', 'Tap your avatar at the right end of the menu bar. Its small bar fills toward your next Title.'),
+        w('Tap Me at the top, or your round picture.', 'Tap your avatar at the right end of the menu bar. Its small bar fills toward your next Title.'),
         w('Tap New nickname for a new silly name. Tap a color dot to change your color.', 'New nickname picks another made-up name; the color dots change your avatar.'),
         w('Badges you do not have yet say how to win them.', 'Badges you have not earned yet say exactly how to earn them.'),
         w('Settings turn sounds, read-aloud and Calm on or off.', 'Settings: sound effects, read-aloud and its voice, Calm, the moving background and text size.')
@@ -113,7 +113,7 @@ export function sections(n) {
       title: w('Dojo and speed tricks', 'Dojo: speed tricks and belts'),
       what: w('Fast math tricks. Each trick has a page that shows how it works. Belts and Stars come with Challenger and Pro.', `${n.tricks} speed tricks from the sutras in Bharati Krishna Tirtha's 1965 book, in ${n.belts} belts from white to black.`),
       how: [
-        w('The Dojo is not in the Explorer menu, so use the button below.', 'Open the Dojo from the menu bar.'),
+        w('The Dojo is not in the Explorer menu, so use the button below.', 'Open the Arcade in the menu bar, then the Dojo.'),
         w('Tap a trick to open its page.', `Each belt has three tricks. Light all ${n.starsPerBelt} Stars of a belt's three tricks to earn it.`),
         w('Watch it work shows each step. Tap Next step to go on.', 'On a trick page, Watch it work runs the trick step by step: type your own numbers and press Show steps, or tap New numbers. Use Back, Next step or Show all.'),
         w('Then practice the trick under it.', 'Then practice the trick in the box beside it, just like any skill.')
@@ -161,7 +161,7 @@ export function sections(n) {
       title: w('Sutra cards', 'Sutra cards and deep dives'),
       what: w('Cards with short math sayings. Flip them to collect them.', `The ${n.sutras} sutras and ${n.subsutras} sub-sutras from Bharati Krishna Tirtha's 1965 book: short word formulas, each a whole method in a phrase, as cards to collect.`),
       how: [
-        w('Tap Sutras in the menu.', 'Open Sutras from the menu bar.'), /* Sutras is in Explorer's menu (openspec change sutras-first) */
+        w('Tap Learn at the top, then The sutras.', 'Open Learn in the menu bar, then Start with the sutras.'), /* the Sutras are the first card on Learn (openspec change play-nav-by-mode) */
         w('Tap a card to flip it. That collects it!', 'Tap a card to flip it and collect it (5 Sparks the first time).'),
         w('Learn more shows a moving picture that explains it.', 'Learn more opens a deep dive: an animated diagram, why it works, worked examples, where it is used and Try it yourself buttons.'),
         w('Close it with the X button.', 'Move to the next sutra with the buttons at the bottom. Close with the X button or Escape.'),
@@ -273,15 +273,15 @@ export function sections(n) {
       try: { href: '#/me', label: 'Voice settings on Me' } },
 
     { id: 'music', group: 'extras', art: 'music', covers: [],
-      title: w('Calm music', 'Calm music and background'),
+      title: w('Calm and music', 'Calm, music and background'),
       what: w('Soft music and a slowly moving picture behind the page.', 'Gentle music made live in your browser, and a slow background that draws real pieces of early Indian mathematics.'),
       how: [
-        w('Tap the music note button in the menu.', 'Tap the music note at the right of the menu bar.'),
+        w('Tap Calm at the top. It has Calm, Pause motion and soft music.', 'Tap Calm at the right of the menu bar: Calm, Pause motion and the music are in one panel. In a round, the same button is at the top of the screen.'),
         w('Pick a sound. Tap Stop to stop it.', 'Pick Singing bowls, Tanpura drone, Himalayan dawn or Temple chimes. Tap it again or press Stop to end it, and set the Volume.'),
         w('Untick Moving background to keep the page still.', 'What is in the background? explains each drawing.')
       ],
       tip: w('Music never starts by itself.', 'Music never starts by itself, pauses when you switch tabs and stops when a video plays.'),
-      try: { action: 'music', label: 'Open the music panel' } },
+      try: { action: 'music', label: 'Open Calm and sound' } },
 
     { id: 'players', group: 'extras', art: 'players', covers: [],
       title: w('More players', 'Players and backups'),
@@ -335,7 +335,8 @@ export function tryFor(s, mode) {
 /* ---------- First-visit tour ---------- */
 /* Each step points at real UI. Its options are tried in order and the first whose element is on screen wins, so one
    step can say the right thing on the Explorer, tile and Sky homes; a step with no match is left out. The last step
-   points at the Guide link so the Player knows where to find this again. */
+   points at Find, the menu's help (Explorer: How to play under More places), so the Player knows where to find this
+   again (openspec change play-nav-by-mode). */
 export const TOUR_STEPS = [
   { id: 'me', options: [{ sel: '.me-strip',
     title: w('This is you!', 'This is you'),
@@ -347,16 +348,19 @@ export const TOUR_STEPS = [
     { sel: '.play-tile', title: w('Tap to play', 'Pick something to play'), body: w('Tap a picture to start. Have fun!', 'Each tile opens a game, a skill or a race.') }] },
   { id: 'nav', options: [{ sel: '.mq-nav',
     title: w('Go anywhere', 'The menu'),
-    body: w('Learn, races, games and videos are all up here.', 'Learn skills, train tricks in the Dojo, race in the Arena, play Games and watch videos. On a phone, swipe it sideways.') }] },
+    body: w('Play, Learn and Me are up here. With Read aloud on, each one says its name.', 'Home, Learn (the sutras and the Skill map), Arcade (the Dojo, the Arena and Games) and Watch.') }] },
   { id: 'music', options: [{ sel: '#vmMBtn',
-    title: w('Calm music', 'Music and background'),
-    body: w('Tap the note for soft music. It never starts by itself.', 'Calm music made in your browser, and the switch for the moving background. It never starts by itself.') }] },
+    title: w('Calm and sound', 'Calm and sound'),
+    body: w('Tap Calm to stop the clocks and the moving, or for soft music. Music never starts by itself.', 'Calm (no clocks in Practice, nothing moves), Pause motion and calm music made in your browser, in one place. Music never starts by itself.') }] },
   { id: 'chip', options: [{ sel: '#mqChip a',
     title: w('Your page', 'Your Me page'),
     body: w('Tap here to see your badges and change your name or color.', 'Badges, nickname and color, play mode, players on this device, Calm and sound settings.') }] },
-  { id: 'guide', options: [{ sel: '.mq-nav a[href="#/guide"]',
-    title: w('Need help?', 'The guide'),
-    body: w('The Guide shows how everything works. You can see this tour again there.', 'Everything the app can do, with a link to each part. You can replay this tour from there any time.') }] }
+  { id: 'guide', options: [{ sel: '.mq-nav .nav-find',
+    title: 'Find and help',
+    body: 'Find anything by name, or press Ctrl K (Cmd K on a Mac). The guide is there too, and you can replay this tour from it.' },
+  { sel: '.home-places a[href="#/guide"]',
+    title: 'Need help?',
+    body: 'How to play shows how everything works. You can see this tour again there.' }] }
 ];
 /* The option of a step to show: the first whose selector finds an element on screen (has(sel) says so), or null */
 export const resolveStep = (step, has) => step.options.find(o => has(o.sel)) || null;

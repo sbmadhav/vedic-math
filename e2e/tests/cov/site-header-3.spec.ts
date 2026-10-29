@@ -19,7 +19,7 @@ for (const scheme of ['light', 'dark'] as const) {
       const nav = (await page.locator('header .mq-nav').boundingBox())!, theme = (await page.locator('#themeBtn').boundingBox())!;
       expect(nav.y).toBeGreaterThanOrEqual(theme.y + theme.height);
       const tabs = page.locator('header .mq-nav a:visible');
-      expect(await tabs.count()).toBeGreaterThanOrEqual(8);
+      expect(await tabs.count()).toBe(5); /* Home, Learn, Arcade, Watch, Find (openspec change play-nav-by-mode) */
       for (const tab of await tabs.all()) {
         const b = (await tab.boundingBox())!;
         expect(b.x).toBeGreaterThanOrEqual(0); expect(b.x + b.width).toBeLessThanOrEqual(320);
@@ -35,7 +35,7 @@ for (const scheme of ['light', 'dark'] as const) {
   for (const width of [1280, 320]) {
     test.describe(`${scheme} scheme, header at ${width}px`, () => {
       test.use({ colorScheme: scheme, viewport: { width, height: 800 } });
-      test('Accessible header: axe finds no serious or critical violation with the music panel closed and open', async ({ page }, testInfo) => {
+      test('Accessible header: axe finds no serious or critical violation with the Calm and sound panel closed and open', async ({ page }, testInfo) => {
         chromiumOnly(testInfo);
         await open(page, '#/learn');
         const check = async () => {

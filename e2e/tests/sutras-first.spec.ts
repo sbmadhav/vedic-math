@@ -167,7 +167,7 @@ test.describe('a new visitor', () => {
     await stubAnalytics(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(APP);
-    await page.locator('.mode-try[data-try="pro"]').click();
+    await page.locator('.mode-card[data-mode="pro"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
     const tag = page.locator('.try-sutra.sutra-tag--full');
     await expect(tag.locator('.sutra-tag-k')).toHaveText('Sutra');
     await expect(tag.locator('b[lang="sa-Latn"]')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');

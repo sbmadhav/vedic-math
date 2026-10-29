@@ -98,7 +98,7 @@ test('the Mode picker and the Home More toggle bind through life.on on the view 
   const app = src('app.js').join('\n');
   const picker = app.slice(app.indexOf('function modePicker('), app.indexOf('\n}\n', app.indexOf('function modePicker(')));
   assert.doesNotMatch(picker, /\.on(click|toggle)\s*=/);
-  assert.ok((picker.match(/\bon\(/g) || []).length >= 2 && (picker.match(/\}, signal\)/g) || []).length >= 2, 'Mode cards and Try a trick on the view signal');
+  assert.ok((picker.match(/\bon\(/g) || []).length >= 1 && (picker.match(/\}, signal\)/g) || []).length >= 1, 'Mode cards on the view signal'); /* the cards are the picker's only buttons (openspec change play-nav-by-mode) */
   assert.match(app, /if \(ctx\.signal\) on\(hm, 'toggle', keepMore, ctx\.signal\); else hm\.ontoggle = keepMore;/, 'More ways to play: the property only without a view signal');
 });
 
