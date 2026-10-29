@@ -149,6 +149,9 @@ html[data-lv-wait] .lv-landing main { visibility: hidden; animation: lv-show 0s 
 .lv-demo-nav .md-btn { min-height: 44px; min-width: 128px; }
 .lv-demo-back[aria-disabled="true"] { opacity: .45; cursor: default; }
 @media (scripting: none) { .lv-demo-nav { display: none; } }
+/* With scripting on, the row keeps its place but shows only once the script has set data-step, so a module that
+   failed to load leaves no dead buttons and nothing shifts when it does load (#172 review) */
+.lv-demo:not([data-step]) .lv-demo-nav { visibility: hidden; }
 .lv-demo[data-step="1"] [data-s="2"], .lv-demo[data-step="1"] [data-s="3"], .lv-demo[data-step="2"] [data-s="3"] { visibility: hidden; }
 .lv-demo[data-step="1"] .lv-board [data-s="1"], .lv-demo[data-step="2"] .lv-board [data-s="2"], .lv-demo[data-step="3"] .lv-board [data-s="3"] { background: color-mix(in srgb, var(--sun) 35%, transparent); }
 .lv-demo .lv-steps li[aria-current="step"] { font-weight: 700; }
@@ -156,6 +159,7 @@ html[data-lv-wait] .lv-landing main { visibility: hidden; animation: lv-show 0s 
 @keyframes lv-step-in { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .lv-demo [data-s] { animation: none !important; } }
 html.motion-paused .lv-demo [data-s], html.calm .lv-demo [data-s] { animation: none !important; }
+html.motion-paused .lv-demo-nav .md-btn, html.calm .lv-demo-nav .md-btn { transition: none; transform: none; } /* the buttons' press dip (reduced motion: components.css) */
 
 /* Inside the game (landing-interactive-hero): Bolt and Math Lens, one line each */
 .lv-feats { list-style: none; margin: var(--space-4) 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }

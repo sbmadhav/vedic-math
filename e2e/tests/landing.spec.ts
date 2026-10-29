@@ -343,6 +343,19 @@ test.describe('the sutras and the method', () => {
     await expect(note.getByRole('link', { name: 'See all 29 sutras' })).toHaveAttribute('href', '/play/#/sutras');
   });
 
+  /* landing-interactive-hero (#172 review): the step buttons show only once the script runs, so a module that fails to
+     load leaves every step on screen and no buttons that do nothing */
+  test('when the step script cannot load, the sutra way shows every step and no visible Back or Next', async ({ page }) => {
+    await page.route(/\/js\/life\.js(\?.*)?$/, route => route.fulfill({ status: 404, body: '' }));
+    await page.goto('/');
+    const card = page.locator('#lv-demo');
+    await expect(card.locator('.lv-steps li')).toHaveCount(3);
+    for (const li of await card.locator('.lv-steps li').all()) await expect(li).toBeVisible();
+    await expect(card).not.toHaveAttribute('data-step', /./);
+    await expect(card.getByRole('button', { name: 'Next' })).toBeHidden();
+    await expect(card.getByRole('button', { name: 'Back' })).toBeHidden();
+  });
+
   test('a Sutra card opens its Deep dive in the game, with no Mode picker and no Mode stored', async ({ page }) => {
     await page.goto('/');
     await page.locator('a.lv-sutra[href="/play/#/sutras/s3"]').click();
