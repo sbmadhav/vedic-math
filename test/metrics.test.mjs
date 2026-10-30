@@ -20,7 +20,7 @@ const PATH = /^math\/[a-z0-9_/:-]+$/;
 /* ---------- Route views ---------- */
 const SAMPLES = {
   '': 'home', '#/': 'home', '#/learn': 'learn', '#/grade/5': 'grade/5', '#/grade/K': 'grade/k',
-  '#/skill/v-sq5': 'skill/v-sq5', '#/mix/3': 'mix/3', '#/run/3': 'run/3', '#/arcade': 'arcade', '#/dojo': 'dojo', '#/tricks': 'tricks',
+  '#/skill/v-sq5': 'skill/v-sq5', '#/mix/3': 'mix/3', '#/mix/3/words': 'mix/3/words', '#/run/3': 'run/3', '#/arcade': 'arcade', '#/dojo': 'dojo', '#/tricks': 'tricks',
   '#/katas/sq5': 'katas/sq5', '#/kata/sq5/4': 'kata/sq5/kata', '#/star/sq5/2': 'star/sq5/star', '#/try': 'try', '#/tower': 'tower', '#/tower/7': 'tower/chapter',
   '#/challenge/123': 'challenge/challenge', '#/sutras': 'sutras', '#/sutras/s1': 'sutras/s1', '#/arena': 'arena',
   '#/duel': 'duel', '#/games': 'games', '#/game/times-sprint': 'game/times-sprint', '#/game/times-sprint/12': 'game/times-sprint/level',

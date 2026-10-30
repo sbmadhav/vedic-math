@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 831820,
+  "total": 833498,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -48,8 +48,8 @@
    "/js/ambient.js": 4372,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 49476,
-   "/js/arena.js": 5392,
+   "/js/app.js": 50399,
+   "/js/arena.js": 5685,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
    "/js/celebrate.js": 3367,
@@ -67,7 +67,7 @@
    "/js/games.js": 12393,
    "/js/gamify.js": 3873,
    "/js/guide-art.js": 2484,
-   "/js/guide.js": 10643,
+   "/js/guide.js": 10650,
    "/js/handoff-schema.js": 6616,
    "/js/handoff.js": 4229,
    "/js/install-rules.js": 2226,
@@ -79,7 +79,7 @@
    "/js/life.js": 1103,
    "/js/listen.js": 1335,
    "/js/mental.js": 2128,
-   "/js/metrics.js": 4174,
+   "/js/metrics.js": 4184,
    "/js/nav.js": 1555,
    "/js/play/catalog.js": 1783,
    "/js/play/exp/apprentice-core.js": 7279,
@@ -132,8 +132,8 @@
    "/js/slokas.js": 16068,
    "/js/star.js": 8768,
    "/js/store.js": 5753,
-   "/js/stories.js": 10070,
-   "/js/story-plan.js": 1723,
+   "/js/stories.js": 10300,
+   "/js/story-plan.js": 1807,
    "/js/sutra-ambience.js": 4169,
    "/js/sutra-details.js": 13423,
    "/js/sutra-progress.js": 1066,
@@ -152,9 +152,9 @@
    "/js/voice.js": 14365,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 24903,
-   "/play/": 4133,
-   "/sw.js": 6282,
+   "/math.css": 25020,
+   "/play/": 4146,
+   "/sw.js": 6283,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -280,10 +280,17 @@
    },
    {
     "date": "2026-10-29",
-    "pr": 174,
+    "pr": 173,
     "from": 826479,
-    "to": 831820,
-    "why": "play-nav-by-mode: the menu by Mode (js/nav.js, new and statically imported), the Arcade page, Learn's Sutras card, the Calm and sound control in the header and the play shell, Find's help card and Ctrl K; measured on main as of #170; file deltas: /js/app.js +1829, /js/nav.js +1555, /js/ambient.js +739, /math.css +592, /js/guide.js +187, /js/find.js +162, /js/shell.js +96, /play/ +66, +5341 in all; js/nav.js as the CI build measures it (one byte more than a local Brotli)"
+    "to": 828167,
+    "why": "word-problems-more: Only Word problems on a level's Endless practice page and the Arena's Word problems round (js/app.js mixView, practice and arenaView; the new route in js/metrics.js and js/guide.js; js/arena.js runArena deal and count, storyItem; js/stories.js roundStory and hasStory by Mode; js/story-plan.js the choice words; the Arena story styles in math.css, and the play shell's picture box, which drew Explorer Arena pictures 0 px wide); js/stories.js still loads after the first paint; measured on main as of #170 and #171; file deltas: /js/app.js +950, /js/arena.js +293, /js/guide.js +3, /js/metrics.js +10, /js/stories.js +230, /js/story-plan.js +84, /math.css +111, /play/ -7, /sw.js +14, +1688 in all"
+   },
+   {
+    "date": "2026-10-29",
+    "pr": 174,
+    "from": 828167,
+    "to": 833498,
+    "why": "play-nav-by-mode: the menu by Mode (js/nav.js, new and statically imported), the Arcade page, Learn's Sutras card, the Calm and sound control in the header and the play shell, Find's help card and Ctrl K; measured on main as of #173; file deltas: /js/app.js +1802, /js/nav.js +1555, /js/ambient.js +739, /math.css +598, /js/guide.js +191, /js/find.js +162, /js/shell.js +96, /play/ +86, +5331 in all; js/nav.js as the CI build measures it (one byte more than a local Brotli)"
    }
   ]
  },

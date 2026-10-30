@@ -252,11 +252,12 @@ const written = w => make(w.id, 'pro', w);
 /* ---------- Which story fits a Skill (D4, D5) ---------- */
 const ORDER = { explorer: ['explorer', 'challenger', 'pro'], challenger: ['challenger', 'explorer', 'pro'], pro: ['pro', 'challenger', 'explorer'] };
 const fits = id => TEMPLATES.filter(t => t.skills.includes(id));
-/* Does this Skill have any Word problem? (a Trick Skill has one when its Trick has a story) */
-export function hasStory(skill) {
+/* Does this Skill have any Word problem? (a Trick Skill has one when its Trick has a story) With a Mode: one that Mode
+   is asked (the hand-written stories are Pro's), as Only Word problems needs (openspec word-problems-more D2). */
+export function hasStory(skill, mode = null) {
   if (!skill) return false;
   if (skill.trick && hasTrickStory(skill.trick)) return true;
-  return fits(skill.id).length > 0 || WRITTEN.some(w => w.skills.includes(skill.id));
+  return fits(skill.id).length > 0 || ((!mode || mode === 'pro') && WRITTEN.some(w => w.skills.includes(skill.id)));
 }
 /* A Word problem for the Skill on screen in this Mode, or null. bare: the question the round would ask, whose numbers a
    Trick Skill's story keeps. */
@@ -278,4 +279,16 @@ export function skillStory(id, mode, r = Math.random) {
   return draw(pk(r, of), r, { grade: null });
 }
 
-register({ hasStory, storyFor, skillStory, trickStory });
+/* A Word problem of a Mode's style for a round that has no Skill on screen: the Arena's Word problems round (openspec
+   word-problems-more, design D4). Pro mixes the hand-written stories in as Pro Practice does. Every answer is a whole
+   number (the Arena keypad takes nothing else). */
+export function roundStory(mode, r = Math.random) {
+  const of = TEMPLATES.filter(t => t.mode === (ORDER[mode] ? mode : 'challenger'));
+  for (let i = 0; i < 20; i++) {
+    const p = mode === 'pro' && r() < RULES.written ? written(pk(r, WRITTEN)) : draw(pk(r, of), r, { grade: null });
+    if (Number.isInteger(p.answer) && p.answer >= 0) return p;
+  }
+  return written(WRITTEN[0]);
+}
+
+register({ hasStory, storyFor, skillStory, trickStory, roundStory });

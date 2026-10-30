@@ -85,7 +85,7 @@ export function sections(n) {
       tip: w('Names are made up for you, so you never type your real name.', 'Nicknames come from fixed word lists and are never typed, so no real names are needed anywhere.'),
       try: { href: '#/me', label: 'Open Me' } },
 
-    { id: 'skills', group: 'learn', art: 'rings', covers: ['#/learn', '#/grade/3', '#/mix/3', '#/run/3'],
+    { id: 'skills', group: 'learn', art: 'rings', covers: ['#/learn', '#/grade/3', '#/mix/3', '#/mix/3/words', '#/run/3'],
       title: 'Skill map',
       what: w('Lots of math to learn, from counting all the way up. Each skill has a ring to fill.', `${fmt(n.skills)} skills from counting to calculus, grouped by level from K to 12, plus ${n.tricks} speed tricks.`, `${fmt(n.skills)} skills from counting to calculus, grouped by level from K to 12, plus ${n.tricks} speed tricks. Each one makes new questions forever.`),
       how: [

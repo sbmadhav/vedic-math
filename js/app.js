@@ -28,7 +28,7 @@ import { boltHTML } from './bolt.js';
 import { FAMILY_SVG } from './family.js';
 import { familyRound } from './family-hook.js';
 import { runStar } from './star.js';
-import { storyPlan, loadStories, storiesNow, LABEL as STORY_LABEL } from './story-plan.js';
+import { storyPlan, loadStories, storiesNow, LABEL as STORY_LABEL, ONLY as STORY_ONLY, ROUND as STORY_ROUND } from './story-plan.js';
 import { runTry, tryFor as tryOf, sutraOf, finished as tryFinished } from './try.js';
 import * as SKY from './sky.js';
 import { skyView, placesHTML } from './sky-view.js';
@@ -103,6 +103,7 @@ const routes = [
   [/^#\/grade\/(\w+)$/, (m, ctx) => gradeView(m[1], ctx)],
   [/^#\/skill\/([\w-]+)$/, (m, ctx) => skillView(m[1], ctx)],
   [/^#\/mix\/(\w+)$/, (m, ctx) => mixView(m[1], false, ctx)],
+  [/^#\/mix\/(\w+)\/words$/, (m, ctx) => mixView(m[1], false, ctx, true)],
   [/^#\/run\/(\w+)$/, (m, ctx) => mixView(m[1], true, ctx)],
   [/^#\/arcade$/, (m, ctx) => arcadeView(ctx)],
   [/^#\/(dojo|tricks)$/, (m, ctx) => dojoView(ctx)],
@@ -509,8 +510,10 @@ function showExample(s) {
 /* Typed something that is not a plain number on an arithmetic skill: not a try, no Sparks */
 const notAnswerMsg = () => fx.t({ explorer: 'Type just the answer, like 7.', challenger: 'Type just the answer, like 56 or 3/4.', pro: 'Type just the answer as a number, like 56 or 3/4.' });
 const KEYS = { basic: ['/', '-', '.'], alg: ['x', '^', '(', ')', '/', '-', '√', 'π'], set: [',', '-', '/', '√'], ineq: ['x', '<', '>', '<=', '>=', '-'], complex: ['i', '+', '-'] };
-/* One Practice session in root. signal: the view's. Each question runs under its own child signal, aborted by the next one. */
-function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signal } = {}) {
+/* One Practice session in root. signal: the view's. Each question runs under its own child signal, aborted by the next one.
+   only: every question a Word problem on the Skill picked (Only Word problems, openspec word-problems-more design D2);
+   pickSkill then picks only Skills that have one, and the stories have loaded. */
+function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signal, only = false } = {}) {
   let s, p, tries = 0, hints = 0, done = false, right = 0, total = 0, run = 0, life = lives;
   const session = child(signal); let question = null;
   const explorer = fx.mode() === 'explorer';
@@ -522,12 +525,14 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
   const dials = new Map(), mode = fx.mode();
   /* Word problems (openspec word-problems): a share of the questions by Mode, once the Player has 20 saved answers */
   const tales = storyPlan(mode || 'challenger', { answered: () => store.count('answers') });
+  /* Only Word problems: the Skill's own story (a Word problem Skill), else one in the Mode's style on its numbers */
+  const onlyStory = (sk, bare) => (bare.story ? null : storiesNow() && storiesNow().storyFor(sk, mode || 'challenger', { bare }));
   const dialFor = id => { if (!dials.has(id)) dials.set(id, new AD.Dial(AD.skillRating(id, mode))); return dials.get(id); };
   const saveDial = id => { const d = dials.get(id); if (!d || d.n < 4) return; AD.saveRating('skill:' + id, d); dials.set(id, new AD.Dial(d.d)); };
   const next = () => {
     if (question) question.abort();
     question = child(session.signal);
-    s = pickSkill(); const level = AD.levelFor(dialFor(s.id).lv), bare = s.gen(level); p = withPlain(s, tales.next(s, bare) || bare); tries = 0; hints = 0; done = false;
+    s = pickSkill(); const level = AD.levelFor(dialFor(s.id).lv), bare = s.gen(level); p = withPlain(s, (only ? onlyStory(s, bare) : tales.next(s, bare)) || bare); tries = 0; hints = 0; done = false;
     // Explorer mode: no typing; small whole-number answers become big buttons
     if (explorer && p.kind === 'num' && Number.isInteger(p.answer) && p.answer >= 0 && p.answer <= 200) { const near = [...new Set([p.answer + 1, p.answer - 1, p.answer + 2, p.answer + 10, p.answer - 2].filter(v => v >= 0))]; p = { ...p, kind: 'choice', choices: [p.answer, ...shuffle(near).slice(0, 3)].sort((a, b) => a - b).map(String), answer: String(p.answer) }; }
     const keyset = p.kind === 'expr' ? KEYS.alg : p.kind === 'set' ? KEYS.set : p.kind === 'ineq' ? KEYS.ineq : p.kind === 'complex' ? KEYS.complex : p.kind === 'num' && !['K', 1, 2].includes(s.grade) ? KEYS.basic : null;
@@ -602,20 +607,38 @@ function answerUI(p) {
   return `<div class="pr-in"><input class="ans-in" aria-label="Your answer" placeholder="${ph}" spellcheck="false" autocapitalize="off" inputmode="${p.kind === 'num' && Number.isInteger(p.answer) && p.answer >= 0 && !p.simplest ? 'numeric' : 'text'}">${p.unit ? `<span class="pr-unit">${p.unit}</span>` : ''}</div>`;
 }
 
-function mixView(g, isRun = false, { signal } = {}) {
+function mixView(g, isRun = false, { signal } = {}, words = false) {
   const G = gradeOf(g); if (!G) return home({ signal });
   document.title = `${isRun ? 'Endless run' : 'Endless practice'}, ${G.pro} · Learn Vedic Math`;
-  const list = skillsFor(g);
+  const all = skillsFor(g), told = () => all.filter(s => storiesNow().hasStory(s, fx.mode() || 'challenger'));
+  /* Only Word problems (openspec word-problems-more D1, D2): the level's Skills that have one; it waits the few
+     milliseconds the stories take to load, as a Word problem Skill's page does, and a level with none opens the mix */
+  if (words && !storiesNow()) {
+    let run = null; view.innerHTML = '<section class="md-section mq-tight"><div class="md-wrap mq-narrow"><p class="mq-small">Getting the stories ready&hellip;</p></div></section>';
+    const go = () => { if (signal && signal.aborted) return; if (storiesNow()) run = mixView(g, false, { signal }, true); else location.replace('#/mix/' + g); };
+    loadStories().then(go, go);
+    return { destroy: () => run && run.destroy() };
+  }
+  if (words && !told().length) { location.replace('#/mix/' + g); return; }
+  const list = words ? told() : all;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs(['#/grade/' + g, gradeLabel(g)], [null, isRun ? 'Endless run' : 'Endless practice'])}
     <h1 class="md-heading">${isRun ? 'Endless run' : 'Endless practice'}: ${gradeLabel(g)}</h1>
-    <p class="md-lede">${isRun ? `Questions from every skill in this level, forever. You have 3 lives: how far can you go? Your best: <b>${store.best('run-' + g)}</b>.` : 'Questions from the whole level, all mixed up and never-ending, favoring skills in progress. Mixing topics is harder, and that is exactly why it makes learning stick.'}</p>
+    <p class="md-lede">${isRun ? `Questions from every skill in this level, forever. You have 3 lives: how far can you go? Your best: <b>${store.best('run-' + g)}</b>.` : words ? 'Only Word problems from this level, never-ending. Read what each story asks, make a plan, then solve it.' : 'Questions from the whole level, all mixed up and never-ending, favoring skills in progress. Mixing topics is harder, and that is exactly why it makes learning stick.'}</p>
+    ${isRun ? '' : '<div class="g-optrow mix-only" id="mixOnly" role="group" aria-label="Questions" hidden></div>'}
     <div class="mq-practice md-card" id="practice"></div></div></section>`;
-  let lastId = null; loadStories().catch(() => {});
+  /* The Mixed and Only Word problems choice, once the stories know which Skills have one (none on a level without) */
+  const offer = () => {
+    const box = $('#mixOnly'); if (!box || (signal && signal.aborted) || !storiesNow() || !told().length) return;
+    box.innerHTML = `<button class="md-chip" aria-pressed="${!words}" data-only="0">Mixed</button><button class="md-chip" aria-pressed="${words}" data-only="1">${STORY_ONLY[fx.mode()] || STORY_ONLY.challenger}</button>`;
+    box.hidden = false;
+    box.querySelectorAll('[data-only]').forEach(b => on(b, 'click', () => { const to = '#/mix/' + g + (b.dataset.only === '1' ? '/words' : ''); if (location.hash !== to) location.hash = to; }, signal));
+  };
+  let lastId = null; loadStories().then(() => { if (!isRun) offer(); }, () => {});
   return practice($('#practice'), () => {
     const going = list.filter(s => store.started(s.id) && !store.mastered(s.id)), pool = (going.length >= 2 && Math.random() < .7 ? going : list).filter(s => s.id !== lastId);
     const s = pick(pool.length ? pool : list); lastId = s.id; return s;
-  }, { mix: true, lives: isRun ? 3 : 0, onOver: right => {
+  }, { mix: true, only: words, lives: isRun ? 3 : 0, onOver: right => {
     store.bump('runs'); const isBest = store.setBest('run-' + g, right), sp = 10 + right * 3; store.addSparks(sp, 'run'); if (isBest && right) fx.confetti(90);
     $('#practice').innerHTML = `<div class="ar-result"><div class="md-stat"><div class="md-kicker">You reached</div><div class="md-value">${right}</div><p>${isBest && right ? 'New best run!' : `Best: ${store.best('run-' + g)}`} <span class="fx-sparks">+${sp} Sparks</span></p></div></div><p><button class="md-btn md-btn--primary" id="again">${icon('bolt')} Run again</button> <a class="md-btn" href="#/grade/${g}">Back to ${gradeLabel(g)}</a></p>`;
     $('#again').onclick = () => mount(ctx => mixView(g, true, ctx));
@@ -1162,8 +1185,9 @@ store.on(type => { if (type === 'sparks') queueSparksPost(); });
 function arenaView({ signal } = {}) {
   document.title = `Arena · Learn Vedic Math`;
   const league = fx.MODES[fx.mode()].league, day = cloud.dayId(), wk = cloud.weekId();
-  /* Round type: daily (Ranked, always timed), practice (timed, untimed in Calm) or untimed (Practice, no clock).
-     With Calm on, the untimed Practice round is picked until the Player picks another this visit. */
+  /* Round type: daily (Ranked, always timed), practice (timed, untimed in Calm), untimed (Practice, no clock) or words
+     (Word problems, Practice with no clock: openspec word-problems-more). With Calm on, the untimed Practice round is
+     picked until the Player picks another this visit. */
   let type = fx.calmOn() ? 'untimed' : 'daily';
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs([null, 'Arena'])}
@@ -1181,7 +1205,7 @@ function arenaView({ signal } = {}) {
     pro: `Arena Rating: <b>${arenaRating()}</b>/20. Practice rounds start there and adapt to every answer; the daily round is the same for everyone.`
   })}</small>`;
   const lobby = (result = '') => {
-    shell.innerHTML = `${result}<div class="g-optrow" role="group" aria-label="Round type"><button class="md-chip" aria-pressed="${type === 'daily'}" data-t="daily">Daily challenge</button><button class="md-chip" aria-pressed="${type === 'practice'}" data-t="practice">Practice round</button><button class="md-chip" aria-pressed="${type === 'untimed'}" data-t="untimed">Practice, no clock</button></div>
+    shell.innerHTML = `${result}<div class="g-optrow" role="group" aria-label="Round type"><button class="md-chip" aria-pressed="${type === 'daily'}" data-t="daily">Daily challenge</button><button class="md-chip" aria-pressed="${type === 'practice'}" data-t="practice">Practice round</button><button class="md-chip" aria-pressed="${type === 'untimed'}" data-t="untimed">Practice, no clock</button><button class="md-chip" aria-pressed="${type === 'words'}" data-t="words">${STORY_ROUND[mode] || STORY_ROUND.challenger}</button></div>
       ${fx.calmOn() ? '<p class="ar-calm" id="arCalmNote">The daily challenge is a timed race for everyone. Practice has no clock in Calm.</p>' : ''}
       <p class="g-best">League: <b>${fx.MODES[fx.mode()].name}</b> · Your best today: <b>${store.best('arena-' + day)}</b><br>${arenaRatingLine()}</p>
       <button class="md-btn md-btn--primary ar-go" id="arGo">${icon('bolt')} Start</button>
@@ -1196,7 +1220,7 @@ function arenaView({ signal } = {}) {
   let run = null, play = null;
   const stop = () => { const r = run, p = play; run = play = null; if (p) p.close(); if (r) r.abort(); };
   const countdown = () => {
-    stop(); run = child(signal); loadArena().catch(() => {});
+    stop(); run = child(signal); loadArena().catch(() => {}); if (type === 'words') loadStories().catch(() => {});
     const old = shell.querySelector('.ar-result'); if (old) old.remove(); /* the last result goes; the new one shows in the shell */
     play = openShell(type === 'daily' ? 'Arena: daily challenge' : 'Arena: Practice', { signal: run.signal, exitId: 'arStop', onExit: stop, focusBack: () => $('#arGo', shell) });
     const area = play.area, rsig = run.signal;
@@ -1204,16 +1228,22 @@ function arenaView({ signal } = {}) {
     const count = child(rsig); /* leaving or stopping during the countdown means the round never starts */
     every(() => { n--; if (n === 0) { count.abort(); fx.sfx('ok'); start(area, rsig); } else { area.firstChild.textContent = n; fx.sfx('tick'); } }, 700, count.signal);
   };
-  const start = (area, rsig) => withArena(area, rsig, ({ runArena }) => {
+  /* The Word problems round's questions: one story after another of the Mode's style, never the same template twice in a
+     row (js/stories.js roundStory). Its stories load after the first paint, like Practice's. */
+  const storyDeal = (A, S) => { let last = null; return () => { let p = null; for (let k = 0; k < 6 && (!p || p.story.id === last); k++) p = S.roundStory(mode || 'challenger'); last = p.story.id; return A.storyItem(p, league, STORY_LABEL[mode] || STORY_LABEL.challenger); }; };
+  const start = (area, rsig) => withArena(area, rsig, A => {
+    const words = type === 'words';
+    if (words && !storiesNow()) { loadStories().then(() => { if (!rsig.aborted) start(area, rsig); }, () => { if (!rsig.aborted) area.innerHTML = '<p class="md-lede">The stories did not load. Check your connection and try again.</p>'; }); return; }
     track('arena/' + league + '/' + type, 'Arena round'); metrics.roundStart('arena');
     /* Practice: the Dial picks each question. Daily: it only records the answers (the questions are the same for everyone).
-       Untimed: the Practice round with no clock, chosen or (for a Practice round) set by Calm. The daily round keeps its clock. */
+       Untimed: the Practice round with no clock, chosen or (for a Practice round) set by Calm. The daily round keeps its clock.
+       Word problems: no clock, its own questions, and the Arena Rating left as it was (word-problems-more design D5). */
     const before = arenaRating(), dial = new AD.Dial(AD.rating(rKey, mode));
-    const untimed = type === 'untimed' || (type === 'practice' && fx.calmOn());
-    runArena(area, { league, day: type === 'daily' ? day : null, dial, signal: rsig, untimed, onEnd: async r => {
+    const untimed = words || type === 'untimed' || (type === 'practice' && fx.calmOn());
+    A.runArena(area, { league, day: type === 'daily' ? day : null, dial: words ? null : dial, signal: rsig, untimed, ...(words ? { deal: storyDeal(A, storiesNow()), count: A.STORY_QS } : {}), onEnd: async r => {
       metrics.roundEnd('arena', league);
-      const after = Math.round(AD.saveRating(rKey, dial) || before);
-      const moved = dial.n < 4 ? '' : fx.t({
+      const after = words ? before : Math.round(AD.saveRating(rKey, dial) || before);
+      const moved = words || dial.n < 4 ? '' : fx.t({
         explorer: after > before ? ` Your Arena Rating went up to ${after}!` : after < before ? ` Your Arena Rating is ${after} now.` : '',
         challenger: after > before ? ` Arena Rating up to ${after}.` : after < before ? ` Arena Rating now ${after}.` : '',
         pro: after > before ? ` Arena Rating up to ${after}.` : after < before ? ` Arena Rating down to ${after}.` : ''

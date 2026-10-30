@@ -206,6 +206,22 @@ test.describe('Calm and sound', () => {
     await expect(panel.locator('#vmCalm')).toHaveAttribute('aria-checked', 'false');
   });
 
+  test('on a short screen the panel stays inside the viewport and scrolls to its last control', async ({ page }) => {
+    await page.setViewportSize({ width: 568, height: 320 });
+    await open(page);
+    await page.locator('#vmMBtn').click();
+    const panel = page.locator('#vmMPanel');
+    await expect(panel).toBeVisible();
+    const b = (await panel.boundingBox())!;
+    expect(b.y + b.height).toBeLessThanOrEqual(320);
+    expect(await panel.evaluate(p => p.scrollHeight > p.clientHeight)).toBe(true);
+    const last = panel.locator('.vm-about summary');
+    await last.scrollIntoViewIfNeeded();
+    await expect(last).toBeInViewport();
+    await last.click();
+    await expect(panel.locator('.vm-about')).toHaveAttribute('open', '');
+  });
+
   test('in a round: the shell has the same control with Pause motion and the music, in step with the header', async ({ page }) => {
     await open(page, '#/star/sq5/1');
     const shell = page.locator('.play-shell');

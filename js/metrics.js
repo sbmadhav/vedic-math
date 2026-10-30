@@ -50,6 +50,7 @@ const ROUTES = [
   [/^#\/grade\/(\w+)$/, 'grade/{grade:1}'],
   [/^#\/skill\/([\w-]+)$/, 'skill/{skill:1}'],
   [/^#\/mix\/(\w+)$/, 'mix/{grade:1}'],
+  [/^#\/mix\/(\w+)\/words$/, 'mix/{grade:1}/words'],
   [/^#\/run\/(\w+)$/, 'run/{grade:1}'],
   [/^#\/arcade$/, 'arcade'], /* the menu's Arcade zone (openspec change play-nav-by-mode) */
   [/^#\/dojo$/, 'dojo'],

@@ -552,6 +552,11 @@ a.door .play-ic { width: 44px; height: 44px; } .door--coral .play-ic { backgroun
 .ar-combo { font-weight: 700; color: var(--coral-strong); } .ar-combo b { font-size: 1.4rem; }
 .ar-bar span { background: var(--coral-strong); }
 .ar-q { font: 600 clamp(1.8rem, 6vw, 2.8rem)/1.25 var(--display); text-align: center; margin: 14px 0; overflow-wrap: anywhere; }
+/* The Arena's Word problems round (openspec word-problems-more): the label over the story, the story in the body font
+   so it reads like text, and the unit beside the entry */
+.ar-story { display: block; width: fit-content; align-self: center; margin: var(--space-2) auto 0; } .ar-story[hidden] { display: none; }
+.ar-q.ar-q--story { font: 600 1.2rem/1.55 var(--font-sans); text-align: start; max-width: 40em; margin-inline: auto; }
+.ar-unit { font-weight: 700; font-size: 1.2rem; }
 .ar-viz { display: grid; place-items: center; max-width: 260px; margin: 0 auto 10px; }
 .ar-viz:empty { display: none; }
 .ar-choices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 420px; margin: 0 auto; }
@@ -697,7 +702,7 @@ html.motion-paused .sutra-face, body.calm .sutra-face, html.motion-paused .sutra
 .vm-mbtn.on .vm-eq i:nth-child(2) { animation-delay: -.3s; } .vm-mbtn.on .vm-eq i:nth-child(3) { animation-delay: -.6s; }
 @media (max-width: 600px) { .vm-mbtn .lbl, .vm-mbtn .vm-eq { display: none; } .vm-mbtn { width: 36px; height: 36px; padding: 0; justify-content: center; } .vm-mbtn.on .vm-eq { display: none; } }
 @keyframes eq { to { height: 12px; } }
-.vm-mpanel { position: absolute; right: 0; top: calc(100% + 8px); width: min(340px, 92vw); max-height: calc(100vh - 96px); overflow: auto; z-index: 60; padding: 16px; }
+.vm-mpanel { position: absolute; right: 0; top: calc(100% + 8px); width: min(340px, 92vw); max-height: calc(100vh - 96px); overflow: auto; box-sizing: border-box; z-index: 60; padding: 16px; }
 .vm-mpanel:hover { transform: none; }
 .vm-mt { display: block; font: 600 1.15rem/1.2 var(--display); }
 .vm-tracks { display: grid; gap: 8px; margin: 10px 0; }
@@ -1242,8 +1247,9 @@ html.play-open #view { z-index: 70; }
 .play-shell .ar-bar { margin-bottom: 6px; }
 .play-shell .ar-fin { margin: 0 0 4px; text-align: right; }
 .play-shell .ar-q { margin: auto 0 8px; font-size: calc(var(--play-scale) * clamp(1.4rem, min(9cqw, 7cqh), 2.8rem)); }
-.play-shell .ar-viz { max-height: 22cqh; overflow: hidden; }
-.play-shell .ar-viz svg { max-height: 22cqh; width: auto; }
+.play-shell .ar-q.ar-q--story { font-size: calc(var(--play-scale) * clamp(1rem, min(4.6cqw, 3.6cqh), 1.35rem)); }
+.play-shell .ar-viz { display: flex; justify-content: center; align-items: center; gap: var(--space-2); width: 100%; max-height: 22cqh; overflow: hidden; }
+.play-shell .ar-viz svg { min-width: 0; max-height: 22cqh; } .play-shell .ar-viz:empty { display: none; }
 .play-shell #arIn { margin-top: auto; }
 .play-shell .ar-entry { min-height: clamp(40px, 8cqh, 56px); font-size: calc(var(--play-scale) * 1.8rem); }
 .play-shell .ar-pad { position: sticky; bottom: 0; margin-top: 8px; background: var(--bg); }
