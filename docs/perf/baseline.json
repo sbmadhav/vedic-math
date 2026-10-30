@@ -10,7 +10,7 @@
   "serverLatency": "the simulation used production's observed server latency (about 20 to 30 ms per origin); since 2026-10-22 every run fixes it at tools/lighthouserc.json serverResponseTime (30 ms), so a preview host's own latency does not count (baseline.md, The server latency is fixed)"
  },
  "reference": {
-  "commit": "002e5d62499154016e4c1733fca6b9d5695fcca7",
+  "commit": "c34871ab29cd43d7881a5eea9293ce7b8dbc99de",
   "date": "2026-10-30",
   "alias": "perf-ref",
   "why": "The pinned reference build the check after a deploy (e2e.yml, perf) measures beside production in the same job, so the runner's CPU speed cancels (openspec change perf-gate-same-runner-post-deploy, design D1 and D2): the main tip the pull request that added it was last merged with before it landed; that pull request changed no file a Player downloads, so production after it served this code. Moved only with a reason (baseline.md, The post-deploy reference)."
