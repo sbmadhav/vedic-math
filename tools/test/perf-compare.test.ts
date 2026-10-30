@@ -168,7 +168,7 @@ test('after a deploy the columns read Reference and Production, and the notes na
   expect(table(rows, DEPLOY).split('\n').slice(0, 2)).toEqual(['| Page or interaction | Metric | Baseline | Reference (`abc1234`) | Production | Limit | |', '|---|---|---|---|---|---|---|']);
   expect(table(rows, DEPLOY)).toMatch(/\| arena \| tbt \| 159 ms \| 190 ms \| 196 ms \| 215 ms \| ok \|/);
   expect(table(rows, DEPLOY)).toMatch(/\| arena \| lcp \| 5200 ms \| 5200 ms \| 5200 ms \| 5300 ms \(baseline\) \| ok \|/);
-  const lines = notes(rows, { benchmarkIndex: 2458 }, { benchmarkIndex: 2470 }, { labels: DEPLOY });
+  const lines = notes(rows, { benchmarkIndex: 2458 }, { benchmarkIndex: 2470 }, { labels: DEPLOY, afterDeploy: true });
   expect(lines[0]).toMatch(/^Limits are the median of Reference \(`abc1234`\) in this job plus the tolerance: how far Production has moved from it/);
   expect(lines[2]).toMatch(/^Runner CPU speed: Lighthouse benchmarkIndex 2458 on the Production runs, 2470 on the Reference \(`abc1234`\) runs/);
   // A pull request's layout is the default
@@ -185,7 +185,7 @@ test('the reference not measured after a deploy: the baseline alone, as before, 
   const rows = compare(deep, { pages: { arena: { median: lh({ tbt: 196 }) } } }, { interactions: { 'arena-answer': ix() } });
   expect(rows.find(r => r.metric === 'tbt')).toMatchObject({ limit: 184, from: 'baseline', ok: false });
   expect(table(rows, DEPLOY).split('\n')[0]).toBe('| Page or interaction | Metric | Baseline | Production | Limit | |');
-  const lines = notes(rows, { benchmarkIndex: 2458 }, undefined, { labels: DEPLOY, missing: { commit: 'abc1234def', why: 'the upload failed' } });
+  const lines = notes(rows, { benchmarkIndex: 2458 }, undefined, { labels: DEPLOY, afterDeploy: true, missing: { commit: 'abc1234def', why: 'the upload failed' } });
   expect(lines[0]).toMatch(/^The pinned reference \(`abc1234`\) was not measured: the upload failed\. Every limit counts from the baseline alone/);
   expect(lines[2]).toMatch(/^Runner CPU speed: Lighthouse benchmarkIndex 2458 \(higher is faster\)/);
   // Without a missing reference, no such note
@@ -209,6 +209,13 @@ test('the command line: --reference and --production are one option, and the lab
     expect(readFileSync(out, 'utf8')).toMatch(/\| Baseline \| Reference \(`abc1234`\) \| Production \| Limit \|/);
     main([b, l, i, '--production', rl, ri, '--out', out]);
     expect(readFileSync(out, 'utf8')).toMatch(/\| Baseline \| Production \| Preview \| Limit \|/);
+    expect(readFileSync(out, 'utf8')).toMatch(/Limits are production's median in this job/);
+    // A pull request's run that names its columns keeps a pull request's notes (#179 review)
+    main([b, l, i, '--production', rl, ri, '--label', 'Preview', '--out', out]);
+    expect(readFileSync(out, 'utf8')).toMatch(/Limits are production's median in this job/);
+    expect(readFileSync(out, 'utf8')).not.toMatch(/workers\.dev, a different network chain/);
+    main([b, l, i, '--reference', rl, ri, '--out', out]);
+    expect(readFileSync(out, 'utf8')).toMatch(/Limits are the median of Production in this job/);
     main([b, l, i, '--label', 'Production', '--reference-missing', 'the upload failed', '--out', out]);
     expect(process.exitCode).toBe(1);
     expect(readFileSync(out, 'utf8')).toMatch(/The pinned reference \(`abc1234`\) was not measured: the upload failed\./);

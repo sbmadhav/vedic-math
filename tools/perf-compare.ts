@@ -32,7 +32,8 @@
             [--reference <lighthouse.json> <interactions.json>] [--reference-label <column>] [--label <column>]
             [--reference-missing <why>] [--out table.md]
    --reference-label names the reference's column (Production by default), --label the measured column (Preview with a
-   reference, Now without).
+   reference, Now without). --reference (or --reference-missing) is the check after a deploy and its notes say so;
+   --production is a pull request's.
    Exit code 1 when a gated median misses its tolerance. Time to first byte, the server's response time and Speed Index
    are shown for information. The runner's CPU speed (Lighthouse's benchmarkIndex, when a run recorded it) is printed
    under the table for each host measured: blocking time scales with it. */
@@ -127,13 +128,14 @@ const fmt = (metric: string, v: number) => (Number.isNaN(v) ? 'missing' : metric
 /* The limit, saying (baseline) when a reference was measured but the limit is the baseline's */
 const limitCell = (r: Row) => (r.limit === null ? 'info' : `${fmt(r.metric, r.limit)}${r.reference !== undefined && r.from === 'baseline' ? ' (baseline)' : ''}`);
 
-/** The table; `labels` names the reference's and the measured columns (a pull request's by default). Without a
-    reference the measured column reads Now on a pull request's labels, else its own label. */
-export function table(rows: Row[], labels: Labels = PULL_REQUEST): string {
+/** The table; `labels` names the reference's and the measured columns (a pull request's when not given). Without a
+    reference the measured column reads its label when one was given, else Now. */
+export function table(rows: Row[], given?: Labels): string {
+  const labels = given ?? PULL_REQUEST;
   const withReference = rows.some(r => r.reference !== undefined);
   const lines = withReference
     ? [`| Page or interaction | Metric | Baseline | ${labels.reference} | ${labels.measured} | Limit | |`, '|---|---|---|---|---|---|---|']
-    : [`| Page or interaction | Metric | Baseline | ${labels === PULL_REQUEST ? 'Now' : labels.measured} | Limit | |`, '|---|---|---|---|---|---|'];
+    : [`| Page or interaction | Metric | Baseline | ${given ? labels.measured : 'Now'} | Limit | |`, '|---|---|---|---|---|---|'];
   for (const r of rows) {
     const cells = [r.what, r.metric, fmt(r.metric, r.base)];
     if (withReference) cells.push(fmt(r.metric, r.reference ?? NaN));
@@ -143,16 +145,17 @@ export function table(rows: Row[], labels: Labels = PULL_REQUEST): string {
   return lines.join('\n');
 }
 
-/** What the notes under the table say beyond the rows: the column names (a pull request's by default), and why a
-    reference that should have been measured was not (after a deploy: the pinned reference's commit and the reason) */
-export type NoteContext = { labels?: Labels; missing?: { commit?: string | undefined; why: string } };
+/** What the notes under the table say beyond the rows: the column names (a pull request's by default), whether this
+    is the check after a deploy (the pinned reference build as the reference, production measured) rather than a pull
+    request's, and why a reference that should have been measured was not (the pinned reference's commit and the reason) */
+export type NoteContext = { labels?: Labels; afterDeploy?: boolean; missing?: { commit?: string | undefined; why: string } };
 
 /** The lines under the table: what the limits count from when a reference was measured (or why the pinned one was
     not), what is reported rather than gated, and the runner's speed when the runs recorded it (both hosts' when a
     reference was measured) */
 export function notes(rows: Row[], lh: Pick<LhRun, 'benchmarkIndex'>, reference?: Pick<LhRun, 'benchmarkIndex'>, context: NoteContext = {}): string[] {
   const labels = context.labels ?? PULL_REQUEST;
-  const pullRequest = labels === PULL_REQUEST;
+  const pullRequest = !context.afterDeploy;
   const out: string[] = [];
   if (rows.some(r => r.reference !== undefined)) {
     out.push(pullRequest
@@ -199,12 +202,14 @@ export function main(argv: string[]) {
   const base = read(basePath) as PerfBaseline;
   const lh = read(lhPath) as LhRun;
   const reference: Reference | undefined = refLh && refIx ? { lh: read(refLh) as LhRun, ix: read(refIx) as IxRun } : undefined;
-  const labels: Labels = refLabel === undefined && label === undefined
-    ? PULL_REQUEST
+  const labels: Labels | undefined = refLabel === undefined && label === undefined
+    ? undefined
     : { reference: refLabel ?? PULL_REQUEST.reference, measured: label ?? (reference ? PULL_REQUEST.measured : 'Now') };
+  /* The check after a deploy spells the option --reference (or names a missing reference); a pull request --production */
+  const afterDeploy = asReference !== undefined || missing !== undefined;
   const rows = compare(base, lh, read(ixPath) as IxRun, reference);
   const over = rows.filter(r => !r.ok);
-  const context: NoteContext = { labels, ...(missing === undefined ? {} : { missing: { commit: base.reference?.commit, why: missing } }) };
+  const context: NoteContext = { ...(labels ? { labels } : {}), afterDeploy, ...(missing === undefined ? {} : { missing: { commit: base.reference?.commit, why: missing } }) };
   const md = `${over.length ? `**${over.length} over budget**` : 'Every gated median is within its tolerance.'}\n\n${table(rows, labels)}\n${notes(rows, lh, reference?.lh, context).map(n => `\n${n}\n`).join('')}`;
   console.log(md);
   if (out) writeFileSync(out, md);

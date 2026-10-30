@@ -299,6 +299,7 @@ jobs:
     outputs:
       url: ${{ steps.upload.outputs.url }}
       commit: ${{ steps.pin.outputs.commit }}
+      status: ${{ steps.done.outputs.status }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -374,6 +375,15 @@ jobs:
           echo "::error::$URL does not serve the pinned build's sw.js"
           exit 1
 
+      # continue-on-error makes needs.reference.result read success even when a step failed, so the job's own status
+      # goes out as an output for the perf job's note (#179 review)
+      - name: The job's status
+        id: done
+        if: always()
+        env:
+          STATUS: ${{ job.status }}
+        run: echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+
   # The load and interaction checks on production after each deploy (openspec change react-typescript,
   # performance-budget spec, task 1.8; openspec change perf-gate-same-runner-post-deploy): the same measurements and
   # rules as the preview's perf job, with production as the measured side and the pinned reference build (the reference
@@ -399,7 +409,7 @@ jobs:
       BASE_URL: https://learnvedicmath.com
       REFERENCE_URL: ${{ needs.reference.outputs.url }}
       REFERENCE_COMMIT: ${{ needs.reference.outputs.commit }}
-      REFERENCE_RESULT: ${{ needs.reference.result }}
+      REFERENCE_RESULT: ${{ needs.reference.outputs.status || needs.reference.result }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -462,33 +472,42 @@ jobs:
             fi
           }
           compare; code=$?
+          incomplete=0
           if [ "$code" != 0 ]; then
             echo "::warning::a median missed its tolerance; measuring again to confirm"
             mkdir -p e2e/perf/results/first
+            cp perf-table.md perf-table-first.md
             cp e2e/perf/results/*.json e2e/perf/results/first/
             if [ -n "$REFERENCE_URL" ]; then mkdir -p e2e/perf/results/first/reference && cp e2e/perf/results/reference/*.json e2e/perf/results/first/reference/; fi
             cd e2e
-            # An over row of a Lighthouse metric (any but inp and visible) re-measures the pages; an over interaction row the interactions
+            # An over row of a Lighthouse metric (any but inp and visible) re-measures the pages; an over interaction row the
+            # interactions. A re-measure that fails on either host leaves the first run's table and opens no issue: the
+            # second comparison would mix the first run's numbers with the second's (#179 review)
             if grep '\*\*over\*\*' ../perf-table.md | grep -qvE '\| (inp|visible) \|'; then
               if [ -n "$REFERENCE_URL" ]; then
-                node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json --reference "$REFERENCE_URL" --reference-json perf/results/reference/lighthouse.json
+                node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json --reference "$REFERENCE_URL" --reference-json perf/results/reference/lighthouse.json || incomplete=1
               else
-                node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json
+                node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json || incomplete=1
               fi
             fi
             if grep '\*\*over\*\*' ../perf-table.md | grep -qE '\| (inp|visible) \|'; then
               if [ -n "$REFERENCE_URL" ]; then
-                BASE_URL="$REFERENCE_URL" pnpm exec playwright test -c perf/playwright.config.ts \
-                  && cp perf/results/interactions.json perf/results/reference/interactions.json
+                if BASE_URL="$REFERENCE_URL" pnpm exec playwright test -c perf/playwright.config.ts; then
+                  cp perf/results/interactions.json perf/results/reference/interactions.json
+                else incomplete=1; fi
               fi
-              pnpm exec playwright test -c perf/playwright.config.ts
+              pnpm exec playwright test -c perf/playwright.config.ts || incomplete=1
             fi
             cd ..
-            compare; code=$?
+            if [ "$incomplete" = 0 ]; then compare; code=$?
+            else
+              cp perf-table-first.md perf-table.md
+              echo "::warning::the re-measure did not finish on both hosts; the table is the first run's, and no issue is opened"
+            fi
           fi
           set -e
           cat perf-table.md >> "$GITHUB_STEP_SUMMARY"
-          if [ "$code" != 0 ]; then
+          if [ "$code" != 0 ] && [ "$incomplete" = 0 ]; then
             if [ "$EVENT" != push ]; then echo "::warning::a median missed its tolerance twice (see the table); a run by hand opens no issue"; exit 0; fi
             if [ -n "$REFERENCE_URL" ]; then
               what=$(printf 'misses its tolerance against the pinned reference build (`%s`, docs/perf/baseline.json `reference`), both measured in this job page by page on one runner, with the baseline for information' "$short")
