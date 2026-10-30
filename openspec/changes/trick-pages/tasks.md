@@ -5,7 +5,7 @@ Approved for building once merged (proposal.md). Playwright runs against a local
 ## 1. Generator and pages
 
 - [ ] 1.1 `tools/trick-pages/pages.ts`: the 15 rows of design D2 (Trick id, slug, worked example numbers, meta description under 160 characters). Verify: `test/trick-pages.test.mjs` checks every id exists in `TRICKS`, every slug is unique and lowercase words, every example passes the Trick's `valid()` and `answer()` equals the expected result recorded in its row for that Trick's operation (a product, a difference, a quotient, a digit-sum check or a root), and no description has an em dash.
-- [ ] 1.2 `tools/trick-pages/generate.ts` (run by `pnpm gen:tricks`): renders `site/tricks/index.html` and `site/tricks/<slug>/index.html` with the header from `theme/header.html`, the Sutra line and 1965 book credit (design D6), the worked example from `steps()`, Practice this trick, the metadata and JSON-LD (design D5). Verify: the test regenerates into a scratch folder and fails when the committed pages differ; `python3 build.py` accepts the pages (header, brackets, hosts).
+- [ ] 1.2 `tools/trick-pages/generate.ts` (run by `pnpm gen:tricks`): renders `site/tricks/index.html` and `site/tricks/<slug>/index.html` with the header from `theme/header.html`, the Sutra line with its Deep dive link (`/play/#/sutras/<sutraId>` from the Trick's `sutraId`) and 1965 book credit (design D6), the worked example from `steps()`, Practice this trick, the metadata and JSON-LD (design D5). Verify: the test regenerates into a scratch folder and fails when the committed pages differ; `python3 build.py` accepts the pages (header, brackets, hosts).
 - [ ] 1.3 `theme/tricks.css`: the page, the calculator and the step highlight classes the steps use (`hl`, `hl-coral` and the rest), tokens only, Daybreak and Deep Space, 320 px wide without overflow. Verify: `a11y.spec.ts` gains `/tricks/` and two Trick pages in both schemes; screenshots at 375 and 1280 px checked by eye.
 
 ## 2. Calculator
@@ -29,6 +29,6 @@ Approved for building once merged (proposal.md). Playwright runs against a local
 ## 5. Owner and follow-ups
 
 - [ ] 5.1 **[OWNER]** After the pages are live, submit `https://learnvedicmath.com/sitemap.xml` in Google Search Console (and Bing Webmaster Tools if wanted): owner setup section 16, learnvedicmath task 1.11. Then, after four weeks, look at which Trick pages get impressions.
-- [ ] 5.2 With `react-typescript` task 5.3: link each prerendered Sutra page to its Trick pages and point each Trick page's Sutra link at the prerendered Sutra page (design D1).
+- [ ] 5.2 With `react-typescript` task 5.3: link each prerendered Sutra page to its Trick pages and switch each Trick page's Sutra link at the prerendered Sutra page (design D1).
 - [ ] 5.3 `openspec validate trick-pages --strict`, `pnpm typecheck`, `pnpm lint`, `pnpm test`, `python3 build.py`; the touched specs plus `a11y.spec.ts` on chromium, webkit and mobile with `--retries=0`.
 - [ ] 5.4 After release: archive this change with its coverage specs.

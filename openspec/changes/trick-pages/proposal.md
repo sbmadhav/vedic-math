@@ -24,7 +24,7 @@ Unchanged: the game (`/play/`), its first-load bytes and its precache; the Trick
 
 ### New Capabilities
 
-- `trick-pages`: the static Trick pages, their calculator, their search metadata, honest framing and their weight.
+- `trick-pages`: the static Trick pages and their index, their calculator, their search metadata, honest framing, their weight, and that they store nothing.
 
 ### Modified Capabilities
 

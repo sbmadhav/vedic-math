@@ -35,7 +35,7 @@ Modes and Players affected: every Player who finishes an Arena daily challenge, 
 
 ### Modified Capabilities
 
-- `arena`: new requirements "Challenge a friend from the daily result", "The share text says what the round was and nothing personal", "A challenge link on its day and League is the daily challenge", "A challenge link on another day or League is Practice" and "A challenge link is checked and never starts by itself".
+- `arena`: new requirements "Challenge a friend from the daily result", "The share text says what the round was and nothing personal", "A challenge link on its day and League is the daily challenge", "A challenge link survives the Mode picker", "A challenge link on another day or League is Practice" and "A challenge link is checked and never starts by itself".
 - `analytics`: new requirement "Challenge links are counted without identifiers".
 
 ## Impact
