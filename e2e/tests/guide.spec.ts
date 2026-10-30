@@ -13,7 +13,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe('the guide page', () => {
-  test('a Challenger sees every group and section, each with what, how, a tip and a picture; Guide is the current menu item', async ({ page, issues }) => {
+  test('a Challenger sees every group and section, each with what, how, a tip and a picture; Find, the menu\'s help, is the current menu item', async ({ page, issues }) => {
     await open(page, '#/guide');
     await expect(page.locator('#view h1')).toHaveText('How to use Vedic Math');
     await expect(page.locator('.gd-group')).toHaveCount(5);
@@ -29,7 +29,7 @@ test.describe('the guide page', () => {
       await expect(s.locator('.gd-tip')).not.toBeEmpty();
     }
     await expect(page.locator('#gd-parents details.pn')).toHaveCount(1); /* the same note as under the Boards */
-    await expect(page.locator('.mq-nav a[href="#/guide"]')).toHaveAttribute('aria-current', 'true');
+    await expect(page.locator('.mq-nav .nav-find')).toHaveAttribute('aria-current', 'true'); /* the guide is in Find's zone (openspec change play-nav-by-mode) */
     await expect(page.locator('#view')).not.toContainText(/\bXP\b|\u2014/);
     expect(appErrors(issues)).toEqual([]);
   });
@@ -56,12 +56,13 @@ test.describe('the guide page', () => {
 
   test.describe('Explorer', () => {
     test.use({ seedMode: 'explorer' });
-    test('Explorer wording, no Stars or Sky section, and the Guide link in the menu bar', async ({ page }) => {
+    test('Explorer wording, no Stars or Sky section, and How to play under More places on Home', async ({ page }) => {
       await open(page, '#/guide');
       await expect(page.locator('#view h1')).toHaveText('How to play');
       await expect(page.locator('#gd-stars, #gd-sky')).toHaveCount(0);
       await expect(page.locator('#gdh-around')).toHaveText('Find your way');
-      await expect(page.locator('.mq-nav a[href="#/guide"]')).toBeVisible();
+      await open(page); /* Explorer's menu is Play, Learn and Me; the guide is under More places (openspec change play-nav-by-mode) */
+      await expect(page.locator('.home-places a[href="#/guide"]')).toBeVisible();
     });
   });
 
@@ -145,14 +146,14 @@ test.describe('the first-visit tour', () => {
     await expect(tour(page)).toHaveCount(0);
   });
 
-  test('on every screen size the Guide step shows its link and the whole card on screen', async ({ page }) => {
+  test('on every screen size the Guide step shows its link (Explorer: How to play under More places) and the whole card on screen', async ({ page }) => {
     await page.goto(APP);
     await page.locator('.mode-card[data-mode="explorer"]').click();
     const dlg = tour(page);
     await expect(dlg).toBeVisible();
     while (await dlg.getAttribute('data-step') !== 'guide') await dlg.locator('[data-act="next"]').click();
     const vp = page.viewportSize()!;
-    for (const box of [await page.locator('.mq-nav a[href="#/guide"]').boundingBox(), await dlg.locator('.tour-card').boundingBox()]) {
+    for (const box of [await page.locator('.home-places a[href="#/guide"]').boundingBox(), await dlg.locator('.tour-card').boundingBox()]) {
       expect(box!.x).toBeGreaterThanOrEqual(0); expect(box!.y).toBeGreaterThanOrEqual(0);
       expect(box!.x + box!.width).toBeLessThanOrEqual(vp.width); expect(box!.y + box!.height).toBeLessThanOrEqual(vp.height);
     }

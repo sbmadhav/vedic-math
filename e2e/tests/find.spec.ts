@@ -21,7 +21,7 @@ test('Find in the menu bar opens the page with the box focused and Find current;
   await expect(page.locator('#findIn')).toBeFocused();
   await expect(page.locator('.mq-nav a[href="#/find"]')).toHaveAttribute('aria-current', 'true');
   await expect(page.locator('#findOut h2')).toHaveText('Browse');
-  await expect(hits(page).locator('b')).toHaveText(['Home', 'Sutras', 'Learn', 'Dojo', 'Arena', 'Games', 'Watch', 'Me', 'Guide']);
+  await expect(hits(page).locator('b')).toHaveText(['Home', 'Sutras', 'Learn', 'Arcade', 'Dojo', 'Arena', 'Games', 'Watch', 'Me', 'Guide']); /* with the Arcade zone (openspec change play-nav-by-mode) */
   for (const h of await hits(page).all()) expect((await h.locator('small').innerText()).length).toBeGreaterThan(20);
   await expect(page.locator('#view')).not.toContainText(/\u2014/);
   expect(appErrors(issues)).toEqual([]);

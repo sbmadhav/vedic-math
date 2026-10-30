@@ -1,7 +1,8 @@
 import { test, expect, open } from '../fixtures';
 
-/* site-header spec, Requirements "Color scheme button", "Nav shows the current route" and "Music control in the site's
-   style": one test per scenario. */
+/* site-header spec, Requirements "Color scheme button", "Nav shows the current route" and "Calm and sound control"
+   (as modified and renamed by openspec change play-nav-by-mode; before it "Music control in the site's style"): one
+   test per scenario. */
 type Page = import('@playwright/test').Page;
 const bg = (page: Page) => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
 
@@ -42,8 +43,8 @@ test('A choice made elsewhere on the site: Deep Space saved on the landing page 
   await expect(page.locator('#themeBtn .md-theme-moon')).toBeVisible();
 });
 
-test('Current route: on Learn, Arena, Games, Watch and Guide exactly that nav link is current and filled', async ({ page }) => {
-  for (const [hash, name] of [['#/learn', 'Learn'], ['#/arena', 'Arena'], ['#/games', 'Games'], ['#/watch', 'Watch'], ['#/guide', 'Guide']] as const) {
+test('Current route: on Learn, the Arena, Games, Watch and the Guide exactly Learn, Arcade, Arcade, Watch or Find is current and filled', async ({ page }) => {
+  for (const [hash, name] of [['#/learn', 'Learn'], ['#/arena', 'Arcade'], ['#/games', 'Arcade'], ['#/watch', 'Watch'], ['#/guide', 'Find']] as const) {
     await open(page, hash);
     const nav = page.locator('header .mq-nav');
     await expect(nav.locator('a[aria-current="true"]')).toHaveCount(1);
@@ -55,11 +56,38 @@ test('Current route: on Learn, Arena, Games, Watch and Guide exactly that nav li
   }
 });
 
-test('Open the panel: Music in the header opens the music panel and Escape closes it', async ({ page }) => {
+test('A Trick page: on the Trick page of squares ending in 5 the Arcade is current', async ({ page }) => {
+  await open(page, '#/skill/v-sq5');
+  await expect(page.locator('header .mq-nav a[aria-current="true"]')).toHaveText('Arcade');
+});
+
+test('Open the panel: Calm in the header opens the panel with the Calm switch, Pause motion and the four soundscapes, and Escape closes it', async ({ page }) => {
   await open(page);
   await page.locator('#vmMBtn').click();
   await expect(page.locator('#vmMPanel')).toBeVisible();
+  await expect(page.locator('#vmMPanel #vmCalm')).toBeVisible();
+  await expect(page.locator('#vmMPanel #vmMotion')).toBeVisible();
+  await expect(page.locator('#vmMPanel [data-t]')).toHaveCount(4);
   await expect(page.locator('#vmMBtn')).toHaveAttribute('aria-expanded', 'true');
   await page.keyboard.press('Escape');
   await expect(page.locator('#vmMPanel')).toBeHidden();
+});
+
+test('Calm from the header: turning Calm on in the panel shows on Me, and nothing starts playing', async ({ page }) => {
+  await open(page);
+  await page.locator('#vmMBtn').click();
+  await page.locator('#vmCalm').click();
+  await expect(page.locator('#vmMBtn')).not.toHaveClass(/\bon\b/);
+  await open(page, '#/me');
+  await expect(page.locator('#setCalm')).toHaveAttribute('aria-checked', 'true');
+});
+
+test('In a round: Pause motion from the shell\'s Calm and sound control is on for the site, and the header shows it after the round', async ({ page }) => {
+  await open(page, '#/star/sq5/1');
+  await page.locator('#plMBtn').click();
+  await page.locator('#plMotion').click();
+  await expect(page.locator('html')).toHaveClass(/motion-paused/);
+  await page.locator('#stExit').click();
+  await page.locator('#vmMBtn').click();
+  await expect(page.locator('#vmMotion')).toHaveAttribute('aria-checked', 'true');
 });

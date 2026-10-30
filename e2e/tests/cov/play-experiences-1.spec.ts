@@ -6,10 +6,10 @@ type Page = import('@playwright/test').Page;
 const today = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
 const progress = (page: Page) => page.evaluate(() => { const p = JSON.parse(localStorage.getItem('vm.players') || '{}').active; return JSON.parse(localStorage.getItem('mathquest.v1.' + p) || '{}'); });
 
-test('Opening Tala Lab: #/games/tala shows Tala Lab, Games is current in the nav, and Back returns to #/games', async ({ page }) => {
+test('Opening Tala Lab: #/games/tala shows Tala Lab, the Arcade (Games\' zone) is current in the nav, and Back returns to #/games', async ({ page }) => {
   await open(page, '#/games/tala');
   await expect(page.locator('#view h1').first()).toHaveText('Tala Lab');
-  await expect(page.locator('.mq-nav a[href="#/games"]')).toHaveAttribute('aria-current', 'true');
+  await expect(page.locator('.mq-nav a[href="#/arcade"]')).toHaveAttribute('aria-current', 'true'); /* Games is in the Arcade (openspec change play-nav-by-mode) */
   await page.locator('.px-back').first().click();
   await expect(page).toHaveURL(/#\/games$/);
 });

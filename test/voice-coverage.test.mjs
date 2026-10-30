@@ -17,6 +17,7 @@ import { wholeSkills, fixedLines, STITCHED_K2 } from '../tools/voice/lines.mjs';
 import { allExplanationLines } from '../js/explain-lines.js';
 import { VIDEOS, LINKS } from '../js/videos.js';
 import { TEMPLATES, WRITTEN, storyFor } from '../js/stories.js';
+import { NAV_LINES } from '../js/nav.js';
 
 const MANIFEST = new URL('../tools/voice/manifest.json', import.meta.url);
 const manifest = existsSync(MANIFEST) ? JSON.parse(readFileSync(MANIFEST, 'utf8')) : null;
@@ -95,4 +96,13 @@ test('every Word problem line has studio audio', { skip: !manifest && 'nothing r
   });
   for (const w of WRITTEN) [w.q, w.ask, w.plan].forEach(x => { const n = normalize(x); if (n && !covered(n, lines, clips)) miss.add(n); });
   assert.deepEqual([...miss].slice(0, 10), [], `${miss.size} Word problem lines have no studio audio; re-run tools/voice/lines.mjs, record.mjs and publish.mjs`);
+});
+
+/* Explorer's menu tabs say their names when tapped with Read aloud on (openspec change play-nav-by-mode). Until the
+   owner records them they play in the Built-in voice; that change's re-record task removes the todo so this becomes
+   a hard gate. tools/voice/lines.mjs lists them as whole lines. */
+test('every Explorer menu tab line has studio audio', { skip: !manifest && 'nothing recorded yet (no tools/voice/manifest.json)', todo: 'until the play-nav-by-mode re-record' }, () => {
+  const lines = new Set(manifest.lines), clips = new Set(manifest.clips);
+  const miss = NAV_LINES.map(t => normalize(t)).filter(w => w && !covered(w, lines, clips));
+  assert.deepEqual(miss, [], `${miss.length} menu tab lines have no studio audio; re-run tools/voice/lines.mjs, record.mjs and publish.mjs`);
 });

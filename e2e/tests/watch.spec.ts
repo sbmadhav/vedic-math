@@ -308,7 +308,7 @@ test('the video list is not part of first loads, and the shelf requests it once'
   expect(asked, 'home and a game do not load the video list').toEqual([]);
   await page.locator('.mq-nav').getByRole('link', { name: 'Watch', exact: true }).click();
   await expect(cards(page).first()).toBeVisible();
-  await page.locator('.mq-nav').getByRole('link', { name: 'Games', exact: true }).click();
+  await page.locator('.mq-nav').getByRole('link', { name: 'Arcade', exact: true }).click(); /* away and back without a reload (Games is in the Arcade: openspec change play-nav-by-mode) */
   await page.locator('.mq-nav').getByRole('link', { name: 'Watch', exact: true }).click();
   await expect(cards(page).first()).toBeVisible();
   expect(asked).toHaveLength(1);

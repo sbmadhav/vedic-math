@@ -51,25 +51,28 @@ test.describe('Pro', () => {
 
 test.describe('Explorer', () => {
   test.use({ seedMode: 'explorer' });
-  test('the menu has Sutras right after Home, and the cards read in Explorer words with tricks practiced', async ({ page }) => {
+  /* The Sutras are Learn's first card (openspec change play-nav-by-mode: Explorer's menu is Play, Learn and Me) */
+  test('Learn opens the Sutras first, and the cards read in Explorer words with tricks practiced', async ({ page }) => {
     await open(page, '#/');
-    expect((await page.locator('header .mq-nav a:visible').allInnerTexts()).map(t => t.trim())).toEqual(['Home', 'Sutras', 'Learn', 'Arena', 'Games', 'Watch', 'Guide', 'Find']);
-    await page.locator('header .mq-nav a[href="#/sutras"]').click();
+    await page.locator('header .mq-nav a[href="#/learn"]').click();
+    await page.locator('#view a.learn-sutras').click();
     await expect(page.locator('#view .md-lede')).toContainText('tiny math rule with a long name');
     await expect(face(page, 's1').locator('.sutra-kid')).toHaveText('One more than the number before');
     await expect(face(page, 's1').locator('.sutra-prog small')).toHaveText('0 of 3 tricks practiced');
-    await expect(page.locator('header .mq-nav a[href="#/sutras"]')).toHaveAttribute('aria-current', 'true');
+    await expect(page.locator('header .mq-nav a[href="#/learn"]')).toHaveAttribute('aria-current', 'true');
   });
-  test('the Guide sends Explorer to Sutras in the menu', async ({ page }) => {
+  test('the Guide sends Explorer to the Sutras through Learn', async ({ page }) => {
     await open(page, '#/guide/sutras');
-    await expect(page.locator('#gd-sutras .gd-how li').first()).toHaveText('Tap Sutras in the menu.');
+    await expect(page.locator('#gd-sutras .gd-how li').first()).toHaveText('Tap Learn at the top, then The sutras.');
   });
 });
 
-test('Challenger menu: Home, Sutras, Learn, Dojo, Arena, Games, Watch, Guide, Find', async ({ page }) => {
+/* openspec change play-nav-by-mode: the Sutras lead Learn, the first zone after Home */
+test('Challenger menu: Home, Learn (with the Sutras first), Arcade, Watch, Find', async ({ page }) => {
   await open(page, '#/');
-  expect((await page.locator('header .mq-nav a:visible').allInnerTexts()).map(t => t.trim())).toEqual(['Home', 'Sutras', 'Learn', 'Dojo', 'Arena', 'Games', 'Watch', 'Guide', 'Find']);
-  await expect(page.locator('header .mq-nav a[href="#/sutras"]')).toHaveAttribute('title', /Bharati Krishna Tirtha/);
+  expect((await page.locator('header .mq-nav a:visible').allInnerTexts()).map(t => t.trim().split('\n')[0].trim())).toEqual(['Home', 'Learn', 'Arcade', 'Watch', 'Find']);
+  await page.locator('header .mq-nav a[href="#/learn"]').click();
+  await expect(page.locator('#view a.learn-sutras')).toContainText('Bharati Krishna Tirtha');
 });
 
 test('The Sutra cards come before the history cards', async ({ page }) => {

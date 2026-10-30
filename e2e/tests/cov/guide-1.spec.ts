@@ -31,7 +31,7 @@ test('A new route: every route the menu bar and the section links reach is cover
   // must cover every link the menu bar shows, so a new nav item without a section fails in the browser too
   await open(page, '#/guide');
   const hrefs = await page.locator('.mq-nav a[href^="#/"]').evaluateAll(els => els.map(e => e.getAttribute('href')!));
-  expect(hrefs.length).toBeGreaterThanOrEqual(6);
+  expect(hrefs.length).toBe(5); /* Home, Learn, Arcade, Watch, Find (openspec change play-nav-by-mode) */
   const uncovered = await page.evaluate(async (hrefs: string[]) => {
     const g = await e2eMod('guide');
     const covers: string[] = g.sections({}).flatMap((s: any) => s.covers || []);

@@ -34,9 +34,9 @@ test.describe('mode picker', () => {
         return out;
       });
       expect(shown).toEqual([m.kid ? 'kid words' : 'pro words']);
-      // Explorer hides the Dojo and Sutras tabs
-      const dojo = page.locator('.mq-nav a[href="#/dojo"]');
-      if (m.id === 'explorer') await expect(dojo).toBeHidden(); else await expect(dojo).toBeVisible();
+      // The menu follows the Mode (openspec change play-nav-by-mode): Explorer's three picture tabs, else four zones and Find
+      const arcade = page.locator('.mq-nav a[href="#/arcade"]'), me = page.locator('.mq-nav a[href="#/me"]');
+      if (m.id === 'explorer') { await expect(arcade).toHaveCount(0); await expect(me).toBeVisible(); } else { await expect(arcade).toBeVisible(); await expect(me).toHaveCount(0); }
 
       expect(await page.evaluate(() => localStorage.getItem('kidmode'))).toBe('e2e-sentinel');
       const players = JSON.parse((await page.evaluate(() => localStorage.getItem('vm.players')))!);
