@@ -201,7 +201,9 @@ test('the landing hero is one image named "The Nikhilam Family: the Devanagari d
   await expect(hero).toHaveCount(1);
   await expect(hero).toHaveJSProperty('tagName', 'svg');
   expect(await page.locator('main').getByRole('img').count()).toBe(1);
-  await expect(page.locator('main')).not.toContainText('Bolt');
+  // Bolt is shown in Inside the game (landing-interactive-hero), decorative, and never in the hero
+  await expect(page.locator('section.lv-hero')).not.toContainText('Bolt');
+  await expect(page.locator('section.lv-inside .lv-bolt-art')).toHaveAttribute('aria-hidden', 'true');
 });
 
 /* The site header (site-header spec): wide and on a 320px phone, in both schemes, with the music panel open */
