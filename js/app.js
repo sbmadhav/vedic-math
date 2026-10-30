@@ -57,6 +57,7 @@ import './voice-plan.js'; /* a level sooner (docs/perf/baseline.md) */
 const boot = new AbortController(); /* the page's lifetime: never aborted */
 /* Off the first load's critical path (docs/perf/baseline.md); a failed load is asked for again */
 const onDemand = load => { let p; return () => (p ||= load().catch(e => { p = null; throw e; })); };
+const loadLinks = onDemand(() => import('./connectors.js')); /* the Trick animator's digit connectors, on first use */
 const loadArena = onDemand(() => import('./arena.js')), loadTour = onDemand(() => import('./tour.js')), loadKit = onDemand(() => import('./play/kit.js'));
 const withArena = (area, signal, fn) => loadArena().then(A => { if (!signal.aborted) fn(A); }, () => { if (!signal.aborted) area.innerHTML = '<p class="md-lede">The round did not load. Check your connection and try again.</p>'; });
 let install = null, installLoad = null, earlyPrompt = null; const installQueue = [];
@@ -199,12 +200,13 @@ if (navEl) on(navEl, 'click', e => {
   if ((location.hash || '#/') === a.getAttribute('href')) fx.speak(a.dataset.say); else navSay = a.dataset.say;
 }, boot.signal);
 
-/* Player chip in the nav: avatar and the bar to the next Title (no number) */
+/* Player chip in the nav: avatar, the bar of Sparks to the next Title (no number) and, for Challenger and Pro, the
+   highest Belt held. Nothing else: Stars, Medals and Badges are in the Trophy case on Me (openspec working-memory-scaffolds). */
 function chip() {
-  const el = $('#mqChip'); if (!el) return; const p = store.player(), T = gm.titleInfo();
-  el.innerHTML = `<a href="#/me" class="mq-chip">${avatar(p, 30)}<span class="md-sr-only">${esc(p.name)}, ${T.title}</span><span class="mq-chip-t"><span class="mq-sparkbar"><i style="width:${pct(T.pct)}%"></i></span></span></a>`;
+  const el = $('#mqChip'); if (!el) return; const p = store.player(), T = gm.titleInfo(), belt = fx.mode() && fx.mode() !== 'explorer' ? gm.currentBelt() : null;
+  el.innerHTML = `<a href="#/me" class="mq-chip">${avatar(p, 30)}<span class="md-sr-only">${esc(p.name)}, ${T.title}${belt ? `, ${belt.name}` : ''}</span>${belt ? `<span class="mq-chip-belt" style="--belt:${belt.color}" data-belt="${belt.id}" aria-hidden="true"></span>` : ''}<span class="mq-chip-t"><span class="mq-sparkbar"><i style="width:${pct(T.pct)}%"></i></span></span></a>`;
 }
-store.on(type => { if (type === 'sparks' || type === 'player') chip(); if (type === 'player') syncNav(); });
+store.on(type => { if (type === 'sparks' || type === 'player' || type === 'belt' || type === 'star') chip(); if (type === 'player') syncNav(); });
 /* The bar to the next Title, as a progressbar with its Sparks in words */
 function titleBar(T, cls = 'mq-sparkbar mq-sparkbar--big') {
   const text = T.next ? `${T.into} of ${T.need} Sparks to ${T.next}` : 'Top Title reached';
@@ -545,7 +547,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
       </form>
       <div class="pr-say" id="prSay" role="status" aria-live="polite"></div>
       <div class="pr-sol" id="prSol" hidden></div>`;
-    wire(question.signal); fx.speakQuestion(p); fam.note({ type: 'question' });
+    wire(question.signal); wireSplit(root, p, question.signal); fx.speakQuestion(p); fam.note({ type: 'question' });
     const first = root.querySelector('input, .pr-choice'); if (first && render.n > 1 && matchMedia('(pointer: fine)').matches) first.focus({ preventScroll: true });
   };
   const say = (html, tone = '') => { const b = $('#prSay', root); b.className = 'pr-say ' + tone; b.innerHTML = html ? `${boltFor(tone)}<div class="md-bubble">${html}</div>` : ''; };
@@ -569,7 +571,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
   const PRAISE = { explorer: ['Yay! You got it!', 'Super star!', 'Woohoo! Correct!', 'You are so smart!'], challenger: ['Correct!', 'Nailed it!', 'Boom! First try.', 'Lightning fast!'], pro: ['Correct.', 'Exactly right.', 'Clean.', 'Correct, first try.'] };
   /* Symbol keys and the "Want a hint?" link: one delegated handler for the whole session */
   on(root, 'click', e => {
-    const k = e.target.closest('.pr-key'); if (k) { fx.sfx('tap'); const inp = root.querySelector('.ans-in:focus') || root.querySelector('.ans-in'); if (inp) { const v = k.dataset.k, a = inp.selectionStart ?? inp.value.length; inp.value = inp.value.slice(0, a) + v + inp.value.slice(inp.selectionEnd ?? a); inp.focus(); inp.setSelectionRange(a + v.length, a + v.length); } return; }
+    const k = e.target.closest('.pr-key'); if (k) { fx.sfx('tap'); const inp = root.querySelector('.ans-in:focus') || root.querySelector('.ans-in:not([readonly])'); if (inp) { const v = k.dataset.k, a = inp.selectionStart ?? inp.value.length; inp.value = inp.value.slice(0, a) + v + inp.value.slice(inp.selectionEnd ?? a); inp.focus(); inp.setSelectionRange(a + v.length, a + v.length); } return; }
     if (e.target.closest('[data-hint]')) { e.preventDefault(); $('#prHint', root).click(); }
   }, session.signal);
   /* Per-question handlers, on the question's signal */
@@ -577,11 +579,11 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
     on($('#prForm', root), 'submit', e => {
       e.preventDefault();
       if ($('#prCheck', root).dataset.next) { fx.sfx('tap'); return next(); }
-      const res = grade(); if (res.empty) { say('Type an answer first.'); return; }
+      const res = grade(); if (res.partial) { say(res.partial); return; } if (res.empty) { say('Type an answer first.'); return; }
       if (res.notAnswer) { say(notAnswerMsg()); return; }
       tries++;
       if (res.ok) { fx.sfx('ok'); const first = tries === 1 && !hints; fam.note({ type: 'right', first }); const msg = first ? pick(PRAISE[fx.mode()] || PRAISE.challenger) : 'You got it!'; say(msg + (first ? ` <span class="pr-sparks">+${10 + Math.min(store.skill(s.id).streak + 1, 5)} Sparks</span>` : ''), 'ok'); fx.bounce($('#prSay .md-bubble', root), qs); fx.twinkle($('#prSay .pr-sparks', root), qs); if (explorer) fx.speak(msg, true); finish(true); return; }
-      fx.sfx('no'); fx.wiggle(root.querySelector('.pr-in, .pr-choices, .pr-fields'), qs); fam.note({ type: 'miss' });
+      fx.sfx('no'); fx.wiggle(root.querySelector('.pr-in, .pr-choices, .pr-fields, .pr-split'), qs); fam.note({ type: 'miss' });
       if (lives) { life--; reveal(); say(life ? `Oops! ${life} ${life === 1 ? 'life' : 'lives'} left. See how it works, then keep going.` : 'Out of lives!', 'no'); finish(false); const lv = root.querySelector('.pr-lives'); lv.innerHTML = '<i class="on"></i>'.repeat(life) + '<i></i>'.repeat(lives - life); lv.setAttribute('aria-label', `${life} lives left`); if (!life && onOver) { const b = $('#prCheck', root); b.textContent = 'See my score'; b.onclick = e => { e.preventDefault(); onOver(right); }; } return; }
       if (tries === 1) { say((res.msg ? res.msg + ' ' : '') + 'Not quite. Try once more.' + (p.hints[0] && !hints ? ' <button type="button" class="linkbtn" data-hint>Want a hint?</button>' : ''), 'no'); if (explorer) fx.speak('Not quite. Try again!', true); }
       else if (tries === 2) { hints = Math.max(hints, 1); const h = p.hints[Math.min(1, p.hints.length - 1)] || p.hints[0]; say((res.msg ? res.msg + ' ' : '') + `Hint: ${h}`, 'no'); if (explorer && h) fx.speak(h, true); } // read the hint that is shown
@@ -595,14 +597,57 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
   const grade = () => {
     if (p.kind === 'choice') { const c = root.querySelector('.pr-choice[aria-pressed="true"]'); if (!c) return { empty: true }; return { ok: c.dataset.v === p.answer }; }
     if (p.kind === 'fields') { const ins = [...root.querySelectorAll('.ans-in')]; if (ins.some(i => !i.value.trim())) return { empty: true }; const rs = ins.map((i, k) => checkOne({ kind: 'num', answer: p.fields[k].answer, tol: p.tol }, i.value)); return { ok: rs.every(r => r.ok), msg: rs.find(r => r.msg)?.msg }; }
-    return checkOne(p, root.querySelector('.ans-in').value);
+    const t = typedAnswer(root); if (t.partial) return { partial: t.partial };
+    return checkOne(p, t.value);
   };
   next();
   return { destroy: () => { [...dials.keys()].forEach(saveDial); fam.note({ type: 'leave' }); session.abort(); } };
 }
+/* Memory lock answer slots (openspec working-memory-scaffolds, split-answer spec): a Trick that writes its answer as a
+   left part and a right part (p.parts) gets a slot for each, for Challenger and Pro outside Word problems. The left part
+   locks (Enter or Lock), checking joins the two, and the one box stays a tap away (saved on this device as vm.split). */
+let splitHere = true; /* the choice for this page when storage is blocked, so the switch still works */
+const splitPref = () => { try { return localStorage.getItem('vm.split') !== 'one'; } catch (e) { return splitHere; } };
+const setSplitPref = two => { splitHere = two; try { if (two) localStorage.removeItem('vm.split'); else localStorage.setItem('vm.split', 'one'); } catch (e) {} };
+const canSplit = p => !!(p.parts && p.kind === 'num' && !p.story && fx.mode() && fx.mode() !== 'explorer');
+const slotsHTML = () => `<div class="pr-split" role="group" aria-label="Your answer in two parts" aria-describedby="prSplitNote">
+    <label class="pr-slot"><span>Left part</span><input class="ans-in pr-slot-in" data-slot="l" inputmode="numeric" spellcheck="false" autocapitalize="off"></label>
+    <button type="button" class="md-btn md-btn--sm pr-lock" data-lock aria-pressed="false" aria-label="Lock the left part">${icon('lock')}Lock</button>
+    <span class="pr-split-bar" aria-hidden="true"></span>
+    <label class="pr-slot"><span>Right part</span><input class="ans-in pr-slot-in" data-slot="r" inputmode="numeric" spellcheck="false" autocapitalize="off"></label>
+  </div><p class="mq-small pr-split-note" id="prSplitNote">Lock the left part, then work out the right part. <button type="button" class="linkbtn" data-split="one">Type it in one box</button></p>`;
+/* What the Player typed: the one box, or the two slots joined left then right ({ partial } when only one is filled) */
+function typedAnswer(root) {
+  const l = root.querySelector('.pr-slot-in[data-slot="l"]');
+  if (!l) { const i = root.querySelector('.ans-in'); return { value: i ? i.value : '' }; }
+  const a = l.value.trim(), b = root.querySelector('.pr-slot-in[data-slot="r"]').value.trim();
+  if (a && !b) return { value: '', partial: 'Now the right part.' };
+  if (!a && b) return { value: '', partial: 'Type the left part too.' };
+  return { value: a + b };
+}
+/* The slots' Lock and Enter, and the switch between slots and one box (redrawn in place, on the question's signal) */
+function wireSplit(root, p, signal) {
+  const sw = root.querySelector('[data-split]');
+  /* What is typed stays: the two parts become the one box's text, and the one box's text goes in the left slot */
+  if (sw) on(sw, 'click', () => {
+    const typed = [...root.querySelectorAll('.pr-ans .ans-in')].map(i => i.value.trim()).join('');
+    setSplitPref(sw.dataset.split === 'two'); fx.sfx('tap'); root.querySelector('.pr-ans').outerHTML = answerUI(p); wireSplit(root, p, signal);
+    const f = root.querySelector('.pr-ans .ans-in'); if (f) { f.value = typed; f.focus(); }
+  }, signal);
+  const l = root.querySelector('.pr-slot-in[data-slot="l"]'); if (!l) return;
+  const r = root.querySelector('.pr-slot-in[data-slot="r"]'), lock = root.querySelector('[data-lock]');
+  const set = v => { l.readOnly = v; l.closest('.pr-slot').classList.toggle('locked', v); lock.setAttribute('aria-pressed', String(v)); };
+  const doLock = () => { if (!l.value.trim()) { l.focus(); return; } set(true); fx.sfx('tap'); r.focus(); };
+  on(lock, 'click', () => { if (l.readOnly) { set(false); l.focus(); } else doLock(); }, signal);
+  on(l, 'keydown', e => { if (e.key !== 'Enter' || e.isComposing) return; e.preventDefault(); if (l.readOnly) r.focus(); else doLock(); }, signal);
+}
 function answerUI(p) {
+  if (canSplit(p)) return `<div class="pr-ans">${splitPref() ? slotsHTML() : `${oneBox(p)}<p class="mq-small pr-split-note"><button type="button" class="linkbtn" data-split="two">Split into parts</button></p>`}</div>`;
   if (p.kind === 'choice') return `<div class="pr-choices" role="group" aria-label="Choices">${p.choices.map(c => `<button type="button" class="md-chip pr-choice" aria-pressed="false" data-v="${esc(c)}">${c}</button>`).join('')}</div>`;
   if (p.kind === 'fields') return `<div class="pr-fields">${p.fields.map(f => `<label>${f.label}<input class="ans-in" inputmode="text" spellcheck="false"></label>`).join('')}</div>`;
+  return oneBox(p);
+}
+function oneBox(p) {
   const ph = { num: 'Your answer', expr: 'e.g. 3x^2 - 2x + 1', set: 'e.g. 2, -5', ineq: 'e.g. x < 4', complex: 'e.g. 3 + 2i', text: 'Your answer' }[p.kind] || 'Your answer';
   return `<div class="pr-in"><input class="ans-in" aria-label="Your answer" placeholder="${ph}" spellcheck="false" autocapitalize="off" inputmode="${p.kind === 'num' && Number.isInteger(p.answer) && p.answer >= 0 && !p.simplest ? 'numeric' : 'text'}">${p.unit ? `<span class="pr-unit">${p.unit}</span>` : ''}</div>`;
 }
@@ -756,7 +801,7 @@ function kataView(trickId, n, { signal } = {}) {
       <div class="pr-q${plain(p.q).length > 60 ? ' long' : ''}">${p.q}</div>
       <form class="pr-form" id="kForm" autocomplete="off">${answerUI(p)}<div class="pr-actions"><button class="md-btn md-btn--primary" id="kGo">Check</button><button type="button" class="md-btn md-btn--sm" id="kHint">Hint</button>${fam.askHTML}</div></form>
       <div class="pr-say" id="kSay" role="status" aria-live="polite"></div>`;
-    tried = false; h0 = hints; fx.speakQuestion(p); fam.note({ type: 'question' });
+    tried = false; h0 = hints; wireSplit(box, p, qs); fx.speakQuestion(p); fam.note({ type: 'question' });
     const f = box.querySelector('input, .pr-choice'); if (f && matchMedia('(pointer: fine)').matches) f.focus({ preventScroll: true });
     box.querySelectorAll('.pr-choice').forEach(b => on(b, 'click', () => { box.querySelectorAll('.pr-choice').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); $('#kForm').requestSubmit(); }, qs));
     on($('#kHint'), 'click', () => { hints++; fam.note({ type: 'hint' }); $('#kSay').innerHTML = `${boltHTML('explain')}<div class="md-bubble">Hint: ${p.hints[0] || p.steps[0]}</div>`; }, qs);
@@ -766,13 +811,13 @@ function kataView(trickId, n, { signal } = {}) {
       let ok;
       if (p.kind === 'choice') { const c = box.querySelector('.pr-choice[aria-pressed="true"]'); if (!c) return; ok = c.dataset.v === p.answer; }
       else if (p.kind === 'fields') { const ins = [...box.querySelectorAll('.ans-in')]; if (ins.some(x => !x.value.trim())) return; ok = ins.every((x, k) => checkOne({ kind: 'num', answer: p.fields[k].answer }, x.value).ok); }
-      else { const v = box.querySelector('.ans-in').value; if (!v.trim()) return; const res = checkOne(p, v); if (res.notAnswer) { $('#kSay').className = 'pr-say'; $('#kSay').innerHTML = `${boltFor('')}<div class="md-bubble">${notAnswerMsg()}</div>`; return; } ok = res.ok; }
+      else { const t = typedAnswer(box); if (t.partial) { $('#kSay').className = 'pr-say'; $('#kSay').innerHTML = `${boltFor('')}<div class="md-bubble">${t.partial}</div>`; return; } const v = t.value; if (!v.trim()) return; const res = checkOne(p, v); if (res.notAnswer) { $('#kSay').className = 'pr-say'; $('#kSay').innerHTML = `${boltFor('')}<div class="md-bubble">${notAnswerMsg()}</div>`; return; } ok = res.ok; }
       tried = true; if (ok) right++; fx.sfx(ok ? 'ok' : 'no'); metrics.answered('kata', ok); fam.note({ type: ok ? 'right' : 'miss', first: ok && hints === h0 }); /* first: right with no hint on this problem */
       $('#kSay').className = 'pr-say ' + (ok ? 'ok' : 'no');
       $('#kSay').innerHTML = `${boltFor(ok ? 'ok' : 'no')}<div class="md-bubble">${ok ? pick(['Correct!', 'Clean!', 'Nailed it!', 'Yes!']) : `Not this time. Answer: <b>${answerText(p, byId['v-' + trickId])}</b><br><small>${p.steps.slice(0, 3).join(' ')}</small>`}</div>`;
       $('#kGo').textContent = i + 1 < K.problems.length ? 'Next' : 'Finish'; $('#kGo').focus({ preventScroll: true });
       box.querySelector('.pr-score').textContent = `${right}/${K.problems.length}`;
-      if (ok) fx.bounce($('#kSay .md-bubble'), qs); else fx.wiggle(box.querySelector('.pr-in, .pr-choices, .pr-fields'), qs); /* everyday moments (openspec celebrations) */
+      if (ok) fx.bounce($('#kSay .md-bubble'), qs); else fx.wiggle(box.querySelector('.pr-in, .pr-choices, .pr-fields, .pr-split'), qs); /* everyday moments (openspec celebrations) */
     }, qs);
   };
   const done = () => {
@@ -1734,6 +1779,21 @@ function familySwitchHTML(p) {
     ${on ? `<fieldset class="me-fam-when"><legend>When they help</legend>${FAMILY_WHEN.map(([v, l]) => `<label><input type="radio" name="familyHelp" value="${v}"${v === when ? ' checked' : ''}> ${l}</label>`).join('')}</fieldset>` : ''}
     <p class="pr-say" id="familyMsg" role="status" aria-live="polite"></p></div>`;
 }
+/* The Trophy case on Me (openspec working-memory-scaffolds, trophy-case spec): every reward but Sparks in one place,
+   each row with a link to where it is earned; the Badges follow it. Explorer is not offered Belts or Stars, so their
+   rows show once something is earned. Opens the section that meView closes after the Badges. */
+function trophyCaseHTML() {
+  const ex = fx.mode() === 'explorer', bp = gm.beltProgress(), held = bp.filter(b => b.earned).length, lit = litStars();
+  const m = ['g:', 'a:'].map(store.medalsWhere).reduce((t, c) => ({ gold: t.gold + c.gold, silver: t.silver + c.silver, bronze: t.bronze + c.bronze }), { gold: 0, silver: 0, bronze: 0 });
+  const row = (cls, kicker, value, body, links) => `<div class="trophy trophy--${cls}"><h3 class="md-kicker">${kicker}</h3><p class="trophy-v">${value}</p>${body}<p class="trophy-go">${links}</p></div>`;
+  const rows = [
+    !ex || held ? row('belts', 'Belts', `${held} of ${BELTS.length}`, `<ul class="belt-row trophy-belts">${bp.map(b => `<li class="belt-chip${b.earned ? ' on' : ''}" style="--belt:${b.color}"><span class="belt-knot" aria-hidden="true"></span>${b.name}${b.earned ? '<span class="md-sr-only">, held</span>' : ''}</li>`).join('')}</ul>`, '<a href="#/dojo">Earn Belts in the Dojo</a>') : '',
+    !ex || lit ? row('stars', 'Stars', `${lit} of ${SKY.PATH.length} Stars lit`, '', '<a href="#/dojo">Play a Star in the Dojo</a>') : '',
+    row('medals', 'Medals', `<span class="trophy-m">${medalHTML(3, { label: false })} ${m.gold} gold</span> <span class="trophy-m">${medalHTML(2, { label: false })} ${m.silver} silver</span> <span class="trophy-m">${medalHTML(1, { label: false })} ${m.bronze} bronze</span>`, '<p class="mq-small">From game Levels and Challenge tower challenges.</p>', '<a href="#/games">Games</a> · <a href="#/tower">Challenge tower</a>'),
+    row('cards', 'Sutra cards', `${gm.collectedCount()} of ${SUTRAS.length + SUBSUTRAS.length} collected`, '', '<a href="#/sutras">See the Sutras</a>')
+  ];
+  return `<section class="trophy-case" aria-labelledby="trophyH"><h2 class="mq-strand" id="trophyH">Trophy case</h2><div class="trophy-grid">${rows.join('')}</div>`;
+}
 function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw from one of its own buttons passes it on */
   document.title = `Me · Learn Vedic Math`;
   const p = store.player(), T = gm.titleInfo(), got = store.badges(), done = SKILLS.filter(s => store.mastered(s.id)).length;
@@ -1744,9 +1804,10 @@ function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw
       <div class="me-acts"><button class="md-btn md-btn--sm" id="meName">New nickname</button>${store.AVATARS.map(c => `<button class="av-pick av av-${c}" data-c="${c}" aria-label="Color ${c}" aria-pressed="${c === p.avatar}"></button>`).join('')}</div>${parentNote()}</div></div>
     <h2 class="mq-strand" id="wbH">World boards</h2>
     <div class="md-card wb-card" id="worldBoards" role="region" aria-labelledby="wbH"><div class="wb-body">${worldBoardsHTML(p)}</div><p class="pr-say" id="wbMsg" role="status" aria-live="polite"></p></div>
-    <div class="mq-stats me-stats"><div class="md-stat"><div class="md-kicker">Skills mastered</div><div class="md-value">${done}</div><p>of ${SKILLS.length}</p></div><div class="md-stat"><div class="md-kicker">Day streak</div><div class="md-value">${store.streakDays()}</div><p>days</p></div><div class="md-stat"><div class="md-kicker">Belts</div><div class="md-value">${gm.beltProgress().filter(b => b.earned).length}</div><p>of ${BELTS.length} · ${litStars()} of ${SKY.PATH.length} Stars lit</p></div></div>
-    <h2 class="mq-strand">Badges <small class="mq-small">${badges.filter(b => got[b.id]).length} of ${badges.length}</small></h2>
-    <div class="badge-grid">${badges.map(b => `<div class="badge${got[b.id] ? ' got' : ''}"><span class="badge-medal" aria-hidden="true">${icon(got[b.id] ? 'star' : 'lock')}</span><b>${b.name}</b><small>${b.how}</small></div>`).join('')}</div>
+    <div class="mq-stats me-stats"><div class="md-stat"><div class="md-kicker">Skills mastered</div><div class="md-value">${done}</div><p>of ${SKILLS.length}</p></div><div class="md-stat"><div class="md-kicker">Day streak</div><div class="md-value">${store.streakDays()}</div><p>days</p></div></div>
+    ${trophyCaseHTML()}
+    <h3 class="mq-strand">Badges <small class="mq-small">${badges.filter(b => got[b.id]).length} of ${badges.length}</small></h3>
+    <div class="badge-grid">${badges.map(b => `<div class="badge${got[b.id] ? ' got' : ''}"><span class="badge-medal" aria-hidden="true">${icon(got[b.id] ? 'star' : 'lock')}</span><b>${b.name}</b><small>${b.how}</small></div>`).join('')}</div></section>
     <h2 class="mq-strand">Play mode</h2>
     <div class="mode-pick mode-pick--sm">${Object.entries(fx.MODES).map(([id, m]) => `<button class="mode-card mode-card--${m.color}" data-mode="${id}" aria-pressed="${id === fx.mode()}"><span class="mode-ic" aria-hidden="true">${modeIcon(id)}</span><b>${m.name}</b><small>${m.ages}</small></button>`).join('')}</div>
     <h2 class="mq-strand">Players on this device</h2>
@@ -1823,20 +1884,31 @@ function animatorHTML(t) {
     <form class="anim-in" id="animForm">${t.inputs.map((f, i) => `<label>${f.label}<input type="number" inputmode="numeric" min="${f.min}" max="${f.max}" data-i="${i}"></label>`).join('')}
       <div class="anim-btns"><button class="md-btn md-btn--sm md-btn--primary">Show steps</button><button type="button" class="md-btn md-btn--sm" id="animRand">New numbers</button></div></form>
     <p class="anim-err" id="animErr" role="alert"></p>
-    <div class="anim-board" id="animBoard" aria-live="polite"></div>
+    <div class="anim-links" id="animLinks"></div>
+    <div class="anim-board" id="animBoard" aria-live="polite" tabindex="0" aria-label="Steps" aria-describedby="animKeys"></div>
+    <p class="md-sr-only" id="animKeys">Space or the right arrow shows the next step, the left arrow the one before.</p>
     <div class="anim-nav" id="animNav" hidden><button type="button" class="md-btn md-btn--sm" id="animPrev">Back</button><span id="animPos"></span><button type="button" class="md-btn md-btn--sm md-btn--primary" id="animNext">Next step</button><button type="button" class="md-btn md-btn--sm" id="animAll">Show all</button>${listenBtn('from:.anim-step p', 'the steps shown')}</div></div>`;
 }
 function mountAnimator(t, signal) {
-  const form = $('#animForm'), ins = [...form.querySelectorAll('input')], board = $('#animBoard'), nav = $('#animNav'), err = $('#animErr'); let steps = [], i = 0, counted = false;
+  const form = $('#animForm'), ins = [...form.querySelectorAll('input')], board = $('#animBoard'), nav = $('#animNav'), err = $('#animErr'); let steps = [], i = 0, counted = false, vals = null, links = null, shownAll = false;
   const fill = vals => ins.forEach((x, k) => (x.value = vals[k]));
-  const show = (all = false) => { board.innerHTML = steps.slice(0, all ? steps.length : i + 1).map((s, k) => `<div class="anim-step${k === (all ? steps.length - 1 : i) ? ' cur' : ''}"><div class="anim-show">${s.show}</div><p>${s.say}</p></div>`).join(''); $('#animPos').textContent = `${all ? steps.length : i + 1} / ${steps.length}`; $('#animPrev').disabled = i === 0 && !all; $('#animNext').disabled = all || i === steps.length - 1;
+  /* Digit connectors (openspec working-memory-scaffolds): the lines for the step on show, once js/connectors.js is here */
+  const drawLinks = () => { const box = $('#animLinks'); if (!box) return; const l = links && vals && steps.length && !shownAll ? links.linksFor(t.id, vals, i) : null; box.innerHTML = l ? l.svg : ''; box.classList.toggle('still', fx.noMotion()); };
+  lateImport(loadLinks, 'connectors.js', signal).then(m => { if (m && !signal.aborted) { links = m; drawLinks(); } });
+  const show = (all = false) => { shownAll = all; drawLinks(); board.innerHTML = steps.slice(0, all ? steps.length : i + 1).map((s, k) => `<div class="anim-step${k === (all ? steps.length - 1 : i) ? ' cur' : ''}"><div class="anim-show">${s.show}</div><p>${s.say}</p></div>`).join(''); $('#animPos').textContent = `${all ? steps.length : i + 1} / ${steps.length}`; $('#animPrev').disabled = i === 0 && !all; $('#animNext').disabled = all || i === steps.length - 1;
     if ((all || i === steps.length - 1) && !counted) { counted = true; store.bump('tricksWatched'); if (store.markSeen('trick:' + t.id)) store.addSparks(5, 'trick'); } };
-  const run = (user = true) => { const vals = ins.map(x => Number(x.value)); if (ins.some(x => x.value === '') || vals.some(v => !Number.isFinite(v))) { err.textContent = 'Fill in every number.'; return; } const bad = t.valid(vals); err.textContent = bad || ''; if (bad) { board.innerHTML = ''; nav.hidden = true; return; } steps = t.steps(vals); i = 0; counted = !user; nav.hidden = false; show(); if (user) track('trick/' + t.id, 'Trick: ' + t.title); };
+  const run = (user = true) => { const vs = ins.map(x => Number(x.value)); if (ins.some(x => x.value === '') || vs.some(v => !Number.isFinite(v))) { err.textContent = 'Fill in every number.'; return; } const bad = t.valid(vs); err.textContent = bad || ''; if (bad) { vals = null; steps = []; board.innerHTML = ''; $('#animLinks').innerHTML = ''; nav.hidden = true; return; } /* no steps left for a late connectors load to draw */ vals = vs; steps = t.steps(vals); i = 0; counted = !user; nav.hidden = false; show(); if (user) track('trick/' + t.id, 'Trick: ' + t.title); };
   on(form, 'submit', e => { e.preventDefault(); fx.sfx('tap'); run(); }, signal);
   on($('#animRand'), 'click', () => { let v; do { v = t.random(); } while (t.valid(v)); fill(v); fx.sfx('pop'); run(); }, signal);
   on($('#animPrev'), 'click', () => { i = Math.max(0, i - 1); show(); }, signal);
   on($('#animNext'), 'click', () => { i = Math.min(steps.length - 1, i + 1); fx.sfx('tap'); show(); }, signal);
   on($('#animAll'), 'click', () => { i = steps.length - 1; show(true); }, signal);
+  /* Space or the right arrow is Next step, the left arrow Back, with focus on the steps */
+  on(board, 'keydown', e => {
+    if (!steps.length || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key === ' ' || e.key === 'ArrowRight') { e.preventDefault(); if (i < steps.length - 1) { i++; fx.sfx('tap'); show(); } }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); if (i > 0) { i--; show(); } }
+  }, signal);
   let v; do { v = t.random(); } while (t.valid(v)); fill(v); run(false);
 }
 

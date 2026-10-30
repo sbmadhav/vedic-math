@@ -1,0 +1,41 @@
+# Design
+
+Every call below is owner-delegated, 2026-10-29 (see the proposal), with its reason.
+
+## Audit claims checked against `main`
+
+- **Section 4 row 3, "6 different reward currencies" in the HUD.** Partly wrong. The persistent HUD (the Player chip) shows the avatar and a bar of Sparks to the next Title, nothing else. Ratings are not a reward: they are the 1 to 20 number that picks how hard the next question is, shown only in the Arena lobby. The reward types that do exist are Sparks (and the Titles they earn), Stars, Belts, Medals, Badges, Sutra cards and Katas done.
+- **Task 3.3.** The chip half is already true except that the Belt was not shown. Medals were not on Me at all.
+- **Task 3.1, "Sutra practice, Dojo and Kata views".** Practice on a Trick page and the Katas use the same answer box; the Dojo itself has no answer entry (it links to Trick pages, Katas and Stars). The Star round already keeps every typed digit in its own box for Challenger.
+- **Section 5 A.2, "Auto-enable Read Aloud and Math Lens" for Explorer.** Read aloud is already on by default for Explorer (`fx.voiceOn()` defaults to the Mode being Explorer), and Explorer already taps big answer buttons for whole-number answers up to 200. Math Lens is not handwriting input: it is a Play experience that points the camera at printed digits (a plate, a clock) and makes a challenge from them, with an 11 MB digit reader loaded on first use.
+- **Task 3.2, "SVG digit connectors for worked examples".** The Deep dive's worked examples are one line each with no steps. The step-by-step solution with Next is the Trick animator, so the connectors go there.
+
+## Memory lock answer slots
+
+- **Which Tricks.** `sq5`, `near-base`, `square-near`, `by9s` and `ends10`: each writes its answer as a left part and a right part joined side by side, which is the layout the steps already show (`left | right`). Each gets `parts(vals)` in `js/vedic.js`, the final parts after any carry or borrow, so `parts.join('') === String(answer)`; `test/parts.test.mjs` checks that for random numbers of every Trick. Not `crosswise`, `duplex` or `by11`: they build the answer one digit at a time from the right with carries, so a left part is not known first. Not `sub-base`: its parts are combined with a multiply, not side by side.
+- **Where.** Practice (every `practice()` round, so a Trick page and Endless practice of Tricks) and the Katas: both use `answerUI()` and a form, so one helper serves both. In the Star round, Challenger's digit boxes get a bar between the parts and the left part's boxes are marked held once full: the boxes already keep the digits on screen, so a second entry model would be one more thing to learn mid-round. Pro's Star round has no boxes on purpose (no length hint), so it stays as it is. The Arena is a Ranked round and keeps one box for every Player, so no Player has a different entry from another on the same Board.
+- **Who.** Challenger and Pro. Explorer keeps its tap answers and single box (the brief), and is not offered these Tricks' Stars or Belts anyway. Word problems keep one box: the story asks for one quantity with a unit, and the parts are the Trick's layout, not the story's.
+- **On by default, one switch.** The slots are on by default (the point is to lower working-memory load, so it should not hide behind a setting), with one link under them, "Type it in one box", and "Split into parts" under the single box. The choice is saved on this device under `vm.split` (`one` or absent), like sound. No setting on Me: one fewer choice there, and the link is where the Player needs it.
+- **Locking.** Enter in the left slot, or the Lock button, locks the left part: the slot becomes read only, shows a lock, the button reads pressed (`aria-pressed="true"`, its name "Lock the left part" stays the same), and focus moves to the right slot. Lock again unlocks. Locking is optional: Check with both slots filled checks without a lock. Enter in the right slot checks. An empty left part with a right part says "Type the left part too."; a left part with no right part says "Now the right part." Neither counts as a try.
+- **Checking.** The two parts are joined as typed and checked with `checkOne()` like the single box, so 95 and 06 is 9506, and 95 and 6 is 956 (wrong: the right part of a base 100 product has two digits, which the steps teach). Sparks, Ratings, mastery and analytics are unchanged.
+- **Screen readers.** The slots are a group named "Your answer in two parts", each input has its visible label, and the note under them is the group's description.
+
+## Digit connectors
+
+- **Which Tricks.** `near-base` (Nikhilaṃ) and `crosswise` (Ūrdhva-Tiryagbhyām), the two the audit names, whose steps each use a few digits of the question.
+- **Layout.** A small inline SVG above the steps, drawn by `js/connectors.js` (pure: numbers in, markup out, tested in `test/connectors.test.mjs`), loaded on first use so first load does not grow. Near-base uses the classic layout, each number with its distance from the base beside it; crosswise puts the two numbers' digits in columns, one above the other.
+- **What each step joins.** Near-base: step 1 joins each number to its distance (coral and teal, the colours the step's distances use); step 2 crosses from the first number to the second distance (sky, the left part's colour), with the other cross dashed since it gives the same; step 3 joins the two distances (sun, the right part's colour). Crosswise: column k joins each pair multiplied in it (coral, teal, plum in turn). Steps that use no question digits (carry, the answer) show no diagram.
+- **Colours.** Only the category tokens (`var(--coral)`, `var(--teal)`, `var(--sky)`, `var(--sun)`, `var(--plum)`), the same ones the steps' highlights use, so a line and the number it explains match. Digits use `var(--ink)` and `var(--ink-muted)`. Both colour schemes come from the tokens.
+- **Motion.** A line draws in over 0.4 s (stroke dash offset). Under reduced motion, Pause motion or Calm it is drawn at once: shown, not animated.
+- **Keyboard.** The steps board is focusable (`tabindex="0"`, named "Steps"). With focus there, Space or the right arrow is Next step and the left arrow is Back. Space on the Next step button already presses it, so a Player who keeps focus on Next steps with Space too.
+- **Screen readers.** Each diagram is `role="img"` with a text alternative naming what it joins ("Lines join 97 to its distance minus 3, and 94 to its distance minus 6."). The step's own sentence is still read by the board's live region.
+
+## Trophy case
+
+- **Chip.** Sparks (the bar to the next Title, as today) and, for a Challenger or Pro Player who holds one, the highest Belt held, as a small knot in the Belt's colour before the bar. The chip's accessible name gains the Belt ("Swift Tiger 42, Sum Sprinter, Green belt"). Explorer is not offered Belts, so the chip shows none. Nothing else is added: no number, no Stars, Medals or Badges.
+- **Me.** A "Trophy case" section after World boards: Belts (the rack of seven, earned ones filled, with "N of 7"), Stars ("N of 63 Stars lit", link to the Dojo), Medals (gold, silver and bronze from game Levels and Challenge tower challenges, links to Games and the tower), Sutra cards ("N of 29 collected", link to Sutras), then the Badges grid as before. The "Belts" stat leaves the stats row, which keeps Skills mastered and Day streak. For Explorer the Belts and Stars rows show only once something is earned (as badges already do).
+- **Nothing removed.** The Dojo still shows Stars and Belts, games and the tower still show Medals, the Sutras page still shows Sutra cards, and Home is unchanged (another change owns Home; its welcome strip's badge count is theirs to decide).
+
+## Explorer, read aloud and Math Lens (audit A.2)
+
+Call: no change. Read aloud already defaults on for Explorer and the tap answers already cover whole numbers up to 200. Math Lens stays an opt-in Play experience: prompting 4 to 7 year olds for the camera, and downloading an 11 MB reader, to answer a question they can tap is not a lower-friction path. Typed answers over 200 are rare for Explorer (Explorer's Skills and games stay small) and keep the device keyboard.

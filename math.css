@@ -201,6 +201,16 @@ a.sutra-tag-a:hover .sutra-tag-n, a.sutra-tag-a:focus-visible .sutra-tag-n { tex
 .pr-fields { display: flex; gap: 12px; flex-wrap: wrap; }
 .pr-fields label { display: grid; gap: 4px; font-weight: 700; font-size: 14px; }
 .pr-fields .ans-in { width: 150px; }
+/* Memory lock answer slots (openspec working-memory-scaffolds): left part, Lock, a bar, right part */
+.pr-split { display: grid; grid-template-columns: minmax(0, 1fr) auto auto minmax(0, 1fr); align-items: end; gap: 8px; max-width: 420px; } /* one row, even on a phone */
+.pr-slot { display: grid; gap: 4px; font-weight: 700; font-size: 14px; }
+.pr-slot .ans-in { width: 100%; min-width: 0; box-sizing: border-box; text-align: center; font-family: var(--font-mono); }
+.pr-slot.locked .ans-in { background: color-mix(in srgb, var(--sky) 18%, var(--card)); border-color: var(--sky-strong); }
+.pr-split-bar { align-self: stretch; width: 3px; margin-top: 22px; border-radius: var(--radius-pill); background: var(--edge); }
+.pr-lock { gap: 6px; min-height: 48px; }
+.pr-lock svg { width: 18px; height: 18px; }
+.pr-lock[aria-pressed="true"] { background: var(--sky); color: var(--on-accent); }
+.pr-split-note { margin: 0; }
 .pr-choices { display: flex; flex-wrap: wrap; gap: 8px; }
 .pr-choice { font-size: 1.15rem; min-width: 64px; min-height: 48px; justify-content: center; }
 .pr-keys { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -272,6 +282,21 @@ sup { font-size: .65em; }
 @keyframes stepIn { from { transform: translateY(6px); opacity: .4; } }
 .anim-show { font: 500 1.5rem/1.45 var(--font-mono); letter-spacing: .03em; overflow-wrap: anywhere; }
 .anim-step p { margin: 4px 0 0; font-size: 15px; }
+/* Digit connectors (openspec working-memory-scaffolds): lines in the category colours join the digits a step uses */
+.anim-links:empty { display: none; }
+.anim-links { margin-top: 12px; }
+.anim-links .cx { display: block; max-width: 100%; height: auto; }
+.cx-d { font: 600 24px/1 var(--font-mono); fill: var(--ink-muted); }
+.cx-d.on { fill: var(--ink); font-weight: 700; }
+.cx-rule { stroke: var(--line); stroke-width: 2; }
+.cx-line { stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 0; animation: cxDraw .4s ease-out both; }
+.cx-line.cx-dash { stroke-dasharray: .06 .06; stroke-width: 3; animation: none; opacity: .8; }
+.cx-coral { stroke: var(--coral); } .cx-teal { stroke: var(--teal); } .cx-sky { stroke: var(--sky); } .cx-sun { stroke: var(--sun); } .cx-plum { stroke: var(--plum); }
+@keyframes cxDraw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) { .cx-line { animation: none; } }
+/* The same with Pause motion (html.motion-paused) and Calm (body.calm): shown, not drawn in */
+html.motion-paused .cx-line, body.calm .cx-line, .anim-links.still .cx-line { animation: none; }
+.anim-board:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; border-radius: var(--radius-md); }
 .anim-nav { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
 #animPos { font: 500 13px/1 var(--font-mono); color: var(--ink-muted); }
 .hl { border-radius: 6px; padding: 0 .18em; color: var(--on-accent); }
@@ -351,6 +376,7 @@ html.motion-paused .mq-grade, body.calm .mq-grade, html.motion-paused .mq-skill,
 .mode-none .mq-nav { display: none; }
 .mq-chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border: 2px solid var(--edge); border-radius: var(--radius-pill); background: var(--card); color: var(--ink); text-decoration: none; margin: 4px 0; white-space: nowrap; }
 .mq-chip-t { display: grid; gap: 3px; font-size: 12px; }
+.mq-chip-belt { flex: none; width: 18px; height: 8px; border-radius: 3px; border: 2px solid var(--edge); background: var(--belt); } /* the Belt held (openspec working-memory-scaffolds) */
 .mq-sparkbar { display: block; width: 64px; height: 6px; border-radius: 99px; background: color-mix(in srgb, var(--ink) 12%, transparent); overflow: hidden; }
 .mq-sparkbar i { display: block; height: 100%; background: var(--sun-strong); border-radius: inherit; transition: width .6s; }
 .mq-sparkbar--big { width: 100%; max-width: 360px; height: 10px; margin-top: 6px; }
@@ -618,6 +644,17 @@ a.door .play-ic { width: 44px; height: 44px; } .door--coral .play-ic { backgroun
 .av-pick { width: 32px; height: 32px; cursor: pointer; }
 .av-pick[aria-pressed="true"] { outline: 3px solid var(--ink); outline-offset: 2px; }
 .me-stats { margin-top: 16px; }
+/* The Trophy case (openspec working-memory-scaffolds): Belts, Stars, Medals and Sutra cards, then the Badges */
+.trophy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 12px; margin-bottom: 16px; }
+.trophy { padding: 14px 16px; border: 2px solid var(--edge); border-radius: var(--radius-lg); background: var(--card); box-shadow: var(--shadow-ledge); display: grid; gap: 8px; align-content: start; }
+.trophy h3.md-kicker { margin: 0; }
+.trophy-v { margin: 0; font-weight: 700; font-size: 1.1rem; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.trophy-m { display: inline-flex; align-items: center; gap: 6px; }
+.trophy-go { margin: 0; font-weight: 700; }
+.trophy-go a { color: var(--sky-strong); }
+.trophy .mq-small { margin: 0; }
+.trophy-belts { list-style: none; margin: 0; padding: 0; }
+.trophy-belts .belt-chip { font-size: 13px; padding: 4px 10px; }
 .badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
 .badge { display: grid; gap: 4px; justify-items: center; text-align: center; padding: 14px 10px; border-radius: var(--radius-lg); border: 1px dashed var(--line); color: var(--ink-muted); }
 .badge b { color: var(--ink); font-size: 14.5px; } .badge small { font-size: 12.5px; line-height: 1.35; }
@@ -1051,6 +1088,9 @@ html.motion-paused .wb-card .md-switch .md-knob, body.calm .wb-card .md-switch .
 .star-boxes { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .star-boxes span { width: clamp(40px, 10vw, 56px); height: clamp(50px, 12vw, 66px); display: grid; place-items: center; border-radius: var(--radius-sm); border: 2px dashed var(--edge); font: 700 clamp(1.6rem, 6vw, 2.2rem)/1 var(--display); background: var(--card); }
 .star-boxes span.f { border-style: solid; background: color-mix(in srgb, var(--sky) 16%, var(--card)); }
+.star-boxes span.cut { margin-left: 14px; position: relative; } /* the bar between a Trick's left and right part */
+.star-boxes span.cut::before { content: ""; position: absolute; left: -15px; top: 4px; bottom: 4px; width: 3px; border-radius: var(--radius-pill); background: var(--edge); }
+.star-boxes span.held { border-color: var(--sky-strong); background: color-mix(in srgb, var(--sky) 30%, var(--card)); }
 .star-boxes.ok span { background: var(--teal); color: var(--on-accent); border-style: solid; }
 .star-boxes.no span { background: color-mix(in srgb, var(--coral) 40%, var(--card)); border-style: solid; text-decoration: line-through; }
 .star-plain { display: block; min-width: 6ch; min-height: 1.3em; padding: 6px 16px; border-bottom: 3px solid var(--edge); font: 700 clamp(2rem, 8vw, 2.8rem)/1.2 var(--display); }

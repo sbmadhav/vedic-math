@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 833498,
+  "total": 838477,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -48,7 +48,7 @@
    "/js/ambient.js": 4372,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 50399,
+   "/js/app.js": 52419,
    "/js/arena.js": 5685,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -56,6 +56,7 @@
    "/js/check.js": 2946,
    "/js/cloud-config.js": 588,
    "/js/cloud.js": 4437,
+   "/js/connectors.js": 1891,
    "/js/explain-lines.js": 2541,
    "/js/family-helpers.js": 5263,
    "/js/family-hook.js": 775,
@@ -68,7 +69,7 @@
    "/js/gamify.js": 3873,
    "/js/guide-art.js": 2484,
    "/js/guide.js": 10650,
-   "/js/handoff-schema.js": 6616,
+   "/js/handoff-schema.js": 6682,
    "/js/handoff.js": 4229,
    "/js/install-rules.js": 2226,
    "/js/install.js": 7143,
@@ -130,7 +131,7 @@
    "/js/sky-view.js": 4458,
    "/js/sky.js": 3762,
    "/js/slokas.js": 16068,
-   "/js/star.js": 8768,
+   "/js/star.js": 8950,
    "/js/store.js": 5753,
    "/js/stories.js": 10300,
    "/js/story-plan.js": 1807,
@@ -143,7 +144,7 @@
    "/js/sutras.js": 4223,
    "/js/tour.js": 2215,
    "/js/try.js": 4416,
-   "/js/vedic.js": 9857,
+   "/js/vedic.js": 10059,
    "/js/videos.js": 20832,
    "/js/viz.js": 5848,
    "/js/voice-index.js": 213,
@@ -152,9 +153,9 @@
    "/js/voice.js": 14365,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 25020,
-   "/play/": 4146,
-   "/sw.js": 6283,
+   "/math.css": 25610,
+   "/play/": 4165,
+   "/sw.js": 6292,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -287,10 +288,17 @@
    },
    {
     "date": "2026-10-29",
-    "pr": 174,
+    "pr": 175,
     "from": 828167,
-    "to": 833498,
-    "why": "play-nav-by-mode: the menu by Mode (js/nav.js, new and statically imported), the Arcade page, Learn's Sutras card, the Calm and sound control in the header and the play shell, Find's help card and Ctrl K; measured on main as of #173; file deltas: /js/app.js +1802, /js/nav.js +1555, /js/ambient.js +739, /math.css +598, /js/guide.js +191, /js/find.js +162, /js/shell.js +96, /play/ +86, +5331 in all; js/nav.js as the CI build measures it (one byte more than a local Brotli)"
+    "to": 833139,
+    "why": "working-memory-scaffolds: the answer slots for Tricks built in parts (js/app.js, js/star.js, js/vedic.js, math.css) and the digit connectors (js/connectors.js, loaded on first use but precached, so it counts), and the Trophy case on Me; file deltas: /js/app.js +2004, /js/connectors.js +1891 (new), /js/handoff-schema.js +66, /js/star.js +182, /js/vedic.js +202, /math.css +588, /play/ +20, /sw.js +17, +4972 in all; measured on main as of #173"
+   },
+   {
+    "date": "2026-10-29",
+    "pr": 174,
+    "from": 833139,
+    "to": 838477,
+    "why": "play-nav-by-mode: the menu by Mode (js/nav.js, new and statically imported), the Arcade page, Learn's Sutras card, the Calm and sound control in the header and the play shell, Find's help card and Ctrl K; measured on main as of #175; file deltas: /js/app.js +1818, /js/nav.js +1555, /js/ambient.js +739, /math.css +600, /js/guide.js +191, /js/find.js +162, /js/shell.js +96, /play/ +79, +5338 in all; js/nav.js as the CI build measures it (one byte more than a local Brotli)"
    }
   ]
  },
