@@ -594,13 +594,18 @@ function typedAnswer(root) {
 /* The slots' Lock and Enter, and the switch between slots and one box (redrawn in place, on the question's signal) */
 function wireSplit(root, p, signal) {
   const sw = root.querySelector('[data-split]');
-  if (sw) on(sw, 'click', () => { setSplitPref(sw.dataset.split === 'two'); fx.sfx('tap'); const box = root.querySelector('.pr-ans'); box.outerHTML = answerUI(p); wireSplit(root, p, signal); const f = root.querySelector('.pr-ans .ans-in'); if (f) f.focus(); }, signal);
+  /* What is typed stays: the two parts become the one box's text, and the one box's text goes in the left slot */
+  if (sw) on(sw, 'click', () => {
+    const typed = [...root.querySelectorAll('.pr-ans .ans-in')].map(i => i.value.trim()).join('');
+    setSplitPref(sw.dataset.split === 'two'); fx.sfx('tap'); root.querySelector('.pr-ans').outerHTML = answerUI(p); wireSplit(root, p, signal);
+    const f = root.querySelector('.pr-ans .ans-in'); if (f) { f.value = typed; f.focus(); }
+  }, signal);
   const l = root.querySelector('.pr-slot-in[data-slot="l"]'); if (!l) return;
   const r = root.querySelector('.pr-slot-in[data-slot="r"]'), lock = root.querySelector('[data-lock]');
   const set = v => { l.readOnly = v; l.closest('.pr-slot').classList.toggle('locked', v); lock.setAttribute('aria-pressed', String(v)); };
   const doLock = () => { if (!l.value.trim()) { l.focus(); return; } set(true); fx.sfx('tap'); r.focus(); };
   on(lock, 'click', () => { if (l.readOnly) { set(false); l.focus(); } else doLock(); }, signal);
-  on(l, 'keydown', e => { if (e.key !== 'Enter') return; e.preventDefault(); if (l.readOnly) r.focus(); else doLock(); }, signal);
+  on(l, 'keydown', e => { if (e.key !== 'Enter' || e.isComposing) return; e.preventDefault(); if (l.readOnly) r.focus(); else doLock(); }, signal);
 }
 function answerUI(p) {
   if (canSplit(p)) return `<div class="pr-ans">${splitPref() ? slotsHTML() : `${oneBox(p)}<p class="mq-small pr-split-note"><button type="button" class="linkbtn" data-split="two">Split into parts</button></p>`}</div>`;
@@ -1822,7 +1827,7 @@ function mountAnimator(t, signal) {
   lateImport(loadLinks, 'connectors.js', signal).then(m => { if (m && !signal.aborted) { links = m; drawLinks(); } });
   const show = (all = false) => { shownAll = all; drawLinks(); board.innerHTML = steps.slice(0, all ? steps.length : i + 1).map((s, k) => `<div class="anim-step${k === (all ? steps.length - 1 : i) ? ' cur' : ''}"><div class="anim-show">${s.show}</div><p>${s.say}</p></div>`).join(''); $('#animPos').textContent = `${all ? steps.length : i + 1} / ${steps.length}`; $('#animPrev').disabled = i === 0 && !all; $('#animNext').disabled = all || i === steps.length - 1;
     if ((all || i === steps.length - 1) && !counted) { counted = true; store.bump('tricksWatched'); if (store.markSeen('trick:' + t.id)) store.addSparks(5, 'trick'); } };
-  const run = (user = true) => { const vs = ins.map(x => Number(x.value)); if (ins.some(x => x.value === '') || vs.some(v => !Number.isFinite(v))) { err.textContent = 'Fill in every number.'; return; } const bad = t.valid(vs); err.textContent = bad || ''; if (bad) { board.innerHTML = ''; $('#animLinks').innerHTML = ''; nav.hidden = true; return; } vals = vs; steps = t.steps(vals); i = 0; counted = !user; nav.hidden = false; show(); if (user) track('trick/' + t.id, 'Trick: ' + t.title); };
+  const run = (user = true) => { const vs = ins.map(x => Number(x.value)); if (ins.some(x => x.value === '') || vs.some(v => !Number.isFinite(v))) { err.textContent = 'Fill in every number.'; return; } const bad = t.valid(vs); err.textContent = bad || ''; if (bad) { vals = null; steps = []; board.innerHTML = ''; $('#animLinks').innerHTML = ''; nav.hidden = true; return; } /* no steps left for a late connectors load to draw */ vals = vs; steps = t.steps(vals); i = 0; counted = !user; nav.hidden = false; show(); if (user) track('trick/' + t.id, 'Trick: ' + t.title); };
   on(form, 'submit', e => { e.preventDefault(); fx.sfx('tap'); run(); }, signal);
   on($('#animRand'), 'click', () => { let v; do { v = t.random(); } while (t.valid(v)); fill(v); fx.sfx('pop'); run(); }, signal);
   on($('#animPrev'), 'click', () => { i = Math.max(0, i - 1); show(); }, signal);

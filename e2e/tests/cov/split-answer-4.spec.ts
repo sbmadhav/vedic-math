@@ -8,9 +8,11 @@ import { slots, partsOf, questionVals } from '../split-kit';
 test('"Type it in one box" switches to the single box for this and later questions; "Split into parts" switches back', async ({ page }) => {
   await open(page, '#/skill/v-near-base');
   const box = page.locator('#practice'), one = box.getByRole('textbox', { name: 'Your answer' });
+  await slots(box).left.fill('95'); await slots(box).right.fill('06');
   await box.getByRole('button', { name: 'Type it in one box' }).click();
   await expect(one).toBeVisible();
   await expect(one).toBeFocused();
+  await expect(one).toHaveValue('9506'); // what was typed stays
   await expect(slots(box).left).toHaveCount(0);
   expect(await page.evaluate(() => localStorage.getItem('vm.split'))).toBe('one');
 
@@ -28,8 +30,10 @@ test('"Type it in one box" switches to the single box for this and later questio
   await page.reload();
   await expect(page.locator('#practice').getByRole('textbox', { name: 'Your answer' })).toBeVisible();
 
+  await page.locator('#practice').getByRole('textbox', { name: 'Your answer' }).fill('12');
   await page.locator('#practice').getByRole('button', { name: 'Split into parts' }).click();
   await expect(slots(page.locator('#practice')).left).toBeFocused();
+  await expect(slots(page.locator('#practice')).left).toHaveValue('12'); // the one box's text goes in the left slot
   expect(await page.evaluate(() => localStorage.getItem('vm.split'))).toBeNull();
 });
 

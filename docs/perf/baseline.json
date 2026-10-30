@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 833029,
+  "total": 833139,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -48,7 +48,7 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 50493,
+   "/js/app.js": 50601,
    "/js/arena.js": 5685,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -153,8 +153,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 25010,
-   "/play/": 4080,
-   "/sw.js": 6283,
+   "/play/": 4086,
+   "/sw.js": 6279,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -289,8 +289,8 @@
     "date": "2026-10-29",
     "pr": 175,
     "from": 828167,
-    "to": 833029,
-    "why": "working-memory-scaffolds: the answer slots for Tricks built in parts (js/app.js, js/star.js, js/vedic.js, math.css) and the digit connectors (js/connectors.js, loaded on first use but precached, so it counts), and the Trophy case on Me; file deltas: /js/app.js +1896, /js/connectors.js +1891 (new), /js/handoff-schema.js +66, /js/star.js +182, /js/vedic.js +202, /math.css +588, /play/ +20, /sw.js +17, +4862 in all; measured on main as of #173"
+    "to": 833139,
+    "why": "working-memory-scaffolds: the answer slots for Tricks built in parts (js/app.js, js/star.js, js/vedic.js, math.css) and the digit connectors (js/connectors.js, loaded on first use but precached, so it counts), and the Trophy case on Me; file deltas: /js/app.js +2004, /js/connectors.js +1891 (new), /js/handoff-schema.js +66, /js/star.js +182, /js/vedic.js +202, /math.css +588, /play/ +20, /sw.js +17, +4972 in all; measured on main as of #173"
    }
   ]
  },

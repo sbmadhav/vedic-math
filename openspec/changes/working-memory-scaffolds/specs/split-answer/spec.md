@@ -52,7 +52,7 @@ Check SHALL join the two parts as typed and check them as one answer, exactly as
 - **THEN** Bolt says "Now the right part." and no try is counted
 
 ### Requirement: One box stays available
-Under the slots a "Type it in one box" control SHALL switch to the single answer box, and under that box a "Split into parts" control SHALL switch back. The choice SHALL be saved on this device and used for later questions.
+Under the slots a "Type it in one box" control SHALL switch to the single answer box, and under that box a "Split into parts" control SHALL switch back. The choice SHALL be saved on this device and used for later questions. What the Player has typed SHALL be kept across the switch: the two parts joined in the one box, the one box's text in the left slot.
 
 #### Scenario: One box
 - **WHEN** a Player presses "Type it in one box" and answers the next question
