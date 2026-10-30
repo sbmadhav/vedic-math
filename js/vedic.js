@@ -339,11 +339,11 @@ TRICKS.push(
 /* Dojo belts: the order tricks are learned in, from first steps to black belt */
 export const BELTS = [
   { id: 'white', name: 'White belt', color: 'var(--belt-white)', tricks: ['from9', 'by11', 'times5'] },
-  { id: 'yellow', name: 'Yellow belt', color: 'var(--sun)', tricks: ['sq5', 'by9s', 'ends10'] },
-  { id: 'orange', name: 'Orange belt', color: 'var(--coral)', tricks: ['near-base', 'square-near', 'check9'] },
-  { id: 'green', name: 'Green belt', color: 'var(--teal)', tricks: ['crosswise', 'duplex', 'sub-base'] },
-  { id: 'blue', name: 'Blue belt', color: 'var(--sky)', tricks: ['div9', 'osculator', 'recip'] },
-  { id: 'purple', name: 'Purple belt', color: 'var(--plum)', tricks: ['sqroot', 'cuberoot', 'transpose'] },
+  { id: 'yellow', name: 'Yellow belt', color: 'var(--cat-yellow)', tricks: ['sq5', 'by9s', 'ends10'] },
+  { id: 'orange', name: 'Orange belt', color: 'var(--cat-orange)', tricks: ['near-base', 'square-near', 'check9'] },
+  { id: 'green', name: 'Green belt', color: 'var(--cat-green)', tricks: ['crosswise', 'duplex', 'sub-base'] },
+  { id: 'blue', name: 'Blue belt', color: 'var(--cat-blue)', tricks: ['div9', 'osculator', 'recip'] },
+  { id: 'purple', name: 'Purple belt', color: 'var(--cat-purple)', tricks: ['sqroot', 'cuberoot', 'transpose'] },
   { id: 'black', name: 'Black belt', color: 'var(--belt-black)', tricks: ['add-sub', 'ratio-zero', 'zero-sum'] }
 ];
 

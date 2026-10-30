@@ -71,7 +71,7 @@ html.motion-paused .lv-mode:is(:hover, :focus-visible) .lv-mode-go, html.calm .l
 .lv-cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-7); }
 @media (max-width: 800px) { .lv-cols { grid-template-columns: 1fr; } }
 .lv-links { padding-left: 1.2em; }
-.lv-foot { border-top: 1px solid var(--line); padding: var(--space-7) 0 var(--space-7); color: var(--ink-muted); font-size: 14px; }
+.lv-foot { border-top: 1px solid var(--line); padding: var(--space-7) 0 var(--space-7); color: var(--ink-muted); font-size: var(--text-label-size); }
 .lv-page a, .lv-foot a, .lv-cols a, .lv-grown a { color: var(--sky-strong); font-weight: 700; }
 
 /* Grown-up pages: readable text */
@@ -82,7 +82,7 @@ html.motion-paused .lv-mode:is(:hover, :focus-visible) .lv-mode-go, html.calm .l
 .lv-page p, .lv-page li { line-height: 1.6; }
 .lv-page blockquote { margin: var(--space-4) 0; padding: var(--space-3) var(--space-4); border-left: 4px solid var(--sun); background: var(--card); border-radius: var(--radius-sm); }
 .lv-table { overflow-x: auto; margin: var(--space-4) 0; }
-.lv-page table { border-collapse: collapse; min-width: 560px; font-size: 15px; }
+.lv-page table { border-collapse: collapse; min-width: 560px; font-size: var(--text-small-size); }
 .lv-page th, .lv-page td { border: 1px solid var(--line); padding: var(--space-2) var(--space-2-5); text-align: left; vertical-align: top; }
 .lv-page th { background: var(--bg-alt); }
 .lv-draft { margin: var(--space-4) 0; padding: var(--space-3) var(--space-4); border: 2px solid var(--edge); border-radius: var(--radius-md); background: color-mix(in srgb, var(--sun) 30%, var(--card)); color: var(--ink); font-weight: 700; }
@@ -104,7 +104,7 @@ html.motion-paused .lv-mode:is(:hover, :focus-visible) .lv-mode-go, html.calm .l
 }
 :root[data-theme="dark"] .vm-bg { background: radial-gradient(140% 50% at 50% 110%, color-mix(in srgb, var(--plum) 16%, transparent), transparent 72%),
   linear-gradient(180deg, color-mix(in srgb, var(--sky) 5%, transparent), transparent 45%); }
-.lv-landing main, .lv-landing .lv-foot { position: relative; z-index: 1; }
+.lv-landing main, .lv-landing .lv-foot { position: relative; z-index: var(--z-base); }
 /* Welcome back: main stays unseen while the script after the Modes sets its words (site/index.html), so nothing shifts */
 html[data-lv-wait] .lv-landing main { visibility: hidden; animation: lv-show 0s 1.5s forwards; } /* shown anyway after 1.5 s */
 @keyframes lv-show { to { visibility: visible; } }
@@ -177,7 +177,7 @@ html.motion-paused .lv-demo-nav .md-btn, html.calm .lv-demo-nav .md-btn { transi
    Nothing moves: no hover lift, no animation. */
 .lv-facts { list-style: none; margin: var(--space-5) 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
 @media (max-width: 700px) { .lv-facts { grid-template-columns: 1fr; } }
-.lv-fact { display: flex; align-items: flex-start; gap: var(--space-3); min-width: 0; padding: var(--space-4); border: 2px solid var(--edge); border-top-width: 6px; border-radius: var(--radius-lg); background: var(--card); color: var(--ink); font-size: 15px; line-height: 1.45; }
+.lv-fact { display: flex; align-items: flex-start; gap: var(--space-3); min-width: 0; padding: var(--space-4); border: 2px solid var(--edge); border-top-width: 6px; border-radius: var(--radius-lg); background: var(--card); color: var(--ink); font-size: var(--text-small-size); line-height: 1.45; }
 .lv-fact strong { display: block; margin-bottom: var(--space-1); font-family: var(--font-display); font-size: 1.1rem; line-height: 1.25; }
 .lv-fact-ic { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: var(--radius-round); color: var(--on-accent); }
 .lv-fact--sky { border-top-color: var(--sky); } .lv-fact--sky .lv-fact-ic { background: var(--sky); }
@@ -188,6 +188,6 @@ html.motion-paused .lv-demo-nav .md-btn, html.calm .lv-demo-nav .md-btn { transi
 .lv-callout-go { margin: var(--space-4) 0; }
 .lv-page .lv-callout-go a.md-btn { color: var(--on-accent); min-height: 48px; font-size: 1.05rem; }
 .lv-page .lv-callout-go a.md-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
-.lv-callout-note { margin: 0; color: var(--ink-muted); font-size: 15px; }
+.lv-callout-note { margin: 0; color: var(--ink-muted); font-size: var(--text-small-size); }
 @media (prefers-reduced-motion: reduce) { .lv-page .lv-callout-go a.md-btn:hover, .lv-page .lv-callout-go a.md-btn:active { transform: none; } }
 html.motion-paused .lv-page .lv-callout-go a.md-btn:is(:hover, :active), html.calm .lv-page .lv-callout-go a.md-btn:is(:hover, :active) { transform: none; }

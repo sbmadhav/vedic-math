@@ -19,7 +19,7 @@ test.beforeEach(async ({ request, baseURL }) => {
   test.skip(!h['strict-transport-security'] && !/^https:/.test(baseURL || ''), 'this server sends no _headers: serve a build (node e2e/local-server.mjs 8124 _site)');
 });
 
-for (const path of ['/', APP, '/import/', '/parents/', '/privacy/', '/js/app.js', '/ds/2.1.0/tokens.css', '/manifest.webmanifest', '/plya/']) {
+for (const path of ['/', APP, '/import/', '/parents/', '/privacy/', '/js/app.js', '/ds/2.2.0/tokens.css', '/manifest.webmanifest', '/plya/']) {
   test(`${path}: every common header, with its value`, async ({ request }) => {
     const res = await request.get(path, { maxRedirects: 0 });
     const h = res.headers();

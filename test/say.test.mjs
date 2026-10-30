@@ -97,7 +97,7 @@ test('the button: accessible name, toggle state, visible words in the name; the 
   assert.match(b, /aria-pressed="false"/);
   assert.match(b, /type="button"/);
   assert.match(b, /Hear how to say<\/span>/);
-  assert.match(S.respellHTML('s1'), /<span class="say-vh">Say it like: <\/span>ay-kah-dhi-KAY-nuh poor-VAY-nuh/);
+  assert.match(S.respellHTML('s1'), /<span class="md-sr-only">Say it like: <\/span>ay-kah-dhi-KAY-nuh poor-VAY-nuh/);
   assert.match(S.devaHTML('s1'), /lang="sa">एकाधिकेन पूर्वेण</);
   assert.equal(S.sayButton('nope'), '');
 });

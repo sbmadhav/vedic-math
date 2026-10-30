@@ -39,7 +39,7 @@ export function sayButton(id, { label = false, cls = '' } = {}) {
   return `<button type="button" class="say-btn${label ? ' say-btn--label' : ''}${cls ? ' ' + cls : ''}" data-say="${id}" aria-pressed="false" aria-label="Hear how to say ${esc(c.name)}">${SPEAKER}${label ? '<span aria-hidden="true">Hear how to say</span>' : ''}</button>`;
 }
 /* The Respelling under the name, with a visually hidden prefix for screen readers */
-export const respellHTML = (id, tag = 'span') => (hasClip(id) ? `<${tag} class="say-resp"><span class="say-vh">Say it like: </span>${esc(NAMES[id].say)}</${tag}>` : '');
+export const respellHTML = (id, tag = 'span') => (hasClip(id) ? `<${tag} class="say-resp"><span class="md-sr-only">Say it like: </span>${esc(NAMES[id].say)}</${tag}>` : '');
 export const devaHTML = id => (hasClip(id) ? `<span class="say-deva" lang="sa">${NAMES[id].deva}</span>` : '');
 
 /* Seams for the node tests; the page uses the defaults */

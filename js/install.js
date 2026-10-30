@@ -165,7 +165,7 @@ function stepsHTML(k, withPrompt) {
     ${s.note ? `<p class="mq-small in-note">${s.note}</p>` : ''}`;
 }
 function guideHTML(k) {
-  const x = `<button type="button" class="vp-x" data-close aria-label="Close"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" ${P}/></svg></button>`;
+  const x = `<button type="button" class="md-icon-btn vp-x" data-close aria-label="Close"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" ${P}/></svg></button>`;
   if (appHere()) return `<div class="vs-head"><h2 id="inTitle">${W.title()}</h2>${x}</div><p id="inSub" class="vs-sub">${installed() ? 'You are already using the installed app.' : 'Installed on this device: open Learn Vedic Math from your home screen or app list.'}</p><p class="vs-foot"><button type="button" class="md-btn md-btn--sm md-btn--primary" data-close>Close</button></p>`;
   const done = justInstalled;
   const one = canPrompt() ? `<div class="in-one"><button type="button" class="md-btn md-btn--primary" data-in="prompt">${icon('install')} Install now</button><p class="mq-small">One tap: your browser asks you to confirm.</p></div>` : '';

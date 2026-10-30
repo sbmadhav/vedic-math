@@ -186,7 +186,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     if (p.kind === 'fields') return `<div class="star-fields">${p.fields.map((f, i) => `<button type="button" class="star-field" data-f="${i}" aria-pressed="${i === 0}"><small>${esc(f.label)}</small><output aria-live="off"></output></button>`).join('')}</div>`;
     /* A Trick written as a left part and a right part: a bar between the parts' boxes (openspec working-memory-scaffolds) */
     const cut = p.kind === 'num' && p.parts && !p.story ? p.parts[0].length : 0;
-    if (boxes) return `<div class="star-boxes${cut ? ' star-boxes--parts' : ''}" id="stBoxes" aria-hidden="true">${Array.from({ length: maxLen(p) }, (_, i) => `<span${cut && i === cut ? ' class="cut"' : ''}></span>`).join('')}</div><output class="vh" id="stOut" aria-live="off" aria-label="Your answer"></output>`;
+    if (boxes) return `<div class="star-boxes${cut ? ' star-boxes--parts' : ''}" id="stBoxes" aria-hidden="true">${Array.from({ length: maxLen(p) }, (_, i) => `<span${cut && i === cut ? ' class="cut"' : ''}></span>`).join('')}</div><output class="md-sr-only" id="stOut" aria-live="off" aria-label="Your answer"></output>`;
     return `<output class="star-plain" id="stOut" aria-live="off" aria-label="Your answer"></output>`;
   }
   function showEntry() {

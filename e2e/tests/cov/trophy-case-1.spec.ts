@@ -17,7 +17,7 @@ test.describe('a Challenger who holds the white and green belts', () => {
       const knot = chip(page).locator('.mq-chip-belt');
       await expect(knot, h).toBeVisible();
       await expect(knot, h).toHaveAttribute('data-belt', 'green');
-      await expect(knot, h).toHaveAttribute('style', /--belt:\s*var\(--teal\)/);
+      await expect(knot, h).toHaveAttribute('style', /--belt:\s*var\(--cat-green\)/);
       await expect(chip(page).locator('.mq-sparkbar'), h).toBeVisible();
       // No Stars, Medals or Badges, and no number
       await expect(chip(page).locator('.medal, .star-link, .badge, .dojo-star'), h).toHaveCount(0);

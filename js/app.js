@@ -585,7 +585,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
       if (res.ok) { fx.sfx('ok'); const first = tries === 1 && !hints; fam.note({ type: 'right', first }); const msg = first ? pick(PRAISE[fx.mode()] || PRAISE.challenger) : 'You got it!'; say(msg + (first ? ` <span class="pr-sparks">+${10 + Math.min(store.skill(s.id).streak + 1, 5)} Sparks</span>` : ''), 'ok'); fx.bounce($('#prSay .md-bubble', root), qs); fx.twinkle($('#prSay .pr-sparks', root), qs); if (explorer) fx.speak(msg, true); finish(true); return; }
       fx.sfx('no'); fx.wiggle(root.querySelector('.pr-in, .pr-choices, .pr-fields, .pr-split'), qs); fam.note({ type: 'miss' });
       if (lives) { life--; reveal(); say(life ? `Oops! ${life} ${life === 1 ? 'life' : 'lives'} left. See how it works, then keep going.` : 'Out of lives!', 'no'); finish(false); const lv = root.querySelector('.pr-lives'); lv.innerHTML = '<i class="on"></i>'.repeat(life) + '<i></i>'.repeat(lives - life); lv.setAttribute('aria-label', `${life} lives left`); if (!life && onOver) { const b = $('#prCheck', root); b.textContent = 'See my score'; b.onclick = e => { e.preventDefault(); onOver(right); }; } return; }
-      if (tries === 1) { say((res.msg ? res.msg + ' ' : '') + 'Not quite. Try once more.' + (p.hints[0] && !hints ? ' <button type="button" class="linkbtn" data-hint>Want a hint?</button>' : ''), 'no'); if (explorer) fx.speak('Not quite. Try again!', true); }
+      if (tries === 1) { say((res.msg ? res.msg + ' ' : '') + 'Not quite. Try once more.' + (p.hints[0] && !hints ? ' <button type="button" class="md-link" data-hint>Want a hint?</button>' : ''), 'no'); if (explorer) fx.speak('Not quite. Try again!', true); }
       else if (tries === 2) { hints = Math.max(hints, 1); const h = p.hints[Math.min(1, p.hints.length - 1)] || p.hints[0]; say((res.msg ? res.msg + ' ' : '') + `Hint: ${h}`, 'no'); if (explorer && h) fx.speak(h, true); } // read the hint that is shown
       else { reveal(); say('That one was tricky. See how it works, then try the next one.', 'no'); finish(false); }
     }, qs);
@@ -615,7 +615,7 @@ const slotsHTML = () => `<div class="pr-split" role="group" aria-label="Your ans
     <button type="button" class="md-btn md-btn--sm pr-lock" data-lock aria-pressed="false" aria-label="Lock the left part">${icon('lock')}Lock</button>
     <span class="pr-split-bar" aria-hidden="true"></span>
     <label class="pr-slot"><span>Right part</span><input class="ans-in pr-slot-in" data-slot="r" inputmode="numeric" spellcheck="false" autocapitalize="off"></label>
-  </div><p class="mq-small pr-split-note" id="prSplitNote">Lock the left part, then work out the right part. <button type="button" class="linkbtn" data-split="one">Type it in one box</button></p>`;
+  </div><p class="mq-small pr-split-note" id="prSplitNote">Lock the left part, then work out the right part. <button type="button" class="md-link" data-split="one">Type it in one box</button></p>`;
 /* What the Player typed: the one box, or the two slots joined left then right ({ partial } when only one is filled) */
 function typedAnswer(root) {
   const l = root.querySelector('.pr-slot-in[data-slot="l"]');
@@ -642,7 +642,7 @@ function wireSplit(root, p, signal) {
   on(l, 'keydown', e => { if (e.key !== 'Enter' || e.isComposing) return; e.preventDefault(); if (l.readOnly) r.focus(); else doLock(); }, signal);
 }
 function answerUI(p) {
-  if (canSplit(p)) return `<div class="pr-ans">${splitPref() ? slotsHTML() : `${oneBox(p)}<p class="mq-small pr-split-note"><button type="button" class="linkbtn" data-split="two">Split into parts</button></p>`}</div>`;
+  if (canSplit(p)) return `<div class="pr-ans">${splitPref() ? slotsHTML() : `${oneBox(p)}<p class="mq-small pr-split-note"><button type="button" class="md-link" data-split="two">Split into parts</button></p>`}</div>`;
   if (p.kind === 'choice') return `<div class="pr-choices" role="group" aria-label="Choices">${p.choices.map(c => `<button type="button" class="md-chip pr-choice" aria-pressed="false" data-v="${esc(c)}">${c}</button>`).join('')}</div>`;
   if (p.kind === 'fields') return `<div class="pr-fields">${p.fields.map(f => `<label>${f.label}<input class="ans-in" inputmode="text" spellcheck="false"></label>`).join('')}</div>`;
   return oneBox(p);
@@ -958,7 +958,7 @@ function sutrasView({ signal } = {}) {
   const card = c => { const have = gm.collectedCard(c); return `<article class="sutra-card${have ? ' got' : ''}" data-id="${c.id}" data-name="${esc(c.name)}">
     ${sayButton(c.id, { cls: 'say-btn--card' })}<button class="sutra-face" aria-expanded="false"><span class="sutra-n">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n}</span><b lang="sa-Latn">${c.name}</b>${respellHTML(c.id)}<i>${c.meaning}</i>${m === 'explorer' ? `<span class="sutra-kid">${esc(c.kid)}</span>` : ''}${progressMeter(sutraProgress(c), m)}${have ? '<span class="sutra-got">Collected</span>' : '<span class="sutra-tap">Tap to flip</span>'}</button>
     <div class="sutra-back"><span>${c.plain}</span>${c.example ? `<code>${c.example}</code>` : ''}
-      <span class="sutra-acts"><a class="sutra-more" href="#/sutras/${c.id}">Learn more ${icon('play')}</a>${listenBtn('sutra-card:' + c.id, c.meaning)}<button type="button" class="sutra-flipback" aria-label="Flip back">${icon('loop')}</button></span></div></article>`; };
+      <span class="sutra-acts"><a class="sutra-more" href="#/sutras/${c.id}">Learn more ${icon('play')}</a>${listenBtn('sutra-card:' + c.id, c.meaning)}<button type="button" class="md-icon-btn md-icon-btn--sm sutra-flipback" aria-label="Flip back">${icon('loop')}</button></span></div></article>`; };
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs([null, 'Sutras'])}
     <div class="sutra-top"><span class="md-tag md-tag--plum">Deep dive</span>${ambienceButton()}</div>
@@ -1062,7 +1062,7 @@ function sutraHTML(c) {
   // Learn more: videos play in the page for every Mode; pages on other sites only for Pro
   const reads = d.read.map(([label, to]) => (typeof to === 'object' ? playBtn(to.yt, `${icon('play')}<span>${esc(label)}</span>`) : outLink(to, `${icon('link')}<span>${esc(label)}</span>`))).filter(Boolean);
   // The close button (with the Ambience toggle beside it) and the prev / next footer stay pinned while the deep dive scrolls under them
-  return `<div class="sd-bar">${ambienceButton({ compact: true })}<button class="vp-x sd-x" aria-label="Close">${icon('close')}</button></div>
+  return `<div class="sd-bar">${ambienceButton({ compact: true })}<button class="md-icon-btn vp-x sd-x" aria-label="Close">${icon('close')}</button></div>
   <header class="sd-head"><div><span class="md-tag md-tag--plum">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n} of ${c.sub ? 13 : 16}</span><h2 id="sdTitle" lang="sa-Latn">${c.name}</h2><p class="sd-say">${sayButton(c.id, { label: true })}${respellHTML(c.id)}</p>${devaHTML(c.id)}<p class="sd-mean">${c.meaning}</p></div></header>
   <div class="sd-body">
     <div class="sd-fig" data-listen-scope><div class="sd-scene"></div><p class="listen-row">${listenBtn('from:.sc-say', 'this diagram step')}</p><p class="mq-small">Diagram plays by itself. Use Back and Next to go at your own pace.</p></div>
@@ -1137,7 +1137,7 @@ function parentNote() {
     : gate === 'needs-age' ? 'Right now nothing is posted for this player. They have not answered the age question yet; it is asked the first time a score would be posted.'
     : gate === 'device-only' ? "Nothing is posted for this player, because their age answer is under 13. Their scores stay on this device's board, and there is no way to turn World boards on for them."
     : "This player's scores and weekly Sparks post to World boards.";
-  return `<details class="mq-small pn"><summary class="linkbtn">${sum}</summary>
+  return `<details class="mq-small pn"><summary class="md-link">${sum}</summary>
     <p class="pn-now"><b>${now}</b></p>
     <p>World boards run on Google Firebase. Three kinds of post go to boards for the player's league: the score of a Daily challenge in the Arena and the score of a Ranked round of a game (today's and this week's board for each), and the player's Sparks total for this week (one weekly board). Sparks come from all play, Practice included, so practice adds to that posted weekly total. Practice scores themselves never leave this device.</p>
     <p>Nothing is posted before a player answers one question about their age. The answer stays on this device and is never sent. Nothing is ever posted for a player whose answer is under 13: their scores rank on this device's board only.</p>
@@ -1554,7 +1554,7 @@ function openPlayer(v, opener, onClose = null) {
   if (musicOn()) stopMusic();
   if (!playerDlg) {
     playerDlg = document.createElement('dialog'); playerDlg.className = 'vm-player'; playerDlg.setAttribute('aria-labelledby', 'vpTitle');
-    playerDlg.innerHTML = `<div class="vp-head"><h2 id="vpTitle"></h2><button class="vp-x" aria-label="Close video">${'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>'}</button></div><div class="vp-frame"></div><p class="vp-desc"></p><p class="vp-foot"></p>`;
+    playerDlg.innerHTML = `<div class="vp-head"><h2 id="vpTitle"></h2><button class="md-icon-btn vp-x" aria-label="Close video">${'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>'}</button></div><div class="vp-frame"></div><p class="vp-desc"></p><p class="vp-foot"></p>`;
     document.body.append(playerDlg);
     const close = () => playerDlg.close();
     playerDlg.querySelector('.vp-x').onclick = close;
@@ -1599,7 +1599,7 @@ function askAge({ onAnswer = () => {}, onDismiss = () => {} } = {}) {
   if (ageDlg.open) return;
   const handlers = ageDlg._handlers = { onAnswer, onDismiss, answered: false };
   ageDlg._opener = document.activeElement;
-  const x = `<button type="button" class="vp-x" data-close aria-label="Close">${icon('close')}</button>`;
+  const x = `<button type="button" class="md-icon-btn vp-x" data-close aria-label="Close">${icon('close')}</button>`;
   ageDlg.innerHTML = `<div class="vs-head"><h2 id="ageTitle">${fx.t({ explorer: 'How old are you?', challenger: 'How old are you?', pro: 'How old is this player?' })}</h2>${x}</div>
     <p id="ageSub" class="vs-sub">${fx.t({ explorer: 'Tap your age. A grown-up can help you.', challenger: 'Pick your age. We ask once, and the answer stays on this device.', pro: 'We ask once per player. The answer stays on this device and is never sent.' })}</p>
     <div class="vs-ages" role="group" aria-labelledby="ageTitle">${AGES.map(([v, l]) => `<button type="button" class="md-chip" data-age="${v}">${l}</button>`).join('')}</div>
@@ -1645,7 +1645,7 @@ function askTour() { tourAsked = true; if ((location.hash || '#/') === '#/' || l
 function newHereHTML() {
   if (store.playedBefore()) return '';
   /* One help control (openspec find-and-home-polish): the tour, which ends on the Guide in the menu bar */
-  return `<p class="gd-new"><span class="gd-new-ic" aria-hidden="true">${icon('map')}</span><span>New here? <button type="button" class="linkbtn" id="tourAgain">Quick tour</button></span></p>`;
+  return `<p class="gd-new"><span class="gd-new-ic" aria-hidden="true">${icon('map')}</span><span>New here? <button type="button" class="md-link" id="tourAgain">Quick tour</button></span></p>`;
 }
 /* On Home: the tour when it is due (a Player with a Mode and no Sparks, on a device that has never shown it) or asked
    for. It starts once the route has drawn the menu chip and focused the heading. */
@@ -1719,7 +1719,7 @@ function findView({ signal } = {}) {
     ${crumbs([null, 'Find'])}
     <span class="md-tag md-tag--teal">Find</span>
     <h1 class="md-heading">${ex ? 'What do you want to find?' : 'Find anything'}</h1>
-    <form class="find-form" role="search" id="findForm"><label class="vh" for="findIn">Find</label><input type="search" id="findIn" class="find-in" placeholder="${ex ? 'A game, a skill or a video' : 'A skill, trick, sutra, game, video or setting'}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"></form>
+    <form class="find-form" role="search" id="findForm"><label class="md-sr-only" for="findIn">Find</label><input type="search" id="findIn" class="find-in" placeholder="${ex ? 'A game, a skill or a video' : 'A skill, trick, sutra, game, video or setting'}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"></form>
     <p class="mq-small find-hint">${ex ? 'Try: balloons, ten, shapes, songs, my name' : 'Try: squares, multiply, take away, leaderboard, for kids, how it works'}</p>
     <p class="mq-small find-count" id="findCount" role="status" aria-live="polite"></p>
     <div id="findOut"></div>
