@@ -66,4 +66,4 @@ Each Player SHALL hold one Title from their total Sparks, at the thresholds the 
 
 #### Scenario: Nav chip
 - **WHEN** any page is shown
-- **THEN** the Player chip shows the avatar and a progress bar to the next Title, and its accessible name says the Nickname and Title, with no level number
+- **THEN** the Player chip shows the avatar and a progress bar to the next Title, and its accessible name says the Nickname and Title, then the Belt when a Challenger or Pro Player holds one, with no level number
