@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 830114,
+  "total": 831796,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -45,10 +45,10 @@
    "/icons/maskable-192.png": 4394,
    "/icons/maskable-512.png": 11879,
    "/js/adapt.js": 1695,
-   "/js/ambient.js": 4236,
+   "/js/ambient.js": 4372,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 50191,
+   "/js/app.js": 49476,
    "/js/arena.js": 5392,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -56,7 +56,7 @@
    "/js/check.js": 2946,
    "/js/cloud-config.js": 588,
    "/js/cloud.js": 4437,
-   "/js/explain-lines.js": 2325,
+   "/js/explain-lines.js": 2541,
    "/js/family-helpers.js": 5263,
    "/js/family-hook.js": 775,
    "/js/family-lines.js": 2624,
@@ -73,6 +73,7 @@
    "/js/install-rules.js": 2226,
    "/js/install.js": 7143,
    "/js/landing-sky.js": 261,
+   "/js/ledes.js": 1794,
    "/js/levels.js": 5012,
    "/js/lib.js": 1707,
    "/js/life.js": 1103,
@@ -143,7 +144,7 @@
    "/js/tour.js": 2215,
    "/js/try.js": 4416,
    "/js/vedic.js": 9857,
-   "/js/videos.js": 20615,
+   "/js/videos.js": 20832,
    "/js/viz.js": 5848,
    "/js/voice-index.js": 213,
    "/js/voice-plan.js": 2458,
@@ -151,9 +152,9 @@
    "/js/voice.js": 14365,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 24867,
-   "/play/": 4135,
-   "/sw.js": 6259,
+   "/math.css": 24877,
+   "/play/": 4137,
+   "/sw.js": 6281,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -265,10 +266,24 @@
    },
    {
     "date": "2026-10-29",
-    "pr": 174,
+    "pr": "videos-new-channels",
     "from": 825099,
-    "to": 830114,
-    "why": "play-nav-by-mode: the menu by Mode (js/nav.js, new and statically imported), the Arcade page, Learn's Sutras card, the Calm and sound control in the header and the play shell, Find's help card and Ctrl K; measured on main as of #166; file deltas: /js/app.js +1704, /js/nav.js +1554, /js/ambient.js +603, /math.css +556, /js/guide.js +187, /js/find.js +162, /js/shell.js +96, /play/ +75, +5015 in all"
+    "to": 825299,
+    "why": "Two Watch shelf videos from newly approved channels (98thPercentile PR2SGZHOaps for by9s, MathsCore LmX9HeJzO_E for ratio-zero): js/videos.js is precached, so its new entries count (+217 bytes); the stamps in /play/ and /sw.js -9 and -8, with no change to their source; +200 in all; measured on main as of #166"
+   },
+   {
+    "date": "2026-10-29",
+    "pr": 170,
+    "from": 825299,
+    "to": 826479,
+    "why": "explanation-audio 4.2: the page introductions are data in the new js/ledes.js, so their fixed lines can be recorded whole (the strings moved out of js/app.js; a new precached module costs its own compression overhead), and the Older roots card has a Listen button; file deltas: /js/app.js -840, /js/explain-lines.js +216, /js/ledes.js +1794, /play/ +16, /sw.js -6, +1180 in all; measured on main as of #169"
+   },
+   {
+    "date": "2026-10-29",
+    "pr": 174,
+    "from": 826479,
+    "to": 831796,
+    "why": "play-nav-by-mode: the menu by Mode (js/nav.js, new and statically imported), the Arcade page, Learn's Sutras card, the Calm and sound control in the header and the play shell, Find's help card and Ctrl K; measured on main as of #170; file deltas: /js/app.js +1829, /js/nav.js +1554, /js/ambient.js +739, /math.css +566, /js/guide.js +187, /js/find.js +162, /js/shell.js +96, /play/ +70, +5317 in all"
    }
   ]
  },

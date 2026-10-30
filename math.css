@@ -714,7 +714,7 @@ html.motion-paused .sutra-face, body.calm .sutra-face, html.motion-paused .sutra
 .vm-mbtn.calm { border-color: var(--teal-strong); }
 .play-sound { position: relative; display: flex; flex: none; }
 .vm-mbtn--sm { height: 32px; padding: 0 10px 0 8px; gap: 6px; font-size: 13px; }
-.play-sound .vm-mpanel { position: absolute; right: auto; left: 0; top: calc(100% + 6px); width: min(320px, 90vw); max-height: 70vh; overflow: auto; }
+.play-sound .vm-mpanel { position: absolute; right: 0; left: auto; top: calc(100% + 6px); width: min(320px, 90vw); max-height: 70vh; overflow: auto; }
 @media (max-width: 600px) { .vm-mbtn--sm { width: 32px; height: 32px; } .play-sound .vm-mpanel { position: fixed; left: 8px; right: 8px; top: 56px; width: auto; } }
 @media (prefers-reduced-motion: reduce) { .vm-eq i { animation: none; } }
 /* The same with Pause motion (html.motion-paused) and Calm (body.calm) */

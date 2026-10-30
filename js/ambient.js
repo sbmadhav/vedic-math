@@ -14,7 +14,6 @@ const setPref = (k, v) => { try { localStorage.setItem('vm.' + k, v); } catch (e
    The full scene on the app home, a quieter one elsewhere (setBgLevel, called by the router). The Moving background
    switch decides whether it is drawn at all; no motion draws it still. */
 import { BG_NOTES } from './sky-scene.js';
-export { BG_NOTES };
 let bg = null, bgLevel = 'full';
 export const bgOn = () => pref('bg', '1') === '1';
 export function setBg(on) { setPref('bg', on ? '1' : '0'); if (on) startBg(); else stopBg(); }
@@ -38,7 +37,7 @@ let ac = null, master = null, verb = null, playing = null, timers = [], live = [
 export const isPlaying = () => !!playing;
 export const current = () => playing || pref('track', 'bowls');
 export const volume = () => +pref('vol', '0.5');
-export function setVolume(v) { setPref('vol', String(v)); if (master) master.gain.setTargetAtTime(v * .5, ac.currentTime, .2); }
+export function setVolume(v) { setPref('vol', String(v)); if (master) master.gain.setTargetAtTime(v * .5, ac.currentTime, .2); try { document.querySelectorAll('.vm-vol input').forEach(i => { if (+i.value !== +v) i.value = v; }); } catch (e) {} } /* every Volume slider (header and play shell) shows the same value */
 
 function ctx() {
   if (ac) return ac;
@@ -126,7 +125,7 @@ export function mountSound(slot, { signal, idp = 'vm', shell = false } = {}) {
   const close = (focus = false) => { panel.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (focus) btn.focus(); };
   on(btn, 'click', e => { e.stopPropagation(); const open = panel.hidden; panel.hidden = !open; btn.setAttribute('aria-expanded', String(open)); }, signal);
   on(document, 'click', e => { if (!panel.hidden && !slot.contains(e.target)) close(); }, signal);
-  on(document, 'keydown', e => { if (e.key === 'Escape' && !panel.hidden) close(true); }, signal);
+  on(document, 'keydown', e => { if (e.key === 'Escape' && !panel.hidden) { e.preventDefault(); close(true); } /* consumed: a round's own Escape (skip a replay) ignores a prevented key */ }, signal);
   slot.querySelectorAll('[data-t]').forEach(b => on(b, 'click', () => (playing === b.dataset.t ? stop() : play(b.dataset.t)), signal));
   on(slot.querySelector('.vm-stop'), 'click', stop, signal);
   on(slot.querySelector('input[type="range"]'), 'input', e => setVolume(+e.target.value), signal);

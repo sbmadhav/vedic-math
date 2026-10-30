@@ -79,7 +79,8 @@ test('studio audio covers at least 99% of all lines', { skip: !manifest && 'noth
 
 /* Explanations are recorded whole only (never stitched from clips), so a Listen line whose hash is not in the manifest
    falls back to the device voice. A todo until the re-record of explanation-audio task 4.6 (the wording has moved on
-   since the 2026-10-17 recording); that task removes the todo so the check becomes a hard gate. */
+   since the 2026-10-17 recording, and the Older roots notes and the page introductions' fixed lines were never
+   recorded); that task removes the todo so the check becomes a hard gate. */
 test('every explanation line is recorded whole', { skip: !manifest && 'nothing recorded yet (no tools/voice/manifest.json)', todo: 'until the explanation-audio 4.6 re-record' }, () => {
   const lines = new Set(manifest.lines), miss = [];
   for (const { text, src } of allExplanationLines({ videos: VIDEOS, links: LINKS })) { const w = normalize(text); if (w && !lines.has(lineHash(manifest.voice, w))) miss.push(`${src}: ${w}`); }
