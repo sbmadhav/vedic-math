@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Paths at the root
-The game SHALL be served at `/learn/` with every screen at a path under it, the landing page at `/`, and the grown-up pages at `/parents/`, `/teachers/`, `/privacy/` and `/terms/`. The game's built files SHALL be served from `/learn/assets/` with a content hash in each name; styles of the landing pages, fonts, icons, audio and vendored files SHALL be served from root paths (such as `/ds/2.1.0/tokens.css`). No published file SHALL reference a path starting with `/vedic-math/`, except the redirect rules for old links.
+The game SHALL be served at `/learn/` with every screen at a path under it, the landing page at `/`, and the grown-up pages at `/parents/`, `/teachers/`, `/privacy/` and `/terms/`. The game's built files SHALL be served from `/learn/assets/` with a content hash in each name; styles of the landing pages, fonts, icons, audio and vendored files SHALL be served from root paths (such as `/ds/2.2.0/tokens.css`). No published file SHALL reference a path starting with `/vedic-math/`, except the redirect rules for old links.
 
 #### Scenario: Build output
 - **WHEN** `python3 build.py --out _site` runs

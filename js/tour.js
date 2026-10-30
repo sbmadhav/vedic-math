@@ -21,7 +21,7 @@ export function startTour(steps, { signal, onEnd = () => {} } = {}) {
   dlg.setAttribute('aria-labelledby', 'tourT'); dlg.setAttribute('aria-describedby', 'tourN tourB');
   dlg.innerHTML = `<div class="tour-ring" aria-hidden="true"></div>
     <div class="tour-card md-card"><p class="tour-n" id="tourN"></p><h2 class="tour-t" id="tourT" tabindex="-1"></h2><p class="tour-b" id="tourB"></p><p class="listen-row">${listenBtn('tour', 'this step')}</p>
-      <div class="tour-acts"><button type="button" class="linkbtn tour-skip" data-act="skip">Skip tour</button><span class="tour-sp"></span><button type="button" class="md-btn md-btn--sm" data-act="back">Back</button><button type="button" class="md-btn md-btn--sm md-btn--primary" data-act="next">Next</button></div></div>`;
+      <div class="tour-acts"><button type="button" class="md-link tour-skip" data-act="skip">Skip tour</button><span class="tour-sp"></span><button type="button" class="md-btn md-btn--sm" data-act="back">Back</button><button type="button" class="md-btn md-btn--sm md-btn--primary" data-act="next">Next</button></div></div>`;
   document.body.append(dlg);
   const ring = dlg.querySelector('.tour-ring'), card = dlg.querySelector('.tour-card'), back = dlg.querySelector('[data-act="back"]'), next = dlg.querySelector('[data-act="next"]');
   const opener = document.activeElement;

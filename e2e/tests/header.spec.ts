@@ -1,7 +1,7 @@
 import { test, expect, open } from './fixtures';
 
 /* The site header (openspec site-header, change learnvedicmath): every page, the game included, uses the Learn Vedic
-   Math header from theme/header.html (design system 2.1.0's header without Explore): one sticky bar with the brand
+   Math header from theme/header.html (design system 2.2.0's header without Explore): one sticky bar with the brand
    (linking to /?home), the page's nav, the round color scheme button, and in the game the Calm and sound pill and the
    Player chip last. No Explore button and no kid mode switch. */
 

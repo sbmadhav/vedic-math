@@ -18,7 +18,7 @@
 .px-note { color: var(--ink-muted); font-size: .9rem; }
 /* Scoped to experience pages: play stylesheets stay loaded after a visit, so a bare selector would restyle the whole app */
 .px-view :is(button, a, [tabindex]):focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-/* Visually hidden text for screen readers (same rules as .vm-sr in math.css), and a flexible spacer in a .px-row */
+/* Visually hidden text for screen readers (the same rules as the design system's .md-sr-only), and a flexible spacer in a .px-row */
 .px-live { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .px-sp { flex: 1; }
 

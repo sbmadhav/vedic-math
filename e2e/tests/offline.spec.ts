@@ -80,7 +80,7 @@ test('the worker registers with scope /play/, caches under lvm-, and every preca
   expect(saved).toContain('/play/');
   expect(saved).toContain('/manifest.webmanifest');
   expect(saved.some(u => /^\/math\.css\?v=\w+$/.test(u))).toBe(true);
-  for (const re of [/^\/ds\/2\.1\.0\/tokens\.css\?v=\w+$/, /^\/ds\/2\.1\.0\/components\.css\?v=\w+$/, /^\/theme\/learnvedicmath\.css\?v=\w+$/, /^\/js\/analytics\.js\?v=\w+$/,
+  for (const re of [/^\/ds\/2\.2\.0\/tokens\.css\?v=\w+$/, /^\/ds\/2\.2\.0\/components\.css\?v=\w+$/, /^\/theme\/learnvedicmath\.css\?v=\w+$/, /^\/js\/analytics\.js\?v=\w+$/,
     /^\/fonts\/nunito-sans-latin-wght-normal\.woff2$/, /^\/icons\/icon-192\.png$/]) expect(saved.some(u => re.test(u)), String(re)).toBe(true);
   expect(saved.filter(u => /^\/(assets|design-system)\//.test(u)), 'nothing from another site').toEqual([]);
   const map = await page.evaluate(() => JSON.parse(document.querySelector('script[type="importmap"]')?.textContent || '{"imports":{}}').imports as Record<string, string>);

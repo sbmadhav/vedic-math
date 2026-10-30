@@ -86,7 +86,7 @@ test.describe('the site\'s own files', () => {
     const css: Record<string, number> = {};
     page.on('response', r => { const u = new URL(r.url()); if (/\.css$/.test(u.pathname)) css[u.pathname] = r.status(); });
     await open(page);
-    for (const f of ['/ds/2.1.0/tokens.css', '/ds/2.1.0/components.css', '/theme/learnvedicmath.css', '/theme/fonts.css', '/math.css']) expect(css[f], f).toBe(200);
+    for (const f of ['/ds/2.2.0/tokens.css', '/ds/2.2.0/components.css', '/theme/learnvedicmath.css', '/theme/fonts.css', '/math.css']) expect(css[f], f).toBe(200);
     const tokens = await page.evaluate(() => {
       const s = getComputedStyle(document.documentElement);
       return ['--coral', '--teal', '--sun', '--sky', '--plum', '--bg', '--ink', '--on-accent'].map(v => [v, s.getPropertyValue(v).trim()]);
