@@ -11,7 +11,7 @@ Approved for building once merged (proposal.md). Build after `trick-pages`, or i
 ## 2. The page
 
 - [ ] 2.1 `site/teachers/warm-up/index.html` with the site header, the five screens, Reveal and Show the steps, the polite progress line, the no sign-in sentence and privacy link (design D6), the 1965 book credit. Verify: new `e2e/tests/cov/teacher-warm-up-1.spec.ts` (A whole warm-up, Reveal, then the steps).
-- [ ] 2.2 `tools/trick-pages/warm-up.ts`, published at `/tricks/warm-up.js` with the types taken out; keys Right, Space, Page Down, Left, Page Up, R; Full screen; listeners through `on()` from `/js/life.js`. Verify: new `e2e/tests/cov/teacher-warm-up-3.spec.ts` (A presenter clicker, Nothing moves by itself, Full screen button hidden when `document.fullscreenEnabled` is false).
+- [ ] 2.2 `tools/trick-pages/warm-up.ts`, published at `/tricks/warm-up.js` with the types taken out; keys Right, Space, Page Down, Left, Page Up, R; Full screen; every listener through `on()` from `/js/life.js` with the signal of one page-lifetime `AbortController` (`on()` already throws without a signal). Verify: new `e2e/tests/cov/teacher-warm-up-3.spec.ts` (A presenter clicker, Nothing moves by itself, Full screen button hidden when `document.fullscreenEnabled` is false).
 - [ ] 2.3 `theme/warm-up.css`: the projector sizes (design D5), tokens only, Daybreak and Deep Space. Verify: `teacher-warm-up-3.spec.ts` (Big enough for the back row at 1280 × 720); `a11y.spec.ts` gains the page in both schemes; screenshots at 1280 × 720 and 1920 × 1080 checked by eye.
 - [ ] 2.4 Nothing stored, no Google host. Verify: new `e2e/tests/cov/teacher-warm-up-4.spec.ts` (Nothing stored, Honest words); `test/copy.test.mjs` scans the page and `/teachers/`.
 
