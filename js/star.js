@@ -184,14 +184,18 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
   function entryHTML(p) {
     if (p.kind === 'choice') return `<div class="star-choices" role="group" aria-label="Choices">${p.choices.map(c => `<button type="button" class="md-btn star-choice" data-v="${esc(c)}">${esc(c)}</button>`).join('')}</div>`;
     if (p.kind === 'fields') return `<div class="star-fields">${p.fields.map((f, i) => `<button type="button" class="star-field" data-f="${i}" aria-pressed="${i === 0}"><small>${esc(f.label)}</small><output aria-live="off"></output></button>`).join('')}</div>`;
-    if (boxes) return `<div class="star-boxes" id="stBoxes" aria-hidden="true">${'<span></span>'.repeat(maxLen(p))}</div><output class="vh" id="stOut" aria-live="off" aria-label="Your answer"></output>`;
+    /* A Trick written as a left part and a right part: a bar between the parts' boxes (openspec working-memory-scaffolds) */
+    const cut = p.kind === 'num' && p.parts && !p.story ? p.parts[0].length : 0;
+    if (boxes) return `<div class="star-boxes${cut ? ' star-boxes--parts' : ''}" id="stBoxes" aria-hidden="true">${Array.from({ length: maxLen(p) }, (_, i) => `<span${cut && i === cut ? ' class="cut"' : ''}></span>`).join('')}</div><output class="vh" id="stOut" aria-live="off" aria-label="Your answer"></output>`;
     return `<output class="star-plain" id="stOut" aria-live="off" aria-label="Your answer"></output>`;
   }
   function showEntry() {
     const p = st.current;
     if (p.kind === 'fields') { root.querySelectorAll('.star-field').forEach((b, i) => { b.querySelector('output').textContent = fields[i] || ''; b.setAttribute('aria-pressed', String(i === active)); }); return; }
     const out = $('#stOut'); if (out) out.textContent = entry;
-    const bx = $('#stBoxes'); if (bx) [...bx.children].forEach((b, i) => { b.textContent = entry[i] || ''; b.classList.toggle('f', i < entry.length); });
+    const bx = $('#stBoxes'); if (!bx) return;
+    const cut = [...bx.children].findIndex(b => b.classList.contains('cut')); /* the left part's boxes are held once full */
+    [...bx.children].forEach((b, i) => { b.textContent = entry[i] || ''; b.classList.toggle('f', i < entry.length); b.classList.toggle('held', cut > 0 && i < cut && entry.length >= cut); });
   }
   function type(k) {
     if (!input) return; const p = st.current; if (p.kind === 'choice') return;

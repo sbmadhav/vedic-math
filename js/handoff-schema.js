@@ -57,6 +57,7 @@ export const EXCLUDED = [
   'vm.voiceName', 'vm.naturalVoice', 'vm.naturalVoiceId', // this device's speech engine and its 100 MB download
   'vm.familyMute', 'vm.familyHi',                 // the Family helpers' Not now and greeting, for one browser session (sessionStorage)
   'vm.install',                                    // the Install nudge's schedule (openspec change install-app): this site's app, not the old one
+  'vm.split',                                      // one box instead of the answer slots (openspec change working-memory-scaffolds): new on this site, the old one never wrote it
 ];
 /* Parts the packer may leave out, biggest first, to fit MAX_PAYLOAD; the import page names them */
 export const OPTIONAL = ['play', 'seen', 'days', 'skyLast', 'questDay'];
