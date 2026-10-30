@@ -97,11 +97,11 @@ Swap a voice with `SHUNYA=`, `NAVA=` or `EKA=` set to another Chirp 3 HD voice n
 
 ## Contributing
 
-Content corrections, bug fixes and accessibility improvements are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to propose a change, and [SECURITY.md](SECURITY.md) to report a security problem privately.
+Reports of a wrong answer, a confusing explanation or an accessibility problem are welcome; code from outside the project is not accepted after the cutoff commit named in `LICENSE`, except that the owner may take a small fix by exception. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to report, and [SECURITY.md](SECURITY.md) to report a security problem privately.
 
 ## License
 
-[MIT](LICENSE), including the lessons and games. The name Madhav Srinivasan and his likeness are not licensed; see [LICENSE-CONTENT.md](LICENSE-CONTENT.md).
+[MIT](LICENSE) up to the cutoff commit named there, including the lessons and games published by then; later code and content are all rights reserved. The name Madhav Srinivasan and his likeness are never licensed. Details in [LICENSE-CONTENT.md](LICENSE-CONTENT.md); third-party licences in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 ## Thank you, Claude
 
