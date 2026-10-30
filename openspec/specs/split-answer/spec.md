@@ -25,11 +25,11 @@ In Practice and in the Katas, a Challenger or Pro Player SHALL answer a question
 - **THEN** they are 125 and 44
 
 ### Requirement: The left part locks
-Enter in the left slot, or the Lock button, SHALL lock the left part: the slot SHALL become read only, the Lock button (named "Lock the left part") SHALL read pressed, and focus SHALL move to the right slot. Pressing Lock again SHALL unlock it. Enter in the right slot SHALL check the answer. Locking SHALL be optional.
+Enter in the left slot, or the Lock button, SHALL lock the left part: the slot SHALL become read-only, the Lock button (named "Lock the left part") SHALL read pressed, and focus SHALL move to the right slot. Pressing Lock again SHALL unlock it. Enter in the right slot SHALL check the answer. Locking SHALL be optional.
 
 #### Scenario: Lock with Enter
 - **WHEN** a Player types 95 in the left slot and presses Enter
-- **THEN** the left slot is read only, the Lock button is pressed, focus is in the right slot, and nothing has been checked
+- **THEN** the left slot is read-only, the Lock button is pressed, focus is in the right slot, and nothing has been checked
 
 #### Scenario: Unlock
 - **WHEN** a Player presses the pressed Lock button
@@ -51,7 +51,7 @@ Check SHALL join the two parts as typed and check them as one answer, exactly as
 - **THEN** Bolt says "Now the right part." and no try is counted
 
 ### Requirement: One box stays available
-Under the slots a "Type it in one box" control SHALL switch to the single answer box, and under that box a "Split into parts" control SHALL switch back. The choice SHALL be saved on this device and used for later questions. What the Player has typed SHALL be kept across the switch: the two parts joined in the one box, the one box's text in the left slot.
+Under the slots a "Type it in one box" control SHALL switch to the single answer box, and under that box a "Split into parts" control SHALL switch back. The choice SHALL be saved on this device and used for later questions in Practice and the Katas; a Star round SHALL ignore it and keep its boxes as `star-round` and "The parts in the Star round's boxes" say. What the Player has typed SHALL be kept across the switch: the two parts joined in the one box, the one box's text in the left slot.
 
 #### Scenario: One box
 - **WHEN** a Player presses "Type it in one box" and answers the next question

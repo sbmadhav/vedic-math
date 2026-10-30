@@ -6,7 +6,7 @@ Point from the question's numbers to the digits each step of a Trick uses, so th
 ## Requirements
 
 ### Requirement: Lines join the digits each step uses
-In the Trick animator ("Watch it work") of "Multiply numbers near 10, 100 or 1000" and "Multiply any two numbers in one line", each step that uses digits of the question SHALL show a diagram of the question's numbers with coloured lines joining the digits that step uses. The lines SHALL use only the category colour tokens (coral, teal, sky, sun, plum), matching the colours of the step's own highlights. Steps that use no digit of the question SHALL show no diagram.
+In the Trick animator ("Watch it work") of "Multiply numbers near 10, 100 or 1000" and "Multiply any two numbers in one line", each step shown one at a time that uses digits of the question SHALL show a diagram of the question's numbers with coloured lines joining the digits that step uses. The lines SHALL use only the category colour tokens, matching the colours of the step's own highlights. Steps that use no digit of the question, and Show all, SHALL show no diagram.
 
 #### Scenario: Near-base, the distances
 - **WHEN** the animator shows the first step of 97 × 94
@@ -27,6 +27,10 @@ In the Trick animator ("Watch it work") of "Multiply numbers near 10, 100 or 100
 #### Scenario: The answer step
 - **WHEN** the animator shows the last step of 23 × 41
 - **THEN** no diagram is shown
+
+#### Scenario: Show all
+- **WHEN** a Player presses Show all on 97 × 94
+- **THEN** every step is listed and no diagram is shown
 
 ### Requirement: Stepping by keyboard
 With focus on the animator's steps, Space and the right arrow SHALL show the next step and the left arrow the step before, as Next step and Back do.
