@@ -28,6 +28,21 @@ A Star replay SHALL have a Listen button once every step is shown, reading the s
 - **WHEN** a Player presses Listen on the Older roots card of the Sutras page
 - **THEN** its intro and then each note are read in order
 
+### Requirement: Page introductions, video descriptions and badge rules can be heard
+Each page introduction (Learn, a level, Dojo, Katas, the Challenge tower, Arena, Games, Sutras, Watch, Guide) SHALL have a Listen button that reads the words the page shows in the Player's Mode, its fixed lines and the Player's own numbers. The video player SHALL have one reading the video's description; pressing play or closing the player SHALL stop it. The Me page SHALL have one reading the rules of the badges the Player has not earned, in the order shown, and none once every badge is earned.
+
+#### Scenario: A page introduction
+- **WHEN** a Player presses Listen under the Sutras page's introduction
+- **THEN** its fixed line plays and then "You have collected" with the Player's own count
+
+#### Scenario: A video's description
+- **WHEN** a Player opens a video, presses Listen and then presses play
+- **THEN** the description is read and stops when the video starts
+
+#### Scenario: Badges to earn
+- **WHEN** a Player presses Listen over the Me page's badges
+- **THEN** the rules of the badges not yet earned are read in order
+
 ### Requirement: Listen uses the studio voice
 A Listen button SHALL read each line with the read-aloud voice order: the natural voice when the Player turned it on, else the whole studio recording, else studio clips, else this device's voice. Every explanation line with fixed words SHALL be in the studio recording list, so it plays whole once recorded.
 
