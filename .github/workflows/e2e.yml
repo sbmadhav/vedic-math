@@ -2,9 +2,10 @@ name: E2E (live site)
 
 # Playwright end-to-end tests against the LIVE https://learnvedicmath.com/ (openspec change learnvedicmath, design
 # D12): after each deploy (once the live files match this commit's build), daily, and on demand with any base URL
-# (a preview, or a local tunnel). Production Firestore is never written to: the suite aborts and fails on any
-# write-shaped request (e2e/tests/fixtures.ts). No pull_request trigger here: pull requests run the suite against their
-# own preview (preview.yml). No secrets.
+# (a preview, or a local tunnel), or with perf_only the perf check alone. Production Firestore is never written to:
+# the suite aborts and fails on any write-shaped request (e2e/tests/fixtures.ts). No pull_request trigger here: pull
+# requests run the suite against their own preview (preview.yml). One secret, the preview token, named only by the
+# reference job (environment preview), which uploads the pinned perf reference build (tools/check-workflow-secrets.mjs).
 #
 # The move from sbmadhav.com (design D13) is watched by the daily run too, by the repository variable MOVE_PHASE:
 #   B: the moved page at https://sbmadhav.com/vedic-math/ (tests/moved.live.spec.ts);
@@ -19,6 +20,11 @@ on:
         description: 'Site to test (default https://learnvedicmath.com)'
         required: false
         default: ''
+      perf_only:
+        description: 'Only the perf check: production against the pinned reference build, as after a deploy (no issue)'
+        type: boolean
+        required: false
+        default: false
   push:
     branches: [main]
 
@@ -92,6 +98,7 @@ jobs:
   e2e:
     name: e2e (shard ${{ matrix.shard }} of 6)
     needs: deploy
+    if: ${{ !inputs.perf_only }}
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.deploy.outputs.playwright }}-noble
@@ -154,6 +161,7 @@ jobs:
   frame-cost:
     name: Frame cost of the background, alone on the runner (chromium)
     needs: deploy
+    if: ${{ !inputs.perf_only }}
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.deploy.outputs.playwright }}-noble
@@ -195,7 +203,7 @@ jobs:
   videos:
     name: Every Watch shelf video still plays (chromium)
     needs: deploy
-    if: ${{ github.event_name != 'push' }}
+    if: ${{ github.event_name != 'push' && !inputs.perf_only }}
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.deploy.outputs.playwright }}-noble
@@ -270,15 +278,118 @@ jobs:
           path: e2e/playwright-report
           retention-days: 14
 
+  # The pinned reference build for the perf check after a deploy (openspec change perf-gate-same-runner-post-deploy,
+  # design D1 to D3): reference.commit of docs/perf/baseline.json, one fixed commit of main moved only with a reason,
+  # built as previews are (--preview, production's voice mode) and uploaded as a Worker version with the preview alias
+  # perf-ref on workers.dev, from that commit's own deploy/ and wrangler.jsonc. Uploaded on every run, so it is always
+  # the pinned code and there is no state to look after. A job of its own, beside the deploy wait and the shards: the
+  # preview token (environment preview) stays in this job, which only builds and uploads, and never reaches the job that
+  # runs Lighthouse against the live site; and when this job fails (an upload error, or GitHub refusing the environment
+  # to this branch), continue-on-error keeps the run green and the perf job compares production with the baseline
+  # alone, saying so under its table. A version upload never changes what learnvedicmath.com serves.
+  reference:
+    name: Upload the pinned perf reference
+    if: vars.CLOUDFLARE_ACCOUNT_ID != '' && (github.event_name == 'push' || inputs.perf_only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: preview
+    continue-on-error: true
+    permissions:
+      contents: read
+    outputs:
+      url: ${{ steps.upload.outputs.url }}
+      commit: ${{ steps.pin.outputs.commit }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: The pinned commit (docs/perf/baseline.json, reference.commit)
+        id: pin
+        run: |
+          c=$(jq -r '.reference.commit // empty' docs/perf/baseline.json)
+          [[ "$c" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::docs/perf/baseline.json has no reference.commit (a full commit id): '$c'"; exit 1; }
+          echo "commit=$c" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.pin.outputs.commit }}
+          path: _reference
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.x"
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: _reference/deploy/package-lock.json
+
+      - name: Build the reference
+        working-directory: _reference
+        # Same voice mode as production (ci.yml) and the previews (preview.yml)
+        env:
+          VOICE: ${{ vars.R2_ACCOUNT_ID != '' && 'r2' || 'off' }}
+        run: python3 build.py --preview --out _site --voice "$VOICE"
+
+      - name: Upload the reference version (alias perf-ref)
+        id: upload
+        working-directory: _reference/deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PREVIEW_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          ALIAS: perf-ref
+        run: |
+          # As preview.yml: strip whitespace at both ends, then refuse anything that is not a token's shape (never printed)
+          t="$CLOUDFLARE_API_TOKEN"; t="${t#"${t%%[![:space:]]*}"}"; t="${t%"${t##*[![:space:]]}"}"  # leading and trailing only
+          CLOUDFLARE_API_TOKEN="$t"; export CLOUDFLARE_API_TOKEN
+          if [[ ! "$CLOUDFLARE_API_TOKEN" =~ ^[A-Za-z0-9_-]{20,}$ ]]; then
+            echo "::error::The preview token secret is not a token (${#CLOUDFLARE_API_TOKEN} characters after trimming); save it again with gh secret set"
+            exit 1
+          fi
+          npm ci --ignore-scripts
+          set +e
+          npx wrangler versions upload --config ../wrangler.jsonc --preview-alias "$ALIAS" 2>&1 | tee upload.log
+          code=${PIPESTATUS[0]}
+          set -e
+          [ "$code" = 0 ] || exit "$code"
+          url=$(grep -Eo "https://${ALIAS}-learnvedicmath\.[a-z0-9-]+\.workers\.dev" upload.log | head -1)
+          test -n "$url" || { echo "::error::no reference URL in the wrangler output"; exit 1; }
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      # The alias serves the pinned build: its sw.js (which carries the build's cache VERSION) is the one built here.
+      # A new version can take a few seconds to answer on the alias.
+      - name: The reference answers with the pinned build
+        env:
+          URL: ${{ steps.upload.outputs.url }}
+        run: |
+          want=$(sha256sum _reference/_site/sw.js | cut -d' ' -f1)
+          for i in $(seq 1 12); do
+            got=$(curl -fsSL "$URL/sw.js?ref-check=${GITHUB_RUN_ID}-${i}" | sha256sum | cut -d' ' -f1) || got=none
+            if [ "$got" = "$want" ]; then echo "$URL serves the pinned build (try $i)."; exit 0; fi
+            sleep 10
+          done
+          echo "::error::$URL does not serve the pinned build's sw.js"
+          exit 1
+
   # The load and interaction checks on production after each deploy (openspec change react-typescript,
-  # performance-budget spec, task 1.8): the same measurements as the preview's perf job, against
-  # https://learnvedicmath.com once the deploy job has seen the deploy go live and the e2e shards are done, compared with docs/perf/baseline.json
-  # (production has no second host to measure as a same-runner reference, so the baseline stays its reference; openspec
-  # change perf-same-runner). A miss opens an issue with the numbers; the deploy stays.
+  # performance-budget spec, task 1.8; openspec change perf-gate-same-runner-post-deploy): the same measurements and
+  # rules as the preview's perf job, with production as the measured side and the pinned reference build (the reference
+  # job above) as the reference, both measured in this job page by page on one runner, so the runner's CPU speed, which
+  # moves blocking time about two to one between GitHub's runners, cancels (docs/perf/baseline.md, "The post-deploy
+  # reference"). tools/perf-compare.ts counts blocking time, layout shift and the interactions from the reference's
+  # median of this job; largest contentful paint stays on the baseline (the reference is on workers.dev, a different
+  # network chain from the custom domain), first contentful paint is reported, and the baseline is shown for
+  # information. Without a reference URL (the upload failed or was refused) production is compared with the baseline
+  # alone, as before, and the notes under the table say so. A miss is measured once more, only the kind that missed,
+  # and a second miss comments on the open issue or opens one; the deploy stays. A run by hand with perf_only measures
+  # the same way and shows the table, without an issue.
   perf:
-    needs: [deploy, e2e]
-    # After the shards whatever their result, but only when the deploy job ran to the end
-    if: always() && needs.deploy.result == 'success' && github.event_name == 'push' && vars.CLOUDFLARE_ACCOUNT_ID != ''
+    needs: [deploy, e2e, reference]
+    # After the shards and the upload whatever their result, but only when the deploy job ran to the end
+    if: always() && needs.deploy.result == 'success' && vars.CLOUDFLARE_ACCOUNT_ID != '' && (github.event_name == 'push' || inputs.perf_only)
     runs-on: ubuntu-latest
     timeout-minutes: 40
     permissions:
@@ -286,6 +397,9 @@ jobs:
       issues: write
     env:
       BASE_URL: https://learnvedicmath.com
+      REFERENCE_URL: ${{ needs.reference.outputs.url }}
+      REFERENCE_COMMIT: ${{ needs.reference.outputs.commit }}
+      REFERENCE_RESULT: ${{ needs.reference.result }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -302,31 +416,86 @@ jobs:
           pnpm install --frozen-lockfile --filter e2e
           pnpm exec playwright install --with-deps chromium
 
-      - name: Lighthouse (mobile preset, 5 runs a page)
-        working-directory: e2e
-        run: node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json
+      - name: The pinned reference, or why it is missing
+        run: |
+          if [ -n "$REFERENCE_URL" ]; then echo "Reference: $REFERENCE_URL (commit $REFERENCE_COMMIT)"
+          else echo "::warning::The pinned perf reference was not uploaded (upload job: $REFERENCE_RESULT): production is compared with the baseline alone, as before"; fi
 
-      - name: Interaction timings (4x CPU, 5 runs)
+      - name: Lighthouse (mobile preset, 5 runs a page), production and the reference page by page
         working-directory: e2e
-        run: pnpm exec playwright test -c perf/playwright.config.ts
+        run: |
+          if [ -n "$REFERENCE_URL" ]; then
+            node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json --reference "$REFERENCE_URL" --reference-json perf/results/reference/lighthouse.json
+          else
+            node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json
+          fi
 
-      - name: Compare with the baseline; open an issue on a miss
+      - name: Interaction timings (4x CPU, 5 runs), the reference then production
+        working-directory: e2e
+        run: |
+          if [ -n "$REFERENCE_URL" ]; then
+            mkdir -p perf/results/reference
+            BASE_URL="$REFERENCE_URL" pnpm exec playwright test -c perf/playwright.config.ts
+            cp perf/results/interactions.json perf/results/reference/interactions.json
+          fi
+          pnpm exec playwright test -c perf/playwright.config.ts
+
+      # As on a pull request: a runner's load can still move a Lighthouse median past a tolerance within a job, so a miss
+      # is measured once more, only the kind that missed (the Lighthouse pages or the interactions, on both hosts), and
+      # only a miss in both runs comments on the issue. The first run's results stay in the artifact under results/first.
+      - name: Compare with the pinned reference and the baseline; open an issue on a miss
         env:
           GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
         run: |
           set +e
-          node tools/perf-compare.ts docs/perf/baseline.json e2e/perf/results/lighthouse.json e2e/perf/results/interactions.json --out perf-table.md
-          code=$?
-          # One more run before an issue: a runner's load alone can move a Lighthouse median past the tolerance
+          short=${REFERENCE_COMMIT::7}
+          why="the upload job ended with ${REFERENCE_RESULT:-no result} and gave no URL (see its log; if GitHub refused the job its preview environment, that environment's deployment branches need main, an owner setting)"
+          compare() {
+            if [ -n "$REFERENCE_URL" ]; then
+              node tools/perf-compare.ts docs/perf/baseline.json e2e/perf/results/lighthouse.json e2e/perf/results/interactions.json \
+                --reference e2e/perf/results/reference/lighthouse.json e2e/perf/results/reference/interactions.json \
+                --reference-label "Reference (\`$short\`)" --label Production --out perf-table.md
+            else
+              node tools/perf-compare.ts docs/perf/baseline.json e2e/perf/results/lighthouse.json e2e/perf/results/interactions.json \
+                --label Production --reference-missing "$why" --out perf-table.md
+            fi
+          }
+          compare; code=$?
           if [ "$code" != 0 ]; then
-            (cd e2e && node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json && pnpm exec playwright test -c perf/playwright.config.ts)
-            node tools/perf-compare.ts docs/perf/baseline.json e2e/perf/results/lighthouse.json e2e/perf/results/interactions.json --out perf-table.md
-            code=$?
+            echo "::warning::a median missed its tolerance; measuring again to confirm"
+            mkdir -p e2e/perf/results/first
+            cp e2e/perf/results/*.json e2e/perf/results/first/
+            if [ -n "$REFERENCE_URL" ]; then mkdir -p e2e/perf/results/first/reference && cp e2e/perf/results/reference/*.json e2e/perf/results/first/reference/; fi
+            cd e2e
+            # An over row of a Lighthouse metric (any but inp and visible) re-measures the pages; an over interaction row the interactions
+            if grep '\*\*over\*\*' ../perf-table.md | grep -qvE '\| (inp|visible) \|'; then
+              if [ -n "$REFERENCE_URL" ]; then
+                node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json --reference "$REFERENCE_URL" --reference-json perf/results/reference/lighthouse.json
+              else
+                node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json
+              fi
+            fi
+            if grep '\*\*over\*\*' ../perf-table.md | grep -qE '\| (inp|visible) \|'; then
+              if [ -n "$REFERENCE_URL" ]; then
+                BASE_URL="$REFERENCE_URL" pnpm exec playwright test -c perf/playwright.config.ts \
+                  && cp perf/results/interactions.json perf/results/reference/interactions.json
+              fi
+              pnpm exec playwright test -c perf/playwright.config.ts
+            fi
+            cd ..
+            compare; code=$?
           fi
           set -e
           cat perf-table.md >> "$GITHUB_STEP_SUMMARY"
           if [ "$code" != 0 ]; then
-            body=$(printf 'Production (%s, after the deploy of %s) misses the performance baseline (docs/perf/baseline.json). The deploy stays.\n\n%s\n\nRun: %s/%s/actions/runs/%s' "$BASE_URL" "$GITHUB_SHA" "$(cat perf-table.md)" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")
+            if [ "$EVENT" != push ]; then echo "::warning::a median missed its tolerance twice (see the table); a run by hand opens no issue"; exit 0; fi
+            if [ -n "$REFERENCE_URL" ]; then
+              what=$(printf 'misses its tolerance against the pinned reference build (`%s`, docs/perf/baseline.json `reference`), both measured in this job page by page on one runner, with the baseline for information' "$short")
+            else
+              what='misses the performance baseline (docs/perf/baseline.json); the pinned reference was not measured (see the notes under the table)'
+            fi
+            body=$(printf 'Production (%s, after the deploy of %s) %s. The deploy stays.\n\n%s\n\nRun: %s/%s/actions/runs/%s' "$BASE_URL" "$GITHUB_SHA" "$what" "$(cat perf-table.md)" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")
             # One open issue while a miss lasts: later misses comment on it
             title="Performance budget missed on production"
             open=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number,title --jq "[.[] | select(.title | startswith(\"$title\"))][0].number // empty")
@@ -343,7 +512,7 @@ jobs:
 
   # Phase B (design D13): the moved page at https://sbmadhav.com/vedic-math/ hands progress over (task 16.4)
   moved-page:
-    if: vars.MOVE_PHASE == 'B' && github.event_name != 'push'
+    if: vars.MOVE_PHASE == 'B' && github.event_name != 'push' && !inputs.perf_only
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -368,7 +537,7 @@ jobs:
   # Phase C (design D13, task 18.5): GitHub's custom-domain redirect sends every old URL to learnvedicmath.com with a
   # 301. Undocumented GitHub behaviour, so it is checked every day.
   redirect-301:
-    if: vars.MOVE_PHASE == 'C' && github.event_name != 'push'
+    if: vars.MOVE_PHASE == 'C' && github.event_name != 'push' && !inputs.perf_only
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
