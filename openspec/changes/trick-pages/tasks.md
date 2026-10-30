@@ -4,14 +4,14 @@ Approved for building once merged (proposal.md). Playwright runs against a local
 
 ## 1. Generator and pages
 
-- [ ] 1.1 `tools/trick-pages/pages.ts`: the 15 rows of design D2 (Trick id, slug, worked example numbers, meta description under 160 characters). Verify: `test/trick-pages.test.mjs` checks every id exists in `TRICKS`, every slug is unique and lowercase words, every example passes the Trick's `valid()` and `answer()` equals the product the example states, and no description has an em dash.
+- [ ] 1.1 `tools/trick-pages/pages.ts`: the 15 rows of design D2 (Trick id, slug, worked example numbers, meta description under 160 characters). Verify: `test/trick-pages.test.mjs` checks every id exists in `TRICKS`, every slug is unique and lowercase words, every example passes the Trick's `valid()` and `answer()` equals the expected result recorded in its row for that Trick's operation (a product, a difference, a quotient, a digit-sum check or a root), and no description has an em dash.
 - [ ] 1.2 `tools/trick-pages/generate.ts` (run by `pnpm gen:tricks`): renders `site/tricks/index.html` and `site/tricks/<slug>/index.html` with the header from `theme/header.html`, the Sutra line and 1965 book credit (design D6), the worked example from `steps()`, Practice this trick, the metadata and JSON-LD (design D5). Verify: the test regenerates into a scratch folder and fails when the committed pages differ; `python3 build.py` accepts the pages (header, brackets, hosts).
 - [ ] 1.3 `theme/tricks.css`: the page, the calculator and the step highlight classes the steps use (`hl`, `hl-coral` and the rest), tokens only, Daybreak and Deep Space, 320 px wide without overflow. Verify: `a11y.spec.ts` gains `/tricks/` and two Trick pages in both schemes; screenshots at 375 and 1280 px checked by eye.
 
 ## 2. Calculator
 
 - [ ] 2.1 `tools/trick-pages/calculator.ts`: inputs, `valid()` messages, Show steps, New numbers, Back, Next, Show all, the polite step line, no motion by itself, the fade only after a press and never under reduced motion, Pause motion or Calm; listeners through `on()` from `/js/life.js`. Verify: new `e2e/tests/cov/trick-pages-2.spec.ts` (Typed numbers, A number the Trick does not take, Keyboard and screen reader) on `sq5`, `near-base` and `duplex`.
-- [ ] 2.2 `build.py` publishes `/tricks/calculator.js` from it with the types taken out (as `tools/build-sw.mjs` does), stamped `?v=` like every page script, and never in the precache list. Verify: `test/build.test.mjs` (published, not precached); `e2e/tests/cov/trick-pages-5.spec.ts` (The game's first load).
+- [ ] 2.2 `build.py` publishes `/tricks/calculator.js` from it with the types taken out (as `tools/build-sw.mjs` does), with every other runtime module of `tools/trick-pages/` at `/tricks/<name>.js` (design D4), stamped `?v=` like every page script, and never in the precache list. Verify: `test/build.test.mjs` (published, not precached, no import of a `.ts` path); a module-load check in `e2e/tests/trick-pages.spec.ts` on every page fails on any 404 response or `pageerror`; `e2e/tests/cov/trick-pages-5.spec.ts` (The game's first load).
 
 ## 3. Findable
 

@@ -41,7 +41,7 @@ Copy rules for every post: the words in `GLOSSARY.md` (Trick, Sutra, Mode, Arena
 
 Title (under 80 characters):
 
-> Show HN: Learn Vedic Math, a no-login math game with Web Audio bowls and on-device OCR
+> Show HN: Learn Vedic Math, a no-login math game with on-device OCR
 
 Text:
 
@@ -109,7 +109,7 @@ More in the same shape, one Trick each: 65² (6 × 7 = 42, then 25), 1000 − 36
 
 ## 6. Teachers
 
-- [ ] **[OWNER]** Teacher groups (Facebook groups, TeacherTok) only after task 13.1, which names school outreach, and once the projector warm-up (`openspec/changes/teacher-warm-up/`) is live. Do not say a school needs no privacy review: say what is true ("no sign-in and no student accounts; nothing about students is stored") and link the privacy policy.
+- [ ] **[OWNER]** Teacher groups (Facebook groups, TeacherTok) only after task 13.1, which names school outreach, and once the projector warm-up (`openspec/changes/teacher-warm-up/`) is live. Do not say a school needs no privacy review: say what is true, in the warm-up's own words ("No sign-in and no student accounts. This page stores nothing on this device."), say that anonymous page and event counts are sent unless Do Not Track or Global Privacy Control is on, and link the privacy policy.
 
 ## 7. After the posts
 

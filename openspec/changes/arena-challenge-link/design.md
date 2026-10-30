@@ -11,11 +11,11 @@
 
 ### D1. No new seed: the link carries the date and the League
 
-Owner-delegated, 2026-10-30. The daily round is already identical for a League on a date (arena spec), so a link `#/arena/day/<YYYY-MM-DD>/<league>` reproduces it exactly with `dailySet(league, day)`. A new "shared daily seed" for every League together was considered and rejected: the Leagues have different question pools on purpose (Explorer taps choices, Pro is mental arithmetic), and one shared round would change the arena spec's pools and split today's Boards.
+Owner-delegated, 2026-10-30. The daily round is already identical for a League on a date (arena spec), so the date and the League in a challenge link reproduce it exactly with `dailySet(league, day)`. The one canonical form is `#/arena/day/<YYYY-MM-DD>/<league>/<score>`: the app always writes all three parts; when parsing, the Score part is optional, and a link without it (or with a bad one, D3) shows "A friend's challenge" with no number. A new "shared daily seed" for every League together was considered and rejected: the Leagues have different question pools on purpose (Explorer taps choices, Pro is mental arithmetic), and one shared round would change the arena spec's pools and split today's Boards.
 
 ### D2. Ranked only on the same date and in the same League
 
-Owner-delegated, 2026-10-30. A challenge link opens a Ranked round only when its date is the recipient's local today and its League is the recipient's Mode's League; then it is simply today's daily challenge, posted as any daily round is. Otherwise the friend's round is offered as Practice, never posted: playing yesterday's questions today must not reach today's Board (the questions would be known in advance), and a Challenger must not post to the Pro Board. Today's own daily challenge is offered beside it, so nobody is stuck with a Practice round they did not want. This keeps the glossary's "challenge-link round" a Ranked round in the only case where it is fair, and the glossary entry is reworded to say so.
+Owner-delegated, 2026-10-30. A challenge link opens a Ranked round only when its date is the recipient's local today and its League is the recipient's Mode's League; then it is simply today's daily challenge, posted as any daily round is. Otherwise the friend's round is offered as Practice, never posted: playing yesterday's questions today must not reach today's Board (the questions would be known in advance), and a Challenger must not post to the Pro Board. Today's own daily challenge is offered beside it, so nobody is stuck with a Practice round they did not want. This keeps the glossary's "challenge-link round" a Ranked round in the only case where it is fair, and the glossary entry is reworded to say so. The check runs again when Start is tapped, not only when the link opens: a lobby opened at 23:58 and started after midnight no longer names today, so the round plays the link's set as Practice and posts nothing. The friend's Practice round follows the Practice contract: its Score never leaves the device, and the Sparks it earns count as any Practice's do (so an eligible Player's weekly Sparks total may still be posted, as today).
 
 ### D3. The link holds the Score to beat, nothing else
 
@@ -35,7 +35,7 @@ Owner-delegated, 2026-10-30. The button hands words to the device's own share sh
 
 ### D7. One tap, no autoplay
 
-Owner-delegated, 2026-10-30. The link opens the lobby ready to Start, not the countdown: a round that starts by itself would surprise a parent opening a link in a chat, and browsers block sound before a tap. "Opens straight into the round" in the feedback becomes "one tap on Start". On a device with no Mode the Mode picker comes first, as for every game route, and the challenge opens after it.
+Owner-delegated, 2026-10-30. The link opens the lobby ready to Start, not the countdown: a round that starts by itself would surprise a parent opening a link in a chat, and browsers block sound before a tap. "Opens straight into the round" in the feedback becomes "one tap on Start". On a device with no Mode the Mode picker comes first, as for every game route, and the challenge opens after it. That needs a hand-off: `afterPick()` in `js/app.js` only returns to a pending hash that `buildIndex()` lists, and a dynamic challenge hash is never listed, so it would fall back to `#/`. `afterPick()` gains an explicit case: a pending hash that `parseChallenge()` accepts is returned as it is (task 2.2).
 
 ### D8. The share helper loads on the first tap
 

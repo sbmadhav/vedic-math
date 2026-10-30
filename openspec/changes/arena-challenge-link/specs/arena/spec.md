@@ -37,7 +37,7 @@ The share text SHALL name the site, the Arena daily challenge, the League, the l
 - **THEN** it contains no Nickname, avatar, Player id, Age answer, Rating, emoji or em dash, and no Sutra or Trick name
 
 ### Requirement: A challenge link on its day and League is the daily challenge
-A link `#/arena/day/<YYYY-MM-DD>/<league>/<score>` whose date is the Player's local today and whose League is the Player's Mode's League SHALL open the Arena lobby with Daily challenge picked, Calm included, and the line "A friend's challenge: Score <score> to beat". Start SHALL play that day's daily round, Ranked as every daily round is. On a device with no Mode the Mode picker SHALL come first.
+A link `#/arena/day/<YYYY-MM-DD>/<league>/<score>` whose date is the Player's local today and whose League is the Player's Mode's League SHALL open the Arena lobby with Daily challenge picked, Calm included, and the line "A friend's challenge: Score <score> to beat". Start SHALL play that day's daily round, Ranked as every daily round is, only if the date and League still match when Start is tapped. On a device with no Mode the Mode picker SHALL come first and the challenge SHALL open after it.
 
 #### Scenario: Same day, same League
 - **WHEN** a Challenger Player opens `#/arena/day/2026-10-30/challenger/240` on 2026-10-30 and taps Start
@@ -45,10 +45,14 @@ A link `#/arena/day/<YYYY-MM-DD>/<league>/<score>` whose date is the Player's lo
 
 #### Scenario: No Mode yet
 - **WHEN** a new visitor opens a challenge link
-- **THEN** the Mode picker is shown first, and after a Mode is picked the Arena opens with the friend's challenge
+- **THEN** the Mode picker is shown first, and after a Mode is picked the Arena opens with the friend's challenge, not Home
+
+#### Scenario: Midnight
+- **WHEN** a Challenger Player opens today's Challenger challenge link at 23:58 and taps Start after midnight
+- **THEN** the round plays the link's questions as Practice and its Score is sent to no World board
 
 ### Requirement: A challenge link on another day or League is Practice
-A challenge link whose date is not the Player's local today, or whose League is not the Player's, SHALL offer the friend's round as Practice, dealing `dailySet(league, day)` for the link's League and date and saying it is not on the Boards, with today's daily challenge offered beside it. That Practice round's Score SHALL never leave the device.
+A challenge link whose date is not the Player's local today, or whose League is not the Player's, SHALL offer the friend's round as Practice, dealing `dailySet(league, day)` for the link's League and date and saying it is not on the Boards, with today's daily challenge offered beside it. That Practice round's Score SHALL never leave the device; its Sparks count as any Practice's do.
 
 #### Scenario: Another League
 - **WHEN** a Pro Player opens a Challenger challenge link for today
@@ -56,7 +60,7 @@ A challenge link whose date is not the Player's local today, or whose League is 
 
 #### Scenario: Another day
 - **WHEN** a Player opens a challenge link dated yesterday and plays the friend's round
-- **THEN** nothing is sent to any World board
+- **THEN** its Score is sent to no World Score board
 
 ### Requirement: A challenge link is checked and never starts by itself
 A Score part that is not a whole number from 0 to 9999 SHALL be ignored, and the line SHALL read "A friend's challenge" with no number. A link whose date or League does not parse SHALL open the Arena as `#/arena` does. No countdown or round SHALL start from a challenge link without a tap on Start.

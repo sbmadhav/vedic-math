@@ -44,10 +44,10 @@ The problem's numbers SHALL be at least 20% of the viewport height. A Full scree
 - **THEN** nothing on it has changed and no animation is running
 
 ### Requirement: The warm-up stores and sends nothing about anyone
-The warm-up SHALL write nothing to storage, create no Player, earn no Sparks, post to no Board and load no Firebase. Its words SHALL say "No sign-in and no student accounts. This page stores nothing on this device." and link to the privacy policy, and SHALL NOT claim a school needs no privacy review or that the site is COPPA compliant. No copy SHALL contain an em dash.
+The warm-up's own scripts SHALL write nothing to storage (the shared header saving a chosen color scheme aside), and it SHALL create no Player, earn no Sparks, post to no Board and load no Firebase. Its words SHALL say "No sign-in and no student accounts. This page stores nothing on this device." and link to the privacy policy, and SHALL NOT claim a school needs no privacy review or that the site is COPPA compliant. No copy SHALL contain an em dash.
 
 #### Scenario: Nothing stored
-- **WHEN** a teacher goes through a whole warm-up
+- **WHEN** a teacher goes through a whole warm-up without touching the color scheme switch
 - **THEN** `localStorage` and `sessionStorage` are unchanged and no request goes to a Google host
 
 #### Scenario: Honest words

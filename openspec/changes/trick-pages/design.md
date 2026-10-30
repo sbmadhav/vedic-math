@@ -36,7 +36,7 @@ Owner-delegated, 2026-10-30. `tools/trick-pages/generate.ts` imports `js/vedic.j
 
 ### D4. The calculator is the game's animator, as a small TypeScript module
 
-Owner-delegated, 2026-10-30. `tools/trick-pages/calculator.ts` (new code is TypeScript) imports `TRICKS` from `/js/vedic.js` and `on` from `/js/life.js`, reads the page's `data-trick`, and draws the Trick's `inputs`, runs `valid()` and steps through `steps()` with Back, Next and Show all, the way `mountAnimator` does in the game. `build.py` publishes it at `/tricks/calculator.js` with its types taken out by Node's type stripper, as `tools/build-sw.mjs` does for `/sw.js`. It is not under `/js/`, so it is not in the game's import map, precache or first-load budget. Its listeners go through `on()` with a page-lifetime signal. The step text comes from `js/vedic.js`, numbers only, so it is set as the game sets it.
+Owner-delegated, 2026-10-30. `tools/trick-pages/calculator.ts` (new code is TypeScript) imports `TRICKS` from `/js/vedic.js` and `on` from `/js/life.js`, reads the page's `data-trick`, and draws the Trick's `inputs`, runs `valid()` and steps through `steps()` with Back, Next and Show all, the way `mountAnimator` does in the game. `build.py` publishes every runtime module in `tools/trick-pages/` (all but `generate.ts`) at `/tricks/<name>.js` with its types taken out by Node's type stripper, as `tools/build-sw.mjs` does for `/sw.js`, so `calculator.ts` becomes `/tricks/calculator.js`. They import each other by those published URLs (`/tricks/step-board.js`) and the game's modules by `/js/...`, never by a `.ts` path, so what the browser fetches is exactly what was published; a module-load test opens each page and fails on any 404 or `pageerror`. It is not under `/js/`, so it is not in the game's import map, precache or first-load budget. Its listeners go through `on()` with a page-lifetime signal. The step text comes from `js/vedic.js`, numbers only, so it is set as the game sets it.
 
 ### D5. Search metadata
 
@@ -52,7 +52,7 @@ Owner-delegated, 2026-10-30. A Trick page's first load (the page, its CSS, the c
 
 ### D8. Analytics
 
-Owner-delegated, 2026-10-30. Two events of fixed words: `math/tricks/calc/<trick>` the first time Show steps (or New numbers) draws steps on a page load, and `math/tricks/practice/<trick>` on Practice this trick. `<trick>` is a Trick id from the catalog. Never the typed numbers.
+Owner-delegated, 2026-10-30. Two events of fixed words: `math/tricks/calc/<trick>` the first time Show steps draws steps on a page load (New numbers alone does not count), and `math/tricks/practice/<trick>` on Practice this trick. `<trick>` is a Trick id from the catalog. Never the typed numbers.
 
 ## What the feedback had wrong or already done
 

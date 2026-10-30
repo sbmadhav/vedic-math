@@ -51,12 +51,12 @@ Each Trick page SHALL say its Sutra comes from Bharati Krishna Tirtha's 1965 boo
 - **THEN** each Trick page credits the 1965 book, and none contains a banned phrase or an em dash
 
 ### Requirement: Trick pages stay light and leave the game alone
-A Trick page's first load SHALL stay within the per-page budget recorded in `docs/perf/baseline.json`, and the build SHALL fail above it. The Trick pages SHALL NOT add any file to the game's import map, precache list or first-load set. A Trick page SHALL write nothing to storage and SHALL NOT load Firebase.
+A Trick page's first load SHALL stay within the per-page budget recorded in `docs/perf/baseline.json`, and the build SHALL fail above it. The Trick pages SHALL NOT add any file to the game's import map, precache list or first-load set. A Trick page's own scripts SHALL write nothing to storage (the shared header saving a chosen color scheme aside) and SHALL NOT load Firebase.
 
 #### Scenario: The game's first load
 - **WHEN** the site is built with the Trick pages
 - **THEN** the game's first-load total is unchanged and `/tricks/calculator.js` is not in the worker's precache list
 
 #### Scenario: Nothing stored
-- **WHEN** a visitor uses the calculator on a Trick page
+- **WHEN** a visitor uses the calculator on a Trick page without touching the color scheme switch
 - **THEN** `localStorage` and `sessionStorage` are unchanged and no request goes to a Google host

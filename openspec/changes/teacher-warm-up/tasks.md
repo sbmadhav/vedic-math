@@ -5,13 +5,13 @@ Approved for building once merged (proposal.md). Build after `trick-pages`, or i
 ## 1. Data and modules
 
 - [ ] 1.1 `tools/trick-pages/warm-up-problems.ts`: the table of design D3. Verify: `test/warm-up.test.mjs` runs every problem through its Trick's `valid()` and `answer()`, checks each Trick's three problems grow, and that every Trick id is one of the 15 in `pages.ts`.
-- [ ] 1.2 Split the step board out of the `trick-pages` calculator into `tools/trick-pages/step-board.ts`, used by both. Verify: the `trick-pages` cov specs still pass unchanged.
+- [ ] 1.2 Split the step board out of the `trick-pages` calculator into `tools/trick-pages/step-board.ts`, used by both, published at `/tricks/step-board.js` with `pages.ts` and `warm-up-problems.ts` beside it (design D7), imported by those URLs. Verify: the `trick-pages` cov specs still pass unchanged; the module-load check (every page, no 404, no `pageerror`) covers `/teachers/warm-up/`.
 - [ ] 1.3 The Trick of the day (local day number modulo 15), Pick a trick, `?trick=<id>` with fallback. Verify: unit test for the rotation over 30 dates; new `e2e/tests/cov/teacher-warm-up-2.spec.ts` (Two days with a fixed clock, A bookmarked Trick, Problems rise).
 
 ## 2. The page
 
 - [ ] 2.1 `site/teachers/warm-up/index.html` with the site header, the five screens, Reveal and Show the steps, the polite progress line, the no sign-in sentence and privacy link (design D6), the 1965 book credit. Verify: new `e2e/tests/cov/teacher-warm-up-1.spec.ts` (A whole warm-up, Reveal, then the steps).
-- [ ] 2.2 `tools/trick-pages/warm-up.ts`, published at `/teachers/warm-up/warm-up.js` with the types taken out; keys Right, Space, Page Down, Left, Page Up, R; Full screen; listeners through `on()` from `/js/life.js`. Verify: new `e2e/tests/cov/teacher-warm-up-3.spec.ts` (A presenter clicker, Nothing moves by itself, Full screen button hidden when `document.fullscreenEnabled` is false).
+- [ ] 2.2 `tools/trick-pages/warm-up.ts`, published at `/tricks/warm-up.js` with the types taken out; keys Right, Space, Page Down, Left, Page Up, R; Full screen; listeners through `on()` from `/js/life.js`. Verify: new `e2e/tests/cov/teacher-warm-up-3.spec.ts` (A presenter clicker, Nothing moves by itself, Full screen button hidden when `document.fullscreenEnabled` is false).
 - [ ] 2.3 `theme/warm-up.css`: the projector sizes (design D5), tokens only, Daybreak and Deep Space. Verify: `teacher-warm-up-3.spec.ts` (Big enough for the back row at 1280 × 720); `a11y.spec.ts` gains the page in both schemes; screenshots at 1280 × 720 and 1920 × 1080 checked by eye.
 - [ ] 2.4 Nothing stored, no Google host. Verify: new `e2e/tests/cov/teacher-warm-up-4.spec.ts` (Nothing stored, Honest words); `test/copy.test.mjs` scans the page and `/teachers/`.
 

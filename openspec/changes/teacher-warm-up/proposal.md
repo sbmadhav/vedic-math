@@ -32,7 +32,7 @@ Unchanged: the Arena, the game, the rest of `/teachers/`, and what the site send
 
 ## Impact
 
-- New: `site/teachers/warm-up/index.html`, `tools/trick-pages/warm-up.ts` (published at `/teachers/warm-up/warm-up.js` with its types taken out, like the `trick-pages` calculator), `tools/trick-pages/warm-up-problems.ts` (three problems per Trick), `theme/warm-up.css` (tokens only).
+- New: `site/teachers/warm-up/index.html`, `tools/trick-pages/warm-up.ts` (published at `/tricks/warm-up.js` with its types taken out, with the other runtime modules it imports, the way `trick-pages` publishes its calculator), `tools/trick-pages/warm-up-problems.ts` (three problems per Trick), `theme/warm-up.css` (tokens only).
 - `site/teachers/index.html`: the warm-up box's button and words.
 - Depends on `trick-pages`: it shares the step board module, the 15-Trick list and the Trick page addresses, so it is built after `trick-pages` (or in the same PR).
 - No spoken line changes: the page has no read aloud.

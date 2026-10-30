@@ -50,7 +50,7 @@ Owner-delegated, 2026-10-30. The page and the `/teachers/` box say what is true:
 
 ### D7. Shares the Trick pages' modules
 
-Owner-delegated, 2026-10-30. The step board (inputs aside) is split out of the `trick-pages` calculator into `tools/trick-pages/step-board.ts` and used by both, and the 15 Tricks and their slugs come from `tools/trick-pages/pages.ts`. So this change is built after `trick-pages` or in the same PR, and the warm-up's last screen can name a page that exists. Its script is published at `/teachers/warm-up/warm-up.js`, outside `/js/`, so the game's precache and first-load bytes do not change; it is covered by the same per-page budget as a Trick page.
+Owner-delegated, 2026-10-30. The step board (inputs aside) is split out of the `trick-pages` calculator into `tools/trick-pages/step-board.ts` and used by both, and the 15 Tricks and their slugs come from `tools/trick-pages/pages.ts`. So this change is built after `trick-pages` or in the same PR, and the warm-up's last screen can name a page that exists. Its scripts are published the `trick-pages` way (its design D4): every runtime module in `tools/trick-pages/` (`warm-up.ts`, `step-board.ts`, `pages.ts`, `warm-up-problems.ts`) at `/tricks/<name>.js` with the types taken out, importing each other by those URLs; the page loads `/tricks/warm-up.js`. They are outside `/js/`, so the game's precache and first-load bytes do not change; it is covered by the same per-page budget as a Trick page.
 
 ## What the feedback had wrong or already done
 
