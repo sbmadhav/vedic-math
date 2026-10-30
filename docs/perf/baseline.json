@@ -316,7 +316,7 @@
    },
    {
     "date": "2026-10-30",
-    "pr": 0,
+    "pr": 180,
     "from": 838848,
     "to": 839775,
     "why": "explanation-audio-rest: Listen buttons on the ten page introductions (ledeListen() and lede keys, ledeKeyLines() in js/explain-lines.js), in the video player and over the Me page badges; normalize() reads an arrow to a worked example answer as \"gives\" and a long digit string digit by digit; /js/nav.js kept at CI figure; file deltas: /js/app.js +349, /js/explain-lines.js +314, /js/voice.js +230, /math.css +30, /sw.js +7, /play/ -3; +927 in all"
