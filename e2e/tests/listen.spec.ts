@@ -373,6 +373,18 @@ test.describe('Listen', () => {
     await expect.poll(async () => (await spoken(page)).join(' ')).toBe(want.join(' '));
   });
 
+  test('a Me page redraw stops the badges being read', async ({ page }) => {
+    await setup(page, { endAfter: 4000 });
+    await open(page, '#/me');
+    await page.getByRole('button', { name: 'Listen: the badges to earn' }).click();
+    await expect.poll(async () => (await spoken(page)).length).toBeGreaterThan(0);
+    const before = (await spoken(page)).length;
+    await page.locator('.av-pick[aria-pressed="false"]').first().click(); // a new avatar color redraws the page
+    await expect(page.getByRole('button', { name: 'Listen: the badges to earn' })).toHaveAttribute('aria-pressed', 'false');
+    await page.waitForTimeout(5000); // past the first rule's end: the next one must not start
+    expect((await spoken(page)).length).toBe(before);
+  });
+
   /* explanation-audio 4.1: the Star replay's steps, once they are all shown; ending the replay stops it */
   test('a Star replay reads its steps once they are all shown, and Escape stops it', async ({ page }) => {
     await setup(page, { endAfter: 4000 });

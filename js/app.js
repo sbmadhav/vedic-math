@@ -1800,6 +1800,7 @@ function trophyCaseHTML() {
   return `<section class="trophy-case" aria-labelledby="trophyH"><h2 class="mq-strand" id="trophyH">Trophy case</h2><div class="trophy-grid">${rows.join('')}</div>`;
 }
 function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw from one of its own buttons passes it on */
+  stopListen(); /* a redraw replaces the badges' Listen button without aborting the view signal, so it stops what it read */
   document.title = `Me · Learn Vedic Math`;
   const p = store.player(), T = gm.titleInfo(), got = store.badges(), done = SKILLS.filter(s => store.mastered(s.id)).length;
   const badges = gm.badgesFor(fx.mode(), got); /* Explorer is not offered Belts or Sutra cards, so their badges are listed only once earned */

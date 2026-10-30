@@ -85,6 +85,8 @@ const CASES = [
   ['arrow to a highlighted word stays "so"', '9 + 1 × 5 = 14 → <b class="hl hl-coral">yes</b>', '9 plus 1 times 5 equals 14, so yes'],
   ['arrow inside a list stays "to"', 'Each divisor has a magic multiplier (7 → 5, 13 → 4).', 'Each divisor has a magic multiplier 7 to 5, 13 to 4.'],
   ['long digit string', 'keep doubling: …789473684210526315 → done', 'keep doubling: and so on,7 8 9 4 7 3 6 8 4 2 1 0 5 2 6 3 1 5, so done'],
+  ['arrow to a negative answer', '3 − 45 → &minus;42', '3 minus 45, gives negative 42'],
+  ['long number with a decimal point stays a number', 'Round 1234567890.5 down.', 'Round 1234567890.5 down.'],
   ['grouped big number stays a number', 'Round 1,000,000,000 down.', 'Round 1000000000 down.'],
   ['list aside', 'Last digit 7 → root ends in 3 (2 and 8 swap, 3 and 7 swap, the rest stay).', 'Last digit 7, so root ends in 3. 2 and 8 swap, 3 and 7 swap, the rest stay.'],
   ['power of a sum', 'Solve: 3<sup><i>x</i> + 1</sup> = 1', 'Solve: 3 to the power of x plus 1, equals 1'],

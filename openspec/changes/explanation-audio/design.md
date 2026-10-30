@@ -41,10 +41,9 @@
 - *Badge rules (4.4).* One button over the Me page's badges reads the rules of the badges still to earn, in grid order (`from:.badge:not(.got) small`, "Listen: the badges to earn"); with every badge earned there is no button. Reading only what is left keeps the block shorter than all 24 (decision 1) and answers the question a Player has there: what can I earn next. The Party Mode badge's rule plays with the device's voice until the re-record.
 - *Mode blurbs (4.4): no button.* They show only on the first visit's Mode picker, whose three Mode cards are its only buttons (`first-visit` spec, change `play-nav-by-mode`), and each blurb is inside its card's button. Find lists them too, as search results. Reason: a fourth button on the first screen would undo the one-step picker.
 
-## Wording found while listing the lines (decided in decision 9)
+## Wording found while listing the lines (as found on 2026-10-17; decision 9 settles each)
 
-- An arrow before a number is read "to": the Sutra example "6 × 7 = 42, then 25 → 4225" is heard "then 25 to 4225" (`normalize()` in `js/voice.js`). "gives" would read better in explanations.
-- Long digit strings such as "…789473684210526315" (the 1/19 example) are read as one huge number.
+- Superseded by decision 9: an arrow before a number was read "to" ("then 25 to 4225"), and long digit strings such as "…789473684210526315" (the 1/19 example) as one huge number.
 - Sanskrit words inside explanation text ("Ekādhika means one more") are read by an English voice. The Sutra names themselves get their own clips (`sutra-pronunciation`).
 - Any wording change to these lines needs a re-record (`tools/voice/lines.mjs`, `record.mjs`, `publish.mjs`), a few hundred characters each. The readings decision 9 changes are in the 4.6 re-record.
 
