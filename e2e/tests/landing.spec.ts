@@ -411,6 +411,22 @@ test.describe('the sutras and the method', () => {
     await expect(card.getByRole('button', { name: 'Back' })).toBeHidden();
   });
 
+  /* #172 review: a visitor who finishes the steps before js/analytics.js has run is still counted, once */
+  test('finishing the steps before analytics has loaded still sends math/landing/demo/done once', async ({ page }) => {
+    const STUB = `window.__events = window.__events || []; window.siteTrack = (path, title) => { window.__events.push(path + ' ' + title); };`;
+    let release: () => void = () => {};
+    const held = new Promise<void>(r => { release = r; });
+    await page.route(/\/js\/analytics\.js(\?.*)?$/, async route => { await held; await route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }); });
+    await page.goto('/', { waitUntil: 'commit' });
+    const card = page.locator('#lv-demo');
+    await expect(card).toHaveAttribute('data-step', '1');
+    for (let i = 0; i < 2; i++) await card.locator('.lv-demo-next').click();
+    await expect(card).toHaveAttribute('data-step', '3');
+    expect(await page.evaluate(() => typeof (window as any).siteTrack)).toBe('undefined');
+    release();
+    await expect.poll(() => page.evaluate(() => ((window as any).__events || []).filter((e: string) => e.startsWith('math/landing/')))).toEqual(['math/landing/demo/done Vedic Math: landing demo finished']);
+  });
+
   test('a Sutra card opens its Deep dive in the game, with no Mode picker and no Mode stored', async ({ page }) => {
     await page.goto('/');
     await page.locator('a.lv-sutra[href="/play/#/sutras/s3"]').click();

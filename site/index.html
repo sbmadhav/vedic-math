@@ -123,7 +123,7 @@
           </div>
           <ol class="lv-steps"><li data-s="1">98 is 2 below 100, and 97 is 3 below.</li><li data-s="2">98 &minus; 3 = 95, and 2 &times; 3 = 06.</li><li data-s="3">So the answer is <b>9506</b>.</li></ol>
           <div class="lv-demo-nav" role="group" aria-label="The sutra way, step by step">
-            <p class="lv-demo-at" aria-live="polite">Step 1 of 3</p>
+            <p class="lv-demo-at" aria-live="polite" aria-atomic="true">Step 1 of 3</p>
             <button type="button" class="md-btn lv-demo-back" aria-disabled="true">Back</button>
             <button type="button" class="md-btn md-btn--primary lv-demo-next">Next</button>
           </div>
@@ -235,15 +235,20 @@ if (card) {
   const back = card.querySelector('.lv-demo-back'), next = card.querySelector('.lv-demo-next'), at = card.querySelector('.lv-demo-at');
   const signal = new AbortController().signal; /* the page's lifetime */
   let step = 1, counted = false;
+  /* js/analytics.js is a deferred script after this one; until it has run, the event waits for the page's load (#172 review) */
+  const send = () => { if (typeof window.siteTrack === 'function') window.siteTrack('math/landing/demo/done', 'Vedic Math: landing demo finished'); };
+  const track = () => { if (typeof window.siteTrack === 'function' || document.readyState === 'complete') send(); else on(window, 'load', send, signal, { once: true }); };
   const show = (n, say) => {
     step = n;
     card.dataset.step = String(n);
     steps.forEach((li, i) => { if (i + 1 === n) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current'); });
     back.setAttribute('aria-disabled', String(n === 1));
     next.textContent = n === last ? 'Start again' : 'Next';
-    at.textContent = `Step ${n} of ${last}`;
-    if (say) { const words = document.createElement('span'); words.className = 'md-sr-only'; words.textContent = ': ' + steps[n - 1].textContent; at.append(words); }
-    if (n === last && !counted) { counted = true; if (typeof window.siteTrack === 'function') window.siteTrack('math/landing/demo/done', 'Vedic Math: landing demo finished'); }
+    /* One update of the atomic live region: the visible count and, after a press, the step's words for screen readers */
+    const parts = [`Step ${n} of ${last}`];
+    if (say) { const words = document.createElement('span'); words.className = 'md-sr-only'; words.textContent = ': ' + steps[n - 1].textContent; parts.push(words); }
+    at.replaceChildren(...parts);
+    if (n === last && !counted) { counted = true; track(); }
   };
   /* data-moved: a visitor has pressed a button, so the step that appears may fade in (theme/site.css) */
   on(next, 'click', () => { card.dataset.moved = ''; show(step === last ? 1 : step + 1, true); }, signal);

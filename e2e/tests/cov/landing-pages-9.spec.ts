@@ -62,6 +62,7 @@ test('Keyboard and screen reader: Enter, then Space on Next; focus stays; the cu
   await page.goto('/');
   const card = page.locator('#lv-demo'), next = card.locator('.lv-demo-next'), at = card.locator('.lv-demo-at');
   await expect(at).toHaveAttribute('aria-live', 'polite');
+  await expect(at).toHaveAttribute('aria-atomic', 'true');
   await expect(card.locator('.lv-board')).toHaveAttribute('aria-hidden', 'true');
   await next.focus();
   await page.keyboard.press('Enter');
