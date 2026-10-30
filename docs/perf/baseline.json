@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 826479,
+  "total": 828167,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -48,8 +48,8 @@
    "/js/ambient.js": 3633,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 47647,
-   "/js/arena.js": 5392,
+   "/js/app.js": 48597,
+   "/js/arena.js": 5685,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
    "/js/celebrate.js": 3367,
@@ -67,7 +67,7 @@
    "/js/games.js": 12393,
    "/js/gamify.js": 3873,
    "/js/guide-art.js": 2484,
-   "/js/guide.js": 10456,
+   "/js/guide.js": 10459,
    "/js/handoff-schema.js": 6616,
    "/js/handoff.js": 4229,
    "/js/install-rules.js": 2226,
@@ -79,7 +79,7 @@
    "/js/life.js": 1103,
    "/js/listen.js": 1335,
    "/js/mental.js": 2128,
-   "/js/metrics.js": 4136,
+   "/js/metrics.js": 4146,
    "/js/play/catalog.js": 1783,
    "/js/play/exp/apprentice-core.js": 7279,
    "/js/play/exp/apprentice.js": 3914,
@@ -131,8 +131,8 @@
    "/js/slokas.js": 16068,
    "/js/star.js": 8768,
    "/js/store.js": 5753,
-   "/js/stories.js": 10070,
-   "/js/story-plan.js": 1723,
+   "/js/stories.js": 10300,
+   "/js/story-plan.js": 1807,
    "/js/sutra-ambience.js": 4169,
    "/js/sutra-details.js": 13423,
    "/js/sutra-progress.js": 1066,
@@ -151,9 +151,9 @@
    "/js/voice.js": 14365,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 24311,
-   "/play/": 4067,
-   "/sw.js": 6252,
+   "/math.css": 24422,
+   "/play/": 4060,
+   "/sw.js": 6266,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -276,6 +276,13 @@
     "from": 825299,
     "to": 826479,
     "why": "explanation-audio 4.2: the page introductions are data in the new js/ledes.js, so their fixed lines can be recorded whole (the strings moved out of js/app.js; a new precached module costs its own compression overhead), and the Older roots card has a Listen button; file deltas: /js/app.js -840, /js/explain-lines.js +216, /js/ledes.js +1794, /play/ +16, /sw.js -6, +1180 in all; measured on main as of #169"
+   },
+   {
+    "date": "2026-10-29",
+    "pr": 173,
+    "from": 826479,
+    "to": 828167,
+    "why": "word-problems-more: Only Word problems on a level's Endless practice page and the Arena's Word problems round (js/app.js mixView, practice and arenaView; the new route in js/metrics.js and js/guide.js; js/arena.js runArena deal and count, storyItem; js/stories.js roundStory and hasStory by Mode; js/story-plan.js the choice words; the Arena story styles in math.css, and the play shell's picture box, which drew Explorer Arena pictures 0 px wide); js/stories.js still loads after the first paint; measured on main as of #170 and #171; file deltas: /js/app.js +950, /js/arena.js +293, /js/guide.js +3, /js/metrics.js +10, /js/stories.js +230, /js/story-plan.js +84, /math.css +111, /play/ -7, /sw.js +14, +1688 in all"
    }
   ]
  },

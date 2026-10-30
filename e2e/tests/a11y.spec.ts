@@ -7,7 +7,7 @@ import { test, expect, APP, open, chromiumOnly, needsWorldBoards } from './fixtu
    (only that rule on that element) and recorded as its own test.fixme below, so it stays visible.
    When one is fixed, delete its KNOWN entry: the route checks then cover it again. */
 
-const ROUTES = ['#/', '#/learn', '#/dojo', '#/arena', '#/games', '#/sutras', '#/sutras/s3', '#/watch', '#/me', '#/skill/v-sq5', '#/game/times-sprint', '#/places', '#/guide', '#/find'];  // #/sutras/s3: the deep dive with Say it and Ambience (sutra-pronunciation 3.3)
+const ROUTES = ['#/', '#/learn', '#/dojo', '#/arena', '#/games', '#/sutras', '#/sutras/s3', '#/watch', '#/me', '#/skill/v-sq5', '#/game/times-sprint', '#/places', '#/guide', '#/find', '#/mix/3/words'];  // #/sutras/s3: the deep dive with Say it and Ambience (sutra-pronunciation 3.3); #/mix/3/words: Only Word problems with its choice (word-problems-more)
 
 /* Known violations on the live site: { route, rule, target, note }. Empty: the Sparks bar is a progressbar and
    #prRun lost its label (both fixed in js/app.js). Add an entry when a new one is found and reported. */
@@ -277,6 +277,21 @@ for (const scheme of ['light', 'dark'] as const) {
       await open(page, '#/me');
       await page.waitForLoadState('networkidle');
       expect(await serious(page, '#/me')).toEqual([]);
+    });
+  });
+}
+
+/* The Arena's Word problems round in the play shell (openspec word-problems-more): the label, the story and the unit */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, Word problems round`, () => {
+    test.use({ colorScheme: scheme });
+    test('the Arena Word problems round has no serious or critical axe violations', async ({ page }, testInfo) => {
+      chromiumOnly(testInfo);
+      await open(page, '#/arena');
+      await page.locator('[data-t="words"]').click();
+      await page.locator('#arGo').click();
+      await expect(page.locator('#arStory')).toBeVisible({ timeout: 6000 });
+      expect(await serious(page, 'shell')).toEqual([]);
     });
   });
 }

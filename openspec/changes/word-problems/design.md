@@ -54,5 +54,7 @@
 
 ## Open questions for the owner
 
-- Word problems in the Arena and games (a separate Board, or a round type)? Not in this change.
-- Should a Player be able to ask for "only Word problems" in Practice? `8-reallife` and `3-twostep` serve that today.
+Both were answered under the owner's delegation of 2026-10-29 ("Make executive decisions") in the change `word-problems-more` (its design D1 to D7):
+
+- Word problems in the Arena and games (a separate Board, or a round type)? A Practice round type in the Arena only, with no Board and nothing sent; games stay as they are (`word-problems-more` D3 to D5).
+- Should a Player be able to ask for "only Word problems" in Practice? Yes: an "Only Word problems" choice on a level's Endless practice page (`word-problems-more` D1, D2).
