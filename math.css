@@ -1,11 +1,11 @@
-/* Learn Vedic Math game styles. Tokens only (/ds/2.1.0/tokens.css with /theme/learnvedicmath.css), both color modes, kid mode via .pro/.kid. */
+/* Learn Vedic Math game styles. Tokens only (/ds/2.2.0/tokens.css with /theme/learnvedicmath.css), both color modes, kid mode via .pro/.kid. */
 
 /* Layers above the page (openspec family-helpers, design D12): the game's own stacking tokens. The pinned design
    system has --z-overlay (100) and --z-toast (120) but no helper layer, and its toast value differs from the game's,
    so these are defined here; a --z-helper in the design system is a change for that repository. */
 :root { --vm-z-toasts: 110; --vm-z-sparkles: 115; --vm-z-confetti: 120; --vm-z-family: 125; }
 
-/* Header: the Learn Vedic Math header (theme/header.html, from design system 2.1.0, put in by compose.py). The design
+/* Header: the Learn Vedic Math header (theme/header.html, from design system 2.2.0, put in by compose.py). The design
    system styles the sticky bar, the brand, the nav pills, the round color scheme button and the end slot; with
    .md-header--tabs the nav moves to its own rows below 1180px and wraps, so every tab stays on screen (a sideways-scrolling
    row hid Sutras, Watch and Guide off the right edge of a phone with no sign they were there). Here: the game's Find tab,

@@ -4,10 +4,10 @@ Learn Vedic Math serves a few files made by others. Each is listed here with its
 from. Published at https://learnvedicmath.com/licenses/. The build fails when a vendored or font file is
 not covered by a path below.
 
-## Madhav design system 2.1.0
+## Madhav design system 2.2.0
 
-Tokens, components and the header script, published at `/ds/2.1.0/`. MIT License, copyright 2026 Madhav Srinivasan.
-Source: `vendor/design-system/2.1.0/` (the full licence text is in `LICENSE` there).
+Tokens, components and the header script, published at `/ds/2.2.0/`. MIT License, copyright 2026 Madhav Srinivasan.
+Source: `vendor/design-system/2.2.0/` (the full licence text is in `LICENSE` there).
 
 ## Fonts
 

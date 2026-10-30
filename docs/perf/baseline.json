@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 838848,
+  "total": 840716,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -27,9 +27,9 @@
    "/css/play/spells.css": 3925,
    "/css/play/tala.css": 4330,
    "/css/play/wall.css": 2204,
-   "/ds/2.1.0/components.css": 4869,
-   "/ds/2.1.0/header.js": 1166,
-   "/ds/2.1.0/tokens.css": 2448,
+   "/ds/2.2.0/components.css": 6692,
+   "/ds/2.2.0/header.js": 1166,
+   "/ds/2.2.0/tokens.css": 2504,
    "/fonts/fredoka-latin-600-normal.woff2": 16454,
    "/fonts/fredoka-latin-700-normal.woff2": 15898,
    "/fonts/jetbrains-mono-latin-500-normal.woff2": 21833,
@@ -153,9 +153,9 @@
    "/js/voice.js": 14365,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 25721,
-   "/play/": 4164,
-   "/sw.js": 6292,
+   "/math.css": 25743,
+   "/play/": 4150,
+   "/sw.js": 6273,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -313,6 +313,13 @@
     "from": 838847,
     "to": 838848,
     "why": "token swaps merged over #174 and #148: CI's build measures /js/nav.js at its #174 size, 1 byte above this branch's local measurement (the Brotli output differs by a byte between machines), so the baseline keeps CI's figure; +1"
+   },
+   {
+    "date": "2026-10-30",
+    "pr": null,
+    "from": 838848,
+    "to": 840716,
+    "why": "design system 2.2.0 (vendor/design-system/2.2.0/, published at /ds/2.2.0/, replacing 2.1.0): components.css gains the control scale, md-actions, md-popover, md-prose, md-table, md-foot, md-hl and the bare-link look, tokens.css the 2.2 sizes and the cta type style"
    }
   ]
  },

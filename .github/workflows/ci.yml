@@ -63,7 +63,7 @@ jobs:
         run: python3 build.py --out _site --voice "$VOICE"
 
       - name: Every page header is the composed theme/header.html
-        run: python3 vendor/design-system/2.1.0/compose.py --check theme/header.html play/index.html $(find site -name '*.html')
+        run: python3 vendor/design-system/2.2.0/compose.py --check theme/header.html play/index.html $(find site -name '*.html')
 
       - name: The build is stamped, has its headers and no repo-only files
         run: |

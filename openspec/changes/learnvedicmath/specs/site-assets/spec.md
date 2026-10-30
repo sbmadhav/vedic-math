@@ -7,10 +7,10 @@ Make the site self-contained: a pinned copy of the design system with its own th
 ## ADDED Requirements
 
 ### Requirement: A pinned copy of the design system
-The build SHALL publish design-system v2.1.0 (`tokens.css`, `components.css`, `header.js`) from a copy vendored in the repo under `vendor/design-system/2.1.0/`, at `/ds/2.1.0/`. A test SHALL fail when a vendored file does not match its recorded sha256. No page SHALL load design-system files from another origin.
+The build SHALL publish design-system v2.2.0 (`tokens.css`, `components.css`, `header.js`) from a copy vendored in the repo under `vendor/design-system/2.2.0/`, at `/ds/2.2.0/`. A test SHALL fail when a vendored file does not match its recorded sha256. No page SHALL load design-system files from another origin.
 
 #### Scenario: A vendored file is edited by hand
-- **WHEN** `vendor/design-system/2.1.0/components.css` differs from its recorded sum
+- **WHEN** `vendor/design-system/2.2.0/components.css` differs from its recorded sum
 - **THEN** the node tests fail and say to vendor a new version instead
 
 ### Requirement: The learnvedicmath theme
@@ -25,7 +25,7 @@ A `learnvedicmath` theme SHALL load after the design system's tokens and SHALL o
 - **THEN** every custom property it sets is defined in the pinned `tokens.css`
 
 ### Requirement: The header comes from one partial
-Every page SHALL get its header from the site's header partial (derived from the design system's v2.1.0 `header.html`, without the Explore button and with the Learn Vedic Math brand), put in at build time by the vendored `compose.py`. CI SHALL fail when a page's header differs from the partial.
+Every page SHALL get its header from the site's header partial (derived from the design system's v2.2.0 `header.html`, without the Explore button and with the Learn Vedic Math brand), put in at build time by the vendored `compose.py`. CI SHALL fail when a page's header differs from the partial.
 
 #### Scenario: A page edited by hand
 - **WHEN** a page's header markup is changed outside its slots

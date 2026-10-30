@@ -80,8 +80,8 @@ test('--out inside the repo must start with _ (git and ESLint ignore _*/), and i
 test('the output has the pages at the root, is stamped, and holds only publishable files', () => {
   build();
   for (const f of ['play/index.html', 'index.html', 'js/app.js', 'parents/index.html', 'teachers/index.html', 'privacy/index.html', 'terms/index.html',
-    'licenses/index.html', '404.html', 'sw.js', 'math.css', 'manifest.webmanifest', 'js/skills/index.js', 'ds/2.1.0/tokens.css', 'ds/2.1.0/components.css',
-    'ds/2.1.0/header.js', 'theme/learnvedicmath.css', 'theme/fonts.css', 'fonts/nunito-sans-latin-wght-normal.woff2', 'icons/icon-192.png',
+    'licenses/index.html', '404.html', 'sw.js', 'math.css', 'manifest.webmanifest', 'js/skills/index.js', 'ds/2.2.0/tokens.css', 'ds/2.2.0/components.css',
+    'ds/2.2.0/header.js', 'theme/learnvedicmath.css', 'theme/fonts.css', 'fonts/nunito-sans-latin-wght-normal.woff2', 'icons/icon-192.png',
     '_headers', '_redirects', 'robots.txt', 'sitemap.xml', '.well-known/security.txt', '.assetsignore'])
     assert.ok(existsSync(join(out, f)), `${f} is published`);
   assert.match(sw().version, /^[0-9a-f]{10}$/);
@@ -103,9 +103,9 @@ test('the output has the pages at the root, is stamped, and holds only publishab
 
 test('the published design system drops its @font-face lines: the fonts are declared once, from /fonts/', () => {
   build();
-  assert.doesNotMatch(read('ds/2.1.0/tokens.css'), /@font-face|\/assets\/fonts/);
+  assert.doesNotMatch(read('ds/2.2.0/tokens.css'), /@font-face|\/assets\/fonts/);
   assert.match(read('theme/fonts.css'), /url\(\/fonts\/nunito-sans-latin-wght-normal\.woff2\)/);
-  assert.equal(read('ds/2.1.0/components.css'), readFileSync(join(dir, 'vendor/design-system/2.1.0/components.css'), 'utf8'));
+  assert.equal(read('ds/2.2.0/components.css'), readFileSync(join(dir, 'vendor/design-system/2.2.0/components.css'), 'utf8'));
   for (const page of ['play/index.html', 'index.html', 'parents/index.html']) {
     assert.doesNotMatch(read(page), /@font-face/, `${page} declares no fonts of its own`);
     assert.match(read(page), /<link rel="preload" href="\/fonts\/nunito-sans-latin-wght-normal\.woff2" as="font"/);
@@ -122,8 +122,8 @@ test('the precache list holds every import-map module, the shell, the styles, fo
   const css = read('play/index.html').match(/href="(\/math\.css\?v=\w+)"/)[1];
   assert.equal(urls.get(css), sha('math.css'));
   assert.equal(urls.get(importMap()['/js/app.js']), sha('js/app.js'));
-  const tokens = read('play/index.html').match(/href="(\/ds\/2\.1\.0\/tokens\.css\?v=\w+)"/)[1];
-  assert.equal(urls.get(tokens), sha('ds/2.1.0/tokens.css'), 'the published tokens.css, as served');
+  const tokens = read('play/index.html').match(/href="(\/ds\/2\.2\.0\/tokens\.css\?v=\w+)"/)[1];
+  assert.equal(urls.get(tokens), sha('ds/2.2.0/tokens.css'), 'the published tokens.css, as served');
   for (const u of ['/fonts/nunito-sans-latin-wght-normal.woff2', '/fonts/jetbrains-mono-latin-500-normal.woff2', '/icons/icon-192.png', '/icons/maskable-192.png', '/icons/maskable-512.png',
     '/icons/favicon-16.png', '/icons/favicon-32.png', '/icons/favicon-48.png', '/icons/favicon.svg', '/icons/apple-touch-icon.png', '/manifest.webmanifest'])
     assert.equal(urls.get(u), sha(u.slice(1)), `${u} is precached with its hash`);
@@ -351,7 +351,7 @@ test('the build fails when a page header differs from theme/header.html', () => 
 });
 
 test('the build fails when a vendored file does not match its SHA256SUMS', () => {
-  withEdit('vendor/design-system/2.1.0/components.css', s => s + '\n/* edited by hand */\n', () => fails(tryBuild(), /does not match .*SHA256SUMS; vendor a new version/));
+  withEdit('vendor/design-system/2.2.0/components.css', s => s + '\n/* edited by hand */\n', () => fails(tryBuild(), /does not match .*SHA256SUMS; vendor a new version/));
 });
 
 test('the build fails on a vendored or font file without an entry in THIRD-PARTY-NOTICES.md', () => {
@@ -388,7 +388,7 @@ test('the build fails on a [bracketed] placeholder in a page or in the Markdown 
 test('the licences page lists every vendored package', () => {
   build();
   const html = read('licenses/index.html');
-  for (const p of ['vendor/design-system/2.1.0/', 'vendor/firebase/', 'vendor/goatcounter/', 'vendor/tesseract/', 'fonts/']) assert.ok(html.includes(p), p);
+  for (const p of ['vendor/design-system/2.2.0/', 'vendor/firebase/', 'vendor/goatcounter/', 'vendor/tesseract/', 'fonts/']) assert.ok(html.includes(p), p);
 });
 
 test('security.txt: contact, canonical, policy, and the build fails within 30 days of Expires', () => {
