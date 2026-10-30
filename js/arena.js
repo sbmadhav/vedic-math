@@ -122,7 +122,7 @@ export function runArena(root, { league, day = null, dial, signal, onEnd, untime
     <div class="ar-top"><div class="ar-score"><small>Score</small><b id="arScore">0</b></div><div class="ar-combo" id="arCombo" aria-live="polite"></div>${clock}</div>
     ${untimed ? '<p class="ar-fin"><button type="button" class="md-btn md-btn--sm" id="arFinish">Finish</button></p>' : '<div class="g-timer ar-bar"><span id="arBar"></span></div>'}
     <span class="md-tag md-tag--teal ar-story" id="arStory" hidden></span><div class="ar-q" id="arQ" aria-live="polite"></div><div class="ar-viz" id="arViz"></div>
-    <div id="arIn"></div><div class="ar-pop" id="arPop" aria-hidden="true"></div><p class="vm-sr" id="arSay" role="status"></p></div>`;
+    <div id="arIn"></div><div class="ar-pop" id="arPop" aria-hidden="true"></div><p class="md-sr-only" id="arSay" role="status"></p></div>`;
   const $ = s => root.querySelector(s);
   const show = () => {
     const p = at(), qEl = $('#arQ'), tag = $('#arStory');
@@ -192,7 +192,7 @@ export function runChallenge(root, ch, set, { onEnd, tap = false, signal, untime
       <div class="ar-time"><small>${ch.secs ? 'Time' : ch.lives ? 'Lives' : 'Question'}</small><b id="arTime">${ch.secs || (ch.lives ? '&#9679;'.repeat(lives) : `1/${total}`)}</b></div></div>
     ${ch.secs ? '<div class="g-timer ar-bar"><span id="arBar"></span></div>' : ''}${sprintUntimed ? '<p class="ar-fin"><button type="button" class="md-btn md-btn--sm" id="arFinish">Finish</button></p>' : ''}
     <div class="ar-q" id="arQ" aria-live="polite"></div><div class="ar-viz" id="arViz"></div>
-    <div id="arIn"></div><p class="ar-fix" id="arFix" aria-live="polite"></p><div class="ar-pop" id="arPop" aria-hidden="true"></div><p class="vm-sr" id="arSay" role="status"></p></div>`;
+    <div id="arIn"></div><p class="ar-fix" id="arFix" aria-live="polite"></p><div class="ar-pop" id="arPop" aria-hidden="true"></div><p class="md-sr-only" id="arSay" role="status"></p></div>`;
   const $ = s => root.querySelector(s);
   const finish = () => { if (over) return; over = true; round.abort(); onEnd({ score, right, wrong, secs: Math.round(secs()), finished: right + wrong >= total || ch.goal !== 'seconds' ? true : false, untimed }); };
   const show = () => {

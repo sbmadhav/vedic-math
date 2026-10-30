@@ -170,7 +170,7 @@ export const GAMES = [
     run(area, ctx) {
       const k = kit(ctx), { dial } = ctx; let want = 0, popped = 0;
       const ask = el('p', { class: 'g-q g-q-sm', 'aria-live': 'polite' }), sky = el('div', { class: 'g-sky', role: 'group', 'aria-label': 'Balloons' }), done = el('button', { class: 'md-btn md-btn--primary' }, 'Done'), tools = el('div', { class: 'g-tools' }); tools.append(done); area.append(ask, sky, tools);
-      const cols = ['coral', 'teal', 'sun', 'sky', 'plum'];
+      const cols = ['cat-red', 'cat-yellow', 'cat-green', 'cat-blue', 'cat-purple'];
       const next = () => {
         if (k.over(8)) return k.finish();
         const lv = dial.lv; popped = 0; ctx.say('');

@@ -320,7 +320,7 @@ test('the build fails on a CSP <meta> in a page, an inline event handler or a ja
   for (const [f, edit, re] of [
     ['play/index.html', s => s.replace('<meta charset="utf-8">', `<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="default-src 'self'">`), /Content-Security-Policy/],
     ['site/index.html', s => s.replace('<meta charset="utf-8">', `<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="default-src 'self'">`), /Content-Security-Policy/],
-    ['play/index.html', s => s.replace('<button type="button" class="linkbtn mq-reset" id="resetMode">', '<button type="button" class="linkbtn mq-reset" id="resetMode" onclick="go()">'), /inline event handler/],
+    ['play/index.html', s => s.replace('<button type="button" class="md-link mq-reset" id="resetMode">', '<button type="button" class="md-link mq-reset" id="resetMode" onclick="go()">'), /inline event handler/],
     ['play/index.html', s => s.replace('href="#/learn"', 'href="javascript:void(0)"'), /javascript: URL/],
   ]) withEdit(f, edit, () => fails(tryBuild(), re));
 });
