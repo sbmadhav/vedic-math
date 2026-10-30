@@ -407,7 +407,8 @@ jobs:
       issues: write
     env:
       BASE_URL: https://learnvedicmath.com
-      REFERENCE_URL: ${{ needs.reference.outputs.url }}
+      # Only a reference whose alias was seen serving the pinned build (#179 review)
+      REFERENCE_URL: ${{ needs.reference.outputs.status == 'success' && needs.reference.outputs.url || '' }}
       REFERENCE_COMMIT: ${{ needs.reference.outputs.commit }}
       REFERENCE_RESULT: ${{ needs.reference.outputs.status || needs.reference.result }}
     steps:

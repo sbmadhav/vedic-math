@@ -215,7 +215,8 @@ test('the command line: --reference and --production are one option, and the lab
     expect(readFileSync(out, 'utf8')).toMatch(/Limits are production's median in this job/);
     expect(readFileSync(out, 'utf8')).not.toMatch(/workers\.dev, a different network chain/);
     main([b, l, i, '--reference', rl, ri, '--out', out]);
-    expect(readFileSync(out, 'utf8')).toMatch(/Limits are the median of Production in this job/);
+    expect(readFileSync(out, 'utf8')).toMatch(/\| Baseline \| Reference \| Production \| Limit \|/);
+    expect(readFileSync(out, 'utf8')).toMatch(/Limits are the median of Reference in this job plus the tolerance: how far Production has moved/);
     main([b, l, i, '--label', 'Production', '--reference-missing', 'the upload failed', '--out', out]);
     expect(process.exitCode).toBe(1);
     expect(readFileSync(out, 'utf8')).toMatch(/The pinned reference \(`abc1234`\) was not measured: the upload failed\./);

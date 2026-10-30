@@ -31,8 +31,8 @@
    Usage: node tools/perf-compare.ts <baseline.json> <lighthouse.json> <interactions.json>
             [--reference <lighthouse.json> <interactions.json>] [--reference-label <column>] [--label <column>]
             [--reference-missing <why>] [--out table.md]
-   --reference-label names the reference's column (Production by default), --label the measured column (Preview with a
-   reference, Now without). --reference (or --reference-missing) is the check after a deploy and its notes say so;
+   --reference-label names the reference's column, --label the measured column: by default Production and Preview with
+   --production, Reference and Production with --reference or --reference-missing, Now with neither. --reference (or --reference-missing) is the check after a deploy and its notes say so;
    --production is a pull request's.
    Exit code 1 when a gated median misses its tolerance. Time to first byte, the server's response time and Speed Index
    are shown for information. The runner's CPU speed (Lighthouse's benchmarkIndex, when a run recorded it) is printed
@@ -65,6 +65,8 @@ export type Row = {
 export type Labels = { reference: string; measured: string };
 /** A pull request's: production is the reference, the preview is measured */
 export const PULL_REQUEST: Labels = { reference: 'Production', measured: 'Preview' };
+/** After a deploy's, when the workflow names no columns: the pinned reference build, and production measured */
+export const AFTER_DEPLOY: Labels = { reference: 'Reference', measured: 'Production' };
 
 /* The tolerance of each gated metric: the largest value that still passes, given the reference's */
 export const LIMITS: Partial<Record<keyof Lh | keyof Ix, (ref: number) => number>> = {
@@ -202,11 +204,12 @@ export function main(argv: string[]) {
   const base = read(basePath) as PerfBaseline;
   const lh = read(lhPath) as LhRun;
   const reference: Reference | undefined = refLh && refIx ? { lh: read(refLh) as LhRun, ix: read(refIx) as IxRun } : undefined;
-  const labels: Labels | undefined = refLabel === undefined && label === undefined
-    ? undefined
-    : { reference: refLabel ?? PULL_REQUEST.reference, measured: label ?? (reference ? PULL_REQUEST.measured : 'Now') };
   /* The check after a deploy spells the option --reference (or names a missing reference); a pull request --production */
   const afterDeploy = asReference !== undefined || missing !== undefined;
+  const defaults = afterDeploy ? AFTER_DEPLOY : PULL_REQUEST;
+  const labels: Labels | undefined = refLabel === undefined && label === undefined && !afterDeploy
+    ? undefined
+    : { reference: refLabel ?? defaults.reference, measured: label ?? (reference || afterDeploy ? defaults.measured : 'Now') };
   const rows = compare(base, lh, read(ixPath) as IxRun, reference);
   const over = rows.filter(r => !r.ok);
   const context: NoteContext = { ...(labels ? { labels } : {}), afterDeploy, ...(missing === undefined ? {} : { missing: { commit: base.reference?.commit, why: missing } }) };
