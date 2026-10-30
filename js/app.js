@@ -41,7 +41,7 @@ import { setOf as navSetOf, navHTML } from './nav.js';
 import { artFor } from './guide-art.js';
 import { guideCounts, rootNote } from './explain-lines.js';
 import { ledeHTML } from './ledes.js';
-import { listenBtn, wireListen } from './listen.js';
+import { listenBtn, wireListen, toggle as toggleListen, stopListen } from './listen.js';
 import { sayButton, respellHTML, devaHTML, wireSay } from './say.js';
 import { sutraAmbience, ambienceButton, wireAmbience, settingsHTML as ambienceSettingsHTML, wireSettings as wireAmbienceSettings } from './sutra-ambience.js';
 import { tag as sutraTag, loadTags, fillTags } from './sutra-tag-slot.js'; /* js/sutra-tag.js loads on demand (#126 review) */
@@ -73,6 +73,9 @@ on(window, 'beforeinstallprompt', e => { if (!install) { e.preventDefault(); ear
 
 const $ = (s, r = document) => r.querySelector(s);
 const view = $('#view');
+/* A page introduction's Listen button (openspec explanation-audio 4.2): key lede:<id>, plus the Player's own two
+   numbers when the introduction shows them (js/explain-lines.js ledeKeyLines) */
+const ledeListen = (id, nums = []) => `<p class="listen-row">${listenBtn(['lede', id, ...nums].join(':'), 'about this page')}</p>`;
 const both = (pro, kid) => (kid && kid !== pro ? `<span class="pro">${pro}</span><span class="kid">${kid}</span>` : pro);
 const track = (name, title) => { try { window.siteTrack && window.siteTrack('math/' + name, title); } catch (e) {} };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -405,7 +408,7 @@ function learnView() {
     ${crumbs([null, 'Skill map'])}
     <span class="md-tag md-tag--sky">Skill map</span>
     <h1 class="md-heading">Pick a level</h1>
-    <p class="md-lede">${ledeHTML('learn', { n: guideCounts() })}</p>
+    <p class="md-lede">${ledeHTML('learn', { n: guideCounts() })}</p>${ledeListen('learn')}
     ${learnSutras()}
     <h2 class="mq-strand">Suggested for ${m.name}</h2><div class="mq-grades">${mine.map(card).join('')}</div>
     <h2 class="mq-strand">Speed tricks</h2><div class="mq-grades">${card(gradeOf('V'))}</div>
@@ -430,7 +433,7 @@ function gradeView(g, { signal } = {}) {
     ${crumbs(['#/learn', 'Skill map'], [null, gradeLabel(g)])}
     <span class="md-tag md-tag--sky">${G.band}</span>
     <h1 class="md-heading">${gradeLabel(g)}</h1>
-    <p class="md-lede">${both(ledeHTML('grade', st), ledeHTML('grade-kid', st))}</p>
+    <p class="md-lede">${both(ledeHTML('grade', st), ledeHTML('grade-kid', st))}</p>${ledeListen(fx.mode() === 'explorer' || fx.mode() === 'challenger' ? 'grade-kid' : 'grade', [st.done, st.total])}
     <div class="mq-gradebar"><span class="mq-bar mq-bar--big"><i style="width:${pct(st.done / (st.total || 1))}%"></i></span><a class="md-btn md-btn--primary md-btn--sm" href="#/run/${g}">${icon('bolt')} Endless run</a><a class="md-btn md-btn--sm" href="#/mix/${g}">Endless practice</a></div>
     <p class="mq-small">Every skill here makes new questions forever. Endless practice mixes them with hints; Endless run gives you 3 lives and counts how far you get.</p>
     <div class="mq-gradejump">${prev ? `<a class="md-chip" href="#/grade/${prev.id}">&larr; ${both(prev.pro, prev.kid)}</a>` : ''}${next ? `<a class="md-chip" href="#/grade/${next.id}">${both(next.pro, next.kid)} &rarr;</a>` : ''}</div>
@@ -724,7 +727,7 @@ function dojoView() {
     ${crumbs([null, 'Dojo'])}
     <span class="md-tag md-tag--plum">Vedic Dojo</span>
     <h1 class="md-heading">From white belt to <span class="hl-word">black belt</span></h1>
-    <p class="md-lede">${ledeHTML('dojo', { mode: fx.mode(), n: guideCounts() })}</p>
+    <p class="md-lede">${ledeHTML('dojo', { mode: fx.mode(), n: guideCounts() })}</p>${ledeListen('dojo')}
     <p class="mq-small">${store.katasDoneWhere('k:')} of ${LV.KATA_COUNT.toLocaleString('en-US')} katas done</p>
     ${playShelf('dojo', 'Play with the tricks')}
     <div class="belt-row">${bp.map(b => `<span class="belt-chip${b.earned ? ' on' : ''}" style="--belt:${b.color}"><span class="belt-knot" aria-hidden="true"></span>${b.name}</span>`).join('')}</div>
@@ -775,7 +778,7 @@ function katasView(trickId) {
     ${crumbs(['#/dojo', 'Dojo'], [null, `${t.title}: katas`])}
     <h1 class="md-heading">${t.title}: ${LV.KATAS_PER_TRICK} katas</h1>
     ${sutraTag('trickTagHTML', trickId, { mode: fx.mode(), surface: 'katas' })}
-    <p class="md-lede">${ledeHTML('katas', {})}</p>
+    <p class="md-lede">${ledeHTML('katas', {})}</p>${ledeListen('katas')}
     <p class="mq-small">${store.katasDoneWhere(`k:${trickId}:`)} of ${LV.KATAS_PER_TRICK} done · <a href="#/skill/v-${trickId}">Learn the trick first</a></p>
     ${levelMap(LV.KATAS_PER_TRICK, n => ({ done: store.kataDone(LV.kataKey(trickId, n)) }), n => `#/kata/${trickId}/${n}`, { noun: 'Kata' })}
   </div></section>`;
@@ -880,7 +883,7 @@ function towerView() {
     ${crumbs(['#/arena', 'Arena'], [null, 'Challenge tower'])}
     <span class="md-tag md-tag--coral">Challenge tower</span>
     <h1 class="md-heading">${LV.CHALLENGE_COUNT.toLocaleString('en-US')} Arena challenges</h1>
-    <p class="md-lede">${ledeHTML('tower', { n: guideCounts() })}</p>
+    <p class="md-lede">${ledeHTML('tower', { n: guideCounts() })}</p>${ledeListen('tower')}
     <p class="mq-small">${store.medalsWhere('a:').any} of ${LV.CHALLENGE_COUNT} cleared · ${store.medalsWhere('a:').gold} gold</p>
     <div class="tower">${LV.TOPICS.map((tp, c) => { const lo = c * LV.PER_CHAPTER + 1, ms = Array.from({ length: LV.PER_CHAPTER }, (_, k) => store.medal(LV.challengeKey(lo + k))), done = ms.filter(Boolean).length, gold = ms.filter(v => v === 3).length;
       return `<a class="tower-ch${done === LV.PER_CHAPTER ? ' done' : ''}" href="#/tower/${c + 1}"><span class="tower-n">${c + 1}</span><span class="tower-t"><b>${tp.name}</b><small>Challenges ${lo} to ${lo + LV.PER_CHAPTER - 1}</small><span class="mq-bar"><i style="width:${pct(done / LV.PER_CHAPTER)}%"></i></span></span><span class="medal-n">${gold} gold</span></a>`; }).join('')}</div>
@@ -963,7 +966,7 @@ function sutrasView({ signal } = {}) {
     ${crumbs([null, 'Sutras'])}
     <div class="sutra-top"><span class="md-tag md-tag--plum">Deep dive</span>${ambienceButton()}</div>
     <h1 class="md-heading">The 16 sutras and 13 sub-sutras</h1>
-    <p class="md-lede">${ledeHTML('sutras', { mode: m, got, all: ALL_SUTRAS.length })}</p>
+    <p class="md-lede">${ledeHTML('sutras', { mode: m, got, all: ALL_SUTRAS.length })}</p>${ledeListen('sutras', [got, ALL_SUTRAS.length])}
     <div class="mq-bar mq-bar--big sutra-bar"><i style="width:${pct(got / ALL_SUTRAS.length)}%"></i></div>
     <h2 class="mq-strand">The 16 sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => !c.sub).map(card).join('')}</div>
     <h2 class="mq-strand">The 13 sub-sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => c.sub).map(card).join('')}</div>
@@ -1238,7 +1241,7 @@ function arenaView({ signal } = {}) {
     ${crumbs([null, 'Arena'])}
     <span class="md-tag md-tag--coral">Arena</span>
     <h1 class="md-heading">60 seconds. Same questions for everyone.</h1>
-    <p class="md-lede">${ledeHTML('arena', { modeName: fx.MODES[fx.mode()].name })}</p>
+    <p class="md-lede">${ledeHTML('arena', { modeName: fx.MODES[fx.mode()].name })}</p>${ledeListen('arena')}
     <a class="tower-promo" href="#/tower">${icon('trophy')}<span><b>Challenge tower: ${LV.CHALLENGE_COUNT.toLocaleString('en-US')} levels</b><small>${medalCounts(store.medalsWhere('a:'))} · Sprint, Survival, Sharpshooter, Time attack, Boss</small></span><span aria-hidden="true">&rarr;</span></a>
     <div class="md-card ar-shell" id="arShell"></div>
     ${playShelf('arena', 'More ways to race')}</div></section>`;
@@ -1394,7 +1397,7 @@ function gamesView() {
     ${crumbs([null, 'Games'])}
     <span class="md-tag md-tag--plum">Games</span>
     <h1 class="md-heading">Games that build number sense</h1>
-    <p class="md-lede">${ledeHTML('games', { n: guideCounts() })}</p>
+    <p class="md-lede">${ledeHTML('games', { n: guideCounts() })}</p>${ledeListen('games')}
     ${playShelf('games', 'Play, make and discover')}
     <h2 class="mq-strand">Picked for ${fx.MODES[m].name}</h2><div class="md-grid">${mine.map(card).join('')}</div>
     ${rest.length ? `<h2 class="mq-strand">More games</h2><div class="md-grid">${rest.map(card).join('')}</div>` : ''}
@@ -1500,7 +1503,7 @@ function watchView({ signal } = {}) {
     ${crumbs([null, 'Watch'])}
     <span class="md-tag md-tag--teal">Watch and learn</span>
     <h1 class="md-heading">Short videos that show how</h1>
-    <p class="md-lede">${ledeHTML('watch', { n: guideCounts(), links: pro })}</p>
+    <p class="md-lede">${ledeHTML('watch', { n: guideCounts(), links: pro })}</p>${ledeListen('watch')}
     <div id="watchBody"><p class="mq-small">Loading videos…</p></div>
   </div></section>`;
   const body = $('#watchBody');
@@ -1554,17 +1557,19 @@ function openPlayer(v, opener, onClose = null) {
   if (musicOn()) stopMusic();
   if (!playerDlg) {
     playerDlg = document.createElement('dialog'); playerDlg.className = 'vm-player'; playerDlg.setAttribute('aria-labelledby', 'vpTitle');
-    playerDlg.innerHTML = `<div class="vp-head"><h2 id="vpTitle"></h2><button class="vp-x" aria-label="Close video">${'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>'}</button></div><div class="vp-frame"></div><p class="vp-desc"></p><p class="vp-foot"></p>`;
+    playerDlg.innerHTML = `<div class="vp-head"><h2 id="vpTitle"></h2><button class="vp-x" aria-label="Close video">${'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>'}</button></div><div class="vp-frame"></div><p class="vp-desc"><span class="vp-why"></span> (<span class="vp-ch"></span>)</p><p class="listen-row">${listenBtn('from:.vp-why', 'about this video')}</p><p class="vp-foot"></p>`;
     document.body.append(playerDlg);
     const close = () => playerDlg.close();
     playerDlg.querySelector('.vp-x').onclick = close;
-    /* a Sutra tag opens its Deep dive: the player closes first */
-    playerDlg.addEventListener('click', ev => { if (ev.target === playerDlg || (ev.target.closest && ev.target.closest('.sutra-tag-a[href]'))) close(); else if (ev.target.closest && ev.target.closest('.vp-play')) playVideo(); });
-    playerDlg.addEventListener('close', () => { clearTimeout(playerDlg._minute); playerDlg.querySelector('.vp-frame').innerHTML = ''; const done = playerDlg._onClose; playerDlg._onClose = null; if (playerDlg._opener && document.body.contains(playerDlg._opener)) playerDlg._opener.focus({ preventScroll: true }); if (done) done(); });
+    /* a Sutra tag opens its Deep dive: the player closes first. Listen reads the video's description (openspec
+       explanation-audio 4.3: the Watch card is a button, so its Listen button is here); closing or playing stops it. */
+    const listenHere = () => { if (playerDlg.querySelector('.listen-btn[aria-pressed="true"]')) stopListen(); };
+    playerDlg.addEventListener('click', ev => { const t = ev.target.closest ? ev.target : null; if (ev.target === playerDlg || (t && t.closest('.sutra-tag-a[href]'))) close(); else if (t && t.closest('.vp-play')) { listenHere(); playVideo(); } else if (t && t.closest('.listen-btn')) toggleListen(t.closest('.listen-btn')); });
+    playerDlg.addEventListener('close', () => { listenHere(); clearTimeout(playerDlg._minute); playerDlg.querySelector('.vp-frame').innerHTML = ''; const done = playerDlg._onClose; playerDlg._onClose = null; if (playerDlg._opener && document.body.contains(playerDlg._opener)) playerDlg._opener.focus({ preventScroll: true }); if (done) done(); });
   }
   playerDlg._video = v; playerDlg._opener = opener; playerDlg._onClose = onClose;
   playerDlg.querySelector('#vpTitle').textContent = v.title;
-  playerDlg.querySelector('.vp-desc').textContent = `${v.why} (${v.channel})`;
+  playerDlg.querySelector('.vp-why').textContent = v.why; playerDlg.querySelector('.vp-ch').textContent = v.channel;
   // Open on YouTube: Pro only (Explorer and Challenger get no link that leaves the site)
   /* the video's Sutra tag (openspec change sutras-first): its first Trick's, as trickTagHTML draws it; the page's signal, as the player has none (a placeholder the next video replaces has left the page) */
   const foot = playerDlg.querySelector('.vp-foot');
@@ -1690,7 +1695,7 @@ function guideView(section, { signal } = {}) {
     ${crumbs([null, 'Guide'])}
     <span class="md-tag md-tag--teal">Guide</span>
     <h1 class="md-heading">${fx.t({ explorer: 'How to play', challenger: 'How to use Vedic Math', pro: 'How to use Vedic Math' })}</h1>
-    <p class="md-lede">${ledeHTML('guide', { mode: fx.mode() })}</p>
+    <p class="md-lede">${ledeHTML('guide', { mode: fx.mode() })}</p>${ledeListen('guide')}
     ${m ? `<p class="mode-line">Words for: <b>${fx.MODES[m].name}</b> <a href="#/me">Change</a></p><p class="gd-top"><button type="button" class="md-btn md-btn--primary" data-gd="tour">${icon('map')} ${explorer ? 'Show me around' : 'Take the tour'}</button></p>`
       : '<div class="md-card gd-nomode"><p>Pick a play mode first: Explorer, Challenger or Pro. It sets the words, the questions and your league. This guide uses the Challenger words until you do.</p><p><a class="md-btn md-btn--primary" href="#/">Pick a play mode</a></p></div>'}
     <nav class="gd-toc md-card" aria-label="Guide contents"><ul>${groups.map(({ g, items }) => `<li><a href="#/guide/${items[0].id}" class="gd-toc-g">${T(g.title)}</a><ul>${items.map(s => `<li><a href="#/guide/${s.id}">${T(s.title)}</a></li>`).join('')}</ul></li>`).join('')}</ul></nav>
@@ -1807,7 +1812,7 @@ function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw
     <div class="mq-stats me-stats"><div class="md-stat"><div class="md-kicker">Skills mastered</div><div class="md-value">${done}</div><p>of ${SKILLS.length}</p></div><div class="md-stat"><div class="md-kicker">Day streak</div><div class="md-value">${store.streakDays()}</div><p>days</p></div></div>
     ${trophyCaseHTML()}
     <h3 class="mq-strand">Badges <small class="mq-small">${badges.filter(b => got[b.id]).length} of ${badges.length}</small></h3>
-    <div class="badge-grid">${badges.map(b => `<div class="badge${got[b.id] ? ' got' : ''}"><span class="badge-medal" aria-hidden="true">${icon(got[b.id] ? 'star' : 'lock')}</span><b>${b.name}</b><small>${b.how}</small></div>`).join('')}</div></section>
+    ${badges.some(b => !got[b.id]) ? `<p class="listen-row">${listenBtn('from:.badge:not(.got) small', 'the badges to earn')}</p>` : ''}<div class="badge-grid">${badges.map(b => `<div class="badge${got[b.id] ? ' got' : ''}"><span class="badge-medal" aria-hidden="true">${icon(got[b.id] ? 'star' : 'lock')}</span><b>${b.name}</b><small>${b.how}</small></div>`).join('')}</div></section>
     <h2 class="mq-strand">Play mode</h2>
     <div class="mode-pick mode-pick--sm">${Object.entries(fx.MODES).map(([id, m]) => `<button class="mode-card mode-card--${m.color}" data-mode="${id}" aria-pressed="${id === fx.mode()}"><span class="mode-ic" aria-hidden="true">${modeIcon(id)}</span><b>${m.name}</b><small>${m.ages}</small></button>`).join('')}</div>
     <h2 class="mq-strand">Players on this device</h2>

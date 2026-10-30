@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 838848,
+  "total": 839775,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -48,7 +48,7 @@
    "/js/ambient.js": 4480,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 52421,
+   "/js/app.js": 52770,
    "/js/arena.js": 5685,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -57,7 +57,7 @@
    "/js/cloud-config.js": 588,
    "/js/cloud.js": 4437,
    "/js/connectors.js": 1891,
-   "/js/explain-lines.js": 2541,
+   "/js/explain-lines.js": 2855,
    "/js/family-helpers.js": 5263,
    "/js/family-hook.js": 775,
    "/js/family-lines.js": 2624,
@@ -150,12 +150,12 @@
    "/js/voice-index.js": 213,
    "/js/voice-plan.js": 2458,
    "/js/voice-worker.js": 877,
-   "/js/voice.js": 14365,
+   "/js/voice.js": 14595,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 25721,
-   "/play/": 4164,
-   "/sw.js": 6292,
+   "/math.css": 25751,
+   "/play/": 4161,
+   "/sw.js": 6299,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -313,6 +313,13 @@
     "from": 838847,
     "to": 838848,
     "why": "token swaps merged over #174 and #148: CI's build measures /js/nav.js at its #174 size, 1 byte above this branch's local measurement (the Brotli output differs by a byte between machines), so the baseline keeps CI's figure; +1"
+   },
+   {
+    "date": "2026-10-30",
+    "pr": 0,
+    "from": 838848,
+    "to": 839775,
+    "why": "explanation-audio-rest: Listen buttons on the ten page introductions (ledeListen() and lede keys, ledeKeyLines() in js/explain-lines.js), in the video player and over the Me page badges; normalize() reads an arrow to a worked example answer as \"gives\" and a long digit string digit by digit; /js/nav.js kept at CI figure; file deltas: /js/app.js +349, /js/explain-lines.js +314, /js/voice.js +230, /math.css +30, /sw.js +7, /play/ -3; +927 in all"
    }
   ]
  },

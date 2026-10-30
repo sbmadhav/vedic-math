@@ -783,6 +783,7 @@ html.motion-paused .vm-eq i, body.calm .vm-eq i { animation: none; }
 .vp-play:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
 .vp-play:hover .watch-play svg { transform: scale(1.08); }
 .vp-desc { margin: var(--space-3) var(--space-4) var(--space-1); color: var(--ink-muted); font-size: 14.5px; }
+.vm-player .listen-row { margin: 0 var(--space-4) var(--space-1); } /* the video's Listen button (openspec explanation-audio 4.3) */
 .vp-foot { margin: 0 var(--space-4) var(--space-3-5); font-size: 14px; } .vp-foot a { color: var(--sky-strong); font-weight: 700; }
 .watch-play { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; }
 .watch-play svg { width: 58px; height: 58px; filter: drop-shadow(0 2px 6px rgba(0,0,0,.45)); background: rgba(21,27,43,.55); border-radius: var(--radius-round); padding: var(--space-1-5); }
