@@ -110,28 +110,36 @@ const sw = (id, cls, label, on, note = '') => `<button type="button" class="md-s
 export function mountSound(slot, { signal, idp = 'vm', shell = false } = {}) {
   if (!slot) return;
   const id = k => idp + k;
+  /* Only the pill on page load; the panel's contents are drawn and wired on its first open (#174 perf: no first-load
+     main-thread work for a panel nobody has opened) */
   slot.innerHTML = `<button type="button" class="vm-mbtn${shell ? ' vm-mbtn--sm' : ''}" id="${id('MBtn')}" aria-expanded="false" aria-controls="${id('MPanel')}" aria-label="Calm and sound">${NOTE}<span class="lbl" aria-hidden="true">Calm</span><span class="vm-eq" aria-hidden="true"><i></i><i></i><i></i></span></button>
-    <div class="vm-mpanel md-card" id="${id('MPanel')}" role="group" aria-label="Calm and sound" hidden><b class="vm-mt">Calm and sound</b>
+    <div class="vm-mpanel md-card" id="${id('MPanel')}" role="group" aria-label="Calm and sound" hidden></div>`;
+  const btn = slot.querySelector('.vm-mbtn'), panel = slot.querySelector('.vm-mpanel');
+  const sync = () => { btn.classList.toggle('on', isPlaying()); slot.querySelectorAll('[data-t]').forEach(b => b.setAttribute('aria-pressed', String(playing === b.dataset.t))); };
+  const calm = () => { btn.classList.toggle('calm', calmOn()); const c = slot.querySelector('.vm-calm'); if (c) c.setAttribute('aria-checked', String(calmOn())); };
+  const close = (focus = false) => { panel.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (focus) btn.focus(); };
+  let built = false;
+  const build = () => {
+    built = true;
+    panel.innerHTML = `<b class="vm-mt">Calm and sound</b>
     ${shell ? '' : sw(id('Calm'), 'vm-calm', 'Calm', calmOn(), 'No clocks in Practice, and nothing moves.')}
     ${sw(id('Motion'), 'vm-motion', 'Pause motion', motionPaused())}
     <b class="vm-mt vm-mt--sub">Calm music</b><p class="mq-small">Gentle sounds made live in your browser. They never start by themselves.</p>
     <div class="vm-tracks" role="group" aria-label="Choose music">${TRACKS.map(t => `<button class="vm-track" data-t="${t.id}" aria-pressed="false"><b>${t.name}</b><small>${t.note}</small></button>`).join('')}</div>
     <div class="vm-mrow"><button class="md-btn md-btn--sm vm-stop" id="${id('Stop')}">Stop</button><label class="vm-vol">Volume <input type="range" min="0" max="1" step="0.05" value="${volume()}" id="${id('Vol')}"></label></div>
     ${shell ? '' : `<label class="vm-bgt"><input type="checkbox" id="${id('Bg')}" ${bgOn() ? 'checked' : ''}> Moving background</label>
-    <details class="vm-about"><summary>What is in the background?</summary><ul>${BG_NOTES.map(([h, b]) => `<li><b>${h}</b> ${b}</li>`).join('')}</ul></details>`}</div>`;
-  const btn = slot.querySelector('.vm-mbtn'), panel = slot.querySelector('.vm-mpanel');
-  const sync = () => { btn.classList.toggle('on', isPlaying()); slot.querySelectorAll('[data-t]').forEach(b => b.setAttribute('aria-pressed', String(playing === b.dataset.t))); };
-  const calm = () => { btn.classList.toggle('calm', calmOn()); const c = slot.querySelector('.vm-calm'); if (c) c.setAttribute('aria-checked', String(calmOn())); };
-  const close = (focus = false) => { panel.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (focus) btn.focus(); };
-  on(btn, 'click', e => { e.stopPropagation(); const open = panel.hidden; panel.hidden = !open; btn.setAttribute('aria-expanded', String(open)); }, signal);
-  on(document, 'click', e => { if (!panel.hidden && !slot.contains(e.target)) close(); }, signal);
-  on(document, 'keydown', e => { if (e.key === 'Escape' && !panel.hidden) { e.preventDefault(); close(true); } /* consumed: a round's own Escape (skip a replay) ignores a prevented key */ }, signal);
-  slot.querySelectorAll('[data-t]').forEach(b => on(b, 'click', () => (playing === b.dataset.t ? stop() : play(b.dataset.t)), signal));
-  on(slot.querySelector('.vm-stop'), 'click', stop, signal);
-  on(slot.querySelector('input[type="range"]'), 'input', e => setVolume(+e.target.value), signal);
-  const bgBox = slot.querySelector('.vm-bgt input'); if (bgBox) on(bgBox, 'change', e => setBg(e.target.checked), signal);
-  on(slot.querySelector('.vm-motion'), 'click', () => setMotionPaused(!motionPaused()), signal);
-  const c = slot.querySelector('.vm-calm'); if (c) on(c, 'click', () => setCalm(!calmOn()), signal);
+    <details class="vm-about"><summary>What is in the background?</summary><ul>${BG_NOTES.map(([h, b]) => `<li><b>${h}</b> ${b}</li>`).join('')}</ul></details>`}`;
+    on(document, 'click', e => { if (!panel.hidden && !slot.contains(e.target)) close(); }, signal);
+    on(document, 'keydown', e => { if (e.key === 'Escape' && !panel.hidden) { e.preventDefault(); close(true); } /* consumed: a round's own Escape (skip a replay) ignores a prevented key */ }, signal);
+    slot.querySelectorAll('[data-t]').forEach(b => on(b, 'click', () => (playing === b.dataset.t ? stop() : play(b.dataset.t)), signal));
+    on(slot.querySelector('.vm-stop'), 'click', stop, signal);
+    on(slot.querySelector('input[type="range"]'), 'input', e => setVolume(+e.target.value), signal);
+    const bgBox = slot.querySelector('.vm-bgt input'); if (bgBox) on(bgBox, 'change', e => setBg(e.target.checked), signal);
+    on(slot.querySelector('.vm-motion'), 'click', () => setMotionPaused(!motionPaused()), signal);
+    const c = slot.querySelector('.vm-calm'); if (c) on(c, 'click', () => setCalm(!calmOn()), signal);
+    sync();
+  };
+  on(btn, 'click', e => { e.stopPropagation(); if (!built) build(); const open = panel.hidden; panel.hidden = !open; btn.setAttribute('aria-expanded', String(open)); }, signal);
   on(document, 'vmcalm', calm, signal);
   onAbort(signal, onChange(sync)); sync(); calm();
 }

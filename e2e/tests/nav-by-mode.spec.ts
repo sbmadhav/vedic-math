@@ -233,6 +233,7 @@ test.describe('Calm and sound', () => {
     await expect(page.locator('html')).toHaveClass(/motion-paused/);
     await shell.locator('#stExit').click();
     await expect(page.locator('.play-shell')).toHaveCount(0);
+    await page.locator('#vmMBtn').click(); /* the panel is drawn on its first open */
     await expect(page.locator('#vmMotion')).toHaveAttribute('aria-checked', 'true');
   });
 });
