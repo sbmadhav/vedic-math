@@ -1,6 +1,7 @@
 import type { BrowserContext, Page, Route } from '@playwright/test';
 import { test, expect, APP, open, cloudLog, chromiumOnly, FIREBASE_SDK, FIREBASE_AUTH, FIRESTORE, showWorld, needsWorldBoards } from './fixtures';
 import { fakeAudio, audioLog } from './audio-fake';
+import { fillAnswer } from './split-kit';
 
 /* Offline: /sw.js (scope /play/) saves the app after one visit, so every route, the
    Dojo and the games keep working without a connection, and the leaderboards fall back to this device.
@@ -88,6 +89,28 @@ test('the worker registers with scope /play/, caches under lvm-, and every preca
   for (const u of modules) expect(saved, `${u} is saved for offline use`).toContain(u);
 });
 
+/* The Installed app opens at the manifest's start_url, and its shortcuts at their own URLs (openspec change install-app):
+   after one visit online, each opens offline from the saved shell, with the install module precached */
+test('the installed app\'s start_url and shortcuts open offline after one visit', async ({ page, context, request }) => {
+  const manifest = await (await request.get('/manifest.webmanifest')).json();
+  await open(page);
+  await workerReady(page);
+  const saved = await page.evaluate(async prefix => {
+    const name = (await caches.keys()).filter(k => k.startsWith(prefix) && k !== prefix + 'voice').pop()!;
+    return (await (await caches.open(name)).keys()).map(r => new URL(r.url).pathname);
+  }, OWN_PREFIX);
+  for (const f of ['/js/install.js', '/js/install-rules.js', '/js/prompt-slot.js', '/icons/maskable-192.png']) expect(saved, f).toContain(f);
+  await goOffline(context);
+  await expectOffline(page);
+  for (const url of [manifest.start_url, ...manifest.shortcuts.map((s: { url: string }) => s.url)]) {
+    const tab = await context.newPage();
+    const res = await tab.goto(url);
+    expect(res?.fromServiceWorker(), `${url}: the page came from the worker`).toBe(true);
+    await expect(tab.locator('#view h1, #view h2').first(), `${url} renders offline`).toBeVisible();
+    await tab.close();
+  }
+});
+
 test.describe('first visit', () => {
   test.use({ seedMode: null });
 
@@ -95,7 +118,7 @@ test.describe('first visit', () => {
     test.setTimeout(120_000);
     await page.goto(APP);
     await page.locator('.mode-card[data-mode="pro"]').click();
-    await expect(page.locator('h1.home-h')).toHaveText('Train your mental math');
+    await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
     await workerReady(page);
     await goOffline(context);
     await expectOffline(page);
@@ -152,7 +175,7 @@ test('a Dojo kata and a game play offline, and the progress persists', async ({ 
   await expect(page.locator('#view h1')).toContainText('Kata 1');
   const answers = await page.evaluate(async () => (await e2eMod('levels')).kata('sq5', 1).problems.map((p: { answer: unknown }) => String(p.answer)));
   for (const a of answers) {
-    await page.locator('#kata .ans-in').fill(a);
+    await fillAnswer(page.locator('#kata'), a); /* the two slots of a Trick built in parts (openspec working-memory-scaffolds) */
     await page.locator('#kGo').click();
     await expect(page.locator('#kSay')).toHaveClass(/\bok\b/);
     await page.locator('#kGo').click();

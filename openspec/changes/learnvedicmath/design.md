@@ -71,7 +71,7 @@ See the proposal's Out of scope. Also: no framework, no bundler (the house rule 
 | `/manifest.webmanifest` | `manifest.webmanifest` | Scope `/play/` |
 | `/.well-known/security.txt`, `/robots.txt`, `/sitemap.xml`, `/404.html` | `site/` | Written or copied by the build |
 
-- `build.py` keeps one `BASE = "/"` and an `APP = "/play/"`; the import check becomes "relative or absolute path inside `/js/`". The CLAUDE.md rule "Every page URL starts with `/vedic-math/`" becomes "Module imports are relative or absolute paths inside `/js/`; the game is at `/play/`".
+- `build.py` keeps one `BASE = "/"` and an `APP = "/play/"`; the import check becomes "relative or absolute path inside `/js/`". The AGENTS.md rule "Every page URL starts with `/vedic-math/`" becomes "Module imports are relative or absolute paths inside `/js/`; the game is at `/play/`" (the import rule now lives in `CODING_STANDARDS.md`).
 - PR #47's on-demand stylesheets keep working: `play_css` keys change from `/vedic-math/css/...` to `/css/...`.
 - Why not keep `index.html` at the root and serve the game at `/`? Decision 2 puts a static landing page at `/`, and a separate shell at `/play/` keeps the landing page free of the 34-module graph.
 
@@ -132,7 +132,7 @@ Crawlers and first-time visitors (no storage) see the landing page. The script r
 - `theme/header.html` is derived from v2.1.0's `header.html` with two edits: no Explore button, and the brand's label says "Learn Vedic Math, home" and links to `/?home`. The pages compose it with the vendored `compose.py`; CI runs `compose.py --check` on every page. The header records the upstream version it came from.
 - Fonts: the five `woff2` files move to `fonts/` with their SIL Open Font License texts; one `@font-face` set in `theme/fonts.css` (the duplicate inline block in today's `index.html` goes, design-audit item 2); `index.html`s preload Nunito Sans and Fredoka.
 - Explore menu: removed with `/assets/explore.js`. Its Pause motion switch (WCAG 2.2.2, `html.motion-paused`) moves into the app: a switch on the Me page and in the music panel, saved on the device under `motion-paused`, applied before paint by the same inline script that applies the theme. `fx.motionOff()` keeps reading the class.
-- The CLAUDE.md rules about the Explore button and `/assets/explore.js` are removed; the rule about `/assets/analytics.js` becomes "`/js/analytics.js`".
+- The AGENTS.md rules about the Explore button and `/assets/explore.js` are removed; the rule about `/assets/analytics.js` becomes "`/js/analytics.js`" (the page chrome rules now live in `CODING_STANDARDS.md`).
 - No "Made by" credit line on any page (owner, L6). The operator is named only where the law needs it: the operator details in the privacy policy.
 
 ### D7. Service worker re-scoped
@@ -174,7 +174,7 @@ Crawlers and first-time visitors (no storage) see the landing page. The script r
 
 **Export page (`https://sbmadhav.com/vm-export/`, user-site repo, permanent)**: opened only as a popup by a click on `/import/`. It checks `window.opener` exists and that a `{ type: 'lvm-export-request' }` message comes from `event.origin === 'https://learnvedicmath.com'`, packs the same payload with the same allow-list (a copy of `handoff-schema.js`, checked by a test in this repo against the published copy), posts it with `targetOrigin` `https://learnvedicmath.com` and closes. It is outside `/vedic-math/`, so it keeps working after the Phase C 301, and it reads the same localStorage (storage is per origin, not per path). It sends no analytics except a `move/export/<sent|empty>` count.
 
-**Backup code**: Me page "Copy backup code" and "Restore from code" cover every Player on the device (the same payload, without the size cap, as text). `importData` stops accepting anything the schema rejects (today it only checks that `skills` is an object). Old single-Player codes are still accepted through the same validator.
+**Backup code**: Me page "Copy backup code" and "Restore from code" cover every Player on the device (the same payload, without the size cap, as text; `from: 'learnvedicmath.com'`, which the validator accepts next to `sbmadhav.com`, so a code the moved page shows restores here too). `importData` stops accepting anything the schema rejects (today it only checks that `skills` is an object). Old single-Player codes are still accepted through the same validator: read as the packer reads a device (`readDevice`, unknown fields and markup left behind), then validated. The Me page shows the same prompt as `/import/` before writing (Bring it or Not now without progress here; Keep this device's, Use the code's or Keep both with it), writes through `applyHandoff` without `vm.migratedAt` (a restore is not a move), and reloads so every setting and Player is read afresh.
 
 **Old worker**: the Phase B deploy of the old origin ships the KILL `sw.js`. An online visit already gets the new page (the old worker fetches navigations network first, with a 3.5 s timeout), the moved page unregisters at once, and the browser's update check installs the KILL worker for tabs that never reach the page. After Phase C, a worker that never updated still forwards navigations to the network, which answers 301, so the browser follows it; offline it shows the old saved app, which is harmless.
 
@@ -202,7 +202,7 @@ Crawlers and first-time visitors (no storage) see the landing page. The script r
 
 - GoatCounter with a new site code (`learnvedicmath`) on goatcounter.com, script served from this site. Event names stay as they are (`math/...`), because the new site code starts empty. The theme event becomes `math/theme/<scheme>`.
 - Cloudflare Web Analytics for traffic and Core Web Vitals: page loads only (hash route changes are not tracked by it, which is fine: GoatCounter counts routes).
-- Hand-off buckets: `math/handoff/<accepted|replaced|merged|kept|declined|invalid|error|popup>` on the new site, `move/handoff/<sent|empty|too-big>` and `move/export/<sent|empty>` on sbmadhav.com. These decide when Phase B ends (D13).
+- Hand-off buckets (the analytics spec's list): `math/handoff/<accepted|replaced|kept|declined|invalid|too-big|popup>` on the new site, one per visit to `/import/` and only after the fragment is gone; `move/handoff/<sent|empty|too-big>` and `move/export/<sent|empty>` on sbmadhav.com. Keep both counts as `accepted` (the old site's Players came in and nothing here was lost); a browser whose storage would not take the progress counts as `too-big`, like a link over a cap; a visit with no payload in the link is not a hand-off and sends nothing. These decide when Phase B ends (D13).
 - PostHog later, only cookieless (`cookieless_mode: 'always'`, `person_profiles: 'never'`, no autocapture, no replay, no surveys, no `identify()`, discard IP), and only after the privacy policy names it. A separate change.
 - Never Google Analytics.
 

@@ -12,7 +12,7 @@ import { GAMES, LEVELS_PER_GAME } from '../js/games.js';
 import { SUTRAS, SUBSUTRAS } from '../js/sutras.js';
 import * as LV from '../js/levels.js';
 
-const N = { skills: 114, tricks: TRICKS.length, belts: BELTS.length, katasPer: LV.KATAS_PER_TRICK, kataCount: LV.KATA_COUNT, sutras: SUTRAS.length, subsutras: SUBSUTRAS.length,
+const N = { skills: 115, tricks: TRICKS.length, belts: BELTS.length, katasPer: LV.KATAS_PER_TRICK, kataCount: LV.KATA_COUNT, sutras: SUTRAS.length, subsutras: SUBSUTRAS.length,
   games: GAMES.length, levelsPerGame: LEVELS_PER_GAME, chapters: LV.TOPICS.length, perChapter: LV.PER_CHAPTER, challenges: LV.CHALLENGE_COUNT, badges: 24, videoMinutes: 12, starsPerBelt: 9 };
 const ALL = sections(N);
 const appSrc = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
@@ -61,7 +61,7 @@ test('every Try it link, in every Mode, opens a real route with a real id', () =
   for (const mode of MODES) for (const s of sectionsFor(mode, N)) {
     const t = tryFor(s, mode); if (!t) continue;
     assert.ok(t.label && typeof t.label === 'string', `${s.id} has a label`);
-    if (t.action) { assert.ok(['tour', 'music'].includes(t.action), `${s.id}: ${t.action}`); continue; }
+    if (t.action) { assert.ok(['tour', 'music', 'install'].includes(t.action), `${s.id}: ${t.action}`); continue; }
     for (const h of [t.href, t.more && t.more.href].filter(Boolean)) { assert.ok(routed(h), `${mode} ${s.id}: ${h} is not a route`); assert.ok(real(h), `${mode} ${s.id}: ${h} names nothing real`); }
   }
 });
@@ -119,11 +119,11 @@ test('the pictures use tokens only and are hidden from assistive technology', ()
 });
 
 /* ---------- The tour ---------- */
-test('the tour has at most six steps, and its last step points at the Guide link', () => {
+test('the tour has at most six steps, and its last step points at Find, the menu\'s help (Explorer: How to play)', () => {
   assert.ok(TOUR_STEPS.length >= 3 && TOUR_STEPS.length <= 6);
-  assert.equal(TOUR_STEPS.at(-1).options[0].sel, '.mq-nav a[href="#/guide"]');
+  assert.deepEqual(TOUR_STEPS.at(-1).options.map(o => o.sel), ['.mq-nav .nav-find', '.home-places a[href="#/guide"]']); /* openspec change play-nav-by-mode */
   const index = readFileSync(new URL('../play/index.html', import.meta.url), 'utf8');
-  assert.match(index, /<a href="#\/guide" data-match="\^#\/guide">Guide<\/a>/, 'the menu bar has the Guide link');
+  assert.match(index, /<a href="#\/find" class="nav-find" data-match="\^#\/\(find\|guide\)\(\/\|\$\)"/, 'the menu bar has the Find trigger, current on the guide too');
   assert.match(index, /<a class="mq-guide" href="#\/guide">How to use this app<\/a>/, 'the footer links the guide');
   for (const s of TOUR_STEPS) for (const o of s.options) for (const m of MODES) { assert.ok(say(o.title, m) && say(o.body, m), `${s.id} in ${m}`); }
 });

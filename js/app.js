@@ -17,31 +17,59 @@ import * as store from './store.js';
 import * as fx from './fx.js';
 import * as gm from './gamify.js';
 import * as cloud from './cloud.js';
-import { runArena, runChallenge } from './arena.js';
 import * as LV from './levels.js';
 import { LEVELS, LEVELS_PER_GAME, levelMedal, boardGame } from './games.js';
 import * as AD from './adapt.js';
-import { initAmbient, bgOn, setBg, setBgLevel, BG_NOTES, stop as stopMusic, isPlaying as musicOn } from './ambient.js';
-import { levelFor } from './sky-scene.js';
-import { on, later, every, child, onAbort } from './life.js';
+import { initAmbient, bgOn, setBg, setBgLevel, stop as stopMusic, isPlaying as musicOn } from './ambient.js';
+import { levelFor, BG_NOTES, ROOTS_INTRO } from './sky-scene.js';
+import { on, later, every, child, onAbort, lateImport } from './life.js';
 import * as metrics from './metrics.js';
 import { boltHTML } from './bolt.js';
 import { FAMILY_SVG } from './family.js';
+import { familyRound } from './family-hook.js';
 import { runStar } from './star.js';
+import { storyPlan, loadStories, storiesNow, LABEL as STORY_LABEL, ONLY as STORY_ONLY, ROUND as STORY_ROUND } from './story-plan.js';
+import { runTry, tryFor as tryOf, sutraOf, finished as tryFinished } from './try.js';
 import * as SKY from './sky.js';
 import { skyView, placesHTML } from './sky-view.js';
 import { openShell } from './shell.js';
 import { PLAY, SECTIONS, playFor, playIn, playOpen } from './play/catalog.js';
 import { ICONS as PLAY_ICONS } from './play/icons.js';
-import { place as playPlace, suspendAudio as playQuiet } from './play/kit.js';
 import { GROUPS, sectionsFor, tryFor, say, resolveTour, tourDue, tourState, setTourState } from './guide.js';
 import { sectionLines, buildIndex, rank, countOf, kindLabel } from './find.js';
+import { setOf as navSetOf, navHTML } from './nav.js';
 import { artFor } from './guide-art.js';
-import { startTour } from './tour.js';
-import { guideCounts } from './explain-lines.js';
+import { guideCounts, rootNote } from './explain-lines.js';
+import { ledeHTML } from './ledes.js';
 import { listenBtn, wireListen } from './listen.js';
 import { sayButton, respellHTML, devaHTML, wireSay } from './say.js';
 import { sutraAmbience, ambienceButton, wireAmbience, settingsHTML as ambienceSettingsHTML, wireSettings as wireAmbienceSettings } from './sutra-ambience.js';
+import { tag as sutraTag, loadTags, fillTags } from './sutra-tag-slot.js'; /* js/sutra-tag.js loads on demand (#126 review) */
+import { tagHTML, sutraOfTrick, SURFACES as TAG_SURFACES } from './sutra-tag-core.js'; /* its core, static: Home's Sutra door (#133 perf) */
+import { progressOf, progressLine, trickLine } from './sutra-progress.js';
+import { claim as claimSlot, release as releaseSlot } from './prompt-slot.js';
+import './voice-plan.js'; /* a level sooner (docs/perf/baseline.md) */
+
+/* Installing the app (openspec change install-app): js/install.js and its rules load after the first view has painted
+   (loadInstall, 100 ms after boot), so they are not in the static import graph the first paint waits for (design D12).
+   The browser's install prompt can arrive before that: it is caught here and handed to initInstall. withInstall(fn,
+   signal) runs fn with the module once it is here, unless signal (the view's) has aborted by then. */
+const boot = new AbortController(); /* the page's lifetime: never aborted */
+/* Off the first load's critical path (docs/perf/baseline.md); a failed load is asked for again */
+const onDemand = load => { let p; return () => (p ||= load().catch(e => { p = null; throw e; })); };
+const loadLinks = onDemand(() => import('./connectors.js')); /* the Trick animator's digit connectors, on first use */
+const loadArena = onDemand(() => import('./arena.js')), loadTour = onDemand(() => import('./tour.js')), loadKit = onDemand(() => import('./play/kit.js'));
+const withArena = (area, signal, fn) => loadArena().then(A => { if (!signal.aborted) fn(A); }, () => { if (!signal.aborted) area.innerHTML = '<p class="md-lede">The round did not load. Check your connection and try again.</p>'; });
+let install = null, installLoad = null, earlyPrompt = null; const installQueue = [];
+function loadInstall() {
+  return installLoad ||= import('./install.js').then(m => {
+    install = m; m.initInstall(earlyPrompt); earlyPrompt = null;
+    installQueue.splice(0).forEach(([fn, s]) => { if (!s || !s.aborted) fn(m); });
+    return m;
+  });
+}
+const withInstall = (fn, signal) => { if (install) fn(install); else installQueue.push([fn, signal]); };
+on(window, 'beforeinstallprompt', e => { if (!install) { e.preventDefault(); earlyPrompt = e; } }, boot.signal);
 
 const $ = (s, r = document) => r.querySelector(s);
 const view = $('#view');
@@ -76,16 +104,20 @@ const routes = [
   [/^#\/grade\/(\w+)$/, (m, ctx) => gradeView(m[1], ctx)],
   [/^#\/skill\/([\w-]+)$/, (m, ctx) => skillView(m[1], ctx)],
   [/^#\/mix\/(\w+)$/, (m, ctx) => mixView(m[1], false, ctx)],
+  [/^#\/mix\/(\w+)\/words$/, (m, ctx) => mixView(m[1], false, ctx, true)],
   [/^#\/run\/(\w+)$/, (m, ctx) => mixView(m[1], true, ctx)],
+  [/^#\/arcade$/, (m, ctx) => arcadeView(ctx)],
   [/^#\/(dojo|tricks)$/, (m, ctx) => dojoView(ctx)],
   [/^#\/katas\/([\w-]+)$/, (m, ctx) => katasView(m[1], ctx)],
   [/^#\/kata\/([\w-]+)\/(\d+)$/, (m, ctx) => kataView(m[1], +m[2], ctx)],
   [/^#\/star\/([\w-]+)\/(\d+)$/, (m, ctx) => starView(m[1], +m[2], ctx)],
+  [/^#\/try$/, (m, ctx) => tryView(ctx)],
   [/^#\/tower$/, (m, ctx) => towerView(ctx)],
   [/^#\/tower\/(\d+)$/, (m, ctx) => chapterView(+m[1], ctx)],
   [/^#\/challenge\/(\d+)$/, (m, ctx) => challengeView(+m[1], ctx)],
   [/^#\/sutras$/, (m, ctx) => sutrasView(ctx)],
-  [/^#\/sutras\/(\w+)$/, (m, ctx) => { sutrasView(ctx); openSutra(m[1], false); }],
+  /* A Deep dive reached from another page of the app (a Sutra tag) closes back to that page; from outside, to the Sutras page */
+  [/^#\/sutras\/(\w+)$/, (m, ctx) => { const inApp = !!render.from && render.from !== location.hash && !/^#\/star\//.test(render.from); sutrasView(ctx); openSutra(m[1], inApp); }], /* back from a Star its Try it yourself started: closing goes to the Sutras page, never back into the round */
   [/^#\/arena$/, (m, ctx) => arenaView(ctx)],
   [/^#\/duel$/, () => { location.replace('#/arena/party'); }], /* Duel became Party Mode (openspec play-experiences) */
   [/^#\/games$/, (m, ctx) => gamesView(ctx)],
@@ -114,6 +146,7 @@ function mount(fn) {
   const ctl = new AbortController(), mine = { ctl, destroy: null }; life = mine;
   wireListen(view, ctl.signal); /* every Listen button the view draws (openspec explanation-audio) */
   const out = fn({ signal: ctl.signal });
+  fillTags(view, ctl.signal); /* a Sutra tag drawn before js/sutra-tag.js was here */
   if (life === mine && out && typeof out.destroy === 'function') mine.destroy = out.destroy;
 }
 /* Which catalog ids a route-view event may name (metrics.routePath); anything else is sent as 'unknown' */
@@ -130,15 +163,15 @@ function render() {
   if (ms && document.querySelector('.sutra-grid')) { openSutra(ms[1], true); metrics.view(h, knownId); return; }
   if (h === '#/sutras' && sutraDlg && sutraDlg.open) { closeSutra(); metrics.view(h, knownId); return; }
   if (sutraDlg && sutraDlg.open) closeSutra(true);
-  const hit = routes.find(([re]) => re.test(h)), picker = !fx.mode() && !/^#\/(watch|sutras|find|guide(\/[\w-]+)?)$/.test(h); /* the guide and Find open without a mode too */
+  const hit = routes.find(([re]) => re.test(h)), picker = !fx.mode() && !/^#\/(watch|sutras(\/\w+)?|find|guide(\/[\w-]+)?)$/.test(h); /* the guide, Find and a Deep dive open without a mode too (openspec change sutras-first) */
   modePicker.pending = picker && hit && h !== '#/' ? h : null; /* the page asked for before a Mode, opened once one is picked (afterPick) */
   mount(ctx => (picker ? modePicker(ctx) : hit ? hit[1](h.match(hit[0]), ctx) : home(ctx)));
   const asSky = !picker && /^#?\/?$/.test(h) && SKY.skyOn(store.player()); /* home showed the Sky: the route view is sky */
   setBgLevel(levelFor(h, { picker, sky: asSky })); /* the full background sky on the Mode picker and home, a quiet one elsewhere */
   if ((location.hash || '#/') === h) metrics.view(h, knownId, picker, asSky); /* one anonymous route view (analytics spec); a view that redirected is counted when its target renders */
-  const lines = Object.fromEntries(sectionLines(fx.mode()).map(l => [l.href, l.plain])); /* one plain line per menu item (openspec site-header) */
-  document.querySelectorAll('.mq-nav a[href]').forEach(a => { a.setAttribute('aria-current', String(h === a.getAttribute('href') || (!!a.dataset.match && new RegExp(a.dataset.match).test(h)))); const line = lines[a.getAttribute('href')]; if (line) a.title = line; });
+  syncNav(h);
   chip();
+  if (navSay) { const words = navSay; navSay = null; fx.speak(words); } /* an Explorer tab's name, after the view it opened has drawn (render stops every voice first) */
   /* Focus the new view's heading, unless the view already put focus somewhere in itself (the Sky, back from a Star) */
   const head = view.querySelector('h1, h2'); if (head) { head.setAttribute('tabindex', '-1'); if (render.n++ && !view.contains(document.activeElement)) head.focus({ preventScroll: true }); }
   if (render.n > 1) window.scrollTo({ top: 0 });
@@ -146,12 +179,34 @@ function render() {
 render.n = 0;
 window.addEventListener('hashchange', render);
 
-/* Player chip in the nav: avatar and the bar to the next Title (no number) */
-function chip() {
-  const el = $('#mqChip'); if (!el) return; const p = store.player(), T = gm.titleInfo();
-  el.innerHTML = `<a href="#/me" class="mq-chip">${avatar(p, 30)}<span class="md-sr-only">${esc(p.name)}, ${T.title}</span><span class="mq-chip-t"><span class="mq-sparkbar"><i style="width:${pct(T.pct)}%"></i></span></span></a>`;
+/* ---------- The menu by Mode (openspec change play-nav-by-mode, js/nav.js) ----------
+   Challenger and Pro: Home, Learn, Arcade, Watch and the Find trigger; Explorer: Play, Learn and Me as big picture tabs.
+   The page holds the Challenger and Pro links as its first paint; the Mode's set is drawn when it differs. Each link
+   is marked current on the routes its zone holds and carries its section's one plain line as its tooltip. */
+const navEl = $('.mq-nav');
+const MAC = (() => { try { return /Mac|iP(hone|ad|od)/.test(navigator.platform || navigator.userAgent || ''); } catch (e) { return false; } })();
+let navSay = null; /* words an Explorer tab says once the view it opens has drawn */
+function syncNav(h = location.hash || '#/') {
+  if (!navEl) return;
+  const m = fx.mode(), set = navSetOf(m);
+  if (navEl.dataset.set !== set) { if (navEl.dataset.set || set !== 'big') navEl.innerHTML = navHTML(set); navEl.dataset.set = set; navEl.classList.toggle('mq-nav--x', set === 'explorer'); }
+  const kbd = navEl.querySelector('.nav-kbd'); if (kbd && MAC) kbd.textContent = '\u2318 K';
+  const lines = Object.fromEntries(sectionLines(m).map(l => [l.href, l.plain]));
+  navEl.querySelectorAll('a[href]').forEach(a => { a.setAttribute('aria-current', String(h === a.getAttribute('href') || (!!a.dataset.match && new RegExp(a.dataset.match).test(h)))); const line = lines[a.getAttribute('href')]; if (line) a.title = line; });
 }
-store.on(type => { if (type === 'sparks' || type === 'player') chip(); });
+/* An Explorer tab says its name when Read aloud is on: after the route it opens has drawn, or at once on its own page */
+if (navEl) on(navEl, 'click', e => {
+  const a = e.target.closest('a[data-say]'); if (!a || !fx.voiceOn()) return;
+  if ((location.hash || '#/') === a.getAttribute('href')) fx.speak(a.dataset.say); else navSay = a.dataset.say;
+}, boot.signal);
+
+/* Player chip in the nav: avatar, the bar of Sparks to the next Title (no number) and, for Challenger and Pro, the
+   highest Belt held. Nothing else: Stars, Medals and Badges are in the Trophy case on Me (openspec working-memory-scaffolds). */
+function chip() {
+  const el = $('#mqChip'); if (!el) return; const p = store.player(), T = gm.titleInfo(), belt = fx.mode() && fx.mode() !== 'explorer' ? gm.currentBelt() : null;
+  el.innerHTML = `<a href="#/me" class="mq-chip">${avatar(p, 30)}<span class="md-sr-only">${esc(p.name)}, ${T.title}${belt ? `, ${belt.name}` : ''}</span>${belt ? `<span class="mq-chip-belt" style="--belt:${belt.color}" data-belt="${belt.id}" aria-hidden="true"></span>` : ''}<span class="mq-chip-t"><span class="mq-sparkbar"><i style="width:${pct(T.pct)}%"></i></span></span></a>`;
+}
+store.on(type => { if (type === 'sparks' || type === 'player' || type === 'belt' || type === 'star') chip(); if (type === 'player') syncNav(); });
 /* The bar to the next Title, as a progressbar with its Sparks in words */
 function titleBar(T, cls = 'mq-sparkbar mq-sparkbar--big') {
   const text = T.next ? `${T.into} of ${T.need} Sparks to ${T.next}` : 'Top Title reached';
@@ -162,18 +217,18 @@ function titleBar(T, cls = 'mq-sparkbar mq-sparkbar--big') {
 function modePicker({ signal } = {}) {
   document.title = `Learn Vedic Math`;
   const p = store.player();
-  /* The hero says as little as it can (openspec first-visit): one headline, one short line, Try a trick as the one big
-     first action, and the Nikhilam Family beside it (js/family.js). The Mode cards follow. */
+  /* The hero says as little as it can (openspec try-trick-in-modes): one headline, one short line and the Nikhilam
+     Family (js/family.js). Then one question, who is playing, with the three Mode cards as its only buttons (openspec
+     change play-nav-by-mode: one step at a time; each Mode's Try a trick waits on its Home). No Mode is guessed. */
   view.innerHTML = `<section class="md-section mq-hero"><div class="md-wrap">
     <div class="mq-hero-in"><div class="mq-hero-t">
       <h1 class="md-heading">Fast, fun math for <span class="hl-word">every</span> brain</h1>
       <p class="md-lede mq-hero-sub">One trick, two minutes, no sign-up.</p>
-      <p class="try-it"><button type="button" class="md-btn md-btn--primary mq-try" id="tryBtn">Try a trick<svg class="mq-try-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></p>
     </div>${FAMILY_SVG}</div>
-    <h2 class="mq-h3 pick-h">Or pick who is playing</h2>
-    <div class="mode-pick">${Object.entries(fx.MODES).map(([id, m]) => `<button class="mode-card mode-card--${m.color}" data-mode="${id}"><span class="mode-ic" aria-hidden="true">${modeIcon(id)}</span><b>${m.name}</b><small>${m.ages}</small><span>${m.blurb}</span></button>`).join('')}</div>
+    <h2 class="mq-h3 pick-h">Pick who is playing</h2>
+    <div class="mode-pick">${Object.entries(fx.MODES).map(([id, m]) => `<button class="mode-card mode-card--${m.color}" data-mode="${id}"><span class="mode-ic" aria-hidden="true">${modeIcon(id)}</span><b>${m.name}</b><small>${m.ages}</small><span>${m.blurb}</span><span class="mode-go" aria-hidden="true">Start as ${m.name}<svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>`).join('')}</div>
     <p class="mq-note">Playing as <b>${esc(p.name)}</b>. Nicknames are made up for you, so no real names are ever needed. You can change who is playing any time.</p>
-    <p class="mq-note gd-pickhelp">Not sure where to start? <a href="#/guide">See how it works</a> or <a href="#/find">find something by name</a>.</p>
+    <p class="mq-note gd-pickhelp">Not sure which? <a href="#/guide">See how it works</a>.</p>
   </div></section>`;
   /* Picking a Mode is an everyday moment, not a win (openspec celebrations): the card pops, a few sparkles fly and the
      family cheers, then Home opens. Under no motion Home opens at once. */
@@ -186,9 +241,6 @@ function modePicker({ signal } = {}) {
     fx.pop(b, signal); fx.sparkle(b, { n: 10 }); fx.cheer(view.querySelector('.lv-family'), signal);
     later(go, 560, signal);
   }, signal));
-  /* Try a trick (openspec first-visit): Challenger as a guess, then the first Star of Bolt's path, the one Home offers */
-  /* The trial Star teaches before it asks (openspec try-trick-teaches): starView shows the worked example once for this route */
-  on($('#tryBtn'), 'click', () => { fx.setMode('challenger', { guess: true }); gm.startDay(); metrics.tryStart(); location.hash = starView.introFor = firstStarHref(); }, signal);
 }
 /* Where a Mode card goes: the page the visitor asked for before picking (a Find result, a link), when it is a route
    in this app the picked Mode can open (one of its Find entries), else Home. Kept in memory only, never stored. */
@@ -196,11 +248,6 @@ function afterPick(mode) {
   const to = modePicker.pending; modePicker.pending = null;
   if (!to || !/^#\/[\w\/-]+$/.test(to) || !routes.some(([re]) => re.test(to))) return '#/';
   return buildIndex({ mode, counts: guideCounts() }).some(e => e.href === to) ? to : '#/';
-}
-/* The Star Home's Play this Star offers: the next one on Bolt's suggested path (js/sky.js), or the first Trick's Star 1 */
-function firstStarHref() {
-  const nk = SKY.suggested(store.starStates(), SKY.startBeltOf(store.player())), ns = nk && SKY.parseKey(nk);
-  return ns ? `#/star/${ns.trick}/${ns.n}` : `#/star/${TRICKS[0].id}/1`;
 }
 function modeIcon(id) {
   const P = 'fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"';
@@ -210,7 +257,7 @@ function modeIcon(id) {
 /* ---------- Home: one per mode ---------- */
 function questsHTML() {
   const qs = gm.quests();
-  return `<div class="md-card quest-card"><h2 class="mq-h3">Daily quests</h2><ul class="quests">${qs.map(q => `<li class="${q.done ? 'done' : ''}"><span class="q-check" aria-hidden="true">${q.done ? '&#10003;' : ''}</span><span class="q-t">${q.label}<span class="mq-bar"><i style="width:${pct(q.prog / q.goal)}%"></i></span></span><span class="q-n">${q.prog}/${q.goal}</span></li>`).join('')}</ul><p class="mq-small">Sparks are the points you earn for right answers. Each quest is worth 25 bonus Sparks. New quests every day.</p></div>`;
+  return `<div class="md-card quest-card"><h2 class="mq-h3">Daily quests</h2><p class="listen-row">${listenBtn('from:.q-l', "today's quests")}</p><ul class="quests">${qs.map(q => `<li class="${q.done ? 'done' : ''}"><span class="q-check" aria-hidden="true">${q.done ? '&#10003;' : ''}</span><span class="q-t"><span class="q-l">${q.label}</span><span class="mq-bar"><i style="width:${pct(q.prog / q.goal)}%"></i></span></span><span class="q-n">${q.prog}/${q.goal}</span></li>`).join('')}</ul><p class="mq-small">Sparks are the points you earn for right answers. Each quest is worth 25 bonus Sparks. New quests every day.</p></div>`;
 }
 function heroStats() {
   const p = store.player(), T = gm.titleInfo();
@@ -228,7 +275,7 @@ function home(ctx = {}, { tiles = false } = {}) {
   const cont = last ? `<a class="mq-continue" href="#/skill/${last.id}">${ring(store.mastery(last.id), 40)}<span><small>Keep going</small><b>${both(last.title, last.kid)}</b></span><span class="mq-go" aria-hidden="true">&rarr;</span></a>` : '';
   let body = '';
   if (m === 'explorer') {
-    body = `<div class="play-grid play-grid--big">
+    body = `${sutraToSay()}<div class="play-grid play-grid--big">
       ${tile('#/game/balloons', 'Balloon pop', 'Count and pop', 'coral', 'balloon')}
       ${tile('#/skill/k-count', 'How many dots?', 'Count with ten frames', 'sun', 'dots')}
       ${tile('#/game/more-less', 'Which has more?', 'Big or small', 'teal', 'scale')}
@@ -237,43 +284,81 @@ function home(ctx = {}, { tiles = false } = {}) {
       ${tile('#/game/quick-look', 'Quick look', 'Flash dots', 'sun', 'eye')}
       ${tile('#/skill/k-shapes', 'Shape detective', 'Name that shape', 'teal', 'shape')}
       ${tile('#/arena', 'Race the clock', 'Tap fast!', 'coral', 'bolt')}
-    </div>
-    <p class="mq-cta"><button class="md-btn" id="voiceBtn" aria-pressed="${fx.voiceOn()}">${icon('speaker')} Read questions aloud: ${fx.voiceOn() ? 'on' : 'off'}</button> <a class="md-btn" href="#/watch">${icon('play')} Watch and sing</a></p>`;
+    </div>${tryCard(m)}
+    <p class="mq-cta"><button class="md-btn" id="voiceBtn" aria-pressed="${fx.voiceOn()}">${icon('speaker')} Read questions aloud: ${fx.voiceOn() ? 'on' : 'off'}</button> <a class="md-btn" href="#/watch">${icon('play')} Watch and sing</a></p>
+    <nav class="home-places" aria-label="More places"><span>More places:</span> <a class="md-chip" href="#/games">All games</a> <a class="md-chip" href="#/sutras">The sutras</a> <a class="md-chip" href="#/guide">How to play</a> <a class="md-chip" href="#/find">Find</a></nav>`; /* Explorer's menu has three tabs (openspec change play-nav-by-mode), so the places it left out are a tap away here */
   } else {
     /* Three doors first (openspec first-visit), each with one plain line that says what its word means; the rest of the
-       tiles wait under More ways to play. Challenger leads with the next Star, Pro with today's Arena round. */
+       tiles wait under More ways to play. */
     const belt = gm.currentBelt(), bp = gm.beltProgress(), earned = bp.filter(b => b.earned).length, next = bp.find(b => !b.earned), nk = SKY.suggested(store.starStates(), SKY.startBeltOf(store.player())), ns = nk && SKY.parseKey(nk), nt = ns && TRICKS.find(t => t.id === ns.trick);
-    const starCard = `<div class="md-card door dojo-card"><span class="md-tag md-tag--plum">Dojo</span><h2 class="mq-h3">${belt ? `You hold the ${belt.name}` : 'Earn your white belt'}</h2>
-      ${nt ? `<p>Next Star: <b>${nt.title}, Star ${ns.n}</b></p>` : '<p>Every Star is lit. Legend!</p>'}
-      <p class="door-acts">${nt ? `<a class="md-btn md-btn--primary" href="#/star/${nt.id}/${ns.n}">Play this Star</a> ` : ''}<a class="md-btn" href="#/dojo">Open the Dojo</a></p>
-      <p class="door-line">A Star is a two-minute round of four questions on one speed trick. Light it to earn your belt in the Dojo, where the tricks live.</p>
+    /* The Sutra door first in both Modes (openspec change sutras-first): the next Star on Bolt's path shown as its
+       Sutra, with Play this Star (the one primary button), Learn the sutra and the Dojo's belts. Then the Arena and the
+       Skill map. The tag is text here: Learn the sutra is the door's link to the Deep dive. It is drawn with the first
+       paint from js/sutra-tag-core.js, so no placeholder moves the doors when js/sutra-tag.js arrives (#133 perf). */
+    const st = nt && sutraOfTrick(nt.id), ss = st && st.id;
+    const sutraDoor = `<div class="md-card door dojo-card sutra-door"><span class="md-tag md-tag--plum">${fx.t({ challenger: 'Your next sutra', pro: 'Next sutra' })}</span>
+      ${st ? tagHTML(st.id, { mode: m, relation: st.relation, link: false, cls: 'sutra-door-tag' }) : `<h2 class="mq-h3">${nt ? 'Your next Star' : 'Every Star is lit. Legend!'}</h2>`}
+      ${nt ? `<p>Next Star: <b>${nt.title}, Star ${ns.n}</b></p>` : ''}
+      <p class="door-acts">${nt ? `<a class="md-btn md-btn--primary" href="#/star/${nt.id}/${ns.n}">Play this Star</a> ` : ''}${ss ? `<a class="md-btn" href="#/sutras/${ss}" data-tag="home">Learn the sutra</a> ` : ''}<a class="md-btn" href="#/dojo">Open the Dojo</a></p>
+      <p class="door-line">${fx.t({ challenger: 'A sutra is a short rule that does a whole sum in a line or two. A Star is a two-minute round of four questions on one of its tricks.', pro: 'A sutra is a one-line rule from Bharati Krishna Tirtha\'s 1965 book that replaces a long method. A Star is a two-minute round of four questions on one of its tricks.' })}</p>
       <div class="belts-mini">${bp.map(b => `<span class="belt-mini${b.earned ? ' on' : ''}" style="--belt:${b.color}" title="${b.name}"></span>`).join('')}</div>
-      ${next ? `<p class="mq-small">${next.name}: ${next.lit} of ${gm.STARS_PER_BELT} Stars lit</p>` : ''}</div>`;
-    const arenaCard = `<div class="md-card door"><span class="md-tag md-tag--coral">Arena</span><h2 class="mq-h3">Today's round</h2>
-      <p class="door-line">Sixty seconds of mental arithmetic: products, squares and percents. Every Pro gets the same questions today, and the best scores go on the leaderboard.</p>
-      <p class="door-acts"><a class="md-btn md-btn--primary" href="#/arena">Play today's round</a></p></div>`;
+      <p class="mq-small">${belt ? `You hold the ${belt.name}.` : 'Light Stars to earn your white belt.'}${next ? ` ${next.name}: ${next.lit} of ${gm.STARS_PER_BELT} Stars lit` : ''}${m === 'pro' ? ` · ${earned} of ${BELTS.length} belts, ${litStars()} of ${SKY.PATH.length} Stars` : ''}</p></div>`;
     const door = (href, title, line, color, ic) => `<a class="md-card door door--${color}" href="${href}"><span class="play-ic" aria-hidden="true">${icon(ic)}</span><b>${title}</b><span class="door-line">${line}</span></a>`;
     const doors = m === 'challenger'
-      ? starCard + door('#/arena', 'Race in the Arena', 'Sixty seconds, the same questions for every Challenger today, and a leaderboard at the end.', 'coral', 'trophy') + door('#/learn', 'Learn a skill', 'Skills by grade, from counting to calculus, each with a hint and a worked answer.', 'sun', 'map')
-      : arenaCard + door('#/dojo', 'Train a trick in the Dojo', `${earned} of ${BELTS.length} belts · ${litStars()} of ${SKY.PATH.length} Stars lit. A Star is a two-minute round of four questions on one speed trick.`, 'plum', 'belt') + door('#/learn', 'Skill map', 'Algebra, geometry and calculus, each skill with a hint and a worked answer.', 'sky', 'map');
+      ? sutraDoor + door('#/arena', 'Race in the Arena', 'Sixty seconds, the same questions for every Challenger today, and a leaderboard at the end.', 'coral', 'trophy') + door('#/learn', 'Learn a skill', 'Skills by grade, from counting to calculus, each with a hint and a worked answer.', 'sun', 'map')
+      : sutraDoor + door('#/arena', "Today's Arena round", 'Sixty seconds of mental arithmetic: products, squares and percents. Every Pro gets the same questions today, and the best scores go on the leaderboard.', 'coral', 'trophy') + door('#/learn', 'Skill map', 'Algebra, geometry and calculus, each skill with a hint and a worked answer.', 'sky', 'map');
     const more = m === 'challenger'
       ? [tile('#/arena/party', 'Party Mode', 'Two to four players, one screen', 'sky', 'duel'), tile('#/games', 'Games', 'Times sprint, target, fractions', 'teal', 'game'), tile('#/sutras', 'Sutra cards', 'Collect all 29', 'plum', 'cards'), tile('#/watch', 'Watch and learn', 'Best trick videos', 'coral', 'play')]
       : [tile('#/sutras', 'Sutra deep dive', `${gm.collectedCount()} of ${SUTRAS.length + SUBSUTRAS.length} cards collected`, 'sun', 'cards'), tile('#/arena/party', 'Party Mode', 'Family math night', 'coral', 'duel'), tile('#/games', 'Puzzles and games', 'Hit the target and more', 'teal', 'game'), tile('#/watch', 'Watch shelf', '3Blue1Brown, Numberphile, more', 'sky', 'play')];
     const board = m === 'pro' ? `<div class="md-card board-card"><span class="md-tag md-tag--coral">Arena</span><h2 class="mq-h3">Today's leaderboard</h2><div id="homeBoard" class="lb-wrap"><p class="mq-small">Loading…</p></div>${parentNote()}</div>` : '';
-    body = `<div class="home-doors">${doors}</div>${board ? `<div class="home-2">${questsHTML()}${board}</div>` : questsHTML()}
+    body = `<div class="home-doors">${doors}</div>${tryCard(m)}${yourSutras(m, ss)}${heroStats()}${board ? `<div class="home-2">${questsHTML()}${board}</div>` : questsHTML()}
       <details class="mq-more home-more" id="homeMore"${fx.homeMoreOpen() ? ' open' : ''}><summary>More ways to play</summary><div class="play-grid">${more.join('')}</div></details>`;
   }
+  /* Home leads with the Sutras (openspec change sutras-first): Explorer keeps the Player strip on top; Challenger and Pro
+     show it after the doors and "Your sutras" */
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
-    ${heroStats()}
-    <h1 class="md-heading home-h">${fx.t({ explorer: 'What do you want to play?', challenger: 'Ready to get faster?', pro: 'Train your mental math' })}</h1>
+    ${m === 'explorer' ? heroStats() : ''}
+    <h1 class="md-heading home-h">${fx.t({ explorer: 'What do you want to play?', challenger: 'Learn a sutra, then use it', pro: 'Mental math, the sutra way' })}</h1>
     <p class="mode-line">Mode: <b>${fx.MODES[m].name}</b>${store.modeGuessed() ? ', our guess for a first try' : ''} <a href="#/me">Change</a></p>
-    ${newHereHTML()}${cont}${body}
+    ${newHereHTML()}<div class="in-slot" id="installSlot"></div>${cont}${body}
   </div></section>`;
-  const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); home(); };
+  const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); mount(c => home(c, { tiles })); }; /* a fresh view signal, so the Install nudge, the tour and Say it on Explorer's Sutra card mount again */
   const hm = $('#homeMore'), keepMore = () => fx.setHomeMoreOpen(hm.open); /* remembered on this device */
   if (hm) { if (ctx.signal) on(hm, 'toggle', keepMore, ctx.signal); else hm.ontoggle = keepMore; } /* home() also runs with no view signal (an unknown Skill falls back to it): then a property on an element of this view */
+  const tc = $('[data-try-open]'), counted = () => metrics.tryStart(m); /* the Try a trick card counts as a Try a trick pressed */
+  if (tc) { if (ctx.signal) on(tc, 'click', counted, ctx.signal); else tc.onclick = counted; }
   if (m === 'pro') loadBoard($('#homeBoard'), `daily-${cloud.dayId()}-pro`, 5);
+  const sc = $('.sutra-say'); if (sc && ctx.signal) wireSay(sc, ctx.signal); /* Say it on Explorer's Sutra card: wired on the card, which every redraw replaces, so a redraw within the view adds no second listener */
   homeTour(ctx.signal);
+  withInstall(m => m.mountNudge($('#installSlot'), ctx.signal), ctx.signal); /* the Install nudge's one place on Home (openspec change install-app) */
+}
+
+/* "Your sutras" on Challenger and Pro Home (openspec change sutras-first, sutra-progress spec): the Sutra of the next
+   Star and up to three others the Player has started, in Bolt's path order, each a link to its Deep dive with its
+   progress, and a link to all 29. Read from the device only. */
+const PATH_SUTRAS = [...new Set(BELTS.flatMap(b => b.tricks).map(id => (sutraOfTrick(id) || {}).id).filter(Boolean))];
+function yourSutras(m, nextId) {
+  const begun = PATH_SUTRAS.filter(id => id !== nextId && sutraProgress(ALL_SUTRAS.find(c => c.id === id)).begun).slice(0, 3);
+  const ids = [...(nextId ? [nextId] : []), ...begun]; if (!ids.length) return '';
+  const row = id => { const c = ALL_SUTRAS.find(x => x.id === id), p = sutraProgress(c); return `<li><a class="your-sutra" href="#/sutras/${id}" data-tag="home"><b lang="sa-Latn">${esc(c.name)}</b><span class="sutra-tag-m">${esc(m === 'explorer' ? c.kid : c.meaning)}</span>${progressMeter(p, m)}${id === nextId ? '<span class="md-sr-only">, the sutra of your next Star</span>' : ''}</a></li>`; };
+  return `<div class="md-card your-sutras"><h2 class="mq-h3">Your sutras</h2><ul class="your-sutras-list">${ids.map(row).join('')}</ul><p class="door-acts"><a class="md-btn md-btn--sm" href="#/sutras">See all ${ALL_SUTRAS.length} sutras</a></p></div>`;
+}
+/* Explorer Home's "A sutra to say" (openspec change sutras-first): one Sutra a day, from those with a plain-number idea,
+   with Say it (its Name clip, after a tap) and its Explorer meaning */
+const SAY_SUTRAS = ['s1', 's14', 's2', 'u8', 'u12'];
+function sutraToSay() {
+  const d = new Date(), day = Math.floor((d.getTime() - d.getTimezoneOffset() * 60000) / 86400000), id = SAY_SUTRAS[day % SAY_SUTRAS.length], c = ALL_SUTRAS.find(x => x.id === id);
+  return `<div class="md-card sutra-say"><span class="md-tag md-tag--plum">A sutra to say</span><p class="sutra-say-name"><b lang="sa-Latn">${esc(c.name)}</b>${sayButton(id)}</p>${respellHTML(id, 'p')}<p class="sutra-say-kid">${esc(c.kid)}</p><p class="door-acts"><a class="md-btn" href="#/sutras/${id}" data-tag="home">See how it works</a></p></div>`;
+}
+
+/* Home's Try a trick card (openspec try-trick-in-modes): the Mode's own Try a trick, until the Player has finished it on
+   this device. Its button is not a primary one, so each Home keeps one primary action. */
+function tryCard(m) {
+  if (tryFinished(m)) return '';
+  const T = tryOf(m), S = sutraOf(m);
+  return `<div class="md-card try-card"><span class="md-tag md-tag--coral">Try a trick</span><h2 class="mq-h3">${T.title}</h2>
+    <p class="door-line">${fx.t({ explorer: 'A magic trick for times 11. Two minutes.', challenger: `Two minutes: learn it from the sutra ${S.name}, then try three.`, pro: `Two minutes: one sutra, ${S.name}, one worked example and three to try.` })}</p>
+    <p class="door-acts"><a class="md-btn" href="#/try" data-try-open>Try a trick</a></p></div>`;
 }
 
 /* The Skill the Keep going card offers, or null. Challenger Home leaves it out when it is the Trick of the Star its
@@ -289,11 +374,14 @@ function keepGoingSkill(m) {
 const litStars = () => { const { lit } = store.starStates(); return SKY.PATH.filter(k => lit[k]).length; };
 function skyHome({ signal } = {}) {
   document.title = `Learn Vedic Math`;
-  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}${newHereHTML()}<div id="skyHome"></div>
+  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}${newHereHTML()}<div class="in-slot" id="installSlot"></div><div id="skyHome"></div>${tryCard(fx.mode())}
     <p class="mode-line">Mode: <b>${fx.MODES[fx.mode()].name}</b> <a href="#/me">Change</a></p></div></section>`;
   const back = (render.from || '').match(/^#\/star\/([\w-]+)\/(\d)$/);
   const out = skyView($('#skyHome'), { signal, focus: back ? `${back[1]}:${back[2]}` : null });
+  const tc = $('[data-try-open]'), m = fx.mode(), counted = () => metrics.tryStart(m); /* the Sky is this Player's Home, so it keeps the Try a trick card too */
+  if (tc) { if (signal) on(tc, 'click', counted, signal); else tc.onclick = counted; }
   homeTour(signal);
+  withInstall(m => m.mountNudge($('#installSlot'), signal), signal);
   return out;
 }
 /* All places: the Sky as a plain list (#/places) */
@@ -317,15 +405,23 @@ function learnView() {
     ${crumbs([null, 'Skill map'])}
     <span class="md-tag md-tag--sky">Skill map</span>
     <h1 class="md-heading">Pick a level</h1>
-    <p class="md-lede">${SKILLS.length - TRICKS.length} skills from counting to calculus. Each has a picture-first lesson, endless practice and hints that teach the strategy. Fill every ring to level up.</p>
+    <p class="md-lede">${ledeHTML('learn', { n: guideCounts() })}</p>
+    ${learnSutras()}
     <h2 class="mq-strand">Suggested for ${m.name}</h2><div class="mq-grades">${mine.map(card).join('')}</div>
     <h2 class="mq-strand">Speed tricks</h2><div class="mq-grades">${card(gradeOf('V'))}</div>
     <details class="mq-more"><summary>All other levels</summary><div class="mq-grades">${rest.map(card).join('')}</div></details>
   </div></section>`;
 }
 
-function gradeView(g) {
-  const G = gradeOf(g); if (!G) return home();
+/* Learn holds the Sutras too (openspec change play-nav-by-mode): one card to the 29 Sutras with the Player's cards
+   collected, above the levels, so the menu needs no Sutras tab and the Sutras still come first */
+function learnSutras() {
+  const got = ALL_SUTRAS.filter(gm.collectedCard).length, ex = fx.mode() === 'explorer';
+  return `<a class="md-card door door--plum learn-sutras" href="#/sutras"><span class="play-ic" aria-hidden="true">${icon('cards')}</span><b>${ex ? 'The sutras: tiny rules with long names' : 'Start with the sutras'}</b><span class="door-line">${esc(sectionLines(fx.mode()).find(l => l.href === '#/sutras').plain)}.</span><small class="mq-small">${got} of ${ALL_SUTRAS.length} cards collected</small></a>`;
+}
+
+function gradeView(g, { signal } = {}) {
+  const G = gradeOf(g); if (!G) return home({ signal });
   if (g !== 'V') store.setGrade(g);
   document.title = `${G.pro} · Learn Vedic Math`;
   const list = skillsFor(g), st = gradeStats(g), strands = Object.keys(STRANDS).filter(k => list.some(s => s.strand === k));
@@ -334,7 +430,7 @@ function gradeView(g) {
     ${crumbs(['#/learn', 'Skill map'], [null, gradeLabel(g)])}
     <span class="md-tag md-tag--sky">${G.band}</span>
     <h1 class="md-heading">${gradeLabel(g)}</h1>
-    <p class="md-lede">${both(`${st.done} of ${st.total} skills mastered. A skill is mastered after at least 8 problems with a score of 85% or more, weighted toward recent answers.`, `You have ${st.done} of ${st.total} skills. Fill every ring!`)}</p>
+    <p class="md-lede">${both(ledeHTML('grade', st), ledeHTML('grade-kid', st))}</p>
     <div class="mq-gradebar"><span class="mq-bar mq-bar--big"><i style="width:${pct(st.done / (st.total || 1))}%"></i></span><a class="md-btn md-btn--primary md-btn--sm" href="#/run/${g}">${icon('bolt')} Endless run</a><a class="md-btn md-btn--sm" href="#/mix/${g}">Endless practice</a></div>
     <p class="mq-small">Every skill here makes new questions forever. Endless practice mixes them with hints; Endless run gives you 3 lives and counts how far you get.</p>
     <div class="mq-gradejump">${prev ? `<a class="md-chip" href="#/grade/${prev.id}">&larr; ${both(prev.pro, prev.kid)}</a>` : ''}${next ? `<a class="md-chip" href="#/grade/${next.id}">${both(next.pro, next.kid)} &rarr;</a>` : ''}</div>
@@ -345,7 +441,7 @@ function gradeView(g) {
 
 /* ---------- Skill: lesson plus practice ---------- */
 function skillView(id, { signal } = {}) {
-  const s = byId[id]; if (!s) return home();
+  const s = byId[id]; if (!s) return home({ signal });
   document.title = `${s.title} · Learn Vedic Math`;
   const S = STRANDS[s.strand], trick = s.trick && TRICKS.find(t => t.id === s.trick);
   const back = trick ? ['#/dojo', 'Dojo'] : ['#/grade/' + s.grade, gradeLabel(s.grade)];
@@ -355,20 +451,40 @@ function skillView(id, { signal } = {}) {
       <article class="mq-lesson md-card">
         <span class="md-tag${S.color === 'sun' ? '' : ' md-tag--' + S.color}">${both(S.pro, S.kid)}</span>
         <h1 class="mq-h1">${both(s.title, s.kid)}</h1>
-        ${trick ? `<div class="mq-sutra"><p class="mq-sutra-name"><b lang="sa-Latn">${trick.sutra}</b>${sayButton(trick.sutraId, { label: true })}</p>${respellHTML(trick.sutraId)}<span class="mq-sutra-mean">${trick.meaning}</span></div>` : ''}
+        ${trick ? sutraTag('trickTagHTML', trick.id, { mode: fx.mode(), size: 'full', surface: 'trick', cls: 'mq-sutra' }) : ''}
         <p class="mq-idea">${s.idea}</p>
         <p class="listen-row">${listenBtn('skill:' + s.id, 'the idea and how it works')}</p>
         <h2 class="mq-h3">How it works</h2>
         <ol class="mq-method">${(trick ? [trick.when] : s.method).map(m => `<li>${m}</li>`).join('')}</ol>
         ${trick ? starsHTML(trick) + animatorHTML(trick) : `<div class="mq-example" id="example"></div>`}
         ${videosFor(s, trick)}
+        <p class="lesson-next"><button type="button" class="md-btn" id="practiceNow">${icon('bolt')} ${fx.t({ explorer: 'Now you try', challenger: 'Practice it now', pro: 'Practice it now' })}</button></p>
       </article>
       <div class="mq-practice md-card" id="practice"></div>
     </div>
   </div></section>`;
   if (trick) mountAnimator(trick, signal); else showExample(s);
+  /* The lesson ends in its practice (openspec change play-nav-by-mode, audit task 3.4): Practice it now brings this
+     Skill's own practice into view and puts the answer in reach */
+  if (signal) on($('#practiceNow'), 'click', () => {
+    const box = $('#practice'); if (!box) return;
+    box.scrollIntoView({ block: 'start', behavior: fx.noMotion() ? 'auto' : 'smooth' });
+    const answer = () => box.querySelector('input:not([type="hidden"]), .pr-choice, button');
+    const f = answer(); if (f) { f.focus({ preventScroll: true }); return; }
+    /* Still getting a Word problem Skill's stories ready: focus the answer once the first question has drawn */
+    const mo = new MutationObserver(() => { const g = answer(); if (g) { mo.disconnect(); g.focus({ preventScroll: true }); } });
+    mo.observe(box, { childList: true, subtree: true }); onAbort(signal, () => mo.disconnect());
+  }, signal);
   if (trick && signal) wireSay(view, signal);
   fillWatch($('[data-watch-for]'), s, trick, signal);
+  /* A Word problem Skill waits the few milliseconds its stories take to load (openspec word-problems), so its first
+     question is one of them; every other Skill starts at once (its first question is never a Word problem) */
+  if (s.stories && !storiesNow()) {
+    let run = null; $('#practice').innerHTML = '<p class="mq-small">Getting the stories ready&hellip;</p>';
+    loadStories().then(() => { if (!signal || !signal.aborted) run = practice($('#practice'), () => s, { signal }); }).catch(() => { if (!signal || !signal.aborted) run = practice($('#practice'), () => s, { signal }); });
+    return { destroy: () => run && run.destroy() };
+  }
+  loadStories().catch(() => {});
   return practice($('#practice'), () => s, { signal });
 }
 /* "Watch it explained": a placeholder filled once the list loads (fillWatch), so the page never waits on it */
@@ -396,34 +512,42 @@ function showExample(s) {
 /* Typed something that is not a plain number on an arithmetic skill: not a try, no Sparks */
 const notAnswerMsg = () => fx.t({ explorer: 'Type just the answer, like 7.', challenger: 'Type just the answer, like 56 or 3/4.', pro: 'Type just the answer as a number, like 56 or 3/4.' });
 const KEYS = { basic: ['/', '-', '.'], alg: ['x', '^', '(', ')', '/', '-', '√', 'π'], set: [',', '-', '/', '√'], ineq: ['x', '<', '>', '<=', '>=', '-'], complex: ['i', '+', '-'] };
-/* One Practice session in root. signal: the view's. Each question runs under its own child signal, aborted by the next one. */
-function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signal } = {}) {
+/* One Practice session in root. signal: the view's. Each question runs under its own child signal, aborted by the next one.
+   only: every question a Word problem on the Skill picked (Only Word problems, openspec word-problems-more design D2);
+   pickSkill then picks only Skills that have one, and the stories have loaded. */
+function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signal, only = false } = {}) {
   let s, p, tries = 0, hints = 0, done = false, right = 0, total = 0, run = 0, life = lives;
   const session = child(signal); let question = null;
   const explorer = fx.mode() === 'explorer';
+  /* The Nikhilam Family helpers (openspec family-helpers): a no-op unless the Player turned them on in Me */
+  const fam = familyRound({ root, card: root, signal: session.signal, area: lives ? 'run' : 'practice', protect: '.pr-q, .mq-viz, .pr-form, .pr-say:not(:empty), .pr-sol:not([hidden])', ctx: () => ({ skill: s, problem: p }), hint: () => { const b = $('#prHint', root); if (!b || b.hidden || done) return false; b.click(); return true; } });
   /* One Dial per Skill seen this session (Endless practice mixes Skills), starting at the Player's Skill Rating.
      It picks each question's generator level (AD.levelFor) and is saved as the Skill Rating every 10 answers and
      when the session ends (openspec ratings spec). Mastery is recorded as before. */
   const dials = new Map(), mode = fx.mode();
+  /* Word problems (openspec word-problems): a share of the questions by Mode, once the Player has 20 saved answers */
+  const tales = storyPlan(mode || 'challenger', { answered: () => store.count('answers') });
+  /* Only Word problems: the Skill's own story (a Word problem Skill), else one in the Mode's style on its numbers */
+  const onlyStory = (sk, bare) => (bare.story ? null : storiesNow() && storiesNow().storyFor(sk, mode || 'challenger', { bare }));
   const dialFor = id => { if (!dials.has(id)) dials.set(id, new AD.Dial(AD.skillRating(id, mode))); return dials.get(id); };
   const saveDial = id => { const d = dials.get(id); if (!d || d.n < 4) return; AD.saveRating('skill:' + id, d); dials.set(id, new AD.Dial(d.d)); };
   const next = () => {
     if (question) question.abort();
     question = child(session.signal);
-    s = pickSkill(); const level = AD.levelFor(dialFor(s.id).lv); p = withPlain(s, s.gen(level)); tries = 0; hints = 0; done = false;
+    s = pickSkill(); const level = AD.levelFor(dialFor(s.id).lv), bare = s.gen(level); p = withPlain(s, (only ? onlyStory(s, bare) : tales.next(s, bare)) || bare); tries = 0; hints = 0; done = false;
     // Explorer mode: no typing; small whole-number answers become big buttons
     if (explorer && p.kind === 'num' && Number.isInteger(p.answer) && p.answer >= 0 && p.answer <= 200) { const near = [...new Set([p.answer + 1, p.answer - 1, p.answer + 2, p.answer + 10, p.answer - 2].filter(v => v >= 0))]; p = { ...p, kind: 'choice', choices: [p.answer, ...shuffle(near).slice(0, 3)].sort((a, b) => a - b).map(String), answer: String(p.answer) }; }
     const keyset = p.kind === 'expr' ? KEYS.alg : p.kind === 'set' ? KEYS.set : p.kind === 'ineq' ? KEYS.ineq : p.kind === 'complex' ? KEYS.complex : p.kind === 'num' && !['K', 1, 2].includes(s.grade) ? KEYS.basic : null;
     root.innerHTML = `
       <div class="pr-head"><span class="pr-meter">${ring(store.mastery(s.id), 36)}<span><small>${mix ? `<a href="#/skill/${s.id}">${both(s.title, s.kid)}</a>` : 'Your turn'}</small><b id="prPct">${pct(store.mastery(s.id))}% mastery</b></span></span><span class="pr-run" id="prRun">${run >= 2 ? `<b>${run}</b> in a row` : ''}</span>${lives ? `<span class="pr-lives" role="img" aria-label="${life} lives left">${'<i class="on"></i>'.repeat(life)}${'<i></i>'.repeat(lives - life)}</span>` : ''}<span class="pr-score" role="img" aria-label="${right} of ${total} right this session">${right}/${total}</span></div>
-      <div class="pr-q${plain(p.q).length > 60 ? ' long' : ''}" id="prQ" data-level="${level}">${p.q}</div>
+      ${p.story ? `<span class="md-tag md-tag--teal pr-story" id="prStory">${STORY_LABEL[mode] || STORY_LABEL.challenger}</span>` : ''}<div class="pr-q${plain(p.q).length > 60 ? ' long' : ''}${p.story ? ' pr-q--story' : ''}" id="prQ" data-level="${level}">${p.q}</div>
       ${p.viz ? `<div class="mq-viz">${p.viz}</div>` : ''}
       <form class="pr-form" id="prForm" autocomplete="off">${answerUI(p)}${keyset ? `<div class="pr-keys" role="group" aria-label="Symbol keys">${keyset.map(k => `<button type="button" class="pr-key" data-k="${esc(k)}">${esc(k)}</button>`).join('')}</div>` : ''}
-        <div class="pr-actions"><button class="md-btn md-btn--primary" id="prCheck">Check</button><button type="button" class="md-btn md-btn--sm" id="prHint">Hint</button><button type="button" class="md-btn md-btn--sm" id="prShow">Show me</button>${'speechSynthesis' in window ? `<button type="button" class="md-btn md-btn--sm" id="prHear">${icon('speaker')} Hear it</button>` : ''}</div>
+        <div class="pr-actions"><button class="md-btn md-btn--primary" id="prCheck">Check</button><button type="button" class="md-btn md-btn--sm" id="prHint">Hint</button><button type="button" class="md-btn md-btn--sm" id="prShow">Show me</button>${'speechSynthesis' in window ? `<button type="button" class="md-btn md-btn--sm" id="prHear">${icon('speaker')} Hear it</button>` : ''}${fam.askHTML}</div>
       </form>
       <div class="pr-say" id="prSay" role="status" aria-live="polite"></div>
       <div class="pr-sol" id="prSol" hidden></div>`;
-    wire(question.signal); fx.speakQuestion(p);
+    wire(question.signal); wireSplit(root, p, question.signal); fx.speakQuestion(p); fam.note({ type: 'question' });
     const first = root.querySelector('input, .pr-choice'); if (first && render.n > 1 && matchMedia('(pointer: fine)').matches) first.focus({ preventScroll: true });
   };
   const say = (html, tone = '') => { const b = $('#prSay', root); b.className = 'pr-say ' + tone; b.innerHTML = html ? `${boltFor(tone)}<div class="md-bubble">${html}</div>` : ''; };
@@ -434,6 +558,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
     /* For the Rating, only a first try with no hint counts as right */
     const dial = dialFor(s.id); dial.hit(ok && tries === 1 && !hints); if (dial.n >= 10) saveDial(s.id);
     metrics.answered(lives ? 'run' : 'practice', ok); /* untimed play only: no per-answer events in timed rounds */
+    if (p.story) metrics.story(lives ? 'run' : 'practice', ok);
     if (r.justMastered) track('mastered/' + s.id, 'Mastered: ' + s.title);
     $('#prPct', root).textContent = `${pct(store.mastery(s.id))}% mastery`; root.querySelector('.pr-meter .ring').outerHTML = ring(store.mastery(s.id), 36);
     const sc = root.querySelector('.pr-score'); sc.textContent = `${right}/${total}`; sc.setAttribute('aria-label', `${right} of ${total} right this session`); $('#prRun', root).innerHTML = run >= 2 ? `<b>${run}</b> in a row` : '';
@@ -446,7 +571,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
   const PRAISE = { explorer: ['Yay! You got it!', 'Super star!', 'Woohoo! Correct!', 'You are so smart!'], challenger: ['Correct!', 'Nailed it!', 'Boom! First try.', 'Lightning fast!'], pro: ['Correct.', 'Exactly right.', 'Clean.', 'Correct, first try.'] };
   /* Symbol keys and the "Want a hint?" link: one delegated handler for the whole session */
   on(root, 'click', e => {
-    const k = e.target.closest('.pr-key'); if (k) { fx.sfx('tap'); const inp = root.querySelector('.ans-in:focus') || root.querySelector('.ans-in'); if (inp) { const v = k.dataset.k, a = inp.selectionStart ?? inp.value.length; inp.value = inp.value.slice(0, a) + v + inp.value.slice(inp.selectionEnd ?? a); inp.focus(); inp.setSelectionRange(a + v.length, a + v.length); } return; }
+    const k = e.target.closest('.pr-key'); if (k) { fx.sfx('tap'); const inp = root.querySelector('.ans-in:focus') || root.querySelector('.ans-in:not([readonly])'); if (inp) { const v = k.dataset.k, a = inp.selectionStart ?? inp.value.length; inp.value = inp.value.slice(0, a) + v + inp.value.slice(inp.selectionEnd ?? a); inp.focus(); inp.setSelectionRange(a + v.length, a + v.length); } return; }
     if (e.target.closest('[data-hint]')) { e.preventDefault(); $('#prHint', root).click(); }
   }, session.signal);
   /* Per-question handlers, on the question's signal */
@@ -454,17 +579,17 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
     on($('#prForm', root), 'submit', e => {
       e.preventDefault();
       if ($('#prCheck', root).dataset.next) { fx.sfx('tap'); return next(); }
-      const res = grade(); if (res.empty) { say('Type an answer first.'); return; }
+      const res = grade(); if (res.partial) { say(res.partial); return; } if (res.empty) { say('Type an answer first.'); return; }
       if (res.notAnswer) { say(notAnswerMsg()); return; }
       tries++;
-      if (res.ok) { fx.sfx('ok'); const first = tries === 1 && !hints; const msg = first ? pick(PRAISE[fx.mode()] || PRAISE.challenger) : 'You got it!'; say(msg + (first ? ` <span class="pr-sparks">+${10 + Math.min(store.skill(s.id).streak + 1, 5)} Sparks</span>` : ''), 'ok'); fx.bounce($('#prSay .md-bubble', root), qs); fx.twinkle($('#prSay .pr-sparks', root), qs); if (explorer) fx.speak(msg, true); finish(true); return; }
-      fx.sfx('no'); fx.wiggle(root.querySelector('.pr-in, .pr-choices, .pr-fields'), qs);
+      if (res.ok) { fx.sfx('ok'); const first = tries === 1 && !hints; fam.note({ type: 'right', first }); const msg = first ? pick(PRAISE[fx.mode()] || PRAISE.challenger) : 'You got it!'; say(msg + (first ? ` <span class="pr-sparks">+${10 + Math.min(store.skill(s.id).streak + 1, 5)} Sparks</span>` : ''), 'ok'); fx.bounce($('#prSay .md-bubble', root), qs); fx.twinkle($('#prSay .pr-sparks', root), qs); if (explorer) fx.speak(msg, true); finish(true); return; }
+      fx.sfx('no'); fx.wiggle(root.querySelector('.pr-in, .pr-choices, .pr-fields, .pr-split'), qs); fam.note({ type: 'miss' });
       if (lives) { life--; reveal(); say(life ? `Oops! ${life} ${life === 1 ? 'life' : 'lives'} left. See how it works, then keep going.` : 'Out of lives!', 'no'); finish(false); const lv = root.querySelector('.pr-lives'); lv.innerHTML = '<i class="on"></i>'.repeat(life) + '<i></i>'.repeat(lives - life); lv.setAttribute('aria-label', `${life} lives left`); if (!life && onOver) { const b = $('#prCheck', root); b.textContent = 'See my score'; b.onclick = e => { e.preventDefault(); onOver(right); }; } return; }
       if (tries === 1) { say((res.msg ? res.msg + ' ' : '') + 'Not quite. Try once more.' + (p.hints[0] && !hints ? ' <button type="button" class="linkbtn" data-hint>Want a hint?</button>' : ''), 'no'); if (explorer) fx.speak('Not quite. Try again!', true); }
       else if (tries === 2) { hints = Math.max(hints, 1); const h = p.hints[Math.min(1, p.hints.length - 1)] || p.hints[0]; say((res.msg ? res.msg + ' ' : '') + `Hint: ${h}`, 'no'); if (explorer && h) fx.speak(h, true); } // read the hint that is shown
       else { reveal(); say('That one was tricky. See how it works, then try the next one.', 'no'); finish(false); }
     }, qs);
-    on($('#prHint', root), 'click', () => { if (done) return; const h = p.hints[Math.min(hints, p.hints.length - 1)]; hints++; say(`Hint: ${h}`); if (explorer) fx.speak(h, true); }, qs);
+    on($('#prHint', root), 'click', () => { if (done) return; const h = p.hints[Math.min(hints, p.hints.length - 1)]; if (p.story && hints === 0) metrics.storyAsking(); hints++; say(`Hint: ${h}`); if (explorer) fx.speak(h, true); fam.note({ type: 'hint' }); }, qs);
     on($('#prShow', root), 'click', () => { if (done) return; tries = Math.max(tries, 3); reveal(); say('Read the steps, then try the next one.'); finish(false); }, qs);
     const hear = $('#prHear', root); if (hear) on(hear, 'click', () => fx.speakQuestion(p, true), qs);
     root.querySelectorAll('.pr-choice').forEach(b => on(b, 'click', () => { if (done) return; root.querySelectorAll('.pr-choice').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); $('#prForm', root).requestSubmit(); }, qs));
@@ -472,37 +597,123 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
   const grade = () => {
     if (p.kind === 'choice') { const c = root.querySelector('.pr-choice[aria-pressed="true"]'); if (!c) return { empty: true }; return { ok: c.dataset.v === p.answer }; }
     if (p.kind === 'fields') { const ins = [...root.querySelectorAll('.ans-in')]; if (ins.some(i => !i.value.trim())) return { empty: true }; const rs = ins.map((i, k) => checkOne({ kind: 'num', answer: p.fields[k].answer, tol: p.tol }, i.value)); return { ok: rs.every(r => r.ok), msg: rs.find(r => r.msg)?.msg }; }
-    return checkOne(p, root.querySelector('.ans-in').value);
+    const t = typedAnswer(root); if (t.partial) return { partial: t.partial };
+    return checkOne(p, t.value);
   };
   next();
-  return { destroy: () => { [...dials.keys()].forEach(saveDial); session.abort(); } };
+  return { destroy: () => { [...dials.keys()].forEach(saveDial); fam.note({ type: 'leave' }); session.abort(); } };
+}
+/* Memory lock answer slots (openspec working-memory-scaffolds, split-answer spec): a Trick that writes its answer as a
+   left part and a right part (p.parts) gets a slot for each, for Challenger and Pro outside Word problems. The left part
+   locks (Enter or Lock), checking joins the two, and the one box stays a tap away (saved on this device as vm.split). */
+let splitHere = true; /* the choice for this page when storage is blocked, so the switch still works */
+const splitPref = () => { try { return localStorage.getItem('vm.split') !== 'one'; } catch (e) { return splitHere; } };
+const setSplitPref = two => { splitHere = two; try { if (two) localStorage.removeItem('vm.split'); else localStorage.setItem('vm.split', 'one'); } catch (e) {} };
+const canSplit = p => !!(p.parts && p.kind === 'num' && !p.story && fx.mode() && fx.mode() !== 'explorer');
+const slotsHTML = () => `<div class="pr-split" role="group" aria-label="Your answer in two parts" aria-describedby="prSplitNote">
+    <label class="pr-slot"><span>Left part</span><input class="ans-in pr-slot-in" data-slot="l" inputmode="numeric" spellcheck="false" autocapitalize="off"></label>
+    <button type="button" class="md-btn md-btn--sm pr-lock" data-lock aria-pressed="false" aria-label="Lock the left part">${icon('lock')}Lock</button>
+    <span class="pr-split-bar" aria-hidden="true"></span>
+    <label class="pr-slot"><span>Right part</span><input class="ans-in pr-slot-in" data-slot="r" inputmode="numeric" spellcheck="false" autocapitalize="off"></label>
+  </div><p class="mq-small pr-split-note" id="prSplitNote">Lock the left part, then work out the right part. <button type="button" class="linkbtn" data-split="one">Type it in one box</button></p>`;
+/* What the Player typed: the one box, or the two slots joined left then right ({ partial } when only one is filled) */
+function typedAnswer(root) {
+  const l = root.querySelector('.pr-slot-in[data-slot="l"]');
+  if (!l) { const i = root.querySelector('.ans-in'); return { value: i ? i.value : '' }; }
+  const a = l.value.trim(), b = root.querySelector('.pr-slot-in[data-slot="r"]').value.trim();
+  if (a && !b) return { value: '', partial: 'Now the right part.' };
+  if (!a && b) return { value: '', partial: 'Type the left part too.' };
+  return { value: a + b };
+}
+/* The slots' Lock and Enter, and the switch between slots and one box (redrawn in place, on the question's signal) */
+function wireSplit(root, p, signal) {
+  const sw = root.querySelector('[data-split]');
+  /* What is typed stays: the two parts become the one box's text, and the one box's text goes in the left slot */
+  if (sw) on(sw, 'click', () => {
+    const typed = [...root.querySelectorAll('.pr-ans .ans-in')].map(i => i.value.trim()).join('');
+    setSplitPref(sw.dataset.split === 'two'); fx.sfx('tap'); root.querySelector('.pr-ans').outerHTML = answerUI(p); wireSplit(root, p, signal);
+    const f = root.querySelector('.pr-ans .ans-in'); if (f) { f.value = typed; f.focus(); }
+  }, signal);
+  const l = root.querySelector('.pr-slot-in[data-slot="l"]'); if (!l) return;
+  const r = root.querySelector('.pr-slot-in[data-slot="r"]'), lock = root.querySelector('[data-lock]');
+  const set = v => { l.readOnly = v; l.closest('.pr-slot').classList.toggle('locked', v); lock.setAttribute('aria-pressed', String(v)); };
+  const doLock = () => { if (!l.value.trim()) { l.focus(); return; } set(true); fx.sfx('tap'); r.focus(); };
+  on(lock, 'click', () => { if (l.readOnly) { set(false); l.focus(); } else doLock(); }, signal);
+  on(l, 'keydown', e => { if (e.key !== 'Enter' || e.isComposing) return; e.preventDefault(); if (l.readOnly) r.focus(); else doLock(); }, signal);
 }
 function answerUI(p) {
+  if (canSplit(p)) return `<div class="pr-ans">${splitPref() ? slotsHTML() : `${oneBox(p)}<p class="mq-small pr-split-note"><button type="button" class="linkbtn" data-split="two">Split into parts</button></p>`}</div>`;
   if (p.kind === 'choice') return `<div class="pr-choices" role="group" aria-label="Choices">${p.choices.map(c => `<button type="button" class="md-chip pr-choice" aria-pressed="false" data-v="${esc(c)}">${c}</button>`).join('')}</div>`;
   if (p.kind === 'fields') return `<div class="pr-fields">${p.fields.map(f => `<label>${f.label}<input class="ans-in" inputmode="text" spellcheck="false"></label>`).join('')}</div>`;
+  return oneBox(p);
+}
+function oneBox(p) {
   const ph = { num: 'Your answer', expr: 'e.g. 3x^2 - 2x + 1', set: 'e.g. 2, -5', ineq: 'e.g. x < 4', complex: 'e.g. 3 + 2i', text: 'Your answer' }[p.kind] || 'Your answer';
   return `<div class="pr-in"><input class="ans-in" aria-label="Your answer" placeholder="${ph}" spellcheck="false" autocapitalize="off" inputmode="${p.kind === 'num' && Number.isInteger(p.answer) && p.answer >= 0 && !p.simplest ? 'numeric' : 'text'}">${p.unit ? `<span class="pr-unit">${p.unit}</span>` : ''}</div>`;
 }
 
-function mixView(g, isRun = false, { signal } = {}) {
-  const G = gradeOf(g); if (!G) return home();
+function mixView(g, isRun = false, { signal } = {}, words = false) {
+  const G = gradeOf(g); if (!G) return home({ signal });
   document.title = `${isRun ? 'Endless run' : 'Endless practice'}, ${G.pro} · Learn Vedic Math`;
-  const list = skillsFor(g);
+  const all = skillsFor(g), told = () => all.filter(s => storiesNow().hasStory(s, fx.mode() || 'challenger'));
+  /* Only Word problems (openspec word-problems-more D1, D2): the level's Skills that have one; it waits the few
+     milliseconds the stories take to load, as a Word problem Skill's page does, and a level with none opens the mix */
+  if (words && !storiesNow()) {
+    let run = null; view.innerHTML = '<section class="md-section mq-tight"><div class="md-wrap mq-narrow"><p class="mq-small">Getting the stories ready&hellip;</p></div></section>';
+    const go = () => { if (signal && signal.aborted) return; if (storiesNow()) run = mixView(g, false, { signal }, true); else location.replace('#/mix/' + g); };
+    loadStories().then(go, go);
+    return { destroy: () => run && run.destroy() };
+  }
+  if (words && !told().length) { location.replace('#/mix/' + g); return; }
+  const list = words ? told() : all;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs(['#/grade/' + g, gradeLabel(g)], [null, isRun ? 'Endless run' : 'Endless practice'])}
     <h1 class="md-heading">${isRun ? 'Endless run' : 'Endless practice'}: ${gradeLabel(g)}</h1>
-    <p class="md-lede">${isRun ? `Questions from every skill in this level, forever. You have 3 lives: how far can you go? Your best: <b>${store.best('run-' + g)}</b>.` : 'Questions from the whole level, all mixed up and never-ending, favoring skills in progress. Mixing topics is harder, and that is exactly why it makes learning stick.'}</p>
+    <p class="md-lede">${isRun ? `Questions from every skill in this level, forever. You have 3 lives: how far can you go? Your best: <b>${store.best('run-' + g)}</b>.` : words ? 'Only Word problems from this level, never-ending. Read what each story asks, make a plan, then solve it.' : 'Questions from the whole level, all mixed up and never-ending, favoring skills in progress. Mixing topics is harder, and that is exactly why it makes learning stick.'}</p>
+    ${isRun ? '' : '<div class="g-optrow mix-only" id="mixOnly" role="group" aria-label="Questions" hidden></div>'}
     <div class="mq-practice md-card" id="practice"></div></div></section>`;
-  let lastId = null;
+  /* The Mixed and Only Word problems choice, once the stories know which Skills have one (none on a level without) */
+  const offer = () => {
+    const box = $('#mixOnly'); if (!box || (signal && signal.aborted) || !storiesNow() || !told().length) return;
+    box.innerHTML = `<button class="md-chip" aria-pressed="${!words}" data-only="0">Mixed</button><button class="md-chip" aria-pressed="${words}" data-only="1">${STORY_ONLY[fx.mode()] || STORY_ONLY.challenger}</button>`;
+    box.hidden = false;
+    box.querySelectorAll('[data-only]').forEach(b => on(b, 'click', () => { const to = '#/mix/' + g + (b.dataset.only === '1' ? '/words' : ''); if (location.hash !== to) location.hash = to; }, signal));
+  };
+  let lastId = null; loadStories().then(() => { if (!isRun) offer(); }, () => {});
   return practice($('#practice'), () => {
     const going = list.filter(s => store.started(s.id) && !store.mastered(s.id)), pool = (going.length >= 2 && Math.random() < .7 ? going : list).filter(s => s.id !== lastId);
     const s = pick(pool.length ? pool : list); lastId = s.id; return s;
-  }, { mix: true, lives: isRun ? 3 : 0, onOver: right => {
+  }, { mix: true, only: words, lives: isRun ? 3 : 0, onOver: right => {
     store.bump('runs'); const isBest = store.setBest('run-' + g, right), sp = 10 + right * 3; store.addSparks(sp, 'run'); if (isBest && right) fx.confetti(90);
     $('#practice').innerHTML = `<div class="ar-result"><div class="md-stat"><div class="md-kicker">You reached</div><div class="md-value">${right}</div><p>${isBest && right ? 'New best run!' : `Best: ${store.best('run-' + g)}`} <span class="fx-sparks">+${sp} Sparks</span></p></div></div><p><button class="md-btn md-btn--primary" id="again">${icon('bolt')} Run again</button> <a class="md-btn" href="#/grade/${g}">Back to ${gradeLabel(g)}</a></p>`;
     $('#again').onclick = () => mount(ctx => mixView(g, true, ctx));
     fx.rollSparks($('#practice'), signal);
   }, signal });
+}
+
+/* ---------- Arcade (openspec change play-nav-by-mode): the menu's zone for playing ----------
+   One page with a card for each place to play, each with its section's plain line: the Dojo (solo practice of the
+   Tricks, not in Explorer), the Arena (the daily timed race) and Games, then Party Mode and the challenge tower. The
+   places keep their own routes; this page only reaches them. */
+function arcadeView() {
+  document.title = `Arcade · Learn Vedic Math`;
+  const m = fx.mode() || 'challenger', ex = m === 'explorer', lines = Object.fromEntries(sectionLines(m).map(l => [l.href, l.plain]));
+  const bp = gm.beltProgress(), belts = bp.filter(b => b.earned).length;
+  const door = (href, title, line, color, ic, extra = '') => `<a class="md-card door door--${color}" href="${href}"><span class="play-ic" aria-hidden="true">${icon(ic)}</span><b>${title}</b><span class="door-line">${line}</span>${extra}</a>`;
+  const doors = [
+    ex ? '' : door('#/dojo', fx.t({ challenger: 'Dojo: solo practice', pro: 'Dojo: solo practice' }), lines['#/dojo'], 'plum', 'belt', `<small class="mq-small">${belts} of ${BELTS.length} belts · ${litStars()} of ${SKY.PATH.length} Stars lit</small>`),
+    door('#/arena', fx.t({ explorer: 'Race the clock', challenger: 'Arena: the daily race', pro: 'Arena: the daily race' }), lines['#/arena'], 'coral', 'trophy'),
+    door('#/games', fx.t({ explorer: 'Games', challenger: 'Games', pro: 'Games and puzzles' }), lines['#/games'], 'teal', 'game')
+  ].join('');
+  const more = [tile('#/arena/party', 'Party Mode', 'Two to four players, one screen', 'sky', 'duel'), ex ? '' : tile('#/tower', 'Challenge tower', `${LV.CHALLENGE_COUNT.toLocaleString('en-US')} Arena challenges`, 'sun', 'trophy')].join('');
+  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
+    ${crumbs([null, 'Arcade'])}
+    <span class="md-tag md-tag--coral">Arcade</span>
+    <h1 class="md-heading">${fx.t({ explorer: 'What do you want to play?', challenger: 'Pick how to play', pro: 'Practice, race or play' })}</h1>
+    <p class="md-lede">${fx.t({ explorer: 'Race the clock or play a game.', challenger: 'Practice a trick on your own, race everyone in today\'s Arena, or play a game. Every right answer earns Sparks.', pro: 'Solo practice of the Tricks, the daily sixty-second race with its leaderboard, and number games. Every right answer earns Sparks.' })}</p>
+    <div class="home-doors arcade-doors">${doors}</div>
+    <h2 class="mq-strand">More ways to play</h2><div class="play-grid">${more}</div>
+  </div></section>`;
 }
 
 /* ---------- Dojo: belts of speed tricks ---------- */
@@ -513,15 +724,15 @@ function dojoView() {
     ${crumbs([null, 'Dojo'])}
     <span class="md-tag md-tag--plum">Vedic Dojo</span>
     <h1 class="md-heading">From white belt to <span class="hl-word">black belt</span></h1>
-    <p class="md-lede">${ex ? `${TRICKS.length} speed tricks from the sutras in Bharati Krishna Tirtha's 1965 book, in seven groups from white belt to black belt. Open a trick to watch it work step by step, practice it, and try its <b>${LV.KATAS_PER_TRICK} katas</b>, drills that get harder. <b class="dojo-ex">Belts and Stars come with Challenger and Pro.</b>` : `${TRICKS.length} speed tricks from the sutras in Bharati Krishna Tirtha's 1965 book, in seven belts. Each trick has three Stars. Light all 9 Stars of a belt's three tricks to earn it. Each trick also has a step-by-step animator, endless practice and <b>${LV.KATAS_PER_TRICK} katas</b>: numbered drills that get harder, ${LV.KATA_COUNT.toLocaleString('en-US')} in all. Finish one to open the next.`}</p>
+    <p class="md-lede">${ledeHTML('dojo', { mode: fx.mode(), n: guideCounts() })}</p>
     <p class="mq-small">${store.katasDoneWhere('k:')} of ${LV.KATA_COUNT.toLocaleString('en-US')} katas done</p>
     ${playShelf('dojo', 'Play with the tricks')}
     <div class="belt-row">${bp.map(b => `<span class="belt-chip${b.earned ? ' on' : ''}" style="--belt:${b.color}"><span class="belt-knot" aria-hidden="true"></span>${b.name}</span>`).join('')}</div>
     ${ex ? '' : `<p class="mq-small">${earned} of ${BELTS.length} belts earned.</p>`}
     <div class="dojo-path">${bp.map((b, i) => `<section class="dojo-belt${b.earned ? ' earned' : ''}">
       <h2 class="dojo-h"><span class="belt-swatch" style="--belt:${b.color}" aria-hidden="true"></span>${b.name}${ex ? '' : `<small>${b.lit}/${gm.STARS_PER_BELT} Stars</small>`}</h2>
-      <div class="dojo-nodes">${b.tricks.map(id => { const t = TRICKS.find(x => x.id === id), sid = 'v-' + id, [cls, lab] = status(sid); return `<div class="dojo-cell"><a class="dojo-node mq-${cls}" href="#/skill/${sid}">${ring(store.mastery(sid), 52)}<span><b>${t.title}</b><small lang="sa-Latn">${t.sutra}</small><em>${lab}</em></span></a><a class="dojo-katas" href="#/katas/${id}">${icon('belt')} Katas ${store.katasDoneWhere(`k:${id}:`)}/${LV.KATAS_PER_TRICK} done</a>${dojoStars(t)}</div>`; }).join('')}</div></section>`).join('')}</div>
-    <p class="mq-cta">${ex ? '' : `<a class="md-btn" href="#/sutras">Read about all 29 sutras</a> `}<a class="md-btn" href="#/arena">Test your speed in the Arena</a></p>
+      <div class="dojo-nodes">${b.tricks.map(id => { const t = TRICKS.find(x => x.id === id), sid = 'v-' + id, [cls, lab] = status(sid); return `<div class="dojo-cell"><a class="dojo-node mq-${cls}" href="#/skill/${sid}">${ring(store.mastery(sid), 52)}<span><b>${t.title}</b><em>${lab}</em></span></a>${sutraTag('trickTagHTML', id, { mode: fx.mode(), size: 'mini', surface: 'dojo' })}<a class="dojo-katas" href="#/katas/${id}">${icon('belt')} Katas ${store.katasDoneWhere(`k:${id}:`)}/${LV.KATAS_PER_TRICK} done</a>${dojoStars(t)}</div>`; }).join('')}</div></section>`).join('')}</div>
+    <p class="mq-cta"><a class="md-btn" href="#/sutras">Read about all 29 sutras</a> <a class="md-btn" href="#/arena">Test your speed in the Arena</a></p>
   </div></section>`;
 }
 
@@ -547,11 +758,11 @@ function levelMap(count, resultOf, hrefOf, { openAll = false, perRow = 0, isOpen
 }
 /* A finished Kata ({ done }) or game Level or tower challenge ({ medal }); noClock: played without the clock in Calm,
    where Medals measured against the clock are not given */
-function resultHTML(res, lines, nextHref, retryHref, backHref, backLabel) {
+function resultHTML(res, lines, nextHref, retryHref, backHref, backLabel, tag = '') {
   const kata = !('medal' in res), cleared = kata ? res.done : res.medal > 0;
   const head = kata ? (res.done ? 'Kata done!' : 'Not quite. Try again!') : res.noClock ? 'Round done' : ['Not quite. Try again!', 'Bronze Medal', 'Silver Medal', 'Gold Medal!'][res.medal];
   const big = kata ? `<span class="kata-mark kata-mark--big${res.done ? ' on' : ''}" aria-hidden="true">${res.done ? '&#10003;' : ''}</span>` : medalHTML(res.medal);
-  return `<div class="lv-result"><div class="lv-big">${big}</div><h2 class="mq-h3">${head}</h2>${lines.map(l => `<p>${l}</p>`).join('')}
+  return `<div class="lv-result"><div class="lv-big">${big}</div><h2 class="mq-h3">${head}</h2>${lines.map(l => `<p>${l}</p>`).join('')}${tag}
     <p class="lv-acts">${cleared && nextHref ? `<a class="md-btn md-btn--primary" href="${nextHref}">${icon('bolt')} Next level</a>` : ''}<a class="md-btn" href="${retryHref}" data-retry>Play again</a><a class="md-btn" href="${backHref}">${backLabel}</a></p></div>`;
 }
 const goalsText = (targets, unit) => `Bronze ${targets[0].toLocaleString('en-US')} · Silver ${targets[1].toLocaleString('en-US')} · Gold ${targets[2].toLocaleString('en-US')} ${unit}`;
@@ -562,9 +773,9 @@ function katasView(trickId) {
   document.title = `${t.title} katas · Learn Vedic Math`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs(['#/dojo', 'Dojo'], [null, `${t.title}: katas`])}
-    <span class="md-tag md-tag--plum" lang="sa-Latn">${t.sutra}</span>
     <h1 class="md-heading">${t.title}: ${LV.KATAS_PER_TRICK} katas</h1>
-    <p class="md-lede">Each kata is a short drill of 5 to 8 problems that gets harder as you climb: bigger numbers, new bases, trickier cases. Get at least 60% right to finish one and unlock the next.</p>
+    ${sutraTag('trickTagHTML', trickId, { mode: fx.mode(), surface: 'katas' })}
+    <p class="md-lede">${ledeHTML('katas', {})}</p>
     <p class="mq-small">${store.katasDoneWhere(`k:${trickId}:`)} of ${LV.KATAS_PER_TRICK} done · <a href="#/skill/v-${trickId}">Learn the trick first</a></p>
     ${levelMap(LV.KATAS_PER_TRICK, n => ({ done: store.kataDone(LV.kataKey(trickId, n)) }), n => `#/kata/${trickId}/${n}`, { noun: 'Kata' })}
   </div></section>`;
@@ -577,46 +788,50 @@ function kataView(trickId, n, { signal } = {}) {
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs(['#/dojo', 'Dojo'], [`#/katas/${trickId}`, t.title], [null, `Kata ${n}`])}
     <h1 class="md-heading">Kata ${n} <small class="kata-of">of ${LV.KATAS_PER_TRICK}</small></h1>
+    ${sutraTag('trickTagHTML', trickId, { mode: fx.mode(), surface: 'kata' })}
     <p class="md-lede">${K.problems.length} problems · par time ${K.par} seconds · ${t.when}</p>
     <div class="md-card mq-practice" id="kata"></div></div></section>`;
-  const box = $('#kata'); let i = 0, right = 0, hints = 0, tried = false, question = null; const t0 = performance.now();
+  const box = $('#kata'); let i = 0, right = 0, hints = 0, h0 = 0, tried = false, question = null; const t0 = performance.now();
+  const fam = familyRound({ root: box, card: box, signal, area: 'kata', protect: '.pr-q, .pr-form, .pr-say:not(:empty)', ctx: () => ({ skill: byId['v-' + trickId], problem: K.problems[i] }), hint: () => { const b = $('#kHint'); if (!b || tried) return false; b.click(); return true; } }); /* openspec family-helpers */
   const show = () => {
     if (question) question.abort();
     question = child(signal); const qs = question.signal; /* this problem's handlers */
     const p = K.problems[i];
     box.innerHTML = `<div class="pr-head"><span class="kata-prog">${K.problems.map((_, j) => `<i class="${j < i ? 'past' : j === i ? 'cur' : ''}"></i>`).join('')}</span><span class="pr-score">${right}/${K.problems.length}</span></div>
       <div class="pr-q${plain(p.q).length > 60 ? ' long' : ''}">${p.q}</div>
-      <form class="pr-form" id="kForm" autocomplete="off">${answerUI(p)}<div class="pr-actions"><button class="md-btn md-btn--primary" id="kGo">Check</button><button type="button" class="md-btn md-btn--sm" id="kHint">Hint</button></div></form>
+      <form class="pr-form" id="kForm" autocomplete="off">${answerUI(p)}<div class="pr-actions"><button class="md-btn md-btn--primary" id="kGo">Check</button><button type="button" class="md-btn md-btn--sm" id="kHint">Hint</button>${fam.askHTML}</div></form>
       <div class="pr-say" id="kSay" role="status" aria-live="polite"></div>`;
-    tried = false; fx.speakQuestion(p);
+    tried = false; h0 = hints; wireSplit(box, p, qs); fx.speakQuestion(p); fam.note({ type: 'question' });
     const f = box.querySelector('input, .pr-choice'); if (f && matchMedia('(pointer: fine)').matches) f.focus({ preventScroll: true });
     box.querySelectorAll('.pr-choice').forEach(b => on(b, 'click', () => { box.querySelectorAll('.pr-choice').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); $('#kForm').requestSubmit(); }, qs));
-    on($('#kHint'), 'click', () => { hints++; $('#kSay').innerHTML = `${boltHTML('explain')}<div class="md-bubble">Hint: ${p.hints[0] || p.steps[0]}</div>`; }, qs);
+    on($('#kHint'), 'click', () => { hints++; fam.note({ type: 'hint' }); $('#kSay').innerHTML = `${boltHTML('explain')}<div class="md-bubble">Hint: ${p.hints[0] || p.steps[0]}</div>`; }, qs);
     on($('#kForm'), 'submit', e => {
       e.preventDefault();
       if (tried) { i++; return i < K.problems.length ? show() : done(); }
       let ok;
       if (p.kind === 'choice') { const c = box.querySelector('.pr-choice[aria-pressed="true"]'); if (!c) return; ok = c.dataset.v === p.answer; }
       else if (p.kind === 'fields') { const ins = [...box.querySelectorAll('.ans-in')]; if (ins.some(x => !x.value.trim())) return; ok = ins.every((x, k) => checkOne({ kind: 'num', answer: p.fields[k].answer }, x.value).ok); }
-      else { const v = box.querySelector('.ans-in').value; if (!v.trim()) return; const res = checkOne(p, v); if (res.notAnswer) { $('#kSay').className = 'pr-say'; $('#kSay').innerHTML = `${boltFor('')}<div class="md-bubble">${notAnswerMsg()}</div>`; return; } ok = res.ok; }
-      tried = true; if (ok) right++; fx.sfx(ok ? 'ok' : 'no'); metrics.answered('kata', ok);
+      else { const t = typedAnswer(box); if (t.partial) { $('#kSay').className = 'pr-say'; $('#kSay').innerHTML = `${boltFor('')}<div class="md-bubble">${t.partial}</div>`; return; } const v = t.value; if (!v.trim()) return; const res = checkOne(p, v); if (res.notAnswer) { $('#kSay').className = 'pr-say'; $('#kSay').innerHTML = `${boltFor('')}<div class="md-bubble">${notAnswerMsg()}</div>`; return; } ok = res.ok; }
+      tried = true; if (ok) right++; fx.sfx(ok ? 'ok' : 'no'); metrics.answered('kata', ok); fam.note({ type: ok ? 'right' : 'miss', first: ok && hints === h0 }); /* first: right with no hint on this problem */
       $('#kSay').className = 'pr-say ' + (ok ? 'ok' : 'no');
       $('#kSay').innerHTML = `${boltFor(ok ? 'ok' : 'no')}<div class="md-bubble">${ok ? pick(['Correct!', 'Clean!', 'Nailed it!', 'Yes!']) : `Not this time. Answer: <b>${answerText(p, byId['v-' + trickId])}</b><br><small>${p.steps.slice(0, 3).join(' ')}</small>`}</div>`;
       $('#kGo').textContent = i + 1 < K.problems.length ? 'Next' : 'Finish'; $('#kGo').focus({ preventScroll: true });
       box.querySelector('.pr-score').textContent = `${right}/${K.problems.length}`;
-      if (ok) fx.bounce($('#kSay .md-bubble'), qs); else fx.wiggle(box.querySelector('.pr-in, .pr-choices, .pr-fields'), qs); /* everyday moments (openspec celebrations) */
+      if (ok) fx.bounce($('#kSay .md-bubble'), qs); else fx.wiggle(box.querySelector('.pr-in, .pr-choices, .pr-fields, .pr-split'), qs); /* everyday moments (openspec celebrations) */
     }, qs);
   };
   const done = () => {
-    question.abort();
+    question.abort(); fam.note({ type: 'roundEnd', misses: 0 });
     const secs = Math.round((performance.now() - t0) / 1000), done = LV.kataDoneFor(right, K.problems.length), key = LV.kataKey(trickId, n), first = done && store.setKataDone(key);
     const sp = LV.kataSparks(right, K.problems.length); if (sp) store.addSparks(sp, 'kata'); store.bump('katas'); store.touchDay(); track('kata/' + trickId, 'Kata ' + n);
     if (done) fx.confetti(right === K.problems.length ? 90 : 40); /* a kata cleared is a true win (openspec celebrations) */
-    box.innerHTML = resultHTML({ done }, [`${right} of ${K.problems.length} right in ${secs} seconds${hints ? `, ${hints} hint${hints > 1 ? 's' : ''}` : ''}.`, `<span class="fx-sparks">+${sp} Sparks</span>${first ? ` Kata ${n} is done.` : ''}`], n < LV.KATAS_PER_TRICK ? `#/kata/${trickId}/${n + 1}` : null, `#/kata/${trickId}/${n}`, `#/katas/${trickId}`, 'All katas');
+    box.innerHTML = resultHTML({ done }, [`${right} of ${K.problems.length} right in ${secs} seconds${hints ? `, ${hints} hint${hints > 1 ? 's' : ''}` : ''}.`, `<span class="fx-sparks">+${sp} Sparks</span>${first ? ` Kata ${n} is done.` : ''}`], n < LV.KATAS_PER_TRICK ? `#/kata/${trickId}/${n + 1}` : null, `#/kata/${trickId}/${n}`, `#/katas/${trickId}`, 'All katas', sutraTag('trickTagHTML', trickId, { mode: fx.mode(), surface: 'kata' }));
+    fillTags(box, signal);
     const rt = box.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); mount(ctx => kataView(trickId, n, ctx)); };
     fx.rollSparks(box, signal);
   };
   show();
+  return { destroy: () => fam.note({ type: 'leave' }) };
 }
 
 /* ---------- Stars (openspec star-round): three per Trick, on Trick pages and in the Dojo, not in Explorer ---------- */
@@ -629,25 +844,33 @@ const dojoStars = t => (fx.mode() === 'explorer' ? '' : `<span class="dojo-stars
 function starView(trick, n, { signal } = {}, back = null) {
   const t = TRICKS.find(x => x.id === trick); if (!t || !(n >= 1 && n <= 3)) return dojoView();
   const from = render.from || '';
-  /* Try a trick's Star opens on the Trick worked once (openspec try-trick-teaches); in memory, once, so Play again,
-     a reload or the same Star from Home goes straight to the first question */
-  const intro = starView.introFor === `#/star/${trick}/${n}`; starView.introFor = null;
   /* For a Player whose home is the Sky, Back always goes to the Sky (which then focuses this Star) */
-  /* Opened from Home or the landing's Try a trick (openspec first-visit): Back goes home, not to the Dojo's long map */
-  back = back || (SKY.skyOn(store.player()) ? { href: '#/', label: 'Back to the Sky' } : from === '#/skill/v-' + trick ? { href: from, label: `Back to ${t.title}` } : /^#?\/?$/.test(from) && from !== '' ? { href: '#/', label: 'Back home' } : { href: '#/dojo', label: 'Back to the Dojo' });
+  /* Opened from Home or from the end of a Try a trick (openspec first-visit): Back goes home, not to the Dojo's long map */
+  back = back || (/^#\/sutras\/\w+$/.test(from) ? { href: from, label: 'Back to the sutra' } : SKY.skyOn(store.player()) ? { href: '#/', label: 'Back to the Sky' } : from === '#/skill/v-' + trick ? { href: from, label: `Back to ${t.title}` } : (/^#?\/?$/.test(from) && from !== '') || from === '#/try' ? { href: '#/', label: 'Back home' } : { href: '#/dojo', label: 'Back to the Dojo' });
   document.title = `Star ${n}: ${t.title} · Learn Vedic Math`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs(['#/dojo', 'Dojo'], ['#/skill/v-' + trick, t.title], [null, `Star ${n}`])}</div></section>`;
   /* The round plays in the full-screen shell (openspec game-shell-and-calm); Back leaves the Star */
   const play = openShell(`Star ${n}: ${t.title}`, { signal, exit: 'Back', exitId: 'stExit', onExit: () => { location.hash = back.href; } });
   play.area.id = 'star';
-  return runStar(play.area, { trick, star: n, signal, back, again: () => mount(ctx => starView(trick, n, ctx, back)), findVideo: starVideo, intro });
+  /* The Family helpers wait for the round's end (openspec family-helpers, star-round delta): Bolt teaches in the round */
+  const fam = familyRound({ root: play.area, card: '.star-end', signal, area: 'star', protect: '.star-end-h, .star-end-sp, .star-acts, .star-talk', ctx: () => ({ skill: byId['v-' + trick] }) });
+  fam.note({ type: 'raceStart' });
+  const onEnd = ({ misses, lit }) => { const acts = play.area.querySelector('.star-acts'); if (acts && fam.askHTML) acts.insertAdjacentHTML('beforeend', fam.askHTML); fam.note({ type: 'roundEnd', misses, lit }); };
+  const run = runStar(play.area, { trick, star: n, signal, back, again: () => mount(ctx => starView(trick, n, ctx, back)), findVideo: starVideo, onEnd });
+  return { destroy: () => { fam.note({ type: 'raceEnd' }); run.destroy(); } }; /* a Star left before its end screen must not hold the next round's Visits */
+}
+/* Try a trick (openspec try-trick-in-modes): the lesson of the Player's Mode, on one Sutra (js/try.js) */
+function tryView({ signal } = {}) {
+  const m = fx.mode() || 'challenger'; document.title = `Try a trick · Learn Vedic Math`;
+  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">${crumbs([null, 'Try a trick'])}<div id="tryRoot"></div></div></section>`;
+  if (signal) { wireSay(view, signal); runTry($('#tryRoot'), { mode: m, signal }); }
 }
 /* star-round's findVideo seam: the Trick's hand-matched video (null offline or when the list fails to load), opened
-   in the in-page player. open(opener) resolves when the player closes. */
+   in the in-page player, which counts the view when play is pressed. open(opener) resolves when the player closes. */
 async function starVideo(trick, mode) {
   const v = await W.videoForTrick(trick, mode);
-  return v && { title: v.title, src: W.embedSrc(v), open: opener => { store.bump('watched'); track('watch/' + v.kind, 'Watch: ' + v.title); return new Promise(done => openPlayer(v, opener, done)); } };
+  return v && { title: v.title, src: W.embedSrc(v), thumb: W.thumbSrc(v), open: opener => new Promise(done => openPlayer(v, opener, done)) };
 }
 
 /* ---------- Arena challenge tower ---------- */
@@ -657,7 +880,7 @@ function towerView() {
     ${crumbs(['#/arena', 'Arena'], [null, 'Challenge tower'])}
     <span class="md-tag md-tag--coral">Challenge tower</span>
     <h1 class="md-heading">${LV.CHALLENGE_COUNT.toLocaleString('en-US')} Arena challenges</h1>
-    <p class="md-lede">${LV.TOPICS.length} chapters, ${LV.PER_CHAPTER} challenges each, in five formats: Sprint, Sharpshooter, Survival, Time attack and Boss rounds. Pick any chapter; inside a chapter, clear each challenge to unlock the next.</p>
+    <p class="md-lede">${ledeHTML('tower', { n: guideCounts() })}</p>
     <p class="mq-small">${store.medalsWhere('a:').any} of ${LV.CHALLENGE_COUNT} cleared · ${store.medalsWhere('a:').gold} gold</p>
     <div class="tower">${LV.TOPICS.map((tp, c) => { const lo = c * LV.PER_CHAPTER + 1, ms = Array.from({ length: LV.PER_CHAPTER }, (_, k) => store.medal(LV.challengeKey(lo + k))), done = ms.filter(Boolean).length, gold = ms.filter(v => v === 3).length;
       return `<a class="tower-ch${done === LV.PER_CHAPTER ? ' done' : ''}" href="#/tower/${c + 1}"><span class="tower-n">${c + 1}</span><span class="tower-t"><b>${tp.name}</b><small>Challenges ${lo} to ${lo + LV.PER_CHAPTER - 1}</small><span class="mq-bar"><i style="width:${pct(done / LV.PER_CHAPTER)}%"></i></span></span><span class="medal-n">${gold} gold</span></a>`; }).join('')}</div>
@@ -671,7 +894,7 @@ function chapterView(c) {
     ${crumbs(['#/arena', 'Arena'], ['#/tower', 'Challenge tower'], [null, `Chapter ${c}`])}
     <span class="md-tag md-tag--coral">Chapter ${c} of ${LV.TOPICS.length}</span>
     <h1 class="md-heading">${tp.name}</h1>
-    <div class="fmt-legend">${Object.values(LV.FORMATS).map(f => `<span><b>${f.name}</b> ${f.how}</span>`).join('')}</div>
+    <div class="fmt-legend">${Object.values(LV.FORMATS).map(f => `<span><b>${f.name}</b> ${f.how}</span>`).join('')}</div><p class="listen-row">${listenBtn('formats', 'the round formats')}</p>
     ${levelMap(LV.PER_CHAPTER, n => ({ medal: store.medal(LV.challengeKey(lo + n)) }), n => `#/challenge/${lo + n}`)}
     <p class="mq-cta">${c > 1 ? `<a class="md-btn" href="#/tower/${c - 1}">&larr; Chapter ${c - 1}</a>` : ''}${c < LV.TOPICS.length ? `<a class="md-btn" href="#/tower/${c + 1}">Chapter ${c + 1} &rarr;</a>` : ''}</p>
   </div></section>`;
@@ -693,14 +916,14 @@ function challengeView(id, { signal } = {}) {
   let run = null, play = null;
   const stop = () => { const r = run, p = play; run = play = null; if (p) p.close(); if (r) r.abort(); };
   $('#chGo').onclick = () => {
-    stop(); run = child(signal);
+    stop(); run = child(signal); loadArena().catch(() => {});
     play = openShell(`Challenge ${id}: ${F.name}`, { signal: run.signal, exitId: 'chStop', onExit: stop, focusBack: () => $('#chGo') });
     const area = play.area;
     let n = 3; area.innerHTML = `<div class="ar-count" aria-live="assertive">${n}</div>`; fx.sfx('tick');
     const count = child(run.signal); /* the countdown stops when it reaches 0, on Stop or when the view is left */
     every(() => { n--; if (n === 0) { count.abort(); fx.sfx('ok'); go(area, run.signal); } else { area.firstChild.textContent = n; fx.sfx('tick'); } }, 650, count.signal);
   };
-  const go = (area, rsig) => {
+  const go = (area, rsig) => withArena(area, rsig, ({ runChallenge }) => {
     track('challenge/' + ch.format, 'Challenge ' + id); metrics.roundStart('tower');
     /* Calm: the tower is Practice, so no clock. Sprint and Time attack Medals are measured against the clock. */
     const untimed = fx.calmOn(), clockMedal = ch.format === 'sprint' || ch.format === 'timeattack';
@@ -716,34 +939,38 @@ function challengeView(id, { signal } = {}) {
       if (play) play.setExit('Back');
       const h = area.querySelector('h2'); if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
     } });
-  };
+  });
 }
 
 /* ---------- Sutras: deep dive and card collection ---------- */
 const sutraId = (c, sub) => (sub ? 'u' : 's') + c.n;
 const ALL_SUTRAS = [...SUTRAS.map(c => ({ ...c, sub: false, id: 's' + c.n })), ...SUBSUTRAS.map(c => ({ ...c, sub: true, id: 'u' + c.n }))];
 let sutraAmb = null; /* the Sutra ambience of the Sutra page on screen (js/sutra-ambience.js) */
+/* Sutra progress (openspec change sutras-first): read-only readers over this Player's records; nothing is written or sent */
+const PROGRESS_READ = { started: id => store.started(id), mastered: id => store.mastered(id), starState: (t, n) => store.starState(t, n), katasDone: t => store.katasDoneWhere(`k:${t}:`), collected: c => gm.collectedCard(c) };
+const sutraProgress = c => progressOf(c, PROGRESS_READ, { katasPer: LV.KATAS_PER_TRICK });
+const progressMeter = (p, m) => `<span class="sutra-prog"><span class="mq-bar sutra-prog-bar" aria-hidden="true"><i style="width:${pct(p.share(m))}%"></i></span><small>${progressLine(p, m)}</small></span>`;
 function sutrasView({ signal } = {}) {
   document.title = `The sutras · Learn Vedic Math`;
   store.markSeen('sutras');
-  const got = ALL_SUTRAS.filter(gm.collectedCard).length;
+  const got = ALL_SUTRAS.filter(gm.collectedCard).length, m = fx.mode() || 'challenger';
   /* The Say it button is the card's sibling of the flip button (a button cannot sit in a button), in its top corner */
   const card = c => { const have = gm.collectedCard(c); return `<article class="sutra-card${have ? ' got' : ''}" data-id="${c.id}" data-name="${esc(c.name)}">
-    ${sayButton(c.id, { cls: 'say-btn--card' })}<button class="sutra-face" aria-expanded="false"><span class="sutra-n">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n}</span><b lang="sa-Latn">${c.name}</b>${respellHTML(c.id)}<i>${c.meaning}</i>${have ? '<span class="sutra-got">Collected</span>' : '<span class="sutra-tap">Tap to flip</span>'}</button>
+    ${sayButton(c.id, { cls: 'say-btn--card' })}<button class="sutra-face" aria-expanded="false"><span class="sutra-n">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n}</span><b lang="sa-Latn">${c.name}</b>${respellHTML(c.id)}<i>${c.meaning}</i>${m === 'explorer' ? `<span class="sutra-kid">${esc(c.kid)}</span>` : ''}${progressMeter(sutraProgress(c), m)}${have ? '<span class="sutra-got">Collected</span>' : '<span class="sutra-tap">Tap to flip</span>'}</button>
     <div class="sutra-back"><span>${c.plain}</span>${c.example ? `<code>${c.example}</code>` : ''}
       <span class="sutra-acts"><a class="sutra-more" href="#/sutras/${c.id}">Learn more ${icon('play')}</a>${listenBtn('sutra-card:' + c.id, c.meaning)}<button type="button" class="sutra-flipback" aria-label="Flip back">${icon('loop')}</button></span></div></article>`; };
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs([null, 'Sutras'])}
     <div class="sutra-top"><span class="md-tag md-tag--plum">Deep dive</span>${ambienceButton()}</div>
     <h1 class="md-heading">The 16 sutras and 13 sub-sutras</h1>
-    <p class="md-lede">Each sutra is a short word formula that packs a whole method into a phrase. Flip a card for the short version, then open <b>Learn more</b> for the full story: animated diagrams, why it works, worked examples and further reading. You have collected <b>${got} of ${ALL_SUTRAS.length}</b>.</p>
+    <p class="md-lede">${ledeHTML('sutras', { mode: m, got, all: ALL_SUTRAS.length })}</p>
     <div class="mq-bar mq-bar--big sutra-bar"><i style="width:${pct(got / ALL_SUTRAS.length)}%"></i></div>
+    <h2 class="mq-strand">The 16 sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => !c.sub).map(card).join('')}</div>
+    <h2 class="mq-strand">The 13 sub-sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => c.sub).map(card).join('')}</div>
     ${playShelf('sutras', 'A mystery from the old texts')}
     <div class="md-card history"><h2 class="mq-h3">Where Vedic math comes from</h2><p class="listen-row">${listenBtn('history', 'where Vedic math comes from')}</p>${HISTORY.map(h => `<p>${h}</p>`).join('')}
       <p class="mq-small" data-history-links hidden></p></div>
-    <div class="md-card history roots"><h2 class="mq-h3">Older roots: what you see in the background</h2><p>The 1965 sutras stand on a much older tradition of Indian mathematics. The moving background draws real pieces of it.</p><ul>${BG_NOTES.map(([h, b]) => `<li><b>${h}.</b> ${b}</li>`).join('')}</ul></div>
-    <h2 class="mq-strand">The 16 sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => !c.sub).map(card).join('')}</div>
-    <h2 class="mq-strand">The 13 sub-sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => c.sub).map(card).join('')}</div>
+    <div class="md-card history roots"><h2 class="mq-h3">Older roots: what you see in the background</h2><p class="listen-row">${listenBtn('roots', 'older roots')}</p><p>${ROOTS_INTRO}</p><ul>${BG_NOTES.map(n => `<li>${rootNote(n)}</li>`).join('')}</ul></div>
     ${versesHTML()}
   </div></section>`;
   const flip = (art, open) => { art.classList.toggle('flipped', open); art.querySelector('.sutra-face').setAttribute('aria-expanded', String(open)); fx.sfx('tap'); if (open) { collect(art.dataset.name); art.classList.add('got'); art.querySelector('.sutra-more').focus({ preventScroll: true }); } else art.querySelector('.sutra-face').focus({ preventScroll: true }); };
@@ -831,7 +1058,7 @@ let sutraDlg = null, sutraScene = null, sutraFrom = null, openedInPage = false; 
 const reducedMotion = () => fx.noMotion();
 function sutraHTML(c) {
   const d = DETAILS[c.name], i = ALL_SUTRAS.indexOf(c), prev = ALL_SUTRAS[i - 1], next = ALL_SUTRAS[i + 1];
-  const tricks = c.tricks.map(t => TRICKS.find(x => x.id === t)).filter(Boolean);
+  const tricks = c.tricks.map(t => TRICKS.find(x => x.id === t)).filter(Boolean), mode = fx.mode() || 'challenger', prog = sutraProgress(c);
   // Learn more: videos play in the page for every Mode; pages on other sites only for Pro
   const reads = d.read.map(([label, to]) => (typeof to === 'object' ? playBtn(to.yt, `${icon('play')}<span>${esc(label)}</span>`) : outLink(to, `${icon('link')}<span>${esc(label)}</span>`))).filter(Boolean);
   // The close button (with the Ambience toggle beside it) and the prev / next footer stay pinned while the deep dive scrolls under them
@@ -846,11 +1073,18 @@ function sutraHTML(c) {
       <ol class="sd-ex" aria-labelledby="sdExH">${d.examples.map(([q, a], k) => `<li><details${k ? '' : ' open'}><summary><span class="sd-exn">Example ${k + 1} of ${d.examples.length}</span><b>${q}</b></summary><p>${a}</p></details></li>`).join('')}</ol>
       ${slokasFor(c.id).map(v => `<div class="sd-verse"><h3>In Sanskrit verse: ${esc(v.title)}</h3><p class="verse-deva" lang="sa">${esc(v.deva).split('\n').join('<br>')}</p><p class="verse-iast" lang="sa-Latn">${esc(v.iast).split('\n').join('<br>')}</p><p>${esc(v.meaning)}</p><p class="mq-small">${esc(v.note)} More verses are at the end of the Sutras page.</p></div>`).join('')}
       <div class="sd-h"><h3>Where it is used</h3>${listenBtn(`sutra:${c.id}:uses`, 'where it is used')}</div><p class="sd-uses">${d.uses.map(u => `<span>${u}</span>`).join('')}</p>
-      ${tricks.length ? `<h3>Try it yourself</h3><p class="sd-try">${tricks.map(t => `<a class="md-btn md-btn--sm md-btn--primary" href="#/skill/v-${t.id}">${icon('bolt')} ${t.title}</a>`).join(' ')}</p>` : ''}
+      ${tricks.length ? `<h3>Try it yourself</h3><p class="mq-small sd-prog">${progressLine(prog, mode)}</p><ul class="sd-try">${tricks.map(t => `<li><a class="md-btn md-btn--sm md-btn--primary" href="${practiceHref(t.id, mode)}">${icon('bolt')} ${t.title}</a><small>${trickLine(prog.each.find(e => e.id === t.id), mode)}</small><a class="sd-how" href="#/skill/v-${t.id}">See how the trick works</a></li>`).join('')}</ul>` : ''}
       ${reads.length ? `<h3>Learn more</h3><div class="rel-links">${reads.join('')}</div>` : ''}
     </div>
   </div>
   <footer class="sd-foot">${prev ? `<a class="md-btn md-btn--sm sd-prev" href="#/sutras/${prev.id}" data-swap aria-label="Previous: ${esc(prev.name)}">&larr; <span lang="sa-Latn">${prev.name}</span></a>` : '<span></span>'}${next ? `<a class="md-btn md-btn--sm sd-next" href="#/sutras/${next.id}" data-swap aria-label="Next: ${esc(next.name)}"><span lang="sa-Latn">${next.name}</span> &rarr;</a>` : ''}</footer>`;
+}
+/* A Deep dive's Try it yourself starts a practice round on that exact Trick (openspec change play-nav-by-mode, audit
+   task 3.4): the Trick's first Star not yet lit in Challenger and Pro, else its page, whose practice starts at once
+   (Explorer, which has no Stars, and a Trick with every Star lit) */
+function practiceHref(trick, mode) {
+  const n = mode === 'explorer' ? 0 : [1, 2, 3].find(k => store.starState(trick, k) !== 'lit');
+  return n ? `#/star/${trick}/${n}` : `#/skill/v-${trick}`;
 }
 function openSutra(id, fromPage) {
   const c = ALL_SUTRAS.find(x => x.id === id); if (!c) return;
@@ -935,7 +1169,7 @@ async function loadBoard(el, board, n = 10) {
     el.innerHTML = `<p class="lb-src mq-small"><b>This device</b></p><div class="lb-body">${device()}</div>${why}`;
     return;
   }
-  el.innerHTML = `<div class="lb-tabs" role="tablist"><button role="tab" aria-selected="false" data-src="world">World</button><button role="tab" aria-selected="true" data-src="device">This device</button></div><div class="lb-body"></div>`;
+  el.innerHTML = `<div class="md-seg lb-tabs" role="tablist"><button role="tab" aria-selected="false" data-src="world">World</button><button role="tab" aria-selected="true" data-src="device">This device</button></div><div class="lb-body"></div>`;
   const body = $('.lb-body', el);
   let shown = 0; // the latest tab picked: a World answer that arrives after another pick is dropped
   const show = async src => {
@@ -996,14 +1230,15 @@ store.on(type => { if (type === 'sparks') queueSparksPost(); });
 function arenaView({ signal } = {}) {
   document.title = `Arena · Learn Vedic Math`;
   const league = fx.MODES[fx.mode()].league, day = cloud.dayId(), wk = cloud.weekId();
-  /* Round type: daily (Ranked, always timed), practice (timed, untimed in Calm) or untimed (Practice, no clock).
-     With Calm on, the untimed Practice round is picked until the Player picks another this visit. */
+  /* Round type: daily (Ranked, always timed), practice (timed, untimed in Calm), untimed (Practice, no clock) or words
+     (Word problems, Practice with no clock: openspec word-problems-more). With Calm on, the untimed Practice round is
+     picked until the Player picks another this visit. */
   let type = fx.calmOn() ? 'untimed' : 'daily';
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs([null, 'Arena'])}
     <span class="md-tag md-tag--coral">Arena</span>
     <h1 class="md-heading">60 seconds. Same questions for everyone.</h1>
-    <p class="md-lede">Answer as many as you can. Each right answer is worth 10, and every answer in a row adds a combo bonus. The daily round uses the same questions for every ${fx.MODES[fx.mode()].name}, so it is a fair race.</p>
+    <p class="md-lede">${ledeHTML('arena', { modeName: fx.MODES[fx.mode()].name })}</p>
     <a class="tower-promo" href="#/tower">${icon('trophy')}<span><b>Challenge tower: ${LV.CHALLENGE_COUNT.toLocaleString('en-US')} levels</b><small>${medalCounts(store.medalsWhere('a:'))} · Sprint, Survival, Sharpshooter, Time attack, Boss</small></span><span aria-hidden="true">&rarr;</span></a>
     <div class="md-card ar-shell" id="arShell"></div>
     ${playShelf('arena', 'More ways to race')}</div></section>`;
@@ -1015,7 +1250,7 @@ function arenaView({ signal } = {}) {
     pro: `Arena Rating: <b>${arenaRating()}</b>/20. Practice rounds start there and adapt to every answer; the daily round is the same for everyone.`
   })}</small>`;
   const lobby = (result = '') => {
-    shell.innerHTML = `${result}<div class="g-optrow" role="group" aria-label="Round type"><button class="md-chip" aria-pressed="${type === 'daily'}" data-t="daily">Daily challenge</button><button class="md-chip" aria-pressed="${type === 'practice'}" data-t="practice">Practice round</button><button class="md-chip" aria-pressed="${type === 'untimed'}" data-t="untimed">Practice, no clock</button></div>
+    shell.innerHTML = `${result}<div class="g-optrow" role="group" aria-label="Round type"><button class="md-chip" aria-pressed="${type === 'daily'}" data-t="daily">Daily challenge</button><button class="md-chip" aria-pressed="${type === 'practice'}" data-t="practice">Practice round</button><button class="md-chip" aria-pressed="${type === 'untimed'}" data-t="untimed">Practice, no clock</button><button class="md-chip" aria-pressed="${type === 'words'}" data-t="words">${STORY_ROUND[mode] || STORY_ROUND.challenger}</button></div>
       ${fx.calmOn() ? '<p class="ar-calm" id="arCalmNote">The daily challenge is a timed race for everyone. Practice has no clock in Calm.</p>' : ''}
       <p class="g-best">League: <b>${fx.MODES[fx.mode()].name}</b> · Your best today: <b>${store.best('arena-' + day)}</b><br>${arenaRatingLine()}</p>
       <button class="md-btn md-btn--primary ar-go" id="arGo">${icon('bolt')} Start</button>
@@ -1030,7 +1265,7 @@ function arenaView({ signal } = {}) {
   let run = null, play = null;
   const stop = () => { const r = run, p = play; run = play = null; if (p) p.close(); if (r) r.abort(); };
   const countdown = () => {
-    stop(); run = child(signal);
+    stop(); run = child(signal); loadArena().catch(() => {}); if (type === 'words') loadStories().catch(() => {});
     const old = shell.querySelector('.ar-result'); if (old) old.remove(); /* the last result goes; the new one shows in the shell */
     play = openShell(type === 'daily' ? 'Arena: daily challenge' : 'Arena: Practice', { signal: run.signal, exitId: 'arStop', onExit: stop, focusBack: () => $('#arGo', shell) });
     const area = play.area, rsig = run.signal;
@@ -1038,16 +1273,22 @@ function arenaView({ signal } = {}) {
     const count = child(rsig); /* leaving or stopping during the countdown means the round never starts */
     every(() => { n--; if (n === 0) { count.abort(); fx.sfx('ok'); start(area, rsig); } else { area.firstChild.textContent = n; fx.sfx('tick'); } }, 700, count.signal);
   };
-  const start = (area, rsig) => {
+  /* The Word problems round's questions: one story after another of the Mode's style, never the same template twice in a
+     row (js/stories.js roundStory). Its stories load after the first paint, like Practice's. */
+  const storyDeal = (A, S) => { let last = null; return () => { let p = null; for (let k = 0; k < 6 && (!p || p.story.id === last); k++) p = S.roundStory(mode || 'challenger'); last = p.story.id; return A.storyItem(p, league, STORY_LABEL[mode] || STORY_LABEL.challenger); }; };
+  const start = (area, rsig) => withArena(area, rsig, A => {
+    const words = type === 'words';
+    if (words && !storiesNow()) { loadStories().then(() => { if (!rsig.aborted) start(area, rsig); }, () => { if (!rsig.aborted) area.innerHTML = '<p class="md-lede">The stories did not load. Check your connection and try again.</p>'; }); return; }
     track('arena/' + league + '/' + type, 'Arena round'); metrics.roundStart('arena');
     /* Practice: the Dial picks each question. Daily: it only records the answers (the questions are the same for everyone).
-       Untimed: the Practice round with no clock, chosen or (for a Practice round) set by Calm. The daily round keeps its clock. */
+       Untimed: the Practice round with no clock, chosen or (for a Practice round) set by Calm. The daily round keeps its clock.
+       Word problems: no clock, its own questions, and the Arena Rating left as it was (word-problems-more design D5). */
     const before = arenaRating(), dial = new AD.Dial(AD.rating(rKey, mode));
-    const untimed = type === 'untimed' || (type === 'practice' && fx.calmOn());
-    runArena(area, { league, day: type === 'daily' ? day : null, dial, signal: rsig, untimed, onEnd: async r => {
+    const untimed = words || type === 'untimed' || (type === 'practice' && fx.calmOn());
+    A.runArena(area, { league, day: type === 'daily' ? day : null, dial: words ? null : dial, signal: rsig, untimed, ...(words ? { deal: storyDeal(A, storiesNow()), count: A.STORY_QS } : {}), onEnd: async r => {
       metrics.roundEnd('arena', league);
-      const after = Math.round(AD.saveRating(rKey, dial) || before);
-      const moved = dial.n < 4 ? '' : fx.t({
+      const after = words ? before : Math.round(AD.saveRating(rKey, dial) || before);
+      const moved = words || dial.n < 4 ? '' : fx.t({
         explorer: after > before ? ` Your Arena Rating went up to ${after}!` : after < before ? ` Your Arena Rating is ${after} now.` : '',
         challenger: after > before ? ` Arena Rating up to ${after}.` : after < before ? ` Arena Rating now ${after}.` : '',
         pro: after > before ? ` Arena Rating up to ${after}.` : after < before ? ` Arena Rating down to ${after}.` : ''
@@ -1062,7 +1303,8 @@ function arenaView({ signal } = {}) {
         if (isBest) { fx.confetti(100); msg = 'New personal best for today!'; }
         postScore([`daily-${day}-${league}`, `week-${wk}-${league}`], r.score, `for today's ${fx.MODES[fx.mode()].name} race.`);
       }
-      const res = `<div class="ar-result"><div class="md-stat"><div class="md-kicker">Score</div><div class="md-value">${r.score}</div><p>${r.right} right · ${r.wrong} missed · best combo ${r.bestCombo}x${moved}</p></div><p class="ar-msg">${msg || (type !== 'daily' ? 'Practice rounds do not count for the leaderboard.' : 'Play again to beat your best.')} <span class="fx-sparks">+${sp} Sparks</span></p></div>`;
+      const T = await loadTags().catch(() => null); /* the round review's tags (js/sutra-tag.js, here long before a round ends) */
+      const res = `<div class="ar-result"><div class="md-stat"><div class="md-kicker">Score</div><div class="md-value">${r.score}</div><p>${r.right} right · ${r.wrong} missed · best combo ${r.bestCombo}x${moved}</p></div><p class="ar-msg">${msg || (type !== 'daily' ? 'Practice rounds do not count for the leaderboard.' : 'Play again to beat your best.')} <span class="fx-sparks">+${sp} Sparks</span></p>${T ? arenaReview(T, r.answered) : ''}</div>`;
       /* The result shows in the shell; leaving it shows the lobby with the same result and focuses Start */
       const back = () => { lobby(res); stop(); };
       if (!play || rsig.aborted) { lobby(res); return; }
@@ -1071,8 +1313,16 @@ function arenaView({ signal } = {}) {
       const done = $('#arDone', area); done.onclick = back; done.focus({ preventScroll: true });
       fx.rollSparks(area, rsig);
     } });
-  };
+  });
   lobby();
+}
+
+/* The round review (openspec change sutras-first): each Sutra that answered a question of the round, with right of
+   asked. Shown only after the round, never during it; nothing when no question had a Sutra. */
+function arenaReview(T, answered) {
+  const list = T.roundSutras(answered); if (!list.length) return '';
+  const m = fx.mode();
+  return `<div class="ar-sutras"><h3 class="mq-h3">${fx.t({ explorer: 'Sutras you used', challenger: 'Sutras in this round', pro: 'Sutras in this round' })}</h3>${list.map(e => T.tagHTML(e.id, { mode: m, relation: e.relation, surface: 'arena', extra: ` <span class="sutra-tag-x">${e.right} of ${e.asked} right</span>` })).join('')}</div>`;
 }
 
 /* ---------- Play experiences (openspec play-experiences): pages inside a section ---------- */
@@ -1102,12 +1352,12 @@ function playView(hash, { signal }) {
       <p><a class="md-btn md-btn--primary" href="${sec.href}">Back to ${sec.label}</a></p></div></section>`;
     return;
   }
-  playPlace.back = sec;
   view.classList.add('px-view', `px-view--${e.id}`);
-  onAbort(signal, () => { view.classList.remove('px-view', `px-view--${e.id}`); playQuiet(); });
+  onAbort(signal, () => { view.classList.remove('px-view', `px-view--${e.id}`); loadKit().then(k => k.suspendAudio(), () => {}); });
   view.innerHTML = `<div class="md-wrap px-loading" aria-busy="true">Opening ${e.title}...</div>`;
-  Promise.all([import(`./play/exp/${e.id}.js`), playCss('base'), playCss(e.id)]).then(([mod]) => {
+  Promise.all([import(`./play/exp/${e.id}.js`), playCss('base'), playCss(e.id), loadKit()]).then(([mod, , , kit]) => {
     if (signal.aborted) return;
+    kit.place.back = sec;
     view.innerHTML = '';
     mod.mount({ root: view, signal, params, exp: e });
     /* Like render(): focus the heading after a route change, not on the first page load */
@@ -1139,12 +1389,12 @@ document.addEventListener('vmplay', onPlay);
 function gamesView() {
   document.title = `Games · Learn Vedic Math`;
   const m = fx.mode(), mine = GAMES.filter(g => g.modes.includes(m)), rest = GAMES.filter(g => !g.modes.includes(m));
-  const card = g => `<a class="md-card mq-game" href="#/game/${g.id}"><div class="md-icon-tile" style="background:color-mix(in srgb,var(--${g.color}) 18%,transparent);color:var(--${g.color}-strong)">${icon('game')}</div><h3>${both(g.title, g.kid)}</h3><p>${g.desc.split('. ')[0]}.</p><small class="mq-game-f">Skill ${Math.round(AD.rating('game:' + g.id, m))}/20 · ${store.medalsWhere(`g:${g.id}:`).any}/${LEVELS_PER_GAME} levels · ${store.medalsWhere(`g:${g.id}:`).gold} gold · leaderboard</small></a>`;
+  const card = g => `<a class="md-card mq-game" href="#/game/${g.id}"><div class="md-icon-tile" style="background:color-mix(in srgb,var(--${g.color}) 18%,transparent);color:var(--${g.color}-strong)">${icon('game')}</div><h3>${both(g.title, g.kid)}</h3>${g.sutra ? sutraTag('tagHTML', g.sutra.id, { mode: m, relation: g.sutra.relation, size: 'mini', link: false }) : ''}<p>${g.desc.split('. ')[0]}.</p><small class="mq-game-f">Skill ${Math.round(AD.rating('game:' + g.id, m))}/20 · ${store.medalsWhere(`g:${g.id}:`).any}/${LEVELS_PER_GAME} levels · ${store.medalsWhere(`g:${g.id}:`).gold} gold · leaderboard</small></a>`;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs([null, 'Games'])}
     <span class="md-tag md-tag--plum">Games</span>
     <h1 class="md-heading">Games that build number sense</h1>
-    <p class="md-lede">${GAMES.length} games, each with its own world leaderboard. Every game adapts to you: right answers make it harder, misses make it easier, and points are weighted by difficulty. ${LEVELS_PER_GAME} levels per game (${(GAMES.length * LEVELS_PER_GAME).toLocaleString('en-US')} in all) open up as your skill grows. Every game earns Sparks, and playing all of them unlocks a badge. Want a real race? Try the <a href="#/arena">Arena</a> or a <a href="#/arena/party">Party Mode</a> game.</p>
+    <p class="md-lede">${ledeHTML('games', { n: guideCounts() })}</p>
     ${playShelf('games', 'Play, make and discover')}
     <h2 class="mq-strand">Picked for ${fx.MODES[m].name}</h2><div class="md-grid">${mine.map(card).join('')}</div>
     ${rest.length ? `<h2 class="mq-strand">More games</h2><div class="md-grid">${rest.map(card).join('')}</div>` : ''}
@@ -1162,7 +1412,7 @@ function gameView(id, lvl = 0, { signal } = {}) {
   let mode = lvl ? 'level' : 'ranked', round = null; /* round: the running round's controller */
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs(['#/games', 'Games'], lvl ? [`#/game/${g.id}`, both(g.title, g.kid)] : [null, both(g.title, g.kid)], ...(lvl ? [[null, `Level ${lvl}`]] : []))}
-    <h1 class="md-heading">${both(g.title, g.kid)}${lvl ? ` <small class="kata-of">level ${lvl} of ${LEVELS_PER_GAME}</small>` : ''}</h1><p class="md-lede">${g.desc}</p><p class="listen-row">${listenBtn('game:' + g.id, 'how to play')}</p>
+    <h1 class="md-heading">${both(g.title, g.kid)}${lvl ? ` <small class="kata-of">level ${lvl} of ${LEVELS_PER_GAME}</small>` : ''}</h1>${g.sutra ? sutraTag('tagHTML', g.sutra.id, { mode: m, relation: g.sutra.relation, surface: 'game' }) : ''}<p class="md-lede">${g.desc}</p><p class="listen-row">${listenBtn('game:' + g.id, 'how to play')}</p>
     <div class="md-card g-shell" id="gShell"></div>
     ${lvl ? '' : `<div class="lb-cols"><div><h2 class="mq-h3">Today's best</h2><div id="gbDay" class="lb-wrap"></div></div><div><h2 class="mq-h3">This week</h2><div id="gbWeek" class="lb-wrap"></div></div></div>${parentNote()}
     <h2 class="mq-strand">Levels <small class="mq-small">${store.medalsWhere(`g:${g.id}:`).any} of ${LEVELS_PER_GAME} cleared · ${store.medalsWhere(`g:${g.id}:`).gold} gold · levels up to ${ratedLevel} are open at your skill (level ${Math.round(rate)} of 20)</small></h2>${levelMap(LEVELS_PER_GAME, n => ({ medal: store.medal(gkey(n)) }), n => `#/game/${g.id}/${n}`, { isOpen, suggest: Math.max(ratedLevel, ...Array.from({ length: LEVELS_PER_GAME }, (_, i) => (store.medal(gkey(i + 1)) ? Math.min(LEVELS_PER_GAME, i + 2) : 0))) })}`}
@@ -1250,7 +1500,7 @@ function watchView({ signal } = {}) {
     ${crumbs([null, 'Watch'])}
     <span class="md-tag md-tag--teal">Watch and learn</span>
     <h1 class="md-heading">Short videos that show how</h1>
-    <p class="md-lede">Every video plays right here, and none is longer than ${W.MAX_LENGTH / 60} minutes. Each one is checked by hand and matched to the skills and tricks it teaches.${pro ? ' Sites open in a new tab.' : ''}</p>
+    <p class="md-lede">${ledeHTML('watch', { n: guideCounts(), links: pro })}</p>
     <div id="watchBody"><p class="mq-small">Loading videos…</p></div>
   </div></section>`;
   const body = $('#watchBody');
@@ -1261,7 +1511,7 @@ function watchView({ signal } = {}) {
     const chips = (key, opts, label) => opts.length < 2 ? '' : `<div class="g-optrow watch-filter" role="group" aria-label="${label}"><span class="watch-flab" aria-hidden="true">${label}</span>${opts.map(([val, l]) => `<button type="button" class="md-chip" data-k="${key}" data-v="${val}" aria-pressed="${String(f[key]) === String(val)}">${l}</button>`).join('')}</div>`;
     const card = v => `<button type="button" class="watch-card plays${v.kind === 'short' ? ' watch-card--short' : ''}" data-watch="${esc(v.yt)}" data-modes="${v.modes.join(' ')}" data-kind="${v.kind}" data-tricks="${v.tricks.join(' ')}" data-secs="${v.duration}"${navigator.onLine === false ? ' disabled' : ''}>
       <span class="watch-th"><img src="${W.thumbSrc(v)}" alt="" loading="lazy" width="320" height="180"><span class="watch-type">${v.kind === 'short' ? 'Short' : 'Video'} · ${mins(v.duration)}</span><span class="watch-play" aria-hidden="true">${icon('play')}</span></span>
-      <b>${esc(v.title)}</b><small>${esc(v.why)}</small><span class="watch-tags"><span>${esc(v.channel)}</span>${v.tricks.length ? '<span class="tagv">Trick</span>' : ''}</span></button>`;
+      <b>${esc(v.title)}</b><small>${esc(v.why)}</small><span class="watch-tags"><span>${esc(v.channel)}</span>${watchSutra(v)}</span></button>`;
     const linkCard = l => outLink(l.url, `<span class="watch-th watch-th--${l.kind === 'game' ? 'game' : 'website'}">${icon('link')}<span class="watch-type">${l.kind === 'game' ? 'Game' : 'Site'}</span><span class="watch-ext">Opens in a new tab</span></span><b>${esc(l.title)}</b><small>${esc(l.why)}</small>`, 'watch-card');
     const draw = () => {
       const list = f.kind === 'link' ? [] : W.filterShelf(VIDEOS, f, byId);
@@ -1280,19 +1530,26 @@ function watchView({ signal } = {}) {
     on(window, 'online', draw, signal); on(window, 'offline', draw, signal);
   }).catch(() => { if (!(signal && signal.aborted)) body.innerHTML = '<p class="mq-note watch-offline">The video list could not load. Videos need a connection.</p>'; });
 }
-/* Play buttons ([data-watch], a YouTube id) open the in-page player; Pro links ([data-link]) open a new tab */
+/* A Watch card's Sutra (openspec change sutras-first): the name of its first Trick's Sutra, as text (the card is a
+   button, so the link is in the player); "Trick" when that Trick has no Sutra card */
+const watchSutra = v => { const t = v.tricks.length && TRICKS.find(x => x.id === v.tricks[0]), c = t && ALL_SUTRAS.find(x => x.id === t.sutraId); return v.tricks.length ? (c ? `<span class="tagv tagv--sutra" lang="sa-Latn">${esc(c.name)}</span>` : '<span class="tagv">Trick</span>') : ''; };
+/* Play buttons ([data-watch], a YouTube id) open the in-page player; Pro links ([data-link]) open a new tab.
+   A followed Sutra tag (openspec change sutras-first, analytics spec) sends one anonymous event naming only its
+   surface, one of the fixed words in SURFACES (js/sutra-tag-core.js, static, so Home's own Sutra links count at once). */
 document.addEventListener('click', e => {
+  const link = e.target.closest('a[data-tag]'), surface = link && TAG_SURFACES.find(x => x === link.dataset.tag);
+  if (surface) { track('sutra_tag/' + surface, 'Sutra tag: ' + surface); return; }
   const b = e.target.closest('[data-watch]'), a = !b && e.target.closest('a[data-link]');
   if (a) { store.bump('watched'); track('watch/link', 'Watch: link'); return; }
   if (!b) return;
   e.preventDefault();
   W.loadVideos().then(({ VIDEOS }) => {
-    const v = VIDEOS.find(x => x.yt === b.dataset.watch); if (!v) return;
-    store.bump('watched'); track('watch/' + v.kind, 'Watch: ' + v.title);
-    openPlayer(v, b);
+    const v = VIDEOS.find(x => x.yt === b.dataset.watch); if (v) openPlayer(v, b);
   }).catch(() => {});
 });
 let playerDlg = null;
+/* The player opens on the facade (W.facade: this site's thumbnail behind a play button). Only when the Player presses
+   play is the YouTube frame written, the view counted and the one-minute timer started (watch-shelf spec, design D10). */
 function openPlayer(v, opener, onClose = null) {
   if (musicOn()) stopMusic();
   if (!playerDlg) {
@@ -1301,18 +1558,29 @@ function openPlayer(v, opener, onClose = null) {
     document.body.append(playerDlg);
     const close = () => playerDlg.close();
     playerDlg.querySelector('.vp-x').onclick = close;
-    playerDlg.addEventListener('click', ev => { if (ev.target === playerDlg) close(); });
+    /* a Sutra tag opens its Deep dive: the player closes first */
+    playerDlg.addEventListener('click', ev => { if (ev.target === playerDlg || (ev.target.closest && ev.target.closest('.sutra-tag-a[href]'))) close(); else if (ev.target.closest && ev.target.closest('.vp-play')) playVideo(); });
     playerDlg.addEventListener('close', () => { clearTimeout(playerDlg._minute); playerDlg.querySelector('.vp-frame').innerHTML = ''; const done = playerDlg._onClose; playerDlg._onClose = null; if (playerDlg._opener && document.body.contains(playerDlg._opener)) playerDlg._opener.focus({ preventScroll: true }); if (done) done(); });
   }
-  playerDlg._opener = opener; playerDlg._onClose = onClose;
+  playerDlg._video = v; playerDlg._opener = opener; playerDlg._onClose = onClose;
   playerDlg.querySelector('#vpTitle').textContent = v.title;
   playerDlg.querySelector('.vp-desc').textContent = `${v.why} (${v.channel})`;
   // Open on YouTube: Pro only (Explorer and Challenger get no link that leaves the site)
-  playerDlg.querySelector('.vp-foot').innerHTML = outLink(`https://www.youtube.com/watch?v=${v.yt}`, 'Open on YouTube', 'vp-yt');
+  /* the video's Sutra tag (openspec change sutras-first): its first Trick's, as trickTagHTML draws it; the page's signal, as the player has none (a placeholder the next video replaces has left the page) */
+  const foot = playerDlg.querySelector('.vp-foot');
+  foot.innerHTML = (v.tricks && v.tricks.length ? sutraTag('trickTagHTML', v.tricks[0], { mode: fx.mode(), surface: 'watch', note: '' }) : '') + outLink(`https://www.youtube.com/watch?v=${v.yt}`, 'Open on YouTube', 'vp-yt');
+  fillTags(foot, boot.signal);
   playerDlg.classList.toggle('tall', v.kind === 'short');
-  playerDlg.querySelector('.vp-frame').innerHTML = `<iframe src="${W.embedSrc(v)}" title="${esc(v.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+  playerDlg.querySelector('.vp-frame').innerHTML = W.facade(W.thumbSrc(v));
   playerDlg.showModal();
-  // Video learner: the player has stayed open for a whole minute (cancelled when it closes)
+  playerDlg.querySelector('.vp-play').focus({ preventScroll: true });
+}
+/* The play press: the privacy-enhanced frame replaces the facade and starts playing */
+function playVideo() {
+  const v = playerDlg._video;
+  store.bump('watched'); track('watch/' + v.kind, 'Watch: ' + v.title);
+  playerDlg.querySelector('.vp-frame').innerHTML = `<iframe src="${W.embedSrc(v)}" title="${esc(v.title)}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+  // Video learner: the video has played for a whole minute (cancelled when the player closes)
   clearTimeout(playerDlg._minute); playerDlg._minute = setTimeout(() => { if (playerDlg.open) store.bump('watchedMinute'); }, 60000);
 }
 
@@ -1386,12 +1654,16 @@ function homeTour(signal) {
   const replay = tourAsked; tourAsked = false;
   if (!signal || !fx.mode()) return;
   if (!replay && !tourDue({ mode: fx.mode(), state: tourState(), hash: location.hash, fresh: store.sparks() === 0 })) return;
+  claimSlot('tour', signal); /* the tour is a prompt too: nothing else asks for attention while it is due or open (openspec change install-app) */
   later(() => {
     const has = sel => { const el = document.querySelector(sel); if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
     const steps = resolveTour(has, fx.mode());
-    if (!steps.length) return;
-    setTourState('shown'); metrics.tourEvent('start');
-    startTour(steps, { signal, onEnd: outcome => { if (outcome === 'finish') { setTourState('done'); metrics.tourEvent('finish'); } else { setTourState('skipped'); metrics.tourEvent('skip'); } } });
+    if (!steps.length) { releaseSlot('tour'); return; }
+    loadTour().then(({ startTour }) => {
+      if (signal.aborted) return;
+      setTourState('shown'); metrics.tourEvent('start');
+      startTour(steps, { signal, onEnd: outcome => { releaseSlot('tour'); if (outcome === 'finish') { setTourState('done'); metrics.tourEvent('finish'); } else { setTourState('skipped'); metrics.tourEvent('skip'); } } });
+    }, () => releaseSlot('tour'));
   }, 300, signal);
 }
 function guideView(section, { signal } = {}) {
@@ -1402,6 +1674,7 @@ function guideView(section, { signal } = {}) {
   const tryHTML = s => {
     const t = tryFor(s, mode); if (!t) return '';
     if (t.action === 'tour' && !m) return '';
+    if (t.action === 'install' && install && install.appHere()) return ''; /* the Installed app: nothing to install (checked again below once the module is here) */
     const main = t.action ? `<button type="button" class="md-btn md-btn--sm md-btn--primary gd-try" data-gd="${t.action}">${esc(t.label)}</button>` : `<a class="md-btn md-btn--sm md-btn--primary gd-try" href="${esc(t.href)}">${esc(t.label)}</a>`;
     return `<p class="gd-acts">${main}${t.more ? ` <a class="md-btn md-btn--sm" href="${esc(t.more.href)}">${esc(t.more.label)}</a>` : ''}</p>`;
   };
@@ -1417,7 +1690,7 @@ function guideView(section, { signal } = {}) {
     ${crumbs([null, 'Guide'])}
     <span class="md-tag md-tag--teal">Guide</span>
     <h1 class="md-heading">${fx.t({ explorer: 'How to play', challenger: 'How to use Vedic Math', pro: 'How to use Vedic Math' })}</h1>
-    <p class="md-lede">${fx.t({ explorer: 'Everything you can do here, one part at a time. The button under each part takes you there.', challenger: 'Every part of the app, what it is for and how to use it. The button under each section takes you straight there.', pro: 'Every part of the app, what it is for and how to use it, with a link to each one.' })}</p>
+    <p class="md-lede">${ledeHTML('guide', { mode: fx.mode() })}</p>
     ${m ? `<p class="mode-line">Words for: <b>${fx.MODES[m].name}</b> <a href="#/me">Change</a></p><p class="gd-top"><button type="button" class="md-btn md-btn--primary" data-gd="tour">${icon('map')} ${explorer ? 'Show me around' : 'Take the tour'}</button></p>`
       : '<div class="md-card gd-nomode"><p>Pick a play mode first: Explorer, Challenger or Pro. It sets the words, the questions and your league. This guide uses the Challenger words until you do.</p><p><a class="md-btn md-btn--primary" href="#/">Pick a play mode</a></p></div>'}
     <nav class="gd-toc md-card" aria-label="Guide contents"><ul>${groups.map(({ g, items }) => `<li><a href="#/guide/${items[0].id}" class="gd-toc-g">${T(g.title)}</a><ul>${items.map(s => `<li><a href="#/guide/${s.id}">${T(s.title)}</a></li>`).join('')}</ul></li>`).join('')}</ul></nav>
@@ -1426,6 +1699,7 @@ function guideView(section, { signal } = {}) {
   on(view, 'click', e => {
     const b = e.target.closest('[data-gd]'); if (!b) return;
     if (b.dataset.gd === 'tour') askTour();
+    else if (b.dataset.gd === 'install') withInstall(m => m.openGuide('guide'), signal);
     else if (b.dataset.gd === 'music') { e.stopPropagation(); window.scrollTo({ top: 0 }); const mb = $('#vmMBtn'); if (mb && mb.getAttribute('aria-expanded') !== 'true') mb.click(); const first = $('#vmMPanel [data-t]'); if (first) first.focus({ preventScroll: true }); }
   }, signal);
   /* #/guide/<section>: focus its heading now (so the router leaves focus there), scroll to it once the router is done */
@@ -1453,11 +1727,13 @@ function findView({ signal } = {}) {
   const input = $('#findIn'), out = $('#findOut'), count = $('#findCount');
   let index = buildIndex({ mode: m, counts: guideCounts(), videos: findVideos || [] });
   if (!findVideos) W.loadVideos().then(({ VIDEOS }) => { if (signal.aborted) return; findVideos = VIDEOS; index = buildIndex({ mode: m, counts: guideCounts(), videos: VIDEOS }); if (input.value.trim()) draw(); }).catch(() => {});
+  /* Find is the menu's help too (openspec change play-nav-by-mode): with the box empty, the guide and the tour come first */
+  const help = () => `<div class="md-card find-help"><p class="door-acts"><b>${ex ? 'How does it work?' : 'Need help?'}</b> <a class="md-btn md-btn--sm" href="#/guide">${ex ? 'How to play' : 'Read the guide'}</a>${fx.mode() ? ` <button type="button" class="md-btn md-btn--sm" data-find-tour>${ex ? 'Show me around' : 'Take the tour'}</button>` : ''}</p></div>`;
   const browse = () => `<h2 class="mq-strand">${ex ? 'Places to go' : 'Browse'}</h2><ul class="find-list">${sectionLines(m).filter(l => l.href !== '#/find').map(l => `<li><a class="find-hit" href="${l.href}"><b>${l.label}</b><small>${l.plain}</small></a></li>`).join('')}</ul>`;
   const hitHTML = e => `<li>${e.yt ? `<button type="button" class="find-hit plays" data-watch="${esc(e.yt)}"><b>${esc(e.title)}</b><small>${esc(e.sub)}</small></button>` : `<a class="find-hit" href="${esc(e.href)}"><b>${esc(e.title)}</b><small>${esc(e.sub)}</small></a>`}</li>`;
   function draw() {
     const q = input.value.trim();
-    if (!q) { count.textContent = ''; out.innerHTML = browse(); return; }
+    if (!q) { count.textContent = ''; out.innerHTML = help() + browse(); return; }
     const groups = rank(index, q), n = countOf(groups);
     count.textContent = n ? `${n} ${n === 1 ? 'result' : 'results'}` : 'Nothing matched';
     out.innerHTML = n ? groups.map(g => `<section class="find-group${g.kind === 'top' ? ' find-group--top' : ''}"><h2 class="mq-strand">${kindLabel(g.kind, m)}</h2><ul class="find-list">${g.items.map(hitHTML).join('')}</ul></section>`).join('')
@@ -1469,15 +1745,17 @@ function findView({ signal } = {}) {
     if (e.key === 'ArrowDown') { const first = out.querySelector('.find-hit'); if (first) { e.preventDefault(); first.focus(); } }
     else if (e.key === 'Escape' && input.value) { e.preventDefault(); input.value = ''; draw(); }
   }, signal);
-  on(out, 'click', e => { if (e.target.closest('.find-group .find-hit')) metrics.findGo(); }, signal); /* a ranked result only, never the browse list; a fixed event: never the text or the result */
+  on(out, 'click', e => { if (e.target.closest('.find-group .find-hit')) metrics.findGo(); if (e.target.closest('[data-find-tour]')) askTour(); }, signal); /* a ranked result only, never the browse list; a fixed event: never the text or the result */
   draw();
   input.focus({ preventScroll: true });
 }
-/* The / key opens Find from any page (openspec find), unless the Player is typing or a dialog or menu is open */
+/* The / key opens Find from any page (openspec find), unless the Player is typing or a dialog or menu is open; Ctrl K
+   (Cmd K on a Mac) opens it too, even from a text field (openspec change play-nav-by-mode), but not over a dialog */
 document.addEventListener('keydown', e => {
-  if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+  const k = String(e.key || '').toLowerCase(), combo = k === 'k' && (e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey;
+  if (!combo && (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey)) return;
   const t = e.target, typing = t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
-  if (typing || document.querySelector('dialog[open]') || document.querySelector('header [aria-expanded="true"]')) return; /* a header menu (Music) is open; an expanded control in the view, like a flipped Sutra card, does not count */
+  if ((typing && !combo) || document.querySelector('dialog[open]') || document.querySelector('header [aria-expanded="true"]') || document.querySelector('.play-shell')) return; /* a header menu (Calm and sound) is open, or a round fills the screen; an expanded control in the view, like a flipped Sutra card, does not count */
   e.preventDefault();
   if ((location.hash || '#/') === '#/find') { const i = $('#findIn'); if (i) i.focus(); } else location.hash = '#/find';
 });
@@ -1491,7 +1769,32 @@ function skySwitchHTML(p) {
     <p class="mq-small" id="skyAbout">${fx.t({ challenger: 'Your home becomes a sky of Stars: one Constellation for each Sutra, three Stars for each Trick, and Bolt to show the way.', pro: 'Home becomes a map of every Trick\'s three Stars, grouped by Sutra, with a suggested path in Belt order.' })} Prefer a list? <a href="#/places">All places</a></p>
     <p class="pr-say" id="skyMsg" role="status" aria-live="polite"></p></div>`;
 }
-function meView() {
+/* "Try the Nikhilam Family helpers" (openspec family-helpers): every Mode, per Player, off until turned on; then
+   "When they help": Always, Only when I ask, Off */
+const FAMILY_WHEN = [['always', 'Always'], ['ask', 'Only when I ask'], ['off', 'Off']];
+function familySwitchHTML(p) {
+  const on = p.family === true, when = FAMILY_WHEN.some(([v]) => v === p.familyHelp) ? p.familyHelp : 'always';
+  return `<div class="me-family md-card"><button type="button" class="md-switch" role="switch" id="familySwitch" aria-checked="${on}" aria-describedby="familyAbout"><span>Try the Nikhilam Family helpers</span><span class="md-track" aria-hidden="true"><span class="md-knob"></span></span></button>
+    <p class="mq-small" id="familyAbout">${fx.t({ explorer: 'Shunya, Nava and Eka hop in when a question gets tricky. They give clues, never the answer.', challenger: 'Shunya, Nava and Eka, the Zero, Nine and One of the Nikhilam Family, are your study friends. When a question gets tricky they hop in with a hint, the method or an example on other numbers, never the answer.', pro: 'Shunya, Nava and Eka, the Zero, Nine and One of the Nikhilam Family, notice when a question is not going well and offer a hint, the method or a worked example on other numbers, never the answer.' })} Saved for this Player on this device.</p>
+    ${on ? `<fieldset class="me-fam-when"><legend>When they help</legend>${FAMILY_WHEN.map(([v, l]) => `<label><input type="radio" name="familyHelp" value="${v}"${v === when ? ' checked' : ''}> ${l}</label>`).join('')}</fieldset>` : ''}
+    <p class="pr-say" id="familyMsg" role="status" aria-live="polite"></p></div>`;
+}
+/* The Trophy case on Me (openspec working-memory-scaffolds, trophy-case spec): every reward but Sparks in one place,
+   each row with a link to where it is earned; the Badges follow it. Explorer is not offered Belts or Stars, so their
+   rows show once something is earned. Opens the section that meView closes after the Badges. */
+function trophyCaseHTML() {
+  const ex = fx.mode() === 'explorer', bp = gm.beltProgress(), held = bp.filter(b => b.earned).length, lit = litStars();
+  const m = ['g:', 'a:'].map(store.medalsWhere).reduce((t, c) => ({ gold: t.gold + c.gold, silver: t.silver + c.silver, bronze: t.bronze + c.bronze }), { gold: 0, silver: 0, bronze: 0 });
+  const row = (cls, kicker, value, body, links) => `<div class="trophy trophy--${cls}"><h3 class="md-kicker">${kicker}</h3><p class="trophy-v">${value}</p>${body}<p class="trophy-go">${links}</p></div>`;
+  const rows = [
+    !ex || held ? row('belts', 'Belts', `${held} of ${BELTS.length}`, `<ul class="belt-row trophy-belts">${bp.map(b => `<li class="belt-chip${b.earned ? ' on' : ''}" style="--belt:${b.color}"><span class="belt-knot" aria-hidden="true"></span>${b.name}${b.earned ? '<span class="md-sr-only">, held</span>' : ''}</li>`).join('')}</ul>`, '<a href="#/dojo">Earn Belts in the Dojo</a>') : '',
+    !ex || lit ? row('stars', 'Stars', `${lit} of ${SKY.PATH.length} Stars lit`, '', '<a href="#/dojo">Play a Star in the Dojo</a>') : '',
+    row('medals', 'Medals', `<span class="trophy-m">${medalHTML(3, { label: false })} ${m.gold} gold</span> <span class="trophy-m">${medalHTML(2, { label: false })} ${m.silver} silver</span> <span class="trophy-m">${medalHTML(1, { label: false })} ${m.bronze} bronze</span>`, '<p class="mq-small">From game Levels and Challenge tower challenges.</p>', '<a href="#/games">Games</a> · <a href="#/tower">Challenge tower</a>'),
+    row('cards', 'Sutra cards', `${gm.collectedCount()} of ${SUTRAS.length + SUBSUTRAS.length} collected`, '', '<a href="#/sutras">See the Sutras</a>')
+  ];
+  return `<section class="trophy-case" aria-labelledby="trophyH"><h2 class="mq-strand" id="trophyH">Trophy case</h2><div class="trophy-grid">${rows.join('')}</div>`;
+}
+function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw from one of its own buttons passes it on */
   document.title = `Me · Learn Vedic Math`;
   const p = store.player(), T = gm.titleInfo(), got = store.badges(), done = SKILLS.filter(s => store.mastered(s.id)).length;
   const badges = gm.badgesFor(fx.mode(), got); /* Explorer is not offered Belts or Sutra cards, so their badges are listed only once earned */
@@ -1501,9 +1804,10 @@ function meView() {
       <div class="me-acts"><button class="md-btn md-btn--sm" id="meName">New nickname</button>${store.AVATARS.map(c => `<button class="av-pick av av-${c}" data-c="${c}" aria-label="Color ${c}" aria-pressed="${c === p.avatar}"></button>`).join('')}</div>${parentNote()}</div></div>
     <h2 class="mq-strand" id="wbH">World boards</h2>
     <div class="md-card wb-card" id="worldBoards" role="region" aria-labelledby="wbH"><div class="wb-body">${worldBoardsHTML(p)}</div><p class="pr-say" id="wbMsg" role="status" aria-live="polite"></p></div>
-    <div class="mq-stats me-stats"><div class="md-stat"><div class="md-kicker">Skills mastered</div><div class="md-value">${done}</div><p>of ${SKILLS.length}</p></div><div class="md-stat"><div class="md-kicker">Day streak</div><div class="md-value">${store.streakDays()}</div><p>days</p></div><div class="md-stat"><div class="md-kicker">Belts</div><div class="md-value">${gm.beltProgress().filter(b => b.earned).length}</div><p>of ${BELTS.length} · ${litStars()} of ${SKY.PATH.length} Stars lit</p></div></div>
-    <h2 class="mq-strand">Badges <small class="mq-small">${badges.filter(b => got[b.id]).length} of ${badges.length}</small></h2>
-    <div class="badge-grid">${badges.map(b => `<div class="badge${got[b.id] ? ' got' : ''}"><span class="badge-medal" aria-hidden="true">${icon(got[b.id] ? 'star' : 'lock')}</span><b>${b.name}</b><small>${b.how}</small></div>`).join('')}</div>
+    <div class="mq-stats me-stats"><div class="md-stat"><div class="md-kicker">Skills mastered</div><div class="md-value">${done}</div><p>of ${SKILLS.length}</p></div><div class="md-stat"><div class="md-kicker">Day streak</div><div class="md-value">${store.streakDays()}</div><p>days</p></div></div>
+    ${trophyCaseHTML()}
+    <h3 class="mq-strand">Badges <small class="mq-small">${badges.filter(b => got[b.id]).length} of ${badges.length}</small></h3>
+    <div class="badge-grid">${badges.map(b => `<div class="badge${got[b.id] ? ' got' : ''}"><span class="badge-medal" aria-hidden="true">${icon(got[b.id] ? 'star' : 'lock')}</span><b>${b.name}</b><small>${b.how}</small></div>`).join('')}</div></section>
     <h2 class="mq-strand">Play mode</h2>
     <div class="mode-pick mode-pick--sm">${Object.entries(fx.MODES).map(([id, m]) => `<button class="mode-card mode-card--${m.color}" data-mode="${id}" aria-pressed="${id === fx.mode()}"><span class="mode-ic" aria-hidden="true">${modeIcon(id)}</span><b>${m.name}</b><small>${m.ages}</small></button>`).join('')}</div>
     <h2 class="mq-strand">Players on this device</h2>
@@ -1511,6 +1815,7 @@ function meView() {
       <button class="md-btn md-btn--sm" id="meAdd">${icon('plus')} Add a player</button></div>
     <h2 class="mq-strand">Settings</h2>
     ${skySwitchHTML(p)}
+    ${familySwitchHTML(p)}${install ? install.meCardHTML() : '<div id="meInstallCard" hidden></div>'}
     <div class="me-set"><label><input type="checkbox" id="setSound" ${fx.soundOn() ? 'checked' : ''}> Sound effects</label><label><input type="checkbox" id="setVoice" ${fx.voiceOn() ? 'checked' : ''}> Read questions aloud</label></div>
     ${ambienceSettingsHTML()}
     <h3 class="mq-h3" id="calmH">Calm and motion</h3>
@@ -1529,16 +1834,26 @@ function meView() {
     <h2 class="mq-strand">Backup</h2>
     <p class="mq-data"><button class="md-btn md-btn--sm" id="pExport">Copy backup code</button> <button class="md-btn md-btn--sm" id="pImport">Restore from code</button> <button class="md-btn md-btn--sm" id="pReset">Reset this player</button></p>
     <p class="pr-say" id="pMsg" role="status" aria-live="polite"></p>
-    <p class="mq-note">Progress stays in this browser. Leaderboards only ever see your made-up nickname, color and score.</p>
+    <div class="md-card me-restore" id="pOffer" hidden>
+      <h3 class="mq-h3" id="pOfferH" tabindex="-1">Restore from this code?</h3>
+      <ul id="pOfferList"></ul>
+      <p class="mq-small">With them come their Sparks, Medals, Stars, Ratings and settings. World board names and the Device board start fresh.</p>
+      <p class="mq-small" id="pOfferHere" hidden><b>This device already has progress:</b> <span></span>. Keep both adds the code's Players next to the ones here; each Player keeps their own progress.</p>
+      <div class="me-acts" id="pOfferFresh"><button class="md-btn md-btn--sm md-btn--primary" id="pBring">Bring it</button><button class="md-btn md-btn--sm" id="pNotNow">Not now</button></div>
+      <div class="me-acts" id="pOfferHas" hidden><button class="md-btn md-btn--sm" id="pKeep">Keep this device's</button><button class="md-btn md-btn--sm" id="pUse">Use the code's</button><button class="md-btn md-btn--sm md-btn--primary" id="pBoth">Keep both</button></div>
+    </div>
+    <p class="mq-note">Progress stays in this browser; the backup code holds every Player on this device. Leaderboards only ever see your made-up nickname, color and score.</p>
   </div></section>`;
   const msg = t => ($('#pMsg').textContent = t);
-  $('#meName').onclick = () => { store.updatePlayer({ name: store.makeName() }); fx.sfx('pop'); meView(); };
-  view.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { store.updatePlayer({ avatar: b.dataset.c }); meView(); });
-  view.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { fx.setMode(b.dataset.mode); gm.startDay(); fx.sfx('level'); meView(); });
-  view.querySelectorAll('[data-switch]').forEach(b => b.onclick = () => { store.switchPlayer(b.dataset.switch); fx.applyMode(); fx.sfx('pop'); meView(); });
-  view.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { if (confirm('Remove this player and their progress from this device?')) { store.removePlayer(b.dataset.del); meView(); } });
+  $('#meName').onclick = () => { store.updatePlayer({ name: store.makeName() }); fx.sfx('pop'); meView(ctx); };
+  view.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { store.updatePlayer({ avatar: b.dataset.c }); meView(ctx); });
+  view.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { fx.setMode(b.dataset.mode); gm.startDay(); fx.sfx('level'); meView(ctx); });
+  view.querySelectorAll('[data-switch]').forEach(b => b.onclick = () => { store.switchPlayer(b.dataset.switch); fx.applyMode(); fx.sfx('pop'); meView(ctx); });
+  view.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { if (confirm('Remove this player and their progress from this device?')) { store.removePlayer(b.dataset.del); meView(ctx); } });
   $('#meAdd').onclick = () => { store.addPlayer(); fx.applyMode(); location.hash = '#/'; render(); };
-  const sky = $('#skySwitch'); if (sky) sky.onclick = () => { store.updatePlayer({ sky: sky.getAttribute('aria-checked') !== 'true' }); fx.sfx('pop'); meView(); $('#skySwitch').focus(); $('#skyMsg').textContent = SKY.skyOn(store.player()) ? 'The Sky is your home now.' : 'Your home is the tile home again.'; };
+  const sky = $('#skySwitch'); if (sky) sky.onclick = () => { store.updatePlayer({ sky: sky.getAttribute('aria-checked') !== 'true' }); fx.sfx('pop'); meView(ctx); $('#skySwitch').focus(); $('#skyMsg').textContent = SKY.skyOn(store.player()) ? 'The Sky is your home now.' : 'Your home is the tile home again.'; };
+  const fam = $('#familySwitch'); if (fam) fam.onclick = () => { store.updatePlayer({ family: fam.getAttribute('aria-checked') !== 'true' }); fx.sfx('pop'); meView(ctx); $('#familySwitch').focus(); $('#familyMsg').textContent = store.player().family ? 'The Family helpers are on.' : 'The Family helpers are off.'; };
+  view.querySelectorAll('input[name="familyHelp"]').forEach(r => r.onchange = () => { store.updatePlayer({ familyHelp: r.value }); $('#familyMsg').textContent = r.value === 'off' ? 'They will stay away.' : r.value === 'ask' ? 'They come when you tap Ask a friend.' : 'They come when a question gets tricky, or when you ask.'; });
   $('#setSound').onchange = e => { fx.setSound(e.target.checked); fx.sfx('ok'); };
   $('#setBg').onchange = e => { setBg(e.target.checked); const t = document.getElementById('vmBg'); if (t) t.checked = e.target.checked; };
   $('#setCalm').onclick = e => { fx.setCalm(!fx.calmOn()); e.currentTarget.setAttribute('aria-checked', String(fx.calmOn())); };
@@ -1548,10 +1863,19 @@ function meView() {
   fx.wireVoiceSettings(view, { player: p.id });
   wireAmbienceSettings(view);
   wireWorldBoards(view);
+  /* The Install guide's card (openspec change install-app): drawn above when the module is here, else put in its place once it is */
+  withInstall(m => { const c = $('#meInstallCard'); if (c) c.outerHTML = m.meCardHTML(); const mi = $('#meInstall'); if (mi) mi.onclick = () => m.openGuide('me'); });
 
-  $('#pExport').onclick = async () => { const code = btoa(unescape(encodeURIComponent(store.exportData()))); try { await navigator.clipboard.writeText(code); msg('Backup code copied. Paste it somewhere safe.'); } catch (e) { prompt('Copy this backup code:', code); } };
-  $('#pImport').onclick = () => { const code = prompt('Paste your backup code:'); if (!code) return; try { store.importData(decodeURIComponent(escape(atob(code.trim())))); msg('Progress restored.'); meView(); } catch (e) { msg('That code did not work. Check that it was copied in full.'); } };
-  $('#pReset').onclick = () => { if (confirm('Reset all progress for this player?')) { store.reset(); meView(); msg('Progress reset.'); } };
+  /* Backup (js/backup.js, loaded after this view has drawn, so a first load never waits for it): every button waits
+     for the module, then runs its handler; the buttons are wired once */
+  const listen = (el, fn) => { if (ctx.signal) on(el, 'click', fn, ctx.signal); else el.onclick = fn; };
+  let bk = null;
+  store.loadBackup().catch(() => {});
+  const backup = fn => async () => { if (!bk) { try { bk = (await store.loadBackup()).meBackup({ $, msg }); } catch (e) { msg('The backup tools could not load. Check the connection, then try again.'); return; } } fn(bk); };
+  listen($('#pExport'), backup(b => b.copy())); listen($('#pImport'), backup(b => b.restore()));
+  listen($('#pBring'), backup(b => b.choose('replace'))); listen($('#pUse'), backup(b => b.choose('replace'))); listen($('#pBoth'), backup(b => b.choose('both')));
+  listen($('#pNotNow'), backup(b => b.keep())); listen($('#pKeep'), backup(b => b.keep()));
+  $('#pReset').onclick = () => { if (confirm('Reset all progress for this player?')) { store.reset(); meView(ctx); msg('Progress reset.'); } };
 }
 
 /* ---------- Trick animator ---------- */
@@ -1560,20 +1884,31 @@ function animatorHTML(t) {
     <form class="anim-in" id="animForm">${t.inputs.map((f, i) => `<label>${f.label}<input type="number" inputmode="numeric" min="${f.min}" max="${f.max}" data-i="${i}"></label>`).join('')}
       <div class="anim-btns"><button class="md-btn md-btn--sm md-btn--primary">Show steps</button><button type="button" class="md-btn md-btn--sm" id="animRand">New numbers</button></div></form>
     <p class="anim-err" id="animErr" role="alert"></p>
-    <div class="anim-board" id="animBoard" aria-live="polite"></div>
+    <div class="anim-links" id="animLinks"></div>
+    <div class="anim-board" id="animBoard" aria-live="polite" tabindex="0" aria-label="Steps" aria-describedby="animKeys"></div>
+    <p class="md-sr-only" id="animKeys">Space or the right arrow shows the next step, the left arrow the one before.</p>
     <div class="anim-nav" id="animNav" hidden><button type="button" class="md-btn md-btn--sm" id="animPrev">Back</button><span id="animPos"></span><button type="button" class="md-btn md-btn--sm md-btn--primary" id="animNext">Next step</button><button type="button" class="md-btn md-btn--sm" id="animAll">Show all</button>${listenBtn('from:.anim-step p', 'the steps shown')}</div></div>`;
 }
 function mountAnimator(t, signal) {
-  const form = $('#animForm'), ins = [...form.querySelectorAll('input')], board = $('#animBoard'), nav = $('#animNav'), err = $('#animErr'); let steps = [], i = 0, counted = false;
+  const form = $('#animForm'), ins = [...form.querySelectorAll('input')], board = $('#animBoard'), nav = $('#animNav'), err = $('#animErr'); let steps = [], i = 0, counted = false, vals = null, links = null, shownAll = false;
   const fill = vals => ins.forEach((x, k) => (x.value = vals[k]));
-  const show = (all = false) => { board.innerHTML = steps.slice(0, all ? steps.length : i + 1).map((s, k) => `<div class="anim-step${k === (all ? steps.length - 1 : i) ? ' cur' : ''}"><div class="anim-show">${s.show}</div><p>${s.say}</p></div>`).join(''); $('#animPos').textContent = `${all ? steps.length : i + 1} / ${steps.length}`; $('#animPrev').disabled = i === 0 && !all; $('#animNext').disabled = all || i === steps.length - 1;
+  /* Digit connectors (openspec working-memory-scaffolds): the lines for the step on show, once js/connectors.js is here */
+  const drawLinks = () => { const box = $('#animLinks'); if (!box) return; const l = links && vals && steps.length && !shownAll ? links.linksFor(t.id, vals, i) : null; box.innerHTML = l ? l.svg : ''; box.classList.toggle('still', fx.noMotion()); };
+  lateImport(loadLinks, 'connectors.js', signal).then(m => { if (m && !signal.aborted) { links = m; drawLinks(); } });
+  const show = (all = false) => { shownAll = all; drawLinks(); board.innerHTML = steps.slice(0, all ? steps.length : i + 1).map((s, k) => `<div class="anim-step${k === (all ? steps.length - 1 : i) ? ' cur' : ''}"><div class="anim-show">${s.show}</div><p>${s.say}</p></div>`).join(''); $('#animPos').textContent = `${all ? steps.length : i + 1} / ${steps.length}`; $('#animPrev').disabled = i === 0 && !all; $('#animNext').disabled = all || i === steps.length - 1;
     if ((all || i === steps.length - 1) && !counted) { counted = true; store.bump('tricksWatched'); if (store.markSeen('trick:' + t.id)) store.addSparks(5, 'trick'); } };
-  const run = (user = true) => { const vals = ins.map(x => Number(x.value)); if (ins.some(x => x.value === '') || vals.some(v => !Number.isFinite(v))) { err.textContent = 'Fill in every number.'; return; } const bad = t.valid(vals); err.textContent = bad || ''; if (bad) { board.innerHTML = ''; nav.hidden = true; return; } steps = t.steps(vals); i = 0; counted = !user; nav.hidden = false; show(); if (user) track('trick/' + t.id, 'Trick: ' + t.title); };
+  const run = (user = true) => { const vs = ins.map(x => Number(x.value)); if (ins.some(x => x.value === '') || vs.some(v => !Number.isFinite(v))) { err.textContent = 'Fill in every number.'; return; } const bad = t.valid(vs); err.textContent = bad || ''; if (bad) { vals = null; steps = []; board.innerHTML = ''; $('#animLinks').innerHTML = ''; nav.hidden = true; return; } /* no steps left for a late connectors load to draw */ vals = vs; steps = t.steps(vals); i = 0; counted = !user; nav.hidden = false; show(); if (user) track('trick/' + t.id, 'Trick: ' + t.title); };
   on(form, 'submit', e => { e.preventDefault(); fx.sfx('tap'); run(); }, signal);
   on($('#animRand'), 'click', () => { let v; do { v = t.random(); } while (t.valid(v)); fill(v); fx.sfx('pop'); run(); }, signal);
   on($('#animPrev'), 'click', () => { i = Math.max(0, i - 1); show(); }, signal);
   on($('#animNext'), 'click', () => { i = Math.min(steps.length - 1, i + 1); fx.sfx('tap'); show(); }, signal);
   on($('#animAll'), 'click', () => { i = steps.length - 1; show(true); }, signal);
+  /* Space or the right arrow is Next step, the left arrow Back, with focus on the steps */
+  on(board, 'keydown', e => {
+    if (!steps.length || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key === ' ' || e.key === 'ArrowRight') { e.preventDefault(); if (i < steps.length - 1) { i++; fx.sfx('tap'); show(); } }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); if (i > 0) { i--; show(); } }
+  }, signal);
   let v; do { v = t.random(); } while (t.valid(v)); fill(v); run(false);
 }
 
@@ -1630,6 +1965,16 @@ metrics.returnCheck(); /* before the first route view: remembers this device's f
 modeFromLink();
 render();
 initAmbient();
+/* The install module, after the first paint (openspec change install-app, design D12); a load that fails is reported once */
+later(() => lateImport(loadInstall, 'install.js'), 100, boot.signal);
+/* Word problems (openspec word-problems): the story templates load after the first paint, like install.js */
+later(() => lateImport(loadStories, 'stories.js'), 150, boot.signal);
+/* The Sutra tag module, a second after the page has loaded, so a view that draws a tag has it at once (#126 review) */
+const preloadTags = () => later(() => {
+  lateImport(loadTags, 'sutra-tag.js');
+  lateImport(loadArena, 'arena.js'); lateImport(loadTour, 'tour.js'); lateImport(loadKit, 'play/kit.js');
+}, 1000, boot.signal);
+if (document.readyState === 'complete') preloadTags(); else on(window, 'load', preloadTags, boot.signal, { once: true });
 /* Offline: /sw.js (scope /play/, the game only) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
   const registerSW = () => navigator.serviceWorker.register('/sw.js', { scope: '/play/' }).catch(() => {});

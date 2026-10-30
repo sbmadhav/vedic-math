@@ -4,7 +4,7 @@ import { test, expect, open } from '../fixtures';
 
 test('Katas page tag: on #/katas/sq5 the Sutra tag has lang="sa-Latn"', async ({ page }) => {
   await open(page, '#/katas/sq5');
-  const tag = page.locator('#view .md-tag--plum').first();
+  const tag = page.locator('#view .sutra-tag b').first(); /* the Sutra tag's name (openspec change sutras-first) */
   await expect(tag).toBeVisible();
   await expect(tag).toHaveAttribute('lang', 'sa-Latn');
   await expect(tag).toContainText(/Ekādhikena/);

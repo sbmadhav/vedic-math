@@ -8,7 +8,7 @@ import * as store from './store.js';
 import { DMIN, DMAX, pointsAt } from '../shared/src/scoring.ts';
 
 export { DMIN, DMAX, pointsAt } from '../shared/src/scoring.ts';
-export { levelFor } from '../shared/src/questions.ts';
+export { levelFor } from '../shared/src/scoring.ts';
 /* Where a first-time player starts, by play mode */
 export const START = { explorer: 1, challenger: 5, pro: 9 };
 /* Level n (1 to 72) starts at this difficulty */

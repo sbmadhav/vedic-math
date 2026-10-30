@@ -3,7 +3,8 @@
 # static assets, wrangler.jsonc). site/ holds page sources the build renders into their places; the design system is
 # published from vendor/design-system/ at /ds/.
 exclude:
-  - CLAUDE.md
+  - AGENTS.md
+  - CODING_STANDARDS.md
   - README.md
   - GLOSSARY.md
   - CONTRIBUTING.md

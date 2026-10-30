@@ -5,13 +5,15 @@
    openShell(title, { signal, onExit, exit, exitId, focusBack }) adds the shell to #view and returns
    { el, area, header, close, setExit }:
    - area: where the round draws itself, exactly as it drew into its card before;
-   - the header holds the Calm switch, the A and A+ text size and the exit button (exit: its label, Stop or Back;
+   - the header holds the Calm switch, the Calm and sound control (Pause motion and Calm music, js/ambient.js; openspec
+     change play-nav-by-mode), the A and A+ text size and the exit button (exit: its label, Stop or Back;
      exitId: its id; onExit: what it does, close() when not given);
    - everything else on the page is inert while the shell is open;
    - close(focus = true) removes it, clears inert and focuses focusBack() (the button that started the round).
    Every listener runs on a child of signal, and the shell closes itself when signal aborts (the view is left). */
 import * as fx from './fx.js';
 import { on, onAbort, child } from './life.js';
+import { mountSound } from './ambient.js';
 
 let current = null;
 
@@ -32,6 +34,7 @@ export function openShell(title, { signal, onExit = null, exit = 'Stop', exitId 
   el.className = 'play-shell'; el.setAttribute('role', 'region'); el.setAttribute('aria-label', String(title)); el.tabIndex = -1;
   el.innerHTML = `<div class="play-head"><p class="play-title"></p>
     <button type="button" class="md-switch play-calm" role="switch" aria-checked="${fx.calmOn()}"><span>Calm</span><span class="md-track" aria-hidden="true"><span class="md-knob"></span></span></button>
+    <span class="play-sound"></span>
     <div class="play-size" role="group" aria-label="Text size">${sizeBtn('a', 'A', 'A, normal text')}${sizeBtn('a+', 'A+', 'A+, larger text')}</div>
     <button type="button" class="md-btn md-btn--sm play-exit"></button></div><div class="play-area"></div>`;
   el.querySelector('.play-title').textContent = String(title);
@@ -39,7 +42,7 @@ export function openShell(title, { signal, onExit = null, exit = 'Stop', exitId 
   exitBtn.id = exitId; exitBtn.textContent = exit;
 
   /* Everything but the shell is inert: the rest of the view, the site header, the footer and the skip link */
-  const others = [...view.children, ...document.querySelectorAll('body > header, body > footer, body > .skip')].filter(n => n !== el && !n.inert);
+  const others = [...view.children, ...document.querySelectorAll('body > header, body > footer, body > .md-skip')].filter(n => n !== el && !n.inert);
   others.forEach(n => (n.inert = true));
   const y = window.scrollY || 0, root = document.documentElement;
   root.classList.add('play-open');
@@ -67,6 +70,7 @@ export function openShell(title, { signal, onExit = null, exit = 'Stop', exitId 
   const calmBtn = el.querySelector('.play-calm');
   on(calmBtn, 'click', () => fx.setCalm(!fx.calmOn()), ls);
   on(document, 'vmcalm', () => calmBtn.setAttribute('aria-checked', String(fx.calmOn())), ls);
+  mountSound(el.querySelector('.play-sound'), { signal: ls, idp: 'pl', shell: true });
   el.querySelectorAll('[data-size]').forEach(b => on(b, 'click', () => fx.setTextSize(b.dataset.size), ls));
   on(document, 'vmtext', () => el.querySelectorAll('[data-size]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.size === fx.textSize()))), ls);
   onAbort(signal, () => shell.close(false));

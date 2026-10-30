@@ -59,7 +59,7 @@ test.describe('Quests have stable ids: Mode change after completing a quest', ()
     expect((await card(page))[0]).toEqual({ label: 'Answer 15 questions', n: '15/15', done: true });
 
     await switchMode(page, 'pro');
-    await expect(page.locator('h1.home-h')).toHaveText('Train your mental math');
+    await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
     const pro = await card(page);
     expect(pro.map(q => q.label)).toEqual(['Answer 20 questions', 'Finish an Arena round', 'Finish 2 Dojo katas']);
     expect(pro.filter(q => q.done), 'no Pro quest is done: none of them was completed').toEqual([]);

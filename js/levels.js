@@ -98,8 +98,10 @@ export function dareFor(trick, star, exclude = new Set(), rand = Math.random) {
 
 /* ---------- Arena challenge tower ---------- */
 const g = id => byId[id] ? [id] : [];
-const grade = gr => SKILLS.filter(s => String(s.grade) === String(gr)).map(s => s.id);
-const strand = (st, maxGrade = 99) => SKILLS.filter(s => s.strand === st && (s.grade === 'K' ? 0 : +s.grade) <= maxGrade).map(s => s.id);
+/* tower: false keeps a Skill out of the tower's mixes (Real-life problems, openspec word-problems D1: no multi-step Word
+   problems in timed rounds) */
+const grade = gr => SKILLS.filter(s => String(s.grade) === String(gr) && s.tower !== false).map(s => s.id);
+const strand = (st, maxGrade = 99) => SKILLS.filter(s => s.strand === st && s.tower !== false && (s.grade === 'K' ? 0 : +s.grade) <= maxGrade).map(s => s.id);
 const tricks = ids => ids.map(i => 'v-' + i);
 export const TOPICS = [
   ['Counting and number bonds', ['k-count', 'k-bonds', 'k-teens', 'k-next', 'k-add10', 'k-sub10']],
@@ -121,7 +123,7 @@ export const TOPICS = [
   ['Purple belt tricks', tricks(['sqroot', 'cuberoot', 'transpose'])], ['Algebra 1', grade(9)], ['Geometry', grade(10)],
   ['Black belt tricks', tricks(['add-sub', 'ratio-zero', 'zero-sum'])], ['Algebra 2', grade(11)], ['Precalculus and calculus', grade(12)],
   ['Squares and roots', [...tricks(['sq5', 'square-near', 'duplex', 'sqroot']), '8-roots']], ['Speed multiplication', tricks(['crosswise', 'near-base', 'by11', 'by9s', 'ends10', 'sub-base', 'times5'])],
-  ['All the speed tricks', TRICKS.map(t => 'v-' + t.id)], ['Elementary grand mix', [1, 2, 3, 4, 5].flatMap(grade)], ['Middle school grand mix', [6, 7, 8].flatMap(grade)], ['Grand master mix', SKILLS.map(s => s.id)]
+  ['All the speed tricks', TRICKS.map(t => 'v-' + t.id)], ['Elementary grand mix', [1, 2, 3, 4, 5].flatMap(grade)], ['Middle school grand mix', [6, 7, 8].flatMap(grade)], ['Grand master mix', SKILLS.filter(s => s.tower !== false).map(s => s.id)]
 ].map(([name, ids]) => ({ name, ids: ids.filter(id => byId[id]) }));
 export const PER_CHAPTER = 25, CHALLENGE_COUNT = TOPICS.length * PER_CHAPTER;
 export const FORMATS = {

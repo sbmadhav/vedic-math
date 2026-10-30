@@ -27,8 +27,9 @@ test('home and a played game never request the video list', async ({ page }) => 
   await page.waitForLoadState('networkidle');
   expect(asked, 'home does not request the video list').toEqual([]);
 
-  // Into a game the way a Player would: the nav, then the game's card
-  await page.locator('.mq-nav').getByRole('link', { name: 'Games', exact: true }).click();
+  // Into a game the way a Player would: the nav's Arcade, Games, then the game's card (openspec change play-nav-by-mode)
+  await page.locator('.mq-nav').getByRole('link', { name: 'Arcade', exact: true }).click();
+  await page.locator('.arcade-doors a[href="#/games"]').click();
   await page.locator('a.mq-game[href="#/game/times-sprint"]').click();
   await expect(page.locator('#view h1')).toHaveText(/Times sprint/);
   await page.locator('#gShell [data-m="endless"]').click();

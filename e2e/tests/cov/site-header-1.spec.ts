@@ -23,13 +23,13 @@ const kinds = (page: Page) => page.evaluate(() => {
 
 test.use({ viewport: { width: 1280, height: 800 } });
 
-test('Game header: brand, the game nav, color scheme, Music and the Player chip in one row, and no Explore button', async ({ page }) => {
+test('Game header: brand, the game nav, color scheme, Calm and sound and the Player chip in one row, and no Explore button', async ({ page }) => {
   await open(page);
   expect(await kinds(page)).toEqual(['brand', 'nav', 'theme', 'music', 'player']);
   await expect(page.locator('body > header .md-brand')).toHaveAttribute('href', '/?home');
   await expect(page.locator('body > header .md-brand')).toContainText('Learn Vedic Math');
   const tabs = await page.locator('header .mq-nav a:visible').allInnerTexts();
-  expect(tabs.map(t => t.trim())).toEqual(['Home', 'Learn', 'Dojo', 'Arena', 'Games', 'Sutras', 'Watch', 'Guide', 'Find']);
+  expect(tabs.map(t => t.trim().split('\n')[0].trim())).toEqual(['Home', 'Learn', 'Arcade', 'Watch', 'Find'] /* the menu by Mode (openspec change play-nav-by-mode; the Sutras lead Learn) */);
   const tops = await page.evaluate(() => ['.md-brand', '.mq-nav', '#themeBtn', '#vmMBtn', '#mqChip a']
     .map(s => { const r = document.querySelector(s)!.getBoundingClientRect(); return Math.round(r.top + r.height / 2); }));
   for (const t of tops) expect(Math.abs(t - tops[0])).toBeLessThanOrEqual(2);
@@ -42,12 +42,12 @@ test('Landing header: the brand, links to Play and the grown-up pages, and the c
   expect(links).toEqual(['/play/', '/parents/', '/teachers/']);
 });
 
-test('One line per menu item: the Dojo link\'s tooltip is the line Find\'s browse list shows for the Dojo', async ({ page }) => {
+test('One line per menu item: the Arcade link\'s tooltip is the line Find\'s browse list shows for the Arcade', async ({ page }) => {
   await open(page);
-  const tip = await page.locator('.mq-nav a[href="#/dojo"]').getAttribute('title');
-  expect(tip).toMatch(/speed tricks/i);
+  const tip = await page.locator('.mq-nav a[href="#/arcade"]').getAttribute('title'); /* the Dojo is in the Arcade (openspec change play-nav-by-mode) */
+  expect(tip).toMatch(/Dojo/);
   await open(page, '#/find');
-  await expect(page.locator('.find-hit[href="#/dojo"] small')).toHaveText(tip!);
+  await expect(page.locator('.find-hit[href="#/arcade"] small')).toHaveText(tip!);
   // Every menu link carries one
   for (const a of await page.locator('.mq-nav a').all()) expect((await a.getAttribute('title'))!.length).toBeGreaterThan(20);
 });

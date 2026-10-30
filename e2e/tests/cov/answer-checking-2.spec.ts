@@ -63,6 +63,7 @@ test.describe('Mixed numbers are numbers', () => {
     const base = Number(q.match(/(\d+)<sup>2<\/sup>/)![1]);
     const ans = String(base * base);
     const spaced = `${ans[0]} ${ans.slice(1)}`; // 1225 -> "1 225"
+    await box.getByRole('button', { name: 'Type it in one box' }).click(); // this checks the one box (openspec working-memory-scaffolds)
     await box.locator('.ans-in').fill(spaced);
     await box.locator('#prCheck').click();
     await expect(box.locator('#prSay')).not.toBeEmpty();

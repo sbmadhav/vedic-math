@@ -28,6 +28,8 @@ export interface Trick {
   valid(vals: Vals): string | null;
   steps(vals: Vals): TrickStep[];
   answer(vals: Vals): number | string;
+  /* The left and right part the Trick writes side by side (openspec working-memory-scaffolds), for the answer slots */
+  parts?(vals: Vals): [string, string];
   q?(vals: Vals): string;
   fields?(vals: Vals): Field[];
   choice?: string[];
@@ -65,7 +67,7 @@ export const TRICKS: Trick[] = [
         { say: `One more than ${a} is ${a + 1}. Multiply: ${a} × ${a + 1} = ${a * (a + 1)}.`, show: `${H(a)} × ${H(a + 1, 'teal')} = ${H(a * (a + 1), 'sky')}` },
         { say: `Write 25 on the right. ${n}² = ${n * n}.`, show: `${H(a * (a + 1), 'sky')} | ${H('25', 'sun')} = <b>${n * n}</b>` }
       ]; },
-    answer: ([n]) => n * n },
+    answer: ([n]) => n * n, parts: ([n]) => { const a = (n - 5) / 10; return [String(a * (a + 1)), '25']; } },
 
   { id: 'near-base', sutra: 'Nikhilaṃ Navataścaramaṃ Daśataḥ', sutraId: 's2', meaning: 'All from 9 and the last from 10', title: 'Multiply numbers near 10, 100 or 1000', kid: 'Near-100 magic', grade: 5,
     when: 'Both numbers are close to the same power of ten: 97 × 94, 103 × 108, 996 × 989.',
@@ -87,7 +89,11 @@ export const TRICKS: Trick[] = [
       st.push({ say: `So ${a} × ${b} = ${a * b}.`, show: `<b>${a * b}</b>` });
       return st;
     },
-    answer: ([a, b]) => a * b },
+    answer: ([a, b]) => a * b,
+    parts([a, b]) { const base = [10, 100, 1000].find(x => Math.abs(a - x) <= x * 0.3 && Math.abs(b - x) <= x * 0.3) as number, w = String(base).length - 1;
+      let L = a + (b - base), R = (a - base) * (b - base);
+      if (R < 0) { const k = Math.ceil(-R / base); L -= k; R += k * base; } else if (R >= base) { const c = Math.floor(R / base); L += c; R -= c * base; }
+      return [String(L), pad(R, w)]; } },
 
   { id: 'crosswise', sutra: 'Ūrdhva Tiryagbhyām', sutraId: 's3', meaning: 'Vertically and crosswise', title: 'Multiply any two numbers in one line', kid: 'Criss-cross multiply', grade: 5,
     when: 'Any multiplication. Fastest for 2-digit and 3-digit numbers.',
@@ -133,7 +139,7 @@ export const TRICKS: Trick[] = [
         { say: `Right part: ${m} − ${left} = ${pad(right, w)} (all from 9).`, show: `${H(left, 'sky')} | ${H(pad(right, w), 'sun')}` },
         { say: `So ${n} × ${m} = ${n * m}.`, show: `<b>${n * m}</b>` }
       ]; },
-    answer: ([n, m]) => n * m },
+    answer: ([n, m]) => n * m, parts: ([n, m]) => [String(n - 1), pad(m - (n - 1), String(m).length)] },
 
   { id: 'ends10', sutra: 'Antyayordaśake\'pi', sutraId: 'u8', meaning: 'When the last digits add to ten', title: 'Same start, last digits add to 10', kid: 'Ten-buddies multiply', grade: 5,
     when: 'Both numbers start the same and their last digits add to 10: 43 × 47, 62 × 68, 104 × 106.',
@@ -147,7 +153,7 @@ export const TRICKS: Trick[] = [
         { say: `${u} × ${v} = ${u * v}, written as two digits: ${pad(u * v, 2)}.`, show: `${H(t * (t + 1), 'sky')} | ${H(pad(u * v, 2), 'sun')}` },
         { say: `So ${a} × ${b} = ${a * b}.`, show: `<b>${a * b}</b>` }
       ]; },
-    answer: ([a, b]) => a * b },
+    answer: ([a, b]) => a * b, parts: ([a, b]) => { const t = Math.floor(a / 10); return [String(t * (t + 1)), pad((a % 10) * (b % 10), 2)]; } },
 
   { id: 'square-near', sutra: 'Yāvadūnam', sutraId: 's10', meaning: 'Whatever the extent of its deficiency', title: 'Square numbers near a base', kid: 'Near-100 squares', grade: 6,
     when: 'Squaring numbers near 10, 100 or 1000: 97², 104², 1012².',
@@ -164,7 +170,10 @@ export const TRICKS: Trick[] = [
       if (note) st.push({ say: note, show: `${H(L, 'sky')} | ${H(pad(R, w), 'sun')}` });
       st.push({ say: `So ${n}² = ${n * n}.`, show: `<b>${n * n}</b>` });
       return st; },
-    answer: ([n]) => n * n },
+    answer: ([n]) => n * n,
+    parts([n]) { const base = [10, 100, 1000].find(x => Math.abs(n - x) <= x * 0.3) as number, w = String(base).length - 1, d = n - base; let L = n + d, R = d * d;
+      if (R >= base) { const c = Math.floor(R / base); L += c; R -= c * base; }
+      return [String(L), pad(R, w)]; } },
 
   { id: 'by11', sutra: 'Ūrdhva Tiryagbhyām (special case)', sutraId: 's3', meaning: 'Vertically and crosswise, with a multiplier of 11', title: 'Multiply by 11', kid: 'The 11 sandwich', grade: 3,
     when: 'Any number times 11.',
@@ -388,10 +397,11 @@ export function problemFor(t: Trick, vals: Vals): Question {
     if (vals[1]) { let r = 1, dg = 0; for (let i = 0; i < vals[1]; i++) { r *= 10; dg = Math.floor(r / vals[0]); r %= vals[0]; } return { q: `1/${vals[0]} = 0.&hellip; What is digit number ${vals[1]} after the decimal point?`, kind: 'num', answer: dg, hints: [s0, s1], steps }; }
     const first = String(1 / vals[0]).replace(/^0\.0*/, '')[0]; return { q, kind: 'num', answer: Number(first), hints: [s0], steps };
   }
-  return { q, kind: 'num', answer: t.answer(vals), hints: [s0, s1], steps };
+  /* parts: the left and right part a Trick writes side by side (openspec working-memory-scaffolds), for the answer slots */
+  return { q, kind: 'num', answer: t.answer(vals), hints: [s0, s1], steps, ...(t.parts ? { parts: t.parts(vals) } : {}) };
 }
 
 export const TRICK_SKILLS: Skill[] = TRICKS.map(t => ({
   id: 'v-' + t.id, grade: 'V', strand: 'tricks', title: t.title, kid: t.kid, idea: t.idea, method: [t.when, ...t.steps(t.random() as Vals).map(s => s.say).slice(0, 2)], trick: t.id,
-  gen() { let vals: Vals; do { vals = t.random() as Vals; } while (t.valid(vals)); return problemFor(t, vals); }
+  gen() { let vals: Vals; do { vals = t.random() as Vals; } while (t.valid(vals)); return { ...problemFor(t, vals), vals }; } /* vals: the numbers, which a Word problem keeps (openspec word-problems) */
 }));

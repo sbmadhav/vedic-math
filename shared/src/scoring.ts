@@ -6,6 +6,8 @@
 export const DMIN = 1, DMAX = 20;
 /* Points for one right answer at difficulty d: 10 at d1, 143 at d20 */
 export const pointsAt = (d: number): number => 10 + 7 * (Math.max(DMIN, Math.min(DMAX, Math.round(d))) - 1);
+/* Skill generators have levels 1 to 3. A Rating picks one: 1 to 7 is level 1, 8 to 13 level 2, 14 to 20 level 3. */
+export const levelFor = (d: number): 1 | 2 | 3 => (d <= 7 ? 1 : d <= 13 ? 2 : 3);
 /* Arena: the points for a right answer that makes the combo `combo` long: 10, plus 2 for each earlier answer in the
    combo, up to 30 */
 export const comboGain = (combo: number): number => 10 + Math.min(combo - 1, 10) * 2;

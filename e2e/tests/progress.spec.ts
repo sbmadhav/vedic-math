@@ -105,6 +105,7 @@ test('Video learner: closing a video after 5 seconds earns nothing, a minute in 
   const dlg = page.locator('dialog.vm-player');
   await card.click();
   await expect(dlg).toBeVisible();
+  await dlg.locator('.vp-play').click(); // the facade: the minute counts from the press on play
   await page.clock.runFor(5_000);
   await dlg.locator('.vp-x').click();
   await expect(dlg).toBeHidden();
@@ -116,6 +117,7 @@ test('Video learner: closing a video after 5 seconds earns nothing, a minute in 
   expect(await sparks()).toBe(0);
   await card.click();
   await expect(dlg).toBeVisible();
+  await dlg.locator('.vp-play').click();
   await page.clock.runFor(61_000);
   expect((await badges()).watch).toBeTruthy();
   await dlg.locator('.vp-x').click();
@@ -164,19 +166,20 @@ test.describe('removing a Player who posted', () => {
   });
 });
 
-/* Badges listed per Mode (openspec explorer-belts): Explorer is not offered Belts or Sutra cards, so their badges are
-   listed only once earned, and the count is earned of listed. */
+/* Badges listed per Mode (openspec explorer-belts, sutras-first): Explorer is not offered Belts, so their badges are
+   listed only once earned, and the count is earned of listed. Sutra cards are in every Mode, and so is Sutra scholar. */
 test.describe('badges in Explorer', () => {
   test.use({ seedMode: 'explorer' });
-  test('no belt or Sutra scholar badge is listed, and the total counts the listed badges', async ({ page }) => {
+  test('no belt badge is listed, Sutra scholar is, and the total counts the listed badges', async ({ page }) => {
     await open(page, '#/me');
     const grid = page.locator('.badge-grid');
     const n = await grid.locator('.badge').count();
     expect(n).toBeGreaterThan(10);
-    for (const name of ['White belt', 'Green belt', 'Black belt', 'Sutra scholar']) await expect(badge(page, name)).toHaveCount(0);
+    for (const name of ['White belt', 'Green belt', 'Black belt']) await expect(badge(page, name)).toHaveCount(0);
+    await expect(badge(page, 'Sutra scholar')).toHaveCount(1);
     await expect(page.locator('.mq-strand', { hasText: 'Badges' })).toContainText(`0 of ${n}`);
     const all = await page.evaluate(async () => (await e2eMod('gamify')).BADGES.length);
-    expect(n).toBe(all - 4);
+    expect(n).toBe(all - 3);
   });
   test.describe('with the White belt earned before switching from Challenger', () => {
     test.use({ seedProgress: { v: 3, skills: {}, sparks: 0, days: {}, best: {}, last: null, grade: null, badges: { 'belt-white': 1700000000000 }, counts: {}, seen: {}, belts: { white: 1700000000000 } } });
@@ -196,4 +199,109 @@ test('badges in Challenger: every badge is listed, belts included', async ({ pag
   const all = await page.evaluate(async () => (await e2eMod('gamify')).BADGES.length);
   await expect(page.locator('.badge-grid .badge')).toHaveCount(all);
   await expect(badge(page, 'White belt')).toHaveCount(1);
+});
+
+/* The backup code (openspec change learnvedicmath, progress-handoff spec "Backup code for every Player"; task 10.3):
+   Copy backup code holds every Player on the device in the hand-off payload format, and Restore from code accepts it,
+   and old single-Player codes, only through the same checks and the same prompt as /import/. */
+test.describe('backup code', () => {
+  type Page = import('@playwright/test').Page;
+  const b64 = (o: unknown) => Buffer.from(JSON.stringify(o), 'utf8').toString('base64');
+  const stored = (page: Page) => page.evaluate(() => Object.fromEntries(Object.keys(localStorage).filter(k => !k.startsWith('e2e.')).map(k => [k, localStorage.getItem(k)])));
+  const names = (page: Page) => page.locator('.players .player b').allTextContents();
+
+  test('Copy backup code holds every Player; Restore from code lists them and writes only after a choice', async ({ page }) => {
+    // The clipboard is a recorder, in every engine
+    await page.addInitScript(() => { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: (t: string) => { (window as any).__copied = t; return Promise.resolve(); } } }); });
+    await open(page, '#/me');
+    const ids: string[] = await page.evaluate(async () => { const s = await e2eMod('store'); s.addSparks(30); const b = s.addPlayer(); s.addSparks(70); const c = s.addPlayer(); s.addSparks(5); s.switchPlayer('p1'); return ['p1', b.id, c.id]; });
+    await page.reload();
+    await expect(page.locator('.players .player')).toHaveCount(3);
+    await page.locator('#pExport').click();
+    await expect(page.locator('#pMsg')).toContainText('every Player on this device');
+    const code: string = await page.evaluate(() => (window as any).__copied);
+    const payload = JSON.parse(Buffer.from(code, 'base64').toString('utf8'));
+    expect(payload.v).toBe(1);
+    expect(payload.from).toBe('learnvedicmath.com');
+    expect(payload.players.list.map((p: any) => p.id)).toEqual(ids);
+    expect(ids.map(id => payload.records[id].sparks)).toEqual([30, 70, 5]);
+    expect(Object.keys(payload).sort()).toEqual(['at', 'from', 'players', 'records', 'settings', 'v']);
+    // Two Players are removed; the code brings them back, but only after Use the code's
+    await page.evaluate(async ([b, c]) => { const s = await e2eMod('store'); s.removePlayer(b); s.removePlayer(c); }, [ids[1], ids[2]]);
+    await page.reload();
+    await expect(page.locator('.players .player')).toHaveCount(1);
+    const before = await stored(page);
+    page.on('dialog', d => d.accept(code));
+    await page.locator('#pImport').click();
+    const offer = page.locator('#pOffer');
+    await expect(offer).toBeVisible();
+    await expect(offer.locator('#pOfferList li')).toHaveText(['Swift Tiger 42: 30 Sparks', /^[A-Z][a-z]+ [A-Z][a-z]+ \d\d: 70 Sparks$/, /^[A-Z][a-z]+ [A-Z][a-z]+ \d\d: 5 Sparks$/]);
+    await expect(offer.locator('#pOfferHere')).toContainText('This device already has progress: Swift Tiger 42.');
+    await expect(offer.locator('#pBring')).toBeHidden();
+    await expect(offer.locator('#pBoth')).toBeVisible();
+    expect(await stored(page), 'nothing is written before a choice').toEqual(before);
+    await offer.locator('#pKeep').click();
+    await expect(offer).toBeHidden();
+    await expect(page.locator('#pMsg')).toHaveText('Nothing was changed.');
+    expect(await stored(page)).toEqual(before);
+    await page.locator('#pImport').click();
+    await expect(offer).toBeVisible();
+    await offer.locator('#pUse').click();
+    await expect(page.locator('.players .player')).toHaveCount(3);
+    const s = await stored(page);
+    expect(JSON.parse(s['vm.players']!).list.map((p: any) => p.id)).toEqual(ids);
+    expect(JSON.parse(s['mathquest.v1.' + ids[1]]!).sparks).toBe(70);
+    expect(JSON.parse(s['mathquest.v1.p1']!).sparks).toBe(30);
+    expect(s['vm.migratedAt']).toBeUndefined();
+  });
+
+  test('an old single-Player code is offered as one Player, and Keep both adds them next to this device\'s', async ({ page }) => {
+    await open(page, '#/me');
+    await page.evaluate(async () => { const s = await e2eMod('store'); s.addSparks(12); });
+    const code = b64({ player: { id: 'p1', name: 'Bold Yak 55', avatar: 'plum', mode: 'pro', parentOk: 1 }, data: { skills: {}, sparks: 250, best: { 'run-1': 9 } } });
+    page.on('dialog', d => d.accept(code));
+    await page.locator('#pImport').click();
+    await expect(page.locator('#pOfferList li')).toHaveText(['Bold Yak 55: 250 Sparks']);
+    await page.locator('#pBoth').click();
+    await expect(page.locator('.players .player')).toHaveCount(2);
+    expect(await names(page)).toEqual(['Swift Tiger 42', 'Bold Yak 55']);
+    const s = await stored(page), P = JSON.parse(s['vm.players']!);
+    const yak = P.list[1];
+    expect(yak.id).not.toBe('p1');
+    expect(yak.parentOk).toBeUndefined();
+    expect(JSON.parse(s['mathquest.v1.p1']!).sparks).toBe(12);
+    expect(JSON.parse(s['mathquest.v1.' + yak.id]!).sparks).toBe(250);
+    expect(JSON.parse(s['mathquest.v1.' + yak.id]!).best).toEqual({ 'run-1': 9 });
+    await expect(page.locator('#view h1')).toHaveText('Bold Yak 55');
+  });
+
+  test('a device with more Players than one code holds is told, and nothing is copied', async ({ page }) => {
+    await page.addInitScript(() => { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: (t: string) => { (window as any).__copied = t; return Promise.resolve(); } } }); });
+    await open(page, '#/me');
+    const n = await page.evaluate(async () => { const s = await e2eMod('store'); while (s.allPlayers().length <= s.MAX_PLAYERS) s.addPlayer(); s.switchPlayer('p1'); return s.allPlayers().length as number; });
+    expect(n).toBe(13);
+    await page.reload();
+    await expect(page.locator('.players .player')).toHaveCount(13);
+    await page.locator('#pExport').click();
+    await expect(page.locator('#pMsg')).toHaveText('One backup code holds up to 12 Players, and this device has more. Remove a Player you no longer need, then try again.');
+    expect(await page.evaluate(() => (window as any).__copied ?? null)).toBeNull();
+  });
+
+  test('a code that is not a backup, or does not match the schema, changes nothing and says so', async ({ page }) => {
+    await open(page, '#/me');
+    const before = await stored(page);
+    const player = { id: 'p1', name: 'Bold Yak 55', avatar: 'plum', mode: null, created: 1 };
+    const payload = { v: 1, from: 'learnvedicmath.com', at: 1, players: { active: 'p1', list: [player] }, records: {}, settings: {} };
+    const codes = ['not a code', b64({ ...payload, extra: 1 }), b64({ ...payload, v: 2 }), b64({ ...payload, players: { active: 'p1', list: [{ ...player, name: '<img src=x onerror=alert(1)>' }] } })];
+    let i = 0;
+    page.on('dialog', d => d.accept(codes[i++]));
+    for (const _ of codes) {
+      await page.locator('#pMsg').evaluate(e => { e.textContent = ''; });
+      await page.locator('#pImport').click();
+      await expect(page.locator('#pMsg')).toHaveText('That code could not be used. Check that it was copied in full.');
+      await expect(page.locator('#pOffer')).toBeHidden();
+    }
+    expect(await stored(page)).toEqual(before);
+    await expect(page.locator('main img')).toHaveCount(0);
+  });
 });

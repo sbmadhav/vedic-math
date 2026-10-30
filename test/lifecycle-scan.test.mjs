@@ -45,6 +45,24 @@ test('the Sky (js/sky-view.js): no bare listeners, timers or frame loops; its li
   assert.ok((src.match(/\bon\([^;]*\bsignal\b/g) || []).length >= 4, 'pointer, scroll and motion listeners on the view signal');
 });
 
+test('the Family helpers (js/family-view.js, js/family-hook.js, js/family-helpers.js): no bare listeners, timers or frame loops', () => {
+  for (const f of ['family-view.js', 'family-hook.js', 'family-helpers.js']) {
+    assert.deepEqual(hits(f, /\.?addEventListener\(/), [], f);
+    assert.deepEqual(hits(f, TIMERS), [], f);
+  }
+  const src = readFileSync(new URL('../js/family-view.js', import.meta.url), 'utf8');
+  assert.match(src, /import \{[^}]*\bon\b[^}]*\blater\b[^}]*\bchild\b[^}]*\} from '\.\/life\.js'/);
+});
+
+test('Try a trick (js/try.js): no bare listeners or timers; its listeners go through life.on on a child signal', () => {
+  assert.deepEqual(hits('try.js', /\.?addEventListener\(/), []);
+  assert.deepEqual(hits('try.js', TIMERS), []);
+  const src = readFileSync(new URL('../js/try.js', import.meta.url), 'utf8');
+  assert.match(src, /import \{[^}]*\bon\b[^}]*\bchild\b[^}]*\} from '\.\/life\.js'/);
+  assert.match(src, /round = child\(signal\)/);
+  assert.doesNotMatch(src, /\.on(click|submit|keydown)\s*=/);
+});
+
 test('no bare listeners or timers in the play shell (js/shell.js)', () => {
   assert.deepEqual(hits('shell.js', /\.?addEventListener\(/), []);
   assert.deepEqual(hits('shell.js', TIMERS), []);
@@ -80,7 +98,7 @@ test('the Mode picker and the Home More toggle bind through life.on on the view 
   const app = src('app.js').join('\n');
   const picker = app.slice(app.indexOf('function modePicker('), app.indexOf('\n}\n', app.indexOf('function modePicker(')));
   assert.doesNotMatch(picker, /\.on(click|toggle)\s*=/);
-  assert.ok((picker.match(/\bon\(/g) || []).length >= 2 && (picker.match(/\}, signal\)/g) || []).length >= 2, 'Mode cards and Try a trick on the view signal');
+  assert.ok((picker.match(/\bon\(/g) || []).length >= 1 && (picker.match(/\}, signal\)/g) || []).length >= 1, 'Mode cards on the view signal'); /* the cards are the picker's only buttons (openspec change play-nav-by-mode) */
   assert.match(app, /if \(ctx\.signal\) on\(hm, 'toggle', keepMore, ctx\.signal\); else hm\.ontoggle = keepMore;/, 'More ways to play: the property only without a view signal');
 });
 
@@ -91,4 +109,16 @@ test('the background sky (js/sky-bg.js): no bare listeners, timers or frame loop
   assert.match(src, /import \{[^}]*\bon\b[^}]*\bloop\b[^}]*\} from '\.\/life\.js'/);
   assert.match(src, /loop\(frame, loopCtl\.signal\)/, 'the frame loop runs on a child signal, aborted when the tab hides or motion stops');
   assert.match(src, /on\(document, 'visibilitychange', sync, signal\)/);
+});
+
+test('installing the app (js/install.js, js/prompt-slot.js): no bare listeners or timers; the install prompt and appinstalled go through life.on', () => {
+  for (const f of ['install.js', 'install-rules.js', 'prompt-slot.js']) {
+    assert.deepEqual(hits(f, /\.?addEventListener\(/), [], f);
+    assert.deepEqual(hits(f, TIMERS), [], f);
+  }
+  const src = readFileSync(new URL('../js/install.js', import.meta.url), 'utf8');
+  assert.match(src, /on\(window, 'beforeinstallprompt', [^\n]*, ps\);/, 'the install prompt on the page signal');
+  assert.match(src, /on\(window, 'appinstalled', [^\n]*, ps\);/, 'appinstalled on the page signal');
+  assert.match(src, /on\(slot, 'click', [\s\S]*?\}, ctl\.signal\);/, 'the nudge on a child of the view signal');
+  assert.match(src, /every\([^\n]*, 2000, poll\.signal\)/, 'the nudge looks again on a child signal that stops after a minute');
 });

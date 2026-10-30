@@ -11,12 +11,13 @@ import { TRICKS } from './vedic.js';
 
 const FIRST = 'vm.firstSeen', FLAGS = 'vm.metrics';
 export const LEAGUES = ['explorer', 'challenger', 'pro'];
-export const ANSWER_AREAS = ['practice', 'run', 'kata', 'star'];
+export const ANSWER_AREAS = ['practice', 'run', 'kata', 'star', 'try'];
 export const ROUND_AREAS = ['arena', 'game', 'tower', 'duel'];
 export const SHARE_SURFACES = ['result', 'challenge-link'];
 export const WIN_BUCKETS = ['under-30', '30-60', '60-90', '90-180', 'over-180'];
 export const STAR_EVENTS = ['lit', 'skipped', 'comeback', 'dare_taken', 'dare_won'];
 export const TOUR_EVENTS = ['start', 'finish', 'skip'];
+export const FAMILY_EVENTS = ['visit/1', 'visit/2', 'visit/3', 'cheer', 'ask', 'show_me', 'not_now'];
 const ID = /^[a-z0-9][a-z0-9_-]{0,40}$/;
 
 const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -49,12 +50,15 @@ const ROUTES = [
   [/^#\/grade\/(\w+)$/, 'grade/{grade:1}'],
   [/^#\/skill\/([\w-]+)$/, 'skill/{skill:1}'],
   [/^#\/mix\/(\w+)$/, 'mix/{grade:1}'],
+  [/^#\/mix\/(\w+)\/words$/, 'mix/{grade:1}/words'],
   [/^#\/run\/(\w+)$/, 'run/{grade:1}'],
+  [/^#\/arcade$/, 'arcade'], /* the menu's Arcade zone (openspec change play-nav-by-mode) */
   [/^#\/dojo$/, 'dojo'],
   [/^#\/tricks$/, 'tricks'],
   [/^#\/katas\/([\w-]+)$/, 'katas/{trick:1}'],
   [/^#\/kata\/([\w-]+)\/\d+$/, 'kata/{trick:1}/kata'],
   [/^#\/star\/([\w-]+)\/\d+$/, 'star/{trick:1}/star'],
+  [/^#\/try$/, 'try'],
   [/^#\/tower$/, 'tower'],
   [/^#\/tower\/\d+$/, 'tower/chapter'],
   [/^#\/challenge\/\d+$/, 'challenge/challenge'],
@@ -114,7 +118,7 @@ export function tourEvent(kind) {
   if (TOUR_EVENTS.includes(kind)) send('tour/' + kind, 'Vedic Math: tour');
 }
 
-/* ---------- Answers in untimed play (Practice, Endless runs, Katas, Star rounds) ---------- */
+/* ---------- Answers in untimed play (Practice, Endless runs, Katas, Star rounds, Try a trick) ---------- */
 export function answered(area, ok) {
   if (!ANSWER_AREAS.includes(area)) return;
   send(`q_answered/${area}/${ok ? 'right' : 'miss'}`, 'Vedic Math: question answered');
@@ -178,9 +182,13 @@ export function shareClick(surface) {
   if (SHARE_SURFACES.includes(surface)) send('share_click/' + surface, 'Vedic Math: share');
 }
 
-/* ---------- Try a trick and Find (openspec first-visit, find) ---------- */
-/* Fixed words only: never the Find text, the result's name or the number of results */
-export function tryStart() { send('try/start', 'Vedic Math: try a trick'); }
+/* ---------- Try a trick and Find (openspec first-visit, find, try-trick-in-modes) ---------- */
+/* Fixed words only: never the Find text, the result's name or the number of results. A Try a trick pressed sends
+   try/start (as before) and the Mode whose Try a trick it is, as a fixed League word (like landing/mode/<id>). */
+export function tryStart(mode) {
+  send('try/start', 'Vedic Math: try a trick');
+  if (LEAGUES.includes(mode)) send('try/mode/' + mode, 'Vedic Math: try a trick in a Mode');
+}
 export function findGo() { send('find/go', 'Vedic Math: find result followed'); }
 /* A Mode link from a landing page Mode card (openspec change landing-modes-and-return): the Mode, a fixed word, only.
    It waits in the early queue, since the game reads the link before js/analytics.js has run. */
@@ -189,4 +197,25 @@ export function modeLink(mode) { if (LEAGUES.includes(mode)) send('landing/mode/
 /* ---------- Say it (openspec sutra-pronunciation) ---------- */
 /* A tap on a Say it button that starts a name clip. Fixed path and title: never the Sutra, the voice or the Mode.
    A tap that stops a playing clip sends nothing. */
+/* Family helper Visits (openspec family-helpers): the level or a fixed word only, never the Skill, Nickname, band or setting */
+export function family(kind) { if (FAMILY_EVENTS.includes(kind)) send('family/' + kind, 'Vedic Math: Family helpers'); }
+export function familyVisit(level, cheer = false) { family(cheer ? 'cheer' : 'visit/' + level); }
 export function say() { send('say/sutra', 'Say a Sutra name'); }
+
+/* ---------- Word problems (openspec change word-problems, design D12) ----------
+   A Word problem finished in Practice, an Endless run or a Star round (right on any try, or not), and a "What is it
+   asking?" hint shown. Fixed words only: never the story, the Skill, a name, a number or anything typed. */
+export const STORY_AREAS = ['practice', 'run', 'star'];
+export function story(area, ok) { if (STORY_AREAS.includes(area)) send(`story/${area}/${ok ? 'right' : 'miss'}`, 'Vedic Math: word problem'); }
+export function storyAsking() { send('story/asking', 'Vedic Math: word problem hint'); }
+
+/* ---------- Installing the app (openspec change install-app) ---------- */
+/* Fixed words only: never the browser, the platform or how many times the nudge was put off. wizard_open names which
+   entry point opened the Install guide, one of INSTALL_FROM. */
+export const INSTALL_EVENTS = ['nudge_shown', 'nudge_later', 'wizard_open', 'prompt_accepted', 'prompt_dismissed', 'installed', 'opened'];
+export const INSTALL_FROM = ['home', 'me', 'footer', 'guide'];
+export function install(kind, from) {
+  if (!INSTALL_EVENTS.includes(kind)) return;
+  if (kind === 'wizard_open') { if (INSTALL_FROM.includes(from)) send(`install/wizard_open/${from}`, 'Vedic Math: install'); return; }
+  send('install/' + kind, 'Vedic Math: install');
+}

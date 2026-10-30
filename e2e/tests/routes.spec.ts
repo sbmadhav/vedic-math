@@ -3,12 +3,13 @@ import { test, expect, APP, open, cloudLog, heldClock } from './fixtures';
 /* The app is a hash router (#/learn, #/dojo, ...). Every top-level route renders, deep links work,
    and Back / Forward move between views. */
 
+/* nav: the menu zone marked current on the route (openspec change play-nav-by-mode) */
 const ROUTES = [
   { hash: '#/learn', nav: 'Learn', h1: 'Pick a level', title: /^Skill map · Learn Vedic Math/ },
-  { hash: '#/dojo', nav: 'Dojo', h1: 'From white belt to black belt', title: /^Vedic Dojo/ },
-  { hash: '#/arena', nav: 'Arena', h1: '60 seconds. Same questions for everyone.', title: /^Arena/ },
-  { hash: '#/games', nav: 'Games', h1: 'Games that build number sense', title: /^Games/ },
-  { hash: '#/sutras', nav: 'Sutras', h1: 'The 16 sutras and 13 sub-sutras', title: /^The sutras · Learn Vedic Math/ },
+  { hash: '#/dojo', nav: 'Arcade', h1: 'From white belt to black belt', title: /^Vedic Dojo/ },
+  { hash: '#/arena', nav: 'Arcade', h1: '60 seconds. Same questions for everyone.', title: /^Arena/ },
+  { hash: '#/games', nav: 'Arcade', h1: 'Games that build number sense', title: /^Games/ },
+  { hash: '#/sutras', nav: 'Learn', h1: 'The 16 sutras and 13 sub-sutras', title: /^The sutras · Learn Vedic Math/ },
   { hash: '#/watch', nav: 'Watch', h1: 'Short videos that show how', title: /^Watch and learn/ },
   { hash: '#/me', nav: null, h1: 'Swift Tiger 42', title: /^Me · Learn Vedic Math/ },
 ];
@@ -48,7 +49,8 @@ test('nav links move between views, and Back / Forward follow', async ({ page })
   const nav = page.locator('.mq-nav');
   await nav.getByRole('link', { name: 'Learn', exact: true }).click();
   await expect(page.locator('#view h1')).toHaveText('Pick a level');
-  await nav.getByRole('link', { name: 'Games', exact: true }).click();
+  await nav.getByRole('link', { name: 'Arcade', exact: true }).click(); /* Games is in the Arcade (openspec change play-nav-by-mode) */
+  await page.locator('.arcade-doors a[href="#/games"]').click();
   await expect(page.locator('#view h1')).toHaveText('Games that build number sense');
   await nav.getByRole('link', { name: 'Watch', exact: true }).click();
   await expect(page.locator('#view h1')).toHaveText('Short videos that show how');
@@ -56,7 +58,10 @@ test('nav links move between views, and Back / Forward follow', async ({ page })
   await expect(page).toHaveURL(/#\/games$/);
   await expect(page.locator('#view h1')).toHaveText('Games that build number sense');
   await page.goBack();
+  await expect(page).toHaveURL(/#\/arcade$/);
+  await page.goBack();
   await expect(page.locator('#view h1')).toHaveText('Pick a level');
+  await page.goForward();
   await page.goForward();
   await expect(page.locator('#view h1')).toHaveText('Games that build number sense');
   await nav.getByRole('link', { name: 'Home', exact: true }).click();
@@ -130,7 +135,7 @@ test('a sutra card flips, then Learn more opens the dialog and Back closes it', 
 
 test('an unknown route falls back to home', async ({ page }) => {
   await page.goto(`${APP}#/no-such-page`);
-  await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
+  await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
 });
 
 /* view-lifecycle spec: leaving a page stops everything it started */

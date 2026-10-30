@@ -1,14 +1,58 @@
 import { test, expect, APP, open, type Mode } from './fixtures';
-import type { Page } from '@playwright/test';
+import type { Page, Locator } from '@playwright/test';
 
 /* The Watch shelf (openspec watch-shelf): the list loads on demand, every video plays in the page, a Mode sees
-   its own videos and the Mode below, and only Pro gets links that leave the site. YouTube itself is answered with
-   an empty page here, so no test loads a third-party player (tests/videos.live.spec.ts checks the real embeds). */
+   its own videos and the Mode below, and only Pro gets links that leave the site. The player opens on a facade (this
+   site's thumbnail behind a play button) and writes the YouTube frame only when play is pressed (change learnvedicmath,
+   design D10). YouTube itself is answered with an empty page here, so no test loads a third-party player
+   (tests/videos.live.spec.ts checks the real embeds). */
 
 async function noYouTube(page: Page) {
   await page.route(/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>video</title>' }));
 }
 test.beforeEach(async ({ page }) => { await noYouTube(page); });
+/** Presses play on the open player's facade, which writes the YouTube frame */
+const play = (page: Page) => page.locator('dialog.vm-player .vp-play').click();
+
+/* The facade (change learnvedicmath, watch-shelf "Before play", task 7.2): opening a video's player creates no frame
+   and reaches no YouTube host; the press on play does both. Google hosts are counted too, so a thumbnail or a script
+   from one would show here. */
+const GOOGLE_OR_YOUTUBE = /(^|\.)(youtube(-nocookie)?\.com|ytimg\.com|googlevideo\.com|google\.com|gstatic\.com|googleapis\.com)$/;
+async function expectFacadeThenPlay(page: Page, opener: Locator) {
+  const yt: string[] = [];
+  page.on('request', r => { if (GOOGLE_OR_YOUTUBE.test(new URL(r.url()).host)) yt.push(r.url()); });
+  const framesBefore = page.frames().length;
+  await opener.click();
+  const dlg = page.locator('dialog.vm-player');
+  await expect(dlg).toBeVisible();
+  const facade = dlg.locator('.vp-play');
+  await expect(facade).toBeFocused();
+  await expect(facade.locator('img')).toHaveAttribute('src', /^\/thumbs\/yt-[\w-]{11}\.webp$/);
+  await expect.poll(() => facade.locator('img').evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0), 'the thumbnail loaded from this site').toBe(true);
+  await expect(dlg.locator('iframe')).toHaveCount(0);
+  expect(page.frames().length, 'no frame before play').toBe(framesBefore);
+  expect(yt, 'no YouTube or Google request before play').toEqual([]);
+  await facade.click();
+  await expect(dlg.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/[\w-]{11}\?autoplay=1&/);
+  await expect.poll(() => page.frames().length, 'one frame after play').toBe(framesBefore + 1);
+  await expect.poll(() => yt.length, 'the frame reaches youtube-nocookie.com after play').toBeGreaterThan(0);
+  for (const u of yt) expect(new URL(u).host, u).toBe('www.youtube-nocookie.com');
+  await dlg.locator('.vp-x').click();
+  await expect(dlg).toBeHidden();
+  await expect(dlg.locator('iframe')).toHaveCount(0);
+}
+
+test('the shelf: opening a video creates no frame and reaches no YouTube host until play is pressed', async ({ page }) => {
+  await openShelf(page);
+  await expectFacadeThenPlay(page, cards(page).first());
+});
+
+test("a Skill's Watch section: its Watch it explained buttons open the same facade", async ({ page }) => {
+  await open(page, '#/skill/v-sq5');
+  const btn = page.locator('[data-watch-for] button[data-watch]').first();
+  await expect(btn).toBeVisible();
+  await expectFacadeThenPlay(page, btn);
+});
 
 /* Thumbnails come from this site (openspec change learnvedicmath, third-party-requests "Self-hosted thumbnails") */
 test('the shelf shows every thumbnail from /thumbs/ and reaches no YouTube or ytimg host', async ({ page, baseURL }) => {
@@ -129,6 +173,7 @@ test('Challenger gets no link that leaves the site; the player has no Open on Yo
   await cards(page).first().click();
   const dlg = page.locator('dialog.vm-player');
   await expect(dlg).toBeVisible();
+  await play(page);
   await expect(dlg.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\//);
   await expect(dlg.locator('.vp-yt')).toHaveCount(0);
   await expect(dlg.locator('a[target="_blank"]')).toHaveCount(0);
@@ -234,6 +279,8 @@ test('the Sutras page and a deep dive have no outside link and no critique for C
   await expect(dd.locator('a[target="_blank"]')).toHaveCount(0);
   await expect(dd).not.toContainText('(Wikipedia)');
   await dd.locator('button[data-watch]').first().click();
+  await expect(page.locator('dialog.vm-player .vp-play img')).toHaveAttribute('src', '/thumbs/yt-oV7Kxm3Zr_c.webp');
+  await play(page);
   await expect(page.locator('dialog.vm-player iframe')).toHaveAttribute('src', /youtube-nocookie\.com\/embed\/oV7Kxm3Zr_c/);
 });
 
@@ -243,6 +290,8 @@ test('a Short plays tall in the page, and closing it starts nothing else', async
   await cards(page).first().click();
   const dlg = page.locator('dialog.vm-player');
   await expect(dlg).toHaveClass(/\btall\b/);
+  await expect(dlg.locator('iframe')).toHaveCount(0);
+  await play(page);
   await expect(dlg.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\/[\w-]{11}\?autoplay=1&rel=0/);
   await dlg.locator('.vp-x').click();
   await expect(dlg).toBeHidden();
@@ -259,7 +308,7 @@ test('the video list is not part of first loads, and the shelf requests it once'
   expect(asked, 'home and a game do not load the video list').toEqual([]);
   await page.locator('.mq-nav').getByRole('link', { name: 'Watch', exact: true }).click();
   await expect(cards(page).first()).toBeVisible();
-  await page.locator('.mq-nav').getByRole('link', { name: 'Games', exact: true }).click();
+  await page.locator('.mq-nav').getByRole('link', { name: 'Arcade', exact: true }).click(); /* away and back without a reload (Games is in the Arcade: openspec change play-nav-by-mode) */
   await page.locator('.mq-nav').getByRole('link', { name: 'Watch', exact: true }).click();
   await expect(cards(page).first()).toBeVisible();
   expect(asked).toHaveLength(1);

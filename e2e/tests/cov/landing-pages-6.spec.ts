@@ -17,7 +17,7 @@ test.describe('JavaScript off', () => {
   test.use({ javaScriptEnabled: false });
   test('Storage blocked (JavaScript off): the first-visit version is shown', async ({ page }) => {
     await page.goto('/?home');
-    await expect(page.locator('main h1')).toHaveText('Math tricks you can do in your head');
+    await expect(page.locator('main h1')).toHaveText('Math in your head, the sutra way');
     await expect(page.locator('main a.lv-play')).toHaveText('Start learning');
     await expect(page.locator('.lv-mode-cta')).toHaveText(['Start as Explorer', 'Start as Challenger', 'Start as Pro']);
   });
@@ -28,7 +28,7 @@ test('Storage blocked: the first-visit version is shown', async ({ page }) => {
     Object.defineProperty(window, 'localStorage', { get() { throw new DOMException('blocked', 'SecurityError'); } });
   });
   await page.goto('/?home');
-  await expect(page.locator('main h1')).toHaveText('Math tricks you can do in your head');
+  await expect(page.locator('main h1')).toHaveText('Math in your head, the sutra way');
   await expect(page.locator('main a.lv-play')).toHaveText('Start learning');
   await expect(page.locator('.lv-mode-cta')).toHaveText(['Start as Explorer', 'Start as Challenger', 'Start as Pro']);
 });

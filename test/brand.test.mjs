@@ -46,7 +46,13 @@ test('the landing hero is the Nikhilam Family, drawn with tokens, named for scre
   assert.ok(!/#[0-9a-f]{3,8}\b/i.test(hero[0]), 'no hex colours: tokens only, so both schemes work');
   for (const t of ['--sky', '--sun', '--coral', '--ink', '--on-accent']) assert.ok(hero[0].includes(`var(${t})`), `the hero uses ${t}`);
   for (const c of ['lv-f-one', 'lv-f-zero', 'lv-f-nine']) assert.ok(hero[0].includes(`class="${c}"`), `the hero draws ${c}`);
-  assert.ok(!/lv-bolt|--bolt-(body|accent|belly|screen|line)|aria-label="Bolt/.test(html), 'Bolt is not on the landing page');
+  /* Bolt is shown only in Inside the game (openspec change landing-interactive-hero), decorative, never in the hero */
+  const heroSection = html.match(/<section class="md-section lv-hero">[\s\S]*?<\/section>/)[0];
+  assert.ok(!/lv-bolt|--bolt-(body|accent|belly|line)|Bolt/.test(heroSection), 'Bolt is not in the landing hero');
+  assert.ok(!/aria-label="Bolt/.test(html), 'Bolt is never named as an image');
+  const outside = html.replace(/<section class="md-section lv-inside"[\s\S]*?<\/section>/, '');
+  assert.ok(!/lv-bolt|--bolt-screen/.test(outside), 'Bolt art is only in Inside the game');
+  assert.match(html, /<svg class="lv-feat-art lv-bolt-art" viewBox="[^"]+" aria-hidden="true"/, 'Bolt in Inside the game is decorative');
 });
 
 test('the app home hero draws the same Nikhilam Family as the landing page, and it holds still under no motion', async () => {
@@ -58,12 +64,29 @@ test('the app home hero draws the same Nikhilam Family as the landing page, and 
   const picker = app.slice(app.indexOf('function modePicker('), app.indexOf('function afterPick('));
   assert.doesNotMatch(picker, /icon\('bolt'\)|boltHTML/, 'no Bolt in the app home hero');
   const css = src('math.css');
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{ \.lv-family \*, \.mq-try::after, \.mq-try svg \{ animation: none !important; \} \}/);
-  assert.match(css, /html\.motion-paused \.lv-family \*, body\.calm \.lv-family \*, html\.motion-paused \.mq-try::after, body\.calm \.mq-try::after/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{ \.lv-family \* \{ animation: none !important; \} \}/);
+  assert.match(css, /html\.motion-paused \.lv-family \*, body\.calm \.lv-family \* \{ animation: none !important; \}/);
 });
 
-test('every grown-up page is free of Bolt art: Bolt stays inside the game', () => {
-  for (const p of pages.filter(f => f.startsWith('site'))) {
+test('each Family helper is cut from the hero drawing (openspec family-helpers): the same group, tokens only, hidden from screen readers, never Bolt', async () => {
+  const { FAMILY_SVG, friendSVG, FRIEND_IDS } = await import('../js/family.js');
+  const group = { eka: 'lv-f-one', shunya: 'lv-f-zero', nava: 'lv-f-nine' };
+  assert.deepEqual([...FRIEND_IDS].sort(), Object.keys(group).sort(), 'the three friends are the hero\'s three digits');
+  for (const id of FRIEND_IDS) {
+    const svg = friendSVG(id);
+    assert.match(svg, new RegExp(`^<svg class="fh-art fh-art--${id}" viewBox="[^"]+" aria-hidden="true" focusable="false" data-pose="idle">`), id);
+    const body = svg.match(/<g class="fh-body">([\s\S]*)<\/g><\/svg>$/);
+    assert.ok(body && body[1].trim().length > 100, `${id} has a body`);
+    const hero = FAMILY_SVG.match(new RegExp(`<g class="${group[id]}">([\\s\\S]*?)</g>`));
+    assert.ok(hero, `the hero draws ${group[id]}`);
+    assert.equal(body[1], hero[1], `${id} is the hero's ${group[id]} group, drawing for drawing`);
+    assert.ok(!/#[0-9a-f]{3,8}\b/i.test(svg), `${id}: no hex colours, tokens only`);
+    assert.ok(!/lv-bolt|--bolt-(body|accent|belly|screen|line)/.test(svg), `${id}: Bolt is not a Family helper`);
+  }
+});
+
+test('every grown-up page is free of Bolt art: Bolt stays inside the game (the landing page shows him only in Inside the game, above)', () => {
+  for (const p of pages.filter(f => f.startsWith('site') && f !== 'site/index.html')) {
     assert.ok(!/lv-bolt|--bolt-(body|accent|belly|screen|line)|Bolt, the friendly robot/.test(src(p)), p);
   }
 });
@@ -93,7 +116,7 @@ test('every page links the favicon set and the Apple touch icon; pages with Open
 test('the icons have the sizes the pages and the manifest name', () => {
   for (const [f, w, h] of [['icons/favicon-16.png', 16, 16], ['icons/favicon-32.png', 32, 32], ['icons/favicon-48.png', 48, 48],
     ['icons/apple-touch-icon.png', 180, 180], ['icons/icon-192.png', 192, 192], ['icons/icon-512.png', 512, 512],
-    ['icons/maskable-512.png', 512, 512], ['icons/og.png', 1200, 630]]) {
+    ['icons/maskable-192.png', 192, 192], ['icons/maskable-512.png', 512, 512], ['icons/og.png', 1200, 630]]) {
     const p = png(f);
     assert.deepEqual([p.w, p.h], [w, h], f);
   }
@@ -103,6 +126,7 @@ test('the icons have the sizes the pages and the manifest name', () => {
     assert.equal(`${p.w}x${p.h}`, i.sizes, i.src);
   }
   assert.ok(manifest.icons.some(i => i.purpose === 'maskable' && i.src === '/icons/maskable-512.png'));
+  assert.ok(manifest.icons.some(i => i.purpose === 'maskable' && i.src === '/icons/maskable-192.png'));
 });
 
 test('the published favicon is the brand source, and its eyes sit on the 16, 32 and 48 px pixel grids', () => {

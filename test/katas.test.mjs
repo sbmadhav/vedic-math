@@ -1,5 +1,5 @@
 /* Dojo katas: 1,050 seeded levels (50 per speed trick). Every stored answer is worked out
-   again here from the question text with exact arithmetic. Run: node --test test/ */
+   again here from the question text with exact arithmetic. Run: pnpm test */
 import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { TRICKS, BELTS } from '../js/vedic.js';

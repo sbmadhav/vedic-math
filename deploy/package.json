@@ -8,6 +8,6 @@
     "dev": "wrangler dev --config ../wrangler.jsonc"
   },
   "devDependencies": {
-    "wrangler": "4.151.2"
+    "wrangler": "4.152.0"
   }
 }

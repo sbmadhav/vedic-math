@@ -43,12 +43,14 @@ After one visit online, the game works offline: `/sw.js` (scope `/play/`) saves 
 
 | Check | Command |
 |---|---|
-| The app builds, and the source has no cache stamps | `python3 build.py --out _site` |
-| Unit tests | `pnpm test` (after `pnpm install`) |
+| Type check | `pnpm typecheck` |
+| Lint (ESLint and stylelint) | `pnpm lint` |
+| Unit tests (Vitest) | `pnpm test` |
+| The app builds, and the source has no cache stamps | `python3 build.py` (into `_site/`) |
 | Firestore rules tests (emulator, needs Java) | `cd cloud/test && npm install && npm test` |
-| End-to-end tests (live site, or `BASE_URL=http://localhost:8124` for a local build) | `corepack enable && pnpm install`, then `cd e2e && pnpm exec playwright install chromium webkit && pnpm exec playwright test` |
+| End-to-end tests (live site, or `BASE_URL=http://localhost:8124` for a local build) | `cd e2e && pnpm exec playwright install chromium webkit && pnpm exec playwright test` |
 
-The pre-commit hook in `.githooks/` runs the first two. Enable it once per clone:
+The pnpm commands need `corepack enable && pnpm install` once per clone. The pre-commit hook in `.githooks/` runs the first four. Enable it once per clone:
 
 ```sh
 git config core.hooksPath .githooks
@@ -79,15 +81,27 @@ node tools/voice/publish.mjs   # uploads the archive with gh and writes its tag 
 
 Commit `js/voice-index.js` and `tools/voice/manifest.json` with the wording change. `test/voice-coverage.test.mjs` fails when an Explorer line has no recording.
 
+### Family helper voice samples
+
+The Nikhilam Family helpers (`openspec/changes/family-helpers/`) get their own Chirp 3 HD voices: Shunya Puck, Nava Leda, Eka Charon. Before the full recording, hear a few lines per friend and Reading band (36 lines, about $0.05 at list price, inside the same spend guard; without `GO=1` the tool only prints the plan):
+
+```sh
+node tools/voice/family-samples.mjs   # the plan and its cost, nothing sent
+GOOGLE_TTS_TOKEN=$(gcloud auth print-access-token) GOOGLE_CLOUD_PROJECT=sbmadhav-vedic-math GO=1 node tools/voice/family-samples.mjs
+python3 -m http.server 8371 --bind 127.0.0.1   # from the repository root, then open http://localhost:8371/docs/prototypes/family-helpers/listen.html
+```
+
+Swap a voice with `SHUNYA=`, `NAVA=` or `EKA=` set to another Chirp 3 HD voice name. The samples land in `tools/voice/out/family-samples/` (git-ignored); never commit them. Until the owner's full recording lands, the Family's lines are text only.
+
 `main` is protected: every change from someone else arrives as a pull request, needs the owner's review and passing checks, and nothing merges without approval.
 
 ## Contributing
 
-Content corrections, bug fixes and accessibility improvements are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to propose a change, and [SECURITY.md](SECURITY.md) to report a security problem privately.
+Reports of a wrong answer, a confusing explanation or an accessibility problem are welcome; code from outside the project is not accepted after the cutoff commit named in `LICENSE`, except that the owner may take a small fix by exception. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to report, and [SECURITY.md](SECURITY.md) to report a security problem privately.
 
 ## License
 
-[MIT](LICENSE), including the lessons and games. The name Madhav Srinivasan and his likeness are not licensed; see [LICENSE-CONTENT.md](LICENSE-CONTENT.md).
+[MIT](LICENSE) up to the cutoff commit named there, including the lessons and games published by then; later code and content are all rights reserved. The name Madhav Srinivasan and his likeness are never licensed. Details in [LICENSE-CONTENT.md](LICENSE-CONTENT.md); third-party licences in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 
 ## Thank you, Claude
 

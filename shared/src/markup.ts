@@ -12,6 +12,10 @@ export type MarkupNode = string | MarkupElement;
 /* What the parser left out, for tests and development warnings: an element, an attribute or a class */
 export interface Dropped { kind: 'tag' | 'attr' | 'class'; name: string; value?: string }
 
+/* A table entry only when the table itself has it: a name such as constructor or __proto__ must not reach what every
+   object inherits, or the parser would keep a tag or an attribute that is not on a list (and throw on __proto__) */
+const own = <T>(table: Record<string, T>, key: string): T | undefined => (Object.prototype.hasOwnProperty.call(table, key) ? table[key] : undefined);
+
 /* Elements kept, by lower-case name, with the name React needs (SVG keeps its camelCase names) */
 const TAGS: Record<string, string> = Object.fromEntries([
   'b', 'i', 'sup', 'sub', 'span', 'br', 'small', 'em', 'strong', 'div',
@@ -60,7 +64,7 @@ export function decodeEntities(s: string): string {
       const n = e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10);
       return n > 0 && n <= 0x10ffff && !(n >= 0xd800 && n <= 0xdfff) ? String.fromCodePoint(n) : m;
     }
-    return ENTITIES[e] ?? m;
+    return own(ENTITIES, e) ?? m;
   });
 }
 
@@ -129,7 +133,7 @@ export function parseMarkup(html: string, onDrop?: (d: Dropped) => void): Markup
       }
       continue;
     }
-    const tag = TAGS[lower];
+    const tag = own(TAGS, lower);
     if (!tag) {
       onDrop?.({ kind: 'tag', name: lower });
       if (!selfClose && !VOID.has(lower) && !['img', 'input', 'hr', 'meta', 'link', 'source', 'wbr', 'area', 'base', 'col', 'param', 'track', 'image', 'use'].includes(lower)) open.push({ name: lower, el: null });
@@ -143,9 +147,9 @@ export function parseMarkup(html: string, onDrop?: (d: Dropped) => void): Markup
         if (keep.length) el.attrs.className = keep.join(' ');
         continue;
       }
-      const check = ATTRS[name];
+      const check = own(ATTRS, name);
       const aria = /^aria-[a-z]+$/.test(name);
-      if (aria || (check && check(value))) el.attrs[ATTR_NAMES[name] ?? name] = value;
+      if (aria || (check && check(value))) el.attrs[own(ATTR_NAMES, name) ?? name] = value;
       else onDrop?.({ kind: 'attr', name, value });
     }
     top().children.push(el);

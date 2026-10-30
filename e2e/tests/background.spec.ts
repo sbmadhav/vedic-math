@@ -1,4 +1,4 @@
-import { test, expect, APP, open, chromiumOnly, heldClock, type Page } from './fixtures';
+import { test, expect, APP, open, chromiumOnly, heldClock, pinStoryDay, type Page } from './fixtures';
 
 /* The background sky (prototype; js/sky-scene.js, js/sky-bg.js): the full scene on the landing page and the app home,
    a quiet one elsewhere, one featured story at a time, a still frame under no motion, a paused loop in a hidden tab,
@@ -49,7 +49,7 @@ test.describe('levels', () => {
 
   test('a story held on home is dropped when a quiet screen opens', async ({ page }, testInfo) => {
     chromiumOnly(testInfo, 'a fake clock over a story: chromium');
-    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.setViewportSize({ width: 1280, height: 1000 }); // room for a story with its full caption under the home's cards
     await heldClock(page);
     await open(page);
     await page.clock.runFor(2000);
@@ -73,12 +73,29 @@ test.describe('levels', () => {
   });
 });
 
+/* The first screen is the page's (design audit): a story and its caption never sit in the landing hero. The landing's
+   first screen has no room for a story with its full caption below the hero at laptop sizes (its sections are dense),
+   so the still frame there usually holds no story; whatever it holds is clear of the hero. */
+test('on the landing page the still frame keeps its story out of the hero', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 1100 });
+  await page.goto('/?home');
+  await expect(sky(page)).toHaveAttribute('data-still', '1', { timeout: 10_000 });
+  await page.waitForTimeout(300);
+  const s = await state(page);
+  expect(['still', 'gap']).toContain(s.phase);
+  const hero = (await page.locator('.lv-hero').boundingBox())!;
+  const meets = (b: number[]) => b[0] < hero.x + hero.width && hero.x < b[2] && b[1] < hero.y + hero.height && hero.y < b[3];
+  if (s.box) expect(meets(s.box.split(',').map(Number)), `story ${s.story} at ${s.box} is clear of the hero`).toBe(false);
+  if (s.cap) { const [x, y, w, h] = s.cap.split(',').map(Number); expect(meets([x, y, x + w, y + h])).toBe(false); }
+  expect(s.place, 'a compact caption is never placed').not.toBe('compact');
+});
+
 test.describe('motion', () => {
   test.use({ reducedMotion: 'no-preference' });
 
   test('one featured story at a time: drawn in, held with its caption, faded, then an empty sky before the next', async ({ page }, testInfo) => {
     chromiumOnly(testInfo, 'a fake clock over a minute of scene time: chromium');
-    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.setViewportSize({ width: 1280, height: 1000 }); // room for a story with its full caption under the home's cards
     await heldClock(page);
     await page.goto(APP);
     await page.clock.runFor(2000);
@@ -106,10 +123,15 @@ test.describe('motion', () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await heldClock(page);
     await page.goto('/?home');
+    // A story never sits in the hero (design audit): read down past it, where the page has room for the drawing
+    await page.evaluate(() => window.scrollTo(0, 400));
     await page.clock.runFor(2000);
     await expect(sky(page)).toBeAttached();
     const s = await untilHeld(page);
     expect([s.story, s.phase]).toEqual(['sulba', 'hold']);
+    const hero = (await page.locator('.lv-hero').boundingBox())!;
+    const b = s.box.split(',').map(Number);
+    expect(b[1] >= hero.y + hero.height || b[3] <= hero.y, `the story at ${s.box} is clear of the hero`).toBe(true);
   });
 
   test('a hidden tab stops the frame loop; showing it again restarts it', async ({ page }) => {
@@ -164,8 +186,10 @@ test('computed colours of every form count: color-mix() boxes show, transparent 
 
 test.describe('still frame', () => {
   /* The suite's default is reduced motion */
-  test('reduced motion: one composed frame on the landing page and home, with the day\'s story complete on a wide screen', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 800 });
+  test('reduced motion: one composed frame on the landing page and home, with the day\'s story complete where there is room', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1000 });
+    await page.goto(APP);
+    await pinStoryDay(page, 'nakshatras'); // a day whose story has room for its caption on home at this size
     for (const url of ['/?home', APP]) {
       await page.goto(url);
       await expect(sky(page)).toHaveAttribute('data-still', '1', { timeout: 10_000 });
@@ -173,8 +197,10 @@ test.describe('still frame', () => {
       await page.waitForTimeout(300);
       expect(await moving(page, 1500), url).toBe(false);
       const s = await state(page);
-      expect(s.phase, url).toBe('still');
-      expect(s.story, url).not.toBe('');
+      // A story never sits in a hero and never shows a title-only plaque (design audit), so the landing's dense first
+      // screen holds none at this size; the home has room for one with its full caption under its cards
+      if (url === APP) { expect(s.phase, url).toBe('still'); expect(s.story, url).toBe('nakshatras'); expect(s.cap, 'with its caption').toBeTruthy(); }
+      else expect(['still', 'gap'], url).toContain(s.phase);
     }
   });
 

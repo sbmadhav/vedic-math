@@ -19,6 +19,9 @@ const CONTROL = new Set(['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA', 'SUMMARY'
 const PICTURE = new Set(['IMG', 'SVG', 'VIDEO', 'IFRAME', 'CANVAS', 'PICTURE']);
 const SKIP = new Set(['SCRIPT', 'STYLE', 'TEMPLATE', 'NOSCRIPT', 'BR']);
 const BAND = new Set(['HEADER', 'NAV', 'FOOTER', 'DIALOG', 'TABLE', 'FIGURE']);
+/* Boxes a story never sits in, by selector: a page's hero (the landing's .lv-hero, the app home's .mq-hero) and anything
+   marked data-sky-clear. A drawing and its plaque in the first screen read as part of the page (design audit). */
+export const KEEP_CLEAR = '[data-sky-clear], .lv-hero, .mq-hero';
 /* A CSS colour as its [r, g, b, a] pixel (a from 0 to 255), resolved by a 1 px canvas so every computed form works
    (hex, rgb(), color(srgb ...) from color-mix(), oklch()). fallback is used where the value is not a colour. */
 let probe = null;
@@ -84,6 +87,8 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, cameo = 
     let W = 0, H = 0, dpr = 1, L = LEVELS[level] || LEVELS.full, dark = darkScheme(), col = {}, fonts = {};
     let t = 0, last = 0, loopCtl = null, stars = [], consts = [], cur = null, stillStory = undefined, powerTurn = 0;
     const set = (k, v) => { v = String(v); if (c.dataset[k] !== v) c.dataset[k] = v; };
+    /* Where the story is (data-box: x0,y0,x1,y1) and its caption (data-cap: x,y,w,h), for tests; empty when none */
+    const setBoxes = s => { set('box', s && s.art ? s.box.map(Math.round).join(',') : ''); set('cap', s && s.cap ? [s.cap.x, s.cap.y, s.cap.w, s.cap.h].map(Math.round).join(',') : ''); };
 
     /* ---------- colors and fonts from the design system's tokens ---------- */
     function readTokens() {
@@ -195,13 +200,14 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, cameo = 
       return out;
     }
     const capHeight = (st, w, compact) => 2 * pad + capLines(st, w, compact).reduce((h, x) => h + x.lh, 0) + 4;
-    /* The caption, drawn once into its own canvas: a plaque in the page's background color, then the lines */
+    /* The caption, drawn once into its own canvas: a plaque in the page's background color (radius-sm, no edge: a
+       stroked plaque read as a card), then the lines */
     function caption(st, w, compact) {
       const key = `${st.id}:${w}:${dark}:${compact}`; if (capCache.has(key)) return capCache.get(key);
       const h = capHeight(st, w, compact), cv = document.createElement('canvas'); cv.width = Math.ceil(w * dpr); cv.height = Math.ceil(h * dpr);
       const x = cv.getContext('2d'); x.scale(dpr, dpr);
-      x.fillStyle = rgba('plaque', 0.86); x.strokeStyle = rgba('edge', 0.9); x.lineWidth = 1;
-      x.beginPath(); if (x.roundRect) x.roundRect(0.5, 0.5, w - 1, h - 1, 14); else x.rect(0.5, 0.5, w - 1, h - 1); x.fill(); x.stroke();
+      x.fillStyle = rgba('plaque', 0.86);
+      x.beginPath(); if (x.roundRect) x.roundRect(0, 0, w, h, 12); else x.rect(0, 0, w, h); x.fill();
       x.textBaseline = 'alphabetic'; x.textAlign = 'left';
       let y = pad - 3;
       for (const { l, font, lh, color } of capLines(st, w, compact)) { y += lh; x.font = font; x.fillStyle = rgba(color); x.fillText(l, pad, y); }
@@ -240,6 +246,7 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, cameo = 
         }
       };
       walk(document.body);
+      for (const el of document.querySelectorAll(KEEP_CLEAR)) { const r = el.getBoundingClientRect(); if (on(r)) push(r, false); } /* the hero as one box; its text is cleared by the walk */
       page = out;
       const sig = out.join(';'); if (sig !== pageSig) { pageSig = sig; pageVersion++; makeMask(); } /* the page really moved */
     }
@@ -247,7 +254,7 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, cameo = 
     let holes = null;
     function makeMask() {
       holes = new Path2D();
-      for (const [x0, y0, x1, y1] of clearList) holes.rect(x0 - KEEP_CLEAR, y0 - KEEP_CLEAR, x1 - x0 + 2 * KEEP_CLEAR, y1 - y0 + 2 * KEEP_CLEAR);
+      for (const [x0, y0, x1, y1] of clearList) holes.rect(x0 - MARGIN, y0 - MARGIN, x1 - x0 + 2 * MARGIN, y1 - y0 + 2 * MARGIN);
     }
     /* While the scene runs, measuring waits for idle time, so a frame never pays for it */
     function measureSoon() { if (measuring || !pageDirty) return; measuring = true; whenIdle(() => { measuring = false; if (pageDirty) measure(); }, signal, 300); }
@@ -259,21 +266,25 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, cameo = 
     /* Clear sky behind the page: nothing the scene draws stays under text or a control (a margin around each), so text
        on top keeps the contrast it has without the background. Cards and bands are left alone: their text is cleared
        one run at a time, and a large cleared area would cost every frame. */
-    const KEEP_CLEAR = 6;
+    const MARGIN = 6;
     function knockout() {
       const list = obstacles(false); if (!list.length) return;
       if (!holes) makeMask();
       g.globalCompositeOperation = 'destination-out'; g.fillStyle = rgba('ink', 1); g.fill(holes); g.globalCompositeOperation = 'source-over';
     }
-    /* Where this story goes now: a free spot for the drawing and its caption (full, else compact), else a free spot for
-       the drawing alone, else nowhere (it is skipped; the constellations carry on). Never under the page. */
+    /* Where this story goes now: a free spot for the drawing and its full caption, else a free spot for the drawing
+       alone, else nowhere (it is skipped; the constellations carry on). Never under the page, never in a hero. A compact
+       caption (the title without its line) is never drawn: a plaque with a title alone read as a stray label
+       (design audit), so a spot that small takes the drawing alone. */
     function place(st) {
       const obs = obstacles(true, true), anchor = W >= 700 ? [0.8, 0.42] : [0.5, 0.6];
-      const spot = placeStory(W, H, obs, storySizes(st, W, (w, compact) => capHeight(st, w, compact), { maxArt: W >= 1100 ? 240 : 200 }), { anchor });
+      const sizes = storySizes(st, W, (w, compact) => capHeight(st, w, compact), { maxArt: W >= 1100 ? 240 : 200 }).filter(s => !s.compact);
+      const spot = placeStory(W, H, obs, sizes, { anchor });
       if (spot) {
         const { layout, compact, art: [aw, ah], cap: [cw, ch] } = spot.size;
         const art = layout === 'stack' ? { x: spot.x + (spot.w - aw) / 2, y: spot.y, w: aw, h: ah } : { x: spot.x, y: spot.y + (spot.h - ah) / 2, w: aw, h: ah };
         const cap = layout === 'stack' ? { x: spot.x + (spot.w - cw) / 2, y: spot.y + ah + 12, w: cw, h: ch, compact } : { x: spot.x + aw + 12, y: spot.y + (spot.h - ch) / 2, w: cw, h: ch, compact };
+        cap.x = Math.round(cap.x); cap.y = Math.round(cap.y); /* on a whole pixel the plaque keeps a crisp edge */
         return { where: compact ? 'compact' : 'spot', box: [spot.x, spot.y, spot.x + spot.w, spot.y + spot.h], art, cap };
       }
       const alone = placeStory(W, H, obs, artSizes(st, W, H), { anchor: [0.5, 0.7] });
@@ -434,7 +445,7 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, cameo = 
       const at = storyAt(t, stories);
       if (at.index < 0 || at.phase === 'gap') {
         if (cur && at.phase === 'gap') cur = null;
-        set('story', ''); set('phase', 'gap');
+        set('story', ''); set('phase', 'gap'); setBoxes(null);
         const n = at.index < 0 ? 0 : at.n + 1, st = stories[n % stories.length];
         if (!pending || pending.n !== n) { pending = { n, ready: false }; whenIdle(() => {
           if (!pending || pending.n !== n) return;
@@ -447,7 +458,7 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, cameo = 
         const st = stories[at.index], pl = pending && pending.n === at.n && pending.ready && pending.v === pageVersion && !pageDirty ? pending : place(st);
         cur = { story: st, pick: st.art === 'powers' ? nextPick() : null, cut: null, ...pl, n: at.n };
         pending = null;
-        set('place', pl.where);
+        set('place', pl.where); setBoxes(cur);
       }
       if (!cur.art) { set('story', ''); set('phase', 'gap'); return; }
       set('story', cur.story.id); set('phase', cur.cut != null ? 'out' : at.phase);
@@ -484,7 +495,7 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, cameo = 
           stillStory = pl.art ? { n: -1, story: st, pick: st.art === 'powers' ? POWERS.find(([n]) => n === POWER_PICKS[0]) : null, cut: null, W, ...pl } : null;
         }
         if (stillStory) { clearUnder(stillStory); drawStory(stillStory, 'hold', 1); }
-        set('story', stillStory ? stillStory.story.id : ''); set('phase', stillStory ? 'still' : 'gap'); set('place', stillStory ? stillStory.where : 'none');
+        set('story', stillStory ? stillStory.story.id : ''); set('phase', stillStory ? 'still' : 'gap'); set('place', stillStory ? stillStory.where : 'none'); setBoxes(stillStory);
       } else { set('story', ''); set('phase', 'gap'); }
       if (pageDirty) measure(); /* the page may have scrolled or a new route drawn since the last measure: knockout() clears behind what is there now */
       knockout();
@@ -519,7 +530,7 @@ export function mountSkyBg({ signal, level = 'full', stories = STORIES, cameo = 
       setLevel(l) {
         if (!LEVELS[l] || l === level) { if (l === level) later(recheck, 60, signal); return; }
         level = l; L = LEVELS[l]; set('level', l); cur = null; pending = null; stillStory = undefined; build();
-        if (!L.stories) { set('story', ''); set('phase', 'gap'); set('place', 'none'); }
+        if (!L.stories) { set('story', ''); set('phase', 'gap'); set('place', 'none'); setBoxes(null); }
         if (stillWanted()) drawStill();
       }
     };

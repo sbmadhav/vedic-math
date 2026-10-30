@@ -43,6 +43,7 @@ test.describe('a Player who may post, with 120 Sparks (40 this week), opens a vi
     await card.click();
     const dlg = page.locator('dialog.vm-player');
     await expect(dlg).toBeVisible();
+    await dlg.locator('.vp-play').click(); // the facade: the frame is written and the minute counted from play (change learnvedicmath)
     await expect(dlg.locator('iframe')).toHaveAttribute('src', /^https:\/\/www\.youtube-nocookie\.com\/embed\//);
     // A whole minute in the player: the Video learner badge's rule (kept), but no Sparks
     await page.clock.runFor(61_000);

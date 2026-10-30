@@ -7,7 +7,7 @@ import { test, expect, APP, open, chromiumOnly, needsWorldBoards } from './fixtu
    (only that rule on that element) and recorded as its own test.fixme below, so it stays visible.
    When one is fixed, delete its KNOWN entry: the route checks then cover it again. */
 
-const ROUTES = ['#/', '#/learn', '#/dojo', '#/arena', '#/games', '#/sutras', '#/sutras/s3', '#/watch', '#/me', '#/skill/v-sq5', '#/game/times-sprint', '#/places', '#/guide', '#/find'];  // #/sutras/s3: the deep dive with Say it and Ambience (sutra-pronunciation 3.3)
+const ROUTES = ['#/', '#/learn', '#/dojo', '#/arena', '#/games', '#/sutras', '#/sutras/s3', '#/watch', '#/me', '#/skill/v-sq5', '#/game/times-sprint', '#/places', '#/guide', '#/find', '#/mix/3/words'];  // #/sutras/s3: the deep dive with Say it and Ambience (sutra-pronunciation 3.3); #/mix/3/words: Only Word problems with its choice (word-problems-more)
 
 /* Known violations on the live site: { route, rule, target, note }. Empty: the Sparks bar is a progressbar and
    #prRun lost its label (both fixed in js/app.js). Add an entry when a new one is found and reported. */
@@ -46,6 +46,60 @@ for (const scheme of ['light', 'dark'] as const) {
       await open(page);
       await expect(page.locator('dialog.vm-tour')).toBeVisible();
       await page.waitForLoadState('networkidle');
+      expect(await serious(page, '#/')).toEqual([]);
+    });
+  });
+}
+
+/* The Mode picker and Try a trick in each Mode (openspec try-trick-in-modes): the card, a question, a miss and the end */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, Try a trick`, () => {
+    test.use({ colorScheme: scheme });
+    test.describe('the Mode picker', () => {
+      test.use({ seedMode: null });
+      /* The three Mode cards are the picker's only buttons (openspec change play-nav-by-mode) */
+      test('the Mode picker with its three Mode cards has no serious or critical axe violations', async ({ page }, testInfo) => {
+        chromiumOnly(testInfo);
+        await page.goto(APP);
+        await expect(page.locator('.mode-card .mode-go')).toHaveCount(3);
+        expect(await serious(page)).toEqual([]);
+      });
+    });
+    for (const mode of ['explorer', 'challenger', 'pro'] as const) test.describe(mode, () => {
+      test.use({ seedMode: mode });
+      test(`#/try (${mode}) on its card, a question, a miss and the end has no serious or critical axe violations`, async ({ page }, testInfo) => {
+        chromiumOnly(testInfo);
+        await open(page, '#/try');
+        await page.waitForLoadState('networkidle');
+        expect(await serious(page, '#/try')).toEqual([]);
+        await page.locator('#tyStart').click();
+        expect(await serious(page, '#/try')).toEqual([]);
+        for (let k = 0; k < 3; k++) {
+          if (mode === 'explorer') { const c = page.locator('.pr-choice:not([disabled])'); await c.first().click(); if (!(await page.locator('#tyNext').count())) await c.first().click(); }
+          else { await page.locator('#tyIn').fill('1'); await page.keyboard.press('Enter'); }
+          if (k === 0) expect(await serious(page, '#/try')).toEqual([]);
+          await page.locator('#tyNext').click();
+        }
+        await expect(page.locator('.try-end')).toBeVisible();
+        expect(await serious(page, '#/try')).toEqual([]);
+      });
+    });
+  });
+}
+
+/* The Install nudge on Home and the Install guide (openspec change install-app), on iPhone Safari where both show */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, install`, () => {
+    test.use({ colorScheme: scheme, seedProgress: { days: { '2026-01-05': 3 } }, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1' });
+    test('Home with the Install nudge, then the Install guide open, has no serious or critical axe violations', async ({ page }, testInfo) => {
+      chromiumOnly(testInfo);
+      await open(page);
+      await expect(page.locator('#installSlot .in-nudge')).toBeVisible();
+      await page.waitForLoadState('networkidle');
+      expect(await serious(page, '#/')).toEqual([]);
+      await page.locator('#installSlot [data-in="go"]').click();
+      await expect(page.locator('dialog#installGuide')).toBeVisible();
+      await page.locator('dialog#installGuide .in-other summary').click();
       expect(await serious(page, '#/')).toEqual([]);
     });
   });
@@ -147,7 +201,9 @@ test('the landing hero is one image named "The Nikhilam Family: the Devanagari d
   await expect(hero).toHaveCount(1);
   await expect(hero).toHaveJSProperty('tagName', 'svg');
   expect(await page.locator('main').getByRole('img').count()).toBe(1);
-  await expect(page.locator('main')).not.toContainText('Bolt');
+  // Bolt is shown in Inside the game (landing-interactive-hero), decorative, and never in the hero
+  await expect(page.locator('section.lv-hero')).not.toContainText('Bolt');
+  await expect(page.locator('section.lv-inside .lv-bolt-art')).toHaveAttribute('aria-hidden', 'true');
 });
 
 /* The site header (site-header spec): wide and on a 320px phone, in both schemes, with the music panel open */
@@ -222,6 +278,21 @@ for (const scheme of ['light', 'dark'] as const) {
       await open(page, '#/me');
       await page.waitForLoadState('networkidle');
       expect(await serious(page, '#/me')).toEqual([]);
+    });
+  });
+}
+
+/* The Arena's Word problems round in the play shell (openspec word-problems-more): the label, the story and the unit */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, Word problems round`, () => {
+    test.use({ colorScheme: scheme });
+    test('the Arena Word problems round has no serious or critical axe violations', async ({ page }, testInfo) => {
+      chromiumOnly(testInfo);
+      await open(page, '#/arena');
+      await page.locator('[data-t="words"]').click();
+      await page.locator('#arGo').click();
+      await expect(page.locator('#arStory')).toBeVisible({ timeout: 6000 });
+      expect(await serious(page, 'shell')).toEqual([]);
     });
   });
 }

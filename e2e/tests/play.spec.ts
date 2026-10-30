@@ -23,8 +23,9 @@ for (const p of PAGES) test(`${p.hash} opens ${p.h1} inside ${p.back}, with no e
   await expect(page.locator('#view h1').first()).toHaveText(p.h1);
   await expect(page.locator('.px-back').first()).toHaveText(new RegExp(p.back));
   await expect(page).toHaveTitle(new RegExp(`^${p.h1} · Learn Vedic Math`));
-  // Its section is the current nav item (spec: "Experiences live inside sections")
-  await expect(page.locator(`.mq-nav a[href="#/${p.back.toLowerCase()}"]`)).toHaveAttribute('aria-current', 'true');
+  // Its section's zone is the current nav item (spec: "Experiences live inside sections"; the Sutras are in Learn, the
+  // Dojo, the Arena and Games in the Arcade: openspec change play-nav-by-mode)
+  await expect(page.locator(`.mq-nav a[href="#/${p.back === 'Sutras' ? 'learn' : 'arcade'}"]`)).toHaveAttribute('aria-current', 'true');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   await page.locator('.px-back').first().click();
   await expect(page).toHaveURL(new RegExp(`#/${p.back.toLowerCase()}$`));

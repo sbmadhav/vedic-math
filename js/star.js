@@ -8,11 +8,15 @@ import { byId } from './skills/index.js';
 import { checkOne } from './check.js';
 import { answerText } from './answers.js';
 import { boltHTML, pose } from './bolt.js';
-import { on, later, child } from './life.js';
+import { on, later, child, onAbort } from './life.js';
+import { facade } from './watch.js';
 import * as store from './store.js';
 import * as fx from './fx.js';
 import * as AD from './adapt.js';
 import * as metrics from './metrics.js';
+import { tag as sutraTag, tags, fillTags } from './sutra-tag-slot.js'; /* js/sutra-tag.js loads on demand (#126 review) */
+import { listenBtn, stopListen } from './listen.js';
+import { trickStoryNow, starSlot, loadStories } from './story-plan.js';
 
 export const ROUND = 4;
 export const SPARK = { right: 10, comeback: 15, dare: 20 };
@@ -21,18 +25,29 @@ const shuffle = (arr, rand = Math.random) => { const a = arr.slice(); for (let i
 
 /* ---------- The engine ---------- */
 /* A new round. last: the keys the previous round on this Star dealt (they go to the back of the deck).
-   pool: the problems to deal from (default: the Star's band at this Rating, js/levels.js starPool). */
-export function starRound({ trick, star, rating = 1, last = [], pool = null, third = null, rand = Math.random } = {}) {
+   pool: the problems to deal from (default: the Star's band at this Rating, js/levels.js starPool).
+   story(p): a Word problem on p's own numbers, or null (openspec word-problems); storyAt: the main question (from 0)
+   it replaces, -1 for none. A rematch after a missed Word problem is a Word problem too; a Dare stays bare. */
+export function starRound({ trick, star, rating = 1, last = [], pool = null, third = null, rand = Math.random, story = null, storyAt = -1 } = {}) {
   const band = pool || starPool(trick, star, rating);
   const lastSigs = new Set(last.map(k => band.find(p => p.key === k)).filter(Boolean).map(sigOf));
   if (!pool) for (const k of last) { const s = sigOfKey(trick, k); if (s) lastSigs.add(s); }
   const mixed = shuffle(band, rand), fresh = mixed.filter(p => !lastSigs.has(sigOf(p))), old = mixed.filter(p => lastSigs.has(sigOf(p)));
   const deck = fresh.concat(old), qs = deck.slice(0, ROUND);
+  if (story && storyAt >= 0 && qs[storyAt]) { const w = story(qs[storyAt]); if (w) qs[storyAt] = w; }
   return {
-    trick, star, rand, band: deck, third, qs, k: 0, mode: 'main', current: qs[0], replayOf: null, sparks: 0, misses: 0,
+    trick, star, rand, story, storyAt, band: deck, third, qs, k: 0, mode: 'main', current: qs[0], replayOf: null, sparks: 0, misses: 0,
     usedKinds: new Set(), used: new Set(qs.map(sigOf)), dareOffered: false, dareDone: false, offerShown: false,
     results: qs.map(() => null), lit: false
   };
+}
+/* The story slot's Word problem when its question comes, if the deal could not make one (the stories were still
+   loading): a main question at storyAt that is still bare */
+export function withStory(st) {
+  if (!st.story || st.mode !== 'main' || st.k !== st.storyAt || !st.current || st.current.story) return st;
+  const w = st.story(st.current); if (!w) return st;
+  const qs = st.qs.slice(); qs[st.k] = w;
+  return { ...st, qs, current: w };
 }
 /* The keys this round deals (saved as the Star's last round when it starts) */
 export const roundKeys = st => st.qs.map(p => p.key);
@@ -45,7 +60,7 @@ export function pickRematch(st, missed) {
   if (!p) { st.third = st.third || starThird(st.trick, st.star); p = shuffle(st.third.filter(same), st.rand)[0]; }
   if (!p) p = st.band.find(unused) || st.band.find(x => sigOf(x) !== sigOf(missed)) || missed;
   st.used.add(sigOf(p));
-  return p;
+  return (missed.story && st.story && st.story(p)) || p;
 }
 
 const copy = st => ({ ...st, usedKinds: new Set(st.usedKinds), used: new Set(st.used), results: st.results.slice() });
@@ -104,17 +119,6 @@ export function starDare(prev, problem = null) {
   return { state: st, events: [{ type: 'dare', problem: p }] };
 }
 
-/* The worked example shown before a trial Star's first question (openspec try-trick-teaches): the easiest problem of
-   the Star's band that this round does not deal (lowest Kata first), else of the Star's whole third. It is marked used,
-   so no rematch or Dare repeats it. Returns { state, example } (example null when every problem is dealt). */
-export function starIntro(prev) {
-  const st = copy(prev), easiest = ps => ps.filter(p => !st.used.has(sigOf(p))).sort((a, b) => (a.kata || 0) - (b.kata || 0))[0];
-  let p = easiest(st.band);
-  if (!p) { st.third = st.third || starThird(st.trick, st.star); p = easiest(st.third); }
-  if (p) st.used.add(sigOf(p));
-  return { state: st, example: p || null };
-}
-
 /* ---------- The view ---------- */
 const esc = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 /* Text for the live region: no tags, and entities as words a screen reader reads */
@@ -126,22 +130,24 @@ const pickOne = a => a[Math.floor(Math.random() * a.length)];
 /* Plays one Star round in root. trick: a Trick id; star: 1 to 3; signal: the view's (everything stops when it aborts).
    back: { href, label } for the end screen's way out; again(): Play again; findVideo(trickId, mode): a Promise of
    { title, src, open? } (src: an embeddable video URL; open(opener): plays it elsewhere and resolves when closed) or null.
-   intro: true shows the Trick worked once on a problem the round does not deal, before the first question (the trial
-   Star of Try a trick, openspec try-trick-teaches). Returns { destroy }, which saves the Rating. */
-export function runStar(root, { trick, star, signal, back = { href: '#/dojo', label: 'Back to the Dojo' }, again = null, findVideo = async () => null, intro = false } = {}) {
+   onEnd({ misses, lit, skipped }): called once the end screen shows (the Family helpers, openspec family-helpers).
+   Returns { destroy }, which saves the Rating. */
+export function runStar(root, { trick, star, signal, back = { href: '#/dojo', label: 'Back to the Dojo' }, again = null, findVideo = async () => null, onEnd = null } = {}) {
   const t = TRICKS.find(x => x.id === trick), skill = byId['v-' + trick], mode = fx.mode() || 'challenger', boxes = mode !== 'pro';
   const round = child(signal), rs = round.signal;
   const rating = AD.skillRating('v-' + trick, mode), dial = new AD.Dial(rating);
-  let st = starRound({ trick, star, rating, last: store.starLast(trick, star) });
+  /* Word problems (openspec word-problems): question 3 for Challenger, 2 for Pro, once the Player has 20 saved answers */
+  let st = starRound({ trick, star, rating, last: store.starLast(trick, star), story: p => trickStoryNow(trick, p, mode), storyAt: starSlot(mode, store.count('answers')) });
   store.setStarLast(trick, star, roundKeys(st)); /* saved at the start, so leaving mid-round still counts as the last round */
   const wasLit = store.starState(trick, star) === 'lit';
   let video = null, phase = null, entry = '', fields = [], active = 0, input = false, dialSaved = false, dareP = null, replaySkip = null, shown = 0;
   Promise.resolve().then(() => findVideo(trick, mode)).then(v => { if (!rs.aborted) video = v || null; }).catch(() => {});
+  const sutraName = () => (tags() ? tags().trickSutraName(trick) : ''); /* the Sutra the replay names (openspec change sutras-first); the header's tag has asked for its module by then */
   const videoAvailable = () => !!(video && video.src) && navigator.onLine !== false;
   const saveDial = () => { if (dialSaved) return; dialSaved = true; AD.saveRating('skill:v-' + trick, dial); };
 
   root.innerHTML = `<div class="star-round${fx.noMotion() ? ' still' : ''}">
-    <header class="star-top"><div><span class="md-tag md-tag--plum">Star ${star} of 3</span><h1 class="md-heading star-h">${esc(t.title)}</h1></div>
+    <header class="star-top"><div><span class="md-tag md-tag--plum">Star ${star} of 3</span><h1 class="md-heading star-h">${esc(t.title)}</h1>${sutraTag('trickTagHTML', trick, { mode, link: false, cls: 'star-sutra' })}</div>
       <button type="button" class="md-btn md-btn--sm" id="stSkip">Skip this Star</button></header>
     <div class="star-hud"><span class="star-dots" id="stDots" role="img"></span>
       <span class="star-meter">${SPARK_SVG}<span class="star-bar" id="stMeter" role="progressbar" aria-label="Sparks to light this Star" aria-valuemin="0" aria-valuemax="${TARGET}" aria-valuenow="0" aria-valuetext="0 of ${TARGET} Sparks"><i></i></span><b class="star-meter-n" id="stMeterN" aria-hidden="true">0/${TARGET}</b></span></div>
@@ -156,6 +162,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
       </div>
     </div></div>`;
   const $ = s => root.querySelector(s), main = $('#stMain'), stage = $('#stStage'), boltEl = $('.star-bolt'), pad = $('#stPad'), dareBtn = $('#stDare');
+  fillTags(root, rs); /* the header's Sutra tag, if its module was not here yet */
   const say = (html, p = null) => { $('#stSay').innerHTML = html; if (p) pose(boltEl, p); };
   const hud = () => {
     const v = Math.min(TARGET, st.sparks), bar = $('#stMeter');
@@ -177,14 +184,18 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
   function entryHTML(p) {
     if (p.kind === 'choice') return `<div class="star-choices" role="group" aria-label="Choices">${p.choices.map(c => `<button type="button" class="md-btn star-choice" data-v="${esc(c)}">${esc(c)}</button>`).join('')}</div>`;
     if (p.kind === 'fields') return `<div class="star-fields">${p.fields.map((f, i) => `<button type="button" class="star-field" data-f="${i}" aria-pressed="${i === 0}"><small>${esc(f.label)}</small><output aria-live="off"></output></button>`).join('')}</div>`;
-    if (boxes) return `<div class="star-boxes" id="stBoxes" aria-hidden="true">${'<span></span>'.repeat(maxLen(p))}</div><output class="vh" id="stOut" aria-live="off" aria-label="Your answer"></output>`;
+    /* A Trick written as a left part and a right part: a bar between the parts' boxes (openspec working-memory-scaffolds) */
+    const cut = p.kind === 'num' && p.parts && !p.story ? p.parts[0].length : 0;
+    if (boxes) return `<div class="star-boxes${cut ? ' star-boxes--parts' : ''}" id="stBoxes" aria-hidden="true">${Array.from({ length: maxLen(p) }, (_, i) => `<span${cut && i === cut ? ' class="cut"' : ''}></span>`).join('')}</div><output class="vh" id="stOut" aria-live="off" aria-label="Your answer"></output>`;
     return `<output class="star-plain" id="stOut" aria-live="off" aria-label="Your answer"></output>`;
   }
   function showEntry() {
     const p = st.current;
     if (p.kind === 'fields') { root.querySelectorAll('.star-field').forEach((b, i) => { b.querySelector('output').textContent = fields[i] || ''; b.setAttribute('aria-pressed', String(i === active)); }); return; }
     const out = $('#stOut'); if (out) out.textContent = entry;
-    const bx = $('#stBoxes'); if (bx) [...bx.children].forEach((b, i) => { b.textContent = entry[i] || ''; b.classList.toggle('f', i < entry.length); });
+    const bx = $('#stBoxes'); if (!bx) return;
+    const cut = [...bx.children].findIndex(b => b.classList.contains('cut')); /* the left part's boxes are held once full */
+    [...bx.children].forEach((b, i) => { b.textContent = entry[i] || ''; b.classList.toggle('f', i < entry.length); b.classList.toggle('held', cut > 0 && i < cut && entry.length >= cut); });
   }
   function type(k) {
     if (!input) return; const p = st.current; if (p.kind === 'choice') return;
@@ -225,9 +236,10 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
 
   /* ---------- Phases ---------- */
   function ask() {
+    st = withStory(st);
     const ps = newPhase(), p = st.current; entry = ''; fields = []; active = 0;
     const tag = st.mode === 'rematch' ? '<span class="star-tag star-tag--rematch">Rematch</span>' : st.mode === 'dare' ? '<span class="star-tag star-tag--dare">Dare</span>' : `<span class="star-tag">Question ${st.k + 1} of ${st.qs.length}</span>`;
-    main.innerHTML = `<div class="star-ask">${tag}<h2 class="star-q${said(p.q).length > 16 ? ' star-q--long' : ''}" id="stQ" tabindex="-1">${p.q}</h2>${entryHTML(p)}<p class="star-pop" id="stPop" aria-hidden="true"></p></div>`;
+    main.innerHTML = `<div class="star-ask">${tag}${p.story ? '<span class="star-story" id="stStory">Word problem</span>' : ''}<h2 class="star-q${p.story ? ' star-q--story' : said(p.q).length > 16 ? ' star-q--long' : ''}" id="stQ" tabindex="-1">${p.q}</h2>${entryHTML(p)}<p class="star-pop" id="stPop" aria-hidden="true"></p></div>`;
     pad.hidden = p.kind === 'choice'; pad.querySelectorAll('button').forEach(b => (b.disabled = false));
     if (st.mode === 'main' && canDare(st)) {
       if (!dareP) dareP = dareFor(trick, star, st.used);
@@ -248,7 +260,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     input = false; pad.querySelectorAll('button').forEach(b => (b.disabled = true));
     const p = st.current, was = st.mode;
     store.record('v-' + trick, ok, false, { sparks: false }); /* counts, mastery and quests; the Star pays its own Sparks */
-    metrics.answered('star', ok);
+    metrics.answered('star', ok); if (p.story) metrics.story('star', ok);
     const r = starAnswer(st, ok); st = r.state;
     for (const e of r.events) {
       if (e.dial !== undefined) dial.hit(e.dial); if (e.sparks) store.addSparks(e.sparks, 'star');
@@ -285,17 +297,18 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     }
   }
 
-  /* The Trick worked step by step on the missed question's own numbers; Skip or Escape ends it at once */
+  /* The Trick worked step by step on the missed question's own numbers, with Listen once every step is shown; Skip or
+     Escape ends it at once */
   function replay(p, of) {
-    const ps = newPhase(), steps = t.steps(p.vals); let i = 0;
+    const ps = newPhase(), steps = (p.story && p.story.first ? [p.story.first] : []).concat(t.steps(p.vals)); let i = 0; /* a Word problem's replay starts with what it asks */
     dareBtn.hidden = true; pad.querySelectorAll('button').forEach(b => (b.disabled = true));
-    main.innerHTML = `<div class="star-replay"><span class="star-tag star-tag--trick">The Trick</span><h2 class="star-q star-q--sm" id="stQ" tabindex="-1">${p.q}</h2>
+    main.innerHTML = `<div class="star-replay"><span class="star-tag star-tag--trick">The Trick${sutraName() ? ` · <span lang="sa-Latn">${esc(sutraName())}</span>` : ''}</span><h2 class="star-q ${p.story ? 'star-q--story' : 'star-q--sm'}" id="stQ" tabindex="-1">${p.q}</h2>
       <ol class="star-steps" id="stSteps"></ol><p class="star-acts"><button type="button" class="md-btn md-btn--sm" id="stRSkip">Skip</button></p></div>`;
     say(of === 'dare' ? 'Here is the Dare, step by step.' : 'Here is how the trick does it.', 'explain');
     const list = $('#stSteps'), done = () => {
       replaySkip = null; const b = $('#stRSkip');
       b.textContent = of === 'dare' ? 'Back to the question' : 'Try one like it'; b.className = 'md-btn md-btn--primary'; b.id = 'stRGo';
-      replaySkip = next; b.focus({ preventScroll: true });
+      replaySkip = next; b.insertAdjacentHTML('beforebegin', listenBtn('from:.star-step > p', 'the steps')); b.focus({ preventScroll: true });
     };
     const next = () => { if (ps.aborted) return; const r = starNext(st, { videoAvailable: videoAvailable() }); st = r.state; if (r.events.some(e => e.type === 'offer')) offer(); else ask(); };
     const add = () => {
@@ -304,6 +317,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
       if (i < steps.length) later(add, 2500, ps); else done();
     };
     replaySkip = next; on($('#stRSkip'), 'click', () => replaySkip && replaySkip(), ps);
+    onAbort(ps, stopListen); // the replay ending (Skip, Go, Escape) stops its Listen
     add();
   }
 
@@ -316,8 +330,13 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     const close = () => { st = starNext(st).state; ask(); };
     on($('#stWatch'), 'click', () => {
       if (video.open) { video.open($('#stWatch')).then(() => { if (!ps.aborted) close(); }); return; } /* the in-page player; closing it goes back to the round */
-      $('#stVideo').innerHTML = `<iframe src="${esc(video.src)}" title="${esc(video.title || t.title)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+      /* No player of its own: the facade here, and the frame only once play is pressed (watch-shelf spec) */
+      const frame = $('#stVideo'); frame.innerHTML = `<div class="vp-frame">${facade(video.thumb || null)}</div>`;
+      on(frame.querySelector('.vp-play'), 'click', () => {
+        frame.firstElementChild.innerHTML = `<iframe src="${esc(video.src)}" title="${esc(video.title || t.title)}" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+      }, ps);
       $('#stWatch').remove(); $('#stNoVid').textContent = 'Back to the round';
+      frame.querySelector('.vp-play').focus({ preventScroll: true });
     }, ps);
     on($('#stNoVid'), 'click', close, ps);
     $('#stWatch').focus({ preventScroll: true });
@@ -341,35 +360,24 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     const line = skipped ? (litNow ? 'A lit Star stays lit.' : 'Come back to it any time. Lighting it later clears the mark.')
       : lit ? (nowLit ? 'It shines in your sky now.' : 'Still shining. Every round still earns Sparks.')
       : litNow ? 'It stays lit. Every round still earns Sparks.' : `${need} more Sparks to light it.`;
-    main.innerHTML = `<div class="star-end"><h2 class="star-end-h" id="stQ" tabindex="-1">${head}</h2><p class="star-end-sp"><span class="fx-sparks">+${st.sparks} Sparks</span></p><p>${line}</p>
+    main.innerHTML = `<div class="star-end"><h2 class="star-end-h" id="stQ" tabindex="-1">${head}</h2><p class="star-end-sp"><span class="fx-sparks">+${st.sparks} Sparks</span></p><p>${line}</p>${sutraTag('trickTagHTML', trick, { mode, surface: 'star' })}
       <p class="star-acts"><button type="button" class="md-btn md-btn--primary" id="stAgain">Play again</button><a class="md-btn" href="${esc(back.href)}" id="stBack">${esc(back.label)}</a></p></div>`;
+    fillTags(main, rs);
     say(lit ? 'You did it!' : skipped ? 'Okay. On to the next one when you are ready.' : 'Good practice. Every miss teaches.', lit ? 'cheer' : 'idle');
     if (!skipped) fx.announce(`${head}. ${st.sparks} Sparks earned. ${line}`);
     fx.rollSparks(main, rs);
     if (lit) { fx.confetti(110); fx.sfx('level'); } /* a Star lit is a true win: the big confetti */
     on($('#stAgain'), 'click', () => { if (again) again(); }, rs);
     $('#stQ').focus({ preventScroll: true });
+    if (onEnd) try { onEnd({ misses: st.misses, lit, skipped }); } catch (e) {} /* the Family helpers come after the round (openspec family-helpers) */
   }
 
-  /* The Trick first (openspec try-trick-teaches): one worked example, every step shown at once (nothing moves or
-     times out, so Calm and Pause motion need nothing different), and one button to the first question. Escape
-     starts too, as it ends a replay. Nothing is spoken: a Player with Read aloud on hears the first question. */
-  function teach(p) {
-    const ps = newPhase(), steps = t.steps(p.vals);
-    dareBtn.hidden = true; pad.hidden = true;
-    main.innerHTML = `<div class="star-intro"><span class="star-tag star-tag--trick">Learn the trick</span><h2 class="star-q star-q--sm" id="stIntroH">${esc(t.title)}</h2>
-      <p class="star-intro-idea">${esc(t.idea)}</p>
-      <h3 class="star-intro-k">Worked example: ${p.q.replace(/ = \?$/, '')}</h3>
-      <ol class="star-steps star-steps--still" id="stSteps">${steps.map(s => `<li class="star-step"><div class="anim-show">${s.show}</div><p>${s.say}</p></li>`).join('')}</ol>
-      <p class="star-acts"><button type="button" class="md-btn md-btn--primary" id="stStart" aria-describedby="stIntroH">Start the Star</button></p><p class="mq-small star-intro-n">Then ${ROUND} questions like it.</p></div>`;
-    say('Watch it once. Then it is your turn.', 'explain'); hud();
-    fx.announce(`Learn the trick first: ${said(t.title)}. A worked example, then Start the Star.`);
-    const start = () => { if (ps.aborted) return; replaySkip = null; shown = 1; ask(); };
-    replaySkip = start; on($('#stStart'), 'click', start, ps);
-    $('#stStart').focus({ preventScroll: true });
-  }
-
-  const first = intro ? starIntro(st) : null;
-  if (first && first.example) { st = first.state; teach(first.example); } else ask();
+  ask();
+  /* Word problems (openspec word-problems): the stories are usually here before question 2; if they arrive while the
+     story slot's question is on screen with nothing typed yet, it is asked again as the Word problem */
+  loadStories().then(() => {
+    if (rs.aborted || !input || entry || fields.some(Boolean)) return;
+    const w = withStory(st); if (w !== st) { st = w; ask(); }
+  }).catch(() => {});
   return { destroy: () => { saveDial(); round.abort(); } };
 }

@@ -8,7 +8,9 @@ import { test, expect, open, heldClock, cloudLog } from '../fixtures';
    rounds; questions are random, so each answer is worked out from the question on screen. */
 
 type Page = import('@playwright/test').Page;
-const base = async (page: Page) => Number((await page.locator('#stQ').innerHTML()).match(/^(\d+)<sup>2<\/sup>/)![1]);
+/* n of n² on screen; after the Player's 20th answer one question a round is a Word problem on the same n (openspec
+   word-problems), "A square garden is n m long on each side" */
+const base = async (page: Page) => { const h = await page.locator('#stQ').innerHTML(); return Number((h.match(/^(\d+)<sup>2<\/sup>/) || h.match(/is (\d+) m long on each side/))![1]); };
 const tag = (page: Page) => page.locator('#stMain .star-tag');
 
 async function answer(page: Page, v: string) { await page.keyboard.type(v); await page.keyboard.press('Enter'); }

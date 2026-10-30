@@ -86,3 +86,8 @@ export const embedSrc = (v, { autoplay = true } = {}) =>
   `https://www.youtube-nocookie.com/embed/${v.yt}?${autoplay ? 'autoplay=1&' : ''}rel=0&modestbranding=1&playsinline=1`;
 /* Thumbnails are served from this site (thumbs/, saved by tools/fetch-thumbs.mjs), so the shelf reaches no YouTube host */
 export const thumbSrc = v => `/thumbs/yt-${v.yt}.webp`;
+/* The player's facade (change learnvedicmath, design D10): until the Player presses play, the player holds only this
+   site's thumbnail behind a play button, so no YouTube frame exists and no YouTube host is reached. The frame is
+   written on that press. thumb is a thumbSrc() URL, or null for a plain play button. */
+export const facade = thumb =>
+  `<button type="button" class="vp-play" aria-label="Play video">${thumb ? `<img src="${String(thumb).replace(/"/g, '&quot;')}" alt="" width="320" height="180">` : ''}<span class="watch-play" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5 3.5-5 3.5z"/></svg></span></button>`;

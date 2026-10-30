@@ -118,6 +118,8 @@ async function offeredPlays(page: Page) {
   await page.locator('#stWatch').click();
   const player = page.locator('dialog.vm-player');
   await expect(player).toBeVisible();
+  await player.locator('.vp-play').click(); // the facade: the frame is written on play (change learnvedicmath)
+  await expect(player.locator('iframe')).toHaveAttribute('src', /embed/);
   const src = await player.locator('iframe').getAttribute('src');
   expect(src).toMatch(/^https:\/\/www\.youtube-nocookie\.com\/embed\/[\w-]{11}\?/);
   expect(page.url()).toBe(before); // plays in the page

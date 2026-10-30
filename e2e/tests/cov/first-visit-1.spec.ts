@@ -1,66 +1,56 @@
 import { test, expect, APP, open } from '../fixtures';
 
-/* first-visit spec: one test per scenario. Try a trick on the landing, the guessed Mode, Back home from a Star opened
-   from Home, the three doors, More ways to play, the Sparks line and the Explorer home. */
+/* first-visit spec: one test per scenario. A Mode guess kept from before (openspec try-trick-in-modes: nothing sets one
+   now), Back home from a Star opened from Home or from the end of a Try a trick, the three doors, More ways to play, the
+   Sparks line and the Explorer home. The Mode picker and Try a trick itself are in first-visit-3.spec.ts. */
 type Page = import('@playwright/test').Page;
 const player = (page: Page) => page.evaluate(() => { const p = JSON.parse(localStorage.getItem('vm.players') || '{}'); return (p.list || []).find((x: any) => x.id === p.active) || p.list?.[0]; });
 const actions = (page: Page) => page.evaluate(() => [...document.querySelectorAll('#view a[href], #view button')].filter(e => (e as HTMLElement).offsetWidth > 0).map(e => (e.textContent || '').replace(/\s+/g, ' ').trim()));
+const STUB = `window.__events = window.__events || []; window.siteTrack = (path) => { window.__events.push(path); };`;
 
-test.describe('a new visitor', () => {
-  test.use({ seedMode: null });
+test.describe('a Player whose record holds a Challenger guess from before', () => {
+  test.use({ seedPlayer: { modeGuess: true } });
 
-  test('Two taps to a question: Try a trick opens the worked example, Start the Star opens the first question, and a digit enters the first answer', async ({ page }) => {
-    await page.goto(APP);
-    await page.locator('#tryBtn').click();
-    await expect(page.locator('.star-h')).toBeVisible();
-    await page.locator('#stStart').click();
-    await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
-    await page.locator('.star-key[data-k="3"]').click();
-    await expect(page.locator('#stOut')).toContainText('3');
-  });
-
-  test('The cards still work: the Explorer card opens Explorer Home as before, with no guess recorded', async ({ page }) => {
-    await page.goto(APP);
-    await page.locator('.mode-card[data-mode="explorer"]').click();
-    await expect(page.locator('h1.home-h')).toHaveText('What do you want to play?');
-    expect((await player(page)).modeGuess).toBeUndefined();
-  });
-
-  test('Above the fold on a phone: Try a trick is on screen without scrolling at 390 px, and the lede has at most 25 words', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto(APP);
-    const b = (await page.locator('#tryBtn').boundingBox())!;
-    expect(b.y + b.height).toBeLessThanOrEqual(844);
-    expect((await page.locator('#view .md-lede').innerText()).split(/\s+/).length).toBeLessThanOrEqual(25);
-  });
-
-  test('Home after the trial: the Challenger doors show and the mode line says the Mode is a guess, with Change beside it', async ({ page }) => {
-    await page.goto(APP);
-    await page.locator('#tryBtn').click();
-    await expect(page.locator('#stExit')).toBeVisible();
-    await open(page, '#/');
+  test('Home after the trial: Home shows the Challenger doors and the mode line says the Mode is a guess, with Change beside it', async ({ page }) => {
+    await open(page);
     await expect(page.locator('.home-doors .door')).toHaveCount(3);
     await expect(page.locator('.mode-line')).toContainText('Mode: Challenger, our guess');
     await expect(page.locator('.mode-line a[href="#/me"]')).toHaveText('Change');
   });
 
   test('Picking clears the guess: after picking Pro on Me, the mode line no longer says the Mode is a guess', async ({ page }) => {
-    await page.goto(APP);
-    await page.locator('#tryBtn').click();
-    await expect(page.locator('#stExit')).toBeVisible();
     await open(page, '#/me');
     await page.locator('.mode-pick--sm .mode-card[data-mode="pro"]').click();
     await open(page, '#/');
     await expect(page.locator('.mode-line')).toHaveText(/Mode: Pro Change$/);
+    expect((await player(page)).modeGuess).toBeUndefined();
+  });
+});
+
+test.describe('a new visitor', () => {
+  test.use({ seedMode: null });
+
+  test('Try a trick sets no guess: the Challenger card, then Try a trick on Home, sets Challenger with no guess and sends math/mode/challenger once', async ({ page }) => {
+    await page.route(/\/js\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
+    await page.goto(APP);
+    await page.locator('.mode-card[data-mode="challenger"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
+    await expect(page.locator('#tyStart')).toBeVisible();
+    const p = await player(page);
+    expect(p.mode).toBe('challenger');
+    expect(p.modeGuess).toBeUndefined();
+    expect((await page.evaluate(() => (globalThis as any).__events as string[])).filter(e => e.startsWith('math/mode/'))).toEqual(['math/mode/challenger']);
   });
 
-  test('After the trial: leaving the Star round with its Back control opens Home', async ({ page }) => {
+  test('After the trial: Play Star 1 at the end of Try a trick, then the Star round\'s Back control, opens Home', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('#tryBtn').click();
+    await page.locator('.mode-card[data-mode="challenger"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
+    await page.locator('#tyStart').click();
+    for (const a of [625, 2025, 4225]) { await page.locator('#tyIn').fill(String(a)); await page.keyboard.press('Enter'); await page.locator('#tyNext').click(); }
+    await page.locator('#tyGoOn').click();
     await expect(page.locator('#stExit')).toBeVisible();
     await page.locator('#stExit').click();
     await expect(page).toHaveURL(new RegExp(`${APP.replace(/\//g, '\\/')}#\\/$`));
-    await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
+    await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
   });
 });
 
@@ -72,24 +62,27 @@ test('From the Dojo: a Star opened from the Dojo still goes back to the Dojo', a
   await expect(page).toHaveURL(/#\/dojo$/);
 });
 
-test('A new Challenger: on a 390 px screen the first three actions are Play this Star, Open the Dojo and the Arena door, and the Star is explained', async ({ page }) => {
+test('A new Challenger: on a 390 px screen the first actions are Play this Star, Learn the sutra and Open the Dojo, then the Arena door; the Sutra door names Nikhilaṃ and its line says what a Sutra and a Star are (openspec change sutras-first)', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await open(page);
   const acts = await actions(page), i = acts.indexOf('Play this Star');
   expect(i).toBeGreaterThanOrEqual(0);
-  expect(acts[i + 1]).toBe('Open the Dojo');
-  expect(acts[i + 2]).toMatch(/^Race in the Arena/);
-  await expect(page.locator('.dojo-card .door-line')).toContainText('A Star is a two-minute round of four questions on one speed trick');
+  expect(acts[i + 1]).toBe('Learn the sutra');
+  expect(acts[i + 2]).toBe('Open the Dojo');
+  expect(acts[i + 3]).toMatch(/^Race in the Arena/);
+  await expect(page.locator('.home-doors .door').first().locator('.sutra-tag-n')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
+  await expect(page.locator('.sutra-door .door-line')).toHaveText('A sutra is a short rule that does a whole sum in a line or two. A Star is a two-minute round of four questions on one of its tricks.');
   await expect(page.locator('#view .md-btn--primary')).toHaveText(['Play this Star']);
 });
 
 test.describe('Pro', () => {
   test.use({ seedMode: 'pro' });
-  test("Pro: the Arena door with Play today's round, the Dojo door and the Skill map door come before the leaderboard card", async ({ page }) => {
+  test('Pro: the Sutra door with Play this Star comes first, then the Arena door and the Skill map door, all before the leaderboard card (openspec change sutras-first)', async ({ page }) => {
     await open(page);
     const doors = page.locator('.home-doors .door');
-    await expect(doors.nth(0).locator('.md-btn--primary')).toHaveText("Play today's round");
-    await expect(doors.nth(1)).toHaveAttribute('href', '#/dojo');
+    await expect(doors.nth(0)).toHaveClass(/sutra-door/);
+    await expect(doors.nth(0).locator('.md-btn--primary')).toHaveText('Play this Star');
+    await expect(doors.nth(1)).toHaveAttribute('href', '#/arena');
     await expect(doors.nth(2)).toHaveAttribute('href', '#/learn');
     const board = (await page.locator('.board-card').boundingBox())!, last = (await doors.nth(2).boundingBox())!;
     expect(board.y).toBeGreaterThanOrEqual(last.y + last.height);
@@ -121,9 +114,19 @@ test('Quests card: its last line says Sparks are the points earned for right ans
 
 test.describe('Explorer', () => {
   test.use({ seedMode: 'explorer' });
-  test('Explorer: eight picture tiles with nothing folded away', async ({ page }) => {
+  test('Explorer: eight picture tiles with nothing folded away, and above them a Sutra card with its name, Say it, an Explorer meaning and a link to its Deep dive (openspec change sutras-first)', async ({ page }) => {
     await open(page);
     await expect(page.locator('.play-grid--big .play-tile')).toHaveCount(8);
     await expect(page.locator('#homeMore')).toHaveCount(0);
+    const card = page.locator('.sutra-say');
+    await expect(card.locator('.sutra-say-name b[lang="sa-Latn"]')).not.toBeEmpty();
+    await expect(card.getByRole('button', { name: /^Hear how to say / })).toBeVisible();
+    await expect(card.locator('.sutra-say-kid')).not.toBeEmpty();
+    await expect(card.getByRole('link', { name: 'See how it works' })).toHaveAttribute('href', /^#\/sutras\/(s1|s14|s2|u8|u12)$/);
+    const c = (await card.boundingBox())!, tiles = (await page.locator('.play-grid--big').boundingBox())!;
+    expect(c.y + c.height).toBeLessThanOrEqual(tiles.y);
+    /* More places after the tiles (openspec change play-nav-by-mode) */
+    expect(await page.locator('nav.home-places a').evaluateAll(as => as.map(a => a.getAttribute('href')))).toEqual(['#/games', '#/sutras', '#/guide', '#/find']);
+    expect((await page.locator('nav.home-places').boundingBox())!.y).toBeGreaterThanOrEqual(tiles.y + tiles.height);
   });
 });

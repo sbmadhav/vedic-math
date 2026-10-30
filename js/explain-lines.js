@@ -15,11 +15,17 @@ import { BADGES, STARS_PER_BELT, QUEST_POOL } from './gamify.js';
 import { MODES as PLAY_MODES } from './fx.js';
 import { MAX_LENGTH } from './watch.js';
 import * as LV from './levels.js';
+import { BG_NOTES, ROOTS_INTRO } from './sky-scene.js';
+import { LEDES, ledeFixed } from './ledes.js';
 
 /* A worked example as heard: its label, then its working ("65 squared. 6 times 7 equals 42, then 25, gives 4225.") */
 export const exampleLine = ([q, a]) => `${q}. ${a}`;
 
-export const skillLines = s => [s.idea, ...(s.method || [])].filter(Boolean);
+/* A Skill as its page shows it: the idea, then the method (a Trick's Skill: when to use it) */
+export const skillLines = s => {
+  const t = s.trick && TRICKS.find(x => x.id === s.trick);
+  return [s.idea, ...(t ? [t.when] : s.method || [])].filter(Boolean);
+};
 export const trickLines = t => [t.idea, t.when].filter(Boolean);
 export const sutraCardLines = c => [c.meaning, c.plain, c.example].filter(Boolean);
 export function sutraDeepLines(name) {
@@ -32,6 +38,14 @@ export const tourLines = mode => TOUR_STEPS.flatMap(s => s.options.map(o => say(
 
 
 export const gameLines = g => [g.desc].filter(Boolean);
+export const formatLines = () => Object.values(LV.FORMATS).map(f => f.how); // the Challenge tower's round format rules
+/* "Older roots" on the Sutras page: the intro, then each background note as the list shows it */
+export const rootNote = ([h, b]) => `<b>${h}.</b> ${b}`;
+export const rootsLines = () => [ROOTS_INTRO, ...BG_NOTES.map(rootNote)];
+/* Page introductions (js/ledes.js, task 4.2): each one's fixed lines in every Mode's words, with outside links shown
+   (Pro's extra line), once each; the parts that hold the Player's own numbers are never listed */
+export const ledeLines = (n = guideCounts()) => [...new Set(Object.keys(LEDES).flatMap(id => Object.keys(PLAY_MODES).flatMap(mode =>
+  ledeFixed(id, { mode, n, modeName: PLAY_MODES[mode].name, links: true, done: 0, total: 0, got: 0, all: 0 }))))];
 /* Video and link descriptions on Watch. js/videos.js loads only when Watch opens, so its lists are passed in */
 export const videoLines = (videos = [], links = []) => [...videos, ...links].map(v => v.why).filter(Boolean);
 
@@ -49,10 +63,12 @@ export function allExplanationLines({ videos = [], links = [] } = {}) {
   for (const c of [...SUTRAS, ...SUBSUTRAS]) { add('sutra-card', sutraCardLines(c)); add('sutra-deep', sutraDeepLines(c.name)); }
   add('sutra-history', HISTORY);
   for (const g of GAMES) add('game:' + g.id, gameLines(g));
-  add('formats', Object.values(LV.FORMATS).map(f => f.how));
+  add('formats', formatLines());
   add('badges', BADGES.map(b => b.how));
   add('quests', Object.values(QUEST_POOL).flat().map(q => q.label));
   add('modes', Object.values(PLAY_MODES).map(m => m.blurb));
+  add('roots', rootsLines());
+  add('ledes', ledeLines(n));
   for (const m of MODES) { for (const sec of sectionsFor(m, n)) add('guide:' + m, guideLines(sec, m)); add('tour:' + m, tourLines(m)); }
   add('watch', videoLines(videos, links));
   return out;
@@ -63,11 +79,7 @@ export function allExplanationLines({ videos = [], links = [] } = {}) {
    recording once the inventory is recorded. Keys that read numbers made up per problem (worked steps) are handled in
    js/listen.js from the page itself. */
 const sutraById = id => [...SUTRAS.map(c => ({ ...c, id: 's' + c.n })), ...SUBSUTRAS.map(c => ({ ...c, id: 'u' + c.n }))].find(c => c.id === id);
-/* A Skill page: its idea, then How it works (a Trick's page shows when to use it instead of the method) */
-export const skillPageLines = s => {
-  const t = s.trick && TRICKS.find(x => x.id === s.trick);
-  return [s.idea, ...(t ? [t.when] : s.method || [])].filter(Boolean);
-};
+export const skillPageLines = skillLines;
 export const SUTRA_PARTS = ['plain', 'why', 'examples', 'uses'];
 /* One section of a Sutra deep dive, as the dialog shows it */
 export function sutraSectionLines(c, part) {
@@ -86,11 +98,13 @@ export function linesForKey(key, mode = 'challenger') {
   if (kind === 'history') return HISTORY.slice();
   if (kind === 'guide') { const sec = sectionsFor(mode, guideCounts()).find(x => x.id === id); return sec ? guideLines(sec, mode) : []; }
   if (kind === 'game') { const g = GAMES.find(x => x.id === id); return g ? gameLines(g) : []; }
+  if (kind === 'formats') return formatLines();
+  if (kind === 'roots') return rootsLines();
   return [];
 }
 /* Every key a page can ask for in a Mode, for the coverage test */
 export function listenKeys(mode = 'challenger') {
   const sut = [...SUTRAS.map(c => 's' + c.n), ...SUBSUTRAS.map(c => 'u' + c.n)];
   return [...SKILLS.map(s => 'skill:' + s.id), ...sut.map(id => 'sutra-card:' + id), ...sut.flatMap(id => SUTRA_PARTS.map(p => `sutra:${id}:${p}`)),
-    'history', ...sectionsFor(mode, guideCounts()).map(s => 'guide:' + s.id), ...GAMES.map(g => 'game:' + g.id)];
+    'history', ...sectionsFor(mode, guideCounts()).map(s => 'guide:' + s.id), ...GAMES.map(g => 'game:' + g.id), 'formats', 'roots'];
 }

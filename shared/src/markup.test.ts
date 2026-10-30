@@ -89,3 +89,18 @@ test('every Skill and Trick string parses with nothing dropped', () => {
 test('parsing is the same on every run: the same string gives the same tree (the browser and the Worker share it)', () => {
   for (const [, html] of content().slice(0, 400)) assert.deepEqual(parseMarkup(html), parseMarkup(html));
 });
+
+test('names every object inherits are not on the lists: constructor and __proto__ keep nothing, and nothing throws', () => {
+  const drops: Dropped[] = [];
+  assert.deepEqual(parseMarkup('<constructor>x</constructor>', d => drops.push(d)), ['x']);
+  assert.deepEqual(drops, [{ kind: 'tag', name: 'constructor' }]);
+  for (const name of ['tostring', 'valueof', 'hasownproperty']) assert.deepEqual(parseMarkup(`<${name}>y</${name}>`), ['y'], name);
+  const tree = parseMarkup('<b constructor="x" __proto__="y" tostring="z">z</b>');
+  assert.equal(tree.length, 1);
+  const b = tree[0] as MarkupElement;
+  assert.equal(b.tag, 'b');
+  assert.deepEqual(Object.keys(b.attrs), [], 'no attribute kept');
+  assert.equal(Object.getPrototypeOf(b.attrs), Object.prototype, 'the attributes object keeps its prototype');
+  assert.equal(decodeEntities('&constructor; &toString; &hasOwnProperty;'), '&constructor; &toString; &hasOwnProperty;');
+  assert.equal(markupText(parseMarkup('a &constructor; b')), 'a &constructor; b');
+});

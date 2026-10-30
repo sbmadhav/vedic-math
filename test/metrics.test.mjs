@@ -20,8 +20,8 @@ const PATH = /^math\/[a-z0-9_/:-]+$/;
 /* ---------- Route views ---------- */
 const SAMPLES = {
   '': 'home', '#/': 'home', '#/learn': 'learn', '#/grade/5': 'grade/5', '#/grade/K': 'grade/k',
-  '#/skill/v-sq5': 'skill/v-sq5', '#/mix/3': 'mix/3', '#/run/3': 'run/3', '#/dojo': 'dojo', '#/tricks': 'tricks',
-  '#/katas/sq5': 'katas/sq5', '#/kata/sq5/4': 'kata/sq5/kata', '#/star/sq5/2': 'star/sq5/star', '#/tower': 'tower', '#/tower/7': 'tower/chapter',
+  '#/skill/v-sq5': 'skill/v-sq5', '#/mix/3': 'mix/3', '#/mix/3/words': 'mix/3/words', '#/run/3': 'run/3', '#/arcade': 'arcade', '#/dojo': 'dojo', '#/tricks': 'tricks',
+  '#/katas/sq5': 'katas/sq5', '#/kata/sq5/4': 'kata/sq5/kata', '#/star/sq5/2': 'star/sq5/star', '#/try': 'try', '#/tower': 'tower', '#/tower/7': 'tower/chapter',
   '#/challenge/123': 'challenge/challenge', '#/sutras': 'sutras', '#/sutras/s1': 'sutras/s1', '#/arena': 'arena',
   '#/duel': 'duel', '#/games': 'games', '#/game/times-sprint': 'game/times-sprint', '#/game/times-sprint/12': 'game/times-sprint/level',
   '#/watch': 'watch', '#/me': 'me', '#/progress': 'progress', '#/places': 'places', '#/tiles': 'tiles',
@@ -83,20 +83,51 @@ test('app.js sends the tour events with fixed words only', () => {
   assert.deepEqual(kinds, ["'finish'", "'skip'", "'start'"]);
 });
 
-/* ---------- Try a trick and Find (first-visit, find) ---------- */
-test('tryStart and findGo send one fixed event each, with no text in path or title', () => {
-  clear(); M.tryStart(); M.findGo(); M.findGo();
-  assert.deepEqual(paths(), ['math/try/start', 'math/find/go', 'math/find/go']);
+/* ---------- Try a trick and Find (first-visit, find, try-trick-in-modes) ---------- */
+test('tryStart sends math/try/start and the Mode as a fixed word, findGo one fixed event, with no text in path or title', () => {
+  clear(); M.tryStart('pro'); M.findGo(); M.findGo();
+  assert.deepEqual(paths(), ['math/try/start', 'math/try/mode/pro', 'math/find/go', 'math/find/go']);
   assert.ok(sent.every(([p, t]) => PATH.test(p) && /^Vedic Math: /.test(t)));
+  clear(); M.tryStart('explorer'); M.tryStart('challenger'); M.tryStart('wizard'); M.tryStart('Swift Tiger 42'); M.tryStart();
+  assert.deepEqual(paths(), ['math/try/start', 'math/try/mode/explorer', 'math/try/start', 'math/try/mode/challenger', 'math/try/start', 'math/try/start', 'math/try/start']);
+});
+test('answers in a Try a trick are counted under the try area, and #/try has its own route view', () => {
+  clear(); M.answered('try', true); M.answered('try', false);
+  assert.deepEqual(paths().filter(p => p.startsWith('math/q_answered/')), ['math/q_answered/try/right', 'math/q_answered/try/miss']);
+  assert.equal(M.routePath('#/try'), 'try');
+});
+/* ---------- Family helpers (openspec family-helpers, analytics delta) ---------- */
+test('Family helper events are fixed words only: the Visit level, cheer, ask, show_me, not_now', () => {
+  clear(); M.familyVisit(1); M.familyVisit(3); M.familyVisit(2, true); M.familyVisit(4); M.family('ask'); M.family('show_me'); M.family('not_now'); M.family('v-sq5'); M.family('Swift Tiger 42');
+  assert.deepEqual(paths(), ['math/family/visit/1', 'math/family/visit/3', 'math/family/cheer', 'math/family/ask', 'math/family/show_me', 'math/family/not_now']);
+  assert.ok(sent.every(([p, t]) => PATH.test(p) && t === 'Vedic Math: Family helpers'));
 });
 test('modeLink sends math/landing/mode/<Mode> for a Mode only, with a fixed title', () => {
   clear(); M.modeLink('pro'); M.modeLink('explorer'); M.modeLink('wizard'); M.modeLink('Swift Tiger 42'); M.modeLink(undefined);
   assert.deepEqual(paths(), ['math/landing/mode/pro', 'math/landing/mode/explorer']);
   assert.ok(sent.every(([p, t]) => PATH.test(p) && t === 'Vedic Math: landing mode card'));
 });
-test('app.js calls tryStart and findGo with no arguments', () => {
+test('app.js calls tryStart with only the Mode and findGo with no arguments', () => {
   const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
-  assert.deepEqual(callSites(app).filter(c => c.fn === 'metrics.tryStart' || c.fn === 'metrics.findGo').map(c => c.args.trim()), ['', '']);
+  assert.deepEqual(callSites(app).filter(c => c.fn === 'metrics.tryStart').map(c => c.args.trim()), ['m', 'm']); // the tile Home, the Sky Home (the picker has no Try a trick since openspec change play-nav-by-mode)
+  assert.deepEqual(callSites(app).filter(c => c.fn === 'metrics.findGo').map(c => c.args.trim()), ['']);
+});
+
+/* ---------- Installing the app (install-app) ---------- */
+test('install: each kind sends math/install/<kind>; wizard_open names a known entry point; anything else sends nothing', () => {
+  clear();
+  for (const k of M.INSTALL_EVENTS) if (k !== 'wizard_open') M.install(k);
+  for (const f of M.INSTALL_FROM) M.install('wizard_open', f);
+  M.install('wizard_open'); M.install('wizard_open', 'ios-safari'); M.install('nudge'); M.install('Swift Tiger 42'); M.install(undefined);
+  assert.deepEqual(paths(), ['math/install/nudge_shown', 'math/install/nudge_later', 'math/install/prompt_accepted', 'math/install/prompt_dismissed',
+    'math/install/installed', 'math/install/opened', 'math/install/wizard_open/home', 'math/install/wizard_open/me', 'math/install/wizard_open/footer', 'math/install/wizard_open/guide']);
+  assert.ok(sent.every(([p, t]) => PATH.test(p) && t === 'Vedic Math: install'));
+});
+test('js/install.js sends install events with fixed words or its entry point only', () => {
+  const src = readFileSync(new URL('../js/install.js', import.meta.url), 'utf8');
+  const calls = callSites(src).filter(c => c.fn === 'metrics.install');
+  assert.ok(calls.length >= 6, `found the call sites (${calls.length})`);
+  for (const c of calls) assert.match(c.args.trim(), /^'(nudge_shown|nudge_later|prompt_accepted|prompt_dismissed|installed|opened)'$|^'wizard_open', from$/, c.args);
 });
 
 /* ---------- Star Quest counts (sky-home) ---------- */
@@ -204,6 +235,7 @@ test('no event or title carries anything but fixed words, route names, catalog i
   for (const s of M.SHARE_SURFACES) M.shareClick(s);
   for (const k of M.STAR_EVENTS) M.starEvent(k, 'sq5');
   for (const k of M.TOUR_EVENTS) M.tourEvent(k);
+  for (const k of M.INSTALL_EVENTS) M.install(k, 'home');
   M.view('#/', known, false, true);
   for (const [p, t] of sent) {
     assert.match(p, PATH, p);
@@ -226,7 +258,11 @@ const ALLOWED = new Set([
   'v.kind', 'v.title',          // Watch: a video's kind (video or short) and title (catalog, js/videos.js)
   'h', 'knownId', 'picker',    // route views: the hash goes through metrics.routePath and the catalog check
   'asSky',                     // route views: true when home showed the Sky (a fixed word, sky)
+  'from',                      // the Install guide's entry point (metrics.install checks it against INSTALL_FROM)
   'ok', "lives ? '' : ''", 'fx.MODES[fx.mode()].league', // right or miss; 'run' or 'practice'; the League
+  'surface',                   // a followed Sutra tag's surface: one of the fixed words in js/sutra-tag.js SURFACES
+  'v.level', 'cheer',          // a Family helper Visit's level (1 to 3) and whether it is a cheer; metrics.family checks FAMILY_EVENTS
+  'result', 'TITLES[result]', // the import page's hand-off result and its title (js/handoff.js count: one of RESULTS, a fixed set the analytics spec lists; test/handoff.test.mjs pins it)
 ]);
 /* Every call of track(, siteTrack( and metrics.<fn>( with its argument text */
 export function callSites(src) {
@@ -291,4 +327,13 @@ test('js/say.js counts through metrics.say() only, and turning the ambience off 
   const say = readFileSync(new URL('../js/say.js', import.meta.url), 'utf8'), amb = readFileSync(new URL('../js/sutra-ambience.js', import.meta.url), 'utf8');
   assert.deepEqual(callSites(say).map(c => `${c.fn}(${c.args})`), ['metrics.say()']);
   assert.deepEqual(callSites(amb), [], 'the ambience sends nothing (owner decision 5)');
+});
+
+/* ---------- Word problems (openspec word-problems, design D12) ---------- */
+test('story(): math/story/<practice|run|star>/<right|miss>, story/asking, fixed words only', () => {
+  clear();
+  for (const a of M.STORY_AREAS) { M.story(a, true); M.story(a, false); }
+  M.story('arena', true); M.story('practice/x', true); M.storyAsking();
+  assert.deepEqual(paths(), ['math/story/practice/right', 'math/story/practice/miss', 'math/story/run/right', 'math/story/run/miss', 'math/story/star/right', 'math/story/star/miss', 'math/story/asking']);
+  for (const [, t] of sent) assert.match(t, /^Vedic Math: word problem( hint)?$/);
 });

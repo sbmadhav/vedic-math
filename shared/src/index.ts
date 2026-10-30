@@ -6,7 +6,7 @@ export * from './lib.ts';
 export * from './question.ts';
 export * from './skills/index.ts';
 export * from './vedic.ts';
-export { FAMILIES, mentalQ, type Family, type MentalQuestion } from './mental.ts';
+export { FAMILIES, mentalQ, sutraOfProduct, sutraOfSquare, type Family, type MentalQuestion } from './mental.ts';
 export * from './questions.ts';
 export * from './scoring.ts';
 export * from './names.ts';

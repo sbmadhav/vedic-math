@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dir = mkdtempSync(join(tmpdir(), 'lvm-build-'));
 for (const f of ['build.py', '_config.yml', '.gitignore', 'play', 'site', 'theme', 'vendor', 'fonts', 'icons', 'thumbs', 'math.css', 'css', 'app/src/sw',
-  'tools/build-sw.mjs', 'tools/build-ts.mjs', 'shared/src', 'tools/budget.ts', 'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'CLAUDE.md', 'README.md',
+  'tools/build-sw.mjs', 'tools/build-ts.mjs', 'shared/src', 'tools/budget.ts', 'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'AGENTS.md', 'CODING_STANDARDS.md', 'README.md',
   'wrangler.jsonc', 'workers/src', 'package.json', 'pnpm-workspace.yaml', 'tsconfig.base.json', 'vitest.config.ts',
   'cloud/firestore.rules', 'test/support/verify.mjs', '.github', 'tools/voice/ci-fetch.mjs', 'tools/sutra-voice/names.mjs'])
   if (existsSync(join(repo, f))) cpSync(join(repo, f), join(dir, f), { recursive: true });
@@ -30,7 +30,8 @@ setBudget(1e9);
    build.py list the real repository's files. */
 const env = Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_') && k !== 'BUILD_TODAY'));
 execFileSync('git', ['init', '-q'], { cwd: dir, env });
-const out = join(dir, 'out');
+/* Inside the copy, so its name starts with _ as build.py requires of an output inside the repo */
+const out = join(dir, '_out');
 test.after(() => rmSync(dir, { recursive: true, force: true }));
 
 const build = (...args) => execFileSync('python3', ['build.py', '--out', out, ...args], { cwd: dir, env, encoding: 'utf8' });
@@ -69,6 +70,13 @@ test('the source in git is unstamped: no import map, plain URLs, a dev worker', 
   assert.ok(!existsSync(join(repo, 'index.html')), 'the game moved to play/index.html');
 });
 
+test('--out inside the repo must start with _ (git and ESLint ignore _*/), and is never the repo itself', () => {
+  const run = o => spawnSync('python3', ['build.py', '--out', o], { cwd: dir, env, encoding: 'utf8' });
+  fails(run(join(dir, 'out')), /--out inside the repo must be a folder starting with _/);
+  assert.ok(!existsSync(join(dir, 'out')), 'nothing is written');
+  fails(run(dir), /must not be the repo itself/);
+});
+
 test('the output has the pages at the root, is stamped, and holds only publishable files', () => {
   build();
   for (const f of ['play/index.html', 'index.html', 'js/app.js', 'parents/index.html', 'teachers/index.html', 'privacy/index.html', 'terms/index.html',
@@ -80,10 +88,10 @@ test('the output has the pages at the root, is stamped, and holds only publishab
   assert.match(read('play/index.html'), /<script type="module" src="\/js\/app\.js\?v=[0-9a-f]{10}"><\/script>/);
   assert.match(read('play/index.html'), /href="\/math\.css\?v=[0-9a-f]{10}"/);
   assert.match(read('index.html'), /href="\/theme\/site\.css\?v=[0-9a-f]{10}"/);
-  for (const f of ['CLAUDE.md', 'README.md', 'build.py', '_config.yml', 'cloud', 'test', 'tools', '.github', '.gitignore', '_notes.txt', 'out', 'site',
+  for (const f of ['AGENTS.md', 'CODING_STANDARDS.md', 'README.md', 'build.py', '_config.yml', 'cloud', 'test', 'tools', '.github', '.gitignore', '_notes.txt', 'out', 'site',
     'moved', 'workers', 'app', 'shared', 'package.json', 'pnpm-workspace.yaml', 'tsconfig.base.json', 'vitest.config.ts', 'wrangler.jsonc', 'THIRD-PARTY-NOTICES.md', 'theme/header.html', 'vendor/design-system', 'docs', 'vendor/goatcounter/SHA256SUMS'])
     assert.ok(!existsSync(join(out, f)), `${f} must not be published`);
-  assert.equal(read('js/app.js'), readFileSync(join(dir, 'js/app.js'), 'utf8'), 'modules are copied byte for byte');
+  assert.equal(read('js/life.js'), readFileSync(join(dir, 'js/life.js'), 'utf8'), 'modules are copied byte for byte');
   for (const p of walk(out)) {
     const rel = relative(out, p);
     if (rel === '_redirects' || /\.(png|woff2|webp|m4a|gz|wasm)$/.test(rel)) continue;
@@ -91,6 +99,27 @@ test('the output has the pages at the root, is stamped, and holds only publishab
   }
   assert.match(read('_redirects'), /^\/vedic-math \/play\/ 301$/m);
   assert.match(read('_redirects'), /^\/vedic-math\/\* \/play\/ 301$/m);
+});
+
+/* react-typescript task 3.1: a js/ module that only re-exports a TypeScript module is skipped by every static import,
+   so the first load requests the TypeScript module once, a level sooner, and js/mental.js's module stays off it */
+test('static imports of a re-export-only js/ module point at its TypeScript module, and the first load graph is no deeper', () => {
+  build();
+  const STATIC = /(?:^|[;\n}])\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|[;\n}])\s*import\s*['"]([^'"]+)['"]/g;
+  const seen = new Set(), queue = ['js/app.js'];
+  while (queue.length) {
+    const f = queue.pop(); if (seen.has(f)) continue; seen.add(f);
+    for (const m of read(f).matchAll(STATIC)) {
+      const s = m[1] || m[2];
+      if (s.startsWith('/')) queue.push(s.slice(1));
+      else if (s.startsWith('.')) queue.push(new URL(s, 'file:///' + f).pathname.slice(1));
+    }
+  }
+  for (const f of ['js/vedic.js', 'js/viz.js', 'js/lib.js', 'js/skills/index.js', 'js/skills/middle.js', 'js/mental.js', 'js/ts/shared/src/mental.js', 'js/ts/shared/src/questions.js'])
+    assert.ok(!seen.has(f), `${f} is in the first load's static graph`);
+  for (const f of ['js/ts/shared/src/vedic.js', 'js/ts/shared/src/skills/index.js', 'js/story-plan.js']) assert.ok(seen.has(f), `${f} is in the graph`);
+  assert.match(read('js/app.js'), /from '\/js\/ts\/shared\/src\/skills\/index\.js'/);
+  assert.ok(existsSync(join(out, 'js/vedic.js')), 'the re-export file is still published, for a dynamic import');
 });
 
 test('the published design system drops its @font-face lines: the fonts are declared once, from /fonts/', () => {
@@ -116,13 +145,14 @@ test('the precache list holds every import-map module, the shell, the styles, fo
   assert.equal(urls.get(importMap()['/js/app.js']), sha('js/app.js'));
   const tokens = read('play/index.html').match(/href="(\/ds\/2\.1\.0\/tokens\.css\?v=\w+)"/)[1];
   assert.equal(urls.get(tokens), sha('ds/2.1.0/tokens.css'), 'the published tokens.css, as served');
-  for (const u of ['/fonts/nunito-sans-latin-wght-normal.woff2', '/fonts/jetbrains-mono-latin-500-normal.woff2', '/icons/icon-192.png', '/icons/maskable-512.png',
+  for (const u of ['/fonts/nunito-sans-latin-wght-normal.woff2', '/fonts/jetbrains-mono-latin-500-normal.woff2', '/icons/icon-192.png', '/icons/maskable-192.png', '/icons/maskable-512.png',
     '/icons/favicon-16.png', '/icons/favicon-32.png', '/icons/favicon-48.png', '/icons/favicon.svg', '/icons/apple-touch-icon.png', '/manifest.webmanifest'])
     assert.equal(urls.get(u), sha(u.slice(1)), `${u} is precached with its hash`);
   for (const [u, hash] of precache) {
     assert.ok(u.startsWith('/'), `${u} is not an absolute path`);
     assert.match(String(hash), /^[0-9a-f]{10}$/, `${u} has no hash`);
     assert.ok(!u.startsWith('/vendor/') && !u.startsWith('/thumbs/'), `${u} is fetched on first use, never precached`);
+    assert.ok(!u.startsWith('/screenshots/'), `${u}: the install screenshots are for the browser's install dialog, never precached`);
   }
 });
 
@@ -347,6 +377,33 @@ test('the build fails when a vendored file does not match its SHA256SUMS', () =>
 
 test('the build fails on a vendored or font file without an entry in THIRD-PARTY-NOTICES.md', () => {
   withFile('vendor/newlib/lib.js', 'export const x = 1;\n', () => fails(tryBuild(), /vendor\/newlib\/lib\.js: no entry in THIRD-PARTY-NOTICES\.md/));
+});
+
+/* ---------- no draft placeholder on a published page (UX audit 2026-10-29, task 1.1) ---------- */
+/* A reader never sees text in [square brackets]: the legal drafts keep what is still to be decided in their
+   "(remove before publishing)" sections, and the build fails on anything left in the published text. */
+const pageText = html => html.replace(/<(script|style)\b[\s\S]*?<\/\1>/gi, '').replace(/<!--[\s\S]*?-->/g, '').replace(/<[^>]+>/g, '');
+test('no published page shows a [bracketed] placeholder, and the legal pages keep their open items out', () => {
+  build();
+  const pages = walk(out).filter(f => f.endsWith('.html'));
+  assert.ok(pages.length >= 8, 'every page is checked');
+  const hits = pages.flatMap(f => (pageText(readFileSync(f, 'utf8')).match(/\[[^[\]]+\]/g) || []).map(m => `${relative(out, f)}: ${m}`));
+  assert.deepEqual(hits, []);
+  for (const p of ['privacy/index.html', 'privacy/retention/index.html', 'terms/index.html']) {
+    const html = read(p);
+    assert.doesNotMatch(html, /Open items|remove before publishing|For the reviewing lawyer|DRAFT\./, p);
+    assert.match(html, /Last updated: |Owner of this policy/, p);
+  }
+});
+
+test('the build fails on a [bracketed] placeholder in a page or in the Markdown it includes', () => {
+  withEdit('docs/legal/terms.md', s => s.replace('## 8. Contact', '## 8. Contact\n\nGoverning law: [lawyer].'), () => fails(tryBuild(), /site\/terms\/index\.html: shows the placeholder \[lawyer\]/));
+  withEdit('site/teachers/index.html', s => s.replace('</main>', '<p>Last updated: [date]</p>\n</main>'), () => fails(tryBuild(), /site\/teachers\/index\.html: shows the placeholder \[date\]/));
+  // At any length and across a line break
+  withEdit('site/parents/index.html', s => s.replace('</main>', '<p>Write to [postal\naddress].</p>\n</main>'), () => fails(tryBuild(), /site\/parents\/index\.html: shows the placeholder \[postal\naddress\]/));
+  withEdit('site/teachers/index.html', s => s.replace('</main>', `<p>[${'x'.repeat(400)}]</p>\n</main>`), () => fails(tryBuild(), /site\/teachers\/index\.html: shows the placeholder \[x{400}\]/));
+  // A Markdown link is a link, and a section to remove before publishing may hold placeholders
+  withEdit('docs/legal/terms.md', s => s + '\n## Notes (remove before publishing)\n\n[owner name]\n', () => build());
 });
 
 test('the licences page lists every vendored package', () => {

@@ -3,6 +3,7 @@
    difficulty. The rounds themselves (the views) stay in js/arena.js; a Duel's server deals from the same sets. */
 import { byId } from './skills/index.ts';
 import { shuffle } from './lib.ts';
+import { levelFor } from './scoring.ts';
 import { mentalQ, FAMILIES, type Family } from './mental.ts';
 import type { Question } from './question.ts';
 
@@ -22,8 +23,9 @@ export const MENTAL_FROM = '2026-10-19';
 /* The difficulty ramp of a Pro daily round, from its first item to its last (every Pro Player gets the same) */
 export const PRO_RAMP: [number, number] = [6, 16];
 
-/* Skill generators have levels 1 to 3. A Rating picks one: 1 to 7 is level 1, 8 to 13 level 2, 14 to 20 level 3. */
-export const levelFor = (d: number): 1 | 2 | 3 => (d <= 7 ? 1 : d <= 13 ? 2 : 3);
+/* levelFor lives in scoring.ts, beside the dial's range, so js/adapt.js reaches it without this module and the
+   mental families (both stay off the first load's critical path); re-exported here for the Arena sets */
+export { levelFor };
 
 /* Seeded random: same day + league = same questions for everyone */
 export function mulberry32(a: number): () => number { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
@@ -42,6 +44,12 @@ export interface ArenaItem {
   skill?: string;
   family?: Family;
   d?: number;
+  /* The Sutra card that answers a Pro question in a line (mental.ts sutraOfProduct, openspec change sutras-first) */
+  sutra?: string;
+  /* A Word problem's story id, its Mode's label and the unit beside the entry (storyItem) */
+  story?: string;
+  label?: string;
+  unit?: string;
 }
 
 /* An Arena item from a generated question: four choices (for tap play) around the answer */
@@ -56,7 +64,7 @@ function poolItem(pool: readonly string[], league: string, level: number, d?: nu
   if (p.kind !== 'num' || typeof p.answer !== 'number' || !Number.isInteger(p.answer) || Math.abs(p.answer) > 99999) return null;
   return item(p as Question & { answer: number }, league, d === undefined ? { skill: s.id } : { skill: s.id, d });
 }
-const mentalItem = (family: string, d: number): ArenaItem => { const p = mentalQ(family, d); return item({ ...p, kind: 'num' }, 'pro', { family: p.family, d: p.d }); };
+const mentalItem = (family: string, d: number): ArenaItem => { const p = mentalQ(family, d); return item({ ...p, kind: 'num' }, 'pro', { family: p.family, d: p.d, ...(p.sutra ? { sutra: p.sutra } : {}) }); };
 
 /* n Arena items for a League (or the proV1 pool). seedText makes the set the same for everyone; null draws at random.
    Pro: the families take turns in a seeded order, and difficulty rises evenly from ramp[0] to ramp[1]. */
@@ -87,6 +95,12 @@ export function practiceItem(league: string, d: number): ArenaItem {
   for (let k = 0; k < 40; k++) { const it = poolItem(pool, league, levelFor(d), Math.round(d)); if (it) return it; }
   return makeSet(league, null, 1)[0] as ArenaItem;
 }
+
+/* A Word problem (js/stories.js roundStory) as an Arena item: the Word problems round (openspec word-problems-more).
+   label: the Mode's Word problem label, shown over the question; the unit sits beside the entry. */
+export const storyItem = (p: Question & { answer: number; story: { id: string } }, league: string, label: string): ArenaItem => item(p, league, { story: p.story.id, label, ...(p.unit ? { unit: p.unit } : {}) });
+/* The Word problems round's length: reading takes longer than a bare question */
+export const STORY_QS = 10;
 
 /* What practiceNext needs of a difficulty dial (js/adapt.js Dial) */
 export interface PracticeDial {

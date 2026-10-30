@@ -2,8 +2,8 @@ import { test, expect, open } from './fixtures';
 
 /* The site header (openspec site-header, change learnvedicmath): every page, the game included, uses the Learn Vedic
    Math header from theme/header.html (design system 2.1.0's header without Explore): one sticky bar with the brand
-   (linking to /?home), the page's nav, the round color scheme button, and in the game the music pill and the Player
-   chip last. No Explore button and no kid mode switch. */
+   (linking to /?home), the page's nav, the round color scheme button, and in the game the Calm and sound pill and the
+   Player chip last. No Explore button and no kid mode switch. */
 
 type Page = import('@playwright/test').Page;
 
@@ -35,7 +35,7 @@ test.describe('wide screen', () => {
       .map(s => { const r = document.querySelector(s)!.getBoundingClientRect(); return Math.round(r.top + r.height / 2); }));
     for (const t of tops) expect(Math.abs(t - tops[0])).toBeLessThanOrEqual(2);
     expect((await header.boundingBox())!.height).toBeLessThanOrEqual(68);
-    await expect(page.locator('#vmMBtn .lbl')).toHaveText('Music');
+    await expect(page.locator('#vmMBtn .lbl')).toHaveText('Calm'); /* the Calm and sound control (openspec change play-nav-by-mode) */
     await expect(page.locator('#vmMBtn .lbl')).toBeVisible();
     // Stays at the top while the page scrolls
     await page.mouse.wheel(0, 1200);
@@ -130,7 +130,8 @@ test.describe('color scheme button', () => {
 
 test.describe('nav', () => {
   test('highlights the current route and only that one', async ({ page }) => {
-    for (const [hash, name] of [['#/', 'Home'], ['#/learn', 'Learn'], ['#/arena', 'Arena'], ['#/games', 'Games'], ['#/watch', 'Watch'], ['#/guide', 'Guide'], ['#/find', 'Find']] as const) {
+    /* Each zone is current on the routes inside it (openspec change play-nav-by-mode) */
+    for (const [hash, name] of [['#/', 'Home'], ['#/learn', 'Learn'], ['#/arena', 'Arcade'], ['#/games', 'Arcade'], ['#/watch', 'Watch'], ['#/guide', 'Find'], ['#/find', 'Find']] as const) {
       await open(page, hash);
       const nav = page.locator('header .mq-nav');
       await expect(nav.locator('a[aria-current="true"]')).toHaveCount(1);
@@ -170,7 +171,7 @@ for (const width of [320, 375, 768]) {
         const nav = (await page.locator('header .mq-nav').boundingBox())!, theme = (await page.locator('#themeBtn').boundingBox())!;
         expect(nav.y).toBeGreaterThanOrEqual(theme.y + theme.height);
         const tabs = page.locator('header .mq-nav a:visible');
-        expect(await tabs.count()).toBeGreaterThanOrEqual(8);
+        expect(await tabs.count()).toBe(5); /* Home, Learn, Arcade, Watch, Find (openspec change play-nav-by-mode) */
         for (const tab of await tabs.all()) {
           const b = (await tab.boundingBox())!;
           expect(b.x, await tab.innerText()).toBeGreaterThanOrEqual(0);
@@ -180,14 +181,14 @@ for (const width of [320, 375, 768]) {
         if (width < 600) {
           // Labels give way to icons on phones, and each icon keeps its name
           await expect(page.locator('#vmMBtn .lbl')).toBeHidden();
-          await expect(page.locator('#vmMBtn')).toHaveAttribute('aria-label', 'Calm music');
+          await expect(page.locator('#vmMBtn')).toHaveAttribute('aria-label', 'Calm and sound');
         }
       });
     }
   });
 }
 
-test('the music button opens the music panel from the header', async ({ page }) => {
+test('the Calm and sound button opens its panel from the header', async ({ page }) => {
   await open(page);
   await page.locator('#vmMBtn').click();
   await expect(page.locator('#vmMPanel')).toBeVisible();
@@ -230,7 +231,7 @@ test.describe('390px wide', () => {
       expect(Math.abs(mid(b) - row), sel).toBeLessThanOrEqual(4);
     }
     const tabs = page.locator('header .mq-nav a:visible');
-    expect(await tabs.count()).toBe(9);
+    expect(await tabs.count()).toBe(5); /* openspec change play-nav-by-mode */
     for (const tab of await tabs.all()) {
       const b = (await tab.boundingBox())!;
       expect(b.height, await tab.innerText()).toBeGreaterThanOrEqual(24);
@@ -246,4 +247,31 @@ test.describe('390px wide, landing', () => {
     await page.goto('/?home');
     await expect(page.locator('body > header .md-brand-t')).toBeVisible();
   });
+});
+
+/* The game's skip link is the design system's .md-skip (design audit fix plan, part A): above the page until it has
+   focus, then on screen in the scheme's ink with the page background as its text, like every other page on the site */
+test.describe('skip link', () => {
+  for (const scheme of ['light', 'dark'] as const) {
+    test(`is the design system's skip link: hidden until focused, then shown in ink (${scheme})`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await open(page);
+      const skip = page.locator('body > a.md-skip[href="#view"]');
+      await expect(skip).toHaveText('Skip to content');
+      await expect(skip).not.toBeInViewport();
+      await skip.focus();
+      await expect(skip).toBeFocused();
+      await expect(skip).toBeInViewport();
+      const [want, got] = await page.evaluate(() => {
+        const probe = document.createElement('i');
+        probe.style.backgroundColor = 'var(--ink)'; probe.style.color = 'var(--bg)';
+        document.body.append(probe);
+        const p = getComputedStyle(probe), s = getComputedStyle(document.querySelector('a.md-skip')!);
+        const out = [[p.backgroundColor, p.color], [s.backgroundColor, s.color]];
+        probe.remove();
+        return out;
+      });
+      expect(got).toEqual(want);
+    });
+  }
 });

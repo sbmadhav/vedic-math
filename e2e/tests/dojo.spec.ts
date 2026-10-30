@@ -1,4 +1,5 @@
 import { test, expect, APP, open } from './fixtures';
+import { fillAnswer } from './split-kit';
 
 /* Dojo katas are seeded, so the test reads the expected answers from the app's own module
    (the same instance the page uses, through its import map). */
@@ -26,7 +27,7 @@ test('kata 1: a right answer and a wrong answer get the right feedback, and the 
 
   for (let i = 0; i < probs.length; i++) {
     const wrong = i === 1;
-    await page.locator('#kata .ans-in').fill(wrong ? '-12345' : String(probs[i].answer));
+    await fillAnswer(page.locator('#kata'), wrong ? '-12345' : String(probs[i].answer)); /* the two slots of a Trick built in parts (openspec working-memory-scaffolds) */
     await page.locator('#kGo').click();
     if (wrong) {
       await expect(say).toHaveClass(/\bno\b/);
@@ -58,10 +59,10 @@ test('kata 1: a right answer and a wrong answer get the right feedback, and the 
 test('a skill practice question: wrong twice gives a hint, Show me reveals the steps', async ({ page }) => {
   await open(page, '#/skill/v-sq5');
   const box = page.locator('#practice');
-  await box.locator('.ans-in').fill('-1');
+  await fillAnswer(box, '-1'); /* the two slots of a Trick built in parts (openspec working-memory-scaffolds) */
   await box.locator('#prCheck').click();
   await expect(box.locator('#prSay')).toContainText('Not quite. Try once more.');
-  await box.locator('.ans-in').fill('-2');
+  await fillAnswer(box, '-2');
   await box.locator('#prCheck').click();
   await expect(box.locator('#prSay')).toContainText('Hint:');
   await box.locator('#prShow').click();
@@ -86,7 +87,7 @@ test('the trick animator steps through a worked example', async ({ page }) => {
 test('leaving a kata mid-question and coming back starts a fresh kata', async ({ page }) => {
   await open(page, '#/kata/sq5/1');
   const probs = await kataProblems(page, 'sq5', 1);
-  await page.locator('#kata .ans-in').fill(String(probs[0].answer));
+  await fillAnswer(page.locator('#kata'), String(probs[0].answer)); /* the two slots of a Trick built in parts (openspec working-memory-scaffolds) */
   await page.locator('#kGo').click();
   await expect(page.locator('#kata .pr-score')).toHaveText('1/5');
   await page.locator('#kGo').click();
@@ -113,7 +114,7 @@ test.describe('Dojo in Explorer', () => {
     await expect(page.locator('#view')).not.toContainText(/\d\/9 Stars/);
     await expect(page.locator('#view')).not.toContainText('Light all 9 Stars');
     await expect(page.locator('.dojo-star')).toHaveCount(0);
-    await expect(page.locator('#view a[href="#/sutras"]')).toHaveCount(0);
+    await expect(page.locator('#view a[href="#/sutras"]')).toHaveCount(1); /* Explorer has the Sutras (openspec change sutras-first) */
     await expect(page.locator('#view a[href="#/arena"]')).toHaveCount(1);
   });
   test.describe('with a White belt kept from Challenger', () => {

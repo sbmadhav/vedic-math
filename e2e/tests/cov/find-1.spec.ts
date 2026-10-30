@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, APP } from '../fixtures';
 
 /* find spec: one test per scenario. The shared analytics.js is replaced by a stub that records window.siteTrack calls. */
 const STUB = `window.__events = window.__events || []; window.siteTrack = (path, title) => { window.__events.push(path); };`;
@@ -7,6 +7,7 @@ type Page = import('@playwright/test').Page;
 const hits = (page: Page) => page.locator('#findOut .find-hit');
 const group = (page: Page, name: string) => page.locator('#findOut .find-group', { has: page.locator('h2', { hasText: name }) }).locator('.find-hit');
 
+/* find spec (as modified by openspec change play-nav-by-mode): Find is the Find trigger at the end of the menu */
 test('From the menu bar: Find opens with the box focused and marked current', async ({ page }) => {
   await open(page);
   await page.locator('.mq-nav a[href="#/find"]').click();
@@ -25,8 +26,7 @@ test('The slash key: / on the Dojo page opens Find with the box focused', async 
 test.describe('no Mode', () => {
   test.use({ seedMode: null });
   test("Before a Mode: the landing's Find link opens the Find page, not the mode picker", async ({ page }) => {
-    await open(page, '#/');
-    await page.locator('.gd-pickhelp a[href="#/find"]').click();
+    await page.goto(`${APP}#/find`); /* a link to the game's Find (the picker's own Find link is gone: openspec change play-nav-by-mode) */
     await expect(page.locator('#findIn')).toBeVisible();
     await expect(page.locator('.mode-pick')).toHaveCount(0);
   });
@@ -111,7 +111,7 @@ test.describe('Explorer', () => {
 
 test('Empty box: the browse list names every section with one line each', async ({ page }) => {
   await open(page, '#/find');
-  await expect(hits(page).locator('b')).toHaveText(['Home', 'Learn', 'Dojo', 'Arena', 'Games', 'Sutras', 'Watch', 'Me', 'Guide']);
+  await expect(hits(page).locator('b')).toHaveText(['Home', 'Sutras', 'Learn', 'Arcade', 'Dojo', 'Arena', 'Games', 'Watch', 'Me', 'Guide']); /* with the Arcade zone (openspec change play-nav-by-mode) */
   for (const h of await hits(page).all()) expect((await h.locator('small').innerText()).length).toBeGreaterThan(20);
 });
 

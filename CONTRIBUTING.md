@@ -1,40 +1,30 @@
-# Contributing to Vedic Math for Everyone
+# Contributing to Learn Vedic Math
 
-Thanks for taking the time to help. Learn Vedic Math is a free learning game for every age, at https://learnvedicmath.com/. Fixes and better explanations are very welcome.
+Thanks for taking the time to help. Learn Vedic Math is a free learning game for every age, at https://learnvedicmath.com/.
 
 ## What is welcome
 
-- Content corrections: a wrong answer, a sutra explained incorrectly, a step that skips too much, a typo. Please say where you saw it (mode, skill or game) and what it should say.
-- Bug fixes in lessons, the Dojo, the Arena, games, quests and leaderboards.
+Reports. Say where you saw it (Mode, Skill or game) and what it should say:
+
+- Content corrections: a wrong answer, a sutra explained incorrectly, a step that skips too much, a typo.
+- Bugs in lessons, Katas, the Arena, games, quests and Boards.
 - Accessibility: keyboard play, screen reader labels, contrast, reduced motion.
-- New practice items or tests for an existing skill.
+
+While this repo is public, open an issue. At any time, write to hello@learnvedicmath.com. Security problems go to security@learnvedicmath.com, never to an issue: see [SECURITY.md](SECURITY.md).
 
 ## What is not
 
-- Ads, trackers, sign-ups or anything that collects personal data. Players are often children.
-- New third-party scripts or services, unless discussed in an issue first.
-- Changes to the vendored design system (`vendor/design-system/`). It is a pinned copy of [sbmadhav/design-system](https://github.com/sbmadhav/design-system); change it there, then vendor the new version here.
-- A kid mode switch in the header. The play modes (Explorer, Challenger, Pro) set the wording here.
+Code from outside the project. After the cutoff commit named in [LICENSE](LICENSE), the code and content are proprietary, and the repo goes private once the owner says so (design D13 and D16), so pull requests from outside are not accepted. The owner may take a small fix by exception; by sending one you confirm it is your own work and give the owner a free, worldwide, permanent and irrevocable right to use, change, publish and license it as part of the project, including under the all rights reserved terms that cover code after the cutoff ([LICENSE-CONTENT.md](LICENSE-CONTENT.md)). You keep the copyright, and you are credited in the commit.
 
-Big ideas (a new game, a new grade band) are best raised in an issue first.
+Also not, in any change: ads, trackers, sign-ups or anything that collects personal data (Players are often children); new third-party scripts or services; changes to the vendored design system (`vendor/design-system/`, a pinned copy of [sbmadhav/design-system](https://github.com/sbmadhav/design-system): change it there, then vendor the new version here); a kid mode switch in the header (the play modes, Explorer, Challenger and Pro, set the wording).
 
 ## How a change gets merged
 
-1. Fork the repo and create a branch from `main`.
-2. Make the change and run the checks below.
-3. Open a pull request against `main` and fill in the checklist.
-
-Every pull request needs:
-
-- an approving review from the owner (@sbmadhav, the code owner of every file),
-- passing checks (the `check` job in `.github/workflows/ci.yml`),
-- every review conversation resolved.
-
-Nothing merges without the owner's approval. `main` deploys straight to the live app, so the branch is protected: no direct pushes from contributors, no force pushes. Workflows from forks wait for the owner's approval before they run.
+Changes are made by the owner and the owner's own tooling: a branch from `main`, the checks below, then a pull request against `main` with the checklist filled in. Every pull request needs passing checks (the `check` job in `.github/workflows/ci.yml`), every review conversation resolved and the owner's approval. `main` deploys straight to the live app, so the branch is protected: no direct pushes, no force pushes. A pull request from a fork gets no preview (`.github/workflows/preview.yml` skips it), and any other workflow it starts waits for the owner's approval before it runs.
 
 ## Local setup
 
-You need Python 3 and Node.js 22 or newer. There is no `npm install` for the app.
+You need Python 3, Node.js 22.19 or newer (`engines` in `package.json`) and pnpm (`corepack enable`). The app itself has no install step; `pnpm install` once at the root is for the checks.
 
 Build the site and serve it the way Cloudflare does:
 
@@ -50,12 +40,14 @@ Then open http://localhost:8124/ (the landing page) or http://localhost:8124/pla
 
 | Check | Command |
 |---|---|
-| The app builds (and the source has no cache stamps) | `python3 build.py --out /tmp/vm-site` |
-| Unit tests | `pnpm test` (after `corepack enable` and `pnpm install`) |
-| End-to-end tests | `cd e2e && pnpm exec playwright test` (after `corepack enable` and `pnpm install`) |
+| Type check | `pnpm typecheck` |
+| Lint (ESLint and stylelint) | `pnpm lint` |
+| Unit tests (Vitest) | `pnpm test` |
+| The app builds (and the source has no cache stamps) | `python3 build.py` (into `_site/`) |
+| End-to-end tests | `cd e2e && pnpm exec playwright test` |
 | Firestore rules tests (only when you change `cloud/`; needs Java) | `cd cloud/test && npm install && npm test` |
 
-The pre-commit hook runs the first two. CI runs them on every pull request and checks that the build holds no repo-only files. Cache stamps are added only by the CI deploy, never in git, so there is nothing to run or commit after editing `play/index.html`, `site/`, `math.css` or `js/`.
+The pre-commit hook runs the first four (the build into a throwaway directory). CI runs them on every pull request and checks that the build holds no repo-only files. A build inside the repo goes in a top-level folder whose name starts with `_` (`_site/`, `_dev/`, `_moved/`, or `--out _<name>`): git and ESLint ignore `_*/`, and `build.py` refuses any other place inside the repo. Every build but `--dev` stamps its output (versioned references and a stamped service worker), and that output is never committed: the source in git holds no cache stamps, so there is nothing to run or commit after editing `play/index.html`, `site/`, `math.css` or `js/`.
 
 ## Tests
 
@@ -82,6 +74,6 @@ The build publishes every file it is not told to skip. If you add a file that is
 
 Do not open a public issue. See [SECURITY.md](SECURITY.md).
 
-## License
+## Licence
 
-By contributing, you agree that your contribution is licensed under the [MIT License](LICENSE), the same license as the rest of this repo.
+Code and content up to the cutoff commit named in [LICENSE](LICENSE) are MIT; everything after it is all rights reserved unless a file says otherwise. What is never licensed, and the third-party notices, are in [LICENSE-CONTENT.md](LICENSE-CONTENT.md) and [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

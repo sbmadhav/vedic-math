@@ -40,7 +40,7 @@ test('Calm music already playing: no bowl strike or hum starts and the music kee
   await page.locator('#vmMBtn').click();
   await page.locator('.vm-track[data-t="tanpura"]').click();
   await page.locator('#vmMBtn').click();
-  await page.locator('.mq-nav a[href="#/sutras"]').first().click();
+  await page.evaluate(() => { location.hash = '#/sutras'; }); /* in-app, no reload; the Sutras are on Learn (openspec change play-nav-by-mode) */
   await expect(page.locator('.sutra-grid').first()).toBeVisible();
   await tapPage(page);
   await goSutra(page, 's1');
@@ -56,7 +56,7 @@ test('Sound effects off: a deep dive plays no ambience', async ({ page }) => {
   await fakeAudio(page); await prefs(page);
   await open(page, '#/me');
   await page.locator('#setSound').uncheck();
-  await page.locator('.mq-nav a[href="#/sutras"]').first().click();
+  await page.evaluate(() => { location.hash = '#/sutras'; }); /* in-app, no reload; the Sutras are on Learn (openspec change play-nav-by-mode) */
   await tapPage(page);
   await goSutra(page, 's5');
   await expect(page.locator('#sdTitle')).toBeVisible();

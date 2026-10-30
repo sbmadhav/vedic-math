@@ -2,7 +2,7 @@
 """Build Learn Vedic Math into an output directory and stamp cache versions there.
 
     python3 build.py                          the site for https://learnvedicmath.com/, into _site/
-    python3 build.py --out DIR                the same, into DIR (emptied first)
+    python3 build.py --out DIR                the same, into DIR (emptied first; inside the repo, DIR must start with _)
     python3 build.py --dev                    the same layout without stamps and with the 'dev' worker, into _dev/
     python3 build.py --preview --out DIR      a branch preview: adds X-Robots-Tag: noindex, nofollow on every response
     python3 build.py --target moved           the Phase B "Vedic Math has moved" output for https://sbmadhav.com/vedic-math/, into _moved/
@@ -40,7 +40,8 @@ What the build does (target site):
 - The first-load budget (tools/budget.ts): the Brotli size of everything a first visit to /play/ requests before the
   first tap, printed on every build and failing above docs/perf/baseline.json (not for --dev).
 
-It fails on: stamps in the source; a CSP <meta>, an inline event handler or a javascript: URL in a page; a module
+It fails on: stamps in the source; a CSP <meta>, an inline event handler or a javascript: URL in a page; text in
+[square brackets] a reader would see on a page (a draft's placeholder); a module
 import it cannot pin (bare, outside /js/, or https://); a header that differs from theme/header.html; a vendored file
 that does not match its SHA256SUMS; a vendored or font file without an entry in THIRD-PARTY-NOTICES.md; a /vedic-math/
 path outside _redirects; a reference to sbmadhav.com other than the export page; a third-party host in neither
@@ -235,7 +236,10 @@ def ts_modules(all_files, js_sources):
     bundles the game, the browser gets each .ts module reachable from js/ with its types taken out (tools/build-ts.mjs,
     Node's own type stripper), published at /js/ts/<path>.js, with every import pointing at a published URL. Returns
     {published path: JavaScript} for those modules and {js path: JavaScript} for the js/ modules whose .ts imports
-    were rewritten. A module outside shared/src/ and app/src/, a test, or a dynamic import() of a .ts file fails."""
+    were rewritten. A module outside shared/src/ and app/src/, a test, or a dynamic import() of a .ts file fails.
+    A js/ module that only re-exports one .ts module (shims()) is skipped: every static import of it points at the .ts
+    module's URL instead, so a first load requests one module, not two, one level sooner (docs/perf/baseline.md, "Off
+    the critical path"). The js/ file is still published at its URL, for a dynamic import() and the tests."""
     ts_files = sorted(f for f in all_files if f.startswith(TS_ROOTS) and f.endswith(".ts") and not f.endswith((".test.ts", ".d.ts")))
     wanted = {f for js, text in js_sources.items() for f in _ts_specs(js, text)}
     if not wanted:
@@ -267,9 +271,32 @@ def ts_modules(all_files, js_sources):
         for g in _ts_specs(f, stripped[f]):
             need(g, f)
             queue.append(g)
-    published = {ts_published(f): _rewrite(f, stripped[f], all_files) for f in sorted(seen)}
-    rewritten = {js: _rewrite(js, text, all_files) for js, text in js_sources.items() if _ts_specs(js, text)}
+    shim = shims(js_sources)
+    published = {ts_published(f): _rewrite(f, stripped[f], all_files, shim) for f in sorted(seen)}
+    rewritten = {js: _rewrite(js, text, all_files, shim) for js, text in js_sources.items()
+                 if _ts_specs(js, text) or any(_resolve(js, s) in shim for s in _specs(text))}
     return published, rewritten
+
+
+SHIM_LINE = re.compile(r"""export\s+(?:\*|\{\s*default\s*\})\s+from\s+['"]([^'"]+\.ts)['"]\s*;?""")
+
+
+def shims(js_sources):
+    """{js path: the .ts module it only re-exports}: a js/ module whose code, comments aside, is `export * from` one .ts
+    module, with or without `export { default } from` the same module, exports exactly that module's bindings, so an
+    import of it can import the .ts module itself (the same module instance, so the same state)."""
+    out = {}
+    for js, text in js_sources.items():
+        code = re.sub(r"/\*.*?\*/|//[^\n]*", "", text, flags=re.S).strip()
+        lines = [s for s in re.split(r"\s*\n\s*", code) if s]
+        targets = {_resolve(js, m.group(1)) for s in lines for m in [SHIM_LINE.fullmatch(s)] if m}
+        if lines and len(targets) == 1 and all(SHIM_LINE.fullmatch(s) for s in lines) and any(s.startswith("export *") for s in lines):
+            out[js] = targets.pop()
+    return out
+
+
+def _specs(text):
+    return [m.group(1) or m.group(2) for m in IMPORT_RE.finditer(text)]
 
 
 def _resolve(importer, spec):
@@ -283,9 +310,10 @@ def _ts_specs(importer, text):
             if (m.group(1) or m.group(2)).endswith(".ts") and (m.group(1) or m.group(2)).startswith(("./", "../", "/"))]
 
 
-def _rewrite(importer, text, all_files):
-    """The module's static imports as published URLs: a .ts module at /js/ts/...js, a js/ module (from a .ts file, whose
-    published place differs from its source's) at its own /js/ URL. Anything else is left for the import check."""
+def _rewrite(importer, text, all_files, shim=None):
+    """The module's static imports as published URLs: a .ts module at /js/ts/...js, a js/ module that only re-exports
+    a .ts module (shim) at that module's URL, a js/ module (from a .ts file, whose published place differs from its
+    source's) at its own /js/ URL. Anything else is left for the import check."""
     out, last = [], 0
     is_ts = importer.endswith(".ts")
     for m in IMPORT_RE.finditer(text):
@@ -294,7 +322,9 @@ def _rewrite(importer, text, all_files):
         if not spec.startswith(("./", "../", "/")):
             continue
         target = _resolve(importer, spec)
-        if target.endswith(".ts"):
+        if shim and target in shim:
+            url = "/" + ts_published(shim[target])
+        elif target.endswith(".ts"):
             url = "/" + ts_published(target)
         elif is_ts and target.startswith("js/") and target in all_files:
             url = "/" + target
@@ -554,6 +584,18 @@ def render_includes(name, html):
     return INCLUDE_MD.sub(sub, html)
 
 
+PLACEHOLDER = re.compile(r"\[[^\[\]]+\]")  # any length, across line breaks
+
+
+def placeholders(html):
+    """Text in [square brackets] a reader would see on a page: a draft's placeholder left in published text (UX audit
+    task 1.1). Scripts, styles, comments and tags are dropped first, and a Markdown link is already an <a> by now."""
+    text = re.sub(r"<(script|style)\b.*?</\1>", "", html, flags=re.S | re.I)
+    text = re.sub(r"<!--.*?-->", "", text, flags=re.S)
+    text = re.sub(r"<[^>]+>", "", text)
+    return PLACEHOLDER.findall(htmllib.unescape(text))
+
+
 def csp_hashes(html):
     out = []
     for m in INLINE_SCRIPT.finditer(html):
@@ -686,6 +728,9 @@ def build_site(args, out):
         elif rel != "site/404.html":
             fail(f"{rel}: has no <!-- md-header --> block; every page uses the site header ({HEADER})")
         pages[page_url(rel)] = [render_includes(rel, html).replace("{{year}}", str(today.year)), "play" if rel == "play/index.html" else "site"]
+        if left := placeholders(pages[page_url(rel)][0]):
+            fail(f"{rel}: shows the placeholder {left[0]}; a published page never shows a draft's [bracketed] text "
+                 "(reword it, or move it to the draft's \"(remove before publishing)\" section)")
 
     # Every static import is a relative or absolute path inside /js/. A bare specifier would fail without the map, a path
     # outside the folder would not be pinned, and a full URL would run code from another site.
@@ -848,7 +893,8 @@ def build_moved(out):
 
 def main():
     ap = argparse.ArgumentParser(description="Build Learn Vedic Math into an output directory with cache stamps.")
-    ap.add_argument("--out", help="output directory, emptied first (default: _site/, _dev/ with --dev, _moved/ for --target moved)")
+    ap.add_argument("--out", help="output directory, emptied first (default: _site/, _dev/ with --dev, _moved/ for --target moved); "
+                                  "inside the repo its name must start with _ (git and ESLint ignore _*/)")
     ap.add_argument("--dev", action="store_true", help="no stamps and the 'dev' worker, for local runs")
     ap.add_argument("--preview", action="store_true", help="a branch preview: X-Robots-Tag: noindex, nofollow on every response")
     ap.add_argument("--target", choices=["site", "moved"], default="site", help="site (learnvedicmath.com) or moved (the Phase B page for the old origin)")
@@ -860,6 +906,9 @@ def main():
     out = pathlib.Path(args.out).resolve() if args.out else ROOT / default
     if out == ROOT or ROOT.is_relative_to(out):
         fail("--out must not be the repo itself")
+    if out.is_relative_to(ROOT) and not out.relative_to(ROOT).parts[0].startswith("_"):
+        # .gitignore and eslint.config.js ignore _*/, and no path starting with _ is ever published
+        fail(f"--out inside the repo must be a folder starting with _, like _site/: {out.relative_to(ROOT)}")
     if args.target == "moved":
         build_moved(out)
     else:

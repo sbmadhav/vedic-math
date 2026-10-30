@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: The header is the Learn Vedic Math header
-Every page of the site, the game included, SHALL use the same sticky header from the site's header partial: the Learn Vedic Math brand (Bolt and the name, linking to `/?home`), the page's own nav in the nav slot (in the game: Home, Learn, Dojo except in Explorer, Arena, Games, Sutras except in Explorer, Watch and Guide), the round color scheme button, the Music pill in the game, and the Player chip last in the game. It SHALL NOT have an Explore button or a kid mode switch.
+Every page of the site, the game included, SHALL use the same sticky header from the site's header partial: the Learn Vedic Math brand (Bolt and the name, linking to `/?home`), the page's own nav in the nav slot (in the game: Home, Sutras, Learn, Dojo except in Explorer, Arena, Games, Watch and Guide; order from the `sutras-first` change), the round color scheme button, the Music pill in the game, and the Player chip last in the game. It SHALL NOT have an Explore button or a kid mode switch.
 
 #### Scenario: Game header
 - **WHEN** a Challenger Player opens `/play/` on a 1280px wide screen

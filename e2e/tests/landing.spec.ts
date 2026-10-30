@@ -13,9 +13,11 @@ test.describe('a first visit', () => {
     page.on('request', r => asked.push(r.url()));
     await page.goto('/');
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.locator('main h1')).toHaveText('Math tricks you can do in your head');
+    await expect(page.locator('main h1')).toHaveText('Math in your head, the sutra way');
     await expect(page.getByRole('img', { name: 'The Nikhilam Family: the Devanagari digits one, zero and nine' })).toBeVisible();
-    await expect(page.locator('.lv-bolt')).toHaveCount(0);
+    // Bolt is inside the game section, never in the hero (landing-interactive-hero)
+    await expect(page.locator('section.lv-hero')).not.toContainText('Bolt');
+    await expect(page.locator('section.lv-hero .lv-bolt-art')).toHaveCount(0);
     for (const m of ['Explorer', 'Challenger', 'Pro']) await expect(page.locator('.lv-modes')).toContainText(m);
     await expect(page.locator('main')).toContainText("Bharati Krishna Tirtha's 1965 book");
     await expect(page.locator('main')).toContainText('They are not found in the Vedas.');
@@ -31,7 +33,8 @@ test.describe('a first visit', () => {
     await page.goto('/');
     const start = page.locator('main a.lv-play');
     await expect(start).toHaveText('Start learning');
-    await expect(page.locator('main h2').first()).toHaveText('Pick how you learn');
+    await expect(page.locator('main h2').first()).toHaveText('One short rule, one line of work');
+    await expect(page.locator('#lv-modes-h')).toHaveText('Pick how you learn');
     await start.click();
     await expect(page).toHaveURL(/\/play\/$/);
     await expect(page.locator('.mode-pick .mode-card')).toHaveCount(3);
@@ -104,10 +107,43 @@ test.describe('pages for grown-ups', () => {
     await expect(page.locator('main a[href="/privacy/"]')).toBeVisible();
   });
 
+  /* The summary above the fold (UX audit 2026-10-29, task 1.2): three claims, each one the privacy policy makes */
+  for (const [width, height] of [[320, 640], [1280, 720]] as const) {
+    test(`/parents/ at ${width}px opens with the three-point summary above the fold`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await page.goto('/parents/');
+      const facts = page.getByRole('list', { name: 'In short' });
+      await expect(facts.locator('li strong')).toHaveText(['No accounts needed', 'Under 13: nothing is posted online', 'Free, with no ads']);
+      const box = (await facts.locator('li strong').first().boundingBox())!;
+      expect(box.y + box.height).toBeLessThanOrEqual(height);
+      if (width >= 1280) {
+        const rows = new Set(await facts.locator('li').evaluateAll(els => els.map(e => Math.round(e.getBoundingClientRect().top))));
+        expect(rows.size, 'the three sit side by side on a wide screen').toBe(1);
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    });
+  }
+
+  test('/parents/ says World boards are off while this site serves no Firebase config', async ({ page }) => {
+    await page.goto('/parents/');
+    await expect(page.locator('main')).toContainText('World boards are switched off on this site for now, so today no score is sent anywhere.');
+  });
+
   test('/teachers/ promises no school plan', async ({ page }) => {
     await page.goto('/teachers/');
     await expect(page.locator('main')).toContainText('There is no school or classroom plan yet');
     await expect(page.locator('main')).toContainText('separate written agreement');
+    await expect(page.locator('main')).toContainText('There are no class accounts or class leaderboards');
+  });
+
+  test('/teachers/ has a 5-minute warm-up whose button opens the Arena', async ({ page }) => {
+    await page.goto('/teachers/');
+    const box = page.getByRole('region', { name: "A 5-minute warm-up for today's class" });
+    await expect(box).toContainText('the same ones for every Player in the same Mode today');
+    await expect(box).toContainText('With Calm on, the Arena starts on an untimed round: pick Daily challenge for the 60-second race.');
+    await box.getByRole('link', { name: 'Open the Arena' }).click();
+    await expect(page).toHaveURL(/\/play\/#\/arena$/);
+    await expect(page.locator('#view h1')).toHaveText('60 seconds. Same questions for everyone.');
   });
 
   test('/privacy/ and /terms/ show the policy with its last-updated line, and nothing meant only for the lawyer', async ({ page }) => {
@@ -118,6 +154,16 @@ test.describe('pages for grown-ups', () => {
     await expect(page.locator('main')).toContainText('privacy@learnvedicmath.com');
     await page.goto('/terms/');
     await expect(page.locator('main')).toContainText('Last updated:');
+  });
+
+  /* No draft placeholder is ever shown (UX audit 2026-10-29, task 1.1; build.py fails on one too) */
+  test('no grown-up page shows text in [square brackets] or a note meant for the owner', async ({ page }) => {
+    for (const url of ['/parents/', '/teachers/', '/privacy/', '/privacy/retention/', '/privacy/security/', '/terms/', '/licenses/']) {
+      await page.goto(url);
+      const text = await page.locator('body').innerText();
+      expect(text.match(/\[[^[\]]+\]/g), url).toBeNull();
+      expect(text, url).not.toMatch(/Open items|remove before publishing|to confirm/);
+    }
   });
 
   test('no page shows the Explore menu, a "Made by" credit or a link to sbmadhav.com', async ({ page }) => {
@@ -132,6 +178,18 @@ test.describe('pages for grown-ups', () => {
     // The site's own host is allowed: a pull request preview is served from <name>.sbmadhav.workers.dev
     const own = new URL(page.url()).host;
     expect([...hosts].filter(h => h !== own && /sbmadhav/.test(h))).toEqual([]);
+  });
+});
+
+/* The warm-up button on a device with no Player yet: the Mode picker comes first, then the Arena it asked for */
+test.describe('the teachers warm-up on a new device', () => {
+  test.use({ seedMode: null });
+  test('picks a Mode first, then opens the Arena', async ({ page }) => {
+    await page.goto('/teachers/');
+    await page.getByRole('link', { name: 'Open the Arena' }).click();
+    await expect(page.locator('.mode-pick .mode-card')).toHaveCount(3);
+    await page.locator('.mode-card[data-mode="challenger"]').click();
+    await expect(page.locator('#view h1')).toHaveText('60 seconds. Same questions for everyone.');
   });
 });
 
@@ -214,7 +272,7 @@ test.describe('reduced motion', () => {
 
 /* The Mode cards (openspec change landing-modes-and-return): each card is a link into the game in its Mode, named by
    its call to action, and the game drops the query once it has set the Mode. */
-const CARDS = [['explorer', 'Explorer', 'What do you want to play?'], ['challenger', 'Challenger', 'Ready to get faster?'], ['pro', 'Pro', 'Train your mental math']] as const;
+const CARDS = [['explorer', 'Explorer', 'What do you want to play?'], ['challenger', 'Challenger', 'Learn a sutra, then use it'], ['pro', 'Pro', 'Mental math, the sutra way']] as const;
 const activeMode = (page: import('@playwright/test').Page) => page.evaluate(() => { const p = JSON.parse(localStorage.getItem('vm.players') || '{}'); return ((p.list || []).find((x: any) => x.id === p.active) || {}).mode ?? null; });
 
 test.describe('Mode cards on a first visit', () => {
@@ -241,7 +299,7 @@ test.describe('Mode cards on a first visit', () => {
     await expect(card).toBeFocused();
     expect(await card.evaluate(el => getComputedStyle(el).outlineStyle)).toBe('solid');
     await page.keyboard.press('Enter');
-    await expect(page.locator('h1.home-h')).toHaveText('Train your mental math');
+    await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
   });
 });
 
@@ -308,4 +366,91 @@ test.describe('welcome back', () => {
     await expect(page.locator('main h1 img')).toHaveCount(0);
     await expect(page.locator('main h1')).toContainText('Welcome back, <img');
   });
+});
+
+/* The sutras and the method (openspec change sutras-first, landing-pages "The landing page leads with the Sutras and
+   the method" and "Three Sutras one tap from their Deep dives"): right after the hero, in plain HTML. */
+test.describe('the sutras and the method', () => {
+  test.use({ seedMode: null });
+
+  test('One short rule, one line of work: 98 × 97 both ways, three Sutra cards with a meaning and an example each, linking to their Deep dives, and the honest origin line', async ({ page }) => {
+    await page.goto('/');
+    const sec = page.locator('section.lv-sutras');
+    const hero = (await page.locator('section.lv-hero').boundingBox())!, s = (await sec.boundingBox())!, modes = (await page.locator('#lv-modes-h').boundingBox())!;
+    expect(s.y).toBeGreaterThanOrEqual(hero.y + hero.height);
+    expect(modes.y).toBeGreaterThanOrEqual(s.y + s.height);
+    await expect(sec.locator('h2')).toHaveText('One short rule, one line of work');
+    await expect(sec.locator('.md-lede')).toHaveText('A sutra is a short rule that turns a long sum into a step or two you can do in your head. Every trick here is built on one of them.');
+    const ways = sec.locator('.lv-way');
+    await expect(ways.locator('figcaption')).toHaveText(['The school way', 'The sutra way Multiply numbers near 10, 100 or 1000 Nikhilaṃ Navataścaramaṃ Daśataḥ']);
+    await expect(ways.nth(0).locator('.lv-steps li')).toHaveText(['98 × 7 = 686', '98 × 90 = 8820', '686 + 8820 = 9506']);
+    await expect(ways.nth(1).locator('.lv-steps li')).toHaveText(['98 is 2 below 100, and 97 is 3 below.', '98 − 3 = 95, and 2 × 3 = 06.', 'So the answer is 9506.']);
+    const cards = sec.locator('a.lv-sutra');
+    await expect(cards).toHaveCount(3);
+    await expect(cards.locator('b[lang="sa-Latn"]')).toHaveText(['Ekādhikena Pūrveṇa', 'Nikhilaṃ Navataścaramaṃ Daśataḥ', 'Ūrdhva-Tiryagbhyām']);
+    await expect(cards.locator('.lv-sutra-m')).toHaveText(['By one more than the one before', 'All from 9 and the last from 10', 'Vertically and crosswise']);
+    await expect(cards.locator('.lv-sutra-ex')).toHaveText(['65²: 6 × 7 = 42, then 25, so 4225', '1000 − 368: 9 − 3, 9 − 6, 10 − 8, so 632', '21 × 13: 2, then 2 × 3 + 1 × 1 = 7, then 3, so 273']);
+    for (const [i, id] of ['s1', 's2', 's3'].entries()) await expect(cards.nth(i)).toHaveAttribute('href', `/play/#/sutras/${id}`);
+    await expect(cards.locator('.lv-trick')).toHaveText(['Square numbers ending in 5', 'Subtract from 100, 1000, 10000', 'Multiply any two numbers in one line']);
+    await expect(cards.first()).toHaveAccessibleName(/Square numbers ending in 5.*Ekādhikena Pūrveṇa.*By one more than the one before.*See how it works/);
+    const note = sec.locator('.lv-sutras-note');
+    await expect(note).toContainText("The 16 sutras and 13 sub-sutras are from Bharati Krishna Tirtha's book Vedic Mathematics, published in 1965. They are not found in the Vedas; each one is ordinary algebra you can check.");
+    await expect(note.getByRole('link', { name: 'See all 29 sutras' })).toHaveAttribute('href', '/play/#/sutras');
+  });
+
+  /* landing-interactive-hero (#172 review): the step buttons show only once the script runs, so a module that fails to
+     load leaves every step on screen and no buttons that do nothing */
+  test('when the step script cannot load, the sutra way shows every step and no visible Back or Next', async ({ page }) => {
+    await page.route(/\/js\/life\.js(\?.*)?$/, route => route.fulfill({ status: 404, body: '' }));
+    await page.goto('/');
+    const card = page.locator('#lv-demo');
+    await expect(card.locator('.lv-steps li')).toHaveCount(3);
+    for (const li of await card.locator('.lv-steps li').all()) await expect(li).toBeVisible();
+    await expect(card).not.toHaveAttribute('data-step', /./);
+    await expect(card.getByRole('button', { name: 'Next' })).toBeHidden();
+    await expect(card.getByRole('button', { name: 'Back' })).toBeHidden();
+  });
+
+  /* #172 review: a visitor who finishes the steps before js/analytics.js has run is still counted, once */
+  test('finishing the steps before analytics has loaded still sends math/landing/demo/done once', async ({ page }) => {
+    const STUB = `window.__events = window.__events || []; window.siteTrack = (path, title) => { window.__events.push(path + ' ' + title); };`;
+    let release: () => void = () => {};
+    const held = new Promise<void>(r => { release = r; });
+    await page.route(/\/js\/analytics\.js(\?.*)?$/, async route => { await held; await route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }); });
+    await page.goto('/', { waitUntil: 'commit' });
+    const card = page.locator('#lv-demo');
+    await expect(card).toHaveAttribute('data-step', '1');
+    for (let i = 0; i < 2; i++) await card.locator('.lv-demo-next').click();
+    await expect(card).toHaveAttribute('data-step', '3');
+    expect(await page.evaluate(() => typeof (window as any).siteTrack)).toBe('undefined');
+    release();
+    await expect.poll(() => page.evaluate(() => ((window as any).__events || []).filter((e: string) => e.startsWith('math/landing/')))).toEqual(['math/landing/demo/done Vedic Math: landing demo finished']);
+  });
+
+  test('a Sutra card opens its Deep dive in the game, with no Mode picker and no Mode stored', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('a.lv-sutra[href="/play/#/sutras/s3"]').click();
+    await expect(page).toHaveURL(/\/play\/#\/sutras\/s3$/);
+    await expect(page.locator('dialog.sutra-modal #sdTitle')).toHaveText('Ūrdhva-Tiryagbhyām');
+    await expect(page.locator('.mode-pick')).toHaveCount(0);
+    expect(await page.evaluate(() => { const p = JSON.parse(localStorage.getItem('vm.players') || 'null'); return p && p.list && p.list[0] ? p.list[0].mode : null; }) ?? null).toBeNull();
+  });
+});
+
+test.describe('JavaScript off, the sutras and the method', () => {
+  test.use({ javaScriptEnabled: false, seedMode: null });
+  test('/ shows One short rule, one line of work with both ways and the three Sutra cards', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.lv-sutras h2')).toHaveText('One short rule, one line of work');
+    await expect(page.locator('.lv-sutras .lv-way')).toHaveCount(2);
+    await expect(page.locator('.lv-sutras a.lv-sutra')).toHaveCount(3);
+    await expect(page.locator('.lv-sutras')).toContainText('9506');
+  });
+});
+
+test('welcome back keeps the sutras section under its own hero', async ({ page }) => {
+  await page.goto('/?home');
+  await expect(page.locator('main h1')).toHaveText('Welcome back, Swift Tiger 42');
+  await expect(page.locator('.lv-sutras h2')).toHaveText('One short rule, one line of work');
+  await expect(page.locator('main :is(h1, h2)').nth(1)).toHaveText('One short rule, one line of work');
 });

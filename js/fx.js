@@ -10,10 +10,11 @@ export const MODES = {
   pro: { name: 'Pro', ages: '13 to adult', blurb: 'Algebra to calculus, sutra deep dives, leaderboards.', color: 'plum', grades: [8, 9, 10, 11, 12], league: 'pro' }
 };
 export const mode = () => store.player().mode;
-/* guess: the Mode was set for the Player by Try a trick (openspec first-visit), not picked; any pick clears it */
-export function setMode(m, { guess = false } = {}) {
-  store.setPlayerMode(m, { guess }); applyMode();
-  if (!guess) try { window.siteTrack && window.siteTrack('math/mode/' + m, 'Vedic Math mode: ' + m); } catch (e) {} /* a guessed Mode is never sent (first-visit spec) */
+/* A pick (a Mode card, a card's Try a trick, a Mode link or Me). It also clears a Mode guess an older Try a trick left
+   on the Player record (openspec try-trick-in-modes: nothing guesses a Mode any more). */
+export function setMode(m) {
+  store.setPlayerMode(m); applyMode();
+  try { window.siteTrack && window.siteTrack('math/mode/' + m, 'Vedic Math mode: ' + m); } catch (e) {}
 }
 export function applyMode() {
   const m = mode() || 'none';
@@ -43,7 +44,7 @@ export const motionOff = () => matchMedia('(prefers-reduced-motion: reduce)').ma
 /* ---------- Pause motion (openspec accessibility): one device setting for every page of this site ----------
    Sets html.motion-paused, which every page treats like the reduced-motion setting, and saves it under
    motion-paused ('1'), which each page's first inline script applies before paint. The switch is on the Me page and
-   in the music panel. Fires sitemotion so moving things stop or start at once. */
+   in the Calm and sound panel. Fires sitemotion so moving things stop or start at once. */
 export const MOTION_KEY = 'motion-paused';
 export const motionPaused = () => document.documentElement.classList.contains('motion-paused');
 export function setMotionPaused(on) {
@@ -51,8 +52,8 @@ export function setMotionPaused(on) {
   document.documentElement.classList.toggle('motion-paused', on);
   try { if (on) localStorage.setItem(MOTION_KEY, '1'); else localStorage.removeItem(MOTION_KEY); } catch (e) {}
   try { document.dispatchEvent(new CustomEvent('sitemotion', { detail: { paused: on } })); } catch (e) {}
-  /* The Me page and the music panel each have the switch; both show the same state */
-  document.querySelectorAll('#vmMotion, #setMotion').forEach(b => b.setAttribute('aria-checked', String(on)));
+  /* The Me page and every Calm and sound panel (js/ambient.js) have the switch; all show the same state */
+  document.querySelectorAll('.vm-motion, #setMotion').forEach(b => b.setAttribute('aria-checked', String(on)));
   announce(on ? 'Pause motion on. Nothing moves.' : 'Pause motion off.');
 }
 
@@ -65,6 +66,7 @@ export function setCalm(on) {
   on = !!on;
   try { localStorage.setItem('vm.calm', on ? '1' : '0'); } catch (e) {}
   applyPrefs();
+  try { document.querySelectorAll('#setCalm, .vm-calm, .play-calm').forEach(b => b.setAttribute('aria-checked', String(on))); } catch (e) {} /* the same switch on Me, in the Calm and sound panel and in the play shell */
   try { document.dispatchEvent(new CustomEvent('vmcalm', { detail: { on } })); } catch (e) {}
   announce(on ? 'Calm on. No clocks in Practice, no motion.' : 'Calm off.');
 }

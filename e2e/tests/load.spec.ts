@@ -1,4 +1,5 @@
-import { test, expect, APP, open, chromiumOnly } from './fixtures';
+import type { Route } from '@playwright/test';
+import { test, expect, APP, open, mod, chromiumOnly } from './fixtures';
 
 /* First load, page metadata, and the site's own files: the pinned design system, the theme, fonts, icons and manifest,
    all served by learnvedicmath.com (openspec change learnvedicmath, site-assets spec). */
@@ -25,10 +26,14 @@ test.describe('first visit', () => {
     // The game is its own installable app (scope /play/)
     await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', '/manifest.webmanifest');
     await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href', '/icons/apple-touch-icon.png');
+    // The installed app on iPhone and iPad: its name under the icon and full screen (openspec change install-app)
+    await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute('content', 'Vedic Math');
+    await expect(page.locator('meta[name="apple-mobile-web-app-capable"]')).toHaveAttribute('content', 'yes');
+    await expect(page.locator('meta[name="mobile-web-app-capable"]')).toHaveAttribute('content', 'yes');
     // The Nikhilam Family favicon: the SVG, and PNG cuts at 16, 32 and 48 px
     await expect(page.locator('link[rel="icon"][type="image/svg+xml"]')).toHaveAttribute('href', '/icons/favicon.svg');
     for (const s of [16, 32, 48]) await expect(page.locator(`link[rel="icon"][sizes="${s}x${s}"]`)).toHaveAttribute('href', `/icons/favicon-${s}.png`);
-    await expect(page.locator('a.skip[href="#view"]')).toHaveCount(1);
+    await expect(page.locator('a.md-skip[href="#view"]')).toHaveCount(1);
     // The Vedic Math tabs are in the page but hidden until a Mode is picked (header.spec.ts 'tabs wait for a Mode')
     await expect(page.locator('nav.mq-nav')).toHaveCount(1);
     await expect(page.locator('nav.mq-nav')).toBeHidden();
@@ -37,10 +42,43 @@ test.describe('first visit', () => {
 
 test('a returning player loads home with no console errors or failed requests', async ({ page, issues }) => {
   await open(page);
-  await expect(page.locator('h1.home-h')).toHaveText('Ready to get faster?');
+  await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
   await page.waitForLoadState('networkidle');
   expect(issues.console, 'console errors').toEqual([]);
   expect(issues.failed, 'failed requests').toEqual([]);
+});
+
+/* The late imports (js/install.js after boot, js/stories.js after first paint, and a second after load js/sutra-tag.js,
+   js/arena.js, js/tour.js and js/play/kit.js) are not in the first paint's import graph. A reload while one is still loading cuts it off; that is the page being left,
+   not a failure, so nothing is logged (lateImport in js/life.js). Each is held in flight until the reload has started. */
+for (const name of ['install', 'stories', 'sutra-tag', 'arena', 'tour', 'play/kit']) {
+  test(`a reload while ${name}.js is still loading logs no console error`, async ({ page, issues }) => {
+    const path = new URL(await mod(page, name), 'http://x').pathname;
+    let hold = true, seen: () => void = () => {};
+    const asked = new Promise<void>(r => { seen = r; });
+    const held: Route[] = [];
+    await page.route(u => u.pathname === path, route => {
+      if (!hold) return route.continue();
+      held.push(route); seen();
+    });
+    // Not open(): WebKit holds the load event for an import started before it, and this one is held
+    await page.goto(APP, { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('h1.home-h')).toBeVisible();
+    await asked;
+    hold = false;
+    await page.reload();
+    for (const r of held) await r.abort().catch(() => {}); /* the old page's request: gone with it */
+    await expect(page.locator('h1.home-h')).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    expect(issues.console, 'console errors').toEqual([]);
+  });
+}
+
+test('a late import that fails while the page stays still reports, as before', async ({ page, issues }) => {
+  const path = new URL(await mod(page, 'install'), 'http://x').pathname;
+  await page.route(u => u.pathname === path, route => route.abort('failed'));
+  await open(page);
+  await expect.poll(() => issues.console.some(m => m.includes('install.js did not load'))).toBe(true);
 });
 
 test.describe('the site\'s own files', () => {
@@ -98,8 +136,21 @@ test.describe('the site\'s own files', () => {
     expect(json.start_url).toBe('/play/?source=pwa');
     expect(json.display).toBe('standalone');
     expect(json.icons.some((i: { sizes: string }) => i.sizes === '192x192')).toBe(true);
-    expect(json.icons.some((i: { sizes: string; purpose?: string }) => i.sizes === '512x512' && !i.purpose)).toBe(true);
-    expect(json.icons.some((i: { purpose?: string }) => i.purpose === 'maskable')).toBe(true);
+    // Any-purpose and maskable cuts at 192 and 512 (openspec change install-app); "any" is the default purpose
+    for (const size of ['192x192', '512x512']) {
+      expect(json.icons.some((i: { sizes: string; purpose?: string }) => i.sizes === size && (!i.purpose || i.purpose === 'any')), `${size} any`).toBe(true);
+      expect(json.icons.some((i: { sizes: string; purpose?: string }) => i.sizes === size && i.purpose === 'maskable'), `${size} maskable`).toBe(true);
+    }
+    // The richer install dialog: a description, narrow and wide screenshots served from this site, and shortcuts inside the scope
+    expect(json.description.length).toBeGreaterThan(20);
+    for (const f of ['narrow', 'wide']) expect(json.screenshots.some((s: { form_factor: string }) => s.form_factor === f), f).toBe(true);
+    for (const s of json.screenshots) {
+      const r = await request.get(s.src);
+      expect(r.status(), s.src).toBe(200);
+      expect(r.headers()['content-type'], s.src).toMatch(/image\/png/);
+    }
+    for (const s of json.shortcuts) expect(s.url, s.name).toMatch(/^\/play\/#\//);
+    expect(json.launch_handler.client_mode).toContain('navigate-existing');
     for (const i of json.icons) {
       expect(i.src, 'icons come from this site').toMatch(/^\/icons\//);
       const r = await request.get(i.src);
@@ -118,6 +169,8 @@ test.describe('the site\'s own files', () => {
     await expect.poll(async () => (await cdp.send('Page.getInstallabilityErrors')).installabilityErrors.map(e => e.errorId), { timeout: 10_000 }).toEqual([]);
     const m = await cdp.send('Page.getAppManifest');
     expect(m.url).toMatch(/\/manifest\.webmanifest$/);
+    // Chrome's own manifest parser finds nothing wrong (openspec change install-app): no error, no warning
+    expect(m.errors.map(e => e.message)).toEqual([]);
   });
 
   test('nothing loads from sbmadhav.com and there is no Explore menu', async ({ page }) => {

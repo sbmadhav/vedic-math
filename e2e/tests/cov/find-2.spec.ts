@@ -1,8 +1,8 @@
 import { test, expect, open } from '../fixtures';
 
-/* find spec, Requirements "The index holds every named thing" (A Play mode), "Plain words find things too" (Multiply
-   big numbers, A title made of an ignored word, A kind word), "Results are grouped and ranked" (One stray word) and "Questions are answered first":
-   one test per new scenario (openspec change find-and-home-polish). */
+/* find spec, Requirements "A Play mode opens Me" (A Play mode), "The group that matches more comes first" (Multiply
+   big numbers), "How words are matched" (A title made of an ignored word, A kind word), "A share of the words is enough"
+   (One stray word) and "Questions are answered first": one test per new scenario (openspec change find-and-home-polish). */
 type Page = import('@playwright/test').Page;
 const hits = (page: Page) => page.locator('#findOut .find-hit');
 const groups = (page: Page) => page.locator('#findOut .find-group h2').allInnerTexts();

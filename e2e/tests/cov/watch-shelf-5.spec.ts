@@ -71,6 +71,7 @@ test('when a Short finishes playing, nothing else starts on its own', async ({ p
   const dlg = page.locator('dialog.vm-player');
   await expect(dlg).toBeVisible();
   await expect(dlg).toHaveClass(/\btall\b/);
+  await dlg.locator('.vp-play').click(); // the facade: the frame is written on play (change learnvedicmath)
   const iframe = dlg.locator('iframe');
   await expect(iframe).toHaveAttribute('src', new RegExp(`/embed/${yt}\\?`));
   const src = (await iframe.getAttribute('src'))!;

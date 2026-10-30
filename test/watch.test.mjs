@@ -2,7 +2,7 @@
 import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { visibleTo, order, picksFor, pickForTrick, videoForTrick, filterShelf, lengthOf, LENGTHS, MAX_LENGTH, embedSrc, linksOut, loadVideos, MODE_SEES } from '../js/watch.js';
+import { visibleTo, order, picksFor, pickForTrick, videoForTrick, filterShelf, lengthOf, LENGTHS, MAX_LENGTH, embedSrc, thumbSrc, facade, linksOut, loadVideos, MODE_SEES } from '../js/watch.js';
 import { VIDEOS } from '../js/videos.js';
 import { DETAILS } from '../js/sutra-details.js';
 import { byId } from '../js/skills/index.js';
@@ -61,6 +61,7 @@ test('the Star video is hand-matched to the Trick only, made for kids first, sho
   // with the real list (loaded on demand)
   const v = await videoForTrick('sq5', 'challenger');
   assert.ok(v && v.tricks.includes('sq5') && v.modes.some(m => MODE_SEES.challenger.includes(m)));
+  assert.equal((await videoForTrick('duplex', 'challenger'))?.id, 'duplex-tecmath', 'the duplex Trick has its video');
 });
 
 test('length buckets at 119, 120, 300, 480 and 719 seconds; nothing from 12 minutes', () => {
@@ -89,6 +90,17 @@ test('the embed is privacy-enhanced and links out only for Pro', () => {
   assert.match(embedSrc({ yt: 'oV7Kxm3Zr_c' }), /^https:\/\/www\.youtube-nocookie\.com\/embed\/oV7Kxm3Zr_c\?autoplay=1&rel=0/);
   assert.doesNotMatch(embedSrc({ yt: 'oV7Kxm3Zr_c' }, { autoplay: false }), /autoplay/);
   assert.deepEqual(['explorer', 'challenger', 'pro'].map(linksOut), [false, false, true]);
+});
+
+/* The facade (change learnvedicmath, design D10): the player opens on this site's thumbnail behind a play button, so
+   no YouTube frame exists and no YouTube host is named until play is pressed */
+test('the facade holds the thumbnail from /thumbs/ behind a play button and names no YouTube host', () => {
+  const html = facade(thumbSrc({ yt: 'oV7Kxm3Zr_c' }));
+  assert.match(html, /^<button type="button" class="vp-play" aria-label="Play video">/);
+  assert.match(html, /<img src="\/thumbs\/yt-oV7Kxm3Zr_c\.webp" alt=""/);
+  assert.doesNotMatch(html, /iframe|youtube|ytimg/);
+  assert.doesNotMatch(facade(null), /<img/, 'no thumbnail: a plain play button');
+  assert.match(facade('a"b'), /src="a&quot;b"/);
 });
 
 test('the list loads once, on demand', async () => {

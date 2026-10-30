@@ -8,7 +8,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import * as S from '../js/handoff-schema.js';
-import { applyHandoff, progressHere } from '../js/handoff.js';
+import { applyHandoff, progressHere, playerRow, RESULTS } from '../js/handoff.js';
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const b64url = buf => Buffer.from(buf).toString('base64url');
@@ -189,6 +189,40 @@ test('the validator accepts a packed payload and rejects anything off the schema
   for (const x of [null, undefined, 1, 'x', true]) assert.equal(S.validatePayload(x).ok, false);
 });
 
+/* ---------- the offer's Player rows (the import page) ---------- */
+/* A document stand-in: elements hold a class, text and children, and setting innerHTML throws, so a row built from
+   the payload can only be built from text */
+const fakeDoc = () => ({ createElement: tag => ({ tag, className: '', textContent: '', attrs: {}, children: [], setAttribute(k, v) { this.attrs[k] = v; }, append(...c) { this.children.push(...c); }, set innerHTML(v) { throw new Error('innerHTML with payload data'); } }) });
+const textOf = n => (typeof n === 'string' ? n : n.textContent || n.children.map(textOf).join(''));
+
+test('a Player row: an avatar tile coloured by Mode with the first letter, the Nickname, then the Mode word and Sparks, from text only', () => {
+  const li = playerRow(P2, 1234, fakeDoc());
+  assert.equal(li.tag, 'li'); assert.equal(li.className, 'ho-player');
+  const [avatar, gap, text] = li.children;
+  assert.equal(avatar.className, 'ho-avatar ho-avatar--sun', 'Explorer is sun');
+  assert.equal(avatar.textContent, 'B'); assert.equal(avatar.attrs['aria-hidden'], 'true');
+  assert.equal(gap, ' ', 'readable before the styles load; never shown in the flex row');
+  assert.deepEqual(text.children.map(c => (typeof c === 'string' ? c : c.className)), ['ho-name', ' ', 'ho-meta']);
+  assert.equal(text.children[0].textContent, 'Brave Otter 17');
+  assert.equal(text.children[2].textContent, 'Explorer, 1,234 Sparks');
+  assert.equal(textOf(li), 'B Brave Otter 17 Explorer, 1,234 Sparks');
+  const meta = (p, n) => playerRow(p, n, fakeDoc()).children[2].children[2].textContent;
+  assert.equal(playerRow(P1, 1, fakeDoc()).children[0].className, 'ho-avatar ho-avatar--sky', 'Challenger is sky');
+  assert.equal(meta(P1, 1), 'Challenger, 1 Spark');
+  assert.equal(playerRow({ ...P1, mode: 'pro' }, 0, fakeDoc()).children[0].className, 'ho-avatar ho-avatar--plum', 'Pro is plum');
+  const noMode = playerRow({ ...P1, mode: null }, 40, fakeDoc());
+  assert.equal(noMode.children[0].className, 'ho-avatar', 'the oldest format packs no Mode');
+  assert.equal(meta({ ...P1, mode: null }, 40), '40 Sparks');
+});
+
+test('the Mode words in the rows are the ones js/fx.js shows', () => {
+  const src = readFileSync(join(repo, 'js/fx.js'), 'utf8');
+  for (const [mode, word] of [['explorer', 'Explorer'], ['challenger', 'Challenger'], ['pro', 'Pro']]) {
+    assert.match(src, new RegExp(`${mode}: \\{ name: '${word}'`), `fx.js MODES.${mode}.name`);
+    assert.equal(playerRow({ ...P1, mode }, 2, fakeDoc()).children[2].children[2].textContent, `${word}, 2 Sparks`);
+  }
+});
+
 /* ---------- writing (the import page) ---------- */
 const imported = async () => (await S.decode(await S.encode(goodPayload())));
 
@@ -249,6 +283,38 @@ test('the game reads what the hand-off wrote', async () => {
   assert.equal(store.sparks(), 5);
 });
 
+/* A storage with a byte cap, as a full browser behaves: a write that would go over it throws QuotaExceededError and
+   leaves the key as it was */
+const capped = (init, cap) => {
+  const st = storage(init), set = st.set;
+  st.size = () => [...st.m.entries()].reduce((n, [k, v]) => n + k.length + v.length, 0);
+  st.set = (k, v) => {
+    const had = st.m.has(k) ? st.m.get(k) : null;
+    set(k, v);
+    if (st.size() > cap) { if (had === null) st.m.delete(k); else st.m.set(k, had); const e = new Error('full'); e.name = 'QuotaExceededError'; throw e; }
+  };
+  return st;
+};
+
+test('a rollback frees every touched key before the old values go back, so a full browser gets its progress back whole', () => {
+  // This device: a Device board stored first, then a small record for p1; the old site's p1 brings a much bigger record
+  const entry = (k, v) => k.length + v.length;
+  const board = JSON.stringify(Array.from({ length: 30 }, (_, i) => ({ board: 'daily-2026-10-' + i, pid: 'p1', score: 100 + i, ts: 1_700_000_000_000 })));
+  const old = JSON.stringify(record());
+  const init = { 'vm.board': board, 'vm.players': players([P1]), 'mathquest.v1.p1': old };
+  const big = record({ seen: Object.fromEntries(Array.from({ length: 300 }, (_, i) => ['tip-' + i, 1_700_000_000_000])) });
+  const payload = S.payloadOf(device({ 'vm.players': players([P1]), 'mathquest.v1.p1': big }), [], 1_700_000_000_000);
+  assert.equal(S.validatePayload(payload).ok, true);
+  const probe = storage(init), snapshot = [...probe.m.entries()].sort();
+  const total = [...probe.m.entries()].reduce((n, [k, v]) => n + entry(k, v), 0);
+  // The cap lets the big record in once the board and the old record are gone, and nothing more: the Players list fails
+  const cap = total - entry('vm.board', board) - entry('mathquest.v1.p1', old) + entry('mathquest.v1.p1', JSON.stringify(payload.records.p1)) + 20;
+  assert.ok(total <= cap, 'what the device held fitted its browser');
+  const st = capped(init, cap);
+  assert.throws(() => applyHandoff(st, payload, 'replace'), /full/);
+  assert.deepEqual([...st.m.entries()].sort(), snapshot, 'the board, the record and the Players list are back as they were');
+});
+
 test('a write that fails part way (storage full) leaves every key exactly as it was, for both choices', async () => {
   const payload = await imported();
   const start = { 'vm.players': players([P1, { ...P1, id: 'pzz', name: 'Bold Yak 55' }]), 'mathquest.v1.p1': record({ sparks: 999 }), 'mathquest.v1.pzz': record(),
@@ -267,4 +333,20 @@ test('a write that fails part way (storage full) leaves every key exactly as it 
       assert.deepEqual([...st.m.entries()].sort(), snapshot, `${choice}: failing write ${n} of ${writes} restores every key`);
     }
   }
+});
+
+/* ---------- the one count the import page sends (analytics spec, task 9.2) ---------- */
+test('the import page\'s result buckets are exactly the ones the analytics spec lists', () => {
+  // The requirement "Hand-off results are counted" lives in the main spec once the change is archived, in its delta until then
+  const spec = ['openspec/specs/analytics/spec.md', 'openspec/changes/learnvedicmath/specs/analytics/spec.md']
+    .map(f => { try { return readFileSync(join(repo, f), 'utf8'); } catch (e) { return ''; } })
+    .find(s => s.includes('### Requirement: Hand-off results are counted'));
+  assert.ok(spec, 'the requirement is in a spec');
+  const m = /`math\/handoff\/<result>` event per visit, where the result is one of ([^.]+), and only after the fragment/.exec(spec);
+  assert.ok(m, 'the requirement names the results');
+  assert.deepEqual(RESULTS, m[1].split(/, | or /));
+  assert.ok(RESULTS.every(r => /^[a-z-]+$/.test(r)), 'fixed words only');
+  const src = readFileSync(join(repo, 'js/handoff.js'), 'utf8');
+  assert.deepEqual([...src.matchAll(/math\/handoff\/([a-z-]+)/g)].map(x => x[1]), [], 'every count goes through count(result), never a literal path');
+  for (const r of src.matchAll(/count\('([a-z-]+)'\)/g)) assert.ok(RESULTS.includes(r[1]), r[1]);
 });

@@ -3,7 +3,7 @@
    Writes tools/voice/out/lines.json (git-ignored):
    - whole: every line of the Skills recorded whole (K to 2, except three-digit adding and comparing), enumerated until
      WHOLE_QUIET draws in a row add nothing new, plus every fixed line the app speaks (literal speak() calls, praise,
-     the Balloon pop prompts and counts);
+     the Balloon pop prompts and counts) and the names Explorer's menu tabs say (js/nav.js NAV_LINES);
    - clips: every number clip in both takes, and every word frame seen while sampling every other source (all Skills,
      all Katas, which Stars deal, Arena sets for each League, towers), each assigned to the first pack that needs it.
    - explanations (openspec explanation-audio): every line js/explain-lines.js lists (Skill ideas and methods, Trick
@@ -23,6 +23,8 @@ import { makeSet } from '../../js/arena.js';
 import { STUDIO } from '../../js/voice-index.js';
 import { allExplanationLines } from '../../js/explain-lines.js';
 import { VIDEOS, LINKS } from '../../js/videos.js';
+import { TEMPLATES, WRITTEN, storyFor } from '../../js/stories.js';
+import { NAV_LINES } from '../../js/nav.js';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const OUT = fileURLToPath(new URL('./out/', import.meta.url));
@@ -57,6 +59,7 @@ function main() {
   const whole = new Map(); // words -> source
   const addWhole = (t, src) => { const w = normalize(t); if (w && !whole.has(w)) whole.set(w, src); };
   for (const t of fixedLines()) addWhole(t, 'fixed');
+  for (const t of NAV_LINES) addWhole(t, 'nav'); /* Explorer's menu tabs say their names (openspec change play-nav-by-mode) */
   for (const { text, src } of allExplanationLines({ videos: VIDEOS, links: LINKS })) addWhole(text, 'explain:' + src);
   for (const s of wholeSkills()) {
     let quiet = 0, before = whole.size;
@@ -81,6 +84,10 @@ function main() {
   for (const t of TRICKS) for (let n = 1; n <= KATAS_PER_TRICK; n++) kata(t.id, n).problems.forEach(p => withSteps(p).forEach(x => addClips(x, 'tricks')));
   for (let d = 0; d < 40; d++) { makeSet('challenger', 'lines-' + d).forEach(p => spoken(p).forEach(t => addClips(t, 'tricks'))); makeSet('pro', 'lines-' + d).forEach(p => spoken(p).forEach(t => addClips(t, 'tricks'))); }
   for (let id = 1; id <= CHALLENGE_COUNT; id += 3) challengeSet(challenge(id), 30).forEach(p => spoken(p).forEach(t => addClips(t, 'tricks')));
+  /* Word problems (openspec word-problems, design D11): names and settings vary too much to record whole, so their
+     frames go into the clip packs, Explorer's into core */
+  for (const t of TEMPLATES) for (let k = 0; k < N; k++) { const p = storyFor({ id: t.skills[0], grade: 3 }, t.mode); if (p) withSteps(p).forEach(x => addClips(x, t.mode === 'explorer' ? 'core' : t.mode === 'challenger' ? 'g3-5' : 'g6-8')); }
+  for (const w of WRITTEN) [w.q, w.ask, w.plan, ...w.steps].forEach(x => addClips(x, 'g6-8'));
 
   const wholeChars = [...whole.keys()].reduce((a, w) => a + w.length, 0);
   const clipChars = [...clips.keys()].reduce((a, id) => a + clipText(id).length, 0);

@@ -32,10 +32,12 @@ const VIDEOS = [
 const titles = groups => groups.flatMap(g => g.items.map(e => e.title));
 const kind = (groups, k) => (groups.find(g => g.kind === k) || { items: [] }).items.map(e => e.title);
 
-test('sectionLines: the menu for each Mode, in menu order, one plain line each, no digits, every href routed', () => {
+test('sectionLines: every section for each Mode, in zone order, one plain line each, no digits, every href routed', () => {
   const pro = sectionLines('pro'), ex = sectionLines('explorer');
-  assert.deepEqual(pro.map(l => l.label), ['Home', 'Learn', 'Dojo', 'Arena', 'Games', 'Sutras', 'Watch', 'Me', 'Guide', 'Find']);
-  assert.deepEqual(ex.map(l => l.label), ['Home', 'Learn', 'Arena', 'Games', 'Watch', 'Me', 'Guide', 'Find']);
+  /* Sutras right after Home, in every Mode (openspec change sutras-first); the Arcade zone before the places in it
+     (openspec change play-nav-by-mode) */
+  assert.deepEqual(pro.map(l => l.label), ['Home', 'Sutras', 'Learn', 'Arcade', 'Dojo', 'Arena', 'Games', 'Watch', 'Me', 'Guide', 'Find']);
+  assert.deepEqual(ex.map(l => l.label), ['Home', 'Sutras', 'Learn', 'Arena', 'Games', 'Watch', 'Me', 'Guide', 'Find']);
   assert.deepEqual(sectionLines('challenger').map(l => l.label), pro.map(l => l.label));
   assert.deepEqual(sectionLines(null).map(l => l.label), pro.map(l => l.label), 'no Mode reads as Challenger');
   for (const l of [...pro, ...ex]) {
@@ -52,7 +54,7 @@ test('buildIndex (Pro): every catalog entry once, with a real routed page', () =
   const ids = idx.map(e => e.id);
   assert.equal(new Set(ids).size, ids.length, 'no duplicate ids');
   const n = k => idx.filter(e => e.kind === k).length;
-  assert.equal(n('section'), 10);
+  assert.equal(n('section'), 11); /* with the Arcade (openspec change play-nav-by-mode) */
   assert.equal(n('mode'), 3);
   assert.equal(n('trick'), TRICKS.length);
   assert.equal(n('skill'), SKILLS.filter(s => !String(s.id).startsWith('v-')).length);
@@ -70,9 +72,11 @@ test('buildIndex (Pro): every catalog entry once, with a real routed page', () =
   }
 });
 
-test('buildIndex (Explorer): no Dojo or Sutras section, no experience or game outside the Mode, Explorer titles', () => {
+test('buildIndex (Explorer): no Dojo section, the Sutras section in Explorer words, no experience or game outside the Mode, Explorer titles', () => {
   const idx = buildIndex({ mode: 'explorer', videos: VIDEOS });
-  assert.ok(!idx.some(e => e.id === 'section-dojo' || e.id === 'section-sutras'));
+  assert.ok(!idx.some(e => e.id === 'section-dojo'));
+  assert.ok(idx.some(e => e.id === 'section-sutras'), 'Explorer has the Sutras page (openspec change sutras-first)');
+  assert.match(idx.find(e => e.id === 'sutra-s1').sub, /^One more than the number before\. /, 'Explorer reads the Explorer meaning');
   assert.ok(!idx.some(e => e.id === 'play-spells'), 'Sutra Spellbook is a Dojo experience');
   assert.ok(!idx.some(e => e.id === 'game-times-sprint'), 'Times sprint is for Challenger and Pro');
   assert.ok(idx.some(e => e.id === 'game-balloons'));

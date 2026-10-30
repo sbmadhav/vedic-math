@@ -96,3 +96,42 @@ for (const [name, setup] of [
     } finally { Object.assign(g, saved); delete g.__paused; }
   });
 }
+
+/* The big confetti runs on time (openspec celebrations, "The big confetti lasts the same time on every screen" and
+   "moves at the same speed on every screen"): the path is a function of elapsed time, equal to the old per-frame steps */
+const PIECES = [
+  { x: 400, y: 300, vx: 5.2, vy: -14, a: 1.2, s: .11 },
+  { x: 310, y: 300, vx: -3.7, vy: -6.5, a: 4.8, s: -.09 },
+  { x: 455, y: 300, vx: .4, vy: -9.9, a: 0, s: .02 }
+];
+/* The old burst: one step per frame */
+const steps = (p0, frames) => {
+  const p = { ...p0 };
+  for (let i = 0; i < frames; i++) { p.x += p.vx; p.y += p.vy; p.vy += .35; p.vx *= .99; p.a += p.s; }
+  return p;
+};
+const near = (got, want, what) => ['x', 'y', 'a'].forEach(k => assert.ok(Math.abs(got[k] - want[k]) < .01, `${what} ${k}: ${got[k]} vs ${want[k]}`));
+
+test('the big confetti lasts 1,833 ms, which is 110 frames of a 60 Hz screen, and a life.js timer ends it', async () => {
+  const C = await import('../js/celebrate.js');
+  assert.equal(C.CONFETTI_MS, 110 * 1000 / 60);
+  assert.equal(Math.floor(C.CONFETTI_MS), 1833);
+  const src = readFileSync(join(repo, 'js/celebrate.js'), 'utf8');
+  assert.match(src, /later\(\(\) => ctl\.abort\(\), CONFETTI_MS, ctl\.signal\)/, 'a timer on the burst signal ends it');
+  assert.doesNotMatch(src, /\+\+f >= 110/, 'no frame count ends it');
+});
+
+test('each piece is where the old per-frame steps put it after the same time at 60 Hz', async () => {
+  const { confettiAt } = await import('../js/celebrate.js');
+  for (const p of PIECES) for (const f of [1, 30, 110]) near(confettiAt(p, f * 1000 / 60), steps(p, f), `after ${f} frames`);
+  for (const p of PIECES) near(confettiAt(p, 0), p, 'at the start');
+  for (const p of PIECES) near(confettiAt(p, -5), p, 'a frame stamped just before the start');
+});
+
+test('the same pieces are at the same place after 1 s whether frames come every 16.7 ms or every 48 ms', async () => {
+  const { confettiAt } = await import('../js/celebrate.js');
+  /* Each frame draws at its own time, up to and including 1,000 ms */
+  const drawn = (p, every) => { let q = p, t = 0; for (;;) { q = confettiAt(p, t); if (t >= 1000) return q; t = Math.min(1000, t + every); } };
+  for (const p of PIECES) near(drawn(p, 1000 / 60), drawn(p, 48), 'at 1,000 ms');
+  for (const p of PIECES) near(drawn(p, 48), steps(p, 60), 'at 1,000 ms against 60 old frames');
+});

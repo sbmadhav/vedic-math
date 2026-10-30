@@ -2,7 +2,8 @@
    Mastery is a running score from 0 to 1: first tries count fully, a try after a hint counts half.
    Nothing here leaves the device except what cloud.js posts to World boards (nickname, color, score). */
 import { AVATARS, makeName } from '../shared/src/names.ts';
-const LEGACY = 'mathquest.v1', PKEY = 'vm.players', BOARD = 'vm.board';
+export const LEGACY = 'mathquest.v1', PKEY = 'vm.players'; /* js/backup.js reads these */
+const BOARD = 'vm.board';
 let S = null, P = null;
 const blank = () => ({ v: 3, skills: {}, sparks: 0, days: {}, best: {}, last: null, grade: null, badges: {}, counts: {}, seen: {}, medals: {}, katasDone: {}, ratings: {}, weekSparks: {}, questDay: null });
 const get = k => { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } };
@@ -29,10 +30,10 @@ function players() {
 export const allPlayers = () => players().list;
 export const player = () => players().list.find(p => p.id === P.active) || P.list[0];
 export function updatePlayer(patch) { Object.assign(player(), patch); put(PKEY, P); emit('player', player()); }
-/* The Mode was guessed by Try a trick (openspec first-visit) and not yet picked by hand. setPlayerMode sets the Mode
-   and marks it a guess only when asked; any other set (a pick, or null to forget the Mode) clears the mark. */
+/* A Mode guess: written only by the Try a trick before try-trick-in-modes (Challenger as a guess), never now. A record
+   that still has one keeps it until setPlayerMode, which every pick (and null, to forget the Mode) goes through, clears it. */
 export const modeGuessed = () => !!player().modeGuess;
-export function setPlayerMode(mode, { guess = false } = {}) { delete player().modeGuess; updatePlayer(guess && mode ? { mode, modeGuess: true } : { mode }); }
+export function setPlayerMode(mode) { delete player().modeGuess; updatePlayer({ mode }); }
 /* Player ids are unique on the device: each one names that Player's World board identity (cloud.appNameFor) */
 const newId = () => { let t = Date.now(), id; do id = 'p' + (t++).toString(36); while (players().list.some(p => p.id === id)); return id; };
 export function addPlayer() { const p = { id: newId(), name: makeName(), avatar: AVATARS[P.list.length % AVATARS.length], mode: null, created: Date.now() }; players().list.push(p); switchPlayer(p.id); return p; }
@@ -178,26 +179,25 @@ export const lastSkill = () => (load(), S.last);
 export const setGrade = g => { load(); S.grade = String(g); save(); };
 export const savedGrade = () => (load(), S.grade);
 export function reset() { S = blank(); save(); emit('player', player()); }
-export function exportData() { load(); return JSON.stringify({ player: player(), data: S }); }
-export function importData(txt) { const d = JSON.parse(txt); const data = d.data || d; if (!isObj(data) || !isObj(data.skills)) throw new Error('bad'); S = { ...blank(), ...migrate(clean(data)) }; save(); emit('import'); }
 
-/* A backup code is outside data that pages later put into HTML. clean keeps only the record's known fields, each in
-   its own shape: counts and times are finite numbers 0 or more, and keys and ids hold no markup characters.
-   Anything else is dropped. A field added to the record must be added here too, or a restore loses it. */
-const KEY = /^[^<>"'&`]{1,120}$/;
-const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
-const num = v => typeof v === 'number' && Number.isFinite(v) && v >= 0;
-const numMap = m => (isObj(m) ? Object.fromEntries(Object.entries(m).filter(([k, v]) => KEY.test(k) && num(v))) : {});
-const mapOf = (m, fn) => (isObj(m) ? Object.fromEntries(Object.entries(m).filter(([k]) => KEY.test(k)).map(([k, v]) => [k, fn(v)])) : {});
-const keyOrNull = v => (typeof v === 'string' && KEY.test(v) ? v : null);
-export function clean(d) {
-  const out = { skills: mapOf(d.skills, numMap) };
-  for (const f of ['v', 'sparks', 'xp', 'skyMigrated']) if (num(d[f])) out[f] = d[f];
-  for (const f of ['days', 'best', 'badges', 'counts', 'seen', 'medals', 'katasDone', 'ratings', 'weekSparks', 'belts', 'weekXp', 'stars']) if (f in d) out[f] = numMap(d[f]);
-  out.last = keyOrNull(d.last); out.grade = keyOrNull(d.grade);
-  if (isObj(d.questDay) && keyOrNull(d.questDay.day)) out.questDay = { day: d.questDay.day, base: numMap(d.questDay.base), done: numMap(d.questDay.done) };
-  if (isObj(d.sky)) out.sky = { lit: numMap(d.sky.lit), skipped: numMap(d.sky.skipped), last: mapOf(d.sky.last, a => (Array.isArray(a) ? a.filter(keyOrNull) : [])) };
-  return out;
+/* ---------- Backup code (progress-handoff spec "Backup code for every Player"): js/backup.js ----------
+   Not part of a first load (nothing before the first paint waits for it or the hand-off modules): the Me page calls
+   loadBackup() and the functions below need it to have resolved. */
+let B = null;
+export function loadBackup() { return B ? Promise.resolve(B) : import('./backup.js').then(m => (B = m)); }
+const need = () => { if (!B) throw new Error('backup not loaded'); return B; };
+export const MAX_PLAYERS = 12; // js/handoff-schema.js MAX_PLAYERS, without loading it; test/store.test.mjs checks they match
+/* Every Player on this device as a code's text; throws 'too many Players' or 'too big' rather than leave one out */
+export const exportData = () => need().exportData();
+/* The payload a pasted code's text holds, checked, or throws; writes nothing */
+export const readBackup = txt => need().readBackup(txt);
+/* What the Restore prompt says: { has, names, both } */
+export const restoreOffer = payload => need().restoreOffer(payload);
+/* Writes a backup (choice 'replace' or 'both'), all or nothing; then every cache here is dropped and listeners hear import */
+export function importData(txt, choice = 'replace') {
+  need().writeBackup(txt, choice);
+  S = null; P = null; migratedAll = false;
+  emit('import'); emit('player', player());
 }
 
 /* ---------- Device leaderboard: every player on this device ---------- */
