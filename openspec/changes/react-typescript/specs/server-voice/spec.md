@@ -129,12 +129,32 @@ The server SHALL voice a new sentence only for a request with a valid `voice`-sc
 - **WHEN** a request to voice a new sentence carries no ticket, or an expired or forged one
 - **THEN** the server refuses it without asking the provider, and the Player hears the clips or the device's voice
 
+#### Scenario: Later sentences in the same browser session
+- **WHEN** that Player is asked a second new sentence in the same browser session, before the ticket expires
+- **THEN** the Turnstile check does not run again, and the request carries the same `voice` ticket
+
+#### Scenario: A ticket made for another use
+- **WHEN** a request to voice a new sentence carries a `family` or `room` ticket the server signed
+- **THEN** the server refuses it without asking the provider, and the Player hears the clips or the device's voice
+
 ### Requirement: A per-address limit on new recordings
 The server SHALL limit requests to voice a new sentence per connection address (about 20 an hour, a server setting), counted in the same Durable Object as the spend ledger with the address kept only as a keyed hash whose key changes daily, and the count deleted when its hour ends. Over the limit it SHALL refuse without asking the provider.
 
 #### Scenario: Too many from one address
 - **WHEN** requests to voice new sentences from one connection address pass the hourly limit
 - **THEN** the next one is refused without asking the provider, the Player hears the clips or the device's voice, and no address is stored, only its keyed hash until the hour ends
+
+#### Scenario: The hour ends
+- **WHEN** an address that passed the hourly limit asks to voice a new sentence after its hour has ended
+- **THEN** the count for that hour has been deleted, the request is counted afresh, and the sentence is voiced if the spend caps allow
+
+#### Scenario: A sentence already on the voice host
+- **WHEN** a Player is asked a Server line that is already on the voice host
+- **THEN** the game plays it from the voice host, no request reaches the server, and nothing is counted against the address
+
+#### Scenario: The next day's key
+- **WHEN** the UTC day changes
+- **THEN** the key for the address hash is a new one, and no hash made with the old key is kept
 
 ### Requirement: The server voice can be switched off
 The server SHALL have one setting that switches the server voice off. Off, it SHALL voice nothing, and within 5 minutes the game SHALL stop playing Server lines, cached or new, and say them with the clips or the device's voice. A build without the voice host SHALL also have the server voice off.

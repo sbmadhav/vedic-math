@@ -21,4 +21,4 @@ Playwright specs run against a local build (`python3 build.py && node e2e/local-
 ## 4. Checks
 
 - [x] 4.1 `openspec validate working-memory-scaffolds --strict`; no spoken line changes (no studio voice re-record); `a11y.spec.ts` on Me, a Trick page and a Kata.
-- [ ] 4.2 After release: archive this change.
+- [x] 4.2 After release: archive this change. Done 2026-10-30: released in commit 840fffe on `main` and deployed (the live site serves `/js/connectors.js` and the answer slots in `/js/app.js`); `openspec archive working-memory-scaffolds -y` creates `split-answer`, `trick-connectors` and `trophy-case` and updates `sparks`; the coverage specs stay in `e2e/tests/cov/` (`split-answer-1` to `-6`, `trick-connectors-1` to `-4`, `trophy-case-1` to `-3`, `sparks-6`); `openspec validate --all --strict` passes.

@@ -125,6 +125,10 @@ The server SHALL allow about 20 turns an hour per connection address, counted in
 - **WHEN** a 21st turn arrives from one connection address within the hour
 - **THEN** the model is not called and the Player gets scripted help with no error
 
+#### Scenario: The hour ends
+- **WHEN** an address that passed the hourly limit sends a turn after its hour has ended
+- **THEN** the count for that hour has been deleted, the turn is counted afresh, and the model is called if the spend caps allow
+
 ### Requirement: Text only at first
 Replies SHALL show as text in the bubble. The conversation SHALL make no request for audio until a later change gives each speaker a server voice.
 
