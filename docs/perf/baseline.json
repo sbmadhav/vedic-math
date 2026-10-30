@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 831796,
+  "total": 831820,
   "files": {
    "/css/play/apprentice.css": 2196,
    "/css/play/art.css": 2398,
@@ -80,7 +80,7 @@
    "/js/listen.js": 1335,
    "/js/mental.js": 2128,
    "/js/metrics.js": 4174,
-   "/js/nav.js": 1554,
+   "/js/nav.js": 1555,
    "/js/play/catalog.js": 1783,
    "/js/play/exp/apprentice-core.js": 7279,
    "/js/play/exp/apprentice.js": 3914,
@@ -152,9 +152,9 @@
    "/js/voice.js": 14365,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 24877,
-   "/play/": 4137,
-   "/sw.js": 6281,
+   "/math.css": 24903,
+   "/play/": 4133,
+   "/sw.js": 6282,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -282,8 +282,8 @@
     "date": "2026-10-29",
     "pr": 174,
     "from": 826479,
-    "to": 831796,
-    "why": "play-nav-by-mode: the menu by Mode (js/nav.js, new and statically imported), the Arcade page, Learn's Sutras card, the Calm and sound control in the header and the play shell, Find's help card and Ctrl K; measured on main as of #170; file deltas: /js/app.js +1829, /js/nav.js +1554, /js/ambient.js +739, /math.css +566, /js/guide.js +187, /js/find.js +162, /js/shell.js +96, /play/ +70, +5317 in all"
+    "to": 831820,
+    "why": "play-nav-by-mode: the menu by Mode (js/nav.js, new and statically imported), the Arcade page, Learn's Sutras card, the Calm and sound control in the header and the play shell, Find's help card and Ctrl K; measured on main as of #170; file deltas: /js/app.js +1829, /js/nav.js +1555, /js/ambient.js +739, /math.css +592, /js/guide.js +187, /js/find.js +162, /js/shell.js +96, /play/ +66, +5341 in all; js/nav.js as the CI build measures it (one byte more than a local Brotli)"
    }
   ]
  },

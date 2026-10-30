@@ -697,7 +697,7 @@ html.motion-paused .sutra-face, body.calm .sutra-face, html.motion-paused .sutra
 .vm-mbtn.on .vm-eq i:nth-child(2) { animation-delay: -.3s; } .vm-mbtn.on .vm-eq i:nth-child(3) { animation-delay: -.6s; }
 @media (max-width: 600px) { .vm-mbtn .lbl, .vm-mbtn .vm-eq { display: none; } .vm-mbtn { width: 36px; height: 36px; padding: 0; justify-content: center; } .vm-mbtn.on .vm-eq { display: none; } }
 @keyframes eq { to { height: 12px; } }
-.vm-mpanel { position: absolute; right: 0; top: calc(100% + 8px); width: min(340px, 92vw); z-index: 60; padding: 16px; }
+.vm-mpanel { position: absolute; right: 0; top: calc(100% + 8px); width: min(340px, 92vw); max-height: calc(100vh - 96px); overflow: auto; z-index: 60; padding: 16px; }
 .vm-mpanel:hover { transform: none; }
 .vm-mt { display: block; font: 600 1.15rem/1.2 var(--display); }
 .vm-tracks { display: grid; gap: 8px; margin: 10px 0; }
@@ -719,7 +719,7 @@ html.motion-paused .sutra-face, body.calm .sutra-face, html.motion-paused .sutra
 @media (prefers-reduced-motion: reduce) { .vm-eq i { animation: none; } }
 /* The same with Pause motion (html.motion-paused) and Calm (body.calm) */
 html.motion-paused .vm-eq i, body.calm .vm-eq i { animation: none; }
-@media (max-width: 700px) { .vm-mpanel { position: fixed; left: 12px; right: 12px; top: 128px; width: auto; } }
+@media (max-width: 700px) { .vm-mpanel { position: fixed; left: 12px; right: 12px; top: 128px; width: auto; max-height: calc(100vh - 140px); } } /* scrolls on a short screen (#174 review) */
 .vm-about { margin-top: 10px; font-size: 13.5px; } .vm-about summary { cursor: pointer; font-weight: 700; }
 .vm-about ul { margin: 8px 0 0; padding-left: 1.1em; display: grid; gap: 6px; max-height: 240px; overflow: auto; } .vm-about li { color: var(--ink-muted); line-height: 1.4; } .vm-about b { color: var(--ink); }
 .roots ul { margin: 8px 0 0; padding-left: 1.2em; display: grid; gap: 6px; } .roots li { font-size: 15px; line-height: 1.5; }
