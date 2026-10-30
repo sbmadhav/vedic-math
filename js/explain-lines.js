@@ -16,6 +16,7 @@ import { MODES as PLAY_MODES } from './fx.js';
 import { MAX_LENGTH } from './watch.js';
 import * as LV from './levels.js';
 import { BG_NOTES, ROOTS_INTRO } from './sky-scene.js';
+import { LEDES, ledeFixed } from './ledes.js';
 
 /* A worked example as heard: its label, then its working ("65 squared. 6 times 7 equals 42, then 25, gives 4225.") */
 export const exampleLine = ([q, a]) => `${q}. ${a}`;
@@ -41,6 +42,10 @@ export const formatLines = () => Object.values(LV.FORMATS).map(f => f.how); // t
 /* "Older roots" on the Sutras page: the intro, then each background note as the list shows it */
 export const rootNote = ([h, b]) => `<b>${h}.</b> ${b}`;
 export const rootsLines = () => [ROOTS_INTRO, ...BG_NOTES.map(rootNote)];
+/* Page introductions (js/ledes.js, task 4.2): each one's fixed lines in every Mode's words, with outside links shown
+   (Pro's extra line), once each; the parts that hold the Player's own numbers are never listed */
+export const ledeLines = (n = guideCounts()) => [...new Set(Object.keys(LEDES).flatMap(id => Object.keys(PLAY_MODES).flatMap(mode =>
+  ledeFixed(id, { mode, n, modeName: PLAY_MODES[mode].name, links: true, done: 0, total: 0, got: 0, all: 0 }))))];
 /* Video and link descriptions on Watch. js/videos.js loads only when Watch opens, so its lists are passed in */
 export const videoLines = (videos = [], links = []) => [...videos, ...links].map(v => v.why).filter(Boolean);
 
@@ -63,6 +68,7 @@ export function allExplanationLines({ videos = [], links = [] } = {}) {
   add('quests', Object.values(QUEST_POOL).flat().map(q => q.label));
   add('modes', Object.values(PLAY_MODES).map(m => m.blurb));
   add('roots', rootsLines());
+  add('ledes', ledeLines(n));
   for (const m of MODES) { for (const sec of sectionsFor(m, n)) add('guide:' + m, guideLines(sec, m)); add('tour:' + m, tourLines(m)); }
   add('watch', videoLines(videos, links));
   return out;
@@ -93,11 +99,12 @@ export function linesForKey(key, mode = 'challenger') {
   if (kind === 'guide') { const sec = sectionsFor(mode, guideCounts()).find(x => x.id === id); return sec ? guideLines(sec, mode) : []; }
   if (kind === 'game') { const g = GAMES.find(x => x.id === id); return g ? gameLines(g) : []; }
   if (kind === 'formats') return formatLines();
+  if (kind === 'roots') return rootsLines();
   return [];
 }
 /* Every key a page can ask for in a Mode, for the coverage test */
 export function listenKeys(mode = 'challenger') {
   const sut = [...SUTRAS.map(c => 's' + c.n), ...SUBSUTRAS.map(c => 'u' + c.n)];
   return [...SKILLS.map(s => 'skill:' + s.id), ...sut.map(id => 'sutra-card:' + id), ...sut.flatMap(id => SUTRA_PARTS.map(p => `sutra:${id}:${p}`)),
-    'history', ...sectionsFor(mode, guideCounts()).map(s => 'guide:' + s.id), ...GAMES.map(g => 'game:' + g.id), 'formats'];
+    'history', ...sectionsFor(mode, guideCounts()).map(s => 'guide:' + s.id), ...GAMES.map(g => 'game:' + g.id), 'formats', 'roots'];
 }

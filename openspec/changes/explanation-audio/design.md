@@ -26,7 +26,8 @@
 - *Star replay steps (4.1).* The steps are worked steps on the Player's own numbers, so like the Trick tool they are read from the page (`from:.star-step > p`) and play from clips, else the device's voice. The button appears only once every step is shown, so it never races the 2.5 s step timer and reads the whole replay. The view's `wireListen()` plays it (the round's shell sits inside the view); the replay phase ending (Skip, Go, Escape) stops it.
 - *Daily quests (4.4).* One button on the quest card reads today's three labels (`from:.q-l`, the label alone, without its count); all 21 labels are recorded.
 - *Round formats (4.4).* One button under the Challenge tower chapter's format legend reads the five rules (key `formats`); all five are recorded. The format names are not recorded lines, so the rules are read alone.
-- *Not yet:* badge rules (the Party Mode badge's rule is not recorded, and 24 rules are one long block, which decision 1 rejects), Mode blurbs (each sits inside a Mode card button, like Watch descriptions, and the Mode names are not recorded lines), Watch descriptions (56 of 298 recorded), page introductions (live counts) and the "Older roots" notes. The notes already live in `js/sky-scene.js`, which Node imports, and are now in the recording list (`rootsLines()`, the intro and one line per note as the list shows it), so the 4.6 re-record records them; their button follows that re-record.
+- *Not yet:* badge rules (the Party Mode badge's rule is not recorded, and 24 rules are one long block, which decision 1 rejects), Mode blurbs (each sits inside a Mode card button, like Watch descriptions, and the Mode names are not recorded lines), Watch descriptions (56 of 298 recorded), and page introductions (their fixed lines are data in `js/ledes.js` since 2026-10-29, apart from the parts with the Player's own numbers, and in the recording list as `ledeLines()`, so the 4.6 re-record records them; their button follows it).
+- *The "Older roots" notes (4.5, 2026-10-29).* They live in `js/sky-scene.js`, which Node imports, and are in the recording list (`rootsLines()`, the intro and one line per note as the list shows it). The card has one Listen button (key `roots`); until the 4.6 re-record records the notes it reads them with this device's voice, as every Listen line without a recording does.
 
 ## Wording found while listing the lines (for the owner, not changed here)
 
@@ -39,8 +40,8 @@
 
 1. Should Listen stay silent when Sound effects are off? Proposed: no, it plays (it is the voice, and it follows a tap).
 2. The wording items above: change them (and re-record) or keep them.
-3. The deferred places (tasks section 4): which matter enough to do next. Page introductions hold live counts ("You have collected 3 of 29"), so they would play from clips or the device's voice unless the fixed sentences are split out.
-4. The "Older roots" notes are in the recording list (`rootsLines()`, decision 8) but none of them is recorded yet: the 4.6 re-record records them, and their Listen button follows it.
+3. The deferred places (tasks section 4): which matter enough to do next. Page introductions hold live counts ("You have collected 3 of 29"); their fixed lines are now split out (`js/ledes.js`) and listed for the 4.6 re-record, and the live parts would play from clips or the device's voice. Proposed: a Listen button on them after that re-record.
+4. The "Older roots" notes have their Listen button (decision 8); none of them is recorded yet, so they play with the device's voice until the 4.6 re-record.
 
 ## Risks / Trade-offs
 

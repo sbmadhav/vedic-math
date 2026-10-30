@@ -76,6 +76,12 @@ export function practiceItem(league, d) {
   return makeSet(league, null, 1)[0];
 }
 
+/* A Word problem (js/stories.js roundStory) as an Arena item: the Word problems round (openspec word-problems-more).
+   label: the Mode's Word problem label, shown over the question; the unit sits beside the entry. */
+export const storyItem = (p, league, label) => item(p, league, { story: p.story.id, label, ...(p.unit ? { unit: p.unit } : {}) });
+/* The Word problems round's length: reading takes longer than a bare question */
+export const STORY_QS = 10;
+
 /* The next Practice question: dial picks the difficulty, and Dial.fresh() keeps it from repeating this round */
 export const practiceNext = (league, dial) => dial.fresh(() => { const it = practiceItem(league, dial.lv); return [it.q, it]; });
 
@@ -100,29 +106,31 @@ function physicalKeys(root, allowed, max, rs, submit) {
    records the answers. No day: a Practice round, where dial picks each next question's difficulty and moves with
    every answer (openspec arena spec). The round runs under a child of signal, aborted when it ends or by destroy(),
    so its handlers never act on the next round drawn into the same root.
-   untimed (Practice only): UNTIMED_QS questions with no clock, a question counter and a Finish button. */
-export function runArena(root, { league, day = null, dial, signal, onEnd, untimed = false }) {
+   untimed (Practice only): count questions (UNTIMED_QS by default) with no clock, a question counter and a Finish button.
+   deal (Practice only): draws each next item instead of the Dial (the Word problems round, storyItem). */
+export function runArena(root, { league, day = null, dial, signal, onEnd, untimed = false, deal = null, count = UNTIMED_QS }) {
   const set = day ? dailySet(league, day) : null, tapMode = league === 'explorer';
   if (set) untimed = false; /* the daily round is a Ranked race: it always has its clock */
-  const draw = () => practiceNext(league, dial);
+  const draw = deal || (() => practiceNext(league, dial));
   let cur = set ? null : draw();
   const at = () => (set ? set[i % set.length] : cur);
   const round = child(signal), rs = round.signal;
   let i = 0, score = 0, right = 0, wrong = 0, combo = 0, bestCombo = 0, over = false;
   const answered = []; /* every answered question and whether it was right: the round review (openspec change sutras-first) */
-  const clock = untimed ? `<div class="ar-time"><small>Question</small><b id="arNum">1/${UNTIMED_QS}</b></div>` : `<div class="ar-time"><small>Time</small><b id="arTime">${ROUND_SECS}</b></div>`;
+  const clock = untimed ? `<div class="ar-time"><small>Question</small><b id="arNum">1/${count}</b></div>` : `<div class="ar-time"><small>Time</small><b id="arTime">${ROUND_SECS}</b></div>`;
   root.innerHTML = `<div class="ar${untimed ? ' ar--untimed' : ''}">
     <div class="ar-top"><div class="ar-score"><small>Score</small><b id="arScore">0</b></div><div class="ar-combo" id="arCombo" aria-live="polite"></div>${clock}</div>
     ${untimed ? '<p class="ar-fin"><button type="button" class="md-btn md-btn--sm" id="arFinish">Finish</button></p>' : '<div class="g-timer ar-bar"><span id="arBar"></span></div>'}
-    <div class="ar-q" id="arQ" aria-live="polite"></div><div class="ar-viz" id="arViz"></div>
+    <span class="md-tag md-tag--teal ar-story" id="arStory" hidden></span><div class="ar-q" id="arQ" aria-live="polite"></div><div class="ar-viz" id="arViz"></div>
     <div id="arIn"></div><div class="ar-pop" id="arPop" aria-hidden="true"></div><p class="vm-sr" id="arSay" role="status"></p></div>`;
   const $ = s => root.querySelector(s);
   const show = () => {
-    const p = at(), qEl = $('#arQ');
+    const p = at(), qEl = $('#arQ'), tag = $('#arStory');
     qEl.innerHTML = p.q; $('#arViz').innerHTML = p.viz || '';
+    qEl.classList.toggle('ar-q--story', !!p.story); tag.hidden = !p.story; tag.textContent = p.story ? p.label || '' : '';
     if (p.d) qEl.dataset.d = p.d; else delete qEl.dataset.d;
     if (tapMode) { $('#arIn').innerHTML = `<div class="ar-choices">${p.choices.map(c => `<button class="ar-choice" data-v="${c}">${c}</button>`).join('')}</div>`; speakQuestion(p); }
-    else { $('#arIn').innerHTML = `<form class="ar-form" id="arForm"><output class="ar-entry" id="arEntry" aria-label="Your answer"></output><input class="ar-hidden" id="arType" inputmode="numeric" autocomplete="off" aria-label="Type your answer"><button class="md-btn md-btn--primary">Go</button></form><div class="ar-pad">${PAD.map(k => `<button type="button" class="ar-key" data-k="${k}">${k === 'del' ? 'Del' : k === '-' ? '&minus;' : k}</button>`).join('')}</div>`;
+    else { $('#arIn').innerHTML = `<form class="ar-form" id="arForm"><output class="ar-entry" id="arEntry" aria-label="Your answer"></output>${p.unit ? `<span class="ar-unit">${p.unit}</span>` : ''}<input class="ar-hidden" id="arType" inputmode="numeric" autocomplete="off" aria-label="Type your answer"><button class="md-btn md-btn--primary">Go</button></form><div class="ar-pad">${PAD.map(k => `<button type="button" class="ar-key" data-k="${k}">${k === 'del' ? 'Del' : k === '-' ? '&minus;' : k}</button>`).join('')}</div>`;
       const typ = $('#arType'); keypadOnly(typ); if (matchMedia('(pointer: fine)').matches) typ.focus({ preventScroll: true });
       on(typ, 'input', () => { typ.value = typ.value.replace(/[^0-9-]/g, '').slice(0, 7); $('#arEntry').textContent = typ.value; }, rs);
       $('#arForm').onsubmit = e => { e.preventDefault(); if (typ.value.trim()) answer(typ.value); };
@@ -144,8 +152,8 @@ export function runArena(root, { league, day = null, dial, signal, onEnd, untime
     $('#arScore').textContent = score; $('#arCombo').innerHTML = combo >= 2 ? `<b>${combo}x</b> combo` : '';
     celebrate(ok);
     i++;
-    if (untimed && i >= UNTIMED_QS) return end();
-    if (untimed) $('#arNum').textContent = `${i + 1}/${UNTIMED_QS}`;
+    if (untimed && i >= count) return end();
+    if (untimed) $('#arNum').textContent = `${i + 1}/${count}`;
     if (!set) cur = draw(); show();
   };
   const end = () => { if (over) return; over = true; round.abort(); onEnd({ score, right, wrong, bestCombo, untimed, answered: answered.slice() }); };

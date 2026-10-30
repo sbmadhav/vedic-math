@@ -20,15 +20,15 @@ import * as cloud from './cloud.js';
 import * as LV from './levels.js';
 import { LEVELS, LEVELS_PER_GAME, levelMedal, boardGame } from './games.js';
 import * as AD from './adapt.js';
-import { initAmbient, bgOn, setBg, setBgLevel, BG_NOTES, stop as stopMusic, isPlaying as musicOn } from './ambient.js';
-import { levelFor, ROOTS_INTRO } from './sky-scene.js';
+import { initAmbient, bgOn, setBg, setBgLevel, stop as stopMusic, isPlaying as musicOn } from './ambient.js';
+import { levelFor, BG_NOTES, ROOTS_INTRO } from './sky-scene.js';
 import { on, later, every, child, onAbort, lateImport } from './life.js';
 import * as metrics from './metrics.js';
 import { boltHTML } from './bolt.js';
 import { FAMILY_SVG } from './family.js';
 import { familyRound } from './family-hook.js';
 import { runStar } from './star.js';
-import { storyPlan, loadStories, storiesNow, LABEL as STORY_LABEL } from './story-plan.js';
+import { storyPlan, loadStories, storiesNow, LABEL as STORY_LABEL, ONLY as STORY_ONLY, ROUND as STORY_ROUND } from './story-plan.js';
 import { runTry, tryFor as tryOf, sutraOf, finished as tryFinished } from './try.js';
 import * as SKY from './sky.js';
 import { skyView, placesHTML } from './sky-view.js';
@@ -39,6 +39,7 @@ import { GROUPS, sectionsFor, tryFor, say, resolveTour, tourDue, tourState, setT
 import { sectionLines, buildIndex, rank, countOf, kindLabel } from './find.js';
 import { artFor } from './guide-art.js';
 import { guideCounts, rootNote } from './explain-lines.js';
+import { ledeHTML } from './ledes.js';
 import { listenBtn, wireListen } from './listen.js';
 import { sayButton, respellHTML, devaHTML, wireSay } from './say.js';
 import { sutraAmbience, ambienceButton, wireAmbience, settingsHTML as ambienceSettingsHTML, wireSettings as wireAmbienceSettings } from './sutra-ambience.js';
@@ -102,6 +103,7 @@ const routes = [
   [/^#\/grade\/(\w+)$/, (m, ctx) => gradeView(m[1], ctx)],
   [/^#\/skill\/([\w-]+)$/, (m, ctx) => skillView(m[1], ctx)],
   [/^#\/mix\/(\w+)$/, (m, ctx) => mixView(m[1], false, ctx)],
+  [/^#\/mix\/(\w+)\/words$/, (m, ctx) => mixView(m[1], false, ctx, true)],
   [/^#\/run\/(\w+)$/, (m, ctx) => mixView(m[1], true, ctx)],
   [/^#\/(dojo|tricks)$/, (m, ctx) => dojoView(ctx)],
   [/^#\/katas\/([\w-]+)$/, (m, ctx) => katasView(m[1], ctx)],
@@ -389,7 +391,7 @@ function learnView() {
     ${crumbs([null, 'Skill map'])}
     <span class="md-tag md-tag--sky">Skill map</span>
     <h1 class="md-heading">Pick a level</h1>
-    <p class="md-lede">${SKILLS.length - TRICKS.length} skills from counting to calculus. Each has a picture-first lesson, endless practice and hints that teach the strategy. Fill every ring to level up.</p>
+    <p class="md-lede">${ledeHTML('learn', { n: guideCounts() })}</p>
     <h2 class="mq-strand">Suggested for ${m.name}</h2><div class="mq-grades">${mine.map(card).join('')}</div>
     <h2 class="mq-strand">Speed tricks</h2><div class="mq-grades">${card(gradeOf('V'))}</div>
     <details class="mq-more"><summary>All other levels</summary><div class="mq-grades">${rest.map(card).join('')}</div></details>
@@ -406,7 +408,7 @@ function gradeView(g, { signal } = {}) {
     ${crumbs(['#/learn', 'Skill map'], [null, gradeLabel(g)])}
     <span class="md-tag md-tag--sky">${G.band}</span>
     <h1 class="md-heading">${gradeLabel(g)}</h1>
-    <p class="md-lede">${both(`${st.done} of ${st.total} skills mastered. A skill is mastered after at least 8 problems with a score of 85% or more, weighted toward recent answers.`, `You have ${st.done} of ${st.total} skills. Fill every ring!`)}</p>
+    <p class="md-lede">${both(ledeHTML('grade', st), ledeHTML('grade-kid', st))}</p>
     <div class="mq-gradebar"><span class="mq-bar mq-bar--big"><i style="width:${pct(st.done / (st.total || 1))}%"></i></span><a class="md-btn md-btn--primary md-btn--sm" href="#/run/${g}">${icon('bolt')} Endless run</a><a class="md-btn md-btn--sm" href="#/mix/${g}">Endless practice</a></div>
     <p class="mq-small">Every skill here makes new questions forever. Endless practice mixes them with hints; Endless run gives you 3 lives and counts how far you get.</p>
     <div class="mq-gradejump">${prev ? `<a class="md-chip" href="#/grade/${prev.id}">&larr; ${both(prev.pro, prev.kid)}</a>` : ''}${next ? `<a class="md-chip" href="#/grade/${next.id}">${both(next.pro, next.kid)} &rarr;</a>` : ''}</div>
@@ -476,8 +478,10 @@ function showExample(s) {
 /* Typed something that is not a plain number on an arithmetic skill: not a try, no Sparks */
 const notAnswerMsg = () => fx.t({ explorer: 'Type just the answer, like 7.', challenger: 'Type just the answer, like 56 or 3/4.', pro: 'Type just the answer as a number, like 56 or 3/4.' });
 const KEYS = { basic: ['/', '-', '.'], alg: ['x', '^', '(', ')', '/', '-', '√', 'π'], set: [',', '-', '/', '√'], ineq: ['x', '<', '>', '<=', '>=', '-'], complex: ['i', '+', '-'] };
-/* One Practice session in root. signal: the view's. Each question runs under its own child signal, aborted by the next one. */
-function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signal } = {}) {
+/* One Practice session in root. signal: the view's. Each question runs under its own child signal, aborted by the next one.
+   only: every question a Word problem on the Skill picked (Only Word problems, openspec word-problems-more design D2);
+   pickSkill then picks only Skills that have one, and the stories have loaded. */
+function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signal, only = false } = {}) {
   let s, p, tries = 0, hints = 0, done = false, right = 0, total = 0, run = 0, life = lives;
   const session = child(signal); let question = null;
   const explorer = fx.mode() === 'explorer';
@@ -489,12 +493,14 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
   const dials = new Map(), mode = fx.mode();
   /* Word problems (openspec word-problems): a share of the questions by Mode, once the Player has 20 saved answers */
   const tales = storyPlan(mode || 'challenger', { answered: () => store.count('answers') });
+  /* Only Word problems: the Skill's own story (a Word problem Skill), else one in the Mode's style on its numbers */
+  const onlyStory = (sk, bare) => (bare.story ? null : storiesNow() && storiesNow().storyFor(sk, mode || 'challenger', { bare }));
   const dialFor = id => { if (!dials.has(id)) dials.set(id, new AD.Dial(AD.skillRating(id, mode))); return dials.get(id); };
   const saveDial = id => { const d = dials.get(id); if (!d || d.n < 4) return; AD.saveRating('skill:' + id, d); dials.set(id, new AD.Dial(d.d)); };
   const next = () => {
     if (question) question.abort();
     question = child(session.signal);
-    s = pickSkill(); const level = AD.levelFor(dialFor(s.id).lv), bare = s.gen(level); p = withPlain(s, tales.next(s, bare) || bare); tries = 0; hints = 0; done = false;
+    s = pickSkill(); const level = AD.levelFor(dialFor(s.id).lv), bare = s.gen(level); p = withPlain(s, (only ? onlyStory(s, bare) : tales.next(s, bare)) || bare); tries = 0; hints = 0; done = false;
     // Explorer mode: no typing; small whole-number answers become big buttons
     if (explorer && p.kind === 'num' && Number.isInteger(p.answer) && p.answer >= 0 && p.answer <= 200) { const near = [...new Set([p.answer + 1, p.answer - 1, p.answer + 2, p.answer + 10, p.answer - 2].filter(v => v >= 0))]; p = { ...p, kind: 'choice', choices: [p.answer, ...shuffle(near).slice(0, 3)].sort((a, b) => a - b).map(String), answer: String(p.answer) }; }
     const keyset = p.kind === 'expr' ? KEYS.alg : p.kind === 'set' ? KEYS.set : p.kind === 'ineq' ? KEYS.ineq : p.kind === 'complex' ? KEYS.complex : p.kind === 'num' && !['K', 1, 2].includes(s.grade) ? KEYS.basic : null;
@@ -607,20 +613,38 @@ function oneBox(p) {
   return `<div class="pr-in"><input class="ans-in" aria-label="Your answer" placeholder="${ph}" spellcheck="false" autocapitalize="off" inputmode="${p.kind === 'num' && Number.isInteger(p.answer) && p.answer >= 0 && !p.simplest ? 'numeric' : 'text'}">${p.unit ? `<span class="pr-unit">${p.unit}</span>` : ''}</div>`;
 }
 
-function mixView(g, isRun = false, { signal } = {}) {
+function mixView(g, isRun = false, { signal } = {}, words = false) {
   const G = gradeOf(g); if (!G) return home({ signal });
   document.title = `${isRun ? 'Endless run' : 'Endless practice'}, ${G.pro} · Learn Vedic Math`;
-  const list = skillsFor(g);
+  const all = skillsFor(g), told = () => all.filter(s => storiesNow().hasStory(s, fx.mode() || 'challenger'));
+  /* Only Word problems (openspec word-problems-more D1, D2): the level's Skills that have one; it waits the few
+     milliseconds the stories take to load, as a Word problem Skill's page does, and a level with none opens the mix */
+  if (words && !storiesNow()) {
+    let run = null; view.innerHTML = '<section class="md-section mq-tight"><div class="md-wrap mq-narrow"><p class="mq-small">Getting the stories ready&hellip;</p></div></section>';
+    const go = () => { if (signal && signal.aborted) return; if (storiesNow()) run = mixView(g, false, { signal }, true); else location.replace('#/mix/' + g); };
+    loadStories().then(go, go);
+    return { destroy: () => run && run.destroy() };
+  }
+  if (words && !told().length) { location.replace('#/mix/' + g); return; }
+  const list = words ? told() : all;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs(['#/grade/' + g, gradeLabel(g)], [null, isRun ? 'Endless run' : 'Endless practice'])}
     <h1 class="md-heading">${isRun ? 'Endless run' : 'Endless practice'}: ${gradeLabel(g)}</h1>
-    <p class="md-lede">${isRun ? `Questions from every skill in this level, forever. You have 3 lives: how far can you go? Your best: <b>${store.best('run-' + g)}</b>.` : 'Questions from the whole level, all mixed up and never-ending, favoring skills in progress. Mixing topics is harder, and that is exactly why it makes learning stick.'}</p>
+    <p class="md-lede">${isRun ? `Questions from every skill in this level, forever. You have 3 lives: how far can you go? Your best: <b>${store.best('run-' + g)}</b>.` : words ? 'Only Word problems from this level, never-ending. Read what each story asks, make a plan, then solve it.' : 'Questions from the whole level, all mixed up and never-ending, favoring skills in progress. Mixing topics is harder, and that is exactly why it makes learning stick.'}</p>
+    ${isRun ? '' : '<div class="g-optrow mix-only" id="mixOnly" role="group" aria-label="Questions" hidden></div>'}
     <div class="mq-practice md-card" id="practice"></div></div></section>`;
-  let lastId = null; loadStories().catch(() => {});
+  /* The Mixed and Only Word problems choice, once the stories know which Skills have one (none on a level without) */
+  const offer = () => {
+    const box = $('#mixOnly'); if (!box || (signal && signal.aborted) || !storiesNow() || !told().length) return;
+    box.innerHTML = `<button class="md-chip" aria-pressed="${!words}" data-only="0">Mixed</button><button class="md-chip" aria-pressed="${words}" data-only="1">${STORY_ONLY[fx.mode()] || STORY_ONLY.challenger}</button>`;
+    box.hidden = false;
+    box.querySelectorAll('[data-only]').forEach(b => on(b, 'click', () => { const to = '#/mix/' + g + (b.dataset.only === '1' ? '/words' : ''); if (location.hash !== to) location.hash = to; }, signal));
+  };
+  let lastId = null; loadStories().then(() => { if (!isRun) offer(); }, () => {});
   return practice($('#practice'), () => {
     const going = list.filter(s => store.started(s.id) && !store.mastered(s.id)), pool = (going.length >= 2 && Math.random() < .7 ? going : list).filter(s => s.id !== lastId);
     const s = pick(pool.length ? pool : list); lastId = s.id; return s;
-  }, { mix: true, lives: isRun ? 3 : 0, onOver: right => {
+  }, { mix: true, only: words, lives: isRun ? 3 : 0, onOver: right => {
     store.bump('runs'); const isBest = store.setBest('run-' + g, right), sp = 10 + right * 3; store.addSparks(sp, 'run'); if (isBest && right) fx.confetti(90);
     $('#practice').innerHTML = `<div class="ar-result"><div class="md-stat"><div class="md-kicker">You reached</div><div class="md-value">${right}</div><p>${isBest && right ? 'New best run!' : `Best: ${store.best('run-' + g)}`} <span class="fx-sparks">+${sp} Sparks</span></p></div></div><p><button class="md-btn md-btn--primary" id="again">${icon('bolt')} Run again</button> <a class="md-btn" href="#/grade/${g}">Back to ${gradeLabel(g)}</a></p>`;
     $('#again').onclick = () => mount(ctx => mixView(g, true, ctx));
@@ -636,7 +660,7 @@ function dojoView() {
     ${crumbs([null, 'Dojo'])}
     <span class="md-tag md-tag--plum">Vedic Dojo</span>
     <h1 class="md-heading">From white belt to <span class="hl-word">black belt</span></h1>
-    <p class="md-lede">${ex ? `${TRICKS.length} speed tricks from the sutras in Bharati Krishna Tirtha's 1965 book, in seven groups from white belt to black belt. Open a trick to watch it work step by step, practice it, and try its <b>${LV.KATAS_PER_TRICK} katas</b>, drills that get harder. <b class="dojo-ex">Belts and Stars come with Challenger and Pro.</b>` : `${TRICKS.length} speed tricks from the sutras in Bharati Krishna Tirtha's 1965 book, in seven belts. Each trick has three Stars. Light all 9 Stars of a belt's three tricks to earn it. Each trick also has a step-by-step animator, endless practice and <b>${LV.KATAS_PER_TRICK} katas</b>: numbered drills that get harder, ${LV.KATA_COUNT.toLocaleString('en-US')} in all. Finish one to open the next.`}</p>
+    <p class="md-lede">${ledeHTML('dojo', { mode: fx.mode(), n: guideCounts() })}</p>
     <p class="mq-small">${store.katasDoneWhere('k:')} of ${LV.KATA_COUNT.toLocaleString('en-US')} katas done</p>
     ${playShelf('dojo', 'Play with the tricks')}
     <div class="belt-row">${bp.map(b => `<span class="belt-chip${b.earned ? ' on' : ''}" style="--belt:${b.color}"><span class="belt-knot" aria-hidden="true"></span>${b.name}</span>`).join('')}</div>
@@ -687,7 +711,7 @@ function katasView(trickId) {
     ${crumbs(['#/dojo', 'Dojo'], [null, `${t.title}: katas`])}
     <h1 class="md-heading">${t.title}: ${LV.KATAS_PER_TRICK} katas</h1>
     ${sutraTag('trickTagHTML', trickId, { mode: fx.mode(), surface: 'katas' })}
-    <p class="md-lede">Each kata is a short drill of 5 to 8 problems that gets harder as you climb: bigger numbers, new bases, trickier cases. Get at least 60% right to finish one and unlock the next.</p>
+    <p class="md-lede">${ledeHTML('katas', {})}</p>
     <p class="mq-small">${store.katasDoneWhere(`k:${trickId}:`)} of ${LV.KATAS_PER_TRICK} done · <a href="#/skill/v-${trickId}">Learn the trick first</a></p>
     ${levelMap(LV.KATAS_PER_TRICK, n => ({ done: store.kataDone(LV.kataKey(trickId, n)) }), n => `#/kata/${trickId}/${n}`, { noun: 'Kata' })}
   </div></section>`;
@@ -792,7 +816,7 @@ function towerView() {
     ${crumbs(['#/arena', 'Arena'], [null, 'Challenge tower'])}
     <span class="md-tag md-tag--coral">Challenge tower</span>
     <h1 class="md-heading">${LV.CHALLENGE_COUNT.toLocaleString('en-US')} Arena challenges</h1>
-    <p class="md-lede">${LV.TOPICS.length} chapters, ${LV.PER_CHAPTER} challenges each, in five formats: Sprint, Sharpshooter, Survival, Time attack and Boss rounds. Pick any chapter; inside a chapter, clear each challenge to unlock the next.</p>
+    <p class="md-lede">${ledeHTML('tower', { n: guideCounts() })}</p>
     <p class="mq-small">${store.medalsWhere('a:').any} of ${LV.CHALLENGE_COUNT} cleared · ${store.medalsWhere('a:').gold} gold</p>
     <div class="tower">${LV.TOPICS.map((tp, c) => { const lo = c * LV.PER_CHAPTER + 1, ms = Array.from({ length: LV.PER_CHAPTER }, (_, k) => store.medal(LV.challengeKey(lo + k))), done = ms.filter(Boolean).length, gold = ms.filter(v => v === 3).length;
       return `<a class="tower-ch${done === LV.PER_CHAPTER ? ' done' : ''}" href="#/tower/${c + 1}"><span class="tower-n">${c + 1}</span><span class="tower-t"><b>${tp.name}</b><small>Challenges ${lo} to ${lo + LV.PER_CHAPTER - 1}</small><span class="mq-bar"><i style="width:${pct(done / LV.PER_CHAPTER)}%"></i></span></span><span class="medal-n">${gold} gold</span></a>`; }).join('')}</div>
@@ -875,14 +899,14 @@ function sutrasView({ signal } = {}) {
     ${crumbs([null, 'Sutras'])}
     <div class="sutra-top"><span class="md-tag md-tag--plum">Deep dive</span>${ambienceButton()}</div>
     <h1 class="md-heading">The 16 sutras and 13 sub-sutras</h1>
-    <p class="md-lede">${m === 'explorer' ? `Each sutra is a tiny math rule with a long name. Tap the speaker to hear the name, flip a card to see the rule, and open <b>Learn more</b> to watch it work. You have collected <b>${got} of ${ALL_SUTRAS.length}</b>.` : `Each sutra is a short word formula that packs a whole method into a phrase. Flip a card for the short version, then open <b>Learn more</b> for the full story: animated diagrams, why it works, worked examples and further reading. Each card shows how far you are with its tricks. You have collected <b>${got} of ${ALL_SUTRAS.length}</b>.`}</p>
+    <p class="md-lede">${ledeHTML('sutras', { mode: m, got, all: ALL_SUTRAS.length })}</p>
     <div class="mq-bar mq-bar--big sutra-bar"><i style="width:${pct(got / ALL_SUTRAS.length)}%"></i></div>
     <h2 class="mq-strand">The 16 sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => !c.sub).map(card).join('')}</div>
     <h2 class="mq-strand">The 13 sub-sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => c.sub).map(card).join('')}</div>
     ${playShelf('sutras', 'A mystery from the old texts')}
     <div class="md-card history"><h2 class="mq-h3">Where Vedic math comes from</h2><p class="listen-row">${listenBtn('history', 'where Vedic math comes from')}</p>${HISTORY.map(h => `<p>${h}</p>`).join('')}
       <p class="mq-small" data-history-links hidden></p></div>
-    <div class="md-card history roots"><h2 class="mq-h3">Older roots: what you see in the background</h2><p>${ROOTS_INTRO}</p><ul>${BG_NOTES.map(n => `<li>${rootNote(n)}</li>`).join('')}</ul></div>
+    <div class="md-card history roots"><h2 class="mq-h3">Older roots: what you see in the background</h2><p class="listen-row">${listenBtn('roots', 'older roots')}</p><p>${ROOTS_INTRO}</p><ul>${BG_NOTES.map(n => `<li>${rootNote(n)}</li>`).join('')}</ul></div>
     ${versesHTML()}
   </div></section>`;
   const flip = (art, open) => { art.classList.toggle('flipped', open); art.querySelector('.sutra-face').setAttribute('aria-expanded', String(open)); fx.sfx('tap'); if (open) { collect(art.dataset.name); art.classList.add('got'); art.querySelector('.sutra-more').focus({ preventScroll: true }); } else art.querySelector('.sutra-face').focus({ preventScroll: true }); };
@@ -1135,14 +1159,15 @@ store.on(type => { if (type === 'sparks') queueSparksPost(); });
 function arenaView({ signal } = {}) {
   document.title = `Arena · Learn Vedic Math`;
   const league = fx.MODES[fx.mode()].league, day = cloud.dayId(), wk = cloud.weekId();
-  /* Round type: daily (Ranked, always timed), practice (timed, untimed in Calm) or untimed (Practice, no clock).
-     With Calm on, the untimed Practice round is picked until the Player picks another this visit. */
+  /* Round type: daily (Ranked, always timed), practice (timed, untimed in Calm), untimed (Practice, no clock) or words
+     (Word problems, Practice with no clock: openspec word-problems-more). With Calm on, the untimed Practice round is
+     picked until the Player picks another this visit. */
   let type = fx.calmOn() ? 'untimed' : 'daily';
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs([null, 'Arena'])}
     <span class="md-tag md-tag--coral">Arena</span>
     <h1 class="md-heading">60 seconds. Same questions for everyone.</h1>
-    <p class="md-lede">Answer as many as you can. Each right answer is worth 10, and every answer in a row adds a combo bonus. The daily round uses the same questions for every ${fx.MODES[fx.mode()].name}, so it is a fair race.</p>
+    <p class="md-lede">${ledeHTML('arena', { modeName: fx.MODES[fx.mode()].name })}</p>
     <a class="tower-promo" href="#/tower">${icon('trophy')}<span><b>Challenge tower: ${LV.CHALLENGE_COUNT.toLocaleString('en-US')} levels</b><small>${medalCounts(store.medalsWhere('a:'))} · Sprint, Survival, Sharpshooter, Time attack, Boss</small></span><span aria-hidden="true">&rarr;</span></a>
     <div class="md-card ar-shell" id="arShell"></div>
     ${playShelf('arena', 'More ways to race')}</div></section>`;
@@ -1154,7 +1179,7 @@ function arenaView({ signal } = {}) {
     pro: `Arena Rating: <b>${arenaRating()}</b>/20. Practice rounds start there and adapt to every answer; the daily round is the same for everyone.`
   })}</small>`;
   const lobby = (result = '') => {
-    shell.innerHTML = `${result}<div class="g-optrow" role="group" aria-label="Round type"><button class="md-chip" aria-pressed="${type === 'daily'}" data-t="daily">Daily challenge</button><button class="md-chip" aria-pressed="${type === 'practice'}" data-t="practice">Practice round</button><button class="md-chip" aria-pressed="${type === 'untimed'}" data-t="untimed">Practice, no clock</button></div>
+    shell.innerHTML = `${result}<div class="g-optrow" role="group" aria-label="Round type"><button class="md-chip" aria-pressed="${type === 'daily'}" data-t="daily">Daily challenge</button><button class="md-chip" aria-pressed="${type === 'practice'}" data-t="practice">Practice round</button><button class="md-chip" aria-pressed="${type === 'untimed'}" data-t="untimed">Practice, no clock</button><button class="md-chip" aria-pressed="${type === 'words'}" data-t="words">${STORY_ROUND[mode] || STORY_ROUND.challenger}</button></div>
       ${fx.calmOn() ? '<p class="ar-calm" id="arCalmNote">The daily challenge is a timed race for everyone. Practice has no clock in Calm.</p>' : ''}
       <p class="g-best">League: <b>${fx.MODES[fx.mode()].name}</b> · Your best today: <b>${store.best('arena-' + day)}</b><br>${arenaRatingLine()}</p>
       <button class="md-btn md-btn--primary ar-go" id="arGo">${icon('bolt')} Start</button>
@@ -1169,7 +1194,7 @@ function arenaView({ signal } = {}) {
   let run = null, play = null;
   const stop = () => { const r = run, p = play; run = play = null; if (p) p.close(); if (r) r.abort(); };
   const countdown = () => {
-    stop(); run = child(signal); loadArena().catch(() => {});
+    stop(); run = child(signal); loadArena().catch(() => {}); if (type === 'words') loadStories().catch(() => {});
     const old = shell.querySelector('.ar-result'); if (old) old.remove(); /* the last result goes; the new one shows in the shell */
     play = openShell(type === 'daily' ? 'Arena: daily challenge' : 'Arena: Practice', { signal: run.signal, exitId: 'arStop', onExit: stop, focusBack: () => $('#arGo', shell) });
     const area = play.area, rsig = run.signal;
@@ -1177,16 +1202,22 @@ function arenaView({ signal } = {}) {
     const count = child(rsig); /* leaving or stopping during the countdown means the round never starts */
     every(() => { n--; if (n === 0) { count.abort(); fx.sfx('ok'); start(area, rsig); } else { area.firstChild.textContent = n; fx.sfx('tick'); } }, 700, count.signal);
   };
-  const start = (area, rsig) => withArena(area, rsig, ({ runArena }) => {
+  /* The Word problems round's questions: one story after another of the Mode's style, never the same template twice in a
+     row (js/stories.js roundStory). Its stories load after the first paint, like Practice's. */
+  const storyDeal = (A, S) => { let last = null; return () => { let p = null; for (let k = 0; k < 6 && (!p || p.story.id === last); k++) p = S.roundStory(mode || 'challenger'); last = p.story.id; return A.storyItem(p, league, STORY_LABEL[mode] || STORY_LABEL.challenger); }; };
+  const start = (area, rsig) => withArena(area, rsig, A => {
+    const words = type === 'words';
+    if (words && !storiesNow()) { loadStories().then(() => { if (!rsig.aborted) start(area, rsig); }, () => { if (!rsig.aborted) area.innerHTML = '<p class="md-lede">The stories did not load. Check your connection and try again.</p>'; }); return; }
     track('arena/' + league + '/' + type, 'Arena round'); metrics.roundStart('arena');
     /* Practice: the Dial picks each question. Daily: it only records the answers (the questions are the same for everyone).
-       Untimed: the Practice round with no clock, chosen or (for a Practice round) set by Calm. The daily round keeps its clock. */
+       Untimed: the Practice round with no clock, chosen or (for a Practice round) set by Calm. The daily round keeps its clock.
+       Word problems: no clock, its own questions, and the Arena Rating left as it was (word-problems-more design D5). */
     const before = arenaRating(), dial = new AD.Dial(AD.rating(rKey, mode));
-    const untimed = type === 'untimed' || (type === 'practice' && fx.calmOn());
-    runArena(area, { league, day: type === 'daily' ? day : null, dial, signal: rsig, untimed, onEnd: async r => {
+    const untimed = words || type === 'untimed' || (type === 'practice' && fx.calmOn());
+    A.runArena(area, { league, day: type === 'daily' ? day : null, dial: words ? null : dial, signal: rsig, untimed, ...(words ? { deal: storyDeal(A, storiesNow()), count: A.STORY_QS } : {}), onEnd: async r => {
       metrics.roundEnd('arena', league);
-      const after = Math.round(AD.saveRating(rKey, dial) || before);
-      const moved = dial.n < 4 ? '' : fx.t({
+      const after = words ? before : Math.round(AD.saveRating(rKey, dial) || before);
+      const moved = words || dial.n < 4 ? '' : fx.t({
         explorer: after > before ? ` Your Arena Rating went up to ${after}!` : after < before ? ` Your Arena Rating is ${after} now.` : '',
         challenger: after > before ? ` Arena Rating up to ${after}.` : after < before ? ` Arena Rating now ${after}.` : '',
         pro: after > before ? ` Arena Rating up to ${after}.` : after < before ? ` Arena Rating down to ${after}.` : ''
@@ -1292,7 +1323,7 @@ function gamesView() {
     ${crumbs([null, 'Games'])}
     <span class="md-tag md-tag--plum">Games</span>
     <h1 class="md-heading">Games that build number sense</h1>
-    <p class="md-lede">${GAMES.length} games, each with its own world leaderboard. Every game adapts to you: right answers make it harder, misses make it easier, and points are weighted by difficulty. ${LEVELS_PER_GAME} levels per game (${(GAMES.length * LEVELS_PER_GAME).toLocaleString('en-US')} in all) open up as your skill grows. Every game earns Sparks, and playing all of them unlocks a badge. Want a real race? Try the <a href="#/arena">Arena</a> or a <a href="#/arena/party">Party Mode</a> game.</p>
+    <p class="md-lede">${ledeHTML('games', { n: guideCounts() })}</p>
     ${playShelf('games', 'Play, make and discover')}
     <h2 class="mq-strand">Picked for ${fx.MODES[m].name}</h2><div class="md-grid">${mine.map(card).join('')}</div>
     ${rest.length ? `<h2 class="mq-strand">More games</h2><div class="md-grid">${rest.map(card).join('')}</div>` : ''}
@@ -1398,7 +1429,7 @@ function watchView({ signal } = {}) {
     ${crumbs([null, 'Watch'])}
     <span class="md-tag md-tag--teal">Watch and learn</span>
     <h1 class="md-heading">Short videos that show how</h1>
-    <p class="md-lede">Every video plays right here, and none is longer than ${W.MAX_LENGTH / 60} minutes. Each one is checked by hand and matched to the skills and tricks it teaches.${pro ? ' Sites open in a new tab.' : ''}</p>
+    <p class="md-lede">${ledeHTML('watch', { n: guideCounts(), links: pro })}</p>
     <div id="watchBody"><p class="mq-small">Loading videos…</p></div>
   </div></section>`;
   const body = $('#watchBody');
@@ -1588,7 +1619,7 @@ function guideView(section, { signal } = {}) {
     ${crumbs([null, 'Guide'])}
     <span class="md-tag md-tag--teal">Guide</span>
     <h1 class="md-heading">${fx.t({ explorer: 'How to play', challenger: 'How to use Vedic Math', pro: 'How to use Vedic Math' })}</h1>
-    <p class="md-lede">${fx.t({ explorer: 'Everything you can do here, one part at a time. The button under each part takes you there.', challenger: 'Every part of the app, what it is for and how to use it. The button under each section takes you straight there.', pro: 'Every part of the app, what it is for and how to use it, with a link to each one.' })}</p>
+    <p class="md-lede">${ledeHTML('guide', { mode: fx.mode() })}</p>
     ${m ? `<p class="mode-line">Words for: <b>${fx.MODES[m].name}</b> <a href="#/me">Change</a></p><p class="gd-top"><button type="button" class="md-btn md-btn--primary" data-gd="tour">${icon('map')} ${explorer ? 'Show me around' : 'Take the tour'}</button></p>`
       : '<div class="md-card gd-nomode"><p>Pick a play mode first: Explorer, Challenger or Pro. It sets the words, the questions and your league. This guide uses the Challenger words until you do.</p><p><a class="md-btn md-btn--primary" href="#/">Pick a play mode</a></p></div>'}
     <nav class="gd-toc md-card" aria-label="Guide contents"><ul>${groups.map(({ g, items }) => `<li><a href="#/guide/${items[0].id}" class="gd-toc-g">${T(g.title)}</a><ul>${items.map(s => `<li><a href="#/guide/${s.id}">${T(s.title)}</a></li>`).join('')}</ul></li>`).join('')}</ul></nav>
