@@ -175,7 +175,7 @@ A Trick learned and then used correctly in a timed round. The thing the product 
 _Avoid_: aha, win
 
 **Try a trick**:
-A short lesson inside each Mode, at `#/try`: one Trick taught under the Sutra it belongs to, on one worked example with every step shown, then three questions and an end card with the next step. Explorer's is the 11 sandwich (Ūrdhva-Tiryagbhyām), Challenger's squares ending in 5 (Ekādhikena Pūrveṇa), Pro's multiplying near 100 (Nikhilaṃ Navataścaramaṃ Daśataḥ). It is reached from the Try a trick button under each Mode card on the Mode picker, which picks that Mode, and from a card on each Mode's Home until it is finished. Right answers earn Sparks; it changes no Rating, mastery, Keep going, Star or Belt. (`try-trick-in-modes` change; before it, one Try a trick above the cards guessed Challenger and opened a Star.)
+A short lesson inside each Mode, at `#/try`: one Trick taught under the Sutra it belongs to, on one worked example with every step shown, then three questions and an end card with the next step. Explorer's is the 11 sandwich (Ūrdhva-Tiryagbhyām), Challenger's squares ending in 5 (Ekādhikena Pūrveṇa), Pro's multiplying near 100 (Nikhilaṃ Navataścaramaṃ Daśataḥ). It is reached from a card on each Mode's Home until it is finished (and from Find); the Mode picker's cards are its only buttons (`play-nav-by-mode`; before it, a Try a trick button under each Mode card). Right answers earn Sparks; it changes no Rating, mastery, Keep going, Star or Belt. (`try-trick-in-modes` change; before it, one Try a trick above the cards guessed Challenger and opened a Star.)
 _Avoid_: demo, trial mode, guest mode
 
 **Mode guess**:
@@ -191,8 +191,12 @@ The first Door on Challenger and Pro Home (`sutras-first`): the next Star on Bol
 _Avoid_: Dojo door, Dojo card (the belts now sit in the Sutra door's foot)
 
 **Find**:
-The page at `#/find` (menu bar, after Guide; the `/` key) with one box over every named thing: sections, Play modes, grades, Skills, Tricks, Sutras, games, play experiences, guide sections and videos, by name or a plain word. Results match a share of the words typed (question words like how and what are ignored), more words matched first. Built in the page from the catalogs (`js/find.js`); nothing typed is stored or sent. Its browse list gives each section's one-line description, the same line the menu shows as a tooltip.
+The page at `#/find` (the **Find trigger**; the `/` key; Ctrl K or Cmd K) with one box over every named thing: sections, Play modes, grades, Skills, Tricks, Sutras, games, play experiences, guide sections and videos, by name or a plain word. Results match a share of the words typed (question words like how and what are ignored), more words matched first. Built in the page from the catalogs (`js/find.js`); nothing typed is stored or sent. Its browse list gives each section's one-line description, the same line the menu shows as a tooltip.
 _Avoid_: search engine, site search, lookup
+
+**Find trigger**:
+The last item of the Challenger and Pro menu: a magnifying glass, the word Find and its shortcut (Ctrl K, or ⌘ K on a Mac). It is also the menu's way to the Guide: with nothing typed, Find offers the guide and the tour first. Explorer reaches Find under **More places**. (`play-nav-by-mode` change.)
+_Avoid_: search bar, command palette, spotlight
 
 **Best match**:
 The first group of Find results when the query is a known question or phrase ("how does it work", "for kids", "what is vedic math"): the entries that answer it, listed before every kind and not repeated below. The phrases are `INTENTS` in `js/find.js`.
@@ -343,8 +347,24 @@ A place on the edge of the Sky that leads somewhere else in the app, such as the
 _Avoid_: tab, menu item, building
 
 **Guide**:
-The page at `#/guide` that explains every part of the app in the words of the Player's Mode, one section per feature with a link to it.
+The page at `#/guide` that explains every part of the app in the words of the Player's Mode, one section per feature with a link to it. Reached from Find, the footer and Explorer's More places (How to play).
 _Avoid_: help, manual, FAQ, tutorial
+
+**Zone**:
+One item of the game's menu, holding a group of routes and marked current on every route inside it (`js/nav.js`, `play-nav-by-mode` change). Challenger and Pro: Home, Learn (the Sutras first, then the Skill map), **Arcade** and Watch, then the Find trigger; Me is the Player chip. Explorer: Play (Home), Learn and Me, as big picture tabs that say their names with Read aloud on. A zone changes how a page is reached, never its route.
+_Avoid_: tab (in specs), section (that is a Find kind), hub
+
+**Arcade**:
+The zone and page at `#/arcade` for playing: a card each for the Dojo (solo practice of the Tricks; not in Explorer), the Arena (the daily timed race) and Games, then Party Mode and the challenge tower.
+_Avoid_: Play (that is Explorer's Home tab), hub, games page
+
+**More places**:
+The row under Explorer Home's picture tiles with the places Explorer's three-tab menu leaves out: All games, The sutras, How to play (the Guide) and Find.
+_Avoid_: menu, more
+
+**Calm and sound**:
+The header control on every page of the game (visible word "Calm", a note icon) whose panel holds the Calm switch, Pause motion, Calm music and the Moving background; the play shell has the same control with Pause motion and Calm music beside its own Calm switch. It never starts anything by itself. (`play-nav-by-mode` change; before it, the Music pill.)
+_Avoid_: music button, focus mode, zen
 
 **Tour**:
 Up to six coach marks over Home, shown once per device on the first visit and replayable from the Guide. Not the Hook.

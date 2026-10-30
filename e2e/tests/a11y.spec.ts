@@ -57,10 +57,11 @@ for (const scheme of ['light', 'dark'] as const) {
     test.use({ colorScheme: scheme });
     test.describe('the Mode picker', () => {
       test.use({ seedMode: null });
-      test('the Mode picker with a Try a trick under each card has no serious or critical axe violations', async ({ page }, testInfo) => {
+      /* The three Mode cards are the picker's only buttons (openspec change play-nav-by-mode) */
+      test('the Mode picker with its three Mode cards has no serious or critical axe violations', async ({ page }, testInfo) => {
         chromiumOnly(testInfo);
         await page.goto(APP);
-        await expect(page.locator('.mode-try')).toHaveCount(3);
+        await expect(page.locator('.mode-card .mode-go')).toHaveCount(3);
         expect(await serious(page)).toEqual([]);
       });
     });

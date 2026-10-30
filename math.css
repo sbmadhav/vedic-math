@@ -16,6 +16,14 @@ h1:focus, h2:focus, [tabindex="-1"]:focus-visible { outline: none !important; }
 .mq-nav a { padding: var(--space-1-5) var(--space-2-5); }
 @media (min-width: 1181px) { .mq-nav { margin-right: var(--space-1); } }
 .nav-find { display: inline-flex; align-items: center; gap: 5px; } .nav-find svg { width: 15px; height: 15px; flex: none; }
+/* The menu by Mode (openspec change play-nav-by-mode, js/nav.js). Find is the one trigger at the end, with its shortcut
+   shown where a keyboard is likely; Explorer's three tabs are big pictures with their names under them. */
+.nav-kbd { font: 700 11px/1 var(--font-sans); padding: 3px 5px; margin-left: 2px; border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--ink-muted); background: var(--bg); }
+@media (max-width: 900px), (any-pointer: coarse) { .nav-kbd { display: none; } }
+.mq-nav--x { gap: var(--space-2); }
+.mq-nav--x a.nav-x { display: inline-grid; justify-items: center; align-content: center; gap: 2px; min-width: 76px; min-height: 60px; padding: var(--space-1) var(--space-3); font: 700 1rem/1.1 var(--display); }
+.mq-nav--x a.nav-x svg { width: 30px; height: 30px; flex: none; }
+@media (max-width: 1180px) { .md-header--tabs .mq-nav--x { justify-content: center; } .md-header--tabs .mq-nav--x a.nav-x { flex: 1 1 0; max-width: 140px; } }
 #mqMusic, #mqChip { display: flex; flex: none; }
 .md-header .mq-chip { margin: 0; height: 40px; box-sizing: border-box; padding: 0 var(--space-2-5) 0 3px; }
 /* A phone keeps the game's header short (openspec find-and-home-polish): tighter rows, the same controls and links.
@@ -364,7 +372,6 @@ html.motion-paused .anim-step.cur, body.calm .anim-step.cur, html.motion-paused 
 html.motion-paused .mq-grade, body.calm .mq-grade, html.motion-paused .mq-skill, body.calm .mq-skill, html.motion-paused .mq-continue, body.calm .mq-continue, html.motion-paused .g-tile, body.calm .g-tile, html.motion-paused .g-frac, body.calm .g-frac, html.motion-paused .ring-fg, body.calm .ring-fg, html.motion-paused .g-stage, body.calm .g-stage { transition: none; }
 
 /* ===== Vedic Math for Everyone: modes, gamification, competitive play ===== */
-.mode-explorer .hide-explorer { display: none; }
 /* Before a Player picks a Mode the tabs lead nowhere (every route shows the mode picker), so they are hidden */
 .mode-none .mq-nav { display: none; }
 .mq-chip { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-1) var(--space-2-5) var(--space-1) var(--space-1); border: 2px solid var(--edge); border-radius: var(--radius-pill); background: var(--card); color: var(--ink); text-decoration: none; margin: var(--space-1) 0; white-space: nowrap; }
@@ -379,11 +386,13 @@ html.motion-paused .mq-grade, body.calm .mq-grade, html.motion-paused .mq-skill,
 .mq-small { color: var(--ink-muted); font-size: 13.5px; margin: var(--space-1-5) 0; }
 
 /* Mode picker */
-/* Each Mode card with its own Try a trick under it (openspec try-trick-in-modes) */
-.mode-opt { display: grid; grid-template-rows: 1fr auto; gap: var(--space-2); }
-.mode-opt .md-btn.mode-try { width: 100%; min-height: 48px; margin: 0; justify-content: center; gap: var(--space-2); font-weight: 800; }
-.mode-try svg.mode-try-go { width: 1.1em; height: 1.1em; }
-.mode-try:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+/* The three Mode cards are the picker's only buttons (openspec change play-nav-by-mode), each ending in its call to
+   action, "Start as <Mode>", like the landing page's Mode cards */
+.mode-go { display: inline-flex; align-items: center; gap: var(--space-1-5); min-height: 40px; margin-top: var(--space-2); padding: 0 var(--space-4); border: 2px solid var(--edge); border-radius: var(--radius-pill); color: var(--on-accent); font-weight: 800; }
+.mode-go svg { width: 1.1em; height: 1.1em; flex: none; }
+.mode-card--sun .mode-go { background: var(--sun); } .mode-card--sky .mode-go { background: var(--sky); } .mode-card--plum .mode-go { background: var(--plum); }
+.mode-card:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+@media (max-width: 900px) { .mode-go { grid-column: 2; justify-self: start; } }
 /* The picker's heading is a title (24px), above the card titles (20px); .mq-h3 (above) sets its size and margin with
    !important, so these do too */
 .pick-h { font: var(--text-title) !important; letter-spacing: var(--text-title-tracking); margin: 0 0 var(--space-3) !important; }
@@ -393,7 +402,7 @@ html.motion-paused .mq-grade, body.calm .mq-grade, html.motion-paused .mq-skill,
 .mode-card:active { transform: translateY(2px); box-shadow: var(--shadow-ledge-press); }
 .mode-card b { font: var(--text-card-title); letter-spacing: var(--text-card-title-tracking); }
 .mode-card small { font: var(--text-label-sm); color: var(--ink-muted); }
-.mode-card span:last-child { text-wrap: pretty; }
+.mode-card > span:not(.mode-ic):not(.mode-go) { text-wrap: pretty; }
 .mode-ic { width: 64px; height: 64px; border-radius: var(--radius-md); display: grid; place-items: center; margin-bottom: var(--space-2); color: var(--on-accent); }
 .mode-card--sun .mode-ic { background: var(--sun); } .mode-card--sky .mode-ic { background: var(--sky); } .mode-card--plum .mode-ic { background: var(--plum); }
 .mode-card[aria-pressed="true"] { outline: 4px solid var(--teal-strong); outline-offset: 3px; }
@@ -730,9 +739,9 @@ html.motion-paused .sutra-face, body.calm .sutra-face, html.motion-paused .sutra
 .vm-mbtn.on .vm-eq i:nth-child(2) { animation-delay: -.3s; } .vm-mbtn.on .vm-eq i:nth-child(3) { animation-delay: -.6s; }
 @media (max-width: 600px) { .vm-mbtn .lbl, .vm-mbtn .vm-eq { display: none; } .vm-mbtn { width: 36px; height: 36px; padding: 0; justify-content: center; } .vm-mbtn.on .vm-eq { display: none; } }
 @keyframes eq { to { height: 12px; } }
-.vm-mpanel { position: absolute; right: 0; top: calc(100% + 8px); width: min(340px, 92vw); z-index: 60; padding: var(--space-4); }
+.vm-mpanel { position: absolute; right: 0; top: calc(100% + 8px); width: min(340px, 92vw); max-height: calc(100vh - 96px); overflow: auto; box-sizing: border-box; z-index: 60; padding: var(--space-4); }
 .vm-mpanel:hover { transform: none; }
-.vm-mt { font: 600 1.15rem/1.2 var(--display); }
+.vm-mt { display: block; font: 600 1.15rem/1.2 var(--display); }
 .vm-tracks { display: grid; gap: var(--space-2); margin: var(--space-2-5) 0; }
 .vm-track { display: grid; text-align: left; gap: 2px; padding: var(--space-2-5) var(--space-3); border: 2px solid var(--edge); border-radius: var(--radius-md); background: var(--card); color: var(--ink); cursor: pointer; font: inherit; }
 .vm-track small { color: var(--ink-muted); font-size: 12.5px; }
@@ -740,11 +749,19 @@ html.motion-paused .sutra-face, body.calm .sutra-face, html.motion-paused .sutra
 .vm-mrow { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
 .vm-vol { display: flex; align-items: center; gap: var(--space-2); font-size: 14px; font-weight: 600; } .vm-vol input { accent-color: var(--plum-strong); }
 .vm-bgt { display: flex; gap: var(--space-2); align-items: center; margin-top: var(--space-2-5); font-size: 14px; font-weight: 600; }
-.vm-mpanel .vm-motion { margin-top: var(--space-2); }
+.vm-mpanel .vm-motion, .vm-mpanel .vm-calm { margin-top: var(--space-2); }
+/* The Calm and sound control (openspec change play-nav-by-mode): Calm and Pause motion first, then the music */
+.vm-mt--sub { display: block; margin-top: var(--space-3); font-size: 1rem; }
+.vm-swnote { margin: 2px 0 0; }
+.vm-mbtn.calm { border-color: var(--teal-strong); }
+.play-sound { position: relative; display: flex; flex: none; }
+.vm-mbtn--sm { height: 32px; padding: 0 var(--space-2-5) 0 var(--space-2); gap: var(--space-1-5); font-size: 13px; }
+.play-sound .vm-mpanel { position: absolute; right: 0; left: auto; top: calc(100% + 6px); width: min(320px, 90vw); max-height: 70vh; overflow: auto; }
+@media (max-width: 600px) { .vm-mbtn--sm { width: 32px; height: 32px; } .play-sound .vm-mpanel { position: fixed; left: 8px; right: 8px; top: 56px; width: auto; } }
 @media (prefers-reduced-motion: reduce) { .vm-eq i { animation: none; } }
 /* The same with Pause motion (html.motion-paused) and Calm (body.calm) */
 html.motion-paused .vm-eq i, body.calm .vm-eq i { animation: none; }
-@media (max-width: 700px) { .vm-mpanel { position: fixed; left: 12px; right: 12px; top: 128px; width: auto; } }
+@media (max-width: 700px) { .vm-mpanel { position: fixed; left: 12px; right: 12px; top: 128px; width: auto; max-height: calc(100vh - 140px); } } /* scrolls on a short screen (#174 review) */
 .vm-about { margin-top: var(--space-2-5); font-size: 13.5px; } .vm-about summary { cursor: pointer; font-weight: 700; }
 .vm-about ul { margin: var(--space-2) 0 0; padding-left: 1.1em; display: grid; gap: var(--space-1-5); max-height: 240px; overflow: auto; } .vm-about li { color: var(--ink-muted); line-height: 1.4; } .vm-about b { color: var(--ink); }
 .roots ul { margin: var(--space-2) 0 0; padding-left: 1.2em; display: grid; gap: var(--space-1-5); } .roots li { font-size: 15px; line-height: 1.5; }
@@ -1244,10 +1261,10 @@ html.play-open #view { z-index: 70; }
 .play-shell:focus { outline: none; }
 .play-head { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1-5) var(--space-3); border-bottom: 1px solid var(--line); background: var(--card); min-width: 0; }
 .play-title { flex: 1; min-width: 0; margin: 0; font: 700 15px/1.2 var(--font-sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.play-head .md-switch { padding: 2px var(--space-1) 2px var(--space-2-5); gap: var(--space-1-5); font-size: 13px; flex: none; }
-.play-head .md-switch .md-track { width: 36px; height: 20px; }
-.play-head .md-switch .md-knob { width: 14px; height: 14px; }
-.play-head .md-switch[aria-checked="true"] .md-knob { transform: translateX(16px); }
+.play-head > .md-switch { padding: 2px var(--space-1) 2px var(--space-2-5); gap: var(--space-1-5); font-size: 13px; flex: none; }
+.play-head > .md-switch .md-track { width: 36px; height: 20px; }
+.play-head > .md-switch .md-knob { width: 14px; height: 14px; }
+.play-head > .md-switch[aria-checked="true"] .md-knob { transform: translateX(16px); }
 .play-size { display: inline-flex; border: 2px solid var(--edge); border-radius: var(--radius-pill); overflow: hidden; flex: none; }
 .play-size-b { min-width: 40px; min-height: 32px; padding: 0 var(--space-2); border: 0; background: var(--card); color: var(--ink); font: 700 14px/1 var(--font-sans); cursor: pointer; }
 .play-size-b + .play-size-b { border-left: 2px solid var(--edge); font-size: 17px; }
@@ -1649,3 +1666,18 @@ html.motion-paused .in-nudge, body.calm .in-nudge { animation: none; }
 .in-me .mq-small { margin: 0 0 var(--space-2); }
 .in-me .md-btn { display: inline-flex; align-items: center; gap: var(--space-2); }
 .in-me .md-btn svg { width: 20px; height: 20px; }
+
+/* Explorer Home's More places, Find's help card, the Arcade and Learn's Sutras card, a lesson's last button
+   (openspec change play-nav-by-mode) */
+.home-places { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: var(--space-3) 0 0; }
+.home-places > span { font-weight: 700; color: var(--ink-muted); }
+.find-help { margin: var(--space-3) 0; padding: var(--space-3) var(--space-4); } .find-help .door-acts { align-items: center; }
+.arcade-doors { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 980px) { .arcade-doors { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .arcade-doors { grid-template-columns: 1fr; } }
+.arcade-doors .door small { display: block; margin-top: var(--space-2); }
+.door--teal .play-ic { background: var(--teal); }
+a.door.learn-sutras { display: grid; grid-template-rows: none; grid-template-columns: auto 1fr; column-gap: var(--space-3); align-items: center; margin: var(--space-4) 0; }
+a.door.learn-sutras .play-ic { grid-row: span 3; }
+.lesson-next { margin: var(--space-4) 0 0; }
+.sd-try .sd-how { color: var(--sky-strong); font-size: 13.5px; font-weight: 700; }

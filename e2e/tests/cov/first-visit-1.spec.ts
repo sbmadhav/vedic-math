@@ -30,10 +30,10 @@ test.describe('a Player whose record holds a Challenger guess from before', () =
 test.describe('a new visitor', () => {
   test.use({ seedMode: null });
 
-  test('Try a trick sets no guess: Try a trick under the Challenger card sets Challenger with no guess and sends math/mode/challenger', async ({ page }) => {
+  test('Try a trick sets no guess: the Challenger card, then Try a trick on Home, sets Challenger with no guess and sends math/mode/challenger once', async ({ page }) => {
     await page.route(/\/js\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
     await page.goto(APP);
-    await page.locator('[data-try="challenger"]').click();
+    await page.locator('.mode-card[data-mode="challenger"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
     await expect(page.locator('#tyStart')).toBeVisible();
     const p = await player(page);
     expect(p.mode).toBe('challenger');
@@ -43,7 +43,7 @@ test.describe('a new visitor', () => {
 
   test('After the trial: Play Star 1 at the end of Try a trick, then the Star round\'s Back control, opens Home', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('[data-try="challenger"]').click();
+    await page.locator('.mode-card[data-mode="challenger"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
     await page.locator('#tyStart').click();
     for (const a of [625, 2025, 4225]) { await page.locator('#tyIn').fill(String(a)); await page.keyboard.press('Enter'); await page.locator('#tyNext').click(); }
     await page.locator('#tyGoOn').click();
@@ -125,5 +125,8 @@ test.describe('Explorer', () => {
     await expect(card.getByRole('link', { name: 'See how it works' })).toHaveAttribute('href', /^#\/sutras\/(s1|s14|s2|u8|u12)$/);
     const c = (await card.boundingBox())!, tiles = (await page.locator('.play-grid--big').boundingBox())!;
     expect(c.y + c.height).toBeLessThanOrEqual(tiles.y);
+    /* More places after the tiles (openspec change play-nav-by-mode) */
+    expect(await page.locator('nav.home-places a').evaluateAll(as => as.map(a => a.getAttribute('href')))).toEqual(['#/games', '#/sutras', '#/guide', '#/find']);
+    expect((await page.locator('nav.home-places').boundingBox())!.y).toBeGreaterThanOrEqual(tiles.y + tiles.height);
   });
 });

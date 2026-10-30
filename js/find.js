@@ -21,21 +21,25 @@ export const KIND_LABELS = {
 };
 export const kindLabel = (kind, mode) => say(KIND_LABELS[kind], modeOf(mode));
 
-/* One plain line per section the Mode's menu has, in menu order. No counts, so the lines never go stale. */
+/* One plain line per section the Mode has, each zone of the menu (js/nav.js) with the places in it: Home; the Sutras
+   (first, openspec change sutras-first) and Learn; the Arcade, the Dojo, the Arena and Games; Watch; Me, the Guide and
+   Find. No counts, so the lines
+   never go stale. The menu's tooltips and Find's browse list read them (openspec change play-nav-by-mode). */
 export function sectionLines(mode) {
   const m = modeOf(mode), ex = m === 'explorer';
   const L = (href, label, modes, explorer, big) => ({ href, label, modes, plain: ex ? explorer : big });
   return [
     L('#/', 'Home', ALL, 'Your name, your Sparks and the games to tap', 'Your next Star, the daily quests and every way to play'),
     L('#/sutras', 'Sutras', ALL, 'Short math rules with long names. Tap to hear them', 'The rules from Bharati Krishna Tirtha\'s book, each with a card, a deep dive and the math behind it'),
-    L('#/learn', 'Learn', ALL, 'Counting, adding and shapes, one skill at a time', 'Skills by grade from counting to calculus, each with a hint and a worked answer'),
+    L('#/learn', 'Learn', ALL, 'Counting, adding, shapes and the sutras, one at a time', 'The sutras, then skills by grade from counting to calculus, each with a hint and a worked answer'),
+    L('#/arcade', 'Arcade', BIG, '', 'Solo practice in the Dojo, the daily Arena race and the games, in one place'),
     L('#/dojo', 'Dojo', BIG, '', 'Speed tricks in belts, from white to black; each trick has three Stars to light'),
     L('#/arena', 'Arena', ALL, 'Race the clock. Tap fast!', 'Sixty-second races with the same questions for everyone in your league, and the leaderboards'),
     L('#/games', 'Games', ALL, 'Balloons, dots, make ten and more', 'Number games with levels, plus puzzles, rhythm, art and a camera lens'),
     L('#/watch', 'Watch', ALL, 'Short videos and songs about numbers', 'Short videos that show each trick and skill'),
     L('#/me', 'Me', ALL, 'Your name, your color and your badges', 'Your nickname, color, badges, play mode, players on this device and settings'),
     L('#/guide', 'Guide', ALL, 'How everything works, one part at a time', 'Every part of the app explained, with a link to each'),
-    L('#/find', 'Find', ALL, 'Type a word to find a game, a skill or a video', 'Search skills, tricks, sutras, games and videos by name or a plain word')
+    L('#/find', 'Find', ALL, 'Type a word to find a game, a skill or a video', 'Search skills, tricks, sutras, games and videos by name or a plain word, and get help from the guide')
   ].filter(l => l.modes.includes(m));
 }
 
@@ -46,6 +50,7 @@ export const SYNONYMS = {
   'section-learn': ['skills', 'skill map', 'grades', 'lessons', 'practice', 'homework', 'school', 'levels'],
   'section-dojo': ['tricks', 'belts', 'stars', 'katas', 'speed', 'train', 'vedic'],
   'section-arena': ['leaderboard', 'leaderboards', 'scores', 'race', 'racing', 'timer', 'rank', 'ranking', 'compete', 'daily', 'board', 'boards', 'medals', 'tower'],
+  'section-arcade': ['play', 'hub', 'practice', 'race', 'games'],
   'section-games': ['play', 'puzzles', 'fun'],
   'section-sutras': ['cards', 'sanskrit', 'book', 'rules', 'verses', 'history', 'deep dive', 'tirtha'],
   'section-watch': ['videos', 'video', 'youtube', 'films', 'clips', 'songs', 'sing'],

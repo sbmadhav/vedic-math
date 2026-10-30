@@ -7,7 +7,7 @@ type Page = import('@playwright/test').Page;
    then comes Home again */
 async function trialThenHome(page: Page) {
   await page.goto(APP);
-  await page.locator('[data-try="challenger"]').click();
+  await page.locator('.mode-card[data-mode="challenger"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
   await page.locator('#tyStart').click();
   for (const a of [625, 2025, 4225]) { await page.locator('#tyIn').fill(String(a)); await page.keyboard.press('Enter'); await page.locator('#tyNext').click(); }
   await page.locator('#tyHome').click();

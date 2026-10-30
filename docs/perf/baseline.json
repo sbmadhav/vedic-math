@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 833377,
+  "total": 838847,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -45,10 +45,10 @@
    "/icons/maskable-192.png": 4394,
    "/icons/maskable-512.png": 11879,
    "/js/adapt.js": 1695,
-   "/js/ambient.js": 3633,
+   "/js/ambient.js": 4480,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 50581,
+   "/js/app.js": 52421,
    "/js/arena.js": 5685,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -63,12 +63,12 @@
    "/js/family-lines.js": 2624,
    "/js/family-view.js": 4196,
    "/js/family.js": 1528,
-   "/js/find.js": 6694,
-   "/js/fx.js": 4003,
+   "/js/find.js": 6856,
+   "/js/fx.js": 4050,
    "/js/games.js": 12393,
    "/js/gamify.js": 3873,
    "/js/guide-art.js": 2484,
-   "/js/guide.js": 10459,
+   "/js/guide.js": 10650,
    "/js/handoff-schema.js": 6682,
    "/js/handoff.js": 4229,
    "/js/install-rules.js": 2226,
@@ -80,7 +80,8 @@
    "/js/life.js": 1103,
    "/js/listen.js": 1335,
    "/js/mental.js": 2128,
-   "/js/metrics.js": 4146,
+   "/js/metrics.js": 4184,
+   "/js/nav.js": 1554,
    "/js/play/catalog.js": 1783,
    "/js/play/exp/apprentice-core.js": 7279,
    "/js/play/exp/apprentice.js": 3914,
@@ -119,7 +120,7 @@
    "/js/say-clips.js": 677,
    "/js/say.js": 3629,
    "/js/scenes.js": 1392,
-   "/js/shell.js": 1673,
+   "/js/shell.js": 1771,
    "/js/skills/early.js": 5459,
    "/js/skills/high.js": 9385,
    "/js/skills/index.js": 1084,
@@ -152,9 +153,9 @@
    "/js/voice.js": 14365,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 25134,
-   "/play/": 4082,
-   "/sw.js": 6268,
+   "/math.css": 25721,
+   "/play/": 4164,
+   "/sw.js": 6292,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -293,11 +294,18 @@
     "why": "working-memory-scaffolds: the answer slots for Tricks built in parts (js/app.js, js/star.js, js/vedic.js, math.css) and the digit connectors (js/connectors.js, loaded on first use but precached, so it counts), and the Trophy case on Me; file deltas: /js/app.js +2004, /js/connectors.js +1891 (new), /js/handoff-schema.js +66, /js/star.js +182, /js/vedic.js +202, /math.css +588, /play/ +20, /sw.js +17, +4972 in all; measured on main as of #173"
    },
    {
+    "date": "2026-10-29",
+    "pr": 174,
+    "from": 833139,
+    "to": 838563,
+    "why": "play-nav-by-mode: the menu by Mode (js/nav.js, new and statically imported), the Arcade page, Learn's Sutras card, the Calm and sound control in the header and the play shell, Find's help card and Ctrl K; measured on main as of #175; file deltas: /js/app.js +1818, /js/nav.js +1555, /js/ambient.js +847, /math.css +600, /js/guide.js +191, /js/find.js +162, /js/shell.js +96, /play/ +56, +5424 in all; js/nav.js as the CI build measures it (one byte more than a local Brotli); the Calm and sound panel is drawn on its first open, not at load"
+   },
+   {
     "date": "2026-10-30",
     "pr": 168,
-    "from": 833139,
-    "to": 833377,
-    "why": "design-audit-token-swaps (merged with main as of #175): spacing, radius and shadow values that equal a design system token read var(--space-N), var(--radius-*) and var(--shadow-ledge), longer than the px values they replace (the same pixels); the skip link and Board tabs use the design system's .md-skip and .md-seg (local rules gone; the tabs' focus ring drawn inside); measured on the merged tree; file deltas: /math.css +84, css/play/*.css +136 (spells +25, tala +18, locks +17, art +16, party +14, scroll +13, lens +12, apprentice +10, wall +10, daily +9, ghosts +4, bets -12), /js/play/exp/wall.js +7, art.js +2, art-draw.js +2, /js/shell.js +2, /js/app.js -20, /play/ +13, /sw.js -4; +222 in all; then the picked Board tab's focus ring takes var(--bg) on its ink fill (CodeRabbit on #168): +16, so +238 in all"
+    "from": 838563,
+    "to": 838847,
+    "why": "design-audit-token-swaps (merged with main as of #174): spacing, radius and shadow values that equal a design system token read var(--space-N), var(--radius-*) and var(--shadow-ledge), longer than the px values they replace (the same pixels); the skip link and Board tabs use the design system's .md-skip and .md-seg (local rules gone; the tabs' focus ring drawn inside, in var(--bg) on the picked tab); measured on the merged tree; file deltas: /math.css +111, css/play/*.css +136 (spells +25, tala +18, locks +17, art +16, party +14, scroll +13, lens +12, apprentice +10, wall +10, daily +9, ghosts +4, bets -12), /js/play/exp/wall.js +7, art.js +2, art-draw.js +2, /js/shell.js +4, /js/app.js +2, /js/nav.js -1, /play/ +22, /sw.js -1; +284 in all"
    }
   ]
  },

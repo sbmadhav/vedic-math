@@ -12,9 +12,9 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('a new visitor', () => {
   test.use({ seedMode: null });
-  test('Try a trick: under the Pro card it sends math/try/start and math/try/mode/pro once each, then the route view math/view/try, and nothing names the Player', async ({ page }) => {
+  test('Try a trick: from Pro Home it sends math/try/start and math/try/mode/pro once each, then the route view math/view/try, and nothing names the Player', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('[data-try="pro"]').click();
+    await page.locator('.mode-card[data-mode="pro"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
     await expect(page.locator('#tyStart')).toBeVisible();
     const ev = await events(page), paths = ev.map(([p]) => p);
     expect(paths.filter(p => p.startsWith('math/try/'))).toEqual(['math/try/start', 'math/try/mode/pro']);

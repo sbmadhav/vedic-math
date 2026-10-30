@@ -49,7 +49,7 @@ test('Low hum on: it plays; leaving for the Dojo fades the ambience out, stops t
   await open(page, '#/sutras');
   await tapPage(page);
   await expect.poll(async () => hums(await log(page)).length).toBe(1);
-  await page.locator('.mq-nav a[href="#/dojo"]').first().click();
+  await page.evaluate(() => { location.hash = '#/dojo'; }); /* in-app, no reload; the menu reaches it through a zone (openspec change play-nav-by-mode) */
   await expect(page.locator('#view .dojo-nodes').first()).toBeVisible();
   await expect.poll(async () => rampedToZero(ambienceBus(await log(page))[0])).toBe(true);
   const after = await log(page);
@@ -83,7 +83,7 @@ test('Calm music already playing: the ambience never starts and the music keeps 
   await page.locator('#vmMBtn').click();
   await page.locator('.vm-track[data-t="tanpura"]').click();
   await page.locator('#vmMBtn').click();
-  await page.locator('.mq-nav a[href="#/sutras"]').first().click();
+  await page.evaluate(() => { location.hash = '#/sutras'; }); /* in-app, no reload; the menu reaches it through a zone (openspec change play-nav-by-mode) */
   await expect(page.locator('.sutra-grid').first()).toBeVisible();
   await tapPage(page);
   await goSutra(page, 's1');
@@ -108,7 +108,7 @@ test('Sound effects off on the Me page: no ambience', async ({ page }) => {
   await fakeAudio(page); await prefs(page);
   await open(page, '#/me');
   await page.locator('#setSound').uncheck();
-  await page.locator('.mq-nav a[href="#/sutras"]').first().click();
+  await page.evaluate(() => { location.hash = '#/sutras'; }); /* in-app, no reload; the menu reaches it through a zone (openspec change play-nav-by-mode) */
   await tapPage(page);
   await goSutra(page, 's5');
   await page.waitForTimeout(300);

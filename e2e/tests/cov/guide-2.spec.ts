@@ -1,7 +1,7 @@
 import { test, expect, APP, open } from '../fixtures';
 
 /* guide spec, Requirements "Guide wording follows the Mode", "Opening the guide at a section" and "The guide is easy
-   to find": one test per scenario. */
+   to find" (as modified by openspec change play-nav-by-mode): one test per scenario. */
 
 test.describe('Explorer', () => {
   test.use({ seedMode: 'explorer' });
@@ -12,15 +12,22 @@ test.describe('Explorer', () => {
     await expect(page.locator('#gd-stars, #gd-sky')).toHaveCount(0);
   });
 
-  test('Menu bar: an Explorer sees a Guide link, marked current on the guide', async ({ page }) => {
-    await open(page, '#/learn');
-    const link = page.locator('.mq-nav a[href="#/guide"]');
-    await expect(link).toBeVisible();
-    await expect(link).toHaveAttribute('aria-current', 'false');
+  test('Explorer: More places on Home has How to play, which opens the guide', async ({ page }) => {
+    await open(page);
+    const link = page.locator('.home-places a[href="#/guide"]');
+    await expect(link).toHaveText('How to play');
     await link.click();
     await expect(page.locator('#view h1')).toHaveText('How to play');
-    await expect(link).toHaveAttribute('aria-current', 'true');
   });
+});
+
+/* "The guide is easy to find" as modified by openspec change play-nav-by-mode: Find is the menu's help */
+test('Menu bar: on the guide the Find trigger is current, and Find\'s help card links to the guide', async ({ page }) => {
+  await open(page, '#/guide');
+  await expect(page.locator('.mq-nav .nav-find')).toHaveAttribute('aria-current', 'true');
+  await page.locator('.mq-nav .nav-find').click();
+  await page.locator('.find-help a[href="#/guide"]').click();
+  await expect(page.locator('#view h1')).toHaveText('How to use Vedic Math');
 });
 
 test.describe('no mode yet', () => {

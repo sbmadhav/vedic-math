@@ -20,7 +20,7 @@ const PATH = /^math\/[a-z0-9_/:-]+$/;
 /* ---------- Route views ---------- */
 const SAMPLES = {
   '': 'home', '#/': 'home', '#/learn': 'learn', '#/grade/5': 'grade/5', '#/grade/K': 'grade/k',
-  '#/skill/v-sq5': 'skill/v-sq5', '#/mix/3': 'mix/3', '#/mix/3/words': 'mix/3/words', '#/run/3': 'run/3', '#/dojo': 'dojo', '#/tricks': 'tricks',
+  '#/skill/v-sq5': 'skill/v-sq5', '#/mix/3': 'mix/3', '#/mix/3/words': 'mix/3/words', '#/run/3': 'run/3', '#/arcade': 'arcade', '#/dojo': 'dojo', '#/tricks': 'tricks',
   '#/katas/sq5': 'katas/sq5', '#/kata/sq5/4': 'kata/sq5/kata', '#/star/sq5/2': 'star/sq5/star', '#/try': 'try', '#/tower': 'tower', '#/tower/7': 'tower/chapter',
   '#/challenge/123': 'challenge/challenge', '#/sutras': 'sutras', '#/sutras/s1': 'sutras/s1', '#/arena': 'arena',
   '#/duel': 'duel', '#/games': 'games', '#/game/times-sprint': 'game/times-sprint', '#/game/times-sprint/12': 'game/times-sprint/level',
@@ -109,7 +109,7 @@ test('modeLink sends math/landing/mode/<Mode> for a Mode only, with a fixed titl
 });
 test('app.js calls tryStart with only the Mode and findGo with no arguments', () => {
   const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
-  assert.deepEqual(callSites(app).filter(c => c.fn === 'metrics.tryStart').map(c => c.args.trim()), ['mode', 'm', 'm']); // the picker, the tile Home, the Sky Home
+  assert.deepEqual(callSites(app).filter(c => c.fn === 'metrics.tryStart').map(c => c.args.trim()), ['m', 'm']); // the tile Home, the Sky Home (the picker has no Try a trick since openspec change play-nav-by-mode)
   assert.deepEqual(callSites(app).filter(c => c.fn === 'metrics.findGo').map(c => c.args.trim()), ['']);
 });
 
