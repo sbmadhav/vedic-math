@@ -27,7 +27,7 @@ Videos are played from YouTube in privacy-enhanced mode, and YouTube's own terms
 ## 5. Who owns what
 
 - The lessons, Katas, Worked examples, art (including Bolt), icons, audio and other content on the site are ours. You may use them to learn and to teach your own children or class.
-- Copies of the site's code and learning content that were published as open source under the MIT licence stay under that licence. The design system, fonts and other open-source parts are listed with their licences on the [licences page](/licenses/).
+- Copies of the site's code and learning content published as open source under the MIT licence up to 28 October 2026 stay under that licence. Everything added or changed after that date is ours, with all rights reserved: you may not copy, sell or republish it without asking us. The details are in the repository's licence notes. The design system, fonts and other open-source parts are listed with their licences on the [licences page](/licenses/).
 - The Sutras themselves are from a book published in 1965; our explanations of them are ours.
 
 ## 6. No promises
@@ -48,6 +48,6 @@ Placeholders taken out of the published text on 2026-10-29 (UX audit task 1.1). 
 
 1. Last updated: the date shows when the published text last changed. Set it to the publication date at task 14.5.
 2. Operator: the terms point to the privacy policy, the only page that names the operator (design L6). Add the postal address there (task 13.3), and the business entity once it exists.
-3. Licence: the draft said "before [date]". The date is the licence change of design D16 (task 12.3, not done: `LICENSE-CONTENT.md` still says the learning content is MIT). Until then the published text says only that MIT copies stay MIT, and section 5 leaves out the draft's "All rights reserved. ... you may not copy, sell or republish them without asking us", which contradicts `LICENSE-CONTENT.md` today (CodeRabbit on PR #171). Put both back, with the date, when 12.3 lands; the lawyer checks the wording.
+3. Licence: restored after task 12.3 landed (PR #148, cutoff commit 2a8b7a3, 2026-10-28): MIT up to that date, all rights reserved after. The lawyer checks the wording.
 4. Limitation of liability: to be written by the lawyer, at the end of section 6.
 5. Governing law and where disputes are resolved: to be written by the lawyer; section 8 is "Contact" until then.
