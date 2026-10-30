@@ -20,15 +20,15 @@ import * as cloud from './cloud.js';
 import * as LV from './levels.js';
 import { LEVELS, LEVELS_PER_GAME, levelMedal, boardGame } from './games.js';
 import * as AD from './adapt.js';
-import { initAmbient, bgOn, setBg, setBgLevel, BG_NOTES, stop as stopMusic, isPlaying as musicOn } from './ambient.js';
-import { levelFor, ROOTS_INTRO } from './sky-scene.js';
+import { initAmbient, bgOn, setBg, setBgLevel, stop as stopMusic, isPlaying as musicOn } from './ambient.js';
+import { levelFor, BG_NOTES, ROOTS_INTRO } from './sky-scene.js';
 import { on, later, every, child, onAbort, lateImport } from './life.js';
 import * as metrics from './metrics.js';
 import { boltHTML } from './bolt.js';
 import { FAMILY_SVG } from './family.js';
 import { familyRound } from './family-hook.js';
 import { runStar } from './star.js';
-import { storyPlan, loadStories, storiesNow, LABEL as STORY_LABEL } from './story-plan.js';
+import { storyPlan, loadStories, storiesNow, LABEL as STORY_LABEL, ONLY as STORY_ONLY, ROUND as STORY_ROUND } from './story-plan.js';
 import { runTry, tryFor as tryOf, sutraOf, finished as tryFinished } from './try.js';
 import * as SKY from './sky.js';
 import { skyView, placesHTML } from './sky-view.js';
@@ -39,6 +39,7 @@ import { GROUPS, sectionsFor, tryFor, say, resolveTour, tourDue, tourState, setT
 import { sectionLines, buildIndex, rank, countOf, kindLabel } from './find.js';
 import { artFor } from './guide-art.js';
 import { guideCounts, rootNote } from './explain-lines.js';
+import { ledeHTML } from './ledes.js';
 import { listenBtn, wireListen } from './listen.js';
 import { sayButton, respellHTML, devaHTML, wireSay } from './say.js';
 import { sutraAmbience, ambienceButton, wireAmbience, settingsHTML as ambienceSettingsHTML, wireSettings as wireAmbienceSettings } from './sutra-ambience.js';
@@ -55,6 +56,7 @@ import './voice-plan.js'; /* a level sooner (docs/perf/baseline.md) */
 const boot = new AbortController(); /* the page's lifetime: never aborted */
 /* Off the first load's critical path (docs/perf/baseline.md); a failed load is asked for again */
 const onDemand = load => { let p; return () => (p ||= load().catch(e => { p = null; throw e; })); };
+const loadLinks = onDemand(() => import('./connectors.js')); /* the Trick animator's digit connectors, on first use */
 const loadArena = onDemand(() => import('./arena.js')), loadTour = onDemand(() => import('./tour.js')), loadKit = onDemand(() => import('./play/kit.js'));
 const withArena = (area, signal, fn) => loadArena().then(A => { if (!signal.aborted) fn(A); }, () => { if (!signal.aborted) area.innerHTML = '<p class="md-lede">The round did not load. Check your connection and try again.</p>'; });
 let install = null, installLoad = null, earlyPrompt = null; const installQueue = [];
@@ -101,6 +103,7 @@ const routes = [
   [/^#\/grade\/(\w+)$/, (m, ctx) => gradeView(m[1], ctx)],
   [/^#\/skill\/([\w-]+)$/, (m, ctx) => skillView(m[1], ctx)],
   [/^#\/mix\/(\w+)$/, (m, ctx) => mixView(m[1], false, ctx)],
+  [/^#\/mix\/(\w+)\/words$/, (m, ctx) => mixView(m[1], false, ctx, true)],
   [/^#\/run\/(\w+)$/, (m, ctx) => mixView(m[1], true, ctx)],
   [/^#\/(dojo|tricks)$/, (m, ctx) => dojoView(ctx)],
   [/^#\/katas\/([\w-]+)$/, (m, ctx) => katasView(m[1], ctx)],
@@ -174,12 +177,13 @@ function render() {
 render.n = 0;
 window.addEventListener('hashchange', render);
 
-/* Player chip in the nav: avatar and the bar to the next Title (no number) */
+/* Player chip in the nav: avatar, the bar of Sparks to the next Title (no number) and, for Challenger and Pro, the
+   highest Belt held. Nothing else: Stars, Medals and Badges are in the Trophy case on Me (openspec working-memory-scaffolds). */
 function chip() {
-  const el = $('#mqChip'); if (!el) return; const p = store.player(), T = gm.titleInfo();
-  el.innerHTML = `<a href="#/me" class="mq-chip">${avatar(p, 30)}<span class="md-sr-only">${esc(p.name)}, ${T.title}</span><span class="mq-chip-t"><span class="mq-sparkbar"><i style="width:${pct(T.pct)}%"></i></span></span></a>`;
+  const el = $('#mqChip'); if (!el) return; const p = store.player(), T = gm.titleInfo(), belt = fx.mode() && fx.mode() !== 'explorer' ? gm.currentBelt() : null;
+  el.innerHTML = `<a href="#/me" class="mq-chip">${avatar(p, 30)}<span class="md-sr-only">${esc(p.name)}, ${T.title}${belt ? `, ${belt.name}` : ''}</span>${belt ? `<span class="mq-chip-belt" style="--belt:${belt.color}" data-belt="${belt.id}" aria-hidden="true"></span>` : ''}<span class="mq-chip-t"><span class="mq-sparkbar"><i style="width:${pct(T.pct)}%"></i></span></span></a>`;
 }
-store.on(type => { if (type === 'sparks' || type === 'player') chip(); });
+store.on(type => { if (type === 'sparks' || type === 'player' || type === 'belt' || type === 'star') chip(); });
 /* The bar to the next Title, as a progressbar with its Sparks in words */
 function titleBar(T, cls = 'mq-sparkbar mq-sparkbar--big') {
   const text = T.next ? `${T.into} of ${T.need} Sparks to ${T.next}` : 'Top Title reached';
@@ -387,7 +391,7 @@ function learnView() {
     ${crumbs([null, 'Skill map'])}
     <span class="md-tag md-tag--sky">Skill map</span>
     <h1 class="md-heading">Pick a level</h1>
-    <p class="md-lede">${SKILLS.length - TRICKS.length} skills from counting to calculus. Each has a picture-first lesson, endless practice and hints that teach the strategy. Fill every ring to level up.</p>
+    <p class="md-lede">${ledeHTML('learn', { n: guideCounts() })}</p>
     <h2 class="mq-strand">Suggested for ${m.name}</h2><div class="mq-grades">${mine.map(card).join('')}</div>
     <h2 class="mq-strand">Speed tricks</h2><div class="mq-grades">${card(gradeOf('V'))}</div>
     <details class="mq-more"><summary>All other levels</summary><div class="mq-grades">${rest.map(card).join('')}</div></details>
@@ -404,7 +408,7 @@ function gradeView(g, { signal } = {}) {
     ${crumbs(['#/learn', 'Skill map'], [null, gradeLabel(g)])}
     <span class="md-tag md-tag--sky">${G.band}</span>
     <h1 class="md-heading">${gradeLabel(g)}</h1>
-    <p class="md-lede">${both(`${st.done} of ${st.total} skills mastered. A skill is mastered after at least 8 problems with a score of 85% or more, weighted toward recent answers.`, `You have ${st.done} of ${st.total} skills. Fill every ring!`)}</p>
+    <p class="md-lede">${both(ledeHTML('grade', st), ledeHTML('grade-kid', st))}</p>
     <div class="mq-gradebar"><span class="mq-bar mq-bar--big"><i style="width:${pct(st.done / (st.total || 1))}%"></i></span><a class="md-btn md-btn--primary md-btn--sm" href="#/run/${g}">${icon('bolt')} Endless run</a><a class="md-btn md-btn--sm" href="#/mix/${g}">Endless practice</a></div>
     <p class="mq-small">Every skill here makes new questions forever. Endless practice mixes them with hints; Endless run gives you 3 lives and counts how far you get.</p>
     <div class="mq-gradejump">${prev ? `<a class="md-chip" href="#/grade/${prev.id}">&larr; ${both(prev.pro, prev.kid)}</a>` : ''}${next ? `<a class="md-chip" href="#/grade/${next.id}">${both(next.pro, next.kid)} &rarr;</a>` : ''}</div>
@@ -474,8 +478,10 @@ function showExample(s) {
 /* Typed something that is not a plain number on an arithmetic skill: not a try, no Sparks */
 const notAnswerMsg = () => fx.t({ explorer: 'Type just the answer, like 7.', challenger: 'Type just the answer, like 56 or 3/4.', pro: 'Type just the answer as a number, like 56 or 3/4.' });
 const KEYS = { basic: ['/', '-', '.'], alg: ['x', '^', '(', ')', '/', '-', '√', 'π'], set: [',', '-', '/', '√'], ineq: ['x', '<', '>', '<=', '>=', '-'], complex: ['i', '+', '-'] };
-/* One Practice session in root. signal: the view's. Each question runs under its own child signal, aborted by the next one. */
-function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signal } = {}) {
+/* One Practice session in root. signal: the view's. Each question runs under its own child signal, aborted by the next one.
+   only: every question a Word problem on the Skill picked (Only Word problems, openspec word-problems-more design D2);
+   pickSkill then picks only Skills that have one, and the stories have loaded. */
+function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signal, only = false } = {}) {
   let s, p, tries = 0, hints = 0, done = false, right = 0, total = 0, run = 0, life = lives;
   const session = child(signal); let question = null;
   const explorer = fx.mode() === 'explorer';
@@ -487,12 +493,14 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
   const dials = new Map(), mode = fx.mode();
   /* Word problems (openspec word-problems): a share of the questions by Mode, once the Player has 20 saved answers */
   const tales = storyPlan(mode || 'challenger', { answered: () => store.count('answers') });
+  /* Only Word problems: the Skill's own story (a Word problem Skill), else one in the Mode's style on its numbers */
+  const onlyStory = (sk, bare) => (bare.story ? null : storiesNow() && storiesNow().storyFor(sk, mode || 'challenger', { bare }));
   const dialFor = id => { if (!dials.has(id)) dials.set(id, new AD.Dial(AD.skillRating(id, mode))); return dials.get(id); };
   const saveDial = id => { const d = dials.get(id); if (!d || d.n < 4) return; AD.saveRating('skill:' + id, d); dials.set(id, new AD.Dial(d.d)); };
   const next = () => {
     if (question) question.abort();
     question = child(session.signal);
-    s = pickSkill(); const level = AD.levelFor(dialFor(s.id).lv), bare = s.gen(level); p = withPlain(s, tales.next(s, bare) || bare); tries = 0; hints = 0; done = false;
+    s = pickSkill(); const level = AD.levelFor(dialFor(s.id).lv), bare = s.gen(level); p = withPlain(s, (only ? onlyStory(s, bare) : tales.next(s, bare)) || bare); tries = 0; hints = 0; done = false;
     // Explorer mode: no typing; small whole-number answers become big buttons
     if (explorer && p.kind === 'num' && Number.isInteger(p.answer) && p.answer >= 0 && p.answer <= 200) { const near = [...new Set([p.answer + 1, p.answer - 1, p.answer + 2, p.answer + 10, p.answer - 2].filter(v => v >= 0))]; p = { ...p, kind: 'choice', choices: [p.answer, ...shuffle(near).slice(0, 3)].sort((a, b) => a - b).map(String), answer: String(p.answer) }; }
     const keyset = p.kind === 'expr' ? KEYS.alg : p.kind === 'set' ? KEYS.set : p.kind === 'ineq' ? KEYS.ineq : p.kind === 'complex' ? KEYS.complex : p.kind === 'num' && !['K', 1, 2].includes(s.grade) ? KEYS.basic : null;
@@ -505,7 +513,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
       </form>
       <div class="pr-say" id="prSay" role="status" aria-live="polite"></div>
       <div class="pr-sol" id="prSol" hidden></div>`;
-    wire(question.signal); fx.speakQuestion(p); fam.note({ type: 'question' });
+    wire(question.signal); wireSplit(root, p, question.signal); fx.speakQuestion(p); fam.note({ type: 'question' });
     const first = root.querySelector('input, .pr-choice'); if (first && render.n > 1 && matchMedia('(pointer: fine)').matches) first.focus({ preventScroll: true });
   };
   const say = (html, tone = '') => { const b = $('#prSay', root); b.className = 'pr-say ' + tone; b.innerHTML = html ? `${boltFor(tone)}<div class="md-bubble">${html}</div>` : ''; };
@@ -529,7 +537,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
   const PRAISE = { explorer: ['Yay! You got it!', 'Super star!', 'Woohoo! Correct!', 'You are so smart!'], challenger: ['Correct!', 'Nailed it!', 'Boom! First try.', 'Lightning fast!'], pro: ['Correct.', 'Exactly right.', 'Clean.', 'Correct, first try.'] };
   /* Symbol keys and the "Want a hint?" link: one delegated handler for the whole session */
   on(root, 'click', e => {
-    const k = e.target.closest('.pr-key'); if (k) { fx.sfx('tap'); const inp = root.querySelector('.ans-in:focus') || root.querySelector('.ans-in'); if (inp) { const v = k.dataset.k, a = inp.selectionStart ?? inp.value.length; inp.value = inp.value.slice(0, a) + v + inp.value.slice(inp.selectionEnd ?? a); inp.focus(); inp.setSelectionRange(a + v.length, a + v.length); } return; }
+    const k = e.target.closest('.pr-key'); if (k) { fx.sfx('tap'); const inp = root.querySelector('.ans-in:focus') || root.querySelector('.ans-in:not([readonly])'); if (inp) { const v = k.dataset.k, a = inp.selectionStart ?? inp.value.length; inp.value = inp.value.slice(0, a) + v + inp.value.slice(inp.selectionEnd ?? a); inp.focus(); inp.setSelectionRange(a + v.length, a + v.length); } return; }
     if (e.target.closest('[data-hint]')) { e.preventDefault(); $('#prHint', root).click(); }
   }, session.signal);
   /* Per-question handlers, on the question's signal */
@@ -537,11 +545,11 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
     on($('#prForm', root), 'submit', e => {
       e.preventDefault();
       if ($('#prCheck', root).dataset.next) { fx.sfx('tap'); return next(); }
-      const res = grade(); if (res.empty) { say('Type an answer first.'); return; }
+      const res = grade(); if (res.partial) { say(res.partial); return; } if (res.empty) { say('Type an answer first.'); return; }
       if (res.notAnswer) { say(notAnswerMsg()); return; }
       tries++;
       if (res.ok) { fx.sfx('ok'); const first = tries === 1 && !hints; fam.note({ type: 'right', first }); const msg = first ? pick(PRAISE[fx.mode()] || PRAISE.challenger) : 'You got it!'; say(msg + (first ? ` <span class="pr-sparks">+${10 + Math.min(store.skill(s.id).streak + 1, 5)} Sparks</span>` : ''), 'ok'); fx.bounce($('#prSay .md-bubble', root), qs); fx.twinkle($('#prSay .pr-sparks', root), qs); if (explorer) fx.speak(msg, true); finish(true); return; }
-      fx.sfx('no'); fx.wiggle(root.querySelector('.pr-in, .pr-choices, .pr-fields'), qs); fam.note({ type: 'miss' });
+      fx.sfx('no'); fx.wiggle(root.querySelector('.pr-in, .pr-choices, .pr-fields, .pr-split'), qs); fam.note({ type: 'miss' });
       if (lives) { life--; reveal(); say(life ? `Oops! ${life} ${life === 1 ? 'life' : 'lives'} left. See how it works, then keep going.` : 'Out of lives!', 'no'); finish(false); const lv = root.querySelector('.pr-lives'); lv.innerHTML = '<i class="on"></i>'.repeat(life) + '<i></i>'.repeat(lives - life); lv.setAttribute('aria-label', `${life} lives left`); if (!life && onOver) { const b = $('#prCheck', root); b.textContent = 'See my score'; b.onclick = e => { e.preventDefault(); onOver(right); }; } return; }
       if (tries === 1) { say((res.msg ? res.msg + ' ' : '') + 'Not quite. Try once more.' + (p.hints[0] && !hints ? ' <button type="button" class="linkbtn" data-hint>Want a hint?</button>' : ''), 'no'); if (explorer) fx.speak('Not quite. Try again!', true); }
       else if (tries === 2) { hints = Math.max(hints, 1); const h = p.hints[Math.min(1, p.hints.length - 1)] || p.hints[0]; say((res.msg ? res.msg + ' ' : '') + `Hint: ${h}`, 'no'); if (explorer && h) fx.speak(h, true); } // read the hint that is shown
@@ -555,32 +563,93 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
   const grade = () => {
     if (p.kind === 'choice') { const c = root.querySelector('.pr-choice[aria-pressed="true"]'); if (!c) return { empty: true }; return { ok: c.dataset.v === p.answer }; }
     if (p.kind === 'fields') { const ins = [...root.querySelectorAll('.ans-in')]; if (ins.some(i => !i.value.trim())) return { empty: true }; const rs = ins.map((i, k) => checkOne({ kind: 'num', answer: p.fields[k].answer, tol: p.tol }, i.value)); return { ok: rs.every(r => r.ok), msg: rs.find(r => r.msg)?.msg }; }
-    return checkOne(p, root.querySelector('.ans-in').value);
+    const t = typedAnswer(root); if (t.partial) return { partial: t.partial };
+    return checkOne(p, t.value);
   };
   next();
   return { destroy: () => { [...dials.keys()].forEach(saveDial); fam.note({ type: 'leave' }); session.abort(); } };
 }
+/* Memory lock answer slots (openspec working-memory-scaffolds, split-answer spec): a Trick that writes its answer as a
+   left part and a right part (p.parts) gets a slot for each, for Challenger and Pro outside Word problems. The left part
+   locks (Enter or Lock), checking joins the two, and the one box stays a tap away (saved on this device as vm.split). */
+let splitHere = true; /* the choice for this page when storage is blocked, so the switch still works */
+const splitPref = () => { try { return localStorage.getItem('vm.split') !== 'one'; } catch (e) { return splitHere; } };
+const setSplitPref = two => { splitHere = two; try { if (two) localStorage.removeItem('vm.split'); else localStorage.setItem('vm.split', 'one'); } catch (e) {} };
+const canSplit = p => !!(p.parts && p.kind === 'num' && !p.story && fx.mode() && fx.mode() !== 'explorer');
+const slotsHTML = () => `<div class="pr-split" role="group" aria-label="Your answer in two parts" aria-describedby="prSplitNote">
+    <label class="pr-slot"><span>Left part</span><input class="ans-in pr-slot-in" data-slot="l" inputmode="numeric" spellcheck="false" autocapitalize="off"></label>
+    <button type="button" class="md-btn md-btn--sm pr-lock" data-lock aria-pressed="false" aria-label="Lock the left part">${icon('lock')}Lock</button>
+    <span class="pr-split-bar" aria-hidden="true"></span>
+    <label class="pr-slot"><span>Right part</span><input class="ans-in pr-slot-in" data-slot="r" inputmode="numeric" spellcheck="false" autocapitalize="off"></label>
+  </div><p class="mq-small pr-split-note" id="prSplitNote">Lock the left part, then work out the right part. <button type="button" class="linkbtn" data-split="one">Type it in one box</button></p>`;
+/* What the Player typed: the one box, or the two slots joined left then right ({ partial } when only one is filled) */
+function typedAnswer(root) {
+  const l = root.querySelector('.pr-slot-in[data-slot="l"]');
+  if (!l) { const i = root.querySelector('.ans-in'); return { value: i ? i.value : '' }; }
+  const a = l.value.trim(), b = root.querySelector('.pr-slot-in[data-slot="r"]').value.trim();
+  if (a && !b) return { value: '', partial: 'Now the right part.' };
+  if (!a && b) return { value: '', partial: 'Type the left part too.' };
+  return { value: a + b };
+}
+/* The slots' Lock and Enter, and the switch between slots and one box (redrawn in place, on the question's signal) */
+function wireSplit(root, p, signal) {
+  const sw = root.querySelector('[data-split]');
+  /* What is typed stays: the two parts become the one box's text, and the one box's text goes in the left slot */
+  if (sw) on(sw, 'click', () => {
+    const typed = [...root.querySelectorAll('.pr-ans .ans-in')].map(i => i.value.trim()).join('');
+    setSplitPref(sw.dataset.split === 'two'); fx.sfx('tap'); root.querySelector('.pr-ans').outerHTML = answerUI(p); wireSplit(root, p, signal);
+    const f = root.querySelector('.pr-ans .ans-in'); if (f) { f.value = typed; f.focus(); }
+  }, signal);
+  const l = root.querySelector('.pr-slot-in[data-slot="l"]'); if (!l) return;
+  const r = root.querySelector('.pr-slot-in[data-slot="r"]'), lock = root.querySelector('[data-lock]');
+  const set = v => { l.readOnly = v; l.closest('.pr-slot').classList.toggle('locked', v); lock.setAttribute('aria-pressed', String(v)); };
+  const doLock = () => { if (!l.value.trim()) { l.focus(); return; } set(true); fx.sfx('tap'); r.focus(); };
+  on(lock, 'click', () => { if (l.readOnly) { set(false); l.focus(); } else doLock(); }, signal);
+  on(l, 'keydown', e => { if (e.key !== 'Enter' || e.isComposing) return; e.preventDefault(); if (l.readOnly) r.focus(); else doLock(); }, signal);
+}
 function answerUI(p) {
+  if (canSplit(p)) return `<div class="pr-ans">${splitPref() ? slotsHTML() : `${oneBox(p)}<p class="mq-small pr-split-note"><button type="button" class="linkbtn" data-split="two">Split into parts</button></p>`}</div>`;
   if (p.kind === 'choice') return `<div class="pr-choices" role="group" aria-label="Choices">${p.choices.map(c => `<button type="button" class="md-chip pr-choice" aria-pressed="false" data-v="${esc(c)}">${c}</button>`).join('')}</div>`;
   if (p.kind === 'fields') return `<div class="pr-fields">${p.fields.map(f => `<label>${f.label}<input class="ans-in" inputmode="text" spellcheck="false"></label>`).join('')}</div>`;
+  return oneBox(p);
+}
+function oneBox(p) {
   const ph = { num: 'Your answer', expr: 'e.g. 3x^2 - 2x + 1', set: 'e.g. 2, -5', ineq: 'e.g. x < 4', complex: 'e.g. 3 + 2i', text: 'Your answer' }[p.kind] || 'Your answer';
   return `<div class="pr-in"><input class="ans-in" aria-label="Your answer" placeholder="${ph}" spellcheck="false" autocapitalize="off" inputmode="${p.kind === 'num' && Number.isInteger(p.answer) && p.answer >= 0 && !p.simplest ? 'numeric' : 'text'}">${p.unit ? `<span class="pr-unit">${p.unit}</span>` : ''}</div>`;
 }
 
-function mixView(g, isRun = false, { signal } = {}) {
+function mixView(g, isRun = false, { signal } = {}, words = false) {
   const G = gradeOf(g); if (!G) return home({ signal });
   document.title = `${isRun ? 'Endless run' : 'Endless practice'}, ${G.pro} · Learn Vedic Math`;
-  const list = skillsFor(g);
+  const all = skillsFor(g), told = () => all.filter(s => storiesNow().hasStory(s, fx.mode() || 'challenger'));
+  /* Only Word problems (openspec word-problems-more D1, D2): the level's Skills that have one; it waits the few
+     milliseconds the stories take to load, as a Word problem Skill's page does, and a level with none opens the mix */
+  if (words && !storiesNow()) {
+    let run = null; view.innerHTML = '<section class="md-section mq-tight"><div class="md-wrap mq-narrow"><p class="mq-small">Getting the stories ready&hellip;</p></div></section>';
+    const go = () => { if (signal && signal.aborted) return; if (storiesNow()) run = mixView(g, false, { signal }, true); else location.replace('#/mix/' + g); };
+    loadStories().then(go, go);
+    return { destroy: () => run && run.destroy() };
+  }
+  if (words && !told().length) { location.replace('#/mix/' + g); return; }
+  const list = words ? told() : all;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs(['#/grade/' + g, gradeLabel(g)], [null, isRun ? 'Endless run' : 'Endless practice'])}
     <h1 class="md-heading">${isRun ? 'Endless run' : 'Endless practice'}: ${gradeLabel(g)}</h1>
-    <p class="md-lede">${isRun ? `Questions from every skill in this level, forever. You have 3 lives: how far can you go? Your best: <b>${store.best('run-' + g)}</b>.` : 'Questions from the whole level, all mixed up and never-ending, favoring skills in progress. Mixing topics is harder, and that is exactly why it makes learning stick.'}</p>
+    <p class="md-lede">${isRun ? `Questions from every skill in this level, forever. You have 3 lives: how far can you go? Your best: <b>${store.best('run-' + g)}</b>.` : words ? 'Only Word problems from this level, never-ending. Read what each story asks, make a plan, then solve it.' : 'Questions from the whole level, all mixed up and never-ending, favoring skills in progress. Mixing topics is harder, and that is exactly why it makes learning stick.'}</p>
+    ${isRun ? '' : '<div class="g-optrow mix-only" id="mixOnly" role="group" aria-label="Questions" hidden></div>'}
     <div class="mq-practice md-card" id="practice"></div></div></section>`;
-  let lastId = null; loadStories().catch(() => {});
+  /* The Mixed and Only Word problems choice, once the stories know which Skills have one (none on a level without) */
+  const offer = () => {
+    const box = $('#mixOnly'); if (!box || (signal && signal.aborted) || !storiesNow() || !told().length) return;
+    box.innerHTML = `<button class="md-chip" aria-pressed="${!words}" data-only="0">Mixed</button><button class="md-chip" aria-pressed="${words}" data-only="1">${STORY_ONLY[fx.mode()] || STORY_ONLY.challenger}</button>`;
+    box.hidden = false;
+    box.querySelectorAll('[data-only]').forEach(b => on(b, 'click', () => { const to = '#/mix/' + g + (b.dataset.only === '1' ? '/words' : ''); if (location.hash !== to) location.hash = to; }, signal));
+  };
+  let lastId = null; loadStories().then(() => { if (!isRun) offer(); }, () => {});
   return practice($('#practice'), () => {
     const going = list.filter(s => store.started(s.id) && !store.mastered(s.id)), pool = (going.length >= 2 && Math.random() < .7 ? going : list).filter(s => s.id !== lastId);
     const s = pick(pool.length ? pool : list); lastId = s.id; return s;
-  }, { mix: true, lives: isRun ? 3 : 0, onOver: right => {
+  }, { mix: true, only: words, lives: isRun ? 3 : 0, onOver: right => {
     store.bump('runs'); const isBest = store.setBest('run-' + g, right), sp = 10 + right * 3; store.addSparks(sp, 'run'); if (isBest && right) fx.confetti(90);
     $('#practice').innerHTML = `<div class="ar-result"><div class="md-stat"><div class="md-kicker">You reached</div><div class="md-value">${right}</div><p>${isBest && right ? 'New best run!' : `Best: ${store.best('run-' + g)}`} <span class="fx-sparks">+${sp} Sparks</span></p></div></div><p><button class="md-btn md-btn--primary" id="again">${icon('bolt')} Run again</button> <a class="md-btn" href="#/grade/${g}">Back to ${gradeLabel(g)}</a></p>`;
     $('#again').onclick = () => mount(ctx => mixView(g, true, ctx));
@@ -596,7 +665,7 @@ function dojoView() {
     ${crumbs([null, 'Dojo'])}
     <span class="md-tag md-tag--plum">Vedic Dojo</span>
     <h1 class="md-heading">From white belt to <span class="hl-word">black belt</span></h1>
-    <p class="md-lede">${ex ? `${TRICKS.length} speed tricks from the sutras in Bharati Krishna Tirtha's 1965 book, in seven groups from white belt to black belt. Open a trick to watch it work step by step, practice it, and try its <b>${LV.KATAS_PER_TRICK} katas</b>, drills that get harder. <b class="dojo-ex">Belts and Stars come with Challenger and Pro.</b>` : `${TRICKS.length} speed tricks from the sutras in Bharati Krishna Tirtha's 1965 book, in seven belts. Each trick has three Stars. Light all 9 Stars of a belt's three tricks to earn it. Each trick also has a step-by-step animator, endless practice and <b>${LV.KATAS_PER_TRICK} katas</b>: numbered drills that get harder, ${LV.KATA_COUNT.toLocaleString('en-US')} in all. Finish one to open the next.`}</p>
+    <p class="md-lede">${ledeHTML('dojo', { mode: fx.mode(), n: guideCounts() })}</p>
     <p class="mq-small">${store.katasDoneWhere('k:')} of ${LV.KATA_COUNT.toLocaleString('en-US')} katas done</p>
     ${playShelf('dojo', 'Play with the tricks')}
     <div class="belt-row">${bp.map(b => `<span class="belt-chip${b.earned ? ' on' : ''}" style="--belt:${b.color}"><span class="belt-knot" aria-hidden="true"></span>${b.name}</span>`).join('')}</div>
@@ -647,7 +716,7 @@ function katasView(trickId) {
     ${crumbs(['#/dojo', 'Dojo'], [null, `${t.title}: katas`])}
     <h1 class="md-heading">${t.title}: ${LV.KATAS_PER_TRICK} katas</h1>
     ${sutraTag('trickTagHTML', trickId, { mode: fx.mode(), surface: 'katas' })}
-    <p class="md-lede">Each kata is a short drill of 5 to 8 problems that gets harder as you climb: bigger numbers, new bases, trickier cases. Get at least 60% right to finish one and unlock the next.</p>
+    <p class="md-lede">${ledeHTML('katas', {})}</p>
     <p class="mq-small">${store.katasDoneWhere(`k:${trickId}:`)} of ${LV.KATAS_PER_TRICK} done · <a href="#/skill/v-${trickId}">Learn the trick first</a></p>
     ${levelMap(LV.KATAS_PER_TRICK, n => ({ done: store.kataDone(LV.kataKey(trickId, n)) }), n => `#/kata/${trickId}/${n}`, { noun: 'Kata' })}
   </div></section>`;
@@ -673,7 +742,7 @@ function kataView(trickId, n, { signal } = {}) {
       <div class="pr-q${plain(p.q).length > 60 ? ' long' : ''}">${p.q}</div>
       <form class="pr-form" id="kForm" autocomplete="off">${answerUI(p)}<div class="pr-actions"><button class="md-btn md-btn--primary" id="kGo">Check</button><button type="button" class="md-btn md-btn--sm" id="kHint">Hint</button>${fam.askHTML}</div></form>
       <div class="pr-say" id="kSay" role="status" aria-live="polite"></div>`;
-    tried = false; h0 = hints; fx.speakQuestion(p); fam.note({ type: 'question' });
+    tried = false; h0 = hints; wireSplit(box, p, qs); fx.speakQuestion(p); fam.note({ type: 'question' });
     const f = box.querySelector('input, .pr-choice'); if (f && matchMedia('(pointer: fine)').matches) f.focus({ preventScroll: true });
     box.querySelectorAll('.pr-choice').forEach(b => on(b, 'click', () => { box.querySelectorAll('.pr-choice').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); $('#kForm').requestSubmit(); }, qs));
     on($('#kHint'), 'click', () => { hints++; fam.note({ type: 'hint' }); $('#kSay').innerHTML = `${boltHTML('explain')}<div class="md-bubble">Hint: ${p.hints[0] || p.steps[0]}</div>`; }, qs);
@@ -683,13 +752,13 @@ function kataView(trickId, n, { signal } = {}) {
       let ok;
       if (p.kind === 'choice') { const c = box.querySelector('.pr-choice[aria-pressed="true"]'); if (!c) return; ok = c.dataset.v === p.answer; }
       else if (p.kind === 'fields') { const ins = [...box.querySelectorAll('.ans-in')]; if (ins.some(x => !x.value.trim())) return; ok = ins.every((x, k) => checkOne({ kind: 'num', answer: p.fields[k].answer }, x.value).ok); }
-      else { const v = box.querySelector('.ans-in').value; if (!v.trim()) return; const res = checkOne(p, v); if (res.notAnswer) { $('#kSay').className = 'pr-say'; $('#kSay').innerHTML = `${boltFor('')}<div class="md-bubble">${notAnswerMsg()}</div>`; return; } ok = res.ok; }
+      else { const t = typedAnswer(box); if (t.partial) { $('#kSay').className = 'pr-say'; $('#kSay').innerHTML = `${boltFor('')}<div class="md-bubble">${t.partial}</div>`; return; } const v = t.value; if (!v.trim()) return; const res = checkOne(p, v); if (res.notAnswer) { $('#kSay').className = 'pr-say'; $('#kSay').innerHTML = `${boltFor('')}<div class="md-bubble">${notAnswerMsg()}</div>`; return; } ok = res.ok; }
       tried = true; if (ok) right++; fx.sfx(ok ? 'ok' : 'no'); metrics.answered('kata', ok); fam.note({ type: ok ? 'right' : 'miss', first: ok && hints === h0 }); /* first: right with no hint on this problem */
       $('#kSay').className = 'pr-say ' + (ok ? 'ok' : 'no');
       $('#kSay').innerHTML = `${boltFor(ok ? 'ok' : 'no')}<div class="md-bubble">${ok ? pick(['Correct!', 'Clean!', 'Nailed it!', 'Yes!']) : `Not this time. Answer: <b>${answerText(p, byId['v-' + trickId])}</b><br><small>${p.steps.slice(0, 3).join(' ')}</small>`}</div>`;
       $('#kGo').textContent = i + 1 < K.problems.length ? 'Next' : 'Finish'; $('#kGo').focus({ preventScroll: true });
       box.querySelector('.pr-score').textContent = `${right}/${K.problems.length}`;
-      if (ok) fx.bounce($('#kSay .md-bubble'), qs); else fx.wiggle(box.querySelector('.pr-in, .pr-choices, .pr-fields'), qs); /* everyday moments (openspec celebrations) */
+      if (ok) fx.bounce($('#kSay .md-bubble'), qs); else fx.wiggle(box.querySelector('.pr-in, .pr-choices, .pr-fields, .pr-split'), qs); /* everyday moments (openspec celebrations) */
     }, qs);
   };
   const done = () => {
@@ -752,7 +821,7 @@ function towerView() {
     ${crumbs(['#/arena', 'Arena'], [null, 'Challenge tower'])}
     <span class="md-tag md-tag--coral">Challenge tower</span>
     <h1 class="md-heading">${LV.CHALLENGE_COUNT.toLocaleString('en-US')} Arena challenges</h1>
-    <p class="md-lede">${LV.TOPICS.length} chapters, ${LV.PER_CHAPTER} challenges each, in five formats: Sprint, Sharpshooter, Survival, Time attack and Boss rounds. Pick any chapter; inside a chapter, clear each challenge to unlock the next.</p>
+    <p class="md-lede">${ledeHTML('tower', { n: guideCounts() })}</p>
     <p class="mq-small">${store.medalsWhere('a:').any} of ${LV.CHALLENGE_COUNT} cleared · ${store.medalsWhere('a:').gold} gold</p>
     <div class="tower">${LV.TOPICS.map((tp, c) => { const lo = c * LV.PER_CHAPTER + 1, ms = Array.from({ length: LV.PER_CHAPTER }, (_, k) => store.medal(LV.challengeKey(lo + k))), done = ms.filter(Boolean).length, gold = ms.filter(v => v === 3).length;
       return `<a class="tower-ch${done === LV.PER_CHAPTER ? ' done' : ''}" href="#/tower/${c + 1}"><span class="tower-n">${c + 1}</span><span class="tower-t"><b>${tp.name}</b><small>Challenges ${lo} to ${lo + LV.PER_CHAPTER - 1}</small><span class="mq-bar"><i style="width:${pct(done / LV.PER_CHAPTER)}%"></i></span></span><span class="medal-n">${gold} gold</span></a>`; }).join('')}</div>
@@ -835,14 +904,14 @@ function sutrasView({ signal } = {}) {
     ${crumbs([null, 'Sutras'])}
     <div class="sutra-top"><span class="md-tag md-tag--plum">Deep dive</span>${ambienceButton()}</div>
     <h1 class="md-heading">The 16 sutras and 13 sub-sutras</h1>
-    <p class="md-lede">${m === 'explorer' ? `Each sutra is a tiny math rule with a long name. Tap the speaker to hear the name, flip a card to see the rule, and open <b>Learn more</b> to watch it work. You have collected <b>${got} of ${ALL_SUTRAS.length}</b>.` : `Each sutra is a short word formula that packs a whole method into a phrase. Flip a card for the short version, then open <b>Learn more</b> for the full story: animated diagrams, why it works, worked examples and further reading. Each card shows how far you are with its tricks. You have collected <b>${got} of ${ALL_SUTRAS.length}</b>.`}</p>
+    <p class="md-lede">${ledeHTML('sutras', { mode: m, got, all: ALL_SUTRAS.length })}</p>
     <div class="mq-bar mq-bar--big sutra-bar"><i style="width:${pct(got / ALL_SUTRAS.length)}%"></i></div>
     <h2 class="mq-strand">The 16 sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => !c.sub).map(card).join('')}</div>
     <h2 class="mq-strand">The 13 sub-sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => c.sub).map(card).join('')}</div>
     ${playShelf('sutras', 'A mystery from the old texts')}
     <div class="md-card history"><h2 class="mq-h3">Where Vedic math comes from</h2><p class="listen-row">${listenBtn('history', 'where Vedic math comes from')}</p>${HISTORY.map(h => `<p>${h}</p>`).join('')}
       <p class="mq-small" data-history-links hidden></p></div>
-    <div class="md-card history roots"><h2 class="mq-h3">Older roots: what you see in the background</h2><p>${ROOTS_INTRO}</p><ul>${BG_NOTES.map(n => `<li>${rootNote(n)}</li>`).join('')}</ul></div>
+    <div class="md-card history roots"><h2 class="mq-h3">Older roots: what you see in the background</h2><p class="listen-row">${listenBtn('roots', 'older roots')}</p><p>${ROOTS_INTRO}</p><ul>${BG_NOTES.map(n => `<li>${rootNote(n)}</li>`).join('')}</ul></div>
     ${versesHTML()}
   </div></section>`;
   const flip = (art, open) => { art.classList.toggle('flipped', open); art.querySelector('.sutra-face').setAttribute('aria-expanded', String(open)); fx.sfx('tap'); if (open) { collect(art.dataset.name); art.classList.add('got'); art.querySelector('.sutra-more').focus({ preventScroll: true }); } else art.querySelector('.sutra-face').focus({ preventScroll: true }); };
@@ -1095,14 +1164,15 @@ store.on(type => { if (type === 'sparks') queueSparksPost(); });
 function arenaView({ signal } = {}) {
   document.title = `Arena · Learn Vedic Math`;
   const league = fx.MODES[fx.mode()].league, day = cloud.dayId(), wk = cloud.weekId();
-  /* Round type: daily (Ranked, always timed), practice (timed, untimed in Calm) or untimed (Practice, no clock).
-     With Calm on, the untimed Practice round is picked until the Player picks another this visit. */
+  /* Round type: daily (Ranked, always timed), practice (timed, untimed in Calm), untimed (Practice, no clock) or words
+     (Word problems, Practice with no clock: openspec word-problems-more). With Calm on, the untimed Practice round is
+     picked until the Player picks another this visit. */
   let type = fx.calmOn() ? 'untimed' : 'daily';
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs([null, 'Arena'])}
     <span class="md-tag md-tag--coral">Arena</span>
     <h1 class="md-heading">60 seconds. Same questions for everyone.</h1>
-    <p class="md-lede">Answer as many as you can. Each right answer is worth 10, and every answer in a row adds a combo bonus. The daily round uses the same questions for every ${fx.MODES[fx.mode()].name}, so it is a fair race.</p>
+    <p class="md-lede">${ledeHTML('arena', { modeName: fx.MODES[fx.mode()].name })}</p>
     <a class="tower-promo" href="#/tower">${icon('trophy')}<span><b>Challenge tower: ${LV.CHALLENGE_COUNT.toLocaleString('en-US')} levels</b><small>${medalCounts(store.medalsWhere('a:'))} · Sprint, Survival, Sharpshooter, Time attack, Boss</small></span><span aria-hidden="true">&rarr;</span></a>
     <div class="md-card ar-shell" id="arShell"></div>
     ${playShelf('arena', 'More ways to race')}</div></section>`;
@@ -1114,7 +1184,7 @@ function arenaView({ signal } = {}) {
     pro: `Arena Rating: <b>${arenaRating()}</b>/20. Practice rounds start there and adapt to every answer; the daily round is the same for everyone.`
   })}</small>`;
   const lobby = (result = '') => {
-    shell.innerHTML = `${result}<div class="g-optrow" role="group" aria-label="Round type"><button class="md-chip" aria-pressed="${type === 'daily'}" data-t="daily">Daily challenge</button><button class="md-chip" aria-pressed="${type === 'practice'}" data-t="practice">Practice round</button><button class="md-chip" aria-pressed="${type === 'untimed'}" data-t="untimed">Practice, no clock</button></div>
+    shell.innerHTML = `${result}<div class="g-optrow" role="group" aria-label="Round type"><button class="md-chip" aria-pressed="${type === 'daily'}" data-t="daily">Daily challenge</button><button class="md-chip" aria-pressed="${type === 'practice'}" data-t="practice">Practice round</button><button class="md-chip" aria-pressed="${type === 'untimed'}" data-t="untimed">Practice, no clock</button><button class="md-chip" aria-pressed="${type === 'words'}" data-t="words">${STORY_ROUND[mode] || STORY_ROUND.challenger}</button></div>
       ${fx.calmOn() ? '<p class="ar-calm" id="arCalmNote">The daily challenge is a timed race for everyone. Practice has no clock in Calm.</p>' : ''}
       <p class="g-best">League: <b>${fx.MODES[fx.mode()].name}</b> · Your best today: <b>${store.best('arena-' + day)}</b><br>${arenaRatingLine()}</p>
       <button class="md-btn md-btn--primary ar-go" id="arGo">${icon('bolt')} Start</button>
@@ -1129,7 +1199,7 @@ function arenaView({ signal } = {}) {
   let run = null, play = null;
   const stop = () => { const r = run, p = play; run = play = null; if (p) p.close(); if (r) r.abort(); };
   const countdown = () => {
-    stop(); run = child(signal); loadArena().catch(() => {});
+    stop(); run = child(signal); loadArena().catch(() => {}); if (type === 'words') loadStories().catch(() => {});
     const old = shell.querySelector('.ar-result'); if (old) old.remove(); /* the last result goes; the new one shows in the shell */
     play = openShell(type === 'daily' ? 'Arena: daily challenge' : 'Arena: Practice', { signal: run.signal, exitId: 'arStop', onExit: stop, focusBack: () => $('#arGo', shell) });
     const area = play.area, rsig = run.signal;
@@ -1137,16 +1207,22 @@ function arenaView({ signal } = {}) {
     const count = child(rsig); /* leaving or stopping during the countdown means the round never starts */
     every(() => { n--; if (n === 0) { count.abort(); fx.sfx('ok'); start(area, rsig); } else { area.firstChild.textContent = n; fx.sfx('tick'); } }, 700, count.signal);
   };
-  const start = (area, rsig) => withArena(area, rsig, ({ runArena }) => {
+  /* The Word problems round's questions: one story after another of the Mode's style, never the same template twice in a
+     row (js/stories.js roundStory). Its stories load after the first paint, like Practice's. */
+  const storyDeal = (A, S) => { let last = null; return () => { let p = null; for (let k = 0; k < 6 && (!p || p.story.id === last); k++) p = S.roundStory(mode || 'challenger'); last = p.story.id; return A.storyItem(p, league, STORY_LABEL[mode] || STORY_LABEL.challenger); }; };
+  const start = (area, rsig) => withArena(area, rsig, A => {
+    const words = type === 'words';
+    if (words && !storiesNow()) { loadStories().then(() => { if (!rsig.aborted) start(area, rsig); }, () => { if (!rsig.aborted) area.innerHTML = '<p class="md-lede">The stories did not load. Check your connection and try again.</p>'; }); return; }
     track('arena/' + league + '/' + type, 'Arena round'); metrics.roundStart('arena');
     /* Practice: the Dial picks each question. Daily: it only records the answers (the questions are the same for everyone).
-       Untimed: the Practice round with no clock, chosen or (for a Practice round) set by Calm. The daily round keeps its clock. */
+       Untimed: the Practice round with no clock, chosen or (for a Practice round) set by Calm. The daily round keeps its clock.
+       Word problems: no clock, its own questions, and the Arena Rating left as it was (word-problems-more design D5). */
     const before = arenaRating(), dial = new AD.Dial(AD.rating(rKey, mode));
-    const untimed = type === 'untimed' || (type === 'practice' && fx.calmOn());
-    runArena(area, { league, day: type === 'daily' ? day : null, dial, signal: rsig, untimed, onEnd: async r => {
+    const untimed = words || type === 'untimed' || (type === 'practice' && fx.calmOn());
+    A.runArena(area, { league, day: type === 'daily' ? day : null, dial: words ? null : dial, signal: rsig, untimed, ...(words ? { deal: storyDeal(A, storiesNow()), count: A.STORY_QS } : {}), onEnd: async r => {
       metrics.roundEnd('arena', league);
-      const after = Math.round(AD.saveRating(rKey, dial) || before);
-      const moved = dial.n < 4 ? '' : fx.t({
+      const after = words ? before : Math.round(AD.saveRating(rKey, dial) || before);
+      const moved = words || dial.n < 4 ? '' : fx.t({
         explorer: after > before ? ` Your Arena Rating went up to ${after}!` : after < before ? ` Your Arena Rating is ${after} now.` : '',
         challenger: after > before ? ` Arena Rating up to ${after}.` : after < before ? ` Arena Rating now ${after}.` : '',
         pro: after > before ? ` Arena Rating up to ${after}.` : after < before ? ` Arena Rating down to ${after}.` : ''
@@ -1252,7 +1328,7 @@ function gamesView() {
     ${crumbs([null, 'Games'])}
     <span class="md-tag md-tag--plum">Games</span>
     <h1 class="md-heading">Games that build number sense</h1>
-    <p class="md-lede">${GAMES.length} games, each with its own world leaderboard. Every game adapts to you: right answers make it harder, misses make it easier, and points are weighted by difficulty. ${LEVELS_PER_GAME} levels per game (${(GAMES.length * LEVELS_PER_GAME).toLocaleString('en-US')} in all) open up as your skill grows. Every game earns Sparks, and playing all of them unlocks a badge. Want a real race? Try the <a href="#/arena">Arena</a> or a <a href="#/arena/party">Party Mode</a> game.</p>
+    <p class="md-lede">${ledeHTML('games', { n: guideCounts() })}</p>
     ${playShelf('games', 'Play, make and discover')}
     <h2 class="mq-strand">Picked for ${fx.MODES[m].name}</h2><div class="md-grid">${mine.map(card).join('')}</div>
     ${rest.length ? `<h2 class="mq-strand">More games</h2><div class="md-grid">${rest.map(card).join('')}</div>` : ''}
@@ -1358,7 +1434,7 @@ function watchView({ signal } = {}) {
     ${crumbs([null, 'Watch'])}
     <span class="md-tag md-tag--teal">Watch and learn</span>
     <h1 class="md-heading">Short videos that show how</h1>
-    <p class="md-lede">Every video plays right here, and none is longer than ${W.MAX_LENGTH / 60} minutes. Each one is checked by hand and matched to the skills and tricks it teaches.${pro ? ' Sites open in a new tab.' : ''}</p>
+    <p class="md-lede">${ledeHTML('watch', { n: guideCounts(), links: pro })}</p>
     <div id="watchBody"><p class="mq-small">Loading videos…</p></div>
   </div></section>`;
   const body = $('#watchBody');
@@ -1548,7 +1624,7 @@ function guideView(section, { signal } = {}) {
     ${crumbs([null, 'Guide'])}
     <span class="md-tag md-tag--teal">Guide</span>
     <h1 class="md-heading">${fx.t({ explorer: 'How to play', challenger: 'How to use Vedic Math', pro: 'How to use Vedic Math' })}</h1>
-    <p class="md-lede">${fx.t({ explorer: 'Everything you can do here, one part at a time. The button under each part takes you there.', challenger: 'Every part of the app, what it is for and how to use it. The button under each section takes you straight there.', pro: 'Every part of the app, what it is for and how to use it, with a link to each one.' })}</p>
+    <p class="md-lede">${ledeHTML('guide', { mode: fx.mode() })}</p>
     ${m ? `<p class="mode-line">Words for: <b>${fx.MODES[m].name}</b> <a href="#/me">Change</a></p><p class="gd-top"><button type="button" class="md-btn md-btn--primary" data-gd="tour">${icon('map')} ${explorer ? 'Show me around' : 'Take the tour'}</button></p>`
       : '<div class="md-card gd-nomode"><p>Pick a play mode first: Explorer, Challenger or Pro. It sets the words, the questions and your league. This guide uses the Challenger words until you do.</p><p><a class="md-btn md-btn--primary" href="#/">Pick a play mode</a></p></div>'}
     <nav class="gd-toc md-card" aria-label="Guide contents"><ul>${groups.map(({ g, items }) => `<li><a href="#/guide/${items[0].id}" class="gd-toc-g">${T(g.title)}</a><ul>${items.map(s => `<li><a href="#/guide/${s.id}">${T(s.title)}</a></li>`).join('')}</ul></li>`).join('')}</ul></nav>
@@ -1633,6 +1709,21 @@ function familySwitchHTML(p) {
     ${on ? `<fieldset class="me-fam-when"><legend>When they help</legend>${FAMILY_WHEN.map(([v, l]) => `<label><input type="radio" name="familyHelp" value="${v}"${v === when ? ' checked' : ''}> ${l}</label>`).join('')}</fieldset>` : ''}
     <p class="pr-say" id="familyMsg" role="status" aria-live="polite"></p></div>`;
 }
+/* The Trophy case on Me (openspec working-memory-scaffolds, trophy-case spec): every reward but Sparks in one place,
+   each row with a link to where it is earned; the Badges follow it. Explorer is not offered Belts or Stars, so their
+   rows show once something is earned. Opens the section that meView closes after the Badges. */
+function trophyCaseHTML() {
+  const ex = fx.mode() === 'explorer', bp = gm.beltProgress(), held = bp.filter(b => b.earned).length, lit = litStars();
+  const m = ['g:', 'a:'].map(store.medalsWhere).reduce((t, c) => ({ gold: t.gold + c.gold, silver: t.silver + c.silver, bronze: t.bronze + c.bronze }), { gold: 0, silver: 0, bronze: 0 });
+  const row = (cls, kicker, value, body, links) => `<div class="trophy trophy--${cls}"><h3 class="md-kicker">${kicker}</h3><p class="trophy-v">${value}</p>${body}<p class="trophy-go">${links}</p></div>`;
+  const rows = [
+    !ex || held ? row('belts', 'Belts', `${held} of ${BELTS.length}`, `<ul class="belt-row trophy-belts">${bp.map(b => `<li class="belt-chip${b.earned ? ' on' : ''}" style="--belt:${b.color}"><span class="belt-knot" aria-hidden="true"></span>${b.name}${b.earned ? '<span class="md-sr-only">, held</span>' : ''}</li>`).join('')}</ul>`, '<a href="#/dojo">Earn Belts in the Dojo</a>') : '',
+    !ex || lit ? row('stars', 'Stars', `${lit} of ${SKY.PATH.length} Stars lit`, '', '<a href="#/dojo">Play a Star in the Dojo</a>') : '',
+    row('medals', 'Medals', `<span class="trophy-m">${medalHTML(3, { label: false })} ${m.gold} gold</span> <span class="trophy-m">${medalHTML(2, { label: false })} ${m.silver} silver</span> <span class="trophy-m">${medalHTML(1, { label: false })} ${m.bronze} bronze</span>`, '<p class="mq-small">From game Levels and Challenge tower challenges.</p>', '<a href="#/games">Games</a> · <a href="#/tower">Challenge tower</a>'),
+    row('cards', 'Sutra cards', `${gm.collectedCount()} of ${SUTRAS.length + SUBSUTRAS.length} collected`, '', '<a href="#/sutras">See the Sutras</a>')
+  ];
+  return `<section class="trophy-case" aria-labelledby="trophyH"><h2 class="mq-strand" id="trophyH">Trophy case</h2><div class="trophy-grid">${rows.join('')}</div>`;
+}
 function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw from one of its own buttons passes it on */
   document.title = `Me · Learn Vedic Math`;
   const p = store.player(), T = gm.titleInfo(), got = store.badges(), done = SKILLS.filter(s => store.mastered(s.id)).length;
@@ -1643,9 +1734,10 @@ function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw
       <div class="me-acts"><button class="md-btn md-btn--sm" id="meName">New nickname</button>${store.AVATARS.map(c => `<button class="av-pick av av-${c}" data-c="${c}" aria-label="Color ${c}" aria-pressed="${c === p.avatar}"></button>`).join('')}</div>${parentNote()}</div></div>
     <h2 class="mq-strand" id="wbH">World boards</h2>
     <div class="md-card wb-card" id="worldBoards" role="region" aria-labelledby="wbH"><div class="wb-body">${worldBoardsHTML(p)}</div><p class="pr-say" id="wbMsg" role="status" aria-live="polite"></p></div>
-    <div class="mq-stats me-stats"><div class="md-stat"><div class="md-kicker">Skills mastered</div><div class="md-value">${done}</div><p>of ${SKILLS.length}</p></div><div class="md-stat"><div class="md-kicker">Day streak</div><div class="md-value">${store.streakDays()}</div><p>days</p></div><div class="md-stat"><div class="md-kicker">Belts</div><div class="md-value">${gm.beltProgress().filter(b => b.earned).length}</div><p>of ${BELTS.length} · ${litStars()} of ${SKY.PATH.length} Stars lit</p></div></div>
-    <h2 class="mq-strand">Badges <small class="mq-small">${badges.filter(b => got[b.id]).length} of ${badges.length}</small></h2>
-    <div class="badge-grid">${badges.map(b => `<div class="badge${got[b.id] ? ' got' : ''}"><span class="badge-medal" aria-hidden="true">${icon(got[b.id] ? 'star' : 'lock')}</span><b>${b.name}</b><small>${b.how}</small></div>`).join('')}</div>
+    <div class="mq-stats me-stats"><div class="md-stat"><div class="md-kicker">Skills mastered</div><div class="md-value">${done}</div><p>of ${SKILLS.length}</p></div><div class="md-stat"><div class="md-kicker">Day streak</div><div class="md-value">${store.streakDays()}</div><p>days</p></div></div>
+    ${trophyCaseHTML()}
+    <h3 class="mq-strand">Badges <small class="mq-small">${badges.filter(b => got[b.id]).length} of ${badges.length}</small></h3>
+    <div class="badge-grid">${badges.map(b => `<div class="badge${got[b.id] ? ' got' : ''}"><span class="badge-medal" aria-hidden="true">${icon(got[b.id] ? 'star' : 'lock')}</span><b>${b.name}</b><small>${b.how}</small></div>`).join('')}</div></section>
     <h2 class="mq-strand">Play mode</h2>
     <div class="mode-pick mode-pick--sm">${Object.entries(fx.MODES).map(([id, m]) => `<button class="mode-card mode-card--${m.color}" data-mode="${id}" aria-pressed="${id === fx.mode()}"><span class="mode-ic" aria-hidden="true">${modeIcon(id)}</span><b>${m.name}</b><small>${m.ages}</small></button>`).join('')}</div>
     <h2 class="mq-strand">Players on this device</h2>
@@ -1722,20 +1814,31 @@ function animatorHTML(t) {
     <form class="anim-in" id="animForm">${t.inputs.map((f, i) => `<label>${f.label}<input type="number" inputmode="numeric" min="${f.min}" max="${f.max}" data-i="${i}"></label>`).join('')}
       <div class="anim-btns"><button class="md-btn md-btn--sm md-btn--primary">Show steps</button><button type="button" class="md-btn md-btn--sm" id="animRand">New numbers</button></div></form>
     <p class="anim-err" id="animErr" role="alert"></p>
-    <div class="anim-board" id="animBoard" aria-live="polite"></div>
+    <div class="anim-links" id="animLinks"></div>
+    <div class="anim-board" id="animBoard" aria-live="polite" tabindex="0" aria-label="Steps" aria-describedby="animKeys"></div>
+    <p class="md-sr-only" id="animKeys">Space or the right arrow shows the next step, the left arrow the one before.</p>
     <div class="anim-nav" id="animNav" hidden><button type="button" class="md-btn md-btn--sm" id="animPrev">Back</button><span id="animPos"></span><button type="button" class="md-btn md-btn--sm md-btn--primary" id="animNext">Next step</button><button type="button" class="md-btn md-btn--sm" id="animAll">Show all</button>${listenBtn('from:.anim-step p', 'the steps shown')}</div></div>`;
 }
 function mountAnimator(t, signal) {
-  const form = $('#animForm'), ins = [...form.querySelectorAll('input')], board = $('#animBoard'), nav = $('#animNav'), err = $('#animErr'); let steps = [], i = 0, counted = false;
+  const form = $('#animForm'), ins = [...form.querySelectorAll('input')], board = $('#animBoard'), nav = $('#animNav'), err = $('#animErr'); let steps = [], i = 0, counted = false, vals = null, links = null, shownAll = false;
   const fill = vals => ins.forEach((x, k) => (x.value = vals[k]));
-  const show = (all = false) => { board.innerHTML = steps.slice(0, all ? steps.length : i + 1).map((s, k) => `<div class="anim-step${k === (all ? steps.length - 1 : i) ? ' cur' : ''}"><div class="anim-show">${s.show}</div><p>${s.say}</p></div>`).join(''); $('#animPos').textContent = `${all ? steps.length : i + 1} / ${steps.length}`; $('#animPrev').disabled = i === 0 && !all; $('#animNext').disabled = all || i === steps.length - 1;
+  /* Digit connectors (openspec working-memory-scaffolds): the lines for the step on show, once js/connectors.js is here */
+  const drawLinks = () => { const box = $('#animLinks'); if (!box) return; const l = links && vals && steps.length && !shownAll ? links.linksFor(t.id, vals, i) : null; box.innerHTML = l ? l.svg : ''; box.classList.toggle('still', fx.noMotion()); };
+  lateImport(loadLinks, 'connectors.js', signal).then(m => { if (m && !signal.aborted) { links = m; drawLinks(); } });
+  const show = (all = false) => { shownAll = all; drawLinks(); board.innerHTML = steps.slice(0, all ? steps.length : i + 1).map((s, k) => `<div class="anim-step${k === (all ? steps.length - 1 : i) ? ' cur' : ''}"><div class="anim-show">${s.show}</div><p>${s.say}</p></div>`).join(''); $('#animPos').textContent = `${all ? steps.length : i + 1} / ${steps.length}`; $('#animPrev').disabled = i === 0 && !all; $('#animNext').disabled = all || i === steps.length - 1;
     if ((all || i === steps.length - 1) && !counted) { counted = true; store.bump('tricksWatched'); if (store.markSeen('trick:' + t.id)) store.addSparks(5, 'trick'); } };
-  const run = (user = true) => { const vals = ins.map(x => Number(x.value)); if (ins.some(x => x.value === '') || vals.some(v => !Number.isFinite(v))) { err.textContent = 'Fill in every number.'; return; } const bad = t.valid(vals); err.textContent = bad || ''; if (bad) { board.innerHTML = ''; nav.hidden = true; return; } steps = t.steps(vals); i = 0; counted = !user; nav.hidden = false; show(); if (user) track('trick/' + t.id, 'Trick: ' + t.title); };
+  const run = (user = true) => { const vs = ins.map(x => Number(x.value)); if (ins.some(x => x.value === '') || vs.some(v => !Number.isFinite(v))) { err.textContent = 'Fill in every number.'; return; } const bad = t.valid(vs); err.textContent = bad || ''; if (bad) { vals = null; steps = []; board.innerHTML = ''; $('#animLinks').innerHTML = ''; nav.hidden = true; return; } /* no steps left for a late connectors load to draw */ vals = vs; steps = t.steps(vals); i = 0; counted = !user; nav.hidden = false; show(); if (user) track('trick/' + t.id, 'Trick: ' + t.title); };
   on(form, 'submit', e => { e.preventDefault(); fx.sfx('tap'); run(); }, signal);
   on($('#animRand'), 'click', () => { let v; do { v = t.random(); } while (t.valid(v)); fill(v); fx.sfx('pop'); run(); }, signal);
   on($('#animPrev'), 'click', () => { i = Math.max(0, i - 1); show(); }, signal);
   on($('#animNext'), 'click', () => { i = Math.min(steps.length - 1, i + 1); fx.sfx('tap'); show(); }, signal);
   on($('#animAll'), 'click', () => { i = steps.length - 1; show(true); }, signal);
+  /* Space or the right arrow is Next step, the left arrow Back, with focus on the steps */
+  on(board, 'keydown', e => {
+    if (!steps.length || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key === ' ' || e.key === 'ArrowRight') { e.preventDefault(); if (i < steps.length - 1) { i++; fx.sfx('tap'); show(); } }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); if (i > 0) { i--; show(); } }
+  }, signal);
   let v; do { v = t.random(); } while (t.valid(v)); fill(v); run(false);
 }
 

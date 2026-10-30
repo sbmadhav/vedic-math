@@ -129,3 +129,65 @@ html[data-lv-wait] .lv-landing main { visibility: hidden; animation: lv-show 0s 
 .lv-sutra-go { margin-top: auto; font-weight: 700; color: var(--sky-strong); }
 .lv-sutras-note { margin-top: var(--space-5); }
 .lv-sutras-note a { color: var(--sky-strong); font-weight: 700; }
+/* A Trick's plain-English name leads and its Sutra's Sanskrit name sits right under it (landing-interactive-hero) */
+.lv-trick { display: block; font: 600 1.15rem/1.3 var(--display); color: var(--ink); }
+.lv-way figcaption .lv-sa { display: block; font-weight: 700; color: var(--plum-strong); }
+.lv-sutra b { font-size: 1rem; }
+
+/* The sutra way, step by step (openspec change landing-interactive-hero). Without JavaScript every step and the whole
+   board show. With it, data-step on the card hides later steps with visibility only, so the card keeps its size and
+   nothing moves; the current step is tinted. Back and Next stay in place, and nothing animates on its own: a step
+   fades in only when a visitor presses a button, and not at all under reduced motion, Pause motion or Calm. */
+.lv-board { display: inline-grid; grid-template-columns: auto auto; column-gap: var(--space-4); row-gap: var(--space-1); margin: var(--space-2) 0 var(--space-3); font: 600 1.35rem/1.2 var(--display); font-variant-numeric: tabular-nums; text-align: right; }
+.lv-board > span { padding: 0 var(--space-2); border-radius: var(--radius-sm); }
+.lv-bd { color: var(--plum-strong); }
+.lv-bl, .lv-br { border-top: 2px solid var(--ink); border-radius: 0 !important; padding-top: var(--space-1) !important; }
+.lv-br { border-left: 2px solid var(--line); }
+.lv-bx { grid-column: 1 / -1; color: var(--plum-strong); font-size: 1.6rem; }
+.lv-demo-nav { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-4); }
+.lv-demo-at { flex-basis: 100%; margin: 0; font-weight: 700; color: var(--ink-muted); }
+.lv-demo-nav .md-btn { min-height: 44px; min-width: 128px; }
+.lv-demo-back[aria-disabled="true"] { opacity: .45; cursor: default; }
+@media (scripting: none) { .lv-demo-nav { display: none; } }
+/* With scripting on, the row keeps its place but shows only once the script has set data-step, so a module that
+   failed to load leaves no dead buttons and nothing shifts when it does load (#172 review) */
+.lv-demo:not([data-step]) .lv-demo-nav { visibility: hidden; }
+.lv-demo[data-step="1"] [data-s="2"], .lv-demo[data-step="1"] [data-s="3"], .lv-demo[data-step="2"] [data-s="3"] { visibility: hidden; }
+.lv-demo[data-step="1"] .lv-board [data-s="1"], .lv-demo[data-step="2"] .lv-board [data-s="2"], .lv-demo[data-step="3"] .lv-board [data-s="3"] { background: color-mix(in srgb, var(--sun) 35%, transparent); }
+/* The current step is tinted, never bolded: background and box-shadow do not change the text's size, so the card never moves (#172 review) */
+.lv-demo .lv-steps li[aria-current="step"] { border-radius: var(--radius-sm); background: color-mix(in srgb, var(--sun) 30%, transparent); box-shadow: -6px 0 0 color-mix(in srgb, var(--sun) 30%, transparent), 6px 0 0 color-mix(in srgb, var(--sun) 30%, transparent); }
+.lv-demo[data-moved][data-step="1"] [data-s="1"], .lv-demo[data-moved][data-step="2"] [data-s="2"], .lv-demo[data-moved][data-step="3"] [data-s="3"] { animation: lv-step-in var(--duration-medium) var(--ease-out); }
+@keyframes lv-step-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .lv-demo [data-s] { animation: none !important; } }
+html.motion-paused .lv-demo [data-s], html.calm .lv-demo [data-s] { animation: none !important; }
+html.motion-paused .lv-demo-nav .md-btn, html.calm .lv-demo-nav .md-btn { transition: none; transform: none; } /* the buttons' press dip (reduced motion: components.css) */
+
+/* Inside the game (landing-interactive-hero): Bolt and Math Lens, one line each */
+.lv-feats { list-style: none; margin: var(--space-4) 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+@media (max-width: 700px) { .lv-feats { grid-template-columns: 1fr; } }
+.lv-feat { display: flex; align-items: flex-start; gap: var(--space-4); min-width: 0; padding: var(--space-4); border: 2px solid var(--edge); border-radius: var(--radius-lg); background: var(--card); color: var(--ink); }
+.lv-feat h3 { margin: 0 0 var(--space-1) !important; font-size: var(--text-h4-size); }
+.lv-feat p { margin: 0; }
+.lv-feat-art { flex: none; width: 64px; height: 64px; }
+.lv-bolt-art { overflow: visible; }
+.lv-lens-art { display: grid; place-items: center; border-radius: var(--radius-round); background: var(--teal); color: var(--on-accent); }
+
+
+/* Grown-up pages: the three-point summary on /parents/ and the warm-up box on /teachers/ (UX audit 2026-10-29, task 1.2).
+   Nothing moves: no hover lift, no animation. */
+.lv-facts { list-style: none; margin: var(--space-5) 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+@media (max-width: 700px) { .lv-facts { grid-template-columns: 1fr; } }
+.lv-fact { display: flex; align-items: flex-start; gap: var(--space-3); min-width: 0; padding: var(--space-4); border: 2px solid var(--edge); border-top-width: 6px; border-radius: var(--radius-lg); background: var(--card); color: var(--ink); font-size: 15px; line-height: 1.45; }
+.lv-fact strong { display: block; margin-bottom: var(--space-1); font-family: var(--font-display); font-size: 1.1rem; line-height: 1.25; }
+.lv-fact-ic { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: var(--radius-round); color: var(--on-accent); }
+.lv-fact--sky { border-top-color: var(--sky); } .lv-fact--sky .lv-fact-ic { background: var(--sky); }
+.lv-fact--plum { border-top-color: var(--plum); } .lv-fact--plum .lv-fact-ic { background: var(--plum); }
+.lv-fact--sun { border-top-color: var(--sun); } .lv-fact--sun .lv-fact-ic { background: var(--sun); }
+.lv-callout { margin: var(--space-6) 0 0; padding: var(--space-5); border: 2px solid var(--edge); border-left: 8px solid var(--coral); border-radius: var(--radius-lg); background: var(--card); }
+.lv-page .lv-callout h2 { margin-top: 0 !important; }
+.lv-callout-go { margin: var(--space-4) 0; }
+.lv-page .lv-callout-go a.md-btn { color: var(--on-accent); min-height: 48px; font-size: 1.05rem; }
+.lv-page .lv-callout-go a.md-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+.lv-callout-note { margin: 0; color: var(--ink-muted); font-size: 15px; }
+@media (prefers-reduced-motion: reduce) { .lv-page .lv-callout-go a.md-btn:hover, .lv-page .lv-callout-go a.md-btn:active { transform: none; } }
+html.motion-paused .lv-page .lv-callout-go a.md-btn:is(:hover, :active), html.calm .lv-page .lv-callout-go a.md-btn:is(:hover, :active) { transform: none; }

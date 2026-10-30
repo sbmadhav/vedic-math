@@ -55,6 +55,7 @@ async function to35Squared(page: Page) {
   await box.locator('#prCheck').click();
   await expect(box.locator('#prCheck')).toHaveText('Check');
   await expect(box.locator('#prQ')).toHaveText(/^\s*352\s*=\s*\?\s*$/);
+  await box.getByRole('button', { name: 'Type it in one box' }).click(); // this checks the one box (openspec working-memory-scaffolds)
   return box;
 }
 

@@ -95,9 +95,13 @@
     </div>
   </section>
 
-  <!-- The sutras and the method first (openspec change sutras-first, landing-pages "The landing page leads with the
+  <!-- The sutras and the method (openspec change sutras-first, landing-pages "The landing page leads with the
        Sutras and the method"): what a sutra is, one sum both ways, and three sutras that open their Deep dives in the
-       game (#/sutras/<id> opens without a Mode). Plain HTML, so it reads the same with JavaScript off. -->
+       game (#/sutras/<id> opens without a Mode). Plain HTML, so it reads the same with JavaScript off: every step and
+       the whole board are shown. With JavaScript the sutra way becomes a three-step click-through (openspec change
+       landing-interactive-hero): the script at the end of this page sets data-step, which only hides later steps
+       (visibility, so nothing moves), and Back and Next walk it. A Trick's plain-English name leads and its Sutra's
+       Sanskrit name sits right under it. -->
   <section class="md-section lv-sutras" aria-labelledby="lv-sutras-h">
     <div class="md-wrap">
       <h2 class="md-heading" id="lv-sutras-h">One short rule, one line of work</h2>
@@ -108,16 +112,27 @@
           <p class="lv-sum">98 &times; 97</p>
           <ol class="lv-steps"><li>98 &times; 7 = 686</li><li>98 &times; 90 = 8820</li><li>686 + 8820 = <b>9506</b></li></ol>
         </figure>
-        <figure class="lv-way lv-way--sutra">
-          <figcaption>The sutra way: <span lang="sa-Latn">Nikhilaṃ</span></figcaption>
+        <figure class="lv-way lv-way--sutra lv-demo" id="lv-demo">
+          <figcaption>The sutra way <span class="lv-trick">Multiply numbers near 10, 100 or 1000</span> <span class="lv-sa" lang="sa-Latn">Nikhilaṃ Navataścaramaṃ Daśataḥ</span></figcaption>
           <p class="lv-sum">98 &times; 97</p>
-          <ol class="lv-steps"><li>98 is 2 below 100, and 97 is 3 below.</li><li>98 &minus; 3 = 95, and 2 &times; 3 = 06.</li><li>So the answer is <b>9506</b>.</li></ol>
+          <div class="lv-board" aria-hidden="true">
+            <span class="lv-bn">98</span><span class="lv-bd" data-s="1">&minus;2</span>
+            <span class="lv-bn">97</span><span class="lv-bd" data-s="1">&minus;3</span>
+            <span class="lv-bl" data-s="2">95</span><span class="lv-br" data-s="2">06</span>
+            <span class="lv-bx" data-s="3">9506</span>
+          </div>
+          <ol class="lv-steps"><li data-s="1">98 is 2 below 100, and 97 is 3 below.</li><li data-s="2">98 &minus; 3 = 95, and 2 &times; 3 = 06.</li><li data-s="3">So the answer is <b>9506</b>.</li></ol>
+          <div class="lv-demo-nav" role="group" aria-label="The sutra way, step by step">
+            <p class="lv-demo-at" aria-live="polite" aria-atomic="true">Step 1 of 3</p>
+            <button type="button" class="md-btn lv-demo-back" aria-disabled="true">Back</button>
+            <button type="button" class="md-btn md-btn--primary lv-demo-next">Next</button>
+          </div>
         </figure>
       </div>
       <ul class="lv-sutra-cards">
-        <li><a class="lv-sutra" href="/play/#/sutras/s1"><b lang="sa-Latn">Ekādhikena Pūrveṇa</b><span class="lv-sutra-m">By one more than the one before</span><span class="lv-sutra-ex">65&sup2;: 6 &times; 7 = 42, then 25, so 4225</span><span class="lv-sutra-go">See how it works</span></a></li>
-        <li><a class="lv-sutra" href="/play/#/sutras/s2"><b lang="sa-Latn">Nikhilaṃ Navataścaramaṃ Daśataḥ</b><span class="lv-sutra-m">All from 9 and the last from 10</span><span class="lv-sutra-ex">1000 &minus; 368: 9 &minus; 3, 9 &minus; 6, 10 &minus; 8, so 632</span><span class="lv-sutra-go">See how it works</span></a></li>
-        <li><a class="lv-sutra" href="/play/#/sutras/s3"><b lang="sa-Latn">Ūrdhva-Tiryagbhyām</b><span class="lv-sutra-m">Vertically and crosswise</span><span class="lv-sutra-ex">21 &times; 13: 2, then 2 &times; 3 + 1 &times; 1 = 7, then 3, so 273</span><span class="lv-sutra-go">See how it works</span></a></li>
+        <li><a class="lv-sutra" href="/play/#/sutras/s1"><span class="lv-trick">Square numbers ending in 5</span><b lang="sa-Latn">Ekādhikena Pūrveṇa</b><span class="lv-sutra-m">By one more than the one before</span><span class="lv-sutra-ex">65&sup2;: 6 &times; 7 = 42, then 25, so 4225</span><span class="lv-sutra-go">See how it works</span></a></li>
+        <li><a class="lv-sutra" href="/play/#/sutras/s2"><span class="lv-trick">Subtract from 100, 1000, 10000</span><b lang="sa-Latn">Nikhilaṃ Navataścaramaṃ Daśataḥ</b><span class="lv-sutra-m">All from 9 and the last from 10</span><span class="lv-sutra-ex">1000 &minus; 368: 9 &minus; 3, 9 &minus; 6, 10 &minus; 8, so 632</span><span class="lv-sutra-go">See how it works</span></a></li>
+        <li><a class="lv-sutra" href="/play/#/sutras/s3"><span class="lv-trick">Multiply any two numbers in one line</span><b lang="sa-Latn">Ūrdhva-Tiryagbhyām</b><span class="lv-sutra-m">Vertically and crosswise</span><span class="lv-sutra-ex">21 &times; 13: 2, then 2 &times; 3 + 1 &times; 1 = 7, then 3, so 273</span><span class="lv-sutra-go">See how it works</span></a></li>
       </ul>
       <p class="lv-sutras-note">The 16 sutras and 13 sub-sutras are from Bharati Krishna Tirtha's book <i>Vedic Mathematics</i>, published in 1965. They are not found in the Vedas; each one is ordinary algebra you can check. <a href="/play/#/sutras">See all 29 sutras</a></p>
     </div>
@@ -155,6 +170,26 @@
        first-visit HTML above stays. The build allows this script by its hash in the page's policy (_headers). -->
   <script>(function(){try{var P=JSON.parse(localStorage.getItem('vm.players')||'null');if(!P||!Array.isArray(P.list)||!P.list.length)return;var d=document,p=P.list.filter(function(x){return x&&x.id===P.active;})[0]||P.list[0]||{},M={explorer:'Explorer',challenger:'Challenger',pro:'Pro'},m=Object.prototype.hasOwnProperty.call(M,p.mode)?p.mode:'',n=typeof p.name==='string'?p.name.trim().slice(0,40):'';d.body.setAttribute('data-visit','back');d.querySelector('.lv-title').textContent=n?'Welcome back, '+n:'Welcome back';d.querySelector('.lv-sub').textContent='Pick up where you left off.';d.querySelector('.lv-play').firstChild.nodeValue='Keep playing';if(!m)return;[].forEach.call(d.querySelectorAll('.lv-mode[data-mode]'),function(a){var id=a.getAttribute('data-mode'),t=d.getElementById('lv-go-'+id);if(id===m){a.setAttribute('aria-current','true');a.setAttribute('href','/play/');t.textContent='Keep playing as '+M[id];var b=d.createElement('span');b.className='lv-mode-badge';b.textContent='Your Mode';a.querySelector('.lv-mode-top').appendChild(b);}else t.textContent='Switch to '+M[id];});}catch(e){}finally{document.documentElement.removeAttribute('data-lv-wait');}})();</script>
 
+  <!-- Inside the game (openspec change landing-interactive-hero): Bolt and Math Lens, one honest line each. Bolt is
+       the robot teacher of the Star rounds (js/bolt.js, idle pose; colours from tokens, so both schemes) and Math Lens
+       the camera digit puzzle (#/games/lens; its camera icon from js/play/icons.js). Both pictures are decorative: the
+       words name them. The hero picture stays the Nikhilam Family. -->
+  <section class="md-section lv-inside" aria-labelledby="lv-inside-h">
+    <div class="md-wrap">
+      <h2 class="md-heading" id="lv-inside-h">Inside the game</h2>
+      <ul class="lv-feats">
+        <li class="lv-feat">
+          <svg class="lv-feat-art lv-bolt-art" viewBox="-6 -14 172 190" aria-hidden="true" focusable="false"><g fill="none" stroke="var(--on-accent)" stroke-linecap="round" stroke-linejoin="round"><line x1="80" y1="34" x2="80" y2="14" stroke-width="5"/><circle cx="80" cy="12" r="9" fill="var(--coral)" stroke-width="4"/><rect x="16" y="66" width="14" height="30" rx="7" fill="var(--sky)" stroke-width="4"/><rect x="130" y="66" width="14" height="30" rx="7" fill="var(--sky)" stroke-width="4"/><rect x="26" y="34" width="108" height="88" rx="30" fill="var(--teal)" stroke-width="5"/><rect x="38" y="48" width="84" height="56" rx="20" fill="var(--bolt-screen)" stroke-width="4"/><circle cx="62" cy="72" r="12" fill="var(--bolt-eye)" stroke-width="3"/><circle cx="98" cy="72" r="12" fill="var(--bolt-eye)" stroke-width="3"/><circle cx="62" cy="72" r="5.5" fill="var(--on-accent)" stroke="none"/><circle cx="98" cy="72" r="5.5" fill="var(--on-accent)" stroke="none"/><path d="M68 92 q12 9 24 0" stroke-width="4"/><rect x="50" y="122" width="60" height="36" rx="14" fill="var(--sun)" stroke-width="4"/><circle cx="80" cy="140" r="7" fill="var(--bolt-eye)" stroke-width="3"/></g><circle cx="48" cy="90" r="5" fill="var(--coral)" opacity=".5"/><circle cx="112" cy="90" r="5" fill="var(--coral)" opacity=".5"/></svg>
+          <div><h3>Bolt</h3><p>Our robot teacher shows you each trick, and when an answer goes wrong, works it step by step on your own numbers.</p></div>
+        </li>
+        <li class="lv-feat">
+          <span class="lv-feat-art lv-lens-art" aria-hidden="true"><svg viewBox="0 0 48 48" width="40" height="40" focusable="false"><g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="14" width="36" height="24" rx="5"/><circle cx="24" cy="26" r="7"/><path d="M17 14l3-5h8l3 5"/></g></svg></span>
+          <div><h3>Math Lens</h3><p>Point the camera at a number plate, a clock or a receipt and play puzzles made from its digits; the pictures never leave your device.</p></div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
   <section class="md-section">
     <div class="md-wrap lv-cols">
       <div>
@@ -187,6 +222,40 @@
     <p><a href="/play/">Learn</a> · <a href="/parents/">For parents</a> · <a href="/teachers/">For teachers</a> · <a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · <a href="/licenses/">Licences</a></p>
   </div>
 </footer>
+<!-- The sutra way, step by step (openspec change landing-interactive-hero). A module, so it runs after parsing like a
+     deferred script; js/life.js is already loaded for the sky. It sets data-step on the card (later steps are hidden
+     with visibility, so the page never moves), and Back and Next walk the three steps; the line between them is a
+     polite live region that says the step. Nothing moves by itself, nothing is stored, and reaching the last step is
+     counted once (math/landing/demo/done, fixed words). The build allows it by its hash (_headers). -->
+<script type="module">
+import { on } from '/js/life.js';
+const card = document.getElementById('lv-demo');
+if (card) {
+  const steps = [...card.querySelectorAll('.lv-steps li')], last = steps.length;
+  const back = card.querySelector('.lv-demo-back'), next = card.querySelector('.lv-demo-next'), at = card.querySelector('.lv-demo-at');
+  const signal = new AbortController().signal; /* the page's lifetime */
+  let step = 1, counted = false;
+  /* js/analytics.js is a deferred script after this one; until it has run, the event waits for the page's load (#172 review) */
+  const send = () => { if (typeof window.siteTrack === 'function') window.siteTrack('math/landing/demo/done', 'Vedic Math: landing demo finished'); };
+  const track = () => { if (typeof window.siteTrack === 'function' || document.readyState === 'complete') send(); else on(window, 'load', send, signal, { once: true }); };
+  const show = (n, say) => {
+    step = n;
+    card.dataset.step = String(n);
+    steps.forEach((li, i) => { if (i + 1 === n) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current'); });
+    back.setAttribute('aria-disabled', String(n === 1));
+    next.textContent = n === last ? 'Start again' : 'Next';
+    /* One update of the atomic live region: the visible count and, after a press, the step's words for screen readers */
+    const parts = [`Step ${n} of ${last}`];
+    if (say) { const words = document.createElement('span'); words.className = 'md-sr-only'; words.textContent = ': ' + steps[n - 1].textContent; parts.push(words); }
+    at.replaceChildren(...parts);
+    if (n === last && !counted) { counted = true; track(); }
+  };
+  /* data-moved: a visitor has pressed a button, so the step that appears may fade in (theme/site.css) */
+  on(next, 'click', () => { card.dataset.moved = ''; show(step === last ? 1 : step + 1, true); }, signal);
+  on(back, 'click', () => { if (step > 1) { card.dataset.moved = ''; show(step - 1, true); } }, signal);
+  show(1, false);
+}
+</script>
 <script src="/ds/2.1.0/header.js" defer></script>
 <script type="module" src="/js/landing-sky.js"></script>
 <script src="/js/analytics.js" defer></script>

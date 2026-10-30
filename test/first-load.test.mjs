@@ -15,9 +15,9 @@ function graph() {
   return seen;
 }
 
-test('the Arena and Tower rounds, the tour and the play kit are outside the static import graph of js/app.js', () => {
+test('the Arena and Tower rounds, the tour, the play kit and the digit connectors are outside the static import graph of js/app.js', () => {
   const seen = graph();
-  for (const f of ['arena.js', 'mental.js', 'tour.js', 'play/kit.js']) assert.ok(!seen.has(f), `a static import of js/${f} puts it back on the critical path`);
+  for (const f of ['arena.js', 'mental.js', 'tour.js', 'play/kit.js', 'connectors.js']) assert.ok(!seen.has(f), `a static import of js/${f} puts it back on the critical path`);
   for (const f of ['shell.js', 'check.js', 'voice.js']) assert.ok(seen.has(f), `js/${f} is still on first load`);
 });
 

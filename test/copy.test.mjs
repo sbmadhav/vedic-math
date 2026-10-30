@@ -103,6 +103,41 @@ test('grown-up pages: the contact on parents and privacy, the legal text include
   assert.doesNotMatch(readFileSync(join(root, 'site/index.html'), 'utf8'), /from the Vedas/i);
 });
 
+/* The summary on /parents/ and the warm-up box on /teachers/ (UX audit 2026-10-29, task 1.2): each claim is one the
+   privacy policy makes in the same words, so the summary can never promise more than the policy */
+test('the parents summary claims only what the privacy policy says, and the teachers warm-up opens the Arena', () => {
+  const page = p => readFileSync(join(root, 'site', p, 'index.html'), 'utf8');
+  const policy = readFileSync(join(root, 'docs/legal/privacy-policy.md'), 'utf8');
+  const facts = page('parents').match(/<ul class="lv-facts"[\s\S]*?<\/ul>/)?.[0] ?? '';
+  assert.deepEqual([...facts.matchAll(/<strong>([^<]+)<\/strong>/g)].map(m => m[1]), ['No accounts needed', 'Under 13: nothing is posted online', 'Free, with no ads']);
+  assert.ok(page('parents').indexOf('lv-facts') < page('parents').indexOf('<h2'), 'the summary comes before the first section');
+  for (const [claim, inPolicy] of [
+    ['we never ask for an email', /We never ask a child for a name, email address/],
+    ["Their scores stay on this device's board, in every Mode.", /the game never posts anything for them to any World board, in any Mode/],
+    ['We never show ads, and we never sell or rent any information.', /We never show ads, and never sell or rent any information\./],
+  ]) { assert.ok(facts.includes(claim), claim); assert.match(policy, inPolicy, claim); }
+  const warm = page('teachers').match(/<section class="lv-callout"[\s\S]*?<\/section>/)?.[0] ?? '';
+  assert.match(warm, /<h2 id="lv-warmup-h">A 5-minute warm-up for today's class<\/h2>/);
+  assert.match(warm, /<a class="md-btn md-btn--primary" href="\/play\/#\/arena">Open the Arena<\/a>/);
+  assert.match(warm, /There are no class accounts or class leaderboards/);
+  const app = readFileSync(join(root, 'js', 'app.js'), 'utf8');
+  assert.match(app, /\[\/\^#\\\/arena\$\/, \(m, ctx\) => arenaView\(ctx\)\]/, 'the Arena route the button opens');
+  /* The Arena's lede lives in js/ledes.js since #170 (explanation-audio prep) */
+  assert.match(readFileSync(join(root, 'js', 'ledes.js'), 'utf8'), /The daily round uses the same questions for every/, 'what the box says about the daily round');
+});
+
+/* While World boards are switched off (js/cloud-config.js FIREBASE = null, tasks 1.8 and 8.5) the grown-up pages say
+   so; once a config is served, the sentence must go (UX audit 2026-10-29, task 1.1: the pages state what is true) */
+test('the grown-up pages say World boards are off exactly while they are off', () => {
+  const off = /export const FIREBASE = null;/.test(readFileSync(join(root, 'js', 'cloud-config.js'), 'utf8'));
+  const texts = {
+    parents: readFileSync(join(root, 'site/parents/index.html'), 'utf8'),
+    privacy: readFileSync(join(root, 'docs/legal/privacy-policy.md'), 'utf8'),
+    retention: readFileSync(join(root, 'docs/legal/data-retention.md'), 'utf8'),
+  };
+  for (const [name, t] of Object.entries(texts)) assert.equal(/World boards are switched off/.test(t), off, name);
+});
+
 /* The parent note (openspec parent-note, change learnvedicmath; task 8.6): under 13 never posts, 30-day showing and
    automatic deletion, the privacy contact, the videos sentence, and links to the privacy policy and the parents page.
    The note is built in js/app.js (parentNote); its fixed sentences are checked in the source. */

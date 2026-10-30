@@ -15,7 +15,8 @@ const titleToasts = (page: Page) => page.evaluate(() => ((window as any).__toast
    - Scenario "Crossing a Title line": a Player at 3,590 Sparks earns 12 more, and one "New Title: Fraction Fighter"
      message is shown.
    - Scenario "Nav chip": on any page the Player chip shows the avatar and a progress bar to the next Title, and its
-     accessible name says the Nickname and Title, with no level number. */
+     accessible name says the Nickname and Title (then the Belt when a Challenger or Pro Player holds one, openspec
+     working-memory-scaffolds), with no level number. */
 
 test.describe('a Player at 3,590 Sparks earns 12 more', () => {
   /* A right Practice answer pays 10 + the skill's streak (up to 5). With a streak of 1 already on 3-mult, the next
@@ -110,5 +111,18 @@ test.describe('the nav chip on any page', () => {
     await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
     await expect(fill).toHaveAttribute('style', /width:\s*50%/);
     await expect(page.locator('#mqChip a.mq-chip')).toHaveAccessibleName('Swift Tiger 42, Sum Sprinter');
+  });
+});
+
+/* Scenario "Nav chip", as changed by openspec working-memory-scaffolds: the name says the Belt after the Title when a
+   Challenger or Pro Player holds one, still with no level number */
+test.describe('the nav chip of a Pro who holds the yellow belt', () => {
+  test.use({ seedMode: 'pro', seedProgress: { v: 3, sparks: 1200, weekSparks: {}, belts: { white: 1, yellow: 2 } } });
+  test('names the Nickname, the Title and the Belt, with no level number', async ({ page }) => {
+    await open(page, '#/learn');
+    const chip = page.locator('#mqChip a.mq-chip');
+    await expect(chip).toHaveAccessibleName('Swift Tiger 42, Sum Sprinter, Yellow belt');
+    await expect(chip).not.toHaveAccessibleName(/\bLv\b|Level/i);
+    await expect(chip.locator('.mq-sparkbar i')).toHaveAttribute('style', /width:\s*18%/);
   });
 });
