@@ -79,6 +79,13 @@ const CASES = [
   ['complex product', '(&minus;4 + 4<i>i</i>) &middot; (&minus;3 + 2<i>i</i>) = ?', 'negative 4 plus 4 i, times negative 3 plus 2 i, equals what?'],
   // Brackets: asides read as a pause, units moved into the question
   ['aside', 'Column 1 (straight down): 0×0 = 0. Write 0.', 'Column 1, straight down: 0 times 0 equals 0. Write 0.'],
+  // Explanations (openspec explanation-audio, design decision 9): an arrow to the answer reads "gives", a long digit string digit by digit
+  ['arrow to the highlighted answer', '6 × 7 = 42, then 25 → <b class="hl hl-coral">4225</b>', '6 times 7 equals 42, then 25, gives 4225'],
+  ['arrow to the number that ends the line', '65² → 6 × 7 = 42, then 25 → 4225', '65 squared to 6 times 7 equals 42, then 25, gives 4225'],
+  ['arrow to a highlighted word stays "so"', '9 + 1 × 5 = 14 → <b class="hl hl-coral">yes</b>', '9 plus 1 times 5 equals 14, so yes'],
+  ['arrow inside a list stays "to"', 'Each divisor has a magic multiplier (7 → 5, 13 → 4).', 'Each divisor has a magic multiplier 7 to 5, 13 to 4.'],
+  ['long digit string', 'keep doubling: …789473684210526315 → done', 'keep doubling: and so on,7 8 9 4 7 3 6 8 4 2 1 0 5 2 6 3 1 5, so done'],
+  ['grouped big number stays a number', 'Round 1,000,000,000 down.', 'Round 1000000000 down.'],
   ['list aside', 'Last digit 7 → root ends in 3 (2 and 8 swap, 3 and 7 swap, the rest stay).', 'Last digit 7, so root ends in 3. 2 and 8 swap, 3 and 7 swap, the rest stay.'],
   ['power of a sum', 'Solve: 3<sup><i>x</i> + 1</sup> = 1', 'Solve: 3 to the power of x plus 1, equals 1'],
   ['number times a bracketed negative power', '4(&minus;<i>x</i>)<sup>3</sup>', '4 times, negative x, all cubed'],
