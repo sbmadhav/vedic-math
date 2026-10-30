@@ -84,6 +84,8 @@ const CASES = [
   ['arrow to the number that ends the line', '65² → 6 × 7 = 42, then 25 → 4225', '65 squared to 6 times 7 equals 42, then 25, gives 4225'],
   ['arrow to a highlighted word stays "so"', '9 + 1 × 5 = 14 → <b class="hl hl-coral">yes</b>', '9 plus 1 times 5 equals 14, so yes'],
   ['arrow inside a list stays "to"', 'Each divisor has a magic multiplier (7 → 5, 13 → 4).', 'Each divisor has a magic multiplier 7 to 5, 13 to 4.'],
+  ['a list of pairs ending the line stays "to"', 'Multipliers: 7 → 5, 13 → 4', 'Multipliers: 7 to 5, 13 to 4'],
+  ['a pair alone stays "to"', '19 → 2', '19 to 2'],
   ['long digit string', 'keep doubling: …789473684210526315 → done', 'keep doubling: and so on,7 8 9 4 7 3 6 8 4 2 1 0 5 2 6 3 1 5, so done'],
   ['arrow to a negative answer', '3 − 45 → &minus;42', '3 minus 45, gives negative 42'],
   ['long number with a decimal point stays a number', 'Round 1234567890.5 down.', 'Round 1234567890.5 down.'],

@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 839797,
+  "total": 839827,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -150,12 +150,12 @@
    "/js/voice-index.js": 213,
    "/js/voice-plan.js": 2458,
    "/js/voice-worker.js": 877,
-   "/js/voice.js": 14637,
+   "/js/voice.js": 14663,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 25751,
-   "/play/": 4176,
-   "/sw.js": 6277,
+   "/play/": 4169,
+   "/sw.js": 6288,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -318,8 +318,8 @@
     "date": "2026-10-30",
     "pr": 180,
     "from": 838848,
-    "to": 839797,
-    "why": "explanation-audio-rest: Listen buttons on the ten page introductions (ledeListen() and lede keys, ledeKeyLines() in js/explain-lines.js), in the video player and over the Me page badges; normalize() reads an arrow to a worked example answer as \"gives\" and a long digit string digit by digit; a Me page redraw stops the badges being read; /js/nav.js kept at CI figure; file deltas: /js/app.js +336, /js/explain-lines.js +314, /js/voice.js +272, /math.css +30, /sw.js -15, /play/ +12; +949 in all"
+    "to": 839827,
+    "why": "explanation-audio-rest: Listen buttons on the ten page introductions (ledeListen() and lede keys, ledeKeyLines() in js/explain-lines.js), in the video player and over the Me page badges; normalize() reads an arrow to a worked example answer as \"gives\" and a long digit string digit by digit; a Me page redraw stops the badges being read; a list of pairs keeps \"to\"; /js/nav.js kept at CI figure; file deltas: /js/app.js +336, /js/explain-lines.js +314, /js/voice.js +298, /math.css +30, /play/ +5, /sw.js -4; +979 in all"
    }
   ]
  },

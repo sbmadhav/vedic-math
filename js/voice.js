@@ -132,9 +132,10 @@ export function normalize(input) {
   let s = String(input ?? '');
   // Structure first, while the tags still say what things are
   /* An arrow to a worked example's answer (the highlighted result, unless it is a word such as "yes", or the number
-     that ends the line) reads "gives":
+     that ends the line, unless the arrow is in a list of pairs such as "7 → 5, 13 → 4") reads "gives":
      "then 25 → 4225" is "then 25, gives 4225" (openspec explanation-audio, design decision 9) */
-  s = s.replace(/\s*(?:→|&rarr;)\s*(?=<b class="hl\b[^>]*>(?:<[^>]+>)*(?![A-Za-z]{2})|(?:<[^>]+>\s*)*(?:[−-]|&minus;)?\d[\d.,]*(?:\s*<\/[^>]+>)*\s*\.?\s*$)/g, ', gives ');
+  s = s.replace(/\s*(?:→|&rarr;)\s*(?=<b class="hl\b[^>]*>(?:<[^>]+>)*(?![A-Za-z]{2}))/g, ', gives ');
+  s = s.replace(/(?<!(?:^|[,;(])\s*(?:[−-]|&minus;)?\d+\s*)\s*(?:→|&rarr;)\s*(?=(?:<[^>]+>\s*)*(?:[−-]|&minus;)?\d[\d.,]*(?:\s*<\/[^>]+>)*\s*\.?\s*$)/g, ', gives ');
   s = s.replace(/<br\s*\/?>/gi, '\n').replace(/<\/?(?:p|div|li|tr|h\d)\b[^>]*>/gi, '\n');
   s = s.replace(/<span class="mx"><span>([\s\S]*?)<\/span><span>([\s\S]*?)<\/span><span>([\s\S]*?)<\/span><span>([\s\S]*?)<\/span><\/span>/g,
     ' the matrix with top row $1, $2, and bottom row $3, $4, ' + MARK + ' ');

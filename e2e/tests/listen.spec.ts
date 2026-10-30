@@ -385,6 +385,22 @@ test.describe('Listen', () => {
     expect((await spoken(page)).length).toBe(before);
   });
 
+  /* explanation-audio design decision 9: an arrow to a worked example's answer is heard "gives", a list of pairs keeps
+     "to", and a long digit string is read digit by digit */
+  test('worked examples are heard "gives" the answer, a list of pairs "to", and a long digit string digit by digit', async ({ page }) => {
+    await setup(page);
+    await open(page, '#/sutras/s1');
+    const dlg = page.locator('dialog.sutra-modal');
+    await expect(dlg).toBeVisible();
+    await dlg.getByRole('button', { name: 'Listen: the worked examples' }).click();
+    await expect.poll(async () => (await spoken(page)).join(' '), { timeout: 20_000 }).toContain('then 25, gives 625');
+    await expect.poll(async () => (await spoken(page)).join(' ')).toContain('7 8 9 4 7 3 6 8 4 2 1 0 5 2 6 3 1 5, gives');
+    await page.evaluate(() => { (window as any).__spoken.length = 0; });
+    await open(page, '#/skill/v-osculator');
+    await page.getByRole('button', { name: 'Listen: the idea and how it works' }).click();
+    await expect.poll(async () => (await spoken(page)).join(' ')).toContain('7 to 5, 13 to 4, 19 to 2, 29 to 3');
+  });
+
   /* explanation-audio 4.1: the Star replay's steps, once they are all shown; ending the replay stops it */
   test('a Star replay reads its steps once they are all shown, and Escape stops it', async ({ page }) => {
     await setup(page, { endAfter: 4000 });

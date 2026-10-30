@@ -26,7 +26,7 @@ Prerequisites:
 
 - [x] 3.1 `GLOSSARY.md`: Listen.
 - [x] 3.2 Owner decisions in design.md (Sound effects off, the wording items, the deferred places). A wording change needs a re-record with `tools/voice/` (README).
-  - Done 2026-10-30 (owner-delegated): design decisions 9 and 10. Listen plays with Sound effects off and Calm; `normalize()` reads an arrow to a worked example's answer as "gives" and a run of ten or more digits digit by digit (73 Sutra card and deep dive lines now read differently, recorded in the 4.6 re-record); Sanskrit words stay. Verify: `test/voice-normalize.test.mjs` (the five new cases, and the sweep over every generator), `test/voice-coverage.test.mjs` "every Explorer line has studio audio" still passes on the `voice-53224c8ddd` manifest.
+  - Done 2026-10-30 (owner-delegated): design decisions 9 and 10. Listen plays with Sound effects off and Calm; `normalize()` reads an arrow to a worked example's answer as "gives" and a run of ten or more digits digit by digit (71 Sutra card and deep dive lines now read differently, recorded in the 4.6 re-record); Sanskrit words stay. Verify: `test/voice-normalize.test.mjs` (the new explanation cases, and the sweep over every generator), `test/voice-coverage.test.mjs` "every Explorer line has studio audio" still passes on the `voice-53224c8ddd` manifest; `listen.spec.ts` "worked examples are heard \"gives\" the answer, a list of pairs \"to\", and a long digit string digit by digit".
 
 ## 4. Deferred
 
