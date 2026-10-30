@@ -2,7 +2,7 @@
 
 Speed tricks from the sutras, a counting-to-calculus skill map, games, daily quests, an Arena with Boards. Three play modes for every age. Served at [learnvedicmath.com](https://learnvedicmath.com/) from Cloudflare Workers static assets (`wrangler.jsonc`, ADR 0004): the landing page at `/`, the game at `/play/`, pages for grown-ups at `/parents/`, `/teachers/`, `/privacy/` and `/terms/`. Until the move is launched (openspec change `learnvedicmath`), the previous app keeps serving at sbmadhav.com/vedic-math/ from this repo's GitHub Pages.
 
-The site is self-contained: the design system is a pinned copy (`vendor/design-system/2.1.0/`, published at `/ds/2.1.0/`) with its own theme (`theme/learnvedicmath.css`), and the fonts, icons, GoatCounter script and Firebase SDK are served from this site too.
+The site is self-contained: the design system is a pinned copy (`vendor/design-system/2.2.0/`, published at `/ds/2.2.0/`) with its own theme (`theme/learnvedicmath.css`), and the fonts, icons, GoatCounter script and Firebase SDK are served from this site too.
 
 ## Layout
 

@@ -27,7 +27,7 @@ export function checkSums(dir) {
 const sums = walk(join(root, 'vendor')).filter(f => f.endsWith('/SHA256SUMS'));
 
 test('every vendored package with SHA256SUMS matches it', () => {
-  assert.ok(sums.some(f => f.includes('design-system/2.1.0')) && sums.some(f => f.includes('firebase/')) && sums.some(f => f.includes('goatcounter')));
+  assert.ok(sums.some(f => f.includes('design-system/2.2.0')) && sums.some(f => f.includes('firebase/')) && sums.some(f => f.includes('goatcounter')));
   for (const f of sums) assert.deepEqual(checkSums(join(f, '..')), [], f);
 });
 
@@ -37,7 +37,7 @@ test('every vendored package lists every file it holds', () => {
     const listed = readFileSync(f, 'utf8').split('\n').filter(Boolean).map(l => l.split(/\s+\*?/)[1]).sort();
     assert.deepEqual(listed, walk(dir).filter(p => p !== f).map(p => relative(dir, p)).sort(), f);
   }
-  const listed = readFileSync(join(root, 'vendor/design-system/2.1.0/SHA256SUMS'), 'utf8').split('\n').filter(Boolean).map(l => l.split(/\s+\*?/)[1]);
+  const listed = readFileSync(join(root, 'vendor/design-system/2.2.0/SHA256SUMS'), 'utf8').split('\n').filter(Boolean).map(l => l.split(/\s+\*?/)[1]);
   for (const f of ['tokens.css', 'components.css', 'header.js', 'header.html', 'compose.py', 'LICENSE']) assert.ok(listed.includes(f), f);
 });
 
@@ -56,7 +56,7 @@ test('the Firebase SDK is vendored with no import of another origin', () => {
 });
 
 /* ---------- the theme ---------- */
-const tokens = readFileSync(join(root, 'vendor/design-system/2.1.0/tokens.css'), 'utf8');
+const tokens = readFileSync(join(root, 'vendor/design-system/2.2.0/tokens.css'), 'utf8');
 const theme = readFileSync(join(root, 'theme/learnvedicmath.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 const defined = new Set([...tokens.matchAll(/(--[\w-]+)\s*:/g)].map(m => m[1]));
 
