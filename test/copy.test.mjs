@@ -122,7 +122,8 @@ test('the parents summary claims only what the privacy policy says, and the teac
   assert.match(warm, /There are no class accounts or class leaderboards/);
   const app = readFileSync(join(root, 'js', 'app.js'), 'utf8');
   assert.match(app, /\[\/\^#\\\/arena\$\/, \(m, ctx\) => arenaView\(ctx\)\]/, 'the Arena route the button opens');
-  assert.match(app, /The daily round uses the same questions for every/, 'what the box says about the daily round');
+  /* The Arena's lede lives in js/ledes.js since #170 (explanation-audio prep) */
+  assert.match(readFileSync(join(root, 'js', 'ledes.js'), 'utf8'), /The daily round uses the same questions for every/, 'what the box says about the daily round');
 });
 
 /* While World boards are switched off (js/cloud-config.js FIREBASE = null, tasks 1.8 and 8.5) the grown-up pages say
