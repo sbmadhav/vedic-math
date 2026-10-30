@@ -3,7 +3,7 @@
    draws the screen, the gallery thumbnails and the high resolution export. No DOM use at import. */
 import * as A from './art-core.js';
 
-/* pal: { bg, ink, muted, line, coral, sun, teal, dark } as [r, g, b, a] arrays */
+/* pal: { bg, ink, muted, line, coral, sun, teal } as [r, g, b, a] arrays, dark, and font (the --font-display stack) */
 /* Three accents cycle through sun on the way back (coral to teal directly would pass through gray) */
 export const stopsOf = (pal, p) => { const s = A.PALETTES[p].keys.map(k => (k === 'ink' ? pal.ink : pal[k.slice(2)])); return s.length === 3 ? [...s, pal.sun] : s; };
 const TAU = Math.PI * 2;
@@ -65,7 +65,7 @@ export function meru(g, w, h, pal, piece, { upto = Infinity, row = -1, diag = -1
       g.fill();
       if (nums && fade >= 1) {
         const txt = String(values[r][i]); g.fillStyle = A.rgba(v === 0 ? pal.muted : pal.dark ? pal.bg : pal.ink, 0.95);
-        g.font = `600 ${Math.max(9, G.s * (txt.length > 3 ? 0.26 : txt.length > 2 ? 0.32 : 0.4))}px Fredoka, "Nunito Sans", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, x, y + 1);
+        g.font = `600 ${Math.max(9, G.s * (txt.length > 3 ? 0.26 : txt.length > 2 ? 0.32 : 0.4))}px ${pal.font}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, x, y + 1);
       }
     }
   }
@@ -94,7 +94,7 @@ export function square(g, w, h, pal, piece, { upto = Infinity, scale = 1 } = {})
       const v = sq[i][j], k = on.findIndex(([a, b]) => a === i && b === j), lit = k >= 0 && k < shown;
       g.fillStyle = lit ? A.rgba(A.along(stops, (i + j) / 18), 0.95) : A.rgba(pal.ink, 0.05);
       g.beginPath(); g.roundRect ? g.roundRect(x0 + j * c + 2, y0 + i * c + 2, c - 4, c - 4, c * 0.2) : g.rect(x0 + j * c + 2, y0 + i * c + 2, c - 4, c - 4); g.fill();
-      g.fillStyle = A.rgba(lit ? (pal.dark ? pal.bg : pal.ink) : pal.muted, lit ? 1 : 0.8); g.font = `600 ${c * 0.42}px Fredoka, "Nunito Sans", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(v, x0 + j * c + c / 2, y0 + i * c + c / 2 + 1);
+      g.fillStyle = A.rgba(lit ? (pal.dark ? pal.bg : pal.ink) : pal.muted, lit ? 1 : 0.8); g.font = `600 ${c * 0.42}px ${pal.font}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(v, x0 + j * c + c / 2, y0 + i * c + c / 2 + 1);
     }
   } else if (view === 'star') {
     const R = S * 0.4, P = k => { const a = -Math.PI / 2 + (TAU * (k % 9)) / 9; return [cx + R * Math.cos(a), cy + R * Math.sin(a)]; };
@@ -110,7 +110,7 @@ export function square(g, w, h, pal, piece, { upto = Infinity, scale = 1 } = {})
       }
     }
     g.globalCompositeOperation = 'source-over';
-    for (let k = 1; k <= 9; k++) { const [x, y] = P(k); g.fillStyle = A.rgba(pal.bg); g.beginPath(); g.arc(x, y, 15 * scale, 0, TAU); g.fill(); g.strokeStyle = A.rgba(pal.ink, 0.5); g.lineWidth = 2 * scale; g.stroke(); g.fillStyle = A.rgba(pal.ink); g.font = `600 ${15 * scale}px Fredoka, "Nunito Sans", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(k, x, y + 1); }
+    for (let k = 1; k <= 9; k++) { const [x, y] = P(k); g.fillStyle = A.rgba(pal.bg); g.beginPath(); g.arc(x, y, 15 * scale, 0, TAU); g.fill(); g.strokeStyle = A.rgba(pal.ink, 0.5); g.lineWidth = 2 * scale; g.stroke(); g.fillStyle = A.rgba(pal.ink); g.font = `600 ${15 * scale}px ${pal.font}`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(k, x, y + 1); }
   } else {
     const { pts } = A.turtle(d, piece.a);
     const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
@@ -172,6 +172,6 @@ export function peg(g, [x, y], pal, { r = 7, label = '', hot = false } = {}) {
   g.save();
   if (hot) { g.beginPath(); g.arc(x, y, r * 2.4, 0, TAU); g.fillStyle = A.rgba(pal.sun, 0.35); g.fill(); }
   g.beginPath(); g.arc(x, y, r, 0, TAU); g.fillStyle = A.rgba(pal.sun); g.fill(); g.lineWidth = 2.5; g.strokeStyle = A.rgba(pal.ink); g.stroke();
-  if (label) { g.fillStyle = A.rgba(pal.ink); g.font = '700 14px Fredoka, "Nunito Sans", sans-serif'; g.textAlign = 'center'; g.fillText(label, x, y - r - 8); }
+  if (label) { g.fillStyle = A.rgba(pal.ink); g.font = `700 14px ${pal.font}`; g.textAlign = 'center'; g.fillText(label, x, y - r - 8); }
   g.restore();
 }

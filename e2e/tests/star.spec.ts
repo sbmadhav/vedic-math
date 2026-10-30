@@ -88,6 +88,21 @@ test('the Dare: absent on question 1, offered on question 2, and a missed Dare c
   await expect(page.locator('#stDots i.miss')).toHaveCount(0);
 });
 
+/* The round's labels (the question tag and the Dare's kicker) use the type scale's 700 weight, not 800 (design audit
+   fix plan, part A) */
+for (const scheme of ['light', 'dark'] as const) {
+  test(`the question tag and the Dare's kicker are weight 700 (${scheme})`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: scheme });
+    await open(page, '#/star/sq5/1');
+    await question(page, 1);
+    await expect(tag(page)).toHaveCSS('font-weight', '700');
+    await enter(page, await sq(page));
+    await question(page, 2);
+    await expect(page.locator('#stDare .star-dare-k')).toHaveText('Dare');
+    await expect(page.locator('#stDare .star-dare-k')).toHaveCSS('font-weight', '700');
+  });
+}
+
 test('Challenger shows one box per digit of the answer', async ({ page }) => {
   await open(page, '#/star/sq5/2');
   await question(page, 1);

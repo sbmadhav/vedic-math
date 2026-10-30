@@ -77,6 +77,25 @@ test('typing the question back is not an answer: no try, no score, no Sparks', a
   await expect(box.locator('.pr-score')).toHaveText('1/1');
 });
 
+/* Bolt glows in Deep Space whether the system or the Player picked it, and never in Daybreak (design audit fix plan,
+   part A: the glow used to need a saved choice) */
+for (const [system, saved, glows] of [['light', '', false], ['dark', '', true], ['light', 'dark', true], ['dark', 'light', false]] as const) {
+  test(`Bolt ${glows ? 'glows' : 'has no glow'} with the system ${system}${saved ? ` and ${saved} saved` : ''}`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: system });
+    if (saved) await page.addInitScript(t => { try { localStorage.setItem('theme', t); } catch (e) { /* storage blocked */ } }, saved);
+    await seedRandom(page, 3);
+    await open(page, '#/skill/3-mult');
+    const box = page.locator('#practice');
+    const [a, b] = ((await box.locator('#prQ').textContent()) || '').match(/\d+/g)!.map(Number);
+    await box.locator('.ans-in').fill(String(a * b));
+    await box.locator('#prCheck').click();
+    const bolt = box.locator('#prSay .bolt');
+    await expect(bolt).toBeVisible();
+    if (glows) await expect(bolt).toHaveCSS('filter', /drop-shadow/);
+    else await expect(bolt).toHaveCSS('filter', 'none');
+  });
+}
+
 test('factoring with negative roots reveals real signs', async ({ page }) => {
   await open(page, '#/skill/9-factor');
   const box = page.locator('#practice');

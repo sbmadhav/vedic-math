@@ -248,3 +248,30 @@ test.describe('390px wide, landing', () => {
     await expect(page.locator('body > header .md-brand-t')).toBeVisible();
   });
 });
+
+/* The game's skip link is the design system's .md-skip (design audit fix plan, part A): above the page until it has
+   focus, then on screen in the scheme's ink with the page background as its text, like every other page on the site */
+test.describe('skip link', () => {
+  for (const scheme of ['light', 'dark'] as const) {
+    test(`is the design system's skip link: hidden until focused, then shown in ink (${scheme})`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await open(page);
+      const skip = page.locator('body > a.md-skip[href="#view"]');
+      await expect(skip).toHaveText('Skip to content');
+      await expect(skip).not.toBeInViewport();
+      await skip.focus();
+      await expect(skip).toBeFocused();
+      await expect(skip).toBeInViewport();
+      const [want, got] = await page.evaluate(() => {
+        const probe = document.createElement('i');
+        probe.style.backgroundColor = 'var(--ink)'; probe.style.color = 'var(--bg)';
+        document.body.append(probe);
+        const p = getComputedStyle(probe), s = getComputedStyle(document.querySelector('a.md-skip')!);
+        const out = [[p.backgroundColor, p.color], [s.backgroundColor, s.color]];
+        probe.remove();
+        return out;
+      });
+      expect(got).toEqual(want);
+    });
+  }
+});

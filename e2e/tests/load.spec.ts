@@ -33,7 +33,7 @@ test.describe('first visit', () => {
     // The Nikhilam Family favicon: the SVG, and PNG cuts at 16, 32 and 48 px
     await expect(page.locator('link[rel="icon"][type="image/svg+xml"]')).toHaveAttribute('href', '/icons/favicon.svg');
     for (const s of [16, 32, 48]) await expect(page.locator(`link[rel="icon"][sizes="${s}x${s}"]`)).toHaveAttribute('href', `/icons/favicon-${s}.png`);
-    await expect(page.locator('a.skip[href="#view"]')).toHaveCount(1);
+    await expect(page.locator('a.md-skip[href="#view"]')).toHaveCount(1);
     // The Vedic Math tabs are in the page but hidden until a Mode is picked (header.spec.ts 'tabs wait for a Mode')
     await expect(page.locator('nav.mq-nav')).toHaveCount(1);
     await expect(page.locator('nav.mq-nav')).toBeHidden();
