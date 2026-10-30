@@ -38,6 +38,26 @@ test('Step by step: Next twice adds one step at a time, says the step, and the c
   await expect(next).toHaveCount(0);
 });
 
+/* Step by step, at the narrowest phone: the current step's mark changes no text size, so nothing rewraps (#172 review) */
+for (const scheme of ['light', 'dark'] as const) {
+  test(`Step by step at 320 px in ${scheme === 'light' ? 'Daybreak' : 'Deep Space'}: the card and every step keep their size on every step`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.setViewportSize({ width: 320, height: 720 });
+    await page.goto('/');
+    const card = page.locator('#lv-demo');
+    await expect(card).toHaveAttribute('data-step', '1');
+    const sizes = () => page.evaluate(() => [document.getElementById('lv-demo')!, ...document.querySelectorAll('#lv-demo .lv-steps li')].map(e => { const r = e.getBoundingClientRect(); return [r.width, r.height]; }));
+    const first = await sizes();
+    for (const n of [2, 3, 1]) {
+      await card.locator('.lv-demo-next').click();
+      await expect(card).toHaveAttribute('data-step', String(n));
+      expect(await sizes(), `step ${n}`).toEqual(first);
+      expect(await card.locator('.lv-steps li[aria-current="step"]').evaluate(e => getComputedStyle(e).fontWeight)).toBe(await card.locator('.lv-steps li:not([aria-current])').first().evaluate(e => getComputedStyle(e).fontWeight));
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  });
+}
+
 test('Back and Start again: Step 3, Back to 2, Next to 3, Start again to 1, and Back does nothing on Step 1', async ({ page }) => {
   await page.goto('/');
   const card = page.locator('#lv-demo'), next = card.locator('.lv-demo-next'), back = card.getByRole('button', { name: 'Back' });

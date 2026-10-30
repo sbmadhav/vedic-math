@@ -154,7 +154,8 @@ html[data-lv-wait] .lv-landing main { visibility: hidden; animation: lv-show 0s 
 .lv-demo:not([data-step]) .lv-demo-nav { visibility: hidden; }
 .lv-demo[data-step="1"] [data-s="2"], .lv-demo[data-step="1"] [data-s="3"], .lv-demo[data-step="2"] [data-s="3"] { visibility: hidden; }
 .lv-demo[data-step="1"] .lv-board [data-s="1"], .lv-demo[data-step="2"] .lv-board [data-s="2"], .lv-demo[data-step="3"] .lv-board [data-s="3"] { background: color-mix(in srgb, var(--sun) 35%, transparent); }
-.lv-demo .lv-steps li[aria-current="step"] { font-weight: 700; }
+/* The current step is tinted, never bolded: background and box-shadow do not change the text's size, so the card never moves (#172 review) */
+.lv-demo .lv-steps li[aria-current="step"] { border-radius: var(--radius-sm); background: color-mix(in srgb, var(--sun) 30%, transparent); box-shadow: -6px 0 0 color-mix(in srgb, var(--sun) 30%, transparent), 6px 0 0 color-mix(in srgb, var(--sun) 30%, transparent); }
 .lv-demo[data-moved][data-step="1"] [data-s="1"], .lv-demo[data-moved][data-step="2"] [data-s="2"], .lv-demo[data-moved][data-step="3"] [data-s="3"] { animation: lv-step-in var(--duration-medium) var(--ease-out); }
 @keyframes lv-step-in { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .lv-demo [data-s] { animation: none !important; } }
