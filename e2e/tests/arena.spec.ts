@@ -113,6 +113,9 @@ for (const scheme of ['light', 'dark'] as const) {
     await day.locator('[data-src="world"]').focus();
     expect(await day.locator('[data-src="world"]').evaluate(e => e.matches(':focus-visible'))).toBe(true);
     await expect(day.locator('[data-src="world"]')).toHaveCSS('outline-offset', '-3px');
+    // On the picked tab's ink fill the ring takes the page background, so it stays visible in both schemes
+    await day.locator('[data-src="device"]').focus();
+    await expect(day.locator('[data-src="device"]')).toHaveCSS('outline-color', want[1]);
   });
 }
 });

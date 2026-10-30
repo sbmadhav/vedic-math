@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 833361,
+  "total": 833377,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -152,9 +152,9 @@
    "/js/voice.js": 14365,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 25094,
-   "/play/": 4099,
-   "/sw.js": 6275,
+   "/math.css": 25134,
+   "/play/": 4082,
+   "/sw.js": 6268,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 547
   },
@@ -296,8 +296,8 @@
     "date": "2026-10-30",
     "pr": 168,
     "from": 833139,
-    "to": 833361,
-    "why": "design-audit-token-swaps (merged with main as of #175): spacing, radius and shadow values that equal a design system token read var(--space-N), var(--radius-*) and var(--shadow-ledge), longer than the px values they replace (the same pixels); the skip link and Board tabs use the design system's .md-skip and .md-seg (local rules gone; the tabs' focus ring drawn inside); measured on the merged tree; file deltas: /math.css +84, css/play/*.css +136 (spells +25, tala +18, locks +17, art +16, party +14, scroll +13, lens +12, apprentice +10, wall +10, daily +9, ghosts +4, bets -12), /js/play/exp/wall.js +7, art.js +2, art-draw.js +2, /js/shell.js +2, /js/app.js -20, /play/ +13, /sw.js -4; +222 in all"
+    "to": 833377,
+    "why": "design-audit-token-swaps (merged with main as of #175): spacing, radius and shadow values that equal a design system token read var(--space-N), var(--radius-*) and var(--shadow-ledge), longer than the px values they replace (the same pixels); the skip link and Board tabs use the design system's .md-skip and .md-seg (local rules gone; the tabs' focus ring drawn inside); measured on the merged tree; file deltas: /math.css +84, css/play/*.css +136 (spells +25, tala +18, locks +17, art +16, party +14, scroll +13, lens +12, apprentice +10, wall +10, daily +9, ghosts +4, bets -12), /js/play/exp/wall.js +7, art.js +2, art-draw.js +2, /js/shell.js +2, /js/app.js -20, /play/ +13, /sw.js -4; +222 in all; then the picked Board tab's focus ring takes var(--bg) on its ink fill (CodeRabbit on #168): +16, so +238 in all"
    }
   ]
  },
