@@ -27,7 +27,7 @@ Videos are played from YouTube in privacy-enhanced mode, and YouTube's own terms
 ## 5. Who owns what
 
 - The lessons, Katas, Worked examples, art (including Bolt), icons, audio and other content on the site are ours. You may use them to learn and to teach your own children or class.
-- Copies of the site's code and learning content published as open source under the MIT licence up to 28 October 2026 stay under that licence. Everything added or changed after that date is ours, with all rights reserved: you may not copy, sell or republish it without asking us. The details are in the repository's licence notes. The design system, fonts and other open-source parts are listed with their licences on the [licences page](/licenses/).
+- Copies of the site's code and learning content published as open source under the MIT licence up to 28 October 2026 stay under that licence. Except for third-party or other separately licensed material named in the repository's licence notes, everything added or changed after that date is ours, with all rights reserved: you may not copy, sell or republish it without asking us. The details are in the repository's licence notes. The design system, fonts and other open-source parts are listed with their licences on the [licences page](/licenses/).
 - The Sutras themselves are from a book published in 1965; our explanations of them are ours.
 
 ## 6. No promises
