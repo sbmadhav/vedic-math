@@ -316,14 +316,14 @@
    },
    {
     "date": "2026-10-30",
-    "pr": null,
+    "pr": 182,
     "from": 838848,
     "to": 840716,
     "why": "design system 2.2.0 (vendor/design-system/2.2.0/, published at /ds/2.2.0/, replacing 2.1.0): components.css gains the control scale, md-actions, md-popover, md-prose, md-table, md-foot, md-hl and the bare-link look, tokens.css the 2.2 sizes and the cta type style"
    },
    {
     "date": "2026-10-30",
-    "pr": null,
+    "pr": 182,
     "from": 840716,
     "to": 840677,
     "why": "design audit plan B: math.css, theme/site.css and the game's modules use the 2.2.0 tokens and components (type sizes that equal a role, spacing and radius snapped to the scale within 2px, motion, layers, Bolt's fixed colours, scrim and media colours, category colours for Belts, balloons and grade tiles, .md-sr-only, .md-link, .md-icon-btn); file deltas: /math.css -84, /js/app.js +18, /js/games.js +17, /js/say.js +9, /js/install.js +8, /js/arena.js +6, /js/star.js -9, /js/vedic.js -11, /theme/learnvedicmath.css -11, /js/tour.js -2, /css/play/base.css +2, /play/ +6, /sw.js +12, -39 in all"
