@@ -1,7 +1,7 @@
 /* Word problems (openspec change word-problems): the small part a round needs at once. Moved from js/story-plan.js
    (openspec change react-typescript, task 3.1) with the Skills that ask it (skills/middle.ts, skills/upper.ts). The
    stories themselves (js/stories.js, the templates and hand-written stories) are not in the first paint's import graph:
-   the page loads them after it has painted (loadStories() in js/story-plan.js, from js/app.js) and they register here,
+   the page loads them after it has painted (loadStories(), from js/app.js) and they register here,
    so a route that never asks one (a Sutra deep dive, Home) never waits for them. Until they are here, no Word problem
    is mixed in (a due one waits), and the two Word problem Skills ask a short built-in story.
    - When (design D2, D3, D4): SLOTS by Mode, the 20 saved answers first, a due slot carried to the next Skill.
@@ -33,6 +33,11 @@ let S: StoriesApi | null = null;
 /* js/stories.js calls this when it runs; storiesNow() is then its API ({ hasStory, storyFor, skillStory, trickStory }) */
 export function register(api: StoriesApi): void { S = api; }
 export const storiesNow = (): StoriesApi | null => S;
+/* How to load them: js/app.js names the dynamic import of js/stories.js (storiesFrom), whose URL only js/ knows, before
+   anything asks; loadStories() starts it once, and a failed load (offline) is tried again on the next call */
+let loader: (() => Promise<unknown>) | null = null, loading: Promise<StoriesApi | null> | null = null;
+export function storiesFrom(load: () => Promise<unknown>): void { loader = load; }
+export const loadStories = (): Promise<StoriesApi | null> => (S ? Promise.resolve(S) : !loader ? Promise.reject(new Error('the stories have no loader (js/app.js storiesFrom)')) : (loading ||= loader().then(() => S, (e: unknown) => { loading = null; throw e; })));
 
 const slotsOf = (mode: string): { first: number; every: number } => (SLOTS as Partial<Record<string, { first: number; every: number }>>)[mode] || SLOTS.challenger;
 /* Is question k (from 1) of a round a Word problem slot in this Mode? */

@@ -115,9 +115,9 @@ test('static imports of a re-export-only js/ module point at its TypeScript modu
       else if (s.startsWith('.')) queue.push(new URL(s, 'file:///' + f).pathname.slice(1));
     }
   }
-  for (const f of ['js/vedic.js', 'js/viz.js', 'js/lib.js', 'js/skills/index.js', 'js/skills/middle.js', 'js/mental.js', 'js/ts/shared/src/mental.js', 'js/ts/shared/src/questions.js'])
+  for (const f of ['js/vedic.js', 'js/viz.js', 'js/lib.js', 'js/skills/index.js', 'js/skills/middle.js', 'js/story-plan.js', 'js/mental.js', 'js/ts/shared/src/mental.js', 'js/ts/shared/src/questions.js'])
     assert.ok(!seen.has(f), `${f} is in the first load's static graph`);
-  for (const f of ['js/ts/shared/src/vedic.js', 'js/ts/shared/src/skills/index.js', 'js/story-plan.js']) assert.ok(seen.has(f), `${f} is in the graph`);
+  for (const f of ['js/ts/shared/src/vedic.js', 'js/ts/shared/src/skills/index.js', 'js/ts/shared/src/story-plan.js']) assert.ok(seen.has(f), `${f} is in the graph`);
   assert.match(read('js/app.js'), /from '\/js\/ts\/shared\/src\/skills\/index\.js'/);
   assert.ok(existsSync(join(out, 'js/vedic.js')), 'the re-export file is still published, for a dynamic import');
 });

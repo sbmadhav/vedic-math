@@ -186,8 +186,9 @@ test('the templates are not in the first paint\'s import graph: only js/story-pl
   const { readFileSync } = await import('node:fs');
   const src = f => readFileSync(new URL(`../js/${f}`, import.meta.url), 'utf8');
   for (const f of ['app.js', 'star.js', 'skills/middle.js', 'skills/upper.js']) assert.ok(!/from '\.{1,2}\/stories\.js'/.test(src(f)), `${f} imports stories.js statically`);
-  /* The plan moved to shared/src/story-plan.ts (react-typescript task 3.1): js/story-plan.js imports only that module, which imports nothing */
-  assert.deepEqual([...src('story-plan.js').matchAll(/^(?:import|export)\b[^'"]*from '([^']+)'/gm)].map(m => m[1]).sort(), ['../shared/src/story-plan.ts', '../shared/src/story-plan.ts'], 'js/story-plan.js imports only the shared plan');
+  /* The plan moved to shared/src/story-plan.ts (react-typescript task 3.1): js/story-plan.js re-exports only that module, which imports nothing */
+  assert.deepEqual([...src('story-plan.js').matchAll(/^(?:import|export)\b[^'"]*from '([^']+)'/gm)].map(m => m[1]), ['../shared/src/story-plan.ts'], 'js/story-plan.js re-exports only the shared plan');
+  assert.ok(src('app.js').includes("storiesFrom(() => import('./stories.js'))"), 'js/app.js loads js/stories.js on demand');
   assert.ok(!/^import (?!type )/m.test(readFileSync(new URL('../shared/src/story-plan.ts', import.meta.url), 'utf8')), 'shared/src/story-plan.ts has no static import');
 });
 
