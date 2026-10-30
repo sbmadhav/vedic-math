@@ -12,7 +12,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 843513,
+  "total": 843514,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -81,7 +81,7 @@
    "/js/listen.js": 1335,
    "/js/mental.js": 155,
    "/js/metrics.js": 4201,
-   "/js/nav.js": 1554,
+   "/js/nav.js": 1555,
    "/js/play/catalog.js": 1783,
    "/js/play/exp/apprentice-core.js": 7279,
    "/js/play/exp/apprentice.js": 3914,
@@ -333,6 +333,13 @@
     "from": 838848,
     "to": 843513,
     "why": "react-typescript task 3.1 (merged with main as of #167): shared/src/ holds the generators, Tricks, pictures, Arena sets, scoring, Nickname lists and the Word problem plan (story-plan.ts); until the framework build (task 2.1) bundles the game, build.py publishes them under /js/ts/ with their types taken out (+56144 in all), and the js/ modules they came from re-export them or shrink (-52009 in all); a static import of a re-export-only js/ module is pointed at its TypeScript module, so the first load requests each once and no deeper, and the re-export files stay published and precached; /js/app.js +27, /js/explain-lines.js +20, /js/family-view.js +6, /js/find.js +14, /js/games.js +20, /js/gamify.js +24, /js/levels.js +10, /js/metrics.js +17, /js/sky-view.js +7, /js/sky.js +20, /js/star.js +3, /js/stories.js +10, /js/sutra-progress.js +6, /js/sutra-tag-core.js +13, /js/try.js +7, /play/ +176, /sw.js +150; +4665 in all"
+   },
+   {
+    "date": "2026-10-30",
+    "pr": 127,
+    "from": 843513,
+    "to": 843514,
+    "why": "CI's measurement: the CI build measures /js/nav.js at 1,555 bytes, its size since #174, 1 byte above this branch's local measurement (the Brotli output differs by a byte between machines, as on #168), so the baseline keeps CI's figure; +1"
    }
   ]
  },
