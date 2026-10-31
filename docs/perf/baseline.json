@@ -18,7 +18,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 841671,
+  "total": 844458,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -88,6 +88,7 @@
    "/js/mental.js": 2128,
    "/js/metrics.js": 4184,
    "/js/nav.js": 1555,
+   "/js/paths.js": 2760,
    "/js/play/catalog.js": 1783,
    "/js/play/exp/apprentice-core.js": 7279,
    "/js/play/exp/apprentice.js": 3914,
@@ -160,8 +161,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 25689,
-   "/play/": 4164,
-   "/sw.js": 6280,
+   "/play/": 4170,
+   "/sw.js": 6301,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
@@ -340,6 +341,13 @@
     "from": 840677,
     "to": 841671,
     "why": "explanation-audio-rest: Listen buttons on the ten page introductions (ledeListen() and lede keys, ledeKeyLines() in js/explain-lines.js), in the video player and over the Me page badges (a Me page redraw stops them); normalize() reads an arrow to a worked example answer as \"gives\" (a list of pairs keeps \"to\") and a long digit string digit by digit; measured on the tree merged with main; files this branch does not touch keep the figures before it; file deltas: /js/app.js +349, /js/explain-lines.js +314, /js/voice.js +298, /math.css +30, /play/ +8, /sw.js -5; +994 in all"
+   },
+   {
+    "date": "2026-10-31",
+    "pr": "routes-1-1-paths",
+    "from": 841671,
+    "to": 844458,
+    "why": "indexable-routes task 1.1: the route table js/paths.js (new, 2,760 bytes: one row per route with its finite keys from the catalogs, toPath, toKey, allPaths). Nothing imports it yet, but build.py pins every /js/ module in the import map and precaches it, so a new module counts here before any view loads it; the router, the hash shim and the prerender step read it from task 2.1 on. File deltas: /js/paths.js +2760 (new), /play/ +6 (its import map entry), /sw.js +21 (its precache entry); +2787 in all with CI's /js/nav.js figure (the local Brotli reads 1 byte less, as the 2026-10-30 entry says); measured on main as of #186"
    }
   ]
  },
