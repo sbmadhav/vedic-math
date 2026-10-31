@@ -4,12 +4,13 @@
    Points are weighted by difficulty, so scores compare fairly across players working at different levels.
    The dial each player reaches is saved per game as their rating and becomes their next starting point. */
 import * as store from './store.js';
+/* The dial's range, pointsAt and levelFor moved to shared/ (openspec change react-typescript, task 3.1) */
+import { DMIN, DMAX, pointsAt } from '../shared/src/scoring.ts';
 
-export const DMIN = 1, DMAX = 20;
+export { DMIN, DMAX, pointsAt } from '../shared/src/scoring.ts';
+export { levelFor } from '../shared/src/scoring.ts';
 /* Where a first-time player starts, by play mode */
 export const START = { explorer: 1, challenger: 5, pro: 9 };
-/* Points for one right answer at difficulty d: 10 at d1, 143 at d20 */
-export const pointsAt = d => 10 + 7 * (Math.max(DMIN, Math.min(DMAX, Math.round(d))) - 1);
 /* Level n (1 to 72) starts at this difficulty */
 export const levelStart = (n, perGame = 72) => Math.min(DMAX, 1 + Math.round(((n - 1) * (DMAX - 1)) / (perGame - 1)));
 export const levelForDifficulty = (d, perGame = 72) => 1 + Math.round(((Math.max(DMIN, Math.min(DMAX, d)) - 1) * (perGame - 1)) / (DMAX - 1));
@@ -19,8 +20,6 @@ export const levelForDifficulty = (d, perGame = 72) => 1 + Math.round(((Math.max
    A Player with no Rating yet starts at their Mode's start (fallback, when given, replaces that start). */
 export const rating = (key, mode, fallback = 0) => store.rating(key) || fallback || START[mode] || START.challenger;
 
-/* Skill generators have levels 1 to 3. A Rating picks one: 1 to 7 is level 1, 8 to 13 level 2, 14 to 20 level 3. */
-export const levelFor = d => (d <= 7 ? 1 : d <= 13 ? 2 : 3);
 /* A Skill Rating for a Player who practiced the Skill before Skill Ratings existed: the middle of the band for
    their mastery level (js/store.js level), so their questions stay at the level they had */
 export const ratingFromLevel = lv => ({ 1: 4, 2: 10, 3: 17 })[lv] || 4;

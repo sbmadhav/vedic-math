@@ -2,14 +2,16 @@
   "name": "shared",
   "private": true,
   "type": "module",
-  "description": "Code the game and the Worker both use (question generators, scoring, Nickname lists, the markup allow-list, message types). No DOM. Filled in phase 2 (task 3.1).",
+  "description": "Code the game and the Worker both use (question generators, scoring, Nickname lists, the markup allow-list, message types, the security policy). No DOM (task 3.1).",
   "exports": {
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.test.json"
   },
   "devDependencies": {
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "@types/node": "22.20.5",
+    "vitest": "4.1.12"
   }
 }
