@@ -372,7 +372,7 @@
    },
    {
     "date": "2026-10-31",
-    "pr": 0,
+    "pr": 193,
     "from": 846845,
     "to": 850639,
     "why": "arena-challenge-link: Challenge a friend on the Arena daily result and the challenge link #/arena/day/<date>/<league>/<score> (the lobby line, the friend's Practice round and the share button in js/app.js; the link's parser, text and URL in shared/src/challenge.ts and the site base in shared/src/site.ts, published under /js/ts/ and precached; the share helper gains a notify option); the share text builder and the parser load with the on-demand Arena module, so the first paint's own bytes grow only by the button, its handler and the lobby line in /js/app.js; /js/nav.js keeps CI's figure; file deltas: /js/ts/shared/src/challenge.js +1476, /js/app.js +1277, /js/ts/shared/src/site.js +256, /js/play/kit.js +248, /js/arena.js +131, /js/metrics.js +130, /math.css +89, /js/ts/shared/src/questions.js +66, /play/ +49, /js/guide.js +39, /sw.js +33; +3794 in all"
