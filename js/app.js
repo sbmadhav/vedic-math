@@ -28,7 +28,7 @@ import { boltHTML } from './bolt.js';
 import { FAMILY_SVG } from './family.js';
 import { familyRound } from './family-hook.js';
 import { runStar } from './star.js';
-import { storyPlan, loadStories, storiesNow, LABEL as STORY_LABEL, ONLY as STORY_ONLY, ROUND as STORY_ROUND } from './story-plan.js';
+import { storyPlan, loadStories, storiesNow, storiesFrom, LABEL as STORY_LABEL, ONLY as STORY_ONLY, ROUND as STORY_ROUND } from './story-plan.js';
 import { runTry, tryFor as tryOf, sutraOf, finished as tryFinished } from './try.js';
 import * as SKY from './sky.js';
 import { skyView, placesHTML } from './sky-view.js';
@@ -58,6 +58,7 @@ const boot = new AbortController(); /* the page's lifetime: never aborted */
 /* Off the first load's critical path (docs/perf/baseline.md); a failed load is asked for again */
 const onDemand = load => { let p; return () => (p ||= load().catch(e => { p = null; throw e; })); };
 const loadLinks = onDemand(() => import('./connectors.js')); /* the Trick animator's digit connectors, on first use */
+storiesFrom(() => import('./stories.js')); /* the Word problems load after the first paint (js/story-plan.js) */
 const loadArena = onDemand(() => import('./arena.js')), loadTour = onDemand(() => import('./tour.js')), loadKit = onDemand(() => import('./play/kit.js'));
 const withArena = (area, signal, fn) => loadArena().then(A => { if (!signal.aborted) fn(A); }, () => { if (!signal.aborted) area.innerHTML = '<p class="md-lede">The round did not load. Check your connection and try again.</p>'; });
 let install = null, installLoad = null, earlyPrompt = null; const installQueue = [];

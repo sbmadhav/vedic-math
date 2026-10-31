@@ -43,6 +43,12 @@ test('Spellbook: a keyboard cast keeps focus on the digits after each key press'
   await expect(page.locator('.sp-after')).toBeVisible();
   await expect(page.locator('.sp-after .md-btn--primary')).toBeFocused();
   expect(await plays(page, 'spells/learn')).toBe(1);
+  /* the lesson opened at #/dojo/spells itself: "Cast it on a monster" still opens the monsters (Muse review, item 1) */
+  await expect(page.locator('.sp-after .md-btn--primary')).toHaveText('Cast it on a monster');
+  await page.locator('.sp-after .md-btn--primary').click();
+  await expect(page.locator('.sp-learn')).toHaveCount(0);
+  await expect(page.locator('.sp-m').first()).toBeVisible();
+  await expect(page.locator('.sp-tabs a[aria-current="page"]')).toHaveText('Cast');
   expect(issues.console).toEqual([]);
 });
 
@@ -138,6 +144,8 @@ test('Locks: level 1 clears by keyboard, and a replay pays no second Sparks even
   await open(page, '#/dojo/locks/eleven');
   await clearFeedLevel(page);
   await expect(page.locator('.lk-next')).toBeFocused();
+  /* the banner names the next level and what it asks, so it never reads as the stage just done (Muse review, item 2) */
+  await expect(page.locator('.lk-clear')).toContainText(/Next, level 2: Predict\. Guess \d in a row/);
   expect((await stored(page, 'locks')).eleven.done).toBe(1);
   expect(await plays(page, 'locks/level')).toBe(1);
   /* replay level 1 */
