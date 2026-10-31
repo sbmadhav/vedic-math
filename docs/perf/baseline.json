@@ -18,7 +18,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 844873,
+  "total": 845455,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -54,7 +54,7 @@
    "/js/ambient.js": 4480,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 52788,
+   "/js/app.js": 53162,
    "/js/arena.js": 5717,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -160,9 +160,9 @@
    "/js/voice.js": 14663,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 25689,
-   "/play/": 4141,
-   "/sw.js": 6306,
+   "/math.css": 25896,
+   "/play/": 4130,
+   "/sw.js": 6318,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
@@ -355,6 +355,13 @@
     "from": 842086,
     "to": 844873,
     "why": "indexable-routes task 1.1: the route table js/paths.js (new, 2,760 bytes: one row per route with its finite keys from the catalogs, toPath, toKey, allPaths). Nothing imports it yet, but build.py pins every /js/ module in the import map and precaches it, so a new module counts here before any view loads it; the router, the hash shim and the prerender step read it from task 2.1 on. File deltas: /js/paths.js +2760 (new), /play/ +6 (its import map entry), /sw.js +21 (its precache entry); +2787 in all with CI's /js/nav.js figure (the local Brotli reads 1 byte less, as the 2026-10-30 entry says); measured on main as of #187"
+   },
+   {
+    "date": "2026-10-31",
+    "pr": "routes-3-1-view-transitions",
+    "from": 844873,
+    "to": 845455,
+    "why": "indexable-routes task 3.1, view transitions inside the game (design D12): render() in js/app.js runs its DOM update inside document.startViewTransition when the browser has it and fx.noMotion() is false, skipping the first render, a redraw of the same route and a change while one is running, with focus and scroll after updateCallbackDone; math.css names the header, the nav and the Player chip (site-header, game-nav, player-chip) and sets the 180 ms fade; no new file; measured on the tree merged with main as of #187 and task 1.1; file deltas: /js/app.js +374, /math.css +207, /sw.js +12, /play/ -11; /js/nav.js reads 1 byte smaller locally than CI's figure, which the baseline keeps (the #168 note); +582 in all as CI measures it"
    }
   ]
  },
