@@ -18,7 +18,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 849632,
+  "total": 849706,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -88,7 +88,7 @@
    "/js/mental.js": 155,
    "/js/metrics.js": 4201,
    "/js/nav.js": 1555,
-   "/js/paths.js": 2760,
+   "/js/paths.js": 2776,
    "/js/play/catalog.js": 1783,
    "/js/play/exp/apprentice-core.js": 7279,
    "/js/play/exp/apprentice.js": 3914,
@@ -174,8 +174,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 25689,
-   "/play/": 4327,
-   "/sw.js": 6445,
+   "/play/": 4362,
+   "/sw.js": 6468,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
@@ -373,8 +373,8 @@
     "date": "2026-10-31",
     "pr": "routes-1-1-paths",
     "from": 846845,
-    "to": 849632,
-    "why": "indexable-routes task 1.1: the route table js/paths.js (new, 2,760 bytes: one row per route with its finite keys from the catalogs, toPath, toKey, allPaths). Nothing imports it yet, but build.py pins every /js/ module in the import map and precaches it, so a new module counts here before any view loads it; the router, the hash shim and the prerender step read it from task 2.1 on. File deltas: /js/paths.js +2760 (new), /play/ +6 (its import map entry), /sw.js +21 (its precache entry); +2787 in all with CI's /js/nav.js figure (the local Brotli reads 1 byte less, as the 2026-10-30 entry says); measured on main as of #186"
+    "to": 849706,
+    "why": "indexable-routes task 1.1: the route table js/paths.js (new, 2,760 bytes: one row per route with its finite keys from the catalogs, toPath, toKey, allPaths). Nothing imports it yet, but build.py pins every /js/ module in the import map and precaches it, so a new module counts here before any view loads it; the router, the hash shim and the prerender step read it from task 2.1 on. File deltas: /js/paths.js +2760 (new), /play/ +6 (its import map entry), /sw.js +21 (its precache entry); +2787 in all with CI's /js/nav.js figure (the local Brotli reads 1 byte less, as the 2026-10-30 entry says); measured on main as of #186; re-measured in routes-2-3-prerender after merging main as of #188 (#127 moved the shell and the import map, so the delta there reads +2,861: /js/paths.js +2776, /play/ +41, /sw.js +44)"
    }
   ]
  },

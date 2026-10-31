@@ -148,27 +148,29 @@ export function metaOf(key: string): Meta {
     learn/kata/sq5/12.html (served at its path by auto-trailing-slash) */
 export const fileOf = (path: string): string => (path.endsWith('/') ? `${path}index.html` : `${path}.html`).slice(1);
 
-/* The head lines the shell (play/index.html) carries once, which every page rewrites */
-const TITLE = /<title>[^<]*<\/title>/, DESCRIPTION = /<meta name="description" content="[^"]*">/, CANONICAL = /<link rel="canonical" href="[^"]*">/;
-const OG_TITLE = /<meta property="og:title" content="[^"]*">/, OG_DESCRIPTION = /<meta property="og:description" content="[^"]*">/, OG_URL = /<meta property="og:url" content="[^"]*">/;
+/* The head lines the shell (play/index.html) carries once, each on its own line, which every page rewrites */
+const TITLE = /<title>[^<]*<\/title>\n/, DESCRIPTION = /<meta name="description" content="[^"]*">\n/, CANONICAL = /<link rel="canonical" href="[^"]*">\n/;
+const OG_TITLE = /<meta property="og:title" content="[^"]*">\n/, OG_DESCRIPTION = /<meta property="og:description" content="[^"]*">\n/, OG_URL = /<meta property="og:url" content="[^"]*">\n/;
 
-function replaceOnce(html: string, re: RegExp, line: string): string {
+/** Replaces the one line the shell has for `re` with `lines` (each ending in a newline; none to drop the line) */
+function replaceOnce(html: string, re: RegExp, lines: string[]): string {
   const hits = html.match(new RegExp(re.source, 'g')) ?? [];
   if (hits.length !== 1) throw new Error(`the shell has ${hits.length} lines matching ${re.source} in its head; the prerender rewrites exactly one`);
-  return html.replace(re, () => line);
+  return html.replace(re, () => lines.map(l => `${l}\n`).join(''));
 }
 
-/** The shell with a page's head: title, description, canonical, Open Graph, and the robots line when not indexed.
-    A null url (the 404 shell) drops the canonical and og:url: a not-found page has no address of its own. */
+/** The shell with a page's head: title, description, canonical, Open Graph, and the robots line when not indexed;
+    everything else, the body included, stays byte for byte. A null url (the 404 shell) drops the canonical and og:url:
+    a not-found page has no address of its own. */
 export function withHead(shell: string, meta: Meta, url: string | null, indexed: boolean): string {
   let html = shell;
-  html = replaceOnce(html, TITLE, `<title>${esc(meta.title)}</title>`);
-  html = replaceOnce(html, DESCRIPTION, `<meta name="description" content="${esc(meta.description)}">${indexed ? '' : `\n${NOINDEX}`}`);
-  html = replaceOnce(html, CANONICAL, url ? `<link rel="canonical" href="${esc(url)}">` : '');
-  html = replaceOnce(html, OG_TITLE, `<meta property="og:title" content="${esc(meta.title)}">`);
-  html = replaceOnce(html, OG_DESCRIPTION, `<meta property="og:description" content="${esc(meta.description)}">`);
-  html = replaceOnce(html, OG_URL, url ? `<meta property="og:url" content="${esc(url)}">` : '');
-  return html.replace(/\n\n+/g, '\n');
+  html = replaceOnce(html, TITLE, [`<title>${esc(meta.title)}</title>`]);
+  html = replaceOnce(html, DESCRIPTION, [`<meta name="description" content="${esc(meta.description)}">`, ...(indexed ? [] : [NOINDEX])]);
+  html = replaceOnce(html, CANONICAL, url ? [`<link rel="canonical" href="${esc(url)}">`] : []);
+  html = replaceOnce(html, OG_TITLE, [`<meta property="og:title" content="${esc(meta.title)}">`]);
+  html = replaceOnce(html, OG_DESCRIPTION, [`<meta property="og:description" content="${esc(meta.description)}">`]);
+  html = replaceOnce(html, OG_URL, url ? [`<meta property="og:url" content="${esc(url)}">`] : []);
+  return html;
 }
 
 /** Every route page, in route-table order, and the 404 shell last */

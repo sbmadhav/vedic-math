@@ -202,6 +202,16 @@ FIREBASE_KEY = re.compile(r"apiKey:\s*[\"']AIza[0-9A-Za-z_-]{30,}[\"']")
 TEXT_EXT = (".js", ".mjs", ".html", ".css", ".json", ".webmanifest", ".txt", ".md", ".svg", ".xml", ".map", ".csv", ".yml", ".yaml")
 SBMADHAV = re.compile(r"(?:https?:)?//(?:[\w-]+\.)*sbmadhav\.(?:com|github\.io)|sbmadhav\.goatcounter\.com")
 SHARED_PATHS = re.compile(r"(?<![\w.-])/(?:assets/(?:explore|analytics|count)\.js|assets/(?:fonts|icons)/|design-system/)")
+# A literal every match of the pattern above it contains. Python's regex engine scans every byte for a pattern that
+# starts with an alternation or a lookbehind, which over the thousands of route pages (check_route_pages) took seconds
+# per pattern; a substring check first skips the scan on a file that cannot match, and changes nothing that is caught.
+LITERALS = {PROVIDER_HOSTS: ("texttospeech", "elevenlabs", "openai", "tts.speech", "cognitiveservices", "polly."),
+            SECRETS: ("AIza", "AQ.", "ya29.", "sk-"), SBMADHAV: ("sbmadhav",), SHARED_PATHS: ("/assets/", "/design-system/")}
+
+
+def scan(pattern, text):
+    """pattern.search(text), after the literal pre-check in LITERALS."""
+    return pattern.search(text) if any(k in text for k in LITERALS[pattern]) else None
 
 
 # --voice off: the published js/voice-index.js names no recording and no host, so js/voice.js finds nothing recorded and
@@ -435,17 +445,18 @@ def check_published(out, voice):
         fail(f"{len(files)} files in the output; Cloudflare Workers allows {MAX_FILES[voice]} per version on this plan (design D17)")
     for p in files:
         rel = p.relative_to(out).as_posix()
-        if p.stat().st_size > MAX_FILE_BYTES:
-            fail(f"{rel}: {p.stat().st_size} bytes; Cloudflare Workers serves files up to 25 MiB")
-        if voice == "off" and VOICE_HOST.split("//")[1].encode() in p.read_bytes().lower():
+        data = p.read_bytes()
+        if len(data) > MAX_FILE_BYTES:
+            fail(f"{rel}: {len(data)} bytes; Cloudflare Workers serves files up to 25 MiB")
+        if voice == "off" and VOICE_HOST.split("//")[1].encode() in data.lower():
             # every published file, text or not, compared ignoring case
             fail(f"{rel}: names the voice host {VOICE_HOST}; a build with --voice off must not (deploy-pipeline spec)")
         if not (p.suffix in TEXT_EXT or p.name in ("_headers", "_redirects")):
             continue
-        text = p.read_text(encoding="utf-8", errors="ignore")
+        text = data.decode("utf-8", errors="ignore")
         if rel == "js/cloud-config.js":
             text = FIREBASE_KEY.sub("", text)
-        host, secret = PROVIDER_HOSTS.search(text), SECRETS.search(text)
+        host, secret = scan(PROVIDER_HOSTS, text), scan(SECRETS, text)
         if host:
             fail(f"{rel}: names a speech provider ({host.group(0)}); the site must only play its own recorded files")
         if secret:
@@ -454,12 +465,12 @@ def check_published(out, voice):
             fail(f"{rel}: names a /vedic-math/ path; the site is served from the root of learnvedicmath.com (only _redirects maps old links)")
         if "gstatic.com/firebasejs" in text:
             fail(f"{rel}: names gstatic.com/firebasejs; the Firebase SDK is served from /vendor/firebase/")
-        m = SBMADHAV.search(text.replace(EXPORT_PAGE, ""))
+        m = scan(SBMADHAV, text.replace(EXPORT_PAGE, ""))
         if m:
             fail(f"{rel}: refers to {m.group(0)}; the site loads and links nothing on sbmadhav.com except the export page {EXPORT_PAGE}")
         if rel.startswith(("vendor/", "ds/", "fonts/")):
             continue  # vendored code and licence texts: pinned by SHA256SUMS and reviewed when vendored; their comments may name anything
-        m = SHARED_PATHS.search(text)
+        m = scan(SHARED_PATHS, text)
         if m:
             fail(f"{rel}: loads {m.group(0)} from the old shared site; this site serves its own copy")
         for m in re.finditer(r"https?://([a-z0-9][a-z0-9.-]*[a-z0-9])", text.replace(EXPORT_PAGE, ""), re.I):

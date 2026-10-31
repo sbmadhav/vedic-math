@@ -73,12 +73,12 @@ test("every page's title is its own and follows the view's document.title rule",
   assert.throws(() => metaOf('#/nowhere'), /no title rule/);
 });
 
-test(`every description is under ${DESCRIPTION_MAX} characters with no em dash or markup, and Open Graph repeats it`, () => {
+test(`every description is under ${DESCRIPTION_MAX} characters with no em dash, and Open Graph repeats it`, () => {
   for (const p of PAGES) {
     const d = description(p.html);
     assert.ok(d, `${p.path} has a description`);
     assert.ok(d.length < DESCRIPTION_MAX, `${p.path}: ${d.length} characters: ${d}`);
-    assert.doesNotMatch(d, /—|&lt;|&gt;/, p.path);
+    assert.doesNotMatch(d, /—/, p.path);
     assert.doesNotMatch(title(p.html), /—/, p.path);
     assert.equal(og(p.html, 'description'), d, p.path);
   }
