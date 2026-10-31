@@ -3,8 +3,11 @@
   "compilerOptions": {
     "lib": ["ES2022"],
     "types": ["node"],
-    "erasableSyntaxOnly": true
+    "erasableSyntaxOnly": true,
+    "//": "allowJs without checkJs: prerender/write.ts imports the game's plain JavaScript catalogs (js/paths.js and what it reads), which tsc follows for their shapes without checking them (openspec change indexable-routes, design D4)",
+    "allowJs": true,
+    "checkJs": false
   },
-  "include": ["*.ts", "test/**/*.ts"],
+  "include": ["*.ts", "test/**/*.ts", "prerender/*.ts"],
   "exclude": ["eslint-rules/fixtures"]
 }
