@@ -4,6 +4,8 @@
    Points are weighted by difficulty, so scores compare fairly across players working at different levels.
    The dial each player reaches is saved per game as their rating and becomes their next starting point. */
 import * as store from './store.js';
+import { byId } from './skills/index.js';
+import { TRICKS } from './vedic.js';
 
 export const DMIN = 1, DMAX = 20;
 /* Where a first-time player starts, by play mode */
@@ -14,18 +16,35 @@ export const pointsAt = d => 10 + 7 * (Math.max(DMIN, Math.min(DMAX, Math.round(
 export const levelStart = (n, perGame = 72) => Math.min(DMAX, 1 + Math.round(((n - 1) * (DMAX - 1)) / (perGame - 1)));
 export const levelForDifficulty = (d, perGame = 72) => 1 + Math.round(((Math.max(DMIN, Math.min(DMAX, d)) - 1) * (perGame - 1)) / (DMAX - 1));
 
+/* The Placement level (openspec placement, ADR 0007): where Practice starts for a Player who has a Placement level and
+   no Rating yet. LEVEL_START is anchored so each Mode's first grade gives that Mode's START (K 1, grade 3 5, grade 8 9):
+   a Player placed at their Mode's start gets today's behavior. Only Practice callers pass { practice: true }; Ranked
+   rounds (the daily Arena, Ranked game rounds) keep the Mode's start, so the Placement level never reaches a Board. */
+export const LEVEL_START = { K: 1, 1: 2, 2: 3, 3: 5, 4: 6, 5: 7, 6: 8, 7: 8, 8: 9, 9: 10, 10: 11, 11: 12, 12: 13 };
+export const gradeNum = g => (String(g) === 'K' ? 0 : Number(g));
+/* A Skill below the Placement level starts at 10 (generator level 2), one at the level at 5 (level 1, near the top), one above at 1 */
+export const skillStart = (grade, level) => { const a = gradeNum(grade), b = gradeNum(level); return a < b ? 10 : a === b ? 5 : 1; };
+const placed = () => { const p = store.placement(); return p ? p.grade : null; };
+const skillGrade = id => { const s = byId[id]; return s ? (s.trick ? (TRICKS.find(t => t.id === s.trick) || {}).grade : s.grade) : null; };
+
 /* Ratings (GLOSSARY.md): one 1 to 20 number per Player for each game, the Arena in each League and each Skill,
    kept with the rest of progress on this device. key is the full key: 'game:<id>', 'arena:<league>' or 'skill:<id>'.
-   A Player with no Rating yet starts at their Mode's start (fallback, when given, replaces that start). */
-export const rating = (key, mode, fallback = 0) => store.rating(key) || fallback || START[mode] || START.challenger;
+   A Player with no Rating yet starts at their Mode's start (fallback, when given, replaces that start); in Practice
+   (practice: true) a Player with a Placement level starts at the level's start instead. */
+export const rating = (key, mode, fallback = 0, { practice = false } = {}) =>
+  store.rating(key) || fallback || (practice && placed() ? LEVEL_START[placed()] : 0) || START[mode] || START.challenger;
 
 /* Skill generators have levels 1 to 3. A Rating picks one: 1 to 7 is level 1, 8 to 13 level 2, 14 to 20 level 3. */
 export const levelFor = d => (d <= 7 ? 1 : d <= 13 ? 2 : 3);
 /* A Skill Rating for a Player who practiced the Skill before Skill Ratings existed: the middle of the band for
    their mastery level (js/store.js level), so their questions stay at the level they had */
 export const ratingFromLevel = lv => ({ 1: 4, 2: 10, 3: 17 })[lv] || 4;
-/* A Player's Rating for a Skill: saved, else from their mastery level if they have started it, else their Mode's start */
-export const skillRating = (id, mode) => rating('skill:' + id, mode, store.started(id) ? ratingFromLevel(store.level(id)) : 0);
+/* A Player's Rating for a Skill: saved, else from their mastery level if they have started it, else (in Practice, with a
+   Placement level) where the level puts the Skill's grade, else their Mode's start */
+export const skillRating = (id, mode, { practice = false } = {}) => {
+  const band = store.started(id) ? ratingFromLevel(store.level(id)) : 0, g = practice && placed() ? skillGrade(id) : null;
+  return rating('skill:' + id, mode, band || (g !== null && g !== undefined ? skillStart(g, placed()) : 0));
+};
 
 export class Dial {
   constructor(start, { floor = DMIN, ceil = DMAX } = {}) {

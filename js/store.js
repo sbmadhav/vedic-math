@@ -140,6 +140,22 @@ export const starStates = () => { const s = sky(); return { lit: { ...s.lit }, s
 export const starLast = (trick, n) => (sky().last[starKey(trick, n)] || []).slice();
 export function setStarLast(trick, n, keys) { sky().last[starKey(trick, n)] = keys.slice(); save(); }
 
+/* Placement (openspec placement, ADR 0007): the result of a Placement climb, { grade ('K' or '1' to '12'), steps, at },
+   on the device only, in the Player's record (the backup code carries it, nothing is ever posted or sent). Not in
+   blank(): a record without it loads as before. placementCard: 'done' once the offer or Home's card has been answered,
+   so neither asks again on its own. hookSeen: when the Hook was shown or skipped (openspec hook), once per Player. */
+export const placement = () => (load(), S.placement || null);
+export function setPlacement({ grade, steps }) {
+  load(); S.placement = { grade: String(grade), steps: Math.max(0, Math.floor(Number(steps) || 0)), at: Date.now() }; save(); emit('placement', { ...S.placement });
+  return S.placement;
+}
+export const placementCard = () => (load(), S.placementCard || null);
+export function setPlacementCard(v = 'done') { load(); if (S.placementCard === v) return false; S.placementCard = v; save(); return true; }
+export const hookSeen = () => (load(), !!S.hookSeen);
+export function setHookSeen() { load(); if (S.hookSeen) return false; S.hookSeen = Date.now(); save(); return true; }
+/* Any progress: an answer, Sparks, a Rating, a lit or skipped Star (Home shows its Placement card to such a Player once) */
+export const hasProgress = () => { load(); const s = S.sky || {}; return (S.counts.answers || 0) > 0 || S.sparks > 0 || Object.keys(S.ratings || {}).length > 0 || Object.keys(s.lit || {}).length > 0 || Object.keys(s.skipped || {}).length > 0; };
+
 /* Kept Belts (openspec sky-home): { <belt id>: when }. A Belt is earned by lighting all 9 of its Stars, and once earned
    (or earned under the old mastery rule before the change) it is kept here and never goes back. */
 export const keptBelts = () => (load(), { ...(S.belts || {}) });
