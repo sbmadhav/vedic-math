@@ -6,9 +6,10 @@ import { answerText } from './answers.js';
 import { shuffle } from './lib.js';
 import { mentalQ, FAMILIES } from './mental.js';
 import { levelFor } from './adapt.js';
-import { sfx, speakQuestion, sparkle, tick, wiggle, t } from './fx.js';
+import { sfx, speakQuestion, sparkle, tick, wiggle, t, MODES } from './fx.js';
 import { on, later, loop, child } from './life.js';
 import { keypadOnly } from './shell.js';
+import { SITE, APP_BASE } from './play/kit.js';
 
 /* Question pools by League. The Pro League draws from the mental arithmetic families (js/mental.js) instead;
    proV1 is the Pro pool before that change, kept only for Pro daily rounds dated before MENTAL_FROM. */
@@ -67,6 +68,48 @@ export function dailySet(league, day) {
   if (day < MENTAL_FROM) return makeSet('proV1', `daily-${day}-pro`);
   return makeSet('pro', `v2:daily-${day}-pro`, 80, { ramp: PRO_RAMP });
 }
+/* ---------- Challenge links (openspec change arena-challenge-link) ----------
+   #/arena/day/<YYYY-MM-DD>/<league>/<score>: the date and the League are the whole recipe for a daily round (dailySet),
+   so a link reproduces the sharer's round exactly, and the Score is the one to beat; nothing else is carried (design D1
+   and D3). The link names the live site whatever host built it (a preview or localhost link is no use to a friend):
+   SITE and APP_BASE live in js/play/kit.js, the one place share links are built. */
+export const LEAGUES = ['explorer', 'challenger', 'pro'];
+export const MAX_CHALLENGE_SCORE = 9999;
+const DAY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+/* A real calendar date written YYYY-MM-DD (2026-02-30 is not one) */
+export function realDay(day) {
+  const m = DAY_RE.exec(String(day || '')); if (!m) return false;
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  return d.getUTCFullYear() === +m[1] && d.getUTCMonth() === +m[2] - 1 && d.getUTCDate() === +m[3];
+}
+/* parts: what follows #/arena/day/ ([day, league] or [day, league, score]); today: the Player's local date (cloud.dayId);
+   league: the Player's League. Returns { day, league, score, ranked } or null when the date or League does not parse.
+   score is null unless the part is a whole number from 0 to 9999 (design D3); ranked is true only on the link's own date
+   in the Player's own League (design D2), and the caller checks it again when Start is tapped. */
+export function parseChallenge(parts, today, league) {
+  const p = Array.isArray(parts) ? parts.filter(x => x !== '') : [];
+  if (p.length < 2 || p.length > 3) return null;
+  const [day, lg, sc] = p;
+  if (!realDay(day) || !LEAGUES.includes(lg)) return null;
+  const score = sc !== undefined && /^\d{1,4}$/.test(sc) ? +sc : null;
+  return { day, league: lg, score, ranked: day === today && lg === league };
+}
+/* The one canonical link, always with its three parts (design D1); the Score is clamped to what the parser takes */
+export const challengeUrl = ({ day, league, score }) => `${SITE}${APP_BASE}#/arena/day/${day}/${league}/${Math.min(MAX_CHALLENGE_SCORE, Math.max(0, Math.round(Number(score) || 0)))}`;
+/* What Challenge a friend hands the share sheet (design D4 and D5): a title, three lines of words (the site, the round,
+   the League and the date; the Score and its parts; the invitation) and the link. The same words in every Mode: the
+   reader is the friend, and the League name already says which Mode. No Nickname, Rating, emoji, em dash, Sutra or Trick. */
+export function challengeShare({ league, day, score, right, wrong, bestCombo }) {
+  const name = (MODES[league] || MODES.challenger).name;
+  return {
+    title: 'Learn Vedic Math',
+    text: `Learn Vedic Math: Arena daily challenge, ${name} League, ${day}\nScore ${score}: ${right} right, ${wrong} missed, best combo ${bestCombo}x\nThe same questions for every ${name} today, ${ROUND_SECS} seconds, no sign-in. Can you beat it?`,
+    url: challengeUrl({ day, league, score })
+  };
+}
+/* The text a Player pastes when there is no share sheet: the three lines, then the link (what kit.share copies) */
+export const challengeText = r => { const s = challengeShare(r); return `${s.text}\n${s.url}`; };
+
 /* One Arena Practice question at difficulty d (1 to 20): a mental family for Pro, else the League's pool at the
    generator level for d */
 export function practiceItem(league, d) {
