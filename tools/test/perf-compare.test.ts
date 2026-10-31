@@ -5,7 +5,10 @@
    regression a pull request adds fails), largest contentful paint stays on the baseline (the hosts differ on the
    network chain), and the table gets a Production column. */
 import { test, expect } from 'vitest';
-import { main, compare, table, notes, REPORTED, ABSOLUTE, type PerfBaseline, type Lh, type Ix, type Reference } from '../perf-compare.ts';
+import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { main, compare, table, notes, REPORTED, ABSOLUTE, PULL_REQUEST, type PerfBaseline, type Lh, type Ix, type Reference, type Labels } from '../perf-compare.ts';
 
 const lh = (o: Partial<Lh> = {}): Lh => ({ fcp: 1900, lcp: 5200, tbt: 30, cls: 0.007, si: 1900, ttfb: 70, ...o });
 const ix = (o: Partial<Ix> = {}): Ix => ({ inp: 48, visible: 33, ...o });
@@ -23,7 +26,7 @@ test('at the tolerance passes; one step past fails, naming the metric', () => {
   expect(over(lh({ lcp: 5301, tbt: 56 }), ix())).toEqual(['arena lcp', 'arena tbt']);
   expect(over(lh({ cls: 0.101 }), ix({ inp: 69, visible: 54 }))).toEqual(['arena cls', 'arena-answer inp', 'arena-answer visible']);
   // Without production every limit counts from the baseline, and no row carries a production number
-  expect(run(lh(), ix()).every(r => r.production === undefined && (r.from === 'baseline' || r.limit === null))).toBe(true);
+  expect(run(lh(), ix()).every(r => r.reference === undefined && (r.from === 'baseline' || r.limit === null))).toBe(true);
 });
 
 test('first contentful paint is reported, not gated: the row keeps its 100 ms limit, reads reported and never fails (owner, 2026-10-23)', () => {
@@ -72,9 +75,9 @@ test('the limits count from production: the slow runner of #125 passes, and the 
   // Both hosts read blocking time far over the baseline's 30 + 25 on a slow runner: the preview is held to production + 25
   expect(overP(lh({ tbt: 190 }), ix(), lh({ tbt: 215 }), ix())).toEqual([]);
   expect(overP(lh({ tbt: 190 }), ix(), lh({ tbt: 216 }), ix())).toEqual(['arena tbt']);
-  expect(runP(lh({ tbt: 190 }), ix(), lh({ tbt: 200 }), ix()).find(r => r.metric === 'tbt')).toMatchObject({ base: 30, production: 190, now: 200, limit: 215, from: 'production', ok: true });
+  expect(runP(lh({ tbt: 190 }), ix(), lh({ tbt: 200 }), ix()).find(r => r.metric === 'tbt')).toMatchObject({ base: 30, reference: 190, now: 200, limit: 215, from: 'reference', ok: true });
   // A fast runner moves the limit down with production: a regression the baseline would hide still fails
-  expect(runP(lh({ tbt: 20 }), ix(), lh({ tbt: 50 }), ix()).find(r => r.metric === 'tbt')).toMatchObject({ production: 20, now: 50, limit: 45, from: 'production', ok: false });
+  expect(runP(lh({ tbt: 20 }), ix(), lh({ tbt: 50 }), ix()).find(r => r.metric === 'tbt')).toMatchObject({ reference: 20, now: 50, limit: 45, from: 'reference', ok: false });
   // Interactions too: 20 ms over production, or the noise the baseline records, counted from production
   expect(overP(lh(), ix({ inp: 60, visible: 40 }), lh(), ix({ inp: 80, visible: 60 }))).toEqual([]);
   expect(overP(lh(), ix({ inp: 60, visible: 40 }), lh(), ix({ inp: 81, visible: 61 }))).toEqual(['arena-answer inp', 'arena-answer visible']);
@@ -95,14 +98,14 @@ test('largest contentful paint is held to the baseline, not production: the host
   // #139's job, the same bytes on both hosts: production 5340, the preview 5460 on /play/ against a baseline of 5420 passes
   const same: PerfBaseline = { ...base, lighthouse: { pages: { arena: { ...base.lighthouse.pages.arena!, median: lh({ lcp: 5420 }) } } } };
   const rows = compare(same, { pages: { arena: { median: lh({ lcp: 5460 }) } } }, { interactions: { 'arena-answer': ix() } }, production(lh({ lcp: 5340 }), ix()));
-  expect(rows.find(r => r.metric === 'lcp')).toMatchObject({ base: 5420, production: 5340, now: 5460, limit: 5520, from: 'baseline', ok: true });
+  expect(rows.find(r => r.metric === 'lcp')).toMatchObject({ base: 5420, reference: 5340, now: 5460, limit: 5520, from: 'baseline', ok: true });
   expect(table(rows)).toMatch(/\| arena \| lcp \| 5420 ms \| 5340 ms \| 5460 ms \| 5520 ms \(baseline\) \| ok \|/);
   // Over the baseline's 100 ms fails, however production reads
-  expect(runP(lh({ lcp: 5600 }), ix(), lh({ lcp: 5301 }), ix()).find(r => r.metric === 'lcp')).toMatchObject({ base: 5200, production: 5600, now: 5301, limit: 5300, from: 'baseline', ok: false });
+  expect(runP(lh({ lcp: 5600 }), ix(), lh({ lcp: 5301 }), ix()).find(r => r.metric === 'lcp')).toMatchObject({ base: 5200, reference: 5600, now: 5301, limit: 5300, from: 'baseline', ok: false });
   expect(overP(lh({ lcp: 5600 }), ix(), lh({ lcp: 5300 }), ix())).toEqual([]);
   expect(overP(lh({ lcp: 5000 }), ix(), lh({ lcp: 5300 }), ix())).toEqual([]);
   // Blocking time has no baseline gate: over the baseline's limit, within production's, passes
-  expect(runP(lh({ tbt: 190 }), ix(), lh({ tbt: 200 }), ix()).find(r => r.metric === 'tbt')).toMatchObject({ limit: 215, from: 'production' });
+  expect(runP(lh({ tbt: 190 }), ix(), lh({ tbt: 200 }), ix()).find(r => r.metric === 'tbt')).toMatchObject({ limit: 215, from: 'reference' });
   expect(table(runP(lh({ tbt: 190 }), ix(), lh({ tbt: 200 }), ix()))).toMatch(/\| arena \| tbt \| 30 ms \| 190 ms \| 200 ms \| 215 ms \| ok \|/);
 });
 
@@ -111,7 +114,7 @@ test('layout shift may rise to the larger of production and 0.1; first contentfu
   expect(overP(lh({ cls: 0.2 }), ix(), lh({ cls: 0.2 }), ix())).toEqual([]);
   expect(overP(lh({ cls: 0.2 }), ix(), lh({ cls: 0.201 }), ix())).toEqual(['arena cls']);
   const rows = runP(lh({ fcp: 2500 }), ix(), lh({ fcp: 3200 }), ix());
-  expect(rows.find(r => r.metric === 'fcp')).toMatchObject({ base: 1900, production: 2500, now: 3200, limit: 2600, from: 'production', reported: true, ok: true });
+  expect(rows.find(r => r.metric === 'fcp')).toMatchObject({ base: 1900, reference: 2500, now: 3200, limit: 2600, from: 'reference', reported: true, ok: true });
   expect(table(rows)).toMatch(/\| arena \| fcp \| 1900 ms \| 2500 ms \| 3200 ms \| 2600 ms \| reported \|/);
 });
 
@@ -143,4 +146,83 @@ test('an incomplete --production option is refused, never a silent fall back to 
   expect(() => main(['b.json', 'l.json', 'i.json', '--production'])).toThrow(/usage/);
   expect(() => main(['b.json', 'l.json', 'i.json', '--production', 'p.json'])).toThrow(/usage/);
   expect(() => main(['b.json', 'l.json', 'i.json', '--production', 'p.json', '--out', 't.md'])).toThrow(/usage/);
+});
+
+/* After a deploy (openspec change perf-gate-same-runner-post-deploy): production is measured and the pinned reference
+   build of baseline.json's `reference` is the reference, with the same rules as a pull request's */
+const DEPLOY: Labels = { reference: 'Reference (`abc1234`)', measured: 'Production' };
+const deep: PerfBaseline = { ...base, lighthouse: { pages: { arena: { ...base.lighthouse.pages.arena!, median: lh({ tbt: 159 }) } } } };
+const afterDeploy = (refL: Lh, l: Lh) => compare(deep, { pages: { arena: { median: l } } }, { interactions: { 'arena-answer': ix() } }, production(refL, ix()));
+
+test('the spec examples after a deploy: a slow runner passes against the pinned reference, 26 ms over it fails, largest contentful paint stays on the baseline', () => {
+  // 196 on production, 190 on the reference, baseline 159: the limit is 215
+  expect(afterDeploy(lh({ tbt: 190 }), lh({ tbt: 196 })).find(r => r.metric === 'tbt')).toMatchObject({ base: 159, reference: 190, now: 196, limit: 215, from: 'reference', ok: true });
+  expect(afterDeploy(lh({ tbt: 190 }), lh({ tbt: 216 })).filter(r => !r.ok).map(r => r.metric)).toEqual(['tbt']);
+  // Small regressions that add up: 30 ms over the pin fails, however each deploy moved it
+  expect(afterDeploy(lh({ tbt: 100 }), lh({ tbt: 130 })).filter(r => !r.ok).map(r => r.metric)).toEqual(['tbt']);
+  expect(afterDeploy(lh({ lcp: 5000 }), lh({ lcp: 5301 })).find(r => r.metric === 'lcp')).toMatchObject({ reference: 5000, limit: 5300, from: 'baseline', ok: false });
+});
+
+test('after a deploy the columns read Reference and Production, and the notes name both', () => {
+  const rows = afterDeploy(lh({ tbt: 190 }), lh({ tbt: 196 }));
+  expect(table(rows, DEPLOY).split('\n').slice(0, 2)).toEqual(['| Page or interaction | Metric | Baseline | Reference (`abc1234`) | Production | Limit | |', '|---|---|---|---|---|---|---|']);
+  expect(table(rows, DEPLOY)).toMatch(/\| arena \| tbt \| 159 ms \| 190 ms \| 196 ms \| 215 ms \| ok \|/);
+  expect(table(rows, DEPLOY)).toMatch(/\| arena \| lcp \| 5200 ms \| 5200 ms \| 5200 ms \| 5300 ms \(baseline\) \| ok \|/);
+  const lines = notes(rows, { benchmarkIndex: 2458 }, { benchmarkIndex: 2470 }, { labels: DEPLOY, afterDeploy: true });
+  expect(lines[0]).toMatch(/^Limits are the median of Reference \(`abc1234`\) in this job plus the tolerance: how far Production has moved from it/);
+  expect(lines[2]).toMatch(/^Runner CPU speed: Lighthouse benchmarkIndex 2458 on the Production runs, 2470 on the Reference \(`abc1234`\) runs/);
+  // A pull request's layout is the default
+  expect(table(rows)).toBe(table(rows, PULL_REQUEST));
+});
+
+test('the pinned reference in docs/perf/baseline.json: a full commit of main, the alias perf-ref, a date and a reason', () => {
+  const real = JSON.parse(readFileSync(new URL('../../docs/perf/baseline.json', import.meta.url), 'utf8')) as PerfBaseline;
+  expect(real.reference).toMatchObject({ commit: expect.stringMatching(/^[0-9a-f]{40}$/), alias: 'perf-ref', date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/), why: expect.any(String) });
+  expect(real.reference!.why.length).toBeGreaterThan(20);
+});
+
+test('the reference not measured after a deploy: the baseline alone, as before, and a note naming the pinned commit and why', () => {
+  const rows = compare(deep, { pages: { arena: { median: lh({ tbt: 196 }) } } }, { interactions: { 'arena-answer': ix() } });
+  expect(rows.find(r => r.metric === 'tbt')).toMatchObject({ limit: 184, from: 'baseline', ok: false });
+  expect(table(rows, DEPLOY).split('\n')[0]).toBe('| Page or interaction | Metric | Baseline | Production | Limit | |');
+  const lines = notes(rows, { benchmarkIndex: 2458 }, undefined, { labels: DEPLOY, afterDeploy: true, missing: { commit: 'abc1234def', why: 'the upload failed' } });
+  expect(lines[0]).toMatch(/^The pinned reference \(`abc1234`\) was not measured: the upload failed\. Every limit counts from the baseline alone/);
+  expect(lines[2]).toMatch(/^Runner CPU speed: Lighthouse benchmarkIndex 2458 \(higher is faster\)/);
+  // Without a missing reference, no such note
+  expect(notes(rows, {})).toHaveLength(1);
+});
+
+test('the command line: --reference and --production are one option, and the labels and the missing note reach the table', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'perf-compare-'));
+  const write = (name: string, v: unknown) => { const p = join(dir, name); writeFileSync(p, JSON.stringify(v)); return p; };
+  const b = write('base.json', { ...deep, reference: { commit: 'abc1234def5678', date: '2026-10-30', alias: 'perf-ref', why: 'test' } });
+  const l = write('lh.json', { pages: { arena: { median: lh({ tbt: 196 }) } }, benchmarkIndex: 2458 });
+  const i = write('ix.json', { interactions: { 'arena-answer': ix() } });
+  const rl = write('rlh.json', { pages: { arena: { median: lh({ tbt: 190 }) } }, benchmarkIndex: 2470 });
+  const ri = write('rix.json', { interactions: { 'arena-answer': ix() } });
+  const out = join(dir, 't.md');
+  const log = console.log;
+  console.log = () => {};
+  try {
+    main([b, l, i, '--reference', rl, ri, '--reference-label', 'Reference (`abc1234`)', '--label', 'Production', '--out', out]);
+    expect(process.exitCode ?? 0).toBe(0);
+    expect(readFileSync(out, 'utf8')).toMatch(/\| Baseline \| Reference \(`abc1234`\) \| Production \| Limit \|/);
+    main([b, l, i, '--production', rl, ri, '--out', out]);
+    expect(readFileSync(out, 'utf8')).toMatch(/\| Baseline \| Production \| Preview \| Limit \|/);
+    expect(readFileSync(out, 'utf8')).toMatch(/Limits are production's median in this job/);
+    // A pull request's run that names its columns keeps a pull request's notes (#179 review)
+    main([b, l, i, '--production', rl, ri, '--label', 'Preview', '--out', out]);
+    expect(readFileSync(out, 'utf8')).toMatch(/Limits are production's median in this job/);
+    expect(readFileSync(out, 'utf8')).not.toMatch(/workers\.dev, a different network chain/);
+    main([b, l, i, '--reference', rl, ri, '--out', out]);
+    expect(readFileSync(out, 'utf8')).toMatch(/\| Baseline \| Reference \| Production \| Limit \|/);
+    expect(readFileSync(out, 'utf8')).toMatch(/Limits are the median of Reference in this job plus the tolerance: how far Production has moved/);
+    main([b, l, i, '--label', 'Production', '--reference-missing', 'the upload failed', '--out', out]);
+    expect(process.exitCode).toBe(1);
+    expect(readFileSync(out, 'utf8')).toMatch(/The pinned reference \(`abc1234`\) was not measured: the upload failed\./);
+  } finally { console.log = log; process.exitCode = 0; rmSync(dir, { recursive: true, force: true }); }
+  expect(() => main([b, l, i, '--reference', rl, ri, '--production', rl, ri])).toThrow(/usage/);
+  expect(() => main([b, l, i, '--reference', rl])).toThrow(/usage/);
+  expect(() => main([b, l, i, '--reference', rl, ri, '--reference-missing', 'x'])).toThrow(/usage/);
+  expect(() => main([b, l, i, '--reference-label'])).toThrow(/usage/);
 });

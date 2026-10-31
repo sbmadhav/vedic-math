@@ -14,8 +14,8 @@
 The site is served by Cloudflare Workers static assets (wrangler.jsonc; openspec change learnvedicmath, design D1)
 from the root of learnvedicmath.com: the landing page at /, the game at /play/, the grown-up pages at /parents/,
 /teachers/, /privacy/ and /terms/, the hand-off import page at /import/. Modules are at /js/, styles at /css/ and
-/math.css. Nothing is loaded from another repo or site: the design system (vendor/design-system/2.1.0/, published at
-/ds/2.1.0/), the fonts (fonts/), the icons (icons/), the GoatCounter script and the Firebase SDK (vendor/) are served
+/math.css. Nothing is loaded from another repo or site: the design system (vendor/design-system/2.2.0/, published at
+/ds/2.2.0/), the fonts (fonts/), the icons (icons/), the GoatCounter script and the Firebase SDK (vendor/) are served
 from this site, and every same-origin script and stylesheet a page loads is pinned with ?v=<hash>.
 
 The source in git is never stamped: play/index.html has no import map and loads plain /js/app.js and /math.css, and
@@ -54,7 +54,7 @@ import argparse, base64, datetime, fnmatch, hashlib, html as htmllib, importlib.
 ROOT = pathlib.Path(__file__).resolve().parent
 ORIGIN = "https://learnvedicmath.com"
 APP = "/play/"
-DS_DIR, DS_URL = "vendor/design-system/2.1.0", "/ds/2.1.0/"
+DS_DIR, DS_URL = "vendor/design-system/2.2.0", "/ds/2.2.0/"
 DS_PUBLISHED = ["tokens.css", "components.css", "header.js"]
 DS_TOKENS = DS_URL.lstrip("/") + "tokens.css"
 HEADER = "theme/header.html"
@@ -696,7 +696,7 @@ def build_site(args, out):
     if voice_off:
         sw = voice_off_sw(sw)
 
-    # Published path -> source path. Pages are rendered separately; the design system goes to /ds/2.1.0/.
+    # Published path -> source path. Pages are rendered separately; the design system goes to /ds/2.2.0/.
     publish = {f: f for f in files if not f.startswith("site/")}
     publish.update({DS_URL.lstrip("/") + f: f"{DS_DIR}/{f}" for f in DS_PUBLISHED})
     # The TypeScript modules js/ imports, published under /js/ts/ with their types taken out (ts_modules)

@@ -89,6 +89,28 @@ test('the keys the app draws exist', () => {
   assert.match(src('tour.js'), /listenBtn\('tour'/);
   assert.match(src('star.js'), /listenBtn\('from:\.star-step > p'/); // the Star replay's steps (worked steps: clips)
   assert.match(app, /listenBtn\('from:\.q-l'/); // today's quests, each a recorded label
+  assert.match(app, /listenBtn\(\['lede', id, \.\.\.nums\]\.join\(':'\)/); // page introductions (task 4.2)
+  assert.match(app, /listenBtn\('from:\.vp-why'/); // a video's description, in the player (task 4.3)
+  assert.match(app, /listenBtn\('from:\.badge:not\(\.got\) small'/); // the rules of the badges still to earn (task 4.4)
+});
+
+/* explanation-audio 4.2: a page introduction's Listen button reads what the page shows, in the Mode's words: the
+   fixed lines (recorded) and, when the key carries them, the Player's own numbers (clips or the device's voice) */
+import { ledeKeyLines } from '../js/explain-lines.js';
+import { LEDES, ledeHTML } from '../js/ledes.js';
+import { MODES as PLAY_MODES } from '../js/fx.js';
+
+test('a page introduction reads the words its page shows, in every Mode', () => {
+  const n = guideCounts();
+  for (const mode of Object.keys(PLAY_MODES)) for (const id of Object.keys(LEDES)) {
+    const c = { mode, n, modeName: PLAY_MODES[mode].name, links: mode === 'pro', done: 7, total: 31, got: 3, all: 29 };
+    const nums = id.startsWith('grade') ? ['7', '31'] : id === 'sutras' ? ['3', '29'] : [];
+    assert.equal(linesForKey(['lede', id, ...nums].join(':'), mode).join(' '), ledeHTML(id, c), `${mode} ${id}`);
+  }
+  assert.deepEqual(linesForKey('lede:grade:7:31', 'pro'), ['7 of 31 skills mastered.', LEDES.grade({ done: 7, total: 31 })[1]]);
+  assert.deepEqual(linesForKey('lede:sutras', 'pro').length, 1, 'without the numbers, only the fixed line');
+  assert.deepEqual(ledeKeyLines('nope', 'pro'), []);
+  assert.deepEqual(linesForKey('lede:toString'), []);
 });
 
 /* explanation-audio 4.4 and 4.5: quest labels, format rules and the "Older roots" notes are in the recording list, in

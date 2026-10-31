@@ -33,17 +33,20 @@ test.describe('Bolt: a miss', () => {
   });
 });
 
-/* Colors: every token-colored part of Bolt resolves to the current scheme's token value */
+/* Colors: every part of Bolt resolves to the design system's fixed Bolt tokens (--bolt-*), the same in both schemes */
 const PARTS: [string, 'fill' | 'stroke', string][] = [
-  ['.b-body', 'fill', '--teal'],
-  ['.b-body', 'stroke', '--on-accent'],
-  ['.b-ball', 'fill', '--coral'],
-  ['.b-armr', 'fill', '--sky'],
-  ['.b-belly', 'fill', '--sun'],
-  ['.b-cheek', 'fill', '--coral'],
-  ['.b-tip', 'fill', '--sun'],
-  ['.b-pupil', 'fill', '--on-accent'],
-  ['.m-talk', 'fill', '--coral'],
+  ['.b-body', 'fill', '--bolt-body'],
+  ['.b-body', 'stroke', '--bolt-line'],
+  ['.b-ball', 'fill', '--bolt-accent'],
+  ['.b-armr', 'fill', '--bolt-body'],
+  ['.b-belly', 'fill', '--bolt-belly'],
+  ['.b-cheek', 'fill', '--bolt-accent'],
+  ['.b-tip', 'fill', '--bolt-belly'],
+  ['.b-pupil', 'fill', '--bolt-line'],
+  ['.b-screen', 'fill', '--bolt-screen'],
+  ['.b-white', 'fill', '--bolt-eye'],
+  ['.b-btn', 'fill', '--bolt-eye'],
+  ['.m-talk', 'fill', '--bolt-accent'],
 ];
 
 async function boltColors(page: Page) {
@@ -77,36 +80,13 @@ for (const scheme of ['light', 'dark'] as const) {
   }
 }
 
-test('Bolt follows the scheme: its token colors change from Daybreak to Deep Space', async ({ page }) => {
+test('Bolt keeps his colors: the same in Daybreak and Deep Space, with a glow only in Deep Space', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await open(page, '#/star/sq5/1');
   const light = await boltColors(page);
+  expect(await bolt(page).evaluate(svg => getComputedStyle(svg).filter)).toBe('none');
   await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
   await expect.poll(async () => (await boltColors(page)).filter(c => c.got !== c.want).length).toBe(0);
-  const dark = await boltColors(page);
-  const body = (cs: typeof light) => cs.find(c => c.sel === '.b-body' && c.prop === 'fill')!.got;
-  expect(body(dark)).not.toBe(body(light));
-});
-
-/* SPEC-GAP: math.css sets --bolt-eye: white and --bolt-screen: color-mix(in srgb, var(--teal) 14%, white), so the eye
-   whites, the belly button and part of the face screen use the literal color white, not a design token (in Deep Space
-   no token is white: --card, --bg and --ink are all other colors). The spec says Bolt's colors come from the tokens. */
-test.fixme('every color Bolt paints is a design token, including the eyes and the button (dark scheme)', async ({ page }) => {
-  await page.emulateMedia({ colorScheme: 'dark' });
-  await open(page, '#/star/sq5/1');
-  const bad = await page.evaluate(() => {
-    const probe = document.createElement('div'); document.body.append(probe);
-    const names = ['--bg', '--bg-alt', '--card', '--ink', '--ink-muted', '--line', '--edge', '--ledge', '--coral', '--teal', '--sun', '--sky', '--plum',
-      '--coral-strong', '--teal-strong', '--sun-strong', '--sky-strong', '--plum-strong', '--on-accent', '--focus'];
-    const tokens = new Set(names.map(v => { probe.style.color = `var(${v})`; return getComputedStyle(probe).color; }));
-    probe.remove();
-    const svg = document.querySelector('.star-bolt svg.bolt')!;
-    const out: string[] = [];
-    for (const el of svg.querySelectorAll('.b-white, .b-btn')) {
-      const f = getComputedStyle(el).fill;
-      if (!tokens.has(f)) out.push(`${el.getAttribute('class')} fill ${f}`);
-    }
-    return out;
-  });
-  expect(bad).toEqual([]);
+  expect((await boltColors(page)).map(c => c.got)).toEqual(light.map(c => c.got));
+  await expect.poll(() => bolt(page).evaluate(svg => getComputedStyle(svg).filter)).toContain('drop-shadow');
 });

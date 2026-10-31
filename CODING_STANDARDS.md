@@ -5,6 +5,8 @@ How code, copy and tests are written here, each rule with its reason.
 ## Styling: tokens and color schemes
 
 - Every value is a design system token (`var(--coral)`, `var(--space-6)`, `var(--radius-lg)`), so the brand theme and both color schemes restyle the whole site from one place. stylelint fails a raw color in `app/src/**/*.css`.
+- A spacing or radius value that is not on the scale takes the nearest step when it is within 2px of one (owner's call, design audit plan B), so the scale stays the one source; a font size that equals a type role's size uses its `--text-<style>-size` token.
+- Things told apart by colour (Belts, balloons, grade tiles) use the category colours (`--cat-*`), never `--sky` and `--teal` or `--plum` and `--coral` side by side; Bolt uses the fixed `--bolt-*` tokens; dialogs use `--scrim` and `--shadow-modal`; layers use `--z-*`; motion uses `--duration-*` and `--ease-*`.
 - Text on an accent fill uses `var(--on-accent)`, the color each scheme pairs with its accents.
 - Every page and view supports both color schemes, Daybreak (light) and Deep Space (dark): the system's scheme by default, the Player's saved choice when there is one.
 

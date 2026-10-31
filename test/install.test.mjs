@@ -135,7 +135,7 @@ test('the Install guide has steps for every kind, with pictures it draws, and no
 test('the game page: theme-color is the Daybreak --bg, and the pre-paint script sets the Deep Space --bg before the first paint', () => {
   /* A meta tag cannot read a CSS token, so these are the two places the page spells a color out; they must be the tokens' values */
   const html = readFileSync(new URL('../play/index.html', import.meta.url), 'utf8');
-  const tokens = readFileSync(new URL('../vendor/design-system/2.1.0/tokens.css', import.meta.url), 'utf8');
+  const tokens = readFileSync(new URL('../vendor/design-system/2.2.0/tokens.css', import.meta.url), 'utf8');
   const daybreak = tokens.match(/:root\s*\{[\s\S]*?--bg:\s*(#[0-9A-Fa-f]{6})/)[1].toLowerCase();
   const deepSpace = tokens.match(/:root\[data-theme="dark"\]\s*\{[\s\S]*?--bg:\s*(#[0-9A-Fa-f]{6})/)[1].toLowerCase();
   assert.notEqual(daybreak, deepSpace);
@@ -158,7 +158,7 @@ test('the manifest: the game as its own app, every field the install screens use
   assert.equal(m.scope, R.SCOPE);
   assert.ok(m.start_url.startsWith(R.SCOPE));
   assert.equal(m.display, 'standalone');
-  const tokens = readFileSync(new URL('../vendor/design-system/2.1.0/tokens.css', import.meta.url), 'utf8');
+  const tokens = readFileSync(new URL('../vendor/design-system/2.2.0/tokens.css', import.meta.url), 'utf8');
   const daybreakBg = tokens.match(/:root\s*\{[\s\S]*?--bg:\s*(#[0-9A-Fa-f]{6})/)[1];
   assert.equal(m.background_color.toLowerCase(), daybreakBg.toLowerCase(), 'the Daybreak --bg token');
   assert.equal(m.theme_color.toLowerCase(), daybreakBg.toLowerCase());

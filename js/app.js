@@ -41,7 +41,7 @@ import { setOf as navSetOf, navHTML } from './nav.js';
 import { artFor } from './guide-art.js';
 import { guideCounts, rootNote } from './explain-lines.js';
 import { ledeHTML } from './ledes.js';
-import { listenBtn, wireListen } from './listen.js';
+import { listenBtn, wireListen, toggle as toggleListen, stopListen } from './listen.js';
 import { sayButton, respellHTML, devaHTML, wireSay } from './say.js';
 import { sutraAmbience, ambienceButton, wireAmbience, settingsHTML as ambienceSettingsHTML, wireSettings as wireAmbienceSettings } from './sutra-ambience.js';
 import { tag as sutraTag, loadTags, fillTags } from './sutra-tag-slot.js'; /* js/sutra-tag.js loads on demand (#126 review) */
@@ -74,6 +74,9 @@ on(window, 'beforeinstallprompt', e => { if (!install) { e.preventDefault(); ear
 
 const $ = (s, r = document) => r.querySelector(s);
 const view = $('#view');
+/* A page introduction's Listen button (openspec explanation-audio 4.2): key lede:<id>, plus the Player's own two
+   numbers when the introduction shows them (js/explain-lines.js ledeKeyLines) */
+const ledeListen = (id, nums = []) => `<p class="listen-row">${listenBtn(['lede', id, ...nums].join(':'), 'about this page')}</p>`;
 const both = (pro, kid) => (kid && kid !== pro ? `<span class="pro">${pro}</span><span class="kid">${kid}</span>` : pro);
 const track = (name, title) => { try { window.siteTrack && window.siteTrack('math/' + name, title); } catch (e) {} };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -406,7 +409,7 @@ function learnView() {
     ${crumbs([null, 'Skill map'])}
     <span class="md-tag md-tag--sky">Skill map</span>
     <h1 class="md-heading">Pick a level</h1>
-    <p class="md-lede">${ledeHTML('learn', { n: guideCounts() })}</p>
+    <p class="md-lede">${ledeHTML('learn', { n: guideCounts() })}</p>${ledeListen('learn')}
     ${learnSutras()}
     <h2 class="mq-strand">Suggested for ${m.name}</h2><div class="mq-grades">${mine.map(card).join('')}</div>
     <h2 class="mq-strand">Speed tricks</h2><div class="mq-grades">${card(gradeOf('V'))}</div>
@@ -431,7 +434,7 @@ function gradeView(g, { signal } = {}) {
     ${crumbs(['#/learn', 'Skill map'], [null, gradeLabel(g)])}
     <span class="md-tag md-tag--sky">${G.band}</span>
     <h1 class="md-heading">${gradeLabel(g)}</h1>
-    <p class="md-lede">${both(ledeHTML('grade', st), ledeHTML('grade-kid', st))}</p>
+    <p class="md-lede">${both(ledeHTML('grade', st), ledeHTML('grade-kid', st))}</p>${ledeListen(fx.mode() === 'explorer' || fx.mode() === 'challenger' ? 'grade-kid' : 'grade', [st.done, st.total])}
     <div class="mq-gradebar"><span class="mq-bar mq-bar--big"><i style="width:${pct(st.done / (st.total || 1))}%"></i></span><a class="md-btn md-btn--primary md-btn--sm" href="#/run/${g}">${icon('bolt')} Endless run</a><a class="md-btn md-btn--sm" href="#/mix/${g}">Endless practice</a></div>
     <p class="mq-small">Every skill here makes new questions forever. Endless practice mixes them with hints; Endless run gives you 3 lives and counts how far you get.</p>
     <div class="mq-gradejump">${prev ? `<a class="md-chip" href="#/grade/${prev.id}">&larr; ${both(prev.pro, prev.kid)}</a>` : ''}${next ? `<a class="md-chip" href="#/grade/${next.id}">${both(next.pro, next.kid)} &rarr;</a>` : ''}</div>
@@ -586,7 +589,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
       if (res.ok) { fx.sfx('ok'); const first = tries === 1 && !hints; fam.note({ type: 'right', first }); const msg = first ? pick(PRAISE[fx.mode()] || PRAISE.challenger) : 'You got it!'; say(msg + (first ? ` <span class="pr-sparks">+${10 + Math.min(store.skill(s.id).streak + 1, 5)} Sparks</span>` : ''), 'ok'); fx.bounce($('#prSay .md-bubble', root), qs); fx.twinkle($('#prSay .pr-sparks', root), qs); if (explorer) fx.speak(msg, true); finish(true); return; }
       fx.sfx('no'); fx.wiggle(root.querySelector('.pr-in, .pr-choices, .pr-fields, .pr-split'), qs); fam.note({ type: 'miss' });
       if (lives) { life--; reveal(); say(life ? `Oops! ${life} ${life === 1 ? 'life' : 'lives'} left. See how it works, then keep going.` : 'Out of lives!', 'no'); finish(false); const lv = root.querySelector('.pr-lives'); lv.innerHTML = '<i class="on"></i>'.repeat(life) + '<i></i>'.repeat(lives - life); lv.setAttribute('aria-label', `${life} lives left`); if (!life && onOver) { const b = $('#prCheck', root); b.textContent = 'See my score'; b.onclick = e => { e.preventDefault(); onOver(right); }; } return; }
-      if (tries === 1) { say((res.msg ? res.msg + ' ' : '') + 'Not quite. Try once more.' + (p.hints[0] && !hints ? ' <button type="button" class="linkbtn" data-hint>Want a hint?</button>' : ''), 'no'); if (explorer) fx.speak('Not quite. Try again!', true); }
+      if (tries === 1) { say((res.msg ? res.msg + ' ' : '') + 'Not quite. Try once more.' + (p.hints[0] && !hints ? ' <button type="button" class="md-link" data-hint>Want a hint?</button>' : ''), 'no'); if (explorer) fx.speak('Not quite. Try again!', true); }
       else if (tries === 2) { hints = Math.max(hints, 1); const h = p.hints[Math.min(1, p.hints.length - 1)] || p.hints[0]; say((res.msg ? res.msg + ' ' : '') + `Hint: ${h}`, 'no'); if (explorer && h) fx.speak(h, true); } // read the hint that is shown
       else { reveal(); say('That one was tricky. See how it works, then try the next one.', 'no'); finish(false); }
     }, qs);
@@ -616,7 +619,7 @@ const slotsHTML = () => `<div class="pr-split" role="group" aria-label="Your ans
     <button type="button" class="md-btn md-btn--sm pr-lock" data-lock aria-pressed="false" aria-label="Lock the left part">${icon('lock')}Lock</button>
     <span class="pr-split-bar" aria-hidden="true"></span>
     <label class="pr-slot"><span>Right part</span><input class="ans-in pr-slot-in" data-slot="r" inputmode="numeric" spellcheck="false" autocapitalize="off"></label>
-  </div><p class="mq-small pr-split-note" id="prSplitNote">Lock the left part, then work out the right part. <button type="button" class="linkbtn" data-split="one">Type it in one box</button></p>`;
+  </div><p class="mq-small pr-split-note" id="prSplitNote">Lock the left part, then work out the right part. <button type="button" class="md-link" data-split="one">Type it in one box</button></p>`;
 /* What the Player typed: the one box, or the two slots joined left then right ({ partial } when only one is filled) */
 function typedAnswer(root) {
   const l = root.querySelector('.pr-slot-in[data-slot="l"]');
@@ -643,7 +646,7 @@ function wireSplit(root, p, signal) {
   on(l, 'keydown', e => { if (e.key !== 'Enter' || e.isComposing) return; e.preventDefault(); if (l.readOnly) r.focus(); else doLock(); }, signal);
 }
 function answerUI(p) {
-  if (canSplit(p)) return `<div class="pr-ans">${splitPref() ? slotsHTML() : `${oneBox(p)}<p class="mq-small pr-split-note"><button type="button" class="linkbtn" data-split="two">Split into parts</button></p>`}</div>`;
+  if (canSplit(p)) return `<div class="pr-ans">${splitPref() ? slotsHTML() : `${oneBox(p)}<p class="mq-small pr-split-note"><button type="button" class="md-link" data-split="two">Split into parts</button></p>`}</div>`;
   if (p.kind === 'choice') return `<div class="pr-choices" role="group" aria-label="Choices">${p.choices.map(c => `<button type="button" class="md-chip pr-choice" aria-pressed="false" data-v="${esc(c)}">${c}</button>`).join('')}</div>`;
   if (p.kind === 'fields') return `<div class="pr-fields">${p.fields.map(f => `<label>${f.label}<input class="ans-in" inputmode="text" spellcheck="false"></label>`).join('')}</div>`;
   return oneBox(p);
@@ -725,7 +728,7 @@ function dojoView() {
     ${crumbs([null, 'Dojo'])}
     <span class="md-tag md-tag--plum">Vedic Dojo</span>
     <h1 class="md-heading">From white belt to <span class="hl-word">black belt</span></h1>
-    <p class="md-lede">${ledeHTML('dojo', { mode: fx.mode(), n: guideCounts() })}</p>
+    <p class="md-lede">${ledeHTML('dojo', { mode: fx.mode(), n: guideCounts() })}</p>${ledeListen('dojo')}
     <p class="mq-small">${store.katasDoneWhere('k:')} of ${LV.KATA_COUNT.toLocaleString('en-US')} katas done</p>
     ${playShelf('dojo', 'Play with the tricks')}
     <div class="belt-row">${bp.map(b => `<span class="belt-chip${b.earned ? ' on' : ''}" style="--belt:${b.color}"><span class="belt-knot" aria-hidden="true"></span>${b.name}</span>`).join('')}</div>
@@ -776,7 +779,7 @@ function katasView(trickId) {
     ${crumbs(['#/dojo', 'Dojo'], [null, `${t.title}: katas`])}
     <h1 class="md-heading">${t.title}: ${LV.KATAS_PER_TRICK} katas</h1>
     ${sutraTag('trickTagHTML', trickId, { mode: fx.mode(), surface: 'katas' })}
-    <p class="md-lede">${ledeHTML('katas', {})}</p>
+    <p class="md-lede">${ledeHTML('katas', {})}</p>${ledeListen('katas')}
     <p class="mq-small">${store.katasDoneWhere(`k:${trickId}:`)} of ${LV.KATAS_PER_TRICK} done · <a href="#/skill/v-${trickId}">Learn the trick first</a></p>
     ${levelMap(LV.KATAS_PER_TRICK, n => ({ done: store.kataDone(LV.kataKey(trickId, n)) }), n => `#/kata/${trickId}/${n}`, { noun: 'Kata' })}
   </div></section>`;
@@ -881,7 +884,7 @@ function towerView() {
     ${crumbs(['#/arena', 'Arena'], [null, 'Challenge tower'])}
     <span class="md-tag md-tag--coral">Challenge tower</span>
     <h1 class="md-heading">${LV.CHALLENGE_COUNT.toLocaleString('en-US')} Arena challenges</h1>
-    <p class="md-lede">${ledeHTML('tower', { n: guideCounts() })}</p>
+    <p class="md-lede">${ledeHTML('tower', { n: guideCounts() })}</p>${ledeListen('tower')}
     <p class="mq-small">${store.medalsWhere('a:').any} of ${LV.CHALLENGE_COUNT} cleared · ${store.medalsWhere('a:').gold} gold</p>
     <div class="tower">${LV.TOPICS.map((tp, c) => { const lo = c * LV.PER_CHAPTER + 1, ms = Array.from({ length: LV.PER_CHAPTER }, (_, k) => store.medal(LV.challengeKey(lo + k))), done = ms.filter(Boolean).length, gold = ms.filter(v => v === 3).length;
       return `<a class="tower-ch${done === LV.PER_CHAPTER ? ' done' : ''}" href="#/tower/${c + 1}"><span class="tower-n">${c + 1}</span><span class="tower-t"><b>${tp.name}</b><small>Challenges ${lo} to ${lo + LV.PER_CHAPTER - 1}</small><span class="mq-bar"><i style="width:${pct(done / LV.PER_CHAPTER)}%"></i></span></span><span class="medal-n">${gold} gold</span></a>`; }).join('')}</div>
@@ -959,12 +962,12 @@ function sutrasView({ signal } = {}) {
   const card = c => { const have = gm.collectedCard(c); return `<article class="sutra-card${have ? ' got' : ''}" data-id="${c.id}" data-name="${esc(c.name)}">
     ${sayButton(c.id, { cls: 'say-btn--card' })}<button class="sutra-face" aria-expanded="false"><span class="sutra-n">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n}</span><b lang="sa-Latn">${c.name}</b>${respellHTML(c.id)}<i>${c.meaning}</i>${m === 'explorer' ? `<span class="sutra-kid">${esc(c.kid)}</span>` : ''}${progressMeter(sutraProgress(c), m)}${have ? '<span class="sutra-got">Collected</span>' : '<span class="sutra-tap">Tap to flip</span>'}</button>
     <div class="sutra-back"><span>${c.plain}</span>${c.example ? `<code>${c.example}</code>` : ''}
-      <span class="sutra-acts"><a class="sutra-more" href="#/sutras/${c.id}">Learn more ${icon('play')}</a>${listenBtn('sutra-card:' + c.id, c.meaning)}<button type="button" class="sutra-flipback" aria-label="Flip back">${icon('loop')}</button></span></div></article>`; };
+      <span class="sutra-acts"><a class="sutra-more" href="#/sutras/${c.id}">Learn more ${icon('play')}</a>${listenBtn('sutra-card:' + c.id, c.meaning)}<button type="button" class="md-icon-btn md-icon-btn--sm sutra-flipback" aria-label="Flip back">${icon('loop')}</button></span></div></article>`; };
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs([null, 'Sutras'])}
     <div class="sutra-top"><span class="md-tag md-tag--plum">Deep dive</span>${ambienceButton()}</div>
     <h1 class="md-heading">The 16 sutras and 13 sub-sutras</h1>
-    <p class="md-lede">${ledeHTML('sutras', { mode: m, got, all: ALL_SUTRAS.length })}</p>
+    <p class="md-lede">${ledeHTML('sutras', { mode: m, got, all: ALL_SUTRAS.length })}</p>${ledeListen('sutras', [got, ALL_SUTRAS.length])}
     <div class="mq-bar mq-bar--big sutra-bar"><i style="width:${pct(got / ALL_SUTRAS.length)}%"></i></div>
     <h2 class="mq-strand">The 16 sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => !c.sub).map(card).join('')}</div>
     <h2 class="mq-strand">The 13 sub-sutras</h2><div class="sutra-grid">${ALL_SUTRAS.filter(c => c.sub).map(card).join('')}</div>
@@ -1063,7 +1066,7 @@ function sutraHTML(c) {
   // Learn more: videos play in the page for every Mode; pages on other sites only for Pro
   const reads = d.read.map(([label, to]) => (typeof to === 'object' ? playBtn(to.yt, `${icon('play')}<span>${esc(label)}</span>`) : outLink(to, `${icon('link')}<span>${esc(label)}</span>`))).filter(Boolean);
   // The close button (with the Ambience toggle beside it) and the prev / next footer stay pinned while the deep dive scrolls under them
-  return `<div class="sd-bar">${ambienceButton({ compact: true })}<button class="vp-x sd-x" aria-label="Close">${icon('close')}</button></div>
+  return `<div class="sd-bar">${ambienceButton({ compact: true })}<button class="md-icon-btn vp-x sd-x" aria-label="Close">${icon('close')}</button></div>
   <header class="sd-head"><div><span class="md-tag md-tag--plum">${c.sub ? 'Sub-sutra' : 'Sutra'} ${c.n} of ${c.sub ? 13 : 16}</span><h2 id="sdTitle" lang="sa-Latn">${c.name}</h2><p class="sd-say">${sayButton(c.id, { label: true })}${respellHTML(c.id)}</p>${devaHTML(c.id)}<p class="sd-mean">${c.meaning}</p></div></header>
   <div class="sd-body">
     <div class="sd-fig" data-listen-scope><div class="sd-scene"></div><p class="listen-row">${listenBtn('from:.sc-say', 'this diagram step')}</p><p class="mq-small">Diagram plays by itself. Use Back and Next to go at your own pace.</p></div>
@@ -1138,7 +1141,7 @@ function parentNote() {
     : gate === 'needs-age' ? 'Right now nothing is posted for this player. They have not answered the age question yet; it is asked the first time a score would be posted.'
     : gate === 'device-only' ? "Nothing is posted for this player, because their age answer is under 13. Their scores stay on this device's board, and there is no way to turn World boards on for them."
     : "This player's scores and weekly Sparks post to World boards.";
-  return `<details class="mq-small pn"><summary class="linkbtn">${sum}</summary>
+  return `<details class="mq-small pn"><summary class="md-link">${sum}</summary>
     <p class="pn-now"><b>${now}</b></p>
     <p>World boards run on Google Firebase. Three kinds of post go to boards for the player's league: the score of a Daily challenge in the Arena and the score of a Ranked round of a game (today's and this week's board for each), and the player's Sparks total for this week (one weekly board). Sparks come from all play, Practice included, so practice adds to that posted weekly total. Practice scores themselves never leave this device.</p>
     <p>Nothing is posted before a player answers one question about their age. The answer stays on this device and is never sent. Nothing is ever posted for a player whose answer is under 13: their scores rank on this device's board only.</p>
@@ -1239,7 +1242,7 @@ function arenaView({ signal } = {}) {
     ${crumbs([null, 'Arena'])}
     <span class="md-tag md-tag--coral">Arena</span>
     <h1 class="md-heading">60 seconds. Same questions for everyone.</h1>
-    <p class="md-lede">${ledeHTML('arena', { modeName: fx.MODES[fx.mode()].name })}</p>
+    <p class="md-lede">${ledeHTML('arena', { modeName: fx.MODES[fx.mode()].name })}</p>${ledeListen('arena')}
     <a class="tower-promo" href="#/tower">${icon('trophy')}<span><b>Challenge tower: ${LV.CHALLENGE_COUNT.toLocaleString('en-US')} levels</b><small>${medalCounts(store.medalsWhere('a:'))} · Sprint, Survival, Sharpshooter, Time attack, Boss</small></span><span aria-hidden="true">&rarr;</span></a>
     <div class="md-card ar-shell" id="arShell"></div>
     ${playShelf('arena', 'More ways to race')}</div></section>`;
@@ -1395,7 +1398,7 @@ function gamesView() {
     ${crumbs([null, 'Games'])}
     <span class="md-tag md-tag--plum">Games</span>
     <h1 class="md-heading">Games that build number sense</h1>
-    <p class="md-lede">${ledeHTML('games', { n: guideCounts() })}</p>
+    <p class="md-lede">${ledeHTML('games', { n: guideCounts() })}</p>${ledeListen('games')}
     ${playShelf('games', 'Play, make and discover')}
     <h2 class="mq-strand">Picked for ${fx.MODES[m].name}</h2><div class="md-grid">${mine.map(card).join('')}</div>
     ${rest.length ? `<h2 class="mq-strand">More games</h2><div class="md-grid">${rest.map(card).join('')}</div>` : ''}
@@ -1501,7 +1504,7 @@ function watchView({ signal } = {}) {
     ${crumbs([null, 'Watch'])}
     <span class="md-tag md-tag--teal">Watch and learn</span>
     <h1 class="md-heading">Short videos that show how</h1>
-    <p class="md-lede">${ledeHTML('watch', { n: guideCounts(), links: pro })}</p>
+    <p class="md-lede">${ledeHTML('watch', { n: guideCounts(), links: pro })}</p>${ledeListen('watch')}
     <div id="watchBody"><p class="mq-small">Loading videos…</p></div>
   </div></section>`;
   const body = $('#watchBody');
@@ -1555,17 +1558,19 @@ function openPlayer(v, opener, onClose = null) {
   if (musicOn()) stopMusic();
   if (!playerDlg) {
     playerDlg = document.createElement('dialog'); playerDlg.className = 'vm-player'; playerDlg.setAttribute('aria-labelledby', 'vpTitle');
-    playerDlg.innerHTML = `<div class="vp-head"><h2 id="vpTitle"></h2><button class="vp-x" aria-label="Close video">${'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>'}</button></div><div class="vp-frame"></div><p class="vp-desc"></p><p class="vp-foot"></p>`;
+    playerDlg.innerHTML = `<div class="vp-head"><h2 id="vpTitle"></h2><button class="md-icon-btn vp-x" aria-label="Close video">${'<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>'}</button></div><div class="vp-frame"></div><p class="vp-desc"><span class="vp-why"></span> (<span class="vp-ch"></span>)</p><p class="listen-row">${listenBtn('from:.vp-why', 'about this video')}</p><p class="vp-foot"></p>`;
     document.body.append(playerDlg);
     const close = () => playerDlg.close();
     playerDlg.querySelector('.vp-x').onclick = close;
-    /* a Sutra tag opens its Deep dive: the player closes first */
-    playerDlg.addEventListener('click', ev => { if (ev.target === playerDlg || (ev.target.closest && ev.target.closest('.sutra-tag-a[href]'))) close(); else if (ev.target.closest && ev.target.closest('.vp-play')) playVideo(); });
-    playerDlg.addEventListener('close', () => { clearTimeout(playerDlg._minute); playerDlg.querySelector('.vp-frame').innerHTML = ''; const done = playerDlg._onClose; playerDlg._onClose = null; if (playerDlg._opener && document.body.contains(playerDlg._opener)) playerDlg._opener.focus({ preventScroll: true }); if (done) done(); });
+    /* a Sutra tag opens its Deep dive: the player closes first. Listen reads the video's description (openspec
+       explanation-audio 4.3: the Watch card is a button, so its Listen button is here); closing or playing stops it. */
+    const listenHere = () => { if (playerDlg.querySelector('.listen-btn[aria-pressed="true"]')) stopListen(); };
+    playerDlg.addEventListener('click', ev => { const t = ev.target.closest ? ev.target : null; if (ev.target === playerDlg || (t && t.closest('.sutra-tag-a[href]'))) close(); else if (t && t.closest('.vp-play')) { listenHere(); playVideo(); } else if (t && t.closest('.listen-btn')) toggleListen(t.closest('.listen-btn')); });
+    playerDlg.addEventListener('close', () => { listenHere(); clearTimeout(playerDlg._minute); playerDlg.querySelector('.vp-frame').innerHTML = ''; const done = playerDlg._onClose; playerDlg._onClose = null; if (playerDlg._opener && document.body.contains(playerDlg._opener)) playerDlg._opener.focus({ preventScroll: true }); if (done) done(); });
   }
   playerDlg._video = v; playerDlg._opener = opener; playerDlg._onClose = onClose;
   playerDlg.querySelector('#vpTitle').textContent = v.title;
-  playerDlg.querySelector('.vp-desc').textContent = `${v.why} (${v.channel})`;
+  playerDlg.querySelector('.vp-why').textContent = v.why; playerDlg.querySelector('.vp-ch').textContent = v.channel;
   // Open on YouTube: Pro only (Explorer and Challenger get no link that leaves the site)
   /* the video's Sutra tag (openspec change sutras-first): its first Trick's, as trickTagHTML draws it; the page's signal, as the player has none (a placeholder the next video replaces has left the page) */
   const foot = playerDlg.querySelector('.vp-foot');
@@ -1600,7 +1605,7 @@ function askAge({ onAnswer = () => {}, onDismiss = () => {} } = {}) {
   if (ageDlg.open) return;
   const handlers = ageDlg._handlers = { onAnswer, onDismiss, answered: false };
   ageDlg._opener = document.activeElement;
-  const x = `<button type="button" class="vp-x" data-close aria-label="Close">${icon('close')}</button>`;
+  const x = `<button type="button" class="md-icon-btn vp-x" data-close aria-label="Close">${icon('close')}</button>`;
   ageDlg.innerHTML = `<div class="vs-head"><h2 id="ageTitle">${fx.t({ explorer: 'How old are you?', challenger: 'How old are you?', pro: 'How old is this player?' })}</h2>${x}</div>
     <p id="ageSub" class="vs-sub">${fx.t({ explorer: 'Tap your age. A grown-up can help you.', challenger: 'Pick your age. We ask once, and the answer stays on this device.', pro: 'We ask once per player. The answer stays on this device and is never sent.' })}</p>
     <div class="vs-ages" role="group" aria-labelledby="ageTitle">${AGES.map(([v, l]) => `<button type="button" class="md-chip" data-age="${v}">${l}</button>`).join('')}</div>
@@ -1646,7 +1651,7 @@ function askTour() { tourAsked = true; if ((location.hash || '#/') === '#/' || l
 function newHereHTML() {
   if (store.playedBefore()) return '';
   /* One help control (openspec find-and-home-polish): the tour, which ends on the Guide in the menu bar */
-  return `<p class="gd-new"><span class="gd-new-ic" aria-hidden="true">${icon('map')}</span><span>New here? <button type="button" class="linkbtn" id="tourAgain">Quick tour</button></span></p>`;
+  return `<p class="gd-new"><span class="gd-new-ic" aria-hidden="true">${icon('map')}</span><span>New here? <button type="button" class="md-link" id="tourAgain">Quick tour</button></span></p>`;
 }
 /* On Home: the tour when it is due (a Player with a Mode and no Sparks, on a device that has never shown it) or asked
    for. It starts once the route has drawn the menu chip and focused the heading. */
@@ -1691,7 +1696,7 @@ function guideView(section, { signal } = {}) {
     ${crumbs([null, 'Guide'])}
     <span class="md-tag md-tag--teal">Guide</span>
     <h1 class="md-heading">${fx.t({ explorer: 'How to play', challenger: 'How to use Vedic Math', pro: 'How to use Vedic Math' })}</h1>
-    <p class="md-lede">${ledeHTML('guide', { mode: fx.mode() })}</p>
+    <p class="md-lede">${ledeHTML('guide', { mode: fx.mode() })}</p>${ledeListen('guide')}
     ${m ? `<p class="mode-line">Words for: <b>${fx.MODES[m].name}</b> <a href="#/me">Change</a></p><p class="gd-top"><button type="button" class="md-btn md-btn--primary" data-gd="tour">${icon('map')} ${explorer ? 'Show me around' : 'Take the tour'}</button></p>`
       : '<div class="md-card gd-nomode"><p>Pick a play mode first: Explorer, Challenger or Pro. It sets the words, the questions and your league. This guide uses the Challenger words until you do.</p><p><a class="md-btn md-btn--primary" href="#/">Pick a play mode</a></p></div>'}
     <nav class="gd-toc md-card" aria-label="Guide contents"><ul>${groups.map(({ g, items }) => `<li><a href="#/guide/${items[0].id}" class="gd-toc-g">${T(g.title)}</a><ul>${items.map(s => `<li><a href="#/guide/${s.id}">${T(s.title)}</a></li>`).join('')}</ul></li>`).join('')}</ul></nav>
@@ -1720,7 +1725,7 @@ function findView({ signal } = {}) {
     ${crumbs([null, 'Find'])}
     <span class="md-tag md-tag--teal">Find</span>
     <h1 class="md-heading">${ex ? 'What do you want to find?' : 'Find anything'}</h1>
-    <form class="find-form" role="search" id="findForm"><label class="vh" for="findIn">Find</label><input type="search" id="findIn" class="find-in" placeholder="${ex ? 'A game, a skill or a video' : 'A skill, trick, sutra, game, video or setting'}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"></form>
+    <form class="find-form" role="search" id="findForm"><label class="md-sr-only" for="findIn">Find</label><input type="search" id="findIn" class="find-in" placeholder="${ex ? 'A game, a skill or a video' : 'A skill, trick, sutra, game, video or setting'}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"></form>
     <p class="mq-small find-hint">${ex ? 'Try: balloons, ten, shapes, songs, my name' : 'Try: squares, multiply, take away, leaderboard, for kids, how it works'}</p>
     <p class="mq-small find-count" id="findCount" role="status" aria-live="polite"></p>
     <div id="findOut"></div>
@@ -1796,6 +1801,7 @@ function trophyCaseHTML() {
   return `<section class="trophy-case" aria-labelledby="trophyH"><h2 class="mq-strand" id="trophyH">Trophy case</h2><div class="trophy-grid">${rows.join('')}</div>`;
 }
 function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw from one of its own buttons passes it on */
+  stopListen(); /* a redraw replaces the badges' Listen button without aborting the view signal, so it stops what it read */
   document.title = `Me · Learn Vedic Math`;
   const p = store.player(), T = gm.titleInfo(), got = store.badges(), done = SKILLS.filter(s => store.mastered(s.id)).length;
   const badges = gm.badgesFor(fx.mode(), got); /* Explorer is not offered Belts or Sutra cards, so their badges are listed only once earned */
@@ -1808,7 +1814,7 @@ function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw
     <div class="mq-stats me-stats"><div class="md-stat"><div class="md-kicker">Skills mastered</div><div class="md-value">${done}</div><p>of ${SKILLS.length}</p></div><div class="md-stat"><div class="md-kicker">Day streak</div><div class="md-value">${store.streakDays()}</div><p>days</p></div></div>
     ${trophyCaseHTML()}
     <h3 class="mq-strand">Badges <small class="mq-small">${badges.filter(b => got[b.id]).length} of ${badges.length}</small></h3>
-    <div class="badge-grid">${badges.map(b => `<div class="badge${got[b.id] ? ' got' : ''}"><span class="badge-medal" aria-hidden="true">${icon(got[b.id] ? 'star' : 'lock')}</span><b>${b.name}</b><small>${b.how}</small></div>`).join('')}</div></section>
+    ${badges.some(b => !got[b.id]) ? `<p class="listen-row">${listenBtn('from:.badge:not(.got) small', 'the badges to earn')}</p>` : ''}<div class="badge-grid">${badges.map(b => `<div class="badge${got[b.id] ? ' got' : ''}"><span class="badge-medal" aria-hidden="true">${icon(got[b.id] ? 'star' : 'lock')}</span><b>${b.name}</b><small>${b.how}</small></div>`).join('')}</div></section>
     <h2 class="mq-strand">Play mode</h2>
     <div class="mode-pick mode-pick--sm">${Object.entries(fx.MODES).map(([id, m]) => `<button class="mode-card mode-card--${m.color}" data-mode="${id}" aria-pressed="${id === fx.mode()}"><span class="mode-ic" aria-hidden="true">${modeIcon(id)}</span><b>${m.name}</b><small>${m.ages}</small></button>`).join('')}</div>
     <h2 class="mq-strand">Players on this device</h2>

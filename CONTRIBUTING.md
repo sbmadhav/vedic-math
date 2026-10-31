@@ -57,7 +57,7 @@ The suite runs against the live site by default. To test your checkout before it
 
 ## Style rules
 
-- Follow the design system (the pinned copy in `vendor/design-system/2.1.0/`, with the theme in `theme/learnvedicmath.css`).
+- Follow the design system (the pinned copy in `vendor/design-system/2.2.0/`, with the theme in `theme/learnvedicmath.css`).
 - Use tokens, never raw hex: `var(--coral)`, `var(--space-6)`, `var(--radius-lg)`. Text on accent fills uses `var(--on-accent)`.
 - Support both color schemes: Daybreak (light) and Deep Space (dark).
 - Write for every play mode: Explorer (young kids), Challenger and Pro.

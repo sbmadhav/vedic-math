@@ -6,7 +6,7 @@ test('The manifest: those fields, and both colors are the vendored design system
   const m = await (await request.get('/manifest.webmanifest')).json();
   expect([m.name, m.short_name, m.id, m.start_url, m.scope, m.display, m.lang]).toEqual(['Learn Vedic Math', 'Vedic Math', '/play/', '/play/?source=pwa', '/play/', 'standalone', 'en']);
   expect(m.description.length).toBeGreaterThan(20);
-  const tokens = await (await request.get('/ds/2.1.0/tokens.css')).text();
+  const tokens = await (await request.get('/ds/2.2.0/tokens.css')).text();
   const bg = tokens.match(/:root\s*\{[\s\S]*?--bg:\s*(#[0-9A-Fa-f]{6})/)![1].toLowerCase();
   expect(m.background_color.toLowerCase()).toBe(bg);
   expect(m.theme_color.toLowerCase()).toBe(bg);
