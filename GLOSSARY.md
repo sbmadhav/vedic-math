@@ -66,6 +66,10 @@ _Avoid_: sutra score, sutra level, mastery (that is one Skill's)
 A genuine Sanskrit verse, prose rule (sūtra) or Vedic mantra about mathematics from an older text, shown in Mathematics in Sanskrit verse at the end of the Sutras page (`js/slokas.js`). Verses are not the source of the Sutras; the only verse in the 1965 book (gopī bhāgya, π/10) is the Swami's own.
 _Avoid_: calling a Sutra a verse; "ancient" without a date
 
+**Trick page**:
+A static page at `/tricks/<slug>/` for one Trick, for search and sharing: its name, its Sutra, when to use it, the idea, a worked example, "Try it with your numbers" (the calculator, the game's animator as a small module) and "Practice this trick" into the game. Not a game view: generated from the catalog by `tools/trick-pages/` and committed under `site/tricks/`, with the index at `/tricks/` (`trick-pages` change).
+_Avoid_: lesson (the lesson is the game's `#/skill/v-<trick>` view), landing page, Sutra page
+
 **Deep dive**:
 The dialog that opens from a Sutra card's Learn more (route `#/sutras/<id>`): the plain explanation, an animated diagram, why it works, Worked examples, where it is used and further reading. Its close button and the footer to the previous and next Sutra stay pinned while it scrolls.
 _Avoid_: modal, popup, detail page

@@ -181,6 +181,28 @@ test('the landing and grown-up pages have no serious or critical axe violations'
   }
 });
 
+/* The Trick pages (openspec change trick-pages, task 1.3): the index and two Trick pages, with the steps drawn, in both schemes */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, Trick pages`, () => {
+    test.use({ colorScheme: scheme });
+    for (const url of ['/tricks/', '/tricks/square-numbers-ending-in-5/', '/tricks/multiply-numbers-near-100/']) {
+      test(`${url} has no serious or critical axe violations`, async ({ page }, testInfo) => {
+        chromiumOnly(testInfo);
+        await page.goto(url);
+        await expect(page.locator('main h1')).toBeVisible();
+        if (url !== '/tricks/') {
+          await expect(page.locator('#tkCalc[data-ready]')).toBeVisible();
+          await page.locator('#tkShow').click();
+          await expect(page.locator('#tkBoard .tk-step')).toHaveCount(1);
+          await page.locator('#tkAll').click();
+        }
+        await page.waitForLoadState('networkidle');
+        expect(await serious(page, url)).toEqual([]);
+      });
+    }
+  });
+}
+
 /* The brand link's accessible name comes from its label, not from the mark (which is hidden), on the game and the landing page */
 test('the brand link is named "Learn Vedic Math, home" and its mark is decorative', async ({ page }, testInfo) => {
   chromiumOnly(testInfo);
