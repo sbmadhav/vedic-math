@@ -1,5 +1,4 @@
 import { test, expect, open, cloudLog, appErrors } from '../fixtures';
-import { startWordRound } from '../word-kit';
 import { DAY, NOW, siteLink, clockAt, endRound, pressStart, scoreAfter, dailyItems, answerRight, fakeShareSheet, shared, noShareSheet, copied, scoreWrites } from '../challenge-kit';
 
 /* arena spec (change arena-challenge-link), Requirement "Challenge a friend from the daily result" and "The share text
@@ -74,8 +73,11 @@ test('Practice has no button: a Practice, an untimed Practice and a Word problem
   await expect(page.locator('.play-shell .ar-result')).toBeVisible();
   await expect(page.locator('#arShare')).toHaveCount(0);
   await page.locator('#arDone').click();
-  // Word problems: ten answers end it
-  await startWordRound(page);
+  // Word problems: ten answers end it (the countdown runs under the held clock, so pressStart moves it)
+  await page.locator('[data-t="words"]').click();
+  await expect(page.locator('[data-t="words"]')).toHaveAttribute('aria-pressed', 'true');
+  await pressStart(page);
+  await expect(page.locator('#arStory')).toHaveText('Word problem');
   for (let k = 0; k < 10; k++) { await page.keyboard.press('1'); await page.keyboard.press('Enter'); }
   await expect(page.locator('.play-shell .ar-result')).toBeVisible();
   await expect(page.locator('#arShare')).toHaveCount(0);

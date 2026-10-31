@@ -1299,8 +1299,9 @@ function arenaView({ signal } = {}, link = null) {
     const words = type === 'words';
     if (words && !storiesNow()) { loadStories().then(() => { if (!rsig.aborted) start(area, rsig); }, () => { if (!rsig.aborted) area.innerHTML = '<p class="md-lede">The stories did not load. Check your connection and try again.</p>'; }); return; }
     /* A challenge link's round is Ranked only while its date is still today and its League is this one (arena-challenge-link
-       design D2): a lobby opened at 23:58 and started after midnight plays the link's set as a friend's round and posts nothing */
-    const friend = !!ch && (type === 'friend' || (type === 'daily' && !(ch.day === cloud.dayId() && ch.league === league)));
+       design D2): a lobby opened at 23:58 and started after midnight plays the link's set as a friend's round and posts nothing.
+       Daily challenge picked beside a friend's Practice round is the Player's own daily round, nothing to re-check. */
+    const friend = !!ch && (type === 'friend' || (type === 'daily' && ch.ranked && !(ch.day === cloud.dayId() && ch.league === league)));
     const ranked = type === 'daily' && !friend;
     track('arena/' + league + '/' + type, 'Arena round'); metrics.roundStart('arena');
     /* Practice: the Dial picks each question. Daily: it only records the answers (the questions are the same for everyone).
