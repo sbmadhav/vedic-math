@@ -34,7 +34,7 @@
 /* The step board (/tricks/step-board.js): the steps build up and stay, the newest marked; large enough for the room */
 .wu-board { display: grid; gap: var(--space-2-5); margin: var(--space-4) auto 0; max-width: 60rem; text-align: left; }
 .wu-board--problem { margin-top: var(--space-5); }
-.sb-step { padding: var(--space-3) var(--space-4); border: 2px solid var(--line); border-radius: var(--radius-lg); background: var(--card); color: var(--ink); }
+.sb-step { padding: var(--space-3) var(--space-4); border: 2px solid var(--line); border-radius: var(--radius-lg); background: var(--card); color: var(--ink); scroll-margin-block-end: calc(var(--control-height-lg) + var(--space-7) * 2); /* clear of the sticky buttons when brought into view */ }
 .sb-step[aria-current="step"] { border-color: var(--edge); box-shadow: var(--shadow-ledge); }
 .sb-show { font: 600 clamp(var(--text-h3-size), 4.2vh, 3rem)/1.4 var(--font-sans); letter-spacing: .02em; overflow-wrap: anywhere; color: var(--ink); }
 .sb-say { margin: var(--space-2) 0 0; font-size: clamp(var(--text-body-size), 2.8vh, 1.8rem); line-height: 1.4; color: var(--ink); }
@@ -52,8 +52,8 @@ html.motion-paused .wu-stage .sb-step, html.calm .wu-stage .sb-step { animation:
 .wu-url a:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; border-radius: var(--radius-sm); }
 .wu-home-note { margin: var(--space-4) auto 0; max-width: 36em; font-size: clamp(var(--text-body-size), 2.8vh, 1.8rem); line-height: 1.4; color: var(--ink-muted); }
 
-/* Back, Reveal, Next: in place at the foot, keyboard words beside them */
-.wu-nav { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); width: 100%; box-sizing: border-box; padding-top: var(--space-3); padding-bottom: var(--space-3); }
+/* Back, Reveal, Next: in place at the foot, keyboard words beside them; they stay in view while a long step board scrolls */
+.wu-nav { position: sticky; bottom: 0; z-index: var(--z-base); display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); width: 100%; box-sizing: border-box; padding-top: var(--space-3); padding-bottom: var(--space-3); background: var(--bg); }
 .wu-nav .md-btn { min-width: 9em; justify-content: center; }
 .wu-keys { flex-basis: 100%; margin: 0; font-size: var(--text-small-size); color: var(--ink-muted); }
 @media (min-width: 900px) { .wu-keys { flex-basis: auto; margin-left: auto; } }

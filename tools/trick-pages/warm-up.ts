@@ -87,6 +87,9 @@ function render(pressed = false) {
   reveal.hidden = !(k >= 0 && beat < 2);
   reveal.textContent = beat === 0 ? 'Reveal' : 'Show the steps';
   say(words);
+  /* After a press, what just appeared is brought into view when a long step board has scrolled (an instant scroll:
+     nothing here sets scroll-behavior, so reduced motion is respected); never on its own */
+  if (pressed) stage.querySelector('.sb-step[aria-current="step"]')?.scrollIntoView({ block: 'nearest' });
 }
 
 /** A press: the newest step may fade in from now on (theme/warm-up.css; never under reduced motion or Pause motion) */
