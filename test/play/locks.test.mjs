@@ -3,7 +3,7 @@
 import test from '../support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { rng } from '../../js/play/kit.js';
-import { CHAPTERS, levelsFor, runRule, checkRule, testInputs, allPicks, compare, chapterById, clearLevel, discover, counts } from '../../js/play/exp/locks-core.js';
+import { CHAPTERS, levelsFor, runRule, checkRule, testInputs, allPicks, compare, chapterById, clearLevel, discover, counts, levelGoal } from '../../js/play/exp/locks-core.js';
 
 const LEVELS = ['explorer', 'challenger', 'pro'];
 
@@ -111,4 +111,16 @@ test('Calm: "Beat the lock" is untimed and a right answer counts whatever the ti
     assert.equal(counts(timed, true, timed.secs - 1), true); assert.equal(counts(timed, true, timed.secs + 1), false, 'too slow with a clock');
     assert.equal(counts(calm, true, 1e6), true, 'no clock under Calm'); assert.equal(counts(calm, false, 1), false);
   }
+});
+
+test('a cleared level names what the next one asks, so it never reads as the stage just done (Muse review, item 2)', () => {
+  for (const lv of LEVELS) for (const calm of [false, true]) {
+    const L = levelsFor(lv, calm);
+    for (const l of L) { const g = levelGoal(l); assert.ok(g.length > 10, `${lv} ${l.kind}`); assert.ok(!g.includes('\u2014')); }
+    /* level 2 asks for a streak, which level 1 (a few feeds and two guesses) does not */
+    assert.match(levelGoal(L[1]), lv === 'explorer' ? /2 in a row/ : /3 in a row/);
+    assert.notEqual(levelGoal(L[1]), levelGoal(L[2]));
+  }
+  assert.match(levelGoal(levelsFor('challenger')[2]), /within 14 seconds/);
+  assert.match(levelGoal(levelsFor('challenger', true)[2]), /no clock/);
 });
