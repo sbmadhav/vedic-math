@@ -7,7 +7,7 @@ Open a new Player's first Star, the one Placement points to, with the Hook: a da
 ## ADDED Requirements
 
 ### Requirement: The Hook opens a new Player's first Star
-When a new Player in Challenger or Pro opens their first Star (usually the one Bolt suggests after Placement or after skipping it), and that Star's Trick has a Hook dare, the Hook SHALL play before the round: the dare, the reveal, then the round. A new Player SHALL be one who has never answered a question outside Placement, has no Sparks, has no Star lit or skipped, and has not seen or skipped the Hook. Explorer Players SHALL NOT get the Hook.
+When a new Player in Challenger or Pro opens their first Star and that Star's Trick has a Hook dare, the Hook SHALL play before the round: the dare, the reveal, then the round. A new Player SHALL be one who has never answered a question outside Placement, has no Star lit or skipped, and has not seen or skipped the Hook. Sparks SHALL NOT count. Explorer Players SHALL NOT get the Hook.
 
 #### Scenario: First Star after Placement
 - **WHEN** a new Challenger Player placed at grade 5 opens the Star Bolt suggests, Star 1 of `sq5`
@@ -16,6 +16,10 @@ When a new Player in Challenger or Pro opens their first Star (usually the one B
 #### Scenario: First Star after skipping Placement
 - **WHEN** a new Challenger Player who skipped Placement opens Star 1 of `from9`
 - **THEN** the Hook's dare appears before the first question
+
+#### Scenario: First Star after a Try a trick
+- **WHEN** a new Challenger Player who finished Try a trick (and earned its Sparks) presses Play this Star on Home
+- **THEN** the Hook's dare appears before the first question, since a Try a trick records no answer
 
 #### Scenario: Explorer
 - **WHEN** a new Explorer Player opens a Star by link
