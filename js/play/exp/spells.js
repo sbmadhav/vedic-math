@@ -269,7 +269,18 @@ export function mount({ root, signal, params }) {
         }
       });
     };
-    on(after, 'click', e => { if (e.target.closest('.sp-again')) { practice++; run(); } }, signal);
+    on(after, 'click', e => {
+      if (e.target.closest('.sp-again')) { practice++; run(); return; }
+      /* A first visit shows this lesson at #/dojo/spells itself, so the link to the monsters names the page already
+         open and the router sees no change: open the arena here instead (Muse review, item 1) */
+      if (e.target.closest('.md-btn--primary') && !params.length) {
+        e.preventDefault();
+        if (cur) cur.stop();
+        arena();
+        scrollTo({ top: 0, behavior: 'auto' });
+        wrap.querySelector('.sp-tabs a[aria-current="page"]')?.focus({ preventScroll: true });
+      }
+    }, signal);
     run();
   }
 
