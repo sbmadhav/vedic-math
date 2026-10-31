@@ -207,3 +207,14 @@ test('every worked example is mathematically correct', () => {
 test('worked example text has no em dashes', () => {
   for (const [name, d] of Object.entries(DETAILS)) for (const [q, a] of d.examples) assert.ok(!/—/.test(q + a), `${name}: ${text(q)}`);
 });
+
+/* The Nikhilam deep dive's "why" works the same subtraction its animation steps through (1000 − 368), not a
+   different power of ten (Muse review, item 9) */
+test('Nikhilam: the why names the subtraction the animation shows', () => {
+  const d = DETAILS['Nikhilaṃ Navataścaramaṃ Daśataḥ'];
+  const shown = d.scene.steps[0].say.match(/Subtract (\d+) from (\d+)/);
+  assert.ok(shown, 'the first step names the subtraction');
+  const [, n, base] = shown;
+  assert.ok(d.why.startsWith(`${base} − ${n} equals ${Number(base) - 1} − ${n} + 1.`), d.why);
+  assert.ok(d.scene.steps.at(-1).say.includes(`${base} − ${n} = ${Number(base) - Number(n)}`));
+});

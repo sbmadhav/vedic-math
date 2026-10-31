@@ -22,6 +22,19 @@ export function levelsFor(lv, calm = false) {
   ];
 }
 
+/* What a level asks, said when the level before it is cleared. Level 1 already ends with two guesses, so a
+   bare "Predict is next" read as the stage just done (Muse review, item 2): name the new task instead. */
+export function levelGoal(lvl) {
+  const n = lvl.need, row = n > 1 ? `${n} in a row` : 'one';
+  return {
+    feed: 'Pick numbers and watch what the lock does.',
+    predict: `Guess ${row} before the lock shows its answer.`,
+    quick: lvl.secs ? `Get ${row}, each within ${lvl.secs} seconds.` : `Get ${row} with the shortcut, no clock.`,
+    rule: 'Build the lock’s rule from tiles.',
+    stretch: `Get ${row} on new, bigger numbers.`
+  }[lvl.kind] || '';
+}
+
 /* Does an answer count toward the level? A right answer counts unless the level has a clock (secs > 0) and it came too late */
 export const counts = (lvl, ok, secs) => !!ok && !(lvl.secs > 0 && secs > lvl.secs);
 

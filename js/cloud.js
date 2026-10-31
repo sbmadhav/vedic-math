@@ -7,14 +7,14 @@
    identity exists until the first post (viewing a World board loads no Auth and never signs in). */
 import { FIREBASE, appCheckSiteKey, appCheckProvider } from './cloud-config.js';
 import * as store from './store.js';
+import { MAX_WEEK_SPARKS, KEEP_DAYS, boardScore } from '../shared/src/scoring.ts';
 
 /* The Firebase SDK is served from this site (vendor/firebase/<V>/, made by tools/vendor-firebase.mjs), never from Google's CDN */
 const V = '13.0.0', CDN = `/vendor/firebase/${V}`;
-/* Score caps and the entry lifetime, mirrored from cloud/firestore.rules (the rules are the authority):
-   Arena boards per league, Ranked game boards (g_...) and weekly Sparks boards (xp-week-...) one cap each. */
-export const MAX_SCORE = { explorer: 2000, challenger: 1600, pro: 1200 };
-export const MAX_GAME_SCORE = 12000, MAX_WEEK_SPARKS = 60000;
-export const KEEP_DAYS = 30;
+/* Score caps, the entry lifetime and boardScore, mirrored from cloud/firestore.rules (the rules are the authority), live
+   in shared/src/scoring.ts (openspec change react-typescript, task 3.1): Arena boards per league, Ranked game boards
+   (g_...) and weekly Sparks boards (xp-week-...) one cap each. */
+export { MAX_SCORE, MAX_GAME_SCORE, MAX_WEEK_SPARKS, KEEP_DAYS, boardScore } from '../shared/src/scoring.ts';
 export const enabled = () => !!(FIREBASE && FIREBASE.projectId);
 export const appCheckOn = () => enabled() && !!appCheckSiteKey;
 
@@ -146,15 +146,6 @@ export function canPost(p = store.player()) {
 /* May this Player see a World board? Only with an Age answer of 13 or over, and only after a tap (App Check makes even
    a read reach Google). Everyone else sees the Device board. */
 export const canViewWorld = (p = store.player()) => enabled() && canPost(p) === 'ok';
-
-/* The score a board accepts, as the rules check it: an integer from 10 to the board's cap, and even on
-   Arena boards (every right answer in the Arena earns an even amount). 0 means the board takes none. */
-export function boardScore(board, raw) {
-  const cap = board.startsWith('g_') ? MAX_GAME_SCORE : board.startsWith('xp-') ? MAX_WEEK_SPARKS : MAX_SCORE[board.split('-').pop()] || 0;
-  let score = Math.min(cap, Math.round(Number(raw) || 0));
-  if (!board.startsWith('g_') && !board.startsWith('xp-')) score -= score % 2;
-  return score >= 10 ? score : 0;
-}
 
 /* The one place anything is posted. Keeps one entry per Player's identity per board; a lower score never replaces a
    higher one (enforced by the rules too). Returns { posted, reason }: reason 'off' when World boards are not
