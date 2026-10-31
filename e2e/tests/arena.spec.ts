@@ -133,6 +133,24 @@ test('challenge tower: challenge 1 starts and takes an answer', async ({ page })
   expect((await cloudLog(page)).writes).toEqual([]);
 });
 
+/* A tower question about a picture ("How many dots are there?") shows the picture, with its text alternative, in
+   every Mode, not only Explorer (Muse review, item 5). Challenge 1's set is seeded and starts with a ten frame. */
+test.describe('a Challenger in the tower', () => {
+  test.use({ seedMode: 'challenger' });
+  test('a picture question shows its picture and names it for a screen reader', async ({ page }) => {
+    await open(page, '#/challenge/1');
+    const first = await page.evaluate(async () => { const LV = await e2eMod('levels'); return LV.challengeSet(LV.challenge(1))[0]; });
+    expect(first.viz, 'challenge 1 still starts with a picture question').toMatch(/<svg/);
+    await page.locator('#chGo').click();
+    await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
+    const pic = page.locator('#arViz svg[role="img"]');
+    await expect(pic).toBeVisible();
+    await expect(pic).toHaveAttribute('aria-label', /\S/);
+    await page.goto(`${APP}#/tower`);
+    expect((await cloudLog(page)).writes).toEqual([]);
+  });
+});
+
 /* The Duel became Party Mode (openspec play-experiences); its tests live in play.spec.ts */
 
 /* view-lifecycle spec: rounds run under their own signal, so a second round on the same page handles each

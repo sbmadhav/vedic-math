@@ -131,7 +131,7 @@ export function runChallenge(root, ch, set, { onEnd, tap = false, signal, untime
   const show = () => {
     if (i >= set.length) return finish();
     const p = set[i];
-    $('#arQ').innerHTML = p.q; $('#arViz').innerHTML = tap ? p.viz || '' : '';
+    $('#arQ').innerHTML = p.q; $('#arViz').innerHTML = p.viz || ''; /* a question about its picture needs the picture in every Mode (Muse review, item 5) */
     if (p.kind === 'choice' || tap) {
       const ch2 = p.kind === 'choice' ? p.choices : shuffle([...new Set([p.answer, p.answer + 1, p.answer - 1, p.answer + 2].map(v => Math.round(v * 1000) / 1000))]).slice(0, 4);
       $('#arIn').innerHTML = `<div class="ar-choices">${ch2.map(c => `<button class="ar-choice" data-v="${c}">${c}</button>`).join('')}</div>`; if (tap) speakQuestion(p);

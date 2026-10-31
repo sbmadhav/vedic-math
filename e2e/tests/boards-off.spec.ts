@@ -29,6 +29,10 @@ test.describe('a Player 13 or over', () => {
       await expect(board.locator('.lb-src')).toHaveText('This device');
       await expect(board.locator('[data-show-world], [data-src="world"]')).toHaveCount(0);
     }
+    /* the Games page names no world leaderboard while each game's board is This device (Muse review, item 4) */
+    await open(page, '#/games');
+    await expect(page.locator('.md-lede').first()).toContainText('each with its own leaderboard');
+    await expect(page.locator('.md-lede').first()).not.toContainText(/world/i);
     await open(page, '#/game/times-sprint');
     await expect(page.locator('#gbDay .lb-src')).toHaveText('This device');
     await expect(page.locator('#gbDay [data-show-world]')).toHaveCount(0);
