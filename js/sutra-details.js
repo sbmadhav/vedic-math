@@ -31,7 +31,7 @@ export const DETAILS = {
   },
   'Nikhilaṃ Navataścaramaṃ Daśataḥ': {
     more: 'Nikhilam means "all". Take every digit from 9 and the last digit from 10. The result is the complement: how far a number is from the next power of ten. That turns subtracting from 100, 1000 or 10000 into one pass with no borrowing, and it is the engine behind multiplying numbers near a base (each number is replaced by its small distance from the base).',
-    why: '10000 − 368 equals 9999 − 368 + 1. Subtracting from 9999 never needs borrowing because every digit is 9, so each digit simply becomes 9 minus itself. The final +1 is the same as taking the last digit from 10 instead of 9.',
+    why: '1000 − 368 equals 999 − 368 + 1. Subtracting from 999 never needs borrowing because every digit is 9, so each digit simply becomes 9 minus itself. The final +1 is the same as taking the last digit from 10 instead of 9.',
     examples: [['100 − 43', `4 from 9 is 5, the last digit 3 from 10 is 7 → ${hl('57')}`], ['1000 − 368', `9 − 3 = 6, 9 − 6 = 3, 10 − 8 = 2 → ${hl('632')}`], ['$100 − $47.35 change', `Digits from 9, last from 10: ${hl('$52.65')}`], ['97 × 94 (near 100)', `Distances −3 and −6. Cross: 97 − 6 = 91. Multiply: 3 × 6 = 18 → ${hl('9118')}`]],
     uses: ['Change at the shop', 'Near-base multiplication', 'Division by 9, 8, 89'],
     read: [['Nikhilam multiplication for beginners (video)', { yt: 'f0W32SwhAwM' }], VM],

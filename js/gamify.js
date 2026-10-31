@@ -60,7 +60,7 @@ export const BADGES = [
   { id: 'belt-white', name: 'White belt', how: 'Light all 9 white belt Stars.', test: () => beltProgress()[0].earned, modes: BIG },
   { id: 'belt-green', name: 'Green belt', how: 'Earn the green belt: light all 9 of its Stars.', test: () => beltProgress()[3].earned, modes: BIG },
   { id: 'belt-black', name: 'Black belt', how: 'Earn the black belt: light all 9 of its Stars.', test: () => beltProgress()[6].earned, modes: BIG },
-  { id: 'arena1', name: 'Arena debut', how: 'Finish an Arena round.', test: () => store.count('arena') >= 1 },
+  { id: 'arena1', name: 'Arena debut', how: 'Finish an Arena round or a tower challenge.', test: () => store.count('arena') >= 1 },
   { id: 'arena200', name: 'Arena star', how: 'Score 200 or more in one Arena round.', test: () => store.count('arenaBest') >= 200 },
   { id: 'daily3', name: 'Daily habit', how: 'Finish the daily challenge on 3 days.', test: () => store.count('dailyDays') >= 3 },
   { id: 'duel', name: 'Party host', how: 'Finish a Party Mode game with family or friends.', test: () => store.count('duelsDone') >= 1 },
@@ -82,9 +82,9 @@ export const badgesFor = (mode, got = {}) => BADGES.filter(b => !b.modes || b.mo
 const ANSWER_COUNTERS = ['answers', 'right'];
 const Q = (counter, goal, label) => ({ id: `${counter}-${goal}`, counter, goal, label });
 export const QUEST_POOL = {
-  explorer: [Q('answers', 8, 'Answer 8 questions'), Q('answers', 12, 'Answer 12 questions'), Q('right', 5, 'Get 5 right'), Q('gamesPlayed', 1, 'Play a game'), Q('gamesPlayed', 2, 'Play 2 games'), Q('tricksWatched', 1, 'Watch a speed trick'), Q('arena', 1, 'Finish an Arena round')],
-  challenger: [Q('answers', 15, 'Answer 15 questions'), Q('right', 10, 'Get 10 right'), Q('tricksWatched', 1, 'Watch a speed trick'), Q('arena', 1, 'Finish an Arena round'), Q('gamesPlayed', 1, 'Play a game'), Q('katas', 1, 'Finish a Dojo kata'), Q('runs', 1, 'Finish an Endless run')],
-  pro: [Q('answers', 20, 'Answer 20 questions'), Q('right', 15, 'Get 15 right'), Q('arena', 1, 'Finish an Arena round'), Q('tricksWatched', 2, 'Watch 2 speed tricks'), Q('katas', 2, 'Finish 2 Dojo katas'), Q('runs', 1, 'Finish an Endless run'), Q('gamesPlayed', 2, 'Play 2 games')]
+  explorer: [Q('answers', 8, 'Answer 8 questions'), Q('answers', 12, 'Answer 12 questions'), Q('right', 5, 'Get 5 right'), Q('gamesPlayed', 1, 'Play a game'), Q('gamesPlayed', 2, 'Play 2 games'), Q('tricksWatched', 1, 'Watch a speed trick'), Q('arena', 1, 'Finish an Arena round or tower challenge')],
+  challenger: [Q('answers', 15, 'Answer 15 questions'), Q('right', 10, 'Get 10 right'), Q('tricksWatched', 1, 'Watch a speed trick'), Q('arena', 1, 'Finish an Arena round or tower challenge'), Q('gamesPlayed', 1, 'Play a game'), Q('katas', 1, 'Finish a Dojo kata'), Q('runs', 1, 'Finish an Endless run')],
+  pro: [Q('answers', 20, 'Answer 20 questions'), Q('right', 15, 'Get 15 right'), Q('arena', 1, 'Finish an Arena round or tower challenge'), Q('tricksWatched', 2, 'Watch 2 speed tricks'), Q('katas', 2, 'Finish 2 Dojo katas'), Q('runs', 1, 'Finish an Endless run'), Q('gamesPlayed', 2, 'Play 2 games')]
 };
 export const QUEST_COUNTERS = [...new Set(Object.values(QUEST_POOL).flat().map(q => q.counter))];
 const QUEST_SEED = 'v1:quests:';
