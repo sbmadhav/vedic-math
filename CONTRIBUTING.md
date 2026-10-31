@@ -63,7 +63,7 @@ The suite runs against the live site by default. To test your checkout before it
 - Write for every play mode: Explorer (young kids), Challenger and Pro.
 - Never use em dashes in copy. Use a period, comma or colon.
 - Never send personal data to analytics or the leaderboards.
-- Module imports stay inside `/js/` (`build.py` fails on anything else), and nothing loads from another site unless it is in `THIRD_PARTIES` in `build.py`.
+- Module imports stay inside `/js/`, or name a TypeScript module under `shared/src/` or `app/src/` that `build.py` publishes under `/js/ts/` (`build.py` fails on anything else), and nothing loads from another site unless it is in `THIRD_PARTIES` (`shared/src/policy.json`, read by `build.py`).
 - Test both schemes, a 390px wide phone, keyboard only and reduced motion.
 
 ## Repo-only files

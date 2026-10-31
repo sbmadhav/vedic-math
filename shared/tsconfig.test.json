@@ -1,0 +1,15 @@
+{
+  "extends": "../tsconfig.base.json",
+  "//": "The tests run in Node (Vitest) and read files such as cloud/firestore.rules; the modules they test keep the no-DOM settings of tsconfig.json.",
+  "compilerOptions": {
+    "lib": [
+      "ES2022"
+    ],
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "src"
+  ]
+}

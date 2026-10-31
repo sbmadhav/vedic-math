@@ -28,8 +28,8 @@ const P2 = { id: 'pabc123', name: 'Brave Otter 17', avatar: 'plum', mode: 'explo
 const goodPayload = () => S.payloadOf(device({ 'vm.players': players([P1, P2]), 'mathquest.v1.p1': record(), 'mathquest.v1.pabc123': record({ sparks: 5 }), theme: 'dark', 'vm.calm': '1' }), [], 1_700_000_000_000);
 
 /* ---------- the allow-list ---------- */
-test('the word lists, avatars and Nickname form match js/store.js', () => {
-  const src = readFileSync(join(repo, 'js/store.js'), 'utf8');
+test('the word lists, avatars and Nickname form match shared/src/names.ts (moved from js/store.js)', () => {
+  const src = readFileSync(join(repo, 'shared/src/names.ts'), 'utf8');
   const list = name => JSON.parse(src.match(new RegExp(`const ${name} = (\\[[^\\]]*\\])`))[1].replace(/'/g, '"'));
   assert.deepEqual(S.ADJ, list('ADJ'));
   assert.deepEqual(S.NOUN, list('NOUN'));
