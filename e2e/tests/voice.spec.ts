@@ -321,17 +321,18 @@ test.describe('studio voice', () => {
     await fakeSpeech(page, [ENHANCED]);
     const requests = await fakeStudio(page);
     await page.addInitScript(() => {
+      try { localStorage.setItem('vm.voice', '0'); } catch (e) {} // read aloud off: only Hear it speaks, so the logs hold one line
       const w = window as any, AC = w.AudioContext;
       /* A context the browser never lets run (iOS before a tap, a kiosk policy): resume() resolves, the state stays suspended */
       w.AudioContext = class extends AC { get state() { return 'suspended'; } resume() { return Promise.resolve(); } };
     });
     await open(page, '#/skill/k-count');
-    await expect.poll(() => requests.some(u => u.endsWith('/l/set.test.bin'))).toBe(true);
-    await page.evaluate(() => { (window as any).__voiceLog.length = 0; (window as any).__spoken.length = 0; });
     await page.locator('#practice').getByRole('button', { name: 'Hear it' }).click();
-    await expect.poll(async () => (await spoken(page)).length, { timeout: 10_000 }).toBeGreaterThan(0);
+    await expect.poll(async () => (await spoken(page)).map(s => s.text), { timeout: 10_000 }).toContain('How many dots are there?');
+    expect(requests.some(u => u.endsWith('/l/set.test.bin')), 'the studio index was asked for').toBe(true);
     const log = await vlog(page);
     expect(log).toContain('studio:suspended');
+    expect(log).toContain('builtin');
     expect(log.filter(e => e === 'studio:line' || e === 'studio:clips')).toEqual([]);
   });
 });

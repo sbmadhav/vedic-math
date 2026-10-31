@@ -443,6 +443,17 @@ if (typeof document !== 'undefined' && document.addEventListener) {
 const fetchBuf = url => fetch(url).then(r => { if (!r.ok) throw new Error(`${url}: ${r.status}`); return r.arrayBuffer(); });
 const decode = buf => new Promise((res, rej) => audioCtx().decodeAudioData(buf, res, rej));
 const wait = ms => new Promise(r => setTimeout(r, ms));
+/* Web Audio that cannot run (a context the browser keeps suspended, as iOS does before the first tap) would play a
+   studio line into silence with nothing to hand it on. Checked right before a line's sound is scheduled, never
+   earlier, so the voice order above is unchanged: the resume gets 300 ms, and a context still not running sends the
+   line to the built-in voice (false). */
+async function audioRunning() {
+  const ctx = audioCtx();
+  if (ctx.state === 'running') return true;
+  try { await Promise.race([ctx.resume(), wait(300)]); } catch (e) {}
+  if (ctx.state === 'running') return true;
+  vlog('studio:suspended'); return false;
+}
 let studioBase = null; // Promise<{ idx, set, dir } | null>: the index, the sorted whole-line set and the clip directory
 function loadStudio() {
   if (!studioBase) studioBase = import('./voice-index.js').then(async m => {
@@ -503,20 +514,16 @@ async function speakStudio(words, my, done = () => {}) {
   if (my !== token) return true;
   if (late) vlog('studio:noindex');
   if (!sb) return false;
-  /* Web Audio that cannot run (a context the browser keeps suspended, as iOS does before the first tap) would play
-     the clips into silence with nothing to hand the line on: the resume gets 300 ms, then the built-in voice reads */
-  const ctx = audioCtx();
-  if (ctx.state !== 'running') {
-    try { await Promise.race([ctx.resume(), wait(300)]); } catch (e) {}
-    if (my !== token) return true;
-    if (ctx.state !== 'running') { vlog('studio:suspended'); return false; }
-  }
   const hash = lineHash(sb.idx.voice, words);
   if (inLineSet(sb.set, hash)) {
     /* A whole recorded line, if it arrives within 600 ms (a slow network falls through to clips) */
     const buf = await Promise.race([fetchBuf(`${sb.idx.base}l/${hash}.m4a`).then(decode), wait(600).then(() => null)]).catch(() => null);
     if (my !== token) return true;
-    if (buf) { startSource(buf, audioCtx().currentTime + 0.03, 0, buf.duration, () => done(true)); vlog('studio:line'); return true; }
+    if (buf) {
+      if (!(await audioRunning())) return false;
+      if (my !== token) return true;
+      startSource(buf, audioCtx().currentTime + 0.03, 0, buf.duration, () => done(true)); vlog('studio:line'); return true;
+    }
   }
   const plan = planLine(words), need = new Set();
   for (const p of plan) if (p.clip) { const name = sb.dir[p.clip]; if (!name) { vlog('studio:missing'); return false; } need.add(name); }
@@ -524,6 +531,8 @@ async function speakStudio(words, my, done = () => {}) {
   if (missing.length) { missing.forEach(n => loadPack(sb, n).catch(() => {})); return false; } // this line: built-in; later lines: clips
   /* Every clip must be in its pack before any is scheduled, so a gap never leaves half a line in the studio voice */
   if (plan.some(p => p.clip && !packReady.get(sb.dir[p.clip]).map.clips[p.clip])) { vlog('studio:missing'); return false; }
+  if (!(await audioRunning())) return false;
+  if (my !== token) return true;
   const lastClip = plan.map(p => !!p.clip).lastIndexOf(true);
   let at = audioCtx().currentTime + 0.05;
   plan.forEach((p, i) => {
