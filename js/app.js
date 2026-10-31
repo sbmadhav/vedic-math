@@ -1840,11 +1840,13 @@ function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw
     <h2 class="mq-strand">Backup</h2>
     <p class="mq-data"><button class="md-btn md-btn--sm" id="pExport">Copy backup code</button> <button class="md-btn md-btn--sm" id="pImport">Restore from code</button> <button class="md-btn md-btn--sm" id="pReset">Reset this player</button></p>
     <p class="pr-say" id="pMsg" role="status" aria-live="polite"></p>
+    <div class="me-restore" id="pCodeBox" hidden><label class="mq-small" for="pCode">Your backup code, every Player on this device. Copy it or write it down.</label><textarea class="md-input" id="pCode" readonly rows="3" spellcheck="false"></textarea></div>
+    <div class="me-restore" id="pPasteBox" hidden><label class="mq-small" for="pPaste">Paste a backup code here, then press Check this code. Nothing changes until you choose what to keep.</label><textarea class="md-input" id="pPaste" rows="3" spellcheck="false" autocomplete="off"></textarea><div class="me-acts"><button type="button" class="md-btn md-btn--sm md-btn--primary" id="pCheck">Check this code</button><button type="button" class="md-btn md-btn--sm" id="pPasteCancel">Cancel</button></div></div>
     <div class="md-card me-restore" id="pOffer" hidden>
       <h3 class="mq-h3" id="pOfferH" tabindex="-1">Restore from this code?</h3>
       <ul id="pOfferList"></ul>
       <p class="mq-small">With them come their Sparks, Medals, Stars, Ratings and settings. World board names and the Device board start fresh.</p>
-      <p class="mq-small" id="pOfferHere" hidden><b>This device already has progress:</b> <span></span>. Keep both adds the code's Players next to the ones here; each Player keeps their own progress.</p>
+      <p class="mq-small" id="pOfferHere" hidden><b>This device already has progress:</b> <span></span>. Use the code's replaces every Player and all progress on this device with the code's. Keep both adds the code's Players next to the ones here; each Player keeps their own progress.</p>
       <div class="me-acts" id="pOfferFresh"><button class="md-btn md-btn--sm md-btn--primary" id="pBring">Bring it</button><button class="md-btn md-btn--sm" id="pNotNow">Not now</button></div>
       <div class="me-acts" id="pOfferHas" hidden><button class="md-btn md-btn--sm" id="pKeep">Keep this device's</button><button class="md-btn md-btn--sm" id="pUse">Use the code's</button><button class="md-btn md-btn--sm md-btn--primary" id="pBoth">Keep both</button></div>
     </div>
@@ -1879,6 +1881,7 @@ function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw
   store.loadBackup().catch(() => {});
   const backup = fn => async () => { if (!bk) { try { bk = (await store.loadBackup()).meBackup({ $, msg }); } catch (e) { msg('The backup tools could not load. Check the connection, then try again.'); return; } } fn(bk); };
   listen($('#pExport'), backup(b => b.copy())); listen($('#pImport'), backup(b => b.restore()));
+  listen($('#pCheck'), backup(b => b.check())); listen($('#pPasteCancel'), backup(b => b.cancelPaste()));
   listen($('#pBring'), backup(b => b.choose('replace'))); listen($('#pUse'), backup(b => b.choose('replace'))); listen($('#pBoth'), backup(b => b.choose('both')));
   listen($('#pNotNow'), backup(b => b.keep())); listen($('#pKeep'), backup(b => b.keep()));
   $('#pReset').onclick = () => { if (confirm('Reset all progress for this player?')) { store.reset(); meView(ctx); msg('Progress reset.'); } };

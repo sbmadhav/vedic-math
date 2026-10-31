@@ -503,6 +503,14 @@ async function speakStudio(words, my, done = () => {}) {
   if (my !== token) return true;
   if (late) vlog('studio:noindex');
   if (!sb) return false;
+  /* Web Audio that cannot run (a context the browser keeps suspended, as iOS does before the first tap) would play
+     the clips into silence with nothing to hand the line on: the resume gets 300 ms, then the built-in voice reads */
+  const ctx = audioCtx();
+  if (ctx.state !== 'running') {
+    try { await Promise.race([ctx.resume(), wait(300)]); } catch (e) {}
+    if (my !== token) return true;
+    if (ctx.state !== 'running') { vlog('studio:suspended'); return false; }
+  }
   const hash = lineHash(sb.idx.voice, words);
   if (inLineSet(sb.set, hash)) {
     /* A whole recorded line, if it arrives within 600 ms (a slow network falls through to clips) */
