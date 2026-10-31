@@ -36,7 +36,8 @@ test.describe('a Player whose Age answer is under 13', () => {
     await btn.click();
     await expect.poll(async () => (await shared(page)).length).toBe(1);
     expect((await shared(page))[0].url).toBe(siteLink(DAY, 'challenger', scoreAfter(2)));
-    expect((await shared(page))[0].text).not.toMatch(/Swift|Tiger|\b10\b|age/i);
+    // The same three lines as for any Player: no Nickname, and the Age answer (10) is nowhere in them
+    expect((await shared(page))[0].text).toBe(`Learn Vedic Math: Arena daily challenge, Challenger League, ${DAY}\nScore ${scoreAfter(2)}: 2 right, 0 missed, best combo 2x\nThe same questions for every Challenger today, 60 seconds, no sign-in. Can you beat it?`);
     await page.locator('#arDone').click();
     // A friend's challenge link: today's, so the daily challenge; its Score ranks on the Device board only
     await open(page, link(DAY, 'challenger', '240'));
