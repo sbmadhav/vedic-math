@@ -308,6 +308,10 @@ _Avoid_: points total, result, Sparks
 Progress points a Player earns from everything they do, Practice included. They add up to one weekly total, and in a Star they light it. The only progress number besides Score.
 _Avoid_: XP, experience, points, score
 
+**Sparks history**:
+The Player's last 50 Sparks awards, newest first, each with its amount, what it was for and when, shown on the Me page as Recent Sparks. Consecutive answers in one round are one row. It is kept on the device with the Player's progress, carried by backup and restore, and never sent anywhere (`muse-review-polish` change).
+_Avoid_: ledger, transaction log, Sparks log (in copy; `sparksLog` is the record field)
+
 **Board**:
 A ranked list for one League and one period (a day or a week). Arena, each game, the Daily Sutra and weekly Sparks each have their own Boards.
 _Avoid_: leaderboard (fine in copy, not in this glossary), ranking, table

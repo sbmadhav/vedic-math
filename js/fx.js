@@ -146,6 +146,11 @@ export { settingsHTML as voiceSettingsHTML, wireSettings as wireVoiceSettings } 
    under no motion (noMotion() above uses the same rule). */
 export { confetti, sparkle, pop, bounce, twinkle, wiggle, tick, cheer, rollUp, rollSparks } from './celebrate.js';
 
+/* ---------- Held input (openspec change muse-review-polish): js/hold.js ----------
+   hold(el, ms, then, { skippable, signal }) replaces later(then, ms, signal) where a round holds input for feedback:
+   a bar under the keypad after 1.2 s, and Next (Enter) in untimed rounds from 2 s. */
+export { hold } from './hold.js';
+
 /* ---------- Toasts ---------- */
 /* Which edge the toasts sit on (openspec find-and-home-polish): the bottom, unless a primary action is there. A round's
    number pad or answer choices (PADS) hold the lower part of the screen and move as feedback shows, so while one is on
