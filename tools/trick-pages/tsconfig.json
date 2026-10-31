@@ -1,0 +1,11 @@
+{
+  "//": "The browser modules of the Trick pages and the warm-up (trick-pages design D4): DOM types, the /js/ imports declared in js-modules.d.ts, and /tricks/<name>.js resolved to the .ts beside it. Run by the tools package's typecheck script. erasableSyntaxOnly: build.py publishes these with Node's type stripper, which takes only plain type syntax.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": [],
+    "erasableSyntaxOnly": true,
+    "paths": { "/tricks/*": ["./*"] }
+  },
+  "include": ["*.ts"]
+}

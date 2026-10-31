@@ -31,7 +31,12 @@ What the build does (target site):
 - In play/index.html: an import map that pins every module under /js/ to ?v=<hash of that file>, and the #vm-css map
   for the play stylesheets. In every page: each same-origin .js and .css it loads gets ?v=<hash>.
 - sw.js: app/src/sw/sw.ts with its types taken out (tools/build-sw.mjs, run with the system node, 22.13 or newer),
-  then VERSION and the PRECACHE list between the "build.py: precache" markers. Every entry has the hash the worker
+  then VERSION and the PRECACHE list between the "build.py: precache" markers.
+- /tricks/<name>.js: every runtime module of tools/trick-pages/ (the Trick pages' calculator and the teachers'
+  projector warm-up; not the generator, a declaration file or a test) with its types taken out the same way, stamped
+  like every page script and never precached. A page that loads one as its module entry gets a page-local import map
+  pinning that entry's whole graph (/js/vedic.js, /js/life.js and the /tricks/ modules it imports) to ?v=<hash>
+  (openspec changes trick-pages, design D4, and teacher-warm-up, design D7). Every entry has the hash the worker
   checks on install: the game shell /play/, every file it loads, every module at its import-map URL, the play
   stylesheets, the fonts, the icons and the manifest.
 - _headers: the security headers on every response, and per page a Content-Security-Policy and a stricter
@@ -64,6 +69,9 @@ SW_START, SW_END = "/* build.py: precache (generated, do not edit) */", "/* /bui
 SW_DEV = "const VERSION = 'dev';\nconst PRECACHE = [];"
 BASELINE = "docs/perf/baseline.json"   # the first-load budget (check_budget)
 SW_SRC = "app/src/sw/sw.ts"   # published as /sw.js with its types taken out (worker_source)
+TRICKS_SRC = "tools/trick-pages"   # the Trick pages' browser modules, published at /tricks/<name>.js with their types taken out (trick_modules)
+TRICKS_URL = "tricks/"
+TRICKS_SKIP = ("generate.ts",)   # runs in Node to write the pages, never in a page
 MARKERS = (".assetsignore", ".nojekyll")  # an earlier build: safe to empty
 GENERATED = ("robots.txt", "sitemap.xml", ".well-known/security.txt", "sw.js", "_headers", "_redirects")
 
@@ -217,17 +225,60 @@ export const STUDIO = {"voice": null, "speed": null, "base": null, "tag": null, 
 SW_VOICE_ORIGIN = re.compile(r"^const VOICE_ORIGIN = '[^']*';.*$", re.M)
 
 
-def worker_source():
-    """The service worker as published: app/src/sw/sw.ts with its types taken out by tools/build-sw.mjs (Node's own type
-    stripper, so nothing needs installing). Every line stays where it is, so the markers and the lines this script
-    rewrites read the same as in the source."""
+def strip_types(path):
+    """A TypeScript source with its types taken out by tools/build-sw.mjs (Node's own type stripper, so nothing needs
+    installing). Every line stays where it is, so marker lines and the lines this script rewrites read the same as in
+    the source. Only plain type syntax is allowed (erasableSyntaxOnly in the tsconfigs)."""
     node = shutil.which("node")
     if not node:
-        fail(f"node is not installed: it turns {SW_SRC} into sw.js (Node 22.13 or newer)")
-    r = subprocess.run([node, "--no-warnings", str(ROOT / "tools/build-sw.mjs"), str(ROOT / SW_SRC)], capture_output=True, text=True)
+        fail(f"node is not installed: it takes the types out of {path} (Node 22.13 or newer)")
+    r = subprocess.run([node, "--no-warnings", str(ROOT / "tools/build-sw.mjs"), str(ROOT / path)], capture_output=True, text=True)
     if r.returncode != 0:
-        fail(f"{SW_SRC}: tools/build-sw.mjs failed:\n{r.stderr.strip()}")
+        fail(f"{path}: tools/build-sw.mjs failed:\n{r.stderr.strip()}")
     return r.stdout
+
+
+def worker_source():
+    """The service worker as published: app/src/sw/sw.ts with its types taken out."""
+    return strip_types(SW_SRC)
+
+
+def trick_modules(all_files):
+    """Published path -> source path for every runtime module of tools/trick-pages/ (trick-pages design D4, teacher-warm-up
+    design D7): each <name>.ts in that folder, not a declaration, a test or the generator, becomes /tricks/<name>.js."""
+    out = {}
+    for f in all_files:
+        name = f[len(TRICKS_SRC) + 1:]
+        if not (f.startswith(TRICKS_SRC + "/") and name.endswith(".ts")) or "/" in name or name.endswith((".d.ts", ".test.ts")) or name in TRICKS_SKIP:
+            continue
+        out[TRICKS_URL + name[:-3] + ".js"] = f
+    return out
+
+
+# A static import or re-export, with the specifier in group 1 or 2
+IMPORT_RE = re.compile(r"""(?:^|[;\n}])\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|[;\n}])\s*import\s*['"]([^'"]+)['"]""")
+
+
+def resolve_import(p, spec):
+    """The published path (no leading slash) a module p imports with spec, or None for a URL or a bare specifier."""
+    if re.match(r"https?://", spec) or not spec.startswith(("./", "../", "/")):
+        return None
+    return posixpath.normpath(spec if spec.startswith("/") else posixpath.join(posixpath.dirname("/" + p), spec))[1:]
+
+
+def module_graph(entry, read):
+    """entry and every module it reaches through static imports (published paths), sorted; read(p) gives a module's source."""
+    seen, queue = set(), [entry]
+    while queue:
+        p = queue.pop()
+        if p in seen:
+            continue
+        seen.add(p)
+        for m in IMPORT_RE.finditer(read(p)):
+            r = resolve_import(p, m.group(1) or m.group(2))
+            if r and r not in seen:
+                queue.append(r)
+    return sorted(seen)
 
 
 def check_budget(out, voice):
@@ -609,6 +660,10 @@ def build_site(args, out):
         fail(f"{VOICE_INDEX} is missing")
     # Published path -> bytes that replace the source file's in the output
     overrides = {VOICE_INDEX: VOICE_OFF_INDEX.encode()} if voice_off else {}
+    # The Trick pages' browser modules: /tricks/<name>.js from tools/trick-pages/<name>.ts with the types taken out
+    tricks = trick_modules(all_files)
+    for pub, s in tricks.items():
+        overrides[pub] = strip_types(s).encode()
     src = lambda p: overrides[p] if p in overrides else (ROOT / p).read_bytes()
     sw = worker_source()
     blocks = re.findall(re.escape(SW_START) + r"\n?(.*?)\n?" + re.escape(SW_END), sw, re.S)
@@ -622,6 +677,7 @@ def build_site(args, out):
     # Published path -> source path. Pages are rendered separately; the design system goes to /ds/2.2.0/.
     publish = {f: f for f in files if not f.startswith("site/")}
     publish.update({DS_URL.lstrip("/") + f: f"{DS_DIR}/{f}" for f in DS_PUBLISHED})
+    publish.update(tricks)
     # The published tokens.css drops its @font-face lines (they point at the old site's /assets/fonts/): theme/fonts.css
     # declares the fonts once, from /fonts/ on this site
     tokens = re.sub(r"(?m)^@font-face[^\n]*\n", "", (ROOT / DS_DIR / "tokens.css").read_text())
@@ -648,20 +704,21 @@ def build_site(args, out):
             fail(f"{rel}: shows the placeholder {left[0]}; a published page never shows a draft's [bracketed] text "
                  "(reword it, or move it to the draft's \"(remove before publishing)\" section)")
 
-    # Every static import is a relative or absolute path inside /js/. A bare specifier would fail without the map, a path
-    # outside the folder would not be pinned, and a full URL would run code from another site.
+    # Every static import is a relative or absolute path inside /js/ (a Trick module may also import /tricks/). A bare
+    # specifier would fail without the map, a path outside those folders would not be pinned (a .ts path is not even
+    # published), and a full URL would run code from another site.
     js = sorted(f for f in publish if f.startswith("js/") and f.endswith(".js"))
-    import_re = re.compile(r"""(?:^|[;\n}])\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|[;\n}])\s*import\s*['"]([^'"]+)['"]""")
-    for p in js:
-        for m in import_re.finditer(src(p).decode()):
+    for p in js + sorted(tricks):
+        roots = ("/js/", "/" + TRICKS_URL) if p in tricks else ("/js/",)
+        for m in IMPORT_RE.finditer(src(p).decode()):
             spec = m.group(1) or m.group(2)
             if re.match(r"https?://", spec):
                 fail(f"{p}: imports {spec}; every module is served and pinned by this site")
             if not spec.startswith(("./", "../", "/")):
                 fail(f"{p}: bare import '{spec}' is not covered by the import map")
-            resolved = posixpath.normpath(spec if spec.startswith("/") else posixpath.join(posixpath.dirname("/" + p), spec))
-            if not resolved.startswith("/js/") or resolved[1:] not in publish:
-                fail(f"{p}: import '{spec}' resolves to {resolved}, outside the versioned /js/ modules")
+            resolved = "/" + resolve_import(p, spec)
+            if not resolved.startswith(roots) or resolved[1:] not in publish:
+                fail(f"{p}: import '{spec}' resolves to {resolved}, outside the versioned {' and '.join(roots)} modules")
 
     imports = {f"/{p}": f"/{p}?v={versions['/' + p]}" for p in js}
     play_css = {f"/{f}": versions["/" + f] for f in publish if f.startswith("css/") and f.endswith(".css")}
@@ -673,6 +730,15 @@ def build_site(args, out):
             entry = re.search(r'<script type="module" src="/js/app\.js"></script>', html)
             if not entry:
                 fail("play/index.html: module entry script not found")
+            html = html[:entry.start()] + map_block + html[entry.start():]
+        # A page whose module entry is a Trick module (/tricks/<name>.js) gets a page-local import map pinning its graph
+        entry = re.search(r'<script type="module" src="/(' + re.escape(TRICKS_URL) + r'[\w-]+\.js)"></script>', html)
+        if entry and not dev:
+            if entry.group(1) not in tricks:
+                fail(f"{url}: loads /{entry.group(1)}, which is not a module of {TRICKS_SRC}/")
+            graph = module_graph(entry.group(1), lambda p: src(p).decode())
+            page_map = {f"/{p}": f"/{p}?v={versions['/' + p]}" for p in graph}
+            map_block = MAP_START + '\n<script type="importmap">\n' + json.dumps({"imports": page_map}, indent=1) + "\n</script>\n" + MAP_END + "\n"
             html = html[:entry.start()] + map_block + html[entry.start():]
         if not dev:
             html = stamp_refs(html, versions)
