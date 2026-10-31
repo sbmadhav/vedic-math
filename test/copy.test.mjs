@@ -118,7 +118,9 @@ test('the parents summary claims only what the privacy policy says, and the teac
   ]) { assert.ok(facts.includes(claim), claim); assert.match(policy, inPolicy, claim); }
   const warm = page('teachers').match(/<section class="lv-callout"[\s\S]*?<\/section>/)?.[0] ?? '';
   assert.match(warm, /<h2 id="lv-warmup-h">A 5-minute warm-up for today's class<\/h2>/);
-  assert.match(warm, /<a class="md-btn md-btn--primary" href="\/play\/#\/arena">Open the Arena<\/a>/);
+  /* The projector warm-up first, the Arena beside it (openspec change teacher-warm-up, task 3.1) */
+  assert.match(warm, /<a class="md-btn md-btn--primary" href="\/teachers\/warm-up\/">Open the projector warm-up<\/a>/);
+  assert.match(warm, /<a class="md-btn" href="\/play\/#\/arena">Open the Arena<\/a>/);
   assert.match(warm, /There are no class accounts or class leaderboards/);
   const app = readFileSync(join(root, 'js', 'app.js'), 'utf8');
   assert.match(app, /\[\/\^#\\\/arena\$\/, \(m, ctx\) => arenaView\(ctx\)\]/, 'the Arena route the button opens');
@@ -166,4 +168,30 @@ test('the parent note says what the privacy policy says, in every Mode', () => {
 test('no Parent step is left in the game', () => {
   const app = readFileSync(join(root, 'js', 'app.js'), 'utf8');
   for (const gone of ['parent-step/', 'wbSwitch', 'wbCheck', 'inWords(', 'needs-parent', 'setParentOk']) assert.ok(!app.includes(gone), gone);
+});
+
+/* The projector warm-up and the /teachers/ box (openspec change teacher-warm-up, design D6; scenario "Honest words"): the
+   no sign-in sentence, a link to the privacy policy, the 1965 book credit, and no claim that a school needs no privacy
+   review or that the site is COPPA compliant (that is for the school and the lawyer, ADR 0006, learnvedicmath 13.1) */
+test('the warm-up and the teachers box say the honest words and claim nothing about privacy reviews or COPPA', () => {
+  const page = p => readFileSync(join(root, 'site', p, 'index.html'), 'utf8');
+  const HONEST = 'No sign-in and no student accounts. This page stores nothing on this device.';
+  const warm = page('teachers/warm-up'), box = page('teachers').match(/<section class="lv-callout"[\s\S]*?<\/section>/)?.[0] ?? '';
+  for (const [name, text] of [['teachers/warm-up', warm], ['the teachers box', box]]) {
+    assert.ok(text.includes(HONEST), `${name}: the no sign-in sentence`);
+    assert.match(text, /href="\/privacy\/"/, `${name}: links the privacy policy`);
+    assert.doesNotMatch(text, /privacy review|district review|IT approval|COPPA/i, `${name}: no claim about reviews or compliance`);
+    assert.doesNotMatch(text, /—|&mdash;/, `${name}: no em dash`);
+  }
+  assert.match(warm, /in Bharati Krishna Tirtha's 1965 book <i>Vedic Mathematics<\/i>/);
+  assert.match(warm, /<script type="module" src="\/tricks\/warm-up\.js"><\/script>/, 'the source page loads the plain module URL (the build stamps it and writes the import map)');
+  assert.doesNotMatch(warm, /importmap|\?v=/);
+  assert.match(warm, /<script src="\/js\/analytics\.js" defer><\/script>/);
+  assert.doesNotMatch(warm.replace(/<!--[\s\S]*?-->/g, ''), /firebase|localStorage\.setItem|sessionStorage/i, 'nothing stored, no Firebase (comments aside, which say so)');
+  for (const f of ['warm-up.ts', 'step-board.ts', 'warm-up-problems.ts', 'warm-up-pick.ts', 'pages.ts']) {
+    const src = readFileSync(join(root, 'tools/trick-pages', f), 'utf8');
+    assert.doesNotMatch(src, /—/, `${f}: no em dash`);
+    assert.doesNotMatch(stripComments(src), /localStorage|sessionStorage|indexedDB|firebase|setTimeout|setInterval|requestAnimationFrame|\.addEventListener\(/i, `${f}: nothing stored, no clock, every listener through on() (comments aside, which say so)`);
+  }
+  assert.match(readFileSync(join(root, 'tools/trick-pages/warm-up.ts'), 'utf8'), /import \{ on \} from '\/js\/life\.js'/);
 });

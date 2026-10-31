@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dir = mkdtempSync(join(tmpdir(), 'lvm-build-'));
 for (const f of ['build.py', '_config.yml', '.gitignore', 'play', 'site', 'theme', 'vendor', 'fonts', 'icons', 'thumbs', 'math.css', 'css', 'app/src/sw',
-  'tools/build-sw.mjs', 'tools/build-ts.mjs', 'shared/src', 'tools/budget.ts', 'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'AGENTS.md', 'CODING_STANDARDS.md', 'README.md',
+  'tools/build-sw.mjs', 'tools/build-ts.mjs', 'shared/src', 'tools/trick-pages', 'tools/budget.ts', 'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'AGENTS.md', 'CODING_STANDARDS.md', 'README.md',
   'wrangler.jsonc', 'workers/src', 'package.json', 'pnpm-workspace.yaml', 'tsconfig.base.json', 'vitest.config.ts',
   'cloud/firestore.rules', 'test/support/verify.mjs', '.github', 'tools/voice/ci-fetch.mjs', 'tools/sutra-voice/names.mjs'])
   if (existsSync(join(repo, f))) cpSync(join(repo, f), join(dir, f), { recursive: true });
@@ -560,4 +560,38 @@ test('the build prints the first-load table and fails above the budget: 20 KB in
       }));
     assert.doesNotThrow(() => build('--dev'), 'a --dev build has no PRECACHE and is not measured');
   } finally { setBudget(1e9); }
+});
+
+/* ---------- the Trick pages' browser modules (trick-pages design D4; teacher-warm-up design D7, task 1.2) ---------- */
+test('the Trick modules are published at /tricks/<name>.js with their types taken out, the warm-up page gets a page-local import map pinning its whole graph, and none is precached', () => {
+  build();
+  const warm = read('tricks/warm-up.js');
+  assert.doesNotMatch(warm, /import type|: string|: number|\bas [A-Z]\w*[;)]|<KeyboardEvent>/, 'types taken out');
+  assert.match(warm, /^import \{ TRICKS, \} from '\/js\/ts\/shared\/src\/vedic\.js';$/m, 'the re-export-only js/vedic.js is skipped for its TypeScript module, as in a js/ module');
+  assert.match(warm, /from '\/js\/life\.js'/);
+  const page = read('teachers/warm-up/index.html');
+  const map = JSON.parse(page.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
+  for (const m of ['/tricks/warm-up.js', '/tricks/step-board.js', '/tricks/pages.js', '/tricks/warm-up-problems.js', '/tricks/warm-up-pick.js', '/js/ts/shared/src/vedic.js', '/js/ts/shared/src/lib.js', '/js/life.js'])
+    assert.equal(map[m], `${m}?v=${sha(m.slice(1))}`, m);
+  assert.ok(!Object.keys(map).some(k => /app\.js|arena\.js/.test(k)), 'only the entry\'s graph, not every /js/ module');
+  assert.match(page, /<script type="module" src="\/tricks\/warm-up\.js\?v=[0-9a-f]{10}"><\/script>/, 'the entry is stamped');
+  assert.ok(page.indexOf('type="importmap"') < page.indexOf('src="/tricks/warm-up.js'), 'the map comes before the module');
+  assert.match(page, /href="\/theme\/warm-up\.css\?v=[0-9a-f]{10}"/);
+  for (const f of walk(join(out, 'tricks')))
+    for (const m of read(relative(out, f)).matchAll(/from '([^']+)'/g)) assert.ok(map[m[1]], `${relative(out, f)} imports ${m[1]}, which the warm-up's map pins`);
+  assert.deepEqual(walk(join(out, 'tricks')).map(f => relative(out, f)).sort(), ['tricks/pages.js', 'tricks/step-board.js', 'tricks/warm-up-pick.js', 'tricks/warm-up-problems.js', 'tricks/warm-up.js'], 'the runtime modules only: no declaration file, no .ts');
+  assert.ok(!sw().precache.some(([u]) => u.startsWith('/tricks/')), 'never precached: outside the game\'s first load');
+  assert.ok(!readFileSync(join(dir, 'site/teachers/warm-up/index.html'), 'utf8').includes('importmap'), 'the source page carries no map');
+  const rules = headerRules();
+  assert.ok(rules['/teachers/warm-up/'], 'the warm-up page has its own policy');
+  assert.match(rules['/teachers/warm-up/']['Content-Security-Policy'], /script-src 'self' 'sha256-[^']+' 'sha256-[^']+'/, 'two inline scripts: the color scheme script and the import map');
+  assert.deepEqual(parse(rules['/teachers/warm-up/']['Content-Security-Policy'])['script-src'].filter(s => s.startsWith("'sha256-")), inlineHashes(page), 'the hashes are those of the page as published, the import map among them');
+  assert.equal(rules['/teachers/warm-up/']['Permissions-Policy'], 'camera=(), microphone=()');
+  assert.match(read('sitemap.xml'), /<loc>https:\/\/learnvedicmath\.com\/teachers\/warm-up\/<\/loc>/);
+});
+
+test('the build fails on a Trick module importing a .ts path or a module outside /js/ and /tricks/', () => {
+  withEdit('tools/trick-pages/warm-up.ts', s => s.replace("'/tricks/step-board.js'", "'/tricks/step-board.ts'"), () => fails(tryBuild(), /warm-up\.ts: imports \/tricks\/step-board\.ts/));
+  withEdit('tools/trick-pages/warm-up.ts', s => s.replace("'/tricks/step-board.js'", "'/css/play/base.css'"), () => fails(tryBuild(), /base\.css, outside the versioned \/js\/ and \/tricks\/ modules/));
+  withEdit('tools/trick-pages/warm-up.ts', s => s.replace("'/tricks/step-board.js'", "'https://example.com/step-board.js'"), () => fails(tryBuild(), /every module is served and pinned by this site/));
 });

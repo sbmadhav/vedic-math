@@ -185,8 +185,10 @@ html.motion-paused .lv-demo-nav .md-btn, html.calm .lv-demo-nav .md-btn { transi
 .lv-fact--sun { border-top-color: var(--sun); } .lv-fact--sun .lv-fact-ic { background: var(--sun); }
 .lv-callout { margin: var(--space-6) 0 0; padding: var(--space-5); border: 2px solid var(--edge); border-left: 8px solid var(--coral); border-radius: var(--radius-lg); background: var(--card); }
 .lv-page .lv-callout h2 { margin-top: 0 !important; }
-.lv-callout-go { margin: var(--space-4) 0; }
-.lv-page .lv-callout-go a.md-btn { color: var(--on-accent); min-height: 48px; font-size: 1.05rem; }
+.lv-callout-go { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: var(--space-4) 0; }
+.lv-page .lv-callout-go a.md-btn { min-height: 48px; font-size: 1.05rem; }
+.lv-page .lv-callout-go a.md-btn--primary { color: var(--on-accent); }
+.lv-page .lv-callout-go a.md-btn:not(.md-btn--primary) { color: var(--ink); } /* the second button (Open the Arena, teacher-warm-up 3.1) keeps the ink of a plain button */
 .lv-page .lv-callout-go a.md-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
 .lv-callout-note { margin: 0; color: var(--ink-muted); font-size: var(--text-small-size); }
 @media (prefers-reduced-motion: reduce) { .lv-page .lv-callout-go a.md-btn:hover, .lv-page .lv-callout-go a.md-btn:active { transform: none; } }

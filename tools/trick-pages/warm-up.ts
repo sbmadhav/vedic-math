@@ -11,7 +11,7 @@
    Counted in fixed words (analytics spec): math/teachers/warmup/start/<trick> on the first Next of a page load,
    math/teachers/warmup/done/<trick> on reaching Practice at home, each once. Never anything about anyone.
    Published at /tricks/warm-up.js with its types taken out (build.py), which also writes the page's import map. */
-import { TRICKS, type Trick } from '/js/vedic.js';
+import { TRICKS, type Trick, type Vals } from '/js/vedic.js';
 import { on } from '/js/life.js';
 import { PAGES, TRICK_IDS } from '/tricks/pages.js';
 import { PROBLEMS, problemText, answerText, type WarmUp } from '/tricks/warm-up-problems.js';
@@ -20,6 +20,8 @@ import { stepBoard, type StepBoard } from '/tricks/step-board.js';
 
 const SITE = 'learnvedicmath.com';
 const signal = new AbortController().signal; /* the page's lifetime */
+/** A problem's numbers as a Trick takes them (Vals is typed as four, a Trick reads the ones it has) */
+const V = (vals: readonly number[]): Vals => [vals[0] ?? 0, vals[1] ?? 0, vals[2] ?? 0, vals[3] ?? 0];
 
 function byId<T extends HTMLElement>(id: string): T {
   const el = document.getElementById(id);
@@ -68,17 +70,17 @@ function render(pressed = false) {
   let words: string | undefined;
   if (screen === 0) {
     exBoard.show(beat);
-    if (pressed && beat > 0) words = trick.steps(warm.example)[beat - 1]?.say;
+    if (pressed && beat > 0) words = trick.steps(V(warm.example))[beat - 1]?.say;
   } else if (k >= 0) {
     const vals = warm.problems[k] ?? [];
     const board = boards[k];
     q.textContent = problemText(trick.id, vals);
-    answer.textContent = answerText(trick.id, vals, trick.answer(vals));
+    answer.textContent = answerText(trick.id, vals, trick.answer(V(vals)));
     answer.hidden = beat < 1;
     boardEl.hidden = beat < 2;
     board?.show(Math.max(0, beat - 1));
     if (pressed && beat === 1) words = `the answer is ${answer.textContent}`;
-    if (pressed && beat >= 2) words = trick.steps(vals)[beat - 2]?.say;
+    if (pressed && beat >= 2) words = trick.steps(V(vals))[beat - 2]?.say;
   }
   back.disabled = screen === 0 && beat === 0;
   next.disabled = screen === HOME;
@@ -124,8 +126,8 @@ function load(id: string) {
   meaning.textContent = t.meaning;
   idea.textContent = t.idea;
   exQ.textContent = problemText(id, w.example);
-  exBoard = stepBoard(exBoardEl, t.steps(w.example));
-  boards = w.problems.map(vals => stepBoard(boardEl, t.steps(vals)));
+  exBoard = stepBoard(exBoardEl, t.steps(V(w.example)));
+  boards = w.problems.map(vals => stepBoard(boardEl, t.steps(V(vals))));
   home.href = `/tricks/${page.slug}/`;
   home.textContent = `${SITE}/tricks/${page.slug}/`;
   pick.value = id;

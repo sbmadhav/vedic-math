@@ -757,8 +757,12 @@ def build_site(args, out):
     for pub, s in tricks.items():
         if pub in publish:
             fail(f"{pub}: is a source file and a published Trick module at once")
+        text = strip_types(s)
+        for spec in _specs(text):
+            if spec.endswith(".ts"):
+                fail(f"{s}: imports {spec}; a Trick module imports the published URL (/{TRICKS_URL}<name>.js or /js/<name>.js), never a .ts path")
         publish[pub] = s
-        overrides[pub] = _rewrite(s, strip_types(s), all_files, shim).encode()
+        overrides[pub] = _rewrite(s, text, all_files, shim).encode()
     # The published tokens.css drops its @font-face lines (they point at the old site's /assets/fonts/): theme/fonts.css
     # declares the fonts once, from /fonts/ on this site
     tokens = re.sub(r"(?m)^@font-face[^\n]*\n", "", (ROOT / DS_DIR / "tokens.css").read_text())
