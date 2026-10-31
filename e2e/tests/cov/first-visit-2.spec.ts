@@ -1,4 +1,4 @@
-import { test, expect, APP, open } from '../fixtures';
+import { test, expect, APP, open, pathTo } from '../fixtures';
 
 /* first-visit spec, Requirements "Home fits a phone" and "Keep going does not repeat the first door": one test per
    scenario (openspec change find-and-home-polish). */
@@ -51,7 +51,7 @@ test.describe('a Challenger who practiced another Skill', () => {
   test.use({ seedProgress: { v: 3, skills: {}, sparks: 0, days: {}, last: '3-mult' } });
   test('Another Skill: the Keep going card offers that Skill', async ({ page }) => {
     await open(page);
-    await expect(page.locator('.mq-continue')).toHaveAttribute('href', '#/skill/3-mult');
+    await expect(page.locator('.mq-continue')).toHaveAttribute('href', pathTo('#/skill/3-mult'));
     await expect(page.locator('.mq-continue')).toContainText('Keep going');
   });
 });

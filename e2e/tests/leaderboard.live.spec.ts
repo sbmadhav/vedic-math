@@ -1,4 +1,4 @@
-import { test, expect, open, chromiumOnly, needsWorldBoards, FIRESTORE, FIREBASE_AUTH, FIREBASE_SDK, isFirestoreWrite, showWorld } from './fixtures';
+import { test, expect, open, chromiumOnly, needsWorldBoards, FIRESTORE, FIREBASE_AUTH, FIREBASE_SDK, isFirestoreWrite, showWorld, pathTo } from './fixtures';
 
 /* The ONLY test that talks to production Firebase. It loads the real SDK and reads the World
    leaderboards shown in the Arena lobby and on a game page, as a fresh device that has never posted.
@@ -35,7 +35,7 @@ test('World leaderboards load from live Firestore (read-only)', async ({ page },
     ['#/game/times-sprint', '#gbDay', 'Times sprint today'], ['#/game/times-sprint', '#gbWeek', 'Times sprint this week'],
   ];
   for (const [route, id, label] of boards) {
-    if (!page.url().endsWith(route)) await open(page, route);
+    if (!page.url().endsWith(pathTo(route))) await open(page, route);
     const body = page.locator(`${id} .lb-body`);
     await showWorld(page, id);
     await expect(body).not.toContainText('Loading world scores', { timeout: 30_000 });

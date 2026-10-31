@@ -1,4 +1,4 @@
-import { test, expect, APP, open, chromiumOnly } from './fixtures';
+import { test, expect, APP, open, chromiumOnly, atRoute } from './fixtures';
 import { UA, RETURNING, offerInstall, asInstalledApp, recordEvents, events, installState, seedInstallState } from './install-helpers';
 
 /* Installing the game as an app (openspec change install-app): the Install nudge on Home, the Install guide, the
@@ -364,7 +364,7 @@ test.describe('the Installed app', () => {
     await other.close();
     await expect(page).toHaveURL(new RegExp(`${APP}`));
     await page.locator('footer a.mq-guide').click();
-    await expect(page).toHaveURL(/#\/guide$/);
+    await expect(page).toHaveURL(atRoute('#/guide'));
     await expect(page.locator('footer a.mq-guide')).not.toHaveAttribute('target', /.+/);
   });
 });

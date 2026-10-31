@@ -1,4 +1,4 @@
-import { test, expect, APP } from './fixtures';
+import { test, expect, APP, atRoute } from './fixtures';
 
 /* The landing page and the pages for grown-ups (openspec change learnvedicmath: hosting "Returning Players go straight
    into the game", "Old links reach the same screen", "Not found"; landing-pages). The landing page is static, readable
@@ -42,7 +42,7 @@ test.describe('a first visit', () => {
 
   test('an old game link (#/route) goes on to the game with the same route', async ({ page }) => {
     await page.goto('/#/sutras');
-    await expect(page).toHaveURL(/\/play\/#\/sutras$/);
+    await expect(page).toHaveURL(atRoute('#/sutras'));
   });
 });
 
@@ -77,7 +77,7 @@ test.describe('a returning Player', () => {
 
   test('an old deep link reaches the same screen: /#/sutras/ekadhikena opens that Sutra in the game', async ({ page }) => {
     await page.goto('/#/sutras/s1');
-    await expect(page).toHaveURL(/\/play\/#\/sutras\/s1$/);
+    await expect(page).toHaveURL(atRoute('#/sutras/s1'));
     await expect(page.locator('#sdTitle')).toBeVisible();
   });
 
@@ -86,7 +86,7 @@ test.describe('a returning Player', () => {
     expect(res.status()).toBe(301);
     expect(res.headers()['location']).toMatch(/\/play\/(\?y=1)?$/);
     await page.goto('/vedic-math/#/arena');
-    await expect(page).toHaveURL(/\/play\/#\/arena$/);
+    await expect(page).toHaveURL(atRoute('#/arena'));
     await expect(page.locator('#view h1')).toHaveText('60 seconds. Same questions for everyone.');
   });
 });
@@ -142,7 +142,7 @@ test.describe('pages for grown-ups', () => {
     await expect(box).toContainText('the same ones for every Player in the same Mode today');
     await expect(box).toContainText('With Calm on, the Arena starts on an untimed round: pick Daily challenge for the 60-second race.');
     await box.getByRole('link', { name: 'Open the Arena' }).click();
-    await expect(page).toHaveURL(/\/play\/#\/arena$/);
+    await expect(page).toHaveURL(atRoute('#/arena'));
     await expect(page.locator('#view h1')).toHaveText('60 seconds. Same questions for everyone.');
   });
 
@@ -286,7 +286,7 @@ test.describe('Mode cards on a first visit', () => {
       await expect(card.locator('.lv-mode-cta')).toHaveText(`Start as ${name}`);
       if (info.project.use.hasTouch) await card.tap(); else await card.click();
       await expect(page.locator('h1.home-h')).toHaveText(heading);
-      await expect(page).toHaveURL(/\/play\/(#\/)?$/);
+      await expect(page).toHaveURL(atRoute('#/'));
       expect(await activeMode(page)).toBe(id);
     });
   }
@@ -430,7 +430,7 @@ test.describe('the sutras and the method', () => {
   test('a Sutra card opens its Deep dive in the game, with no Mode picker and no Mode stored', async ({ page }) => {
     await page.goto('/');
     await page.locator('a.lv-sutra[href="/play/#/sutras/s3"]').click();
-    await expect(page).toHaveURL(/\/play\/#\/sutras\/s3$/);
+    await expect(page).toHaveURL(atRoute('#/sutras/s3'));
     await expect(page.locator('dialog.sutra-modal #sdTitle')).toHaveText('Ūrdhva-Tiryagbhyām');
     await expect(page.locator('.mode-pick')).toHaveCount(0);
     expect(await page.evaluate(() => { const p = JSON.parse(localStorage.getItem('vm.players') || 'null'); return p && p.list && p.list[0] ? p.list[0].mode : null; }) ?? null).toBeNull();

@@ -1,4 +1,4 @@
-import { test, expect, APP, open } from '../fixtures';
+import { test, expect, APP, open, atRoute } from '../fixtures';
 
 /* guide spec, Requirement "A first-visit tour": one test per scenario. The tour runs on a device that has never shown
    it (tourSeen: false) for a Player who has just picked a Mode. */
@@ -51,7 +51,7 @@ test.describe('a Player with Sparks', () => {
   test('Replay: Take the tour in the guide opens Home with the first step', async ({ page }) => {
     await open(page, '#/guide');
     await page.locator('.gd-top [data-gd="tour"]').click();
-    await expect(page).toHaveURL(/#\/$/);
+    await expect(page).toHaveURL(atRoute('#/'));
     await expect(tour(page)).toBeVisible();
     await expect(tour(page).locator('#tourN')).toContainText('1 of');
   });

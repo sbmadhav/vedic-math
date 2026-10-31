@@ -1,5 +1,5 @@
 import type { BrowserContext, Page, Route } from '@playwright/test';
-import { test, expect, APP, open, cloudLog, chromiumOnly, FIREBASE_SDK, FIREBASE_AUTH, FIRESTORE, showWorld, needsWorldBoards } from './fixtures';
+import { test, expect, APP, open, cloudLog, chromiumOnly, FIREBASE_SDK, FIREBASE_AUTH, FIRESTORE, showWorld, needsWorldBoards, hrefTo } from './fixtures';
 import { fakeAudio, audioLog } from './audio-fake';
 import { fillAnswer } from './split-kit';
 
@@ -200,8 +200,8 @@ test('a Dojo kata and a game play offline, and the progress persists', async ({ 
   expect(sparks).toBeGreaterThan(30);
   await page.reload();
   await page.goto(`${APP}#/katas/sq5`);
-  await expect(page.locator('a.lv-node[href="#/kata/sq5/2"]')).toBeVisible();
-  await expect(page.locator('a.lv-node[href="#/kata/sq5/1"]')).toHaveAttribute('aria-label', 'Kata 1, done');
+  await expect(page.locator(`a.lv-node${hrefTo('#/kata/sq5/2')}`)).toBeVisible();
+  await expect(page.locator(`a.lv-node${hrefTo('#/kata/sq5/1')}`)).toHaveAttribute('aria-label', 'Kata 1, done');
   await page.goto(`${APP}#/me`);
   await expect(page.locator('.me-head')).toContainText(`${sparks} Sparks`);
   await page.goto(`${APP}#/game/times-sprint`);

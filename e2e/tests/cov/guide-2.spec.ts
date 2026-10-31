@@ -1,4 +1,4 @@
-import { test, expect, APP, open } from '../fixtures';
+import { test, expect, APP, open, hrefTo } from '../fixtures';
 
 /* guide spec, Requirements "Guide wording follows the Mode", "Opening the guide at a section" and "The guide is easy
    to find" (as modified by openspec change play-nav-by-mode): one test per scenario. */
@@ -14,7 +14,7 @@ test.describe('Explorer', () => {
 
   test('Explorer: More places on Home has How to play, which opens the guide', async ({ page }) => {
     await open(page);
-    const link = page.locator('.home-places a[href="#/guide"]');
+    const link = page.locator(`.home-places a${hrefTo('#/guide')}`);
     await expect(link).toHaveText('How to play');
     await link.click();
     await expect(page.locator('#view h1')).toHaveText('How to play');
@@ -26,7 +26,7 @@ test('Menu bar: on the guide the Find trigger is current, and Find\'s help card 
   await open(page, '#/guide');
   await expect(page.locator('.mq-nav .nav-find')).toHaveAttribute('aria-current', 'true');
   await page.locator('.mq-nav .nav-find').click();
-  await page.locator('.find-help a[href="#/guide"]').click();
+  await page.locator(`.find-help a${hrefTo('#/guide')}`).click();
   await expect(page.locator('#view h1')).toHaveText('How to use Vedic Math');
 });
 
@@ -36,7 +36,7 @@ test.describe('no mode yet', () => {
     await page.goto(`${APP}#/guide`);
     await expect(page.locator('#view h1')).toHaveText('How to use Vedic Math');
     await expect(page.locator('.mode-pick')).toHaveCount(0);
-    const pick = page.locator('.gd-nomode a[href="#/"]');
+    const pick = page.locator(`.gd-nomode a${hrefTo('#/')}`);
     await expect(pick).toBeVisible();
     await pick.click();
     await expect(page.locator('.mode-pick .mode-card').first()).toBeVisible();

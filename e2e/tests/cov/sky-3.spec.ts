@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, atRoute } from '../fixtures';
 
 /* sky spec, Requirements "Belts are earned by lighting Stars" and "Existing Kata progress lights Stars": one test per
    scenario. The one-time migration (js/sky.js migrateSky) runs on a record without skyMigrated. */
@@ -22,7 +22,7 @@ test.describe('eight white belt Stars lit', () => {
     await expect(page.locator('#view')).toContainText('0 of 7 belts earned');
     await open(page);
     await star(page, 'from9:1').click();
-    await expect(page).toHaveURL(/#\/star\/from9\/1$/);
+    await expect(page).toHaveURL(atRoute('#/star/from9/1'));
     for (let i = 1; i <= 4; i++) {
       await expect(page.locator('#stMain .star-tag')).toHaveText(`Question ${i} of 4`);
       await page.keyboard.type(await from9Answer(page)); await page.keyboard.press('Enter');

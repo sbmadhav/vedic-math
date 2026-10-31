@@ -1,4 +1,4 @@
-import { test, expect, open, heldClock, cloudLog } from '../fixtures';
+import { test, expect, open, heldClock, cloudLog, hrefTo } from '../fixtures';
 
 /* openspec star-round: "Skip a Star / Skip a lit Star" and "Stars are Practice / No post".
    Questions are dealt at random, so each answer is worked out from the n² on screen. */
@@ -27,7 +27,7 @@ test.describe('Skip a lit Star', () => {
     // Everywhere the Star is shown, it is lit and not skipped
     await page.locator('#stBack').click();
     await open(page, '#/dojo');
-    await expect(page.locator('.dojo-star[href="#/star/sq5/1"]')).toHaveAttribute('aria-label', 'Square numbers ending in 5: Star 1, lit');
+    await expect(page.locator(`.dojo-star${hrefTo('#/star/sq5/1')}`)).toHaveAttribute('aria-label', 'Square numbers ending in 5: Star 1, lit');
   });
 
   test.describe('on the Trick page (Pro)', () => {

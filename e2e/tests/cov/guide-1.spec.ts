@@ -22,7 +22,7 @@ test('Reading the guide: a Challenger sees every section with what, how, a tip a
 test('Try it: the Katas section link opens the Katas page of a real Trick', async ({ page }) => {
   await open(page, '#/guide');
   await page.locator('#gd-katas .gd-try').click();
-  await expect(page).toHaveURL(/#\/katas\/[\w-]+$/);
+  await expect(page).toHaveURL(new RegExp(`${APP}katas/[\\w-]+$`));
   await expect(page.locator('#view h1')).toContainText(/katas/i);
 });
 

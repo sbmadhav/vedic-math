@@ -1,4 +1,4 @@
-import { test, expect, open, heldClock, cloudLog } from './fixtures';
+import { test, expect, open, heldClock, cloudLog, atRoute, hrefTo, pathTo } from './fixtures';
 
 /* A Star round (openspec star-round) on Square numbers ending in 5: every question is n², so the test works each
    answer out from the question itself. Questions are dealt at random, so nothing here depends on which come. */
@@ -38,7 +38,7 @@ test('four right answers light Star 1: +40 Sparks, saved as lit, and the Rating 
   expect(d.ratings['skill:v-sq5']).toBeGreaterThan(5); // a new Challenger starts at 5
   expect(d.counts.answers).toBe(4);
   expect(d.sparks).toBe(40); // the Star's own Sparks only, no Practice Sparks on top
-  await expect(page.locator('#stBack')).toHaveAttribute('href', '#/dojo');
+  await expect(page.locator('#stBack')).toHaveAttribute('href', pathTo('#/dojo'));
 });
 
 test('a miss replays the trick on the missed number, Escape skips it, and a right rematch is a Comeback worth 15', async ({ page }) => {
@@ -206,7 +206,7 @@ test.describe('skip', () => {
     expect(d.sky.skipped['sq5:2']).toBeGreaterThan(0);
     expect(d.sparks || 0).toBe(0);
     await page.clock.fastForward(120_000);
-    await expect(page).toHaveURL(/#\/star\/sq5\/2$/);
+    await expect(page).toHaveURL(atRoute('#/star/sq5/2'));
     await expect(page.locator('.star-end-h')).toHaveText('Star 2 skipped');
     await expect(page.locator('#stAgain')).toBeVisible();
   });
@@ -261,18 +261,18 @@ test.describe('entry points', () => {
       await expect(links.nth(1)).toContainText('Skipped');
       await expect(links.nth(2)).toContainText('Open');
       await links.nth(2).click();
-      await expect(page).toHaveURL(/#\/star\/sq5\/3$/);
+      await expect(page).toHaveURL(atRoute('#/star/sq5/3'));
       await expect(page.locator('.star-top .md-tag')).toHaveText('Star 3 of 3');
       await page.locator('#stSkip').click();
       await expect(page.locator('#stBack')).toHaveText('Back to Square numbers ending in 5');
       await page.locator('#stBack').click();
-      await expect(page).toHaveURL(/#\/skill\/v-sq5$/);
+      await expect(page).toHaveURL(atRoute('#/skill/v-sq5'));
       await expect(page.locator('.star-links .star-link').nth(2)).toContainText('Skipped');
     });
     test('the Dojo shows three Stars per Trick', async ({ page }) => {
       await open(page, '#/dojo');
       await expect(page.locator('.dojo-star')).toHaveCount(63);
-      await expect(page.locator('.dojo-star[href="#/star/sq5/1"]')).toHaveAttribute('aria-label', 'Square numbers ending in 5: Star 1, lit');
+      await expect(page.locator(`.dojo-star${hrefTo('#/star/sq5/1')}`)).toHaveAttribute('aria-label', 'Square numbers ending in 5: Star 1, lit');
     });
   });
   test.describe('Explorer', () => {
@@ -298,7 +298,7 @@ test('Play again deals a fresh round of different questions', async ({ page }) =
   expect(second).toHaveLength(4);
   expect(second.filter((k: string) => first.includes(k))).toEqual([]);
   expect((await cloudLog(page)).writes).toEqual([]);
-  await expect(page).toHaveURL(/#\/star\/sq5\/1$/);
+  await expect(page).toHaveURL(atRoute('#/star/sq5/1'));
 });
 
 /* Calm (openspec game-shell-and-calm): with motion allowed on the device, Calm alone stops every animation */

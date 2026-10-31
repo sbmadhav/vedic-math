@@ -1,4 +1,4 @@
-import { test, expect, open, APP } from '../fixtures';
+import { test, expect, open, APP, atRoute, hrefTo } from '../fixtures';
 import { fillAnswer } from '../split-kit';
 
 /* medals spec, Requirement "Katas are done or not done":
@@ -43,15 +43,15 @@ async function expectFinished(page: Page, trick: string, n: number, right: numbe
   await expect(res).toContainText(`Kata ${n} is done.`);
   await expect(page.locator('#kata')).not.toContainText('★');
   await expect(page.locator('#kata .medal, #kata .star')).toHaveCount(0);
-  await expect(res.locator(`a[href="#/kata/${trick}/${n + 1}"]`)).toBeVisible();
+  await expect(res.locator(`a${hrefTo(`#/kata/${trick}/${n + 1}`)}`)).toBeVisible();
   const d = await saved(page);
   expect(d.katasDone[`k:${trick}:${n}`]).toBeTruthy();
   // A daily quest the Kata completes (for example "Finish a Dojo kata") adds its own 25 Sparks on top
   const questSparks = 25 * Object.keys(d.questDay?.done || {}).length;
   expect(d.sparks - questSparks).toBe(sparks);
   await page.goto(`${APP}#/katas/${trick}`);
-  await expect(page.locator(`a.lv-node[href="#/kata/${trick}/${n}"]`)).toHaveAttribute('aria-label', `Kata ${n}, done`);
-  await expect(page.locator(`a.lv-node[href="#/kata/${trick}/${n + 1}"]`)).toHaveAttribute('aria-label', `Kata ${n + 1}`);
+  await expect(page.locator(`a.lv-node${hrefTo(`#/kata/${trick}/${n}`)}`)).toHaveAttribute('aria-label', `Kata ${n}, done`);
+  await expect(page.locator(`a.lv-node${hrefTo(`#/kata/${trick}/${n + 1}`)}`)).toHaveAttribute('aria-label', `Kata ${n + 1}`);
   await expect(page.locator(`.lv-node.locked[aria-label="Kata ${n + 2}, locked"]`)).toBeVisible();
   await expect(page.locator('#view')).not.toContainText('★');
   // The next Kata really opens (no redirect back to the map)
@@ -92,8 +92,8 @@ test.describe('Old Kata stars', () => {
 
   test('a Kata with 1 to 3 stars is done after the update; a Kata with 0 stars is not', async ({ page }) => {
     await open(page, '#/katas/sq5');
-    for (const n of [1, 2, 3]) await expect(page.locator(`a.lv-node[href="#/kata/sq5/${n}"]`)).toHaveAttribute('aria-label', `Kata ${n}, done`);
-    const k4 = page.locator('a.lv-node[href="#/kata/sq5/4"]');
+    for (const n of [1, 2, 3]) await expect(page.locator(`a.lv-node${hrefTo(`#/kata/sq5/${n}`)}`)).toHaveAttribute('aria-label', `Kata ${n}, done`);
+    const k4 = page.locator(`a.lv-node${hrefTo('#/kata/sq5/4')}`);
     await expect(k4).toHaveAttribute('aria-label', 'Kata 4');
     await expect(k4).not.toHaveClass(/\bdone\b/);
     await expect(page.locator('.lv-node.locked[aria-label="Kata 5, locked"]')).toBeVisible();
@@ -101,12 +101,12 @@ test.describe('Old Kata stars', () => {
     await expect(page.locator('#view')).not.toContainText('★');
 
     await open(page, '#/katas/by11');
-    await expect(page.locator('a.lv-node[href="#/kata/by11/1"]')).toHaveAttribute('aria-label', 'Kata 1');
+    await expect(page.locator(`a.lv-node${hrefTo('#/kata/by11/1')}`)).toHaveAttribute('aria-label', 'Kata 1');
     await expect(page.locator('#view .mq-small').first()).toContainText('0 of 50 done');
 
     await open(page, '#/dojo');
-    await expect(page.locator('a.dojo-katas[href="#/katas/sq5"]')).toContainText('Katas 3/50 done');
-    await expect(page.locator('a.dojo-katas[href="#/katas/by11"]')).toContainText('Katas 0/50 done');
+    await expect(page.locator(`a.dojo-katas${hrefTo('#/katas/sq5')}`)).toContainText('Katas 3/50 done');
+    await expect(page.locator(`a.dojo-katas${hrefTo('#/katas/by11')}`)).toContainText('Katas 0/50 done');
 
     const d = await saved(page);
     expect(d.v).toBe(3);
@@ -114,6 +114,6 @@ test.describe('Old Kata stars', () => {
 
     // Kata 5 stays shut: Kata 4 (0 stars) is not done, so the route goes back to the map
     await page.goto(`${APP}#/kata/sq5/5`);
-    await expect(page).toHaveURL(/#\/katas\/sq5$/);
+    await expect(page).toHaveURL(atRoute('#/katas/sq5'));
   });
 });

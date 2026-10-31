@@ -1,4 +1,4 @@
-import { test, expect, open } from './fixtures';
+import { test, expect, open, atRoute, hrefTo, pathTo } from './fixtures';
 
 /* Play experiences (openspec play-experiences): twelve pages inside the Dojo, Arena, Games and Sutras sections,
    listed on each section's shelf. Party Mode replaces the Duel. */
@@ -25,10 +25,10 @@ for (const p of PAGES) test(`${p.hash} opens ${p.h1} inside ${p.back}, with no e
   await expect(page).toHaveTitle(new RegExp(`^${p.h1} · Learn Vedic Math`));
   // Its section's zone is the current nav item (spec: "Experiences live inside sections"; the Sutras are in Learn, the
   // Dojo, the Arena and Games in the Arcade: openspec change play-nav-by-mode)
-  await expect(page.locator(`.mq-nav a[href="#/${p.back === 'Sutras' ? 'learn' : 'arcade'}"]`)).toHaveAttribute('aria-current', 'true');
+  await expect(page.locator(`.mq-nav a${hrefTo(`#/${p.back === 'Sutras' ? 'learn' : 'arcade'}`)}`)).toHaveAttribute('aria-current', 'true');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   await page.locator('.px-back').first().click();
-  await expect(page).toHaveURL(new RegExp(`#/${p.back.toLowerCase()}$`));
+  await expect(page).toHaveURL(atRoute(`#/${p.back.toLowerCase()}`));
   expect(issues.console).toEqual([]);
 });
 
@@ -38,7 +38,7 @@ test('section shelves list the experiences for the Mode', async ({ page }) => {
     await expect(page.locator('.play-shelf .play-card')).toHaveCount(n);
   }
   await page.locator('.play-card', { hasText: 'The Lost Śulba Scroll' }).click();
-  await expect(page).toHaveURL(/#\/sutras\/lost-scroll$/);
+  await expect(page).toHaveURL(atRoute('#/sutras/lost-scroll'));
 });
 
 test.describe('explorer', () => {
@@ -57,7 +57,7 @@ test.describe('explorer', () => {
       await open(page, hash);
       await expect(page.locator('#view h1')).toHaveText(`${title} is for older players`);
       await expect(page.locator('#view .play-card').first()).toBeVisible();
-      for (const href of await page.locator('#view .play-card').evaluateAll(as => as.map(a => a.getAttribute('href')))) expect(['#/games/tala', '#/games/art', '#/games/lens', '#/arena/party', '#/arena/ghosts', '#/arena/daily-number']).toContain(href);
+      for (const href of await page.locator('#view .play-card').evaluateAll(as => as.map(a => a.getAttribute('href')))) expect(['#/games/tala', '#/games/art', '#/games/lens', '#/arena/party', '#/arena/ghosts', '#/arena/daily-number'].map(pathTo)).toContain(href);
       expect(await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('vm.play.')))).toEqual([]);
       expect(issues.console).toEqual([]);
     });
@@ -66,14 +66,14 @@ test.describe('explorer', () => {
 
 test('#/duel opens Party Mode, and the Home tile and Sky place point there', async ({ page }) => {
   await open(page, '#/duel');
-  await expect(page).toHaveURL(/#\/arena\/party$/);
+  await expect(page).toHaveURL(atRoute('#/arena/party'));
   await expect(page.locator('#view h1').first()).toHaveText('Party Mode');
   await expect(page.locator('.pt-start')).toBeVisible();
   await open(page, '#/tiles');
-  await expect(page.locator('#view a.play-tile[href="#/arena/party"]')).toHaveCount(1);
-  await expect(page.locator('#view a[href="#/duel"]')).toHaveCount(0);
+  await expect(page.locator(`#view a.play-tile${hrefTo('#/arena/party')}`)).toHaveCount(1);
+  await expect(page.locator('#view a[href="#/duel"], #view a[href$="/duel"]')).toHaveCount(0); /* the old route's name is drawn nowhere, in either form */
   await open(page, '#/places');
-  await expect(page.locator('.places-list').getByRole('link', { name: 'Party', exact: true })).toHaveAttribute('href', '#/arena/party');
+  await expect(page.locator('.places-list').getByRole('link', { name: 'Party', exact: true })).toHaveAttribute('href', pathTo('#/arena/party'));
 });
 
 test("a shelf does not restyle Home's tile grid (its own grid class)", async ({ page }) => {
@@ -153,6 +153,6 @@ test('leaving an experience page suspends the shared audio context', async ({ pa
   const state = () => page.evaluate(async () => { const k = await e2eMod('play/kit'); return k.audio()?.state; });
   await expect.poll(state).toBe('running');
   await page.locator('.px-back').first().click();
-  await expect(page).toHaveURL(/#\/games$/);
+  await expect(page).toHaveURL(atRoute('#/games'));
   await expect.poll(() => page.evaluate(async () => { const k = await e2eMod('play/kit'); return (k as any).audioState?.(); })).toBe('suspended');
 });

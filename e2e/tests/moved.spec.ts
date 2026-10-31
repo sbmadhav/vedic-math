@@ -69,13 +69,13 @@ test('a Player with progress: old caches go, madhav-* stays, and the progress ri
 
 test('an empty device goes straight to the game on the same route', async ({ page, log }) => {
   await page.goto(MOVED + '#/dojo');
-  await page.waitForURL('https://learnvedicmath.com/play/#/dojo');
+  await page.waitForURL(/learnvedicmath\.com\/play\/(#\/)?dojo$/);
   expect(log.counts).toEqual(['move/handoff/empty']);
 });
 
 test('a deep old path gets the moved page too (404.html)', async ({ page }) => {
   await page.goto(MOVED + 'some/old/file.html#/sutras');
-  await page.waitForURL('https://learnvedicmath.com/play/#/sutras');
+  await page.waitForURL(/learnvedicmath\.com\/play\/(#\/)?sutras$/);
 });
 
 test('a device on the oldest format (a bare mathquest.v1 record) is handed off as p1', async ({ page }) => {

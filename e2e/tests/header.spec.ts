@@ -1,4 +1,4 @@
-import { test, expect, open } from './fixtures';
+import { test, expect, open, atRoute } from './fixtures';
 
 /* The site header (openspec site-header, change learnvedicmath): every page, the game included, uses the Learn Vedic
    Math header from theme/header.html (design system 2.2.0's header without Explore): one sticky bar with the brand
@@ -208,7 +208,7 @@ test.describe('tabs wait for a Mode', () => {
     const nav = page.locator('.mq-nav');
     await expect(nav).toBeVisible();
     await nav.getByRole('link', { name: 'Learn' }).click();
-    await expect(page).toHaveURL(/#\/learn$/);
+    await expect(page).toHaveURL(atRoute('#/learn'));
     await expect(nav.getByRole('link', { name: 'Learn' })).toHaveAttribute('aria-current', 'true');
   });
 });

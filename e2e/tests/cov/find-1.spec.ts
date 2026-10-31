@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, open, APP } from '../fixtures';
+import { test, expect, open, APP, atRoute, hrefTo, pathTo } from '../fixtures';
 
 /* find spec: one test per scenario. The shared analytics.js is replaced by a stub that records window.siteTrack calls. */
 const STUB = `window.__events = window.__events || []; window.siteTrack = (path, title) => { window.__events.push(path); };`;
@@ -10,16 +10,16 @@ const group = (page: Page, name: string) => page.locator('#findOut .find-group',
 /* find spec (as modified by openspec change play-nav-by-mode): Find is the Find trigger at the end of the menu */
 test('From the menu bar: Find opens with the box focused and marked current', async ({ page }) => {
   await open(page);
-  await page.locator('.mq-nav a[href="#/find"]').click();
-  await expect(page).toHaveURL(/#\/find$/);
+  await page.locator(`.mq-nav a${hrefTo('#/find')}`).click();
+  await expect(page).toHaveURL(atRoute('#/find'));
   await expect(page.locator('#findIn')).toBeFocused();
-  await expect(page.locator('.mq-nav a[href="#/find"]')).toHaveAttribute('aria-current', 'true');
+  await expect(page.locator(`.mq-nav a${hrefTo('#/find')}`)).toHaveAttribute('aria-current', 'true');
 });
 
 test('The slash key: / on the Dojo page opens Find with the box focused', async ({ page }) => {
   await open(page, '#/dojo');
   await page.keyboard.press('/');
-  await expect(page).toHaveURL(/#\/find$/);
+  await expect(page).toHaveURL(atRoute('#/find'));
   await expect(page.locator('#findIn')).toBeFocused();
 });
 
@@ -46,7 +46,7 @@ test('A Sutra in plain letters: "urdhva" lists Ūrdhva-Tiryagbhyām under Sutras
   const s = group(page, 'Sutras').first();
   await expect(s.locator('b')).toHaveText('Ūrdhva-Tiryagbhyām');
   await s.click();
-  await expect(page).toHaveURL(/#\/sutras\/s3$/);
+  await expect(page).toHaveURL(atRoute('#/sutras/s3'));
   await expect(page.locator('.sutra-modal[open]')).toBeVisible();
 });
 
@@ -59,7 +59,7 @@ test('A video: typing a video title and following the result opens the player in
   await v.click();
   await expect(page.locator('dialog.vm-player[open]')).toBeVisible();
   await expect(page.locator('#vpTitle')).toContainText('Count to 20');
-  await expect(page).toHaveURL(/#\/find$/);
+  await expect(page).toHaveURL(atRoute('#/find'));
 });
 
 test('Take away: the Trick "Subtract from 100, 1000, 10000" is among the first three results', async ({ page }) => {
@@ -80,7 +80,7 @@ test.describe('Pro', () => {
     await open(page, '#/find');
     await page.locator('#findIn').fill('arena');
     await expect(hits(page).first().locator('b')).toHaveText('Arena');
-    await expect(hits(page).first()).toHaveAttribute('href', '#/arena');
+    await expect(hits(page).first()).toHaveAttribute('href', pathTo('#/arena'));
     expect(await group(page, 'Guide').count()).toBeGreaterThan(0);
   });
 });
@@ -127,7 +127,7 @@ test('Enter opens the first result: "arena" then Enter opens the Arena page', as
   await open(page, '#/find');
   await page.locator('#findIn').fill('arena');
   await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(/#\/arena$/);
+  await expect(page).toHaveURL(atRoute('#/arena'));
   await expect(page.locator('#view h1')).toHaveText('60 seconds. Same questions for everyone.');
 });
 
@@ -149,7 +149,7 @@ test('Typing and following: no request carries the text, the address is the resu
   await open(page, '#/find');
   await page.locator('#findIn').fill('squares');
   await hits(page).first().click();
-  await expect(page).toHaveURL(/#\/skill\/v-sq5$/);
+  await expect(page).toHaveURL(atRoute('#/skill/v-sq5'));
   expect(urls.some(u => /squares/i.test(u))).toBe(false);
   const ev: string[] = await page.evaluate(() => (globalThis as any).__events || []);
   expect(ev.filter(e => e.startsWith('math/find/'))).toEqual(['math/find/go']);

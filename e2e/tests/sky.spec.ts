@@ -1,4 +1,4 @@
-import { test, expect, open, APP } from './fixtures';
+import { test, expect, open, APP, atRoute, pathTo } from './fixtures';
 
 /* The Sky (openspec sky-home): the opt-in home map for Challenger and Pro, All places, and Back to the Sky.
    Players here have turned on "Try the new Sky" (seedPlayer: { sky: true }). */
@@ -26,7 +26,7 @@ test.describe('the map', () => {
     const sk = star(page, 'sq5:2');
     await expect(sk).toHaveClass(/sky-star--skipped/);
     await expect(sk).toHaveAttribute('aria-label', 'Square numbers ending in 5, Star 2, skipped');
-    await expect(sk).toHaveAttribute('href', '#/star/sq5/2');
+    await expect(sk).toHaveAttribute('href', pathTo('#/star/sq5/2'));
     await expect(sk.locator('.sky-skipb')).toHaveCount(1);
     expect(await sk.locator('.sky-skipring').evaluate(e => getComputedStyle(e).strokeDasharray)).not.toBe('none');
     await expect(star(page, 'sq5:1')).toHaveAttribute('aria-label', 'Square numbers ending in 5, Star 1, not lit yet');
@@ -52,7 +52,7 @@ test.describe('after some progress', () => {
 test('every Star is open: a black belt Star 3 opens its round', async ({ page }) => {
   await open(page);
   await star(page, 'zero-sum:3').click();
-  await expect(page).toHaveURL(/#\/star\/zero-sum\/3$/);
+  await expect(page).toHaveURL(atRoute('#/star/zero-sum/3'));
   await expect(page.locator('.star-top .md-tag')).toHaveText('Star 3 of 3');
 });
 
@@ -73,7 +73,7 @@ test('the race track Landmark opens the Arena', async ({ page }) => {
   const marks = page.locator('.sky-mark');
   await expect(marks).toHaveText(['Arena', 'Party', 'Games', 'Watch', 'Skill map']);
   await page.locator('.sky-mark[data-landmark="arena"]').click();
-  await expect(page).toHaveURL(/#\/arena$/);
+  await expect(page).toHaveURL(atRoute('#/arena'));
   await expect(page.locator('#view h1')).toHaveText('60 seconds. Same questions for everyone.');
 });
 
@@ -123,7 +123,7 @@ test.describe('All places', () => {
   test('lists every Constellation, Star, Landmark and place; a Star link opens its round by keyboard', async ({ page }) => {
     await open(page);
     await page.locator('#skyPlaces').click();
-    await expect(page).toHaveURL(/#\/places$/);
+    await expect(page).toHaveURL(atRoute('#/places'));
     await expect(page.locator('#view h1')).toHaveText('All places');
     await expect(page).toHaveTitle(/^All places · Learn Vedic Math/);
     await expect(page.locator('.places-c h2')).toHaveCount(17);
@@ -137,13 +137,13 @@ test.describe('All places', () => {
     const sk = page.getByRole('link', { name: 'Square numbers ending in 5, Star 2, skipped' });
     await sk.focus();
     await page.keyboard.press('Enter');
-    await expect(page).toHaveURL(/#\/star\/sq5\/2$/);
+    await expect(page).toHaveURL(atRoute('#/star/sq5/2'));
     await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
   });
   test('the tile home is still there', async ({ page }) => {
     await open(page, '#/places');
     await page.locator('.places-list').getByRole('link', { name: 'The tile home' }).click();
-    await expect(page).toHaveURL(/#\/tiles$/);
+    await expect(page).toHaveURL(atRoute('#/tiles'));
     await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
   });
 });
@@ -152,7 +152,7 @@ test('Back to the Sky: light Star 1 of from9 from the Sky, go back, and that Sta
   await page.clock.install();
   await open(page);
   await star(page, 'from9:1').click();
-  await expect(page).toHaveURL(/#\/star\/from9\/1$/);
+  await expect(page).toHaveURL(atRoute('#/star/from9/1'));
   for (let i = 1; i <= 4; i++) {
     await expect(page.locator('#stMain .star-tag')).toHaveText(`Question ${i} of 4`);
     await page.keyboard.type(await from9Answer(page)); await page.keyboard.press('Enter');
@@ -161,10 +161,10 @@ test('Back to the Sky: light Star 1 of from9 from the Sky, go back, and that Sta
   await expect(page.locator('.star-end-h')).toHaveText('Star 1 is lit!');
   await expect(page.locator('#stBack')).toHaveText('Back to the Sky');
   await page.clock.fastForward(60_000);
-  await expect(page).toHaveURL(/#\/star\/from9\/1$/);
+  await expect(page).toHaveURL(atRoute('#/star/from9/1'));
   await expect(page.locator('.star-end-h')).toHaveText('Star 1 is lit!');
   await page.locator('#stBack').click();
-  await expect(page).toHaveURL(new RegExp(`${APP.replace(/\//g, '\\/')}#\\/$`));
+  await expect(page).toHaveURL(atRoute('#/'));
   await expect(star(page, 'from9:1')).toHaveClass(/sky-star--lit/);
   await expect(star(page, 'from9:1')).toHaveAttribute('aria-label', /Star 1, lit$/);
   await expect(star(page, 'from9:1')).toBeFocused();
@@ -189,7 +189,7 @@ test.describe('Belt copy with the Sky off', () => {
     const card = page.locator('.dojo-card');
     await expect(card).toContainText('White belt: 4 of 9 Stars lit');
     await expect(card).toContainText('Next Star: Multiply by 11, Star 2');
-    await expect(card.getByRole('link', { name: 'Play this Star' })).toHaveAttribute('href', '#/star/by11/2');
+    await expect(card.getByRole('link', { name: 'Play this Star' })).toHaveAttribute('href', pathTo('#/star/by11/2'));
     await open(page, '#/me');
     await expect(page.locator('.trophy--stars')).toContainText('4 of 63 Stars lit'); /* in the Trophy case (openspec working-memory-scaffolds) */
     await expect(page.locator('.badge-grid')).toContainText('Light all 9 white belt Stars.');

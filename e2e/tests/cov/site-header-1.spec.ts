@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, hrefTo } from '../fixtures';
 
 /* site-header spec (change learnvedicmath), Requirement "The header is the Learn Vedic Math header": one test per
    scenario. Every page uses the same sticky header from theme/header.html, with no Explore button and no kid mode
@@ -44,10 +44,10 @@ test('Landing header: the brand, links to Play and the grown-up pages, and the c
 
 test('One line per menu item: the Arcade link\'s tooltip is the line Find\'s browse list shows for the Arcade', async ({ page }) => {
   await open(page);
-  const tip = await page.locator('.mq-nav a[href="#/arcade"]').getAttribute('title'); /* the Dojo is in the Arcade (openspec change play-nav-by-mode) */
+  const tip = await page.locator(`.mq-nav a${hrefTo('#/arcade')}`).getAttribute('title'); /* the Dojo is in the Arcade (openspec change play-nav-by-mode) */
   expect(tip).toMatch(/Dojo/);
   await open(page, '#/find');
-  await expect(page.locator('.find-hit[href="#/arcade"] small')).toHaveText(tip!);
+  await expect(page.locator(`.find-hit${hrefTo('#/arcade')} small`)).toHaveText(tip!);
   // Every menu link carries one
   for (const a of await page.locator('.mq-nav a').all()) expect((await a.getAttribute('title'))!.length).toBeGreaterThan(20);
 });

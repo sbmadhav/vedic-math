@@ -1,4 +1,4 @@
-import { test, expect, open, type Page } from '../fixtures';
+import { test, expect, open, type Page, hrefTo } from '../fixtures';
 
 /* ratings spec, "Skill Rating picks the Practice question level":
    - Rating climbs in a session: WHEN a Player's Rating on a Skill crosses into the range of the Skill's next level
@@ -119,7 +119,7 @@ test.describe('Mastery unchanged: a Player at the starting Rating', () => {
     await playSequence(page);
     // The Skill's ring on its grade page shows the same mastery
     await open(page, '#/grade/3');
-    const fg = page.locator('a.mq-skill[href="#/skill/3-mult"] .ring .ring-fg');
+    const fg = page.locator(`a.mq-skill${hrefTo('#/skill/3-mult')} .ring .ring-fg`);
     const m = (await progress(page)).skills['3-mult'].m as number;
     const r = 44 / 2 - 4;
     expect(Number(await fg.getAttribute('stroke-dashoffset'))).toBeCloseTo(2 * Math.PI * r * (1 - m), 3);

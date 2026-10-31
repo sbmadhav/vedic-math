@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures';
+import { test, expect, atRoute } from '../fixtures';
 import AxeBuilder from '@axe-core/playwright';
 
 /* landing-pages, Requirements "The landing page leads with the Sutras and the method" and "Three Sutras one tap from
@@ -38,7 +38,7 @@ test('A Sutra card: tapping the Nikhilaṃ Navataścaramaṃ Daśataḥ card ope
   const card = page.locator('a.lv-sutra[href="/play/#/sutras/s2"]');
   await expect(card.locator('b[lang="sa-Latn"]')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
   if (info.project.use.hasTouch) await card.tap(); else await card.click();
-  await expect(page).toHaveURL(/\/play\/#\/sutras\/s2$/);
+  await expect(page).toHaveURL(atRoute('#/sutras/s2'));
   await expect(page.locator('dialog.sutra-modal #sdTitle')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
   await expect(page.locator('.mode-pick')).toHaveCount(0);
 });

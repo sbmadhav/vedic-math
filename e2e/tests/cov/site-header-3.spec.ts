@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, open, chromiumOnly } from '../fixtures';
+import { test, expect, open, chromiumOnly, atRoute } from '../fixtures';
 
 /* site-header spec, Requirements "Small screens" and "Tabs appear after a Mode is picked": one test per scenario. */
 
@@ -64,7 +64,7 @@ test.describe('no Mode yet', () => {
     const nav = page.locator('.mq-nav');
     await expect(nav).toBeVisible();
     await nav.getByRole('link', { name: 'Learn', exact: true }).click();
-    await expect(page).toHaveURL(/#\/learn$/);
+    await expect(page).toHaveURL(atRoute('#/learn'));
     await expect(page.locator('#view h1')).toHaveText('Pick a level');
   });
   test('Find without a Mode: #/find shows the Find page, not the mode picker', async ({ page }) => {

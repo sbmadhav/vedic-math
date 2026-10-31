@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, type Mode, typeAnswer, FIREBASE_SDK, needsWorldBoards } from './fixtures';
+import { test, expect, APP, open, cloudLog, type Mode, typeAnswer, FIREBASE_SDK, needsWorldBoards, pathTo } from './fixtures';
 import type { Page } from '@playwright/test';
 
 /* Posting consent (openspec posting-consent spec, change learnvedicmath; docs/adr/0001, 0006): the Age answer is
@@ -35,7 +35,7 @@ const savedPlayer = (page: Page) => page.evaluate(() => JSON.parse(localStorage.
 
 /** Plays today's Arena Daily challenge with one right answer (score 10) and lets the 60 seconds run out. */
 async function arenaRound(page: Page, mode: Mode) {
-  if (!page.url().endsWith('#/arena')) await open(page, '#/arena');
+  if (!page.url().endsWith(pathTo('#/arena'))) await open(page, '#/arena');
   // The last round's result is still in the play shell: Back to the Arena
   if (await page.locator('#arDone').isVisible()) await page.locator('#arDone').click();
   const answer = await page.evaluate(async m => {

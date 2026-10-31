@@ -1,4 +1,4 @@
-import { test, expect, open, heldClock, typeAnswer } from '../fixtures';
+import { test, expect, open, heldClock, typeAnswer, hrefTo } from '../fixtures';
 
 /* medals spec, "Game Levels and tower challenges earn Medals":
    - Two goals reached: finishing game Level 12 past the second goal but not the third earns a silver Medal.
@@ -51,7 +51,7 @@ test.describe('Two goals reached', () => {
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1')!));
     expect(saved.medals['g:times-sprint:12']).toBe(2);
     await open(page, '#/game/times-sprint');
-    const node = page.locator('a.lv-node[href="#/game/times-sprint/12"]');
+    const node = page.locator(`a.lv-node${hrefTo('#/game/times-sprint/12')}`);
     await expect(node).toHaveAttribute('aria-label', 'Level 12, silver Medal');
     await expect(node.locator('.medal')).toHaveClass(/medal--silver/);
     await open(page, '#/game/times-sprint/12');
@@ -113,7 +113,7 @@ test.describe('A worse result later', () => {
     await result.locator('[data-retry]').click();
     await expect(page.locator('#chShell .lv-best .medal')).toHaveAttribute('aria-label', 'Gold Medal');
     await open(page, '#/tower/1');
-    const node = page.locator('a.lv-node[href="#/challenge/2"]');
+    const node = page.locator(`a.lv-node${hrefTo('#/challenge/2')}`);
     await expect(node).toHaveAttribute('aria-label', 'Level 2, gold Medal');
     await expect(node.locator('.medal')).toHaveClass(/medal--gold/);
     await expect(page.locator('#view')).not.toContainText('★');

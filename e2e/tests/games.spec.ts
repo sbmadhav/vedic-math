@@ -1,4 +1,4 @@
-import { test, expect, open, chromiumOnly, cloudLog, heldClock, type Mode } from './fixtures';
+import { test, expect, open, chromiumOnly, cloudLog, heldClock, type Mode, hrefTo } from './fixtures';
 import type { Page, Locator } from '@playwright/test';
 
 /* Every game launches (Endless practice, so no round ends and nothing is posted) and accepts an answer.
@@ -64,7 +64,7 @@ const GAMES: Record<string, { mode?: Mode; step: Step }> = {
 
 test('the games page lists all 14 games with a leaderboard each', async ({ page }) => {
   await open(page, '#/games');
-  const ids = await page.locator('a.mq-game').evaluateAll(as => as.map(a => a.getAttribute('href')!.replace('#/game/', '')));
+  const ids = await page.locator('a.mq-game').evaluateAll(as => as.map(a => a.getAttribute('href')!.replace(/^.*\/game\//, '')));
   expect(ids.sort()).toEqual(Object.keys(GAMES).sort());
 });
 
@@ -256,25 +256,25 @@ test.describe('Medals from saved stars', () => {
 
   test('a Level with 3 stars shows a gold Medal, and the next Level is open', async ({ page }) => {
     await open(page, '#/game/times-sprint');
-    const lv3 = page.locator('a.lv-node[href="#/game/times-sprint/3"]');
+    const lv3 = page.locator(`a.lv-node${hrefTo('#/game/times-sprint/3')}`);
     await expect(lv3).toHaveAttribute('aria-label', 'Level 3, gold Medal');
     await expect(lv3.locator('.medal')).toHaveClass(/medal--gold/);
-    await expect(page.locator('a.lv-node[href="#/game/times-sprint/2"]')).toHaveAttribute('aria-label', 'Level 2, silver Medal');
-    await expect(page.locator('a.lv-node[href="#/game/times-sprint/4"]')).toHaveAttribute('aria-label', 'Level 4');
+    await expect(page.locator(`a.lv-node${hrefTo('#/game/times-sprint/2')}`)).toHaveAttribute('aria-label', 'Level 2, silver Medal');
+    await expect(page.locator(`a.lv-node${hrefTo('#/game/times-sprint/4')}`)).toHaveAttribute('aria-label', 'Level 4');
     await expect(page.locator('#view')).not.toContainText('★');
-    await page.locator('a.lv-node[href="#/game/times-sprint/3"]').click();
+    await page.locator(`a.lv-node${hrefTo('#/game/times-sprint/3')}`).click();
     await expect(page.locator('.lv-best .medal')).toHaveAttribute('aria-label', 'Gold Medal');
     await expect(page.locator('.lv-best').first()).toContainText(/Medals: Bronze [\d,]+ · Silver [\d,]+ · Gold [\d,]+ points/);
   });
 
   test('a tower challenge with 1 star shows bronze and keeps the next challenge open; old XP is Sparks with the same Title', async ({ page }) => {
     await open(page, '#/tower/1');
-    await expect(page.locator('a.lv-node[href="#/challenge/1"]')).toHaveAttribute('aria-label', 'Level 1, bronze Medal');
-    await expect(page.locator('a.lv-node[href="#/challenge/2"]')).toBeVisible();
+    await expect(page.locator(`a.lv-node${hrefTo('#/challenge/1')}`)).toHaveAttribute('aria-label', 'Level 1, bronze Medal');
+    await expect(page.locator(`a.lv-node${hrefTo('#/challenge/2')}`)).toBeVisible();
     await expect(page.locator('.lv-node').nth(2)).toHaveClass(/locked/);
     await open(page, '#/katas/sq5');
-    await expect(page.locator('a.lv-node[href="#/kata/sq5/1"]')).toHaveAttribute('aria-label', 'Kata 1, done');
-    await expect(page.locator('a.lv-node[href="#/kata/sq5/2"]')).toBeVisible();
+    await expect(page.locator(`a.lv-node${hrefTo('#/kata/sq5/1')}`)).toHaveAttribute('aria-label', 'Kata 1, done');
+    await expect(page.locator(`a.lv-node${hrefTo('#/kata/sq5/2')}`)).toBeVisible();
     await open(page, '#/me');
     await expect(page.locator('.me-head')).toContainText('Times Tamer · 2340 Sparks');
     await expect(page.locator('#mqChip a.mq-chip')).toHaveAccessibleName('Swift Tiger 42, Times Tamer');

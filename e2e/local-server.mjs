@@ -58,6 +58,16 @@ async function find(rel) {
   const s = await stat(p).catch(() => null);
   return s ? { p, dir: s.isDirectory() } : null;
 }
+/* The index.html of the nearest folder above rel, below the root (the game's shell for a path under it), with the URL
+   path it is served at, so its own _headers rule applies; null when only the root has one */
+async function nearestShell(rel) {
+  for (let dir = path.posix.dirname(rel); dir !== '/' && dir !== '.'; dir = path.posix.dirname(dir)) {
+    const file = path.join(root, dir, 'index.html');
+    const body = await readFile(file).catch(() => null);
+    if (body) return { file, body, urlPath: prefix.replace(/\/$/, '') + dir + '/' };
+  }
+  return null;
+}
 
 http.createServer(async (req, res) => {
   try {
@@ -77,6 +87,14 @@ http.createServer(async (req, res) => {
     const target = hit && (hit.dir ? path.join(hit.p, 'index.html') : hit.p);
     const body = target && await readFile(target).catch(() => null);
     if (body) return send(res, 200, target, body, pathname);
+    // The game's screens are paths (openspec change indexable-routes): until task 2.3 writes a page per path and the
+    // game's own 404.html, a path with no file under the game's folder gets the game's shell (its index.html) with
+    // status 200 and the shell's own headers, as its prerendered page will be. A missing script, style or image (a
+    // path with an extension) and a path straight under the root still get /404.html, as on Cloudflare.
+    if (!path.extname(rel)) {
+      const shell = await nearestShell(rel);
+      if (shell) return send(res, 200, shell.file, shell.body, shell.urlPath);
+    }
     const html = path.join(root, '404.html');
     const nf = await readFile(html).catch(() => null);
     if (nf) return send(res, 404, html, nf, pathname);

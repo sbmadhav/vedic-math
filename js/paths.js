@@ -2,9 +2,11 @@
    the same order, so the first match wins here as it does there. Pure: no DOM and nothing stored, so the router, the
    hash shim, the build (the prerendered pages, the sitemap, _redirects), js/metrics.js and the tests read one table.
    A route key is the hash form the router matches ('#/kata/sq5/12'). Its path is the key without its '#', under
-   /learn, lowercase with no trailing slash ('/learn/kata/sq5/12'); Home is '/learn/'. Four rows choose otherwise
-   (design D2): the Skill map is /learn/skills, and a route's second name (tricks, progress, duel, learn) is an alias
-   path that answers 301 to the screen's one path.
+   BASE, lowercase with no trailing slash ('/learn/kata/sq5/12'); Home is BASE + '/'. Four rows choose otherwise
+   (design D2): the Skill map is BASE + '/skills', and a route's second name (tricks, progress, duel, learn) is an
+   alias path that answers 301 to the screen's one path. BASE is the one place the game's path base is written: it is
+   /play while the page is served there, and task 2.2 moves it to /learn with the page (design D2), so the router
+   (js/app.js), the e2e fixtures and the build follow in one line.
    Row fields:
    - pattern: the regex in js/app.js `routes`, the same source (test/paths.test.mjs matches them up)
    - kind: the route-view name for analytics (js/metrics.js routePath): {catalog:n} is capture n, lowercased, which
@@ -24,7 +26,7 @@ import { sections } from './guide.js';
 import { guideCounts } from './explain-lines.js';
 import { PLAY } from './play/catalog.js';
 
-export const BASE = '/learn';
+export const BASE = '/play'; /* task 2.2: '/learn' */
 
 const range = n => Array.from({ length: n }, (_, i) => i + 1);
 const GRADE_IDS = GRADES.map(g => String(g.id));
@@ -33,14 +35,14 @@ const row = (pattern, kind, o = {}) => Object.freeze({ pattern, kind, public: fa
 
 export const ROWS = Object.freeze([
   row(/^#?\/?$/, 'home', { public: true, indexed: true, keys: () => ['#/'] }),
-  row(/^#\/learn$/, 'learn', { public: true, indexed: true, path: '/learn/skills', aliases: ['/learn/learn'], keys: () => ['#/learn'] }),
+  row(/^#\/learn$/, 'learn', { public: true, indexed: true, path: BASE + '/skills', aliases: [BASE + '/learn'], keys: () => ['#/learn'] }),
   row(/^#\/grade\/(\w+)$/, 'grade/{grade:1}', { public: true, indexed: true, keys: () => GRADE_IDS.map(g => `#/grade/${g}`) }),
   row(/^#\/skill\/([\w-]+)$/, 'skill/{skill:1}', { public: true, indexed: true, keys: () => SKILLS.map(s => `#/skill/${s.id}`) }),
   row(/^#\/mix\/(\w+)$/, 'mix/{grade:1}', { keys: () => GRADE_IDS.map(g => `#/mix/${g}`) }),
   row(/^#\/mix\/(\w+)\/words$/, 'mix/{grade:1}/words', { keys: () => GRADE_IDS.map(g => `#/mix/${g}/words`) }),
   row(/^#\/run\/(\w+)$/, 'run/{grade:1}', { keys: () => GRADE_IDS.map(g => `#/run/${g}`) }),
   row(/^#\/arcade$/, 'arcade', { public: true, indexed: true, keys: () => ['#/arcade'] }),
-  row(/^#\/(dojo|tricks)$/, 'dojo', { public: true, indexed: true, path: '/learn/dojo', aliases: ['/learn/tricks'], keys: () => ['#/dojo'] }),
+  row(/^#\/(dojo|tricks)$/, 'dojo', { public: true, indexed: true, path: BASE + '/dojo', aliases: [BASE + '/tricks'], keys: () => ['#/dojo'] }),
   row(/^#\/katas\/([\w-]+)$/, 'katas/{trick:1}', { keys: () => TRICKS.map(t => `#/katas/${t.id}`) }),
   row(/^#\/kata\/([\w-]+)\/(\d+)$/, 'kata/{trick:1}/kata', { lock: 'kata', keys: () => TRICKS.flatMap(t => range(KATAS_PER_TRICK).map(n => `#/kata/${t.id}/${n}`)) }),
   row(/^#\/star\/([\w-]+)\/(\d+)$/, 'star/{trick:1}/star', { keys: () => TRICKS.flatMap(t => range(STARS_PER_TRICK).map(n => `#/star/${t.id}/${n}`)) }),
@@ -51,14 +53,14 @@ export const ROWS = Object.freeze([
   row(/^#\/sutras$/, 'sutras', { public: true, indexed: true, keys: () => ['#/sutras'] }),
   row(/^#\/sutras\/(\w+)$/, 'sutras/{sutra:1}', { public: true, indexed: true, keys: () => SUTRA_IDS.map(id => `#/sutras/${id}`) }),
   row(/^#\/arena$/, 'arena', { public: true, indexed: true, keys: () => ['#/arena'] }),
-  row(/^#\/duel$/, 'duel', { path: '/learn/arena/party', aliases: ['/learn/duel'] }), /* Duel became Party Mode: a redirect, no page of its own */
+  row(/^#\/duel$/, 'duel', { path: BASE + '/arena/party', aliases: [BASE + '/duel'] }), /* Duel became Party Mode: a redirect, no page of its own */
   row(/^#\/games$/, 'games', { public: true, indexed: true, keys: () => ['#/games'] }),
   row(/^#\/game\/([\w-]+)$/, 'game/{game:1}', { public: true, indexed: true, keys: () => GAMES.map(g => `#/game/${g.id}`) }),
   row(/^#\/game\/([\w-]+)\/(\d+)$/, 'game/{game:1}/level', { lock: 'level', keys: () => GAMES.flatMap(g => range(LEVELS_PER_GAME).map(n => `#/game/${g.id}/${n}`)) }),
   row(/^#\/watch$/, 'watch', { public: true, indexed: true, keys: () => ['#/watch'] }),
   row(/^#\/places$/, 'places', { keys: () => ['#/places'] }),
   row(/^#\/tiles$/, 'tiles', { keys: () => ['#/tiles'] }),
-  row(/^#\/(me|progress)$/, 'me', { path: '/learn/me', aliases: ['/learn/progress'], keys: () => ['#/me'] }),
+  row(/^#\/(me|progress)$/, 'me', { path: BASE + '/me', aliases: [BASE + '/progress'], keys: () => ['#/me'] }),
   /* #/guide/<s> scrolls the Guide to section s (js/guide.js sections), so each section is a page */
   row(/^#\/guide(?:\/([\w-]+))?$/, m => (m[1] ? 'guide/section' : 'guide'), { public: true, indexed: true, keys: () => ['#/guide', ...sections(guideCounts()).map(s => `#/guide/${s.id}`)] }),
   row(/^#\/find$/, 'find', { public: true, keys: () => ['#/find'] }),

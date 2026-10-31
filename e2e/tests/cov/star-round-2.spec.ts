@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog } from '../fixtures';
+import { test, expect, open, cloudLog, atRoute } from '../fixtures';
 
 /* openspec star-round: "Three Stars per Trick / Nothing locked" and
    "A Star round is four shuffled questions / Two rounds in a row". */
@@ -18,7 +18,7 @@ test.describe('Nothing locked: a new Player opens Star 3 of any Trick by link an
       await question(page, 1);
       await expect(page.locator('#stQ')).not.toBeEmpty();
       await expect(page.locator('#stMain')).not.toContainText(/locked/i);
-      await expect(page).toHaveURL(new RegExp(`#/star/${id}/3$`));
+      await expect(page).toHaveURL(atRoute(`#/star/${id}/3`));
       expect((await cloudLog(page)).writes).toEqual([]);
     });
   }

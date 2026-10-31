@@ -1,4 +1,4 @@
-import { test, expect, APP, type Page } from './fixtures';
+import { test, expect, APP, type Page, atRoute } from './fixtures';
 
 /* Sutra deep dive (openspec change sutra-examples, sutra-deep-dive spec): every sutra and sub-sutra teaches with at
    least three worked examples, easy to harder, the first open and the rest opened by the Player; the prev / next
@@ -77,7 +77,7 @@ for (const width of [1280, 768, 375, 320]) {
     expect(await d.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
     // The footer still moves to the next sutra, from the bottom of the scroll
     await next.click();
-    await expect(page).toHaveURL(/#\/sutras\/s3$/);
+    await expect(page).toHaveURL(atRoute('#/sutras/s3'));
     await expect(d.locator('#sdTitle')).toHaveText('Ūrdhva-Tiryagbhyām');
     await expect.poll(() => d.evaluate(el => el.scrollTop)).toBe(0);
   });

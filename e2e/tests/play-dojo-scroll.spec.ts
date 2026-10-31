@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, open, chromiumOnly } from './fixtures';
+import { test, expect, open, chromiumOnly, hrefTo } from './fixtures';
 
 /* Sutra Spellbook, Discovery Locks and the Lost Śulba Scroll (openspec play-experiences): keyboard play keeps
    focus, Sparks events fire only for first clears, the scroll keeps its own class names, and the pages pass axe. */
@@ -149,7 +149,7 @@ test('Locks: level 1 clears by keyboard, and a replay pays no second Sparks even
   expect((await stored(page, 'locks')).eleven.done).toBe(1);
   expect(await plays(page, 'locks/level')).toBe(1);
   /* replay level 1 */
-  await page.locator('a.lk-lv[href="#/dojo/locks/eleven/0"]').click();
+  await page.locator(`a.lk-lv${hrefTo('#/dojo/locks/eleven/0')}`).click();
   await expect(page.locator('.lk-say')).toContainText('Feed the lock');
   await clearFeedLevel(page);
   expect(await plays(page, 'locks/level')).toBe(1);
