@@ -88,28 +88,17 @@ def fail(msg):
 
 
 # ---------- Third parties (openspec change learnvedicmath, design D10) ----------
-# The one list of hosts outside this site that a page or worker may reach. The Content-Security-Policy is built from
-# it, the build fails when a published file names a host that is in neither this list nor LINKS, and
+# The one list of hosts outside this site that a page or worker may reach, the policy's directives and the headers on
+# every response live in shared/src/policy.json (openspec change react-typescript, task 3.1; design D15), so the
+# Worker that renders pages (task 2.4) sends the same policy as this _headers file. The Content-Security-Policy is built
+# from it, the build fails when a published file names a host that is in neither THIRD_PARTIES nor LINKS, and
 # e2e/tests/third-party.spec.ts fails on a request to a host not here. "csp" maps a directive to the pages that allow
 # the host there ("play" is the game only, "*" every page). An empty csp means no page contacts it (only a worker,
 # which gets its own policy from its own response).
-VOICE_HOST = "https://voice.learnvedicmath.com"  # the R2 voice host (design D17)
-THIRD_PARTIES = [
-    {"host": VOICE_HOST, "own": True, "csp": {"media-src": "play", "connect-src": "play"},
-     "why": "Studio voice files (R2 bucket learnvedicmath-voice, design D17)", "when": "When read aloud plays a recorded line"},
-    {"host": "https://www.youtube-nocookie.com", "csp": {"frame-src": "play"},
-     "why": "A video plays in the page (privacy-enhanced mode)", "when": "After the Player taps play; no frame before"},
-    {"host": "https://learnvedicmath.goatcounter.com", "csp": {"connect-src": "*", "img-src": "*"},
-     "why": "Analytics beacons (cookieless; count.js is served from /vendor/goatcounter/)", "when": "After load and idle; never with Do Not Track or GPC"},
-    {"host": "https://static.cloudflareinsights.com", "csp": {"script-src": "*"},
-     "why": "Cloudflare Web Analytics beacon script (manual snippet, cookieless)", "when": "After load and idle, from js/analytics.js; never with Do Not Track or GPC"},
-    {"host": "https://cloudflareinsights.com", "csp": {"connect-src": "*"},
-     "why": "Cloudflare Web Analytics endpoint", "when": "After load and idle; never with Do Not Track or GPC"},
-    {"host": "https://cdn.jsdelivr.net", "csp": {},
-     "why": "Natural voice library (voice worker only)", "when": "After the Player opts in and confirms the download"},
-    {"host": "https://huggingface.co", "csp": {},
-     "why": "Natural voice model (voice worker only)", "when": "After the Player opts in and confirms the download"},
-]
+POLICY_SRC = "shared/src/policy.json"
+POLICY = json.loads((ROOT / POLICY_SRC).read_text())
+THIRD_PARTIES = POLICY["thirdParties"]
+VOICE_HOST = next(t["host"] for t in THIRD_PARTIES if t.get("voice"))  # the R2 voice host (design D17)
 # Firebase hosts come from js/cloud-config.js (firebase_sources below): World boards, for Players 13 and over only.
 
 # Hosts published files only link to or cite (a Player opens them by following a link); a page never fetches them
@@ -276,6 +265,122 @@ def check_route_pages(out, base, shell_html, count):
         if csp_hashes(p.read_text()) != want:
             fail(f"{rel}: its inline scripts differ from the game shell's; every page under {base}/ shares one set, so one "
                  f"_headers rule ({base}/*) covers them all (move the script out of the page, or into the shell)")
+
+
+# Static imports and export ... from (the same pattern tools/budget.ts and the import check read)
+IMPORT_RE = re.compile(r"""(?:^|[;\n}])\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|[;\n}])\s*import\s*['"]([^'"]+)['"]""")
+TS_ROOTS = ("shared/src/", "app/src/")   # where the modules the Legacy views import from TypeScript live
+TS_OUT = "js/ts/"                        # where they are published, inside the pinned /js/ modules
+
+
+def ts_published(path):
+    """shared/src/lib.ts -> js/ts/shared/src/lib.js"""
+    return TS_OUT + path[: -len(".ts")] + ".js"
+
+
+def ts_modules(all_files, js_sources):
+    """The TypeScript modules the Legacy views reach (openspec change react-typescript, tasks 3.1 to 3.3). A js/ module
+    that moved to shared/src/ or app/src/ keeps its URL and re-exports the .ts file; until the framework build (task 2.1)
+    bundles the game, the browser gets each .ts module reachable from js/ with its types taken out (tools/build-ts.mjs,
+    Node's own type stripper), published at /js/ts/<path>.js, with every import pointing at a published URL. Returns
+    {published path: JavaScript} for those modules and {js path: JavaScript} for the js/ modules whose .ts imports
+    were rewritten. A module outside shared/src/ and app/src/, a test, or a dynamic import() of a .ts file fails.
+    A js/ module that only re-exports one .ts module (shims()) is skipped: every static import of it points at the .ts
+    module's URL instead, so a first load requests one module, not two, one level sooner (docs/perf/baseline.md, "Off
+    the critical path"). The js/ file is still published at its URL, for a dynamic import() and the tests."""
+    ts_files = sorted(f for f in all_files if f.startswith(TS_ROOTS) and f.endswith(".ts") and not f.endswith((".test.ts", ".d.ts")))
+    wanted = {f for js, text in js_sources.items() for f in _ts_specs(js, text)}
+    if not wanted:
+        return {}, {}
+    node = shutil.which("node")
+    if not node:
+        fail("node is not installed: it publishes the TypeScript modules js/ imports (tools/build-ts.mjs, Node 22.13 or newer)")
+    r = subprocess.run([node, "--no-warnings", str(ROOT / "tools/build-ts.mjs"), *[str(ROOT / f) for f in ts_files]], capture_output=True, text=True)
+    if r.returncode != 0:
+        fail(f"tools/build-ts.mjs failed:\n{r.stderr.strip()}")
+    rel = lambda k: pathlib.Path(k).resolve().relative_to(ROOT.resolve()).as_posix()
+    res = json.loads(r.stdout)
+    stripped, errors = {rel(k): v for k, v in res["js"].items()}, {rel(k): v for k, v in res["errors"].items()}
+    def need(f, by):
+        if f in errors:
+            fail(f"{f}: {errors[f]} (imported by {by}; a module the Legacy views reach must be plain type syntax)")
+        if f not in stripped:
+            fail(f"{f}: imported by {by}, but not a module under {' or '.join(TS_ROOTS)} (tests and .d.ts files are never published)")
+    for js, text in js_sources.items():
+        for f in _ts_specs(js, text):
+            need(f, js)
+    # Every .ts module reachable from js/, through the stripped code (type-only imports are gone from it)
+    seen, queue = set(), sorted(wanted)
+    while queue:
+        f = queue.pop()
+        if f in seen:
+            continue
+        seen.add(f)
+        for g in _ts_specs(f, stripped[f]):
+            need(g, f)
+            queue.append(g)
+    shim = shims(js_sources)
+    published = {ts_published(f): _rewrite(f, stripped[f], all_files, shim) for f in sorted(seen)}
+    rewritten = {js: _rewrite(js, text, all_files, shim) for js, text in js_sources.items()
+                 if _ts_specs(js, text) or any(_resolve(js, s) in shim for s in _specs(text))}
+    return published, rewritten
+
+
+SHIM_LINE = re.compile(r"""export\s+(?:\*|\{\s*default\s*\})\s+from\s+['"]([^'"]+\.ts)['"]\s*;?""")
+
+
+def shims(js_sources):
+    """{js path: the .ts module it only re-exports}: a js/ module whose code, comments aside, is `export * from` one .ts
+    module, with or without `export { default } from` the same module, exports exactly that module's bindings, so an
+    import of it can import the .ts module itself (the same module instance, so the same state)."""
+    out = {}
+    for js, text in js_sources.items():
+        code = re.sub(r"/\*.*?\*/|//[^\n]*", "", text, flags=re.S).strip()
+        lines = [s for s in re.split(r"\s*\n\s*", code) if s]
+        targets = {_resolve(js, m.group(1)) for s in lines for m in [SHIM_LINE.fullmatch(s)] if m}
+        if lines and len(targets) == 1 and all(SHIM_LINE.fullmatch(s) for s in lines) and any(s.startswith("export *") for s in lines):
+            out[js] = targets.pop()
+    return out
+
+
+def _specs(text):
+    return [m.group(1) or m.group(2) for m in IMPORT_RE.finditer(text)]
+
+
+def _resolve(importer, spec):
+    return posixpath.normpath(spec[1:] if spec.startswith("/") else posixpath.join(posixpath.dirname(importer), spec))
+
+
+def _ts_specs(importer, text):
+    if re.search(r"""\bimport\s*\(\s*['"][^'"]+\.ts['"]""", text):
+        fail(f"{importer}: a dynamic import() of a .ts module; import TypeScript statically (build.py publishes what it can see)")
+    return [_resolve(importer, m.group(1) or m.group(2)) for m in IMPORT_RE.finditer(text)
+            if (m.group(1) or m.group(2)).endswith(".ts") and (m.group(1) or m.group(2)).startswith(("./", "../", "/"))]
+
+
+def _rewrite(importer, text, all_files, shim=None):
+    """The module's static imports as published URLs: a .ts module at /js/ts/...js, a js/ module that only re-exports
+    a .ts module (shim) at that module's URL, a js/ module (from a .ts file, whose published place differs from its
+    source's) at its own /js/ URL. Anything else is left for the import check."""
+    out, last = [], 0
+    is_ts = importer.endswith(".ts")
+    for m in IMPORT_RE.finditer(text):
+        g = 1 if m.group(1) else 2
+        spec = m.group(g)
+        if not spec.startswith(("./", "../", "/")):
+            continue
+        target = _resolve(importer, spec)
+        if shim and target in shim:
+            url = "/" + ts_published(shim[target])
+        elif target.endswith(".ts"):
+            url = "/" + ts_published(target)
+        elif is_ts and target.startswith("js/") and target in all_files:
+            url = "/" + target
+        else:
+            continue
+        out.append(text[last:m.start(g)] + url)
+        last = m.end(g)
+    return "".join(out) + text[last:]
 
 
 def check_budget(out, voice):
@@ -549,52 +654,24 @@ def csp_hashes(html):
 
 
 def csp(html, page, report_only=False):
-    """The policy for one page: this origin, the page's inline script hashes, and THIRD_PARTIES for that page."""
+    """The policy for one page: this origin, the page's inline script hashes, and THIRD_PARTIES for that page, in the
+    order of POLICY["directives"] (shared/src/policy.json)."""
     def extra(directive):
         hosts = [t["host"] for t in THIRD_PARTIES if t["csp"].get(directive) in ("*", page)]
         return hosts + (firebase_sources().get(directive, []) if page == "play" else [])
-    j = lambda *parts: " ".join(x for part in parts for x in part)
-    frames = extra("frame-src")
-    return "; ".join([
-        "default-src 'self'",
-        # 'wasm-unsafe-eval': the Math Lens digit reader (vendor/tesseract/) compiles WebAssembly; it allows no eval()
-        "script-src " + j(["'self'"], ["'wasm-unsafe-eval'"] if page == "play" else [], csp_hashes(html), extra("script-src")),
-        # style="" in markup the views build needs 'unsafe-inline' today; the Report-Only variant tries without it
-        "style-src 'self'" + ("" if report_only else " 'unsafe-inline'"),
-        "img-src " + j(["'self'", "data:"], extra("img-src")),
-        "font-src 'self'",
-        "connect-src " + j(["'self'"], extra("connect-src")),
-        "frame-src " + (j(frames) if frames else "'none'"),
-        "worker-src 'self'",
-        "manifest-src 'self'",
-        "media-src " + j(["'self'"], extra("media-src")),
-        "object-src 'none'",
-        "base-uri 'none'",
-        "form-action 'self'",
-        "frame-ancestors 'none'",
-        # Browsers ignore upgrade-insecure-requests in a Report-Only policy and log a console warning on every page
-        *([] if report_only else ["upgrade-insecure-requests"]),
-        *(["require-trusted-types-for 'script'"] if report_only else []),
-        # The Report-Only variant reports through report-to only, which the Reporting API batches: through report-uri
-        # every innerHTML of a view would be one request to /_csp
-        *([] if report_only else ["report-uri /_csp"]),
-        "report-to csp",
-    ])
+    out = []
+    for d in POLICY["directives"]:
+        if d.get("only") == ("enforced" if report_only else "report-only"):
+            continue
+        sources = (list(d["sources"]) + (d.get("play", []) if page == "play" else []) + (csp_hashes(html) if d.get("hashes") else [])
+                   + ([] if report_only else d.get("enforced", [])) + extra(d["name"]))
+        if not sources and "none" in d:
+            sources = [d["none"]]
+        out.append(" ".join([d["name"]] + sources))
+    return "; ".join(out)
 
 
-YT = '"https://www.youtube-nocookie.com"'
-COMMON_HEADERS = [
-    ("Strict-Transport-Security", "max-age=63072000; includeSubDomains"),
-    ("X-Content-Type-Options", "nosniff"),
-    ("Referrer-Policy", "strict-origin-when-cross-origin"),
-    ("Cross-Origin-Resource-Policy", "same-origin"),
-    ("X-Frame-Options", "DENY"),
-    # Camera and microphone are per page (headers_file): the game uses them (Math Lens, Tala Lab), no other page does
-    ("Permissions-Policy", "geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), interest-cohort=(), "
-     f"browsing-topics=(), fullscreen=(self {YT}), autoplay=(self {YT}), encrypted-media=(self {YT}), picture-in-picture=(self {YT})"),
-    # Relative, so a preview or a local run reports to its own /_csp, never to production's
-    ("Reporting-Endpoints", 'csp="/_csp"'),
-]
+COMMON_HEADERS = [tuple(h) for h in POLICY["headers"] if h[0] != "//"]
 
 
 def headers_file(pages, preview):
@@ -657,8 +734,8 @@ def build_site(args, out):
     dev = args.dev
     today = datetime.date.fromisoformat(os.environ["BUILD_TODAY"]) if os.environ.get("BUILD_TODAY") else datetime.date.today()
     all_files = git_files(out)
-    for required in ["play/index.html", SW_SRC, "tools/build-sw.mjs", "tools/budget.ts", PRERENDER, PATHS_JS, "math.css", "manifest.webmanifest", "js/app.js", HEADER,
-                     "site/index.html", "site/404.html", "site/.well-known/security.txt", "THIRD-PARTY-NOTICES.md"]:
+    for required in ["play/index.html", SW_SRC, "tools/build-sw.mjs", "tools/build-ts.mjs", POLICY_SRC, "tools/budget.ts", PRERENDER, PATHS_JS, "math.css", "manifest.webmanifest", "js/app.js", HEADER, "site/index.html",
+                     "site/404.html", "site/.well-known/security.txt", "THIRD-PARTY-NOTICES.md"]:
         if required not in all_files:
             fail(f"{required} is missing")
     check_vendor_sums(all_files)
@@ -686,6 +763,13 @@ def build_site(args, out):
     # Published path -> source path. Pages are rendered separately; the design system goes to /ds/2.2.0/.
     publish = {f: f for f in files if not f.startswith("site/")}
     publish.update({DS_URL.lstrip("/") + f: f"{DS_DIR}/{f}" for f in DS_PUBLISHED})
+    # The TypeScript modules js/ imports, published under /js/ts/ with their types taken out (ts_modules)
+    ts_out, ts_js = ts_modules(all_files, {p: src(p).decode() for p in publish if p.startswith("js/") and p.endswith(".js")})
+    for f, text in {**ts_out, **ts_js}.items():
+        if f in ts_out and f in publish:
+            fail(f"{f}: is a source file and a published TypeScript module at once")
+        publish[f] = f
+        overrides[f] = text.encode()
     # The published tokens.css drops its @font-face lines (they point at the old site's /assets/fonts/): theme/fonts.css
     # declares the fonts once, from /fonts/ on this site
     tokens = re.sub(r"(?m)^@font-face[^\n]*\n", "", (ROOT / DS_DIR / "tokens.css").read_text())
@@ -715,9 +799,8 @@ def build_site(args, out):
     # Every static import is a relative or absolute path inside /js/. A bare specifier would fail without the map, a path
     # outside the folder would not be pinned, and a full URL would run code from another site.
     js = sorted(f for f in publish if f.startswith("js/") and f.endswith(".js"))
-    import_re = re.compile(r"""(?:^|[;\n}])\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|[;\n}])\s*import\s*['"]([^'"]+)['"]""")
     for p in js:
-        for m in import_re.finditer(src(p).decode()):
+        for m in IMPORT_RE.finditer(src(p).decode()):
             spec = m.group(1) or m.group(2)
             if re.match(r"https?://", spec):
                 fail(f"{p}: imports {spec}; every module is served and pinned by this site")
