@@ -61,7 +61,7 @@ test.describe('Quests have stable ids: Mode change after completing a quest', ()
     await switchMode(page, 'pro');
     await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
     const pro = await card(page);
-    expect(pro.map(q => q.label)).toEqual(['Answer 20 questions', 'Finish an Arena round', 'Finish 2 Dojo katas']);
+    expect(pro.map(q => q.label)).toEqual(['Answer 20 questions', 'Finish an Arena round or tower challenge', 'Finish 2 Dojo katas']);
     expect(pro.filter(q => q.done), 'no Pro quest is done: none of them was completed').toEqual([]);
     expect(await page.locator('.quest-card .quests li.done').count()).toBe(0);
     expect(await page.locator('.quest-card .q-check').allTextContents()).toEqual(['', '', '']);
@@ -73,17 +73,17 @@ test.describe('Quests have stable ids: Mode change after completing a quest', ()
   test('a quest both Modes share (Finish an Arena round) is shown as done in Pro only because it was completed', async ({ page }) => {
     await page.clock.install({ time: at('2026-03-13') });
     await open(page, '#/');
-    expect((await card(page)).map(q => q.label)).toEqual(['Answer 15 questions', 'Finish an Endless run', 'Finish an Arena round']);
+    expect((await card(page)).map(q => q.label)).toEqual(['Answer 15 questions', 'Finish an Endless run', 'Finish an Arena round or tower challenge']);
 
     // Finishing an Arena round bumps the arena counter (js/arena.js); done here directly on the store
     await page.evaluate(async () => ((await e2eMod('store')) as any).bump('arena'));
-    await expect(page.locator('.fx-toast', { hasText: 'Quest complete' })).toContainText('Finish an Arena round');
+    await expect(page.locator('.fx-toast', { hasText: 'Quest complete' })).toContainText('Finish an Arena round or tower challenge');
     expect(Object.keys((await questDay(page)).done)).toEqual(['arena-1']);
 
     await switchMode(page, 'pro');
     expect(await card(page)).toEqual([
       { label: 'Answer 20 questions', n: '0/20', done: false },
-      { label: 'Finish an Arena round', n: '1/1', done: true },
+      { label: 'Finish an Arena round or tower challenge', n: '1/1', done: true },
       { label: 'Play 2 games', n: '0/2', done: false },
     ]);
   });
