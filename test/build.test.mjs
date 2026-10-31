@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dir = mkdtempSync(join(tmpdir(), 'lvm-build-'));
 for (const f of ['build.py', '_config.yml', '.gitignore', 'play', 'site', 'theme', 'vendor', 'fonts', 'icons', 'thumbs', 'math.css', 'css', 'app/src/sw',
-  'tools/build-sw.mjs', 'tools/budget.ts', 'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'AGENTS.md', 'CODING_STANDARDS.md', 'README.md',
+  'tools/build-sw.mjs', 'tools/build-ts.mjs', 'shared/src', 'tools/budget.ts', 'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'AGENTS.md', 'CODING_STANDARDS.md', 'README.md',
   'wrangler.jsonc', 'workers/src', 'package.json', 'pnpm-workspace.yaml', 'tsconfig.base.json', 'vitest.config.ts',
   'cloud/firestore.rules', 'test/support/verify.mjs', '.github', 'tools/voice/ci-fetch.mjs', 'tools/sutra-voice/names.mjs'])
   if (existsSync(join(repo, f))) cpSync(join(repo, f), join(dir, f), { recursive: true });
@@ -91,7 +91,7 @@ test('the output has the pages at the root, is stamped, and holds only publishab
   for (const f of ['AGENTS.md', 'CODING_STANDARDS.md', 'README.md', 'build.py', '_config.yml', 'cloud', 'test', 'tools', '.github', '.gitignore', '_notes.txt', 'out', 'site',
     'moved', 'workers', 'app', 'shared', 'package.json', 'pnpm-workspace.yaml', 'tsconfig.base.json', 'vitest.config.ts', 'wrangler.jsonc', 'THIRD-PARTY-NOTICES.md', 'theme/header.html', 'vendor/design-system', 'docs', 'vendor/goatcounter/SHA256SUMS'])
     assert.ok(!existsSync(join(out, f)), `${f} must not be published`);
-  assert.equal(read('js/app.js'), readFileSync(join(dir, 'js/app.js'), 'utf8'), 'modules are copied byte for byte');
+  assert.equal(read('js/life.js'), readFileSync(join(dir, 'js/life.js'), 'utf8'), 'modules are copied byte for byte');
   for (const p of walk(out)) {
     const rel = relative(out, p);
     if (rel === '_redirects' || /\.(png|woff2|webp|m4a|gz|wasm)$/.test(rel)) continue;
@@ -99,6 +99,27 @@ test('the output has the pages at the root, is stamped, and holds only publishab
   }
   assert.match(read('_redirects'), /^\/vedic-math \/play\/ 301$/m);
   assert.match(read('_redirects'), /^\/vedic-math\/\* \/play\/ 301$/m);
+});
+
+/* react-typescript task 3.1: a js/ module that only re-exports a TypeScript module is skipped by every static import,
+   so the first load requests the TypeScript module once, a level sooner, and js/mental.js's module stays off it */
+test('static imports of a re-export-only js/ module point at its TypeScript module, and the first load graph is no deeper', () => {
+  build();
+  const STATIC = /(?:^|[;\n}])\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|[;\n}])\s*import\s*['"]([^'"]+)['"]/g;
+  const seen = new Set(), queue = ['js/app.js'];
+  while (queue.length) {
+    const f = queue.pop(); if (seen.has(f)) continue; seen.add(f);
+    for (const m of read(f).matchAll(STATIC)) {
+      const s = m[1] || m[2];
+      if (s.startsWith('/')) queue.push(s.slice(1));
+      else if (s.startsWith('.')) queue.push(new URL(s, 'file:///' + f).pathname.slice(1));
+    }
+  }
+  for (const f of ['js/vedic.js', 'js/viz.js', 'js/lib.js', 'js/skills/index.js', 'js/skills/middle.js', 'js/story-plan.js', 'js/mental.js', 'js/ts/shared/src/mental.js', 'js/ts/shared/src/questions.js'])
+    assert.ok(!seen.has(f), `${f} is in the first load's static graph`);
+  for (const f of ['js/ts/shared/src/vedic.js', 'js/ts/shared/src/skills/index.js', 'js/ts/shared/src/story-plan.js']) assert.ok(seen.has(f), `${f} is in the graph`);
+  assert.match(read('js/app.js'), /from '\/js\/ts\/shared\/src\/skills\/index\.js'/);
+  assert.ok(existsSync(join(out, 'js/vedic.js')), 'the re-export file is still published, for a dynamic import');
 });
 
 test('the published design system drops its @font-face lines: the fonts are declared once, from /fonts/', () => {
