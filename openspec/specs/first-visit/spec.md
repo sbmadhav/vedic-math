@@ -5,23 +5,8 @@ Give a curious visitor one obvious thing to do before any choice, and a Home tha
 
 ## Requirements
 
-### Requirement: One plain lede, and the Mode cards stay
-The Mode picker's lede SHALL be one plain sentence, and the three Mode cards (Explorer, Challenger, Pro) SHALL be the choice under the heading "Pick who is playing". Each card SHALL have its own Try a trick button directly under it, named with its Mode ("Try a trick as Explorer"), and the picker SHALL have no other Try a trick button. Pressing a card SHALL open that Mode's Home as before.
-
-#### Scenario: The cards still work
-- **WHEN** a new visitor presses the Explorer card
-- **THEN** Explorer Home opens, exactly as before this change, and no Try a trick opens and no guess is recorded
-
-#### Scenario: Above the fold on a phone
-- **WHEN** a new visitor opens the Mode picker on a 390 by 844 screen
-- **THEN** the Explorer card's Try a trick is on screen without scrolling, and the lede has at most 25 words
-
-#### Scenario: Three Try a trick buttons
-- **WHEN** a new visitor opens the Mode picker
-- **THEN** there are exactly three Try a trick buttons, one under each Mode card, named "Try a trick as Explorer", "Try a trick as Challenger" and "Try a trick as Pro"
-
 ### Requirement: A guessed Mode is shown and easy to change
-Nothing in the app SHALL set a Mode guess any more. When a Player record still holds a Mode guess written by the earlier Try a trick, Home's mode line SHALL say so (for example "Mode: Challenger, our guess for a first try") beside the Change link. Picking a Mode by hand, on the Mode picker's cards, a card's Try a trick, a Mode link or Me, SHALL clear the guess. The guess SHALL be kept on the Player record on this device only and SHALL never be sent.
+Nothing in the app SHALL set a Mode guess any more. When a Player record still holds a Mode guess written by the earlier Try a trick, Home's mode line SHALL say so (for example "Mode: Challenger, our guess for a first try") beside the Change link. Picking a Mode by hand, on the Mode picker's cards, a Mode link or Me, SHALL clear the guess. The guess SHALL be kept on the Player record on this device only and SHALL never be sent.
 
 #### Scenario: Home after the trial
 - **WHEN** a Player whose record holds a Challenger Mode guess opens Home
@@ -32,8 +17,8 @@ Nothing in the app SHALL set a Mode guess any more. When a Player record still h
 - **THEN** the mode line on Home no longer says the Mode is a guess
 
 #### Scenario: Try a trick sets no guess
-- **WHEN** a new visitor presses Try a trick under the Challenger card
-- **THEN** the Player's Mode is Challenger with no guess, and `math/mode/challenger` is sent as for a card pick
+- **WHEN** a new visitor presses the Challenger card and then the Try a trick card on Home
+- **THEN** the Player's Mode is Challenger with no guess, and `math/mode/challenger` was sent once, for the card
 
 ### Requirement: Back from a Star opened from Home goes Home
 A Star opened from Home or from the end of a Try a trick SHALL offer "Back home" as its way out, returning to Home (for a Player whose Home is the Sky, the Sky requirement "Back to the Sky" applies: the label reads Back to the Sky and it still returns to Home). A Star opened from the Dojo, a Trick page or by link SHALL keep its present Back (the Dojo, the Trick, or the Sky).
@@ -47,15 +32,19 @@ A Star opened from Home or from the end of a Try a trick SHALL offer "Back home"
 - **THEN** the Dojo opens, as before
 
 ### Requirement: Three doors first on Home
-Challenger and Pro Home SHALL show three doors after the Keep going card (when there is one). Challenger: the next Star (belt, the Star's Trick and number, Play this Star, Open the Dojo), the Arena, the Skill map. Pro: the Arena (Play today's round), the Dojo (belts and Stars lit), the Skill map. Each door SHALL carry one plain line introducing its term on first use, and only the first door SHALL have a primary button.
+Challenger and Pro Home SHALL show three doors after the Keep going card (if any), the Sutra door first (the next Star of Bolt's path as its Sutra's tag, Trick and number; Play this Star, Learn the sutra, Open the Dojo with the belts in its foot), then the Arena door and the Skill map door. The Sutra door SHALL carry one plain line on Sutras and Stars, the others one line each, and only the Sutra door a primary button. The Player strip SHALL follow the doors and "Your sutras".
 
 #### Scenario: A new Challenger
 - **WHEN** a new Challenger Player opens Home on a 390 px wide screen
-- **THEN** the first three actions in the view are Play this Star, Open the Dojo and the Arena door, and the Star door's line says what a Star is
+- **THEN** the first actions in the view are Play this Star, Learn the sutra and Open the Dojo, then the Arena door, the Sutra door names Nikhilaṃ Navataścaramaṃ Daśataḥ, and its line says what a Sutra and a Star are
 
 #### Scenario: Pro
 - **WHEN** a new Pro Player opens Home
-- **THEN** the Arena door with Play today's round, the Dojo door and the Skill map door come before the leaderboard card
+- **THEN** the Sutra door with Play this Star comes first, then the Arena door and the Skill map door, all before the leaderboard card
+
+#### Scenario: Sparks follow the Sutras
+- **WHEN** a Challenger or Pro Player opens Home
+- **THEN** the Player strip with Sparks comes after the doors and "Your sutras"
 
 ### Requirement: More ways to play is folded
 After the quests card, Challenger and Pro Home SHALL fold the remaining tiles (Party Mode, Games, Sutra cards or the Sutra deep dives, Watch) under a disclosure named "More ways to play", closed by default and remembered open or closed on this device. Every tile that was on Home before this change SHALL still be on Home, in the doors or under the disclosure.
@@ -76,17 +65,17 @@ The quests card SHALL say what Sparks are in its last line (for example "Sparks 
 - **THEN** its last line says Sparks are the points earned for right answers
 
 ### Requirement: Explorer Home keeps its pictures
-Explorer Home SHALL keep its eight picture tiles, the read-aloud switch and the Watch and sing link, with no disclosure.
+Explorer Home SHALL keep its eight picture tiles, the read-aloud switch and the Watch and sing link, with no disclosure. Above the tiles it SHALL show one "A sutra to say" card: one Sutra a day from a short list of those with a plain-number idea, its name with Say it, its Explorer meaning, and a link to its Deep dive. After the tiles it SHALL add one row of "More places": All games, The sutras, How to play (the guide) and Find.
 
 #### Scenario: Explorer
 - **WHEN** an Explorer Player opens Home
-- **THEN** eight picture tiles are shown with nothing folded away
+- **THEN** eight picture tiles are shown with nothing folded away, above them a Sutra card with its name, a Say it button, an Explorer meaning and a link to its Deep dive, and More places links to `#/games`, `#/sutras`, `#/guide` and `#/find`
 
 ### Requirement: Home fits a phone
 On a screen up to 600 px wide, Home SHALL show the Player strip compactly (the avatar, nickname, Title and bar on one row, the Sparks, day streak and badge numbers on one short line), and a new Challenger Player's first primary action (Play this Star) SHALL be on screen without scrolling at 390 by 844, whether they picked the Challenger card or came Home from its Try a trick. Nothing on Home SHALL be removed for this.
 
 #### Scenario: After Try a trick
-- **WHEN** a new visitor presses Try a trick under the Challenger card, finishes it and opens Home on a 390 by 844 screen
+- **WHEN** a new visitor presses the Challenger card, opens Try a trick from Home, finishes it and opens Home on a 390 by 844 screen
 - **THEN** Play this Star is on screen without scrolling, the Player strip is at most 130 px tall, and the page does not scroll sideways
 
 ### Requirement: Keep going does not repeat the first door
@@ -99,32 +88,6 @@ On Challenger Home, the Keep going card SHALL be left out when the Skill it offe
 #### Scenario: Another Skill
 - **WHEN** a Challenger Player who last practiced a Skill that is not that Trick opens Home
 - **THEN** the Keep going card offers that Skill
-
-### Requirement: The app's hero says little
-The Mode picker's hero SHALL say as little as it can: the headline "Fast, fun math for every brain", the one line "One trick, two minutes, no sign-up." and the Nikhilam Family beside them as the mascot, with no Bolt and no button. The family SHALL move gently and hold still under reduced motion, Pause motion and Calm. Each Try a trick under a Mode card SHALL be at least 44 px tall and work by click, tap and Enter.
-
-#### Scenario: The hero says little
-- **WHEN** a new visitor opens the app
-- **THEN** the hero shows "Fast, fun math for every brain" and "One trick, two minutes, no sign-up.", at most 14 words, with the Nikhilam Family beside them and no button
-
-#### Scenario: Try a trick draws the eye and works every way
-- **WHEN** a new visitor opens the app at 320, 375, 768 or 1280 px wide
-- **THEN** nothing scrolls sideways, every Try a trick is at least 44 px tall and opens its Mode's Try a trick by click, tap and Enter, and the family holds still with reduced motion, Pause motion or Calm
-
-### Requirement: Try a trick inside each Mode
-Each Mode SHALL have its own Try a trick at `#/try`, which opens the one of the Player's Mode: a short lesson on one Trick under the Sutra that Trick belongs to in the app's Sutra data. Explorer's SHALL be "The 11 sandwich" under Ūrdhva-Tiryagbhyām, Challenger's squares of numbers ending in 5 under Ekādhikena Pūrveṇa, and Pro's multiplying numbers near 100 under Nikhilaṃ Navataścaramaṃ Daśataḥ. A card's Try a trick SHALL pick that Mode as its card does, start the day and open `#/try`.
-
-#### Scenario: Challenger from the picker
-- **WHEN** a new visitor presses Try a trick under the Challenger card
-- **THEN** the Mode is Challenger and the Try a trick for squares of numbers ending in 5 opens, naming Ekādhikena Pūrveṇa
-
-#### Scenario: Pro from the picker
-- **WHEN** a new visitor presses Try a trick under the Pro card
-- **THEN** the Mode is Pro and the Try a trick for multiplying numbers near 100 opens, naming Nikhilaṃ Navataścaramaṃ Daśataḥ
-
-#### Scenario: Explorer from the picker
-- **WHEN** a new visitor presses Try a trick under the Explorer card
-- **THEN** the Mode is Explorer and "The 11 sandwich" opens, naming Ūrdhva-Tiryagbhyām, with no Star, Belt or Star count anywhere in it
 
 ### Requirement: Try a trick on Home
 Each Mode's Home SHALL show a Try a trick card, after the three doors in Challenger and Pro (after the Sky map when the Sky is the Home) and after the picture tiles in Explorer, until the Player has finished that Mode's Try a trick on this device. Its button SHALL open `#/try` and SHALL NOT be a primary button.
@@ -182,7 +145,7 @@ After the third question an end card SHALL show how many of 3 were right, a link
 When the card opens, its start button SHALL take keyboard focus, so Enter or Space starts; Escape SHALL also start. Each question SHALL take focus when it opens (the answer box in Challenger and Pro, the question in Explorer). The card and each result SHALL be announced once through the polite live region.
 
 #### Scenario: Keyboard
-- **WHEN** a keyboard user presses Try a trick under the Pro card and then Enter
+- **WHEN** a keyboard user opens Try a trick from Pro Home and presses Enter
 - **THEN** the first question opens with its answer box focused, and typing the answer and Enter checks it
 
 #### Scenario: Screen reader
@@ -199,3 +162,44 @@ Nothing in a Try a trick SHALL move or time out except a few sparkles after a ri
 #### Scenario: Nothing new spoken
 - **WHEN** an Explorer with Read aloud on goes through Try a trick and misses once
 - **THEN** the only lines spoken are "Not quite. Try again!" and "You got it!"
+
+### Requirement: The Mode picker asks one question
+The Mode picker's lede SHALL be one plain sentence, and the three Mode cards (Explorer, Challenger, Pro) SHALL be the one choice under the heading "Pick who is playing" and the picker's only buttons. Each card SHALL end in its call to action, "Start as <Mode>". The picker SHALL have no Try a trick button and no link to Find; one line SHALL link to the guide. Pressing a card SHALL open that Mode's Home as before.
+
+#### Scenario: The cards still work
+- **WHEN** a new visitor presses the Explorer card
+- **THEN** Explorer Home opens, exactly as before this change, and no Try a trick opens and no guess is recorded
+
+#### Scenario: Above the fold on a phone
+- **WHEN** a new visitor opens the Mode picker on a 390 by 844 screen
+- **THEN** the Explorer card and its "Start as Explorer" are on screen without scrolling, and the lede has at most 25 words
+
+#### Scenario: One choice
+- **WHEN** a new visitor opens the Mode picker
+- **THEN** its only buttons are the three Mode cards, ending in "Start as Explorer", "Start as Challenger" and "Start as Pro", there is no Try a trick button, and the one other link opens the guide
+
+### Requirement: The hero says little and the cards work every way
+The Mode picker's hero SHALL say as little as it can: the headline "Fast, fun math for every brain", the one line "One trick, two minutes, no sign-up." and the Nikhilam Family beside them as the mascot, with no Bolt and no button. The family SHALL move gently and hold still under reduced motion, Pause motion and Calm. Each Mode card SHALL be at least 44 px tall and work by click, tap and Enter.
+
+#### Scenario: The hero says little
+- **WHEN** a new visitor opens the app
+- **THEN** the hero shows "Fast, fun math for every brain" and "One trick, two minutes, no sign-up.", at most 14 words, with the Nikhilam Family beside them and no button
+
+#### Scenario: The cards draw the eye and work every way
+- **WHEN** a new visitor opens the app at 320, 375, 768 or 1280 px wide
+- **THEN** nothing scrolls sideways, every Mode card is at least 44 px tall and opens its Mode's Home by click, tap and Enter, and the family holds still with reduced motion, Pause motion or Calm
+
+### Requirement: Try a trick inside each Mode, from Home
+Each Mode SHALL have its own Try a trick at `#/try`, which opens the one of the Player's Mode: a short lesson on one Trick under the Sutra that Trick belongs to in the app's Sutra data. Explorer's SHALL be "The 11 sandwich" under Ūrdhva-Tiryagbhyām, Challenger's squares of numbers ending in 5 under Ekādhikena Pūrveṇa, and Pro's multiplying numbers near 100 under Nikhilaṃ Navataścaramaṃ Daśataḥ. It SHALL be reached from the Try a trick card on the Mode's Home (and Find), not from the Mode picker.
+
+#### Scenario: Challenger from Home
+- **WHEN** a new visitor picks Challenger and presses the Try a trick card's button on Home
+- **THEN** the Mode is Challenger and the Try a trick for squares of numbers ending in 5 opens, naming Ekādhikena Pūrveṇa
+
+#### Scenario: Pro from Home
+- **WHEN** a new visitor picks Pro and presses the Try a trick card's button on Home
+- **THEN** the Try a trick for multiplying numbers near 100 opens, naming Nikhilaṃ Navataścaramaṃ Daśataḥ
+
+#### Scenario: Explorer from Home
+- **WHEN** a new visitor picks Explorer and presses the Try a trick card's button on Home
+- **THEN** "The 11 sandwich" opens, naming Ūrdhva-Tiryagbhyām, with no Star, Belt or Star count anywhere in it

@@ -35,11 +35,15 @@ At a 320px wide viewport, with or without a text spacing override (line height 1
 - **THEN** the voice picker fits the screen and the page does not scroll sideways
 
 ### Requirement: Motion can be paused
-The system SHALL treat the site's Pause motion setting (`html.motion-paused`) like the reduced-motion setting: the moving background holds still and looping animations stop, at once and after a reload. Turning off the page's Moving background SHALL also stop the background.
+The system SHALL offer a Pause motion switch on the Me page and in the music panel, saved on the device and applied before the page paints, which sets `html.motion-paused`. The system SHALL treat `html.motion-paused` like the reduced-motion setting: the moving background holds still and looping animations stop, at once and after a reload. Turning off the page's Moving background SHALL also stop the background.
 
 #### Scenario: Pause from the Explore menu
-- **WHEN** a Player turns on Pause motion in the Explore menu
-- **THEN** the background canvas stops changing and no looping animation runs, and both resume when Pause motion is turned off
+- **WHEN** a Player turns on Pause motion, which is on the Me page now that the site has no Explore menu
+- **THEN** the background canvas stops changing and no looping animation runs, still after a reload, and both resume when Pause motion is turned off
+
+#### Scenario: Landing page
+- **WHEN** Pause motion is on and the Player opens the landing page
+- **THEN** the Nikhilam Family and the page hold still, as they do with reduced motion on the device or Calm on
 
 ### Requirement: Sutra names say their language
 Every Sutra name in IAST SHALL carry `lang="sa-Latn"` and every name in Devanagari `lang="sa"`, on cards, in the deep dive, on Trick and Katas pages and in All places. Each Say it button SHALL have the accessible name "Hear how to say <name>" and a target of at least 44 by 44 CSS pixels.

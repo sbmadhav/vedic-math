@@ -20,31 +20,24 @@ The system SHALL ask each Player one neutral age question before the first time 
 - **WHEN** a Player gives an Age answer and later posts a Score
 - **THEN** no request leaving the device contains the Age answer
 
-### Requirement: Parent step for Players under 13
-The system SHALL NOT post any Score or weekly Sparks total to a World board for a Player whose Age answer is under 13 until a grown-up gives the Parent step for that Player on this device. This SHALL apply in every Mode. The Parent step SHALL include a simple check that a grown-up is present and SHALL be stored only on the device.
-
-#### Scenario: Under-13 Player in Pro mode
-- **WHEN** a Player who answered under 13 and chose Pro finishes a Ranked round
-- **THEN** nothing is posted, the Score appears on the Device board, and the Player is told a grown-up can turn on World boards
-
-#### Scenario: Grown-up gives the Parent step
-- **WHEN** a grown-up completes the Parent step for an under-13 Player
-- **THEN** that Player's later Scores and weekly Sparks totals post to World boards as for any other Player
-
-#### Scenario: Players 13 and over
-- **WHEN** a Player whose Age answer is 13 or over finishes a Ranked round
-- **THEN** the Score posts to World boards without the Parent step
-
-### Requirement: Withdrawing the Parent step
-The system SHALL let a grown-up withdraw the Parent step for a Player on this device, after which nothing more is posted for that Player until it is given again.
-
-#### Scenario: Parent step withdrawn
-- **WHEN** a grown-up withdraws the Parent step and the Player then finishes a Ranked round
-- **THEN** nothing is posted, and entries already on World boards are left unchanged
-
 ### Requirement: Play is never blocked
-The system SHALL let every Player play every Mode, Ranked rounds included, whether or not they have an Age answer or the Parent step. Only posting to World boards depends on them.
+The system SHALL let every Player play every Mode, Ranked rounds included, whatever their Age answer and whether or not they have one. Only posting to World boards depends on it.
 
 #### Scenario: Under-13 Player without the Parent step plays the Arena
-- **WHEN** an under-13 Player without the Parent step plays an Arena daily round
+- **WHEN** an under-13 Player plays an Arena daily round
 - **THEN** the round plays normally and its Score ranks on the Device board
+
+### Requirement: Players under 13 use Device boards only
+The system SHALL NOT post any Score or weekly Sparks total to a World board for a Player whose Age answer is under 13, in any Mode, and SHALL NOT offer any way to turn World board posting on for them. Their Scores SHALL rank on the Device board as for every other Player, and they SHALL be told, in the words of their Mode, that their Scores stay on this device's board.
+
+#### Scenario: Under-13 Player in Pro mode
+- **WHEN** a Player whose Age answer is 11 and who chose Pro finishes a Ranked round
+- **THEN** nothing is posted, no Firebase file is loaded, the Score appears on the Device board, and the Player is told their Scores stay on this device
+
+#### Scenario: No switch for grown-ups
+- **WHEN** a grown-up opens the Me page for a Player whose Age answer is under 13
+- **THEN** there is no control that would let that Player post to World boards
+
+#### Scenario: Imported Parent step
+- **WHEN** a Player imported from sbmadhav.com had the Parent step there and their Age answer is under 13
+- **THEN** nothing is posted for them on learnvedicmath.com

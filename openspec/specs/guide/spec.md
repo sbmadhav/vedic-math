@@ -39,11 +39,15 @@ The guide SHALL use the wording of the Player's Mode (Explorer, Challenger or Pr
 - **THEN** the Arena section is in view and its heading has focus
 
 ### Requirement: The guide is easy to find
-The menu bar SHALL have a Guide link in every Mode, and the footer SHALL link to the guide. Home SHALL show a short "New here?" note with one control, "Quick tour", that starts the tour (whose last step points at the Guide link in the menu bar), while the Player has not played on an earlier day. The note SHALL have a solid background so the background drawing never shows through its words. The mode picker SHALL link to the guide.
+The guide SHALL be reached from Find (its help card and results) in every Mode, from the footer, and for Explorer from More places on Home ("How to play"). While the Player has not played on an earlier day, Home SHALL show a short "New here?" note with one control, "Quick tour", that starts the tour, whose last step points at the Find trigger (for Explorer at How to play). The note SHALL have a solid background so the drawing never shows through. The mode picker SHALL link to the guide.
 
 #### Scenario: Menu bar
-- **WHEN** an Explorer Player looks at the menu bar
-- **THEN** a Guide link is there, and on the guide it is marked as the current page
+- **WHEN** a Challenger Player opens the guide
+- **THEN** the Find trigger in the menu bar is marked as the current page, and Find's help card links to the guide
+
+#### Scenario: Explorer
+- **WHEN** an Explorer Player looks at Home
+- **THEN** More places has How to play, which opens the guide
 
 #### Scenario: New here
 - **WHEN** a new Challenger Player opens Home and presses Quick tour in the "New here?" note
@@ -76,8 +80,8 @@ The tour SHALL be a modal dialog with an accessible name and description from th
 - **THEN** the tour closes and is recorded as skipped
 
 #### Scenario: Phone
-- **WHEN** the tour points at the Guide link on a 390px wide screen
-- **THEN** the menu bar is scrolled so the link is visible, and the whole card is on screen
+- **WHEN** the tour points at the Find trigger on a 390px wide screen
+- **THEN** the trigger and the whole card are on screen
 
 #### Scenario: Calm
 - **WHEN** Calm is on

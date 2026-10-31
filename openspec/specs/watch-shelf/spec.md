@@ -17,11 +17,15 @@ Every video and Short SHALL be one entry in a separate data file with: id, title
 - **THEN** the shelf lists its videos and says they need a connection to play
 
 ### Requirement: Every video plays in the page
-Every video and Short SHALL play in the page's own player, in YouTube's privacy-enhanced mode. No video, Short, playlist or channel SHALL be a link that leaves the site.
+Every video and Short SHALL play in the page's own player, in YouTube's privacy-enhanced mode. Until a Player presses play, the page SHALL show only the thumbnail served from this site and SHALL NOT create the YouTube frame or contact any YouTube host. No video, Short, playlist or channel SHALL be a link that leaves the site.
 
 #### Scenario: Choosing a video
-- **WHEN** a Player chooses a video on the Watch shelf
+- **WHEN** a Player chooses a video on the Watch shelf and presses play
 - **THEN** it plays in the page's player from `youtube-nocookie.com`, and the page stays open
+
+#### Scenario: Before play
+- **WHEN** a Player opens a video's player but has not pressed play
+- **THEN** no frame and no request for any YouTube host exists, and the thumbnail comes from `/thumbs/`
 
 ### Requirement: No links out for Explorer and Challenger
 Explorer and Challenger Players SHALL see no link that leaves the site anywhere a video or reading is offered: no "Open on YouTube", no websites or games, no outside reading in a Sutra's deep dive or the history card. Pro Players SHALL keep "Open on YouTube" and the shelf's websites and games, which open in a new tab.

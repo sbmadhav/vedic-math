@@ -69,7 +69,7 @@ Every share action the app offers SHALL send `math/share_click/<surface>` when u
 - **THEN** one `math/share_click/<surface>` event is sent
 
 ### Requirement: Events carry no identifiers
-No route view or event SHALL contain a Player id, Nickname, avatar, Score, Age answer, Board identity, seed, typed text or any other value that could single out a Player or device. Analytics SHALL set no cookies and SHALL send nothing when Do Not Track or Global Privacy Control is on.
+No route view or event SHALL contain a Player id, Nickname, avatar, Score, Age answer, Board identity, seed, typed text, any part of a hand-off payload or fragment, or anything else that could single out a Player or device. Analytics SHALL set no cookies, store nothing, and send nothing under Do Not Track or Global Privacy Control. The only tools SHALL be GoatCounter (the learnvedicmath site code, its script served from this site) and Cloudflare Web Analytics, never Google Analytics.
 
 #### Scenario: Event contents
 - **WHEN** every event the app can send is listed
@@ -78,6 +78,10 @@ No route view or event SHALL contain a Player id, Nickname, avatar, Score, Age a
 #### Scenario: Global Privacy Control
 - **WHEN** the browser sends Global Privacy Control
 - **THEN** no analytics request is made
+
+#### Scenario: Only the listed tools
+- **WHEN** every request the site makes during a full visit is listed
+- **THEN** analytics requests go only to the learnvedicmath GoatCounter endpoint and Cloudflare Web Analytics, and the GoatCounter script loads from this site
 
 ### Requirement: Listening to a verse is counted
 Each Listen tap that starts speech SHALL send one anonymous event `math/sloka/listen`, with no verse id, voice or other value.
@@ -146,10 +150,10 @@ Route views of a play experience SHALL be counted as `math/view/play/<name>`, ne
 - **THEN** the route view sent is `math/view/play/ghosts`
 
 ### Requirement: Try a trick and Find are counted
-Pressing a Try a trick button (on the Mode picker or a Home card) SHALL send one `math/try/start` and one `math/try/mode/<mode>`, `<mode>` being the fixed word `explorer`, `challenger` or `pro`; opening it is the route view `math/view/try`. Following a Find result SHALL send one `math/find/go`, whatever the kind or result, and opening Find is the route view `math/view/find`. These follow "Events carry no identifiers": no Find text, result name or result count is ever in an event.
+Pressing a Home card's Try a trick button SHALL send one `math/try/start` and one `math/try/mode/<mode>` (`explorer`, `challenger` or `pro`); opening it is the route view `math/view/try`. Following a Find result SHALL send one `math/find/go`, whatever the kind or result; opening Find is the route view `math/view/find` and opening the Arcade `math/view/arcade`. These follow "Events carry no identifiers": no Find text, result name or result count is ever in an event.
 
 #### Scenario: Try a trick
-- **WHEN** a new visitor presses Try a trick under the Pro card
+- **WHEN** a new visitor picks Pro and presses the Try a trick card's button on Home
 - **THEN** `math/try/start` and `math/try/mode/pro` are sent once each, followed by the route view `math/view/try`, and no event names the Player
 
 #### Scenario: A Find result
@@ -159,3 +163,50 @@ Pressing a Try a trick button (on the Mode picker or a Home card) SHALL send one
 #### Scenario: A browse link is not a Find result
 - **WHEN** a Player opens Find, or types a word that matches nothing, and follows a link in the browse list
 - **THEN** no `math/find/go` is sent
+
+#### Scenario: The Arcade
+- **WHEN** a Challenger opens Arcade
+- **THEN** one `math/view/arcade` route view is sent
+
+### Requirement: Word problems are counted
+The system SHALL send one anonymous `math/story/<area>/<right|miss>` event when a Word problem is finished, where `<area>` is `practice`, `run` or `star` and the result is `right` for a right answer on any try, and SHALL send `math/story/asking` when a "What is it asking?" hint is shown. No event SHALL carry the story, the Skill, a name, a number or anything the Player typed. These events SHALL follow "Events carry no identifiers".
+
+#### Scenario: A Word problem answered after its first hint
+- **WHEN** a Challenger presses Hint on a Practice Word problem and then answers it right
+- **THEN** `math/story/asking` and then `math/story/practice/right` are sent, each made only of fixed words
+
+### Requirement: Install counts
+The system SHALL send `math/install/<event>` events made of fixed words: `nudge_shown` once per page load, `nudge_later`, `wizard_open/<home|me|footer|guide>`, `prompt_accepted` or `prompt_dismissed`, `installed` on `appinstalled`, and `opened` once per page load in the Installed app. No install event SHALL name the browser, the platform, the Mode or a count, and they SHALL follow "Events carry no identifiers".
+
+#### Scenario: From the nudge to the app
+- **WHEN** a Player sees the nudge on Android, presses Install and accepts Chrome's dialog
+- **THEN** `math/install/nudge_shown` and `math/install/prompt_accepted` are sent once each, and `math/install/installed` when Chrome reports the install
+
+#### Scenario: The guide from the Me page
+- **WHEN** a Player opens the Install guide from the Me page
+- **THEN** exactly `math/install/wizard_open/me` is sent
+
+#### Scenario: Event contents
+- **WHEN** every install event is listed
+- **THEN** each path is `math/install/` followed by one of the fixed words above, and its title is "Vedic Math: install"
+
+### Requirement: Traffic is counted at the edge without cookies
+Every page SHALL report page loads to Cloudflare Web Analytics, which sets no cookie and stores nothing in the browser, and SHALL send nothing to it when Do Not Track or Global Privacy Control is on.
+
+#### Scenario: A page load
+- **WHEN** a visitor without Do Not Track opens `/parents/`
+- **THEN** one Cloudflare Web Analytics beacon is sent and no cookie is set
+
+### Requirement: Hand-off results are counted
+The import page SHALL send one `math/handoff/<result>` event per visit, where the result is one of accepted, replaced, kept, declined, invalid, too-big or popup, and only after the fragment has been removed. The moved page and the export page on sbmadhav.com SHALL each send one count of the form `move/handoff/<sent|empty|too-big>` and `move/export/<sent|empty>`. None of them SHALL carry anything else.
+
+#### Scenario: Accepted hand-off
+- **WHEN** a Player chooses Bring it on the import page
+- **THEN** exactly one `math/handoff/accepted` event is sent, after the address bar shows `/import/`
+
+### Requirement: Following a Sutra tag is counted
+Following a Sutra tag's link SHALL send one anonymous `math/sutra_tag/<surface>` event titled "Sutra tag: <surface>", where `<surface>` is one fixed word for where the tag was (`trick`, `star`, `try`, `kata`, `katas`, `dojo`, `arena`, `watch`, `game` or `home`). The event SHALL NOT name the Sutra, the Trick, the Mode or the Player's progress, and SHALL follow "Events carry no identifiers".
+
+#### Scenario: From a Trick page
+- **WHEN** a Player follows the Sutra tag on the Trick page for Square numbers ending in 5
+- **THEN** one `math/sutra_tag/trick` event is sent, and the Deep dive's own route view follows
