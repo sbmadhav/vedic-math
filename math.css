@@ -1143,14 +1143,42 @@ html.motion-paused .wb-card .md-switch .md-knob, body.calm .wb-card .md-switch .
 .dojo-stars { display: flex; gap: var(--space-1-5); margin-top: var(--space-1-5); }
 .dojo-star { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-2); border: 2px solid var(--edge); border-radius: var(--radius-pill); color: var(--ink); text-decoration: none; font-weight: 700; font-size: 13px; background: var(--card); }
 .dojo-star svg { width: 16px; height: 16px; }
+/* ---------- Placement (js/placement-view.js, openspec placement): the offer, the climb and the result ----------
+   Tokens only, both schemes. The staircase is 12 bars that rise left to right; a climbed Step fills (a transition,
+   none under no motion). Explorer's three choices are .pr-choice, big through .mode-explorer .pr-choice above. */
+.place-root { min-height: 320px; }
+.place { display: grid; gap: var(--space-3); }
+.place-offer, .place-result, .place-card { padding: var(--space-5); }
+.place-talk { display: flex; align-items: center; gap: var(--space-3); }
+.place-talk-t { display: grid; gap: var(--space-1); min-width: 0; }
+.place-bolt { flex: none; width: clamp(60px, 12vw, 96px); }
+.place-bolt .bolt { width: 100%; height: auto; display: block; }
+.place-h { margin: 0; font-size: clamp(1.5rem, 4.5vw, 2.2rem); }
+.place-lede { margin: 0; }
+.place-line { margin: 0; color: var(--ink-muted); font-size: var(--text-small-size); line-height: 1.5; }
+.place-acts { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; }
+.place-say { margin: 0; position: relative; background: var(--bg-alt); border: 2px solid var(--edge); border-radius: var(--radius-bubble); padding: var(--space-2) var(--space-3-5); font: 700 clamp(15px, 2.2vw, 17px)/1.35 var(--font-sans); }
+.place-main { display: grid; gap: var(--space-3); margin-top: var(--space-3); }
+.place-q { margin: 0; }
+.place-choices .pr-choice { font-size: 1.3rem; min-width: 96px; min-height: 56px; }
+.place-form { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.place-form .pr-in { flex: 1 1 160px; }
+.place-stairs { display: flex; align-items: flex-end; gap: var(--space-1); height: 72px; padding: 0 var(--space-1); }
+.place-stairs i { flex: 1; display: block; height: calc(14px + var(--i) * 5px); border-radius: var(--radius-2xs); border: 2px solid var(--edge); background: var(--card); transition: background var(--duration-medium), border-color var(--duration-medium); }
+.place-stairs i.on { background: var(--teal); border-color: var(--teal-strong); }
+.place-stairs--done i.on { background: var(--sun); border-color: var(--sun-strong); }
+.place-home .door-line { margin-bottom: var(--space-3); }
+.me-place { display: grid; gap: var(--space-1); justify-items: start; max-width: 640px; }
+.me-place p { margin: 0; }
+@media (max-width: 560px) { .place-offer, .place-result, .place-card { padding: var(--space-4); } .place-stairs { height: 56px; } .place-stairs i { height: calc(10px + var(--i) * 3.5px); } }
 /* No motion: reduced motion, the site-wide motion pause, Calm (body.calm), or .still when the round began under one */
 @media (prefers-reduced-motion: reduce) {
-  .bolt *, .star-round *, .star-dare { animation: none !important; transition: none !important; }
+  .bolt *, .star-round *, .star-dare, .place * { animation: none !important; transition: none !important; }
 }
 /* The same with Pause motion (html.motion-paused) and Calm (body.calm) */
 body.calm .star-dare { animation: none !important; transition: none !important; }
-html.motion-paused .bolt *, html.motion-paused .star-round *, html.motion-paused .star-dare,
-body.calm .bolt *, body.calm .star-round *, .star-round.still *, .star-round.still .bolt * { animation: none !important; transition: none !important; }
+html.motion-paused .bolt *, html.motion-paused .star-round *, html.motion-paused .star-dare, html.motion-paused .place *,
+body.calm .bolt *, body.calm .star-round *, body.calm .place *, .star-round.still *, .star-round.still .bolt *, .place.still * { animation: none !important; transition: none !important; }
 /* Phones: a compact round so the question and the keypad sit close together */
 @media (max-width: 760px) {
   .star-top { align-items: center; }

@@ -13,13 +13,13 @@ const ICON = {
 
 /* Which routes each zone holds. A Trick page (#/skill/v-...) is the Dojo's, so it belongs to the Arcade. */
 const M = {
-  home: '^#?/?$|^#/(tiles|places|try)$',
+  home: '^#?/?$|^#/(tiles|places|try|placement)$',
   learn: '^#/(learn|grade|mix|run|sutras)(/|$)|^#/skill/(?!v-)',
   arcade: '^#/(arcade|dojo|tricks|katas|kata|star|arena|duel|tower|challenge|games?)(/|$)|^#/skill/v-',
   watch: '^#/watch$',
   find: '^#/(find|guide)(/|$)',
   /* Explorer: Play holds Home and everything its picture tiles open; Learn the skills and the Sutras; Me the Me page */
-  xplay: '^#?/?$|^#/(tiles|places|try|arcade|dojo|tricks|katas|kata|star|arena|duel|tower|challenge|games?|watch)(/|$)|^#/skill/v-',
+  xplay: '^#?/?$|^#/(tiles|places|try|placement|arcade|dojo|tricks|katas|kata|star|arena|duel|tower|challenge|games?|watch)(/|$)|^#/skill/v-',
   xme: '^#/(me|progress)$'
 };
 

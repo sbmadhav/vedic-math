@@ -135,7 +135,7 @@ const pickOne = a => a[Math.floor(Math.random() * a.length)];
 export function runStar(root, { trick, star, signal, back = { href: '#/dojo', label: 'Back to the Dojo' }, again = null, findVideo = async () => null, onEnd = null } = {}) {
   const t = TRICKS.find(x => x.id === trick), skill = byId['v-' + trick], mode = fx.mode() || 'challenger', boxes = mode !== 'pro';
   const round = child(signal), rs = round.signal;
-  const rating = AD.skillRating('v-' + trick, mode), dial = new AD.Dial(rating);
+  const rating = AD.skillRating('v-' + trick, mode, { practice: true }), dial = new AD.Dial(rating); /* a Star is Practice: a Placement level sets its start when there is no Rating (openspec placement) */
   /* Word problems (openspec word-problems): question 3 for Challenger, 2 for Pro, once the Player has 20 saved answers */
   let st = starRound({ trick, star, rating, last: store.starLast(trick, star), story: p => trickStoryNow(trick, p, mode), storyAt: starSlot(mode, store.count('answers')) });
   store.setStarLast(trick, star, roundKeys(st)); /* saved at the start, so leaving mid-round still counts as the last round */

@@ -63,6 +63,15 @@ test('Try a trick (js/try.js): no bare listeners or timers; its listeners go thr
   assert.doesNotMatch(src, /\.on(click|submit|keydown)\s*=/);
 });
 
+test('Placement (js/placement-view.js): no bare listeners or timers; its listeners go through life.on on the view signal or a child of it', () => {
+  assert.deepEqual(hits('placement-view.js', /\.?addEventListener\(/), []);
+  assert.deepEqual(hits('placement-view.js', TIMERS), []);
+  const src = readFileSync(new URL('../js/placement-view.js', import.meta.url), 'utf8');
+  assert.match(src, /import \{[^}]*\bon\b[^}]*\blater\b[^}]*\bchild\b[^}]*\} from '\.\/life\.js'/);
+  assert.match(src, /phase = child\(signal\)/, 'one child signal per question');
+  assert.doesNotMatch(src, /\.on(click|submit|keydown)\s*=/);
+});
+
 test('no bare listeners or timers in the play shell (js/shell.js)', () => {
   assert.deepEqual(hits('shell.js', /\.?addEventListener\(/), []);
   assert.deepEqual(hits('shell.js', TIMERS), []);

@@ -294,6 +294,19 @@ export async function open(page: Page, hash = '#/') {
   await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
 }
 
+/** The Placement offer (openspec placement) follows a new Player's Mode pick: "Skip, just play" takes them Home exactly as
+    before the change. A spec about something else presses it through here. */
+export async function skipPlacement(page: Page) {
+  const skip = page.locator('#plSkip');
+  await expect(skip).toBeVisible();
+  await skip.click();
+}
+/** Picks a Mode card on the first visit and skips the Placement offer, landing on that Mode's Home. */
+export async function pickMode(page: Page, mode: Mode) {
+  await page.locator(`.mode-card[data-mode="${mode}"]`).click();
+  await skipPlacement(page);
+}
+
 /** A fake clock that moves only when the test moves it (page.clock.runFor / fastForward). page.clock.install()
     alone lets time keep flowing, so on a slow CI machine a 1.2 second wait can end before the test looks.
     Call before opening the page. */
