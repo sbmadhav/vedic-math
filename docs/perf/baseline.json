@@ -18,7 +18,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 841671,
+  "total": 842253,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -54,7 +54,7 @@
    "/js/ambient.js": 4480,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 52788,
+   "/js/app.js": 53162,
    "/js/arena.js": 5691,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -159,9 +159,9 @@
    "/js/voice.js": 14663,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 25689,
-   "/play/": 4164,
-   "/sw.js": 6280,
+   "/math.css": 25896,
+   "/play/": 4153,
+   "/sw.js": 6292,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
@@ -340,6 +340,13 @@
     "from": 840677,
     "to": 841671,
     "why": "explanation-audio-rest: Listen buttons on the ten page introductions (ledeListen() and lede keys, ledeKeyLines() in js/explain-lines.js), in the video player and over the Me page badges (a Me page redraw stops them); normalize() reads an arrow to a worked example answer as \"gives\" (a list of pairs keeps \"to\") and a long digit string digit by digit; measured on the tree merged with main; files this branch does not touch keep the figures before it; file deltas: /js/app.js +349, /js/explain-lines.js +314, /js/voice.js +298, /math.css +30, /play/ +8, /sw.js -5; +994 in all"
+   },
+   {
+    "date": "2026-10-31",
+    "pr": "routes-3-1-view-transitions",
+    "from": 841671,
+    "to": 842253,
+    "why": "indexable-routes task 3.1, view transitions inside the game (design D12): render() in js/app.js runs its DOM update inside document.startViewTransition when the browser has it and fx.noMotion() is false, skipping the first render, a redraw of the same route and a change while one is running, with focus and scroll after updateCallbackDone; math.css names the header, the nav and the Player chip (site-header, game-nav, player-chip) and sets the 180 ms fade; no new file; measured on the tree merged with main as of #186; file deltas: /js/app.js +374, /math.css +207, /sw.js +12, /play/ -11; /js/nav.js reads 1 byte smaller locally than CI's figure, which the baseline keeps (the #168 note); +582 in all as CI measures it"
    }
   ]
  },
