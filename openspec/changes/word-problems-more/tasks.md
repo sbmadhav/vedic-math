@@ -25,4 +25,5 @@ Tasks marked **[OWNER]** can only be done by the owner. "Verify:" says how a tas
 - [x] 4.1 Voice: no new spoken line (D6); `test/voice-coverage.test.mjs` unchanged. Verify: `pnpm test`.
 - [x] 4.2 First-load budget: `docs/perf/baseline.json` `firstLoad` and `firstLoad.changes`, and `docs/perf/baseline.md`, record the growth and why. Verify: `python3 build.py --out <dir> --voice off` passes the budget.
 - [ ] 4.3 **[OWNER]** Phone check on the preview: Only Word problems on a level's Endless practice in each Mode, and a Word problems round in the Arena; note what to change here.
-- [ ] 4.4 After release, and after `word-problems` is archived (this change modifies its spec): archive this change with its coverage specs (`openspec archive word-problems-more -y`).
+- [x] 4.4 After release, and after `word-problems` is archived (this change modifies its spec): archive this change with its coverage specs (`openspec archive word-problems-more -y`).
+  - Done 2026-10-31 (`archive-sweep`): archived after `word-problems`, with `e2e/tests/cov/word-problems-12` and `arena-7`; 4.3 (the phone check) stays with the owner.

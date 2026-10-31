@@ -18,4 +18,5 @@ The owner shared the 2026-10-29 UX audit and delegated the calls in each area, w
 - [x] 3.1 `openspec validate landing-interactive-hero --strict`; `pnpm typecheck`, `pnpm lint`, `pnpm test`; `python3 build.py --out <scratch> --voice off` (first-load budget unchanged: nothing new in `/js/`).
 - [x] 3.2 The touched specs and `a11y.spec.ts` on chromium, webkit and mobile with `--retries=0`.
 - [x] 3.3 Screenshots at 375 and 1280 px in Daybreak and Deep Space, with and without JavaScript, checked by eye (kept out of the repo).
-- [ ] 3.4 After release: archive `learnvedicmath`, `landing-modes-and-return` and `sutras-first` first, then this change.
+- [x] 3.4 After release: archive `learnvedicmath`, `landing-modes-and-return` and `sutras-first` first, then this change.
+  - Done 2026-10-31 (`archive-sweep`): archived in that order; the coverage specs are `e2e/tests/cov/landing-pages-8` and `-9`.

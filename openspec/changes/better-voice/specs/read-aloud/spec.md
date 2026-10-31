@@ -1,5 +1,9 @@
 # Spec Delta
 
+## Purpose
+
+How the game reads aloud: the Studio voice recorded ahead of time and served as files from this site, the device's built-in voice tuned and ranked as the fallback, and the natural voice only after opting in; nothing spoken is sent to a speech provider at play time.
+
 ## ADDED Requirements
 
 ### Requirement: Voice order

@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Three doors first on Home
-Challenger and Pro Home SHALL show three doors after the Keep going card (when there is one), with the Sutra door first in both Modes: the next Star of Bolt's path shown as its Sutra's tag, its Trick and number, Play this Star, Learn the sutra (to the Sutra's Deep dive), and Open the Dojo with the belts in its foot. Then the Arena door and the Skill map door. The Sutra door SHALL carry one plain line saying what a Sutra and a Star are, each other door one plain line introducing its term, and only the Sutra door SHALL have a primary button. The Player strip (Sparks, streak, badges) SHALL come after the doors and "Your sutras", not before them.
+Challenger and Pro Home SHALL show three doors after the Keep going card (if any), the Sutra door first (the next Star of Bolt's path as its Sutra's tag, Trick and number; Play this Star, Learn the sutra, Open the Dojo with the belts in its foot), then the Arena door and the Skill map door. The Sutra door SHALL carry one plain line on Sutras and Stars, the others one line each, and only the Sutra door a primary button. The Player strip SHALL follow the doors and "Your sutras".
 
 #### Scenario: A new Challenger
 - **WHEN** a new Challenger Player opens Home on a 390 px wide screen

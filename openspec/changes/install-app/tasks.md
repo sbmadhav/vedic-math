@@ -45,4 +45,5 @@ Approved by the owner's request of 2026-10-21 ("add ability to install the app a
 
 ## 8. Archive
 
-- [ ] 8.1 After release and the owner checks: archive (`install-app` becomes a spec; `analytics` gains "Install counts"); the cov specs are already in `e2e/tests/cov/`.
+- [x] 8.1 After release and the owner checks: archive (`install-app` becomes a spec; `analytics` gains "Install counts"); the cov specs are already in `e2e/tests/cov/`.
+  - Done 2026-10-31 (`archive-sweep`): archived with the release live; `e2e/tests/cov/install-app-1` to `-14` and `analytics-12`. The owner checks 7.1 to 7.4 stay open.

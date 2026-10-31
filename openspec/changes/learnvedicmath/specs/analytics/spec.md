@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Events carry no identifiers
-No route view or event SHALL contain a Player id, Nickname, avatar, Score, Age answer, Board identity, seed, typed text, any part of a hand-off payload or URL fragment, or any other value that could single out a Player or device. Analytics SHALL set no cookies and store nothing in the browser, and SHALL send nothing when Do Not Track or Global Privacy Control is on. The only analytics tools SHALL be GoatCounter, under the site code for learnvedicmath.com with its script served from this site, and Cloudflare Web Analytics. Google Analytics SHALL never be used.
+No route view or event SHALL contain a Player id, Nickname, avatar, Score, Age answer, Board identity, seed, typed text, any part of a hand-off payload or fragment, or anything else that could single out a Player or device. Analytics SHALL set no cookies, store nothing, and send nothing under Do Not Track or Global Privacy Control. The only tools SHALL be GoatCounter (the learnvedicmath site code, its script served from this site) and Cloudflare Web Analytics, never Google Analytics.
 
 #### Scenario: Event contents
 - **WHEN** every event the app can send is listed

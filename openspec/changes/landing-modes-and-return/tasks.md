@@ -16,4 +16,5 @@ Playwright specs run against a local build (`python3 build.py && node e2e/local-
 
 - [x] 3.1 `GLOSSARY.md`: Mode card, Mode link, Welcome back. No spoken line changes (no studio voice re-record). `openspec validate landing-modes-and-return --strict`.
 - [x] 3.2 Screenshots of both versions at 375 and 1280 px in Daybreak and Deep Space, checked by eye (kept out of the repo).
-- [ ] 3.3 After release: archive `learnvedicmath` first, then this change.
+- [x] 3.3 After release: archive `learnvedicmath` first, then this change.
+  - Done 2026-10-31 (`archive-sweep`): archived after `learnvedicmath`; the coverage specs are `e2e/tests/cov/landing-pages-1` to `-7` and `hosting-1`.

@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: The landing page
-The landing page SHALL show the Nikhilam Family as its large picture in the hero, named for screen readers, with no Bolt in the hero. It SHALL say in plain words what Vedic Math is (the Sutras from Bharati Krishna Tirtha's 1965 book and the Tricks built on them, with practice, games and Boards for ages 4 to adult), offer one main "Start learning" button to `/play/`, show the three Modes as links under "Pick how you learn", frame games as one way to learn among several, and link to the grown-up pages. Its sections SHALL come in this order: the hero, the Sutras and the method, the Modes, Inside the game, what the site teaches and where the tricks come from, For grown-ups, then the footer. It SHALL NOT claim the methods come from the Vedas.
+The landing page SHALL show the Nikhilam Family as its large picture in the hero. It SHALL say what Vedic Math is (the Sutras from Bharati Krishna Tirtha's 1965 book and the Tricks built on them; practice, games and Boards for ages 4 to adult), offer one main "Start learning" button to `/play/`, show the three Modes as links under "Pick how you learn", link to the grown-up pages, and order its sections as the Page order scenario lists. It SHALL NOT claim the methods come from the Vedas.
 
 #### Scenario: Start learning
 - **WHEN** a first-time visitor taps Start learning on the landing page
@@ -22,11 +22,11 @@ The landing page SHALL show the Nikhilam Family as its large picture in the hero
 - **THEN** the section headings come in the order: the hero's headline, "One short rule, one line of work", "Pick how you learn", "Inside the game", "What you learn", "Where the tricks come from", "For grown-ups"
 
 ### Requirement: The landing page leads with the Sutras and the method
-Right after the hero the landing page SHALL show a section headed "One short rule, one line of work" that says what a Sutra is and shows one sum done the school way and the sutra way side by side. The sutra way SHALL lead with its Trick's plain-English name, "Multiply numbers near 10, 100 or 1000", with the Sutra's Sanskrit name right under it. With JavaScript, the sutra way SHALL be a click-through of three steps with Back and Next buttons and a line saying the step ("Step 1 of 3"), announced politely to screen readers with the step's words; earlier steps SHALL stay on screen, later ones SHALL be hidden without changing the card's size, and on the last step Next SHALL read Start again and go back to Step 1. Nothing in it SHALL move by itself, and a step SHALL appear without motion under reduced motion, Pause motion or Calm. Reaching the last step SHALL be counted once per page load as `math/landing/demo/done`. With JavaScript off the section SHALL show every step, with no buttons.
+Right after the hero, a section headed "One short rule, one line of work" SHALL say what a Sutra is and show one sum the school way and the sutra way side by side, the sutra way headed by its Trick's plain-English name over the Sutra's Sanskrit name. With JavaScript the sutra way SHALL be a three-step click-through (Back, Next) that never moves by itself, counted once per page load as `math/landing/demo/done` at its last step. With JavaScript off it SHALL show every step and no buttons.
 
 #### Scenario: Both ways
 - **WHEN** a visitor reads the section
-- **THEN** it shows 98 × 97 worked the school way and the sutra way, both ending in 9506
+- **THEN** it shows 98 × 97 worked the school way and the sutra way, both ending in 9506, the sutra way headed "Multiply numbers near 10, 100 or 1000" with the Sanskrit name under it
 
 #### Scenario: A phone
 - **WHEN** a visitor opens the landing page 320 px wide in Daybreak or Deep Space

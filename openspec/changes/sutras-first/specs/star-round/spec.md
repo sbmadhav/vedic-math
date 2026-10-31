@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Where Stars are offered
-A Trick's three Stars SHALL be offered on its Trick page and in the Dojo (and, once it ships, on the Sky), each showing whether it is lit, skipped or open, to Challenger and Pro Players. Explorer SHALL NOT be offered Stars; an Explorer Player who opens a Star by link SHALL get the Challenger layout. In Explorer the Dojo SHALL show the Tricks grouped by belt with no Star counts and no belt progress, SHALL say that belts and Stars come with Challenger and Pro, and SHALL link to the Sutras page, which Explorer has in its menu; a Belt the Player already holds SHALL still show as earned.
+A Trick's three Stars SHALL be offered on its Trick page and in the Dojo (and the Sky once it ships), each shown as lit, skipped or open, to Challenger and Pro. Explorer SHALL NOT be offered Stars; an Explorer who opens a Star by link SHALL get the Challenger layout. In Explorer the Dojo SHALL group the Tricks by belt without Star counts or belt progress, say that belts and Stars come with Challenger and Pro, and link to the Sutras page; a Belt already held SHALL still show as earned.
 
 #### Scenario: Trick page in Pro
 - **WHEN** a Pro Player opens the Trick page for Square numbers ending in 5

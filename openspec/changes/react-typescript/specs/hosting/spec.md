@@ -9,6 +9,10 @@ The game SHALL be served at `/learn/` with every screen at a path under it, the 
 - **WHEN** `python3 build.py --out _site` runs
 - **THEN** `_site/learn/index.html`, `_site/index.html` and at least one `_site/learn/assets/*.js` exist, and no file in `_site` other than `_redirects` contains `/vedic-math/`
 
+#### Scenario: A hash route in the game
+- **WHEN** a Player opens `https://learnvedicmath.com/play/#/arena`
+- **THEN** the Arena is shown
+
 #### Scenario: A screen in the game
 - **WHEN** a Player opens `https://learnvedicmath.com/learn/arena`
 - **THEN** the Arena is shown

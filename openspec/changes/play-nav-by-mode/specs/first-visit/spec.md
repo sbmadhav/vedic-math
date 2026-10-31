@@ -61,11 +61,11 @@ Nothing in the app SHALL set a Mode guess any more. When a Player record still h
 - **THEN** the Player's Mode is Challenger with no guess, and `math/mode/challenger` was sent once, for the card
 
 ### Requirement: Explorer Home keeps its pictures
-Explorer Home SHALL keep its eight picture tiles, the read-aloud switch and the Watch and sing link, with no disclosure, and SHALL add one row of "More places" after them: All games, The sutras, How to play (the guide) and Find.
+Explorer Home SHALL keep its eight picture tiles, the read-aloud switch and the Watch and sing link, with no disclosure. Above the tiles it SHALL show one "A sutra to say" card: one Sutra a day from a short list of those with a plain-number idea, its name with Say it, its Explorer meaning, and a link to its Deep dive. After the tiles it SHALL add one row of "More places": All games, The sutras, How to play (the guide) and Find.
 
 #### Scenario: Explorer
 - **WHEN** an Explorer Player opens Home
-- **THEN** eight picture tiles are shown with nothing folded away, and More places links to `#/games`, `#/sutras`, `#/guide` and `#/find`
+- **THEN** eight picture tiles are shown with nothing folded away, above them a Sutra card with its name, a Say it button, an Explorer meaning and a link to its Deep dive, and More places links to `#/games`, `#/sutras`, `#/guide` and `#/find`
 
 ### Requirement: Home fits a phone
 On a screen up to 600 px wide, Home SHALL show the Player strip compactly (the avatar, nickname, Title and bar on one row, the Sparks, day streak and badge numbers on one short line), and a new Challenger Player's first primary action (Play this Star) SHALL be on screen without scrolling at 390 by 844, whether they picked the Challenger card or came Home from its Try a trick. Nothing on Home SHALL be removed for this.

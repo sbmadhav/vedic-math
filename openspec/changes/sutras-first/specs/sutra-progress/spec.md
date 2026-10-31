@@ -1,5 +1,9 @@
 # Spec Delta
 
+## Purpose
+
+Progress per Sutra, computed on the device from the Stars lit and the Skills practiced, shown on each Sutra card, in its Deep dive and as Your sutras on Home.
+
 ## ADDED Requirements
 
 ### Requirement: Progress per Sutra comes from what the device keeps

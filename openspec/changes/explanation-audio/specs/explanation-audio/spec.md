@@ -1,5 +1,9 @@
 # Spec Delta
 
+## Purpose
+
+Every explanation in the game (Skill pages, worked examples, the Guide, Sutra deep dives, tour steps, page introductions and more) can be heard through a Listen button, in the Studio voice when the line is recorded and the device's voice until then, one line at a time and never by itself.
+
 ## ADDED Requirements
 
 ### Requirement: Every explanation can be heard

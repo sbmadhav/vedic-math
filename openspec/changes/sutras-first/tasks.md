@@ -58,4 +58,5 @@ The owner asked for this on 2026-10-21 ("It is important to make the sutras and 
   PR 3: +1,063 bytes, the Sutra door, "Your sutras" and Explorer's card in `js/app.js` (+908) and `math.css` (+147), with the stamped `sw.js` and page; 770,322 bytes, measured on the build with parts 1 and 2 at their reviewed tips.
 
 - [x] 8.1 `GLOSSARY.md`: Sutra tag, Sutra way, Sutra progress; Sutra and Home entries. Verify: `openspec validate sutras-first --strict`.
-- [ ] 8.2 After release: archive this change after `learnvedicmath` and `landing-modes-and-return` (their `landing-pages` and header requirements come first).
+- [x] 8.2 After release: archive this change after `learnvedicmath` and `landing-modes-and-return` (their `landing-pages` and header requirements come first).
+  - Done 2026-10-31 (`archive-sweep`): archived in that order; the coverage specs are those of tasks 3.4, 4.4, 5.4, 6.4 and 7.2. `play-nav-by-mode` removes "Sutras come first in the menu" when it is archived next.

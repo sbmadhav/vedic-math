@@ -52,3 +52,4 @@ Prerequisites:
 
 - [ ] 5.1 Node, build and Playwright suites pass locally; after deploy the live E2E run is green. The owner listens on an iPhone (ringer off), an Android phone and a Windows laptop. Then archive the change.
   - 2026-10-30 (`explanation-audio-rest`): Node, build and the touched Playwright specs pass locally (chromium, webkit, mobile). Open (owner): the listening check, after the 4.6 re-record; then archive.
+  - Archived 2026-10-31 (`archive-sweep`, owner: finish everything open) with the Listen buttons live and the two owner items (4.6 and this listen) still open; the `explanation-audio` spec is in `openspec/specs/` with coverage specs `e2e/tests/cov/explanation-audio-*`.

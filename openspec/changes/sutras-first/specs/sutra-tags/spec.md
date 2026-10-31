@@ -1,5 +1,9 @@
 # Spec Delta
 
+## Purpose
+
+A Sutra tag names the Sutra a Trick comes from and what it means, wherever the Trick is taught or practiced (Trick pages, the Dojo, Star rounds, Arena results, Watch and games), one tap from the Deep dive and honest about how closely the Trick follows the Sutra.
+
 ## ADDED Requirements
 
 ### Requirement: A Sutra tag names the Sutra and what it means

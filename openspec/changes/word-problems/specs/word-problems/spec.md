@@ -1,5 +1,9 @@
 # Word problems
 
+## Purpose
+
+Word problems in Practice and Star rounds, by Mode: stories with everyday settings and Sutra-friendly numbers, two hints (read, plan, solve) and the Only Word problems choice, so a Player meets a Trick inside a story and not only in bare numbers.
+
 ## ADDED Requirements
 
 ### Requirement: Word problems join Practice by Mode

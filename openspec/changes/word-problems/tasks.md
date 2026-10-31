@@ -33,4 +33,5 @@ Tasks marked **[OWNER]** can only be done by the owner. "Verify:" says how a tas
 
 - [x] 5.1 First-load budget: `js/stories.js` is precached; `docs/perf/baseline.json` `firstLoad` and `firstLoad.changes` and `docs/perf/baseline.md` record the growth and why. Verify: `python3 build.py --out /tmp/wp --voice off` passes the budget.
 - [ ] 5.2 **[OWNER]** Phone check on the preview: as each Mode with 20 answers, a Word problem in Practice, Hint twice, and (Challenger, Pro) a Star; note what to change here.
-- [ ] 5.3 After release: archive this change with its coverage specs (`openspec archive word-problems -y`).
+- [x] 5.3 After release: archive this change with its coverage specs (`openspec archive word-problems -y`).
+  - Done 2026-10-31 (`archive-sweep`): archived with `e2e/tests/cov/word-problems-1` to `-11` and `analytics-14-word-problems`; 4.2 (the re-record) and 5.2 (the phone check) stay with the owner.

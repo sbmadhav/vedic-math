@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: The guide is easy to find
-The guide SHALL be reached from Find (its help card and its results) in every Mode, from the footer, and for Explorer from More places on Home ("How to play"). Home SHALL show a short "New here?" note with one control, "Quick tour", that starts the tour (whose last step points at the Find trigger, or for Explorer at How to play), while the Player has not played on an earlier day. The note SHALL have a solid background so the background drawing never shows through its words. The mode picker SHALL link to the guide.
+The guide SHALL be reached from Find (its help card and results) in every Mode, from the footer, and for Explorer from More places on Home ("How to play"). While the Player has not played on an earlier day, Home SHALL show a short "New here?" note with one control, "Quick tour", that starts the tour, whose last step points at the Find trigger (for Explorer at How to play). The note SHALL have a solid background so the drawing never shows through. The mode picker SHALL link to the guide.
 
 #### Scenario: Menu bar
 - **WHEN** a Challenger Player opens the guide

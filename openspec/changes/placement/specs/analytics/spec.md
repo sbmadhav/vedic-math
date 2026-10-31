@@ -26,6 +26,10 @@ No route view or event SHALL contain a Player id, Nickname, avatar, Score, Age a
 - **WHEN** the browser sends Global Privacy Control
 - **THEN** no analytics request is made
 
+#### Scenario: Only the listed tools
+- **WHEN** every request the site makes during a full visit is listed
+- **THEN** analytics requests go only to the learnvedicmath GoatCounter endpoint and Cloudflare Web Analytics, and the GoatCounter script loads from this site
+
 #### Scenario: Placement level
 - **WHEN** a Player placed at grade 7 uses the app
 - **THEN** no analytics path or title contains "7" because of the Placement level, and none names a grade

@@ -1,5 +1,9 @@
 # Spec Delta
 
+## Purpose
+
+A lesson ends in its practice: every Skill and Trick page offers Practice it now, Try it yourself starts a round on the Trick, and a Star opened from a Deep dive goes back to it.
+
 ## ADDED Requirements
 
 ### Requirement: A lesson ends in its practice

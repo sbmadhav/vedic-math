@@ -50,8 +50,23 @@ When Read aloud is on, an Explorer tab SHALL say its name ("Play", "Learn", "Me"
 
 ## MODIFIED Requirements
 
+### Requirement: The header is the Learn Vedic Math header
+Every page of the site, the game included, SHALL use the same sticky header from the site's header partial: the Learn Vedic Math brand (Bolt and the name, linking to `/?home`), the page's own nav in the nav slot (in the game, the Mode's menu of "The menu follows the Mode"), the round color scheme button, the Calm and sound control in the game, and the Player chip last in the game. It SHALL NOT have an Explore button or a kid mode switch.
+
+#### Scenario: Game header
+- **WHEN** a Challenger Player opens `/play/` on a 1280px wide screen
+- **THEN** the header shows, in one row, the brand, the game's nav, the color scheme button, the Calm and sound control and the Player chip, and no Explore button
+
+#### Scenario: Landing header
+- **WHEN** a visitor opens `/`
+- **THEN** the header shows the brand, links to Learn (to `/play/`) and the grown-up pages, and the color scheme button
+
+#### Scenario: Stays on top
+- **WHEN** a Player scrolls down a long view
+- **THEN** the header stays at the top of the screen
+
 ### Requirement: Nav shows the current route
-The Vedic Math nav SHALL use the home page's pill links. The menu item whose zone holds the current route SHALL be marked with `aria-current="true"` and shown as a filled pill, and every other item SHALL have `aria-current="false"`. Home holds Home, `#/tiles`, `#/places` and `#/try`; Learn holds the Skill map, grades, Skills, Endless practice and runs and the Sutras with their Deep dives; Arcade holds the Arcade, the Dojo, Trick pages, Katas, Stars, the Arena, Party Mode, the challenge tower and Games; Watch holds Watch; Find holds Find and the Guide. For Explorer, Play holds Home and every page its picture tiles open, Learn holds the same as for Challenger, and Me holds Me.
+The nav SHALL use the home page's pill links. The item whose zone holds the route SHALL have `aria-current="true"` and a filled pill; every other item `aria-current="false"`. Zones: Home (Home, `#/tiles`, `#/places`, `#/try`); Learn (Skill map, grades, Skills, practice, runs, Sutras, Deep dives); Arcade (Arcade, Dojo, Trick pages, Katas, Stars, Arena, Party Mode, tower and Games); Watch; Find (Find and the Guide). Explorer: Play holds Home and its tiles' pages, Learn as above, Me is Me.
 
 #### Scenario: Current route
 - **WHEN** a Challenger Player opens Learn, the Arena, Games, Watch or the Guide
@@ -62,11 +77,11 @@ The Vedic Math nav SHALL use the home page's pill links. The menu item whose zon
 - **THEN** Arcade is current
 
 ### Requirement: Calm and sound control
-The header SHALL have one Calm and sound control on every page of the game: a pill like the home page's music pill, with a note, the word "Calm" and a small equalizer, named "Calm and sound", filled while music plays. One click SHALL open its panel, which SHALL hold, in this order, the Calm switch with one line on what it does, Pause motion, the Calm music picker (Singing bowls, Tanpura drone, Himalayan dawn, Temple chimes, Stop and Volume), and the Moving background. The play shell's header SHALL have the same control, with Pause motion and the music. Nothing in it SHALL start by itself, Escape SHALL close it, and the header SHALL have no kid mode switch.
+The header SHALL have one Calm and sound control on every game page: a pill like the home page's music pill, named "Calm and sound", filled while music plays. One click SHALL open its panel: the Calm switch, Pause motion, the Calm music picker (four soundscapes, Stop and Volume), then the Moving background. The play shell's header SHALL have the same control, with Pause motion and the music. Nothing in it SHALL start by itself, Escape SHALL close it, and there SHALL be no kid mode switch.
 
 #### Scenario: Open the panel
-- **WHEN** a Player clicks Calm in the header
-- **THEN** the panel opens with the Calm switch, Pause motion and the four soundscapes, and Escape closes it
+- **WHEN** a Player clicks the Calm pill (a note, the word "Calm" and a small equalizer) in the header
+- **THEN** the panel opens with the Calm switch and one line on what it does, Pause motion and the four soundscapes (Singing bowls, Tanpura drone, Himalayan dawn, Temple chimes), and Escape closes it
 
 #### Scenario: Calm from the header
 - **WHEN** a Player turns on Calm in the header's panel and opens Me
@@ -101,3 +116,9 @@ Before a Player has picked a Mode, the menu SHALL be hidden, the Find trigger in
 #### Scenario: Find without a Mode
 - **WHEN** a new Player opens `#/find` before picking a Mode
 - **THEN** the Find page shows, not the mode picker
+
+## REMOVED Requirements
+
+### Requirement: Sutras come first in the menu
+**Reason**: The menu follows the Mode now (Home, Learn, Arcade, Watch and Find for Challenger and Pro; Play, Learn and Me for Explorer), and the Sutras lead the Learn page instead of holding a menu item of their own.
+**Migration**: Replaced by "The menu follows the Mode" and "Learn and the Arcade hold the places" above; Find's browse list order is in the `find` spec ("The browse list").

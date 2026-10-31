@@ -3,11 +3,11 @@
 ## MODIFIED Requirements
 
 ### Requirement: A Find page
-The system SHALL offer a Find page at `#/find` with a search box focused on open, a one-line hint of what it searches, and results that update as the Player types. For Challenger and Pro it SHALL be the Find trigger at the end of the menu (marked current on `#/find` and the guide), showing its shortcut where a keyboard is likely; for Explorer it SHALL be under More places on Home. It SHALL open from the landing by a link, from any page when the `/` key is pressed outside a text field, menu or dialog, and from any page when Ctrl K or Cmd K is pressed, also in a text field, but not while a dialog or menu is open or a round fills the screen. It SHALL open before a Mode is picked, with Challenger wording until one is.
+There SHALL be a Find page at `#/find`: a search box focused on open, a one-line hint of what it searches, and results that update as the Player types. For Challenger and Pro it SHALL be the Find trigger ending the menu, current on `#/find` and the guide; for Explorer it SHALL sit under More places on Home. It SHALL open from the landing, by `/` outside a text field, and by Ctrl K or Cmd K anywhere, but never over a dialog, a menu or a round, and before a Mode is picked (Challenger wording).
 
 #### Scenario: From the menu bar
 - **WHEN** a Challenger Player presses Find in the menu bar
-- **THEN** the Find page opens with the search box focused and Find marked as the current page
+- **THEN** the Find page opens with the search box focused and Find marked as the current page, its shortcut shown beside it on a wide screen
 
 #### Scenario: The slash key
 - **WHEN** a Player on the Dojo page presses `/` with no text field focused
