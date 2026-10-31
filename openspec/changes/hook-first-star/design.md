@@ -2,6 +2,28 @@
 
 > **Superseded by `placement` (owner Q14, 2026-10-17).** The Hook now opens the first Star that Placement points to. Its requirements live in `openspec/changes/placement/specs/hook/spec.md` and its tasks in `placement`'s tasks.md section 4. Do not apply or archive this change; `placement` task 7.2 deletes this folder.
 
+## Checked against main, 2026-10-30: not built, delete this folder
+
+**Call (owner-delegated, 2026-10-30): do not build this change; it is fully superseded as a change.** Reasons:
+
+- **Nothing that shipped does the Hook's job.** `first-visit`, `try-trick-in-modes` (archived 2026-10-27), `sutras-first`, `play-nav-by-mode` and `working-memory-scaffolds` give the first minute a Sutra lesson (Try a trick on Home), a Star round that names its Sutra, and two-part answer boxes, but no race against a calculator: nothing in `js/`, `app/src/` or `shared/src/` draws one. The Star round's own Dare (GLOSSARY: a harder optional question) is a different thing. So the Hook still adds something, and it stays planned.
+- **Its plan already lives in `placement`.** The owner folded the Hook into Placement (Q14) and set Placement to be built after the move to React (Q15, `react-typescript` D3). `placement`'s design decision 10 re-plans it for `app/src/logic/hook.ts` and `app/src/views/star/Hook.tsx`, and already absorbed what `try-trick-in-modes` changed (Sparks from a Try a trick do not make a Player old). Building `js/hook.js` in the Legacy Star view now would go against Q14 and Q15 and against the coding standard that new code is TypeScript and React, and it would be rewritten when the Star view moves.
+- **Nothing is lost by deleting it.** `placement`'s tasks 4.2 to 4.4 and 4.6 now carry every Verify case this file's tasks listed (they used to point here with "as written there"), so this folder can go now rather than wait for `placement` task 7.2.
+
+Task by task:
+
+| Task here | Where it is now | What shipped since that touches it |
+| --- | --- | --- |
+| 1.1 `HOOK_DARES`, `calcKeys` | `placement` 4.2, in `app/src/logic/hook.ts` | Nothing. |
+| 1.2 `isNewPlayer()`, `S.hookSeen` | `placement` 4.2 | `try-trick-in-modes`: a Try a trick earns Sparks and records no answer, so the "no Sparks" condition is dropped (`placement` decision 10). |
+| 2.1 `runHook()`: dare, race, reveal, Skip | `placement` 4.3, `Hook.tsx` and `Calculator.tsx` | `sutras-first`: the replay the reveal reuses names the Trick's Sutra. `play-nav-by-mode`: a Deep dive's Try it yourself and Home's Play this Star are now the usual ways into a first Star; the Mode picker has no Try a trick buttons (Try a trick is on Home). `working-memory-scaffolds`: Challenger's digit boxes mark the two parts, which the dare's entry reuses. |
+| 2.2 easiest-first deal | `placement` 4.3 (`starRound({ easiestFirst: true })`) | Nothing: `starRound()` still shuffles its band. |
+| 3.1 Calm, motion, announcements | `placement` 4.4 | `fx.calmOn()` has shipped (`game-shell-and-calm`), so the fallback this file allowed for is not needed. |
+| 3.2 Accessibility | `placement` 4.4 | Nothing. |
+| 4.1 ADR 0001 and `docs/PLAN.md` | `placement` 7.1 | `docs/PLAN.md` already says the Hook moved into `placement` and that the replay and rematch replaced the Mistake Museum. ADR 0001's "once the Hook ships" line is still to reword. |
+| 4.2 nothing is sent | `placement` 4.6 | Nothing. |
+| 5.1 release check and the kids' Hook test | `placement` 8.1 | Nothing (an owner task: children, a parent, a phone). |
+
 ## Context
 
 - `star-round` provides `runStar(root, { trick, star, signal, back, findVideo })`, the replay renderer (steps every 2.5 s, Skip and Escape), `fx.noMotion()`, `fx.announce()` and Bolt's poses.

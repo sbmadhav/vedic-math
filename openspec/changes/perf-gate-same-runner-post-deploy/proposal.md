@@ -1,6 +1,6 @@
 # Proposal
 
-Status: plan only, waiting for the owner's approval. Nothing here is built; merging this plan is not that approval.
+Status: built (the ideas sweep of 2026-10-30 builds the approved changes in `openspec/changes/`; owner, 2026-10-29). The calls made while building are under "Calls made while building" in `design.md`.
 
 ## Why
 
@@ -34,11 +34,13 @@ Affected: no Player and no Mode. This changes a CI check after a deploy, the iss
 ### Modified Capabilities
 
 - `performance-budget`: MODIFIED "Load and interaction times do not regress", on top of `perf-same-runner`'s delta (the run on production after a deploy is compared with the pinned reference measured in the same job, not with the baseline alone; scenario "Production after a deploy" replaced). As for `perf-gate-fcp` and `perf-same-runner`, the capability is still `react-typescript`'s ADDED delta and is not in `openspec/specs/` yet, so `openspec validate --strict` notes that archive would refuse this delta: expected. Order: `react-typescript`'s delta, then `perf-gate-fcp`'s, then `perf-same-runner`'s, are synced to `openspec/specs/` before this change is archived.
+- `deploy-pipeline`: MODIFIED "Production and preview credentials are separate" (the preview token also uploads the pinned reference, from `e2e.yml`'s `reference` job in the `preview` environment, in a workflow with no pull request trigger; scenario "The pinned performance reference after a deploy" added; design C2). The capability is still `learnvedicmath`'s ADDED delta, so the same validate note applies, and that delta is synced first.
 
 ## Impact
 
-- `.github/workflows/e2e.yml` (the `perf` job: `environment: preview` for the preview token, building and uploading the reference, measuring both hosts, the compare step and the issue text).
+- `.github/workflows/e2e.yml` (a `reference` job in the `preview` environment that builds and uploads the reference; the `perf` job: measuring both hosts, the compare step, the fallback and the issue text; a `perf_only` input for a run by hand: design C1 and C3).
+- `tools/check-workflow-secrets.mjs` and `test/workflow-secrets.test.mjs` (the preview token's second allowed place: design C2).
 - `e2e/perf/lighthouse.mts` and `tools/perf-compare.ts` (the reference option named for what it is, so production can be either side: design D4), `tools/test/perf-compare.test.ts`.
 - `docs/perf/baseline.json` (`reference`), `docs/perf/baseline.md` ("The post-deploy reference"), `docs/agent/build-and-checks.md`.
-- Owner: allow `main` to use the `preview` environment if its deployment branches are limited (design D3).
+- Owner: allow `main` to use the `preview` environment if its deployment branches are limited (design D3). On 2026-10-30 the environment allowed protected branches only, and the repository had no classic branch protection rule (`main` is protected by a ruleset), in which case GitHub lets every branch use it: pull request branches upload previews today, and `main` can too.
 - Job time: about 5 and a half minutes more Lighthouse and interaction time than today (`perf-same-runner`'s measured cost for two hosts), plus the reference's build and upload; the job blocks nothing, as the deploy is already live.
