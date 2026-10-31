@@ -1,0 +1,12 @@
+{
+  "//": "The prerender step (openspec change indexable-routes, design D4): its own project because it imports the game's plain JavaScript catalogs (js/paths.js and what it reads), which allowJs lets tsc follow without checking them; the tools package's typecheck script runs it after tools/tsconfig.json.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "erasableSyntaxOnly": true,
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": ["*.ts"]
+}

@@ -36,7 +36,13 @@ What the build does (target site):
   stylesheets, the fonts, the icons and the manifest.
 - _headers: the security headers on every response, and per page a Content-Security-Policy and a stricter
   Report-Only one, built from that page's inline script hashes and THIRD_PARTIES. No page carries a CSP <meta>.
-- _redirects (old /vedic-math/ links to /play/), robots.txt, sitemap.xml, /.well-known/security.txt.
+- _redirects (old /vedic-math/ links to /play/, the 200 rewrites for share links under /learn/), robots.txt,
+  sitemap.xml, /.well-known/security.txt.
+- The route pages (openspec change indexable-routes, design D4): tools/prerender/write.ts (run with the system node,
+  like the worker's type stripping) writes learn/<path>.html for every path the route table js/paths.js enumerates,
+  the game shell with that page's own title, description, canonical, Open Graph tags and robots line, plus
+  learn/404.html (the shell with noindex, which Cloudflare serves with status 404 for an unknown path under /learn/).
+  They all share the shell's inline scripts, so _headers has one rule for /learn/*; the build fails when one differs.
 - The first-load budget (tools/budget.ts): the Brotli size of everything a first visit to /play/ requests before the
   first tap, printed on every build and failing above docs/perf/baseline.json (not for --dev).
 
@@ -54,6 +60,8 @@ import argparse, base64, datetime, fnmatch, hashlib, html as htmllib, importlib.
 ROOT = pathlib.Path(__file__).resolve().parent
 ORIGIN = "https://learnvedicmath.com"
 APP = "/play/"
+PATHS_JS = "js/paths.js"   # the route table; its BASE ('/learn') is where the route pages live (prerender_base)
+PRERENDER = "tools/prerender/write.ts"   # writes the route pages from the game shell (prerender)
 DS_DIR, DS_URL = "vendor/design-system/2.2.0", "/ds/2.2.0/"
 DS_PUBLISHED = ["tokens.css", "components.css", "header.js"]
 DS_TOKENS = DS_URL.lstrip("/") + "tokens.css"
@@ -228,6 +236,46 @@ def worker_source():
     if r.returncode != 0:
         fail(f"{SW_SRC}: tools/build-sw.mjs failed:\n{r.stderr.strip()}")
     return r.stdout
+
+
+def prerender_base():
+    """The path base of the game's route pages, read from js/paths.js (`export const BASE = '/learn'`), so the router,
+    the prerender step and the _headers rule here read one constant (openspec change indexable-routes, design D3)."""
+    m = re.search(r"^export const BASE = '(/[\w-]+)';", (ROOT / PATHS_JS).read_text(), re.M)
+    if not m:
+        fail(f"{PATHS_JS}: no `export const BASE = '/...'` line; the route pages' path base is read from it")
+    return m.group(1)
+
+
+def prerender(out, shell):
+    """The route pages (design D4): tools/prerender/write.ts writes <out>/learn/<path>.html for every path of the route
+    table from the published game shell, and <out>/learn/404.html. Returns what it printed: the page count, how many
+    are indexed, the folder, and the [from, to] 200 rewrites for share links that go into _redirects."""
+    node = shutil.which("node")
+    if not node:
+        fail(f"node is not installed: it writes the route pages ({PRERENDER}, Node 22.18 or newer)")
+    r = subprocess.run([node, "--no-warnings", str(ROOT / PRERENDER), "--shell", str(shell), "--out", str(out)], capture_output=True, text=True)
+    if r.returncode != 0:
+        fail(f"{PRERENDER} failed:\n{r.stderr.strip()}")
+    try:
+        return json.loads(r.stdout)
+    except json.JSONDecodeError:
+        fail(f"{PRERENDER} printed no JSON summary: {r.stdout[:200]}")
+
+
+def check_route_pages(out, base, shell_html, count):
+    """Every page under the route pages' base is the shell with its own head, so the one _headers rule for <base>/*
+    carries their policy: the build fails on a page whose inline scripts differ from the shell's (search-pages spec,
+    "One header rule for the game's pages"), or on a count that is not the route table's plus the 404 shell."""
+    want = csp_hashes(shell_html)
+    pages = sorted(p for p in (out / base.lstrip("/")).rglob("*.html") if p.is_file())
+    if len(pages) != count + 1:
+        fail(f"{base}/: {len(pages)} pages written, expected {count} route pages and 404.html")
+    for p in pages:
+        rel = p.relative_to(out).as_posix()
+        if csp_hashes(p.read_text()) != want:
+            fail(f"{rel}: its inline scripts differ from the game shell's; every page under {base}/ shares one set, so one "
+                 f"_headers rule ({base}/*) covers them all (move the script out of the page, or into the shell)")
 
 
 def check_budget(out, voice):
@@ -550,14 +598,15 @@ COMMON_HEADERS = [
 
 
 def headers_file(pages, preview):
-    """_headers for Cloudflare static assets. Policies and COOP sit on exact page paths only: Cloudflare joins the values
-    of every rule that matches a path, and two policies would both be enforced. For the same reason camera and
-    microphone are named only here, never on /*: the game page allows them for this site (Math Lens asks for the camera,
-    Tala Lab for the microphone, each after a tap), every other page turns them off."""
+    """_headers for Cloudflare static assets. Policies and COOP sit on exact page paths only, and on the one <base>/*
+    rule for the route pages, which all share the game shell's inline scripts (check_route_pages): Cloudflare joins the
+    values of every rule that matches a path, and two policies would both be enforced. For the same reason camera and
+    microphone are named only here, never on /*: the game ("play" pages) allows them for this site (Math Lens asks for
+    the camera, Tala Lab for the microphone, each after a tap), every other page turns them off."""
     rules = [("/*", COMMON_HEADERS + ([("X-Robots-Tag", "noindex, nofollow")] if preview else []))]
     for url, (html, kind) in sorted(pages.items()):
         rules.append((url, [("Cross-Origin-Opener-Policy", "same-origin-allow-popups" if url == "/import/" else "same-origin"),
-                            ("Permissions-Policy", "camera=(self), microphone=(self)" if url == "/play/" else "camera=(), microphone=()"),
+                            ("Permissions-Policy", "camera=(self), microphone=(self)" if kind == "play" else "camera=(), microphone=()"),
                             ("Content-Security-Policy", csp(html, kind)),
                             ("Content-Security-Policy-Report-Only", csp(html, kind, report_only=True))]))
     if len(rules) > MAX_HEADER_RULES:
@@ -573,6 +622,21 @@ def headers_file(pages, preview):
 
 REDIRECTS = ("# Written by build.py: old links from sbmadhav.com/vedic-math/ reach the game (the hash route rides along).\n"
              "/vedic-math /play/ 301\n/vedic-math/* /play/ 301\n")
+
+
+def redirects_file(rewrites):
+    """_redirects: the old-origin rules, then the 200 rewrites for share links (openspec change indexable-routes, design
+    D4): a path under a play experience with parameters (a Ghost race code, an Art piece, a Wall card, a Locks chapter)
+    and an Arena challenge link are answered with their page, status 200, by Cloudflare without running code; the app
+    reads the parameters from the address as today. One dynamic (splat) rule each, of Cloudflare's 100."""
+    text = REDIRECTS + "# Share links with codes open their experience's page (status 200), which reads the code from the address.\n"
+    text += "".join(f"{src} {dest} 200\n" for src, dest in rewrites)
+    rules = [l for l in text.splitlines() if l and not l.startswith("#")]
+    if len(rules) > MAX_REDIRECTS:
+        fail(f"_redirects has {len(rules)} rules; Cloudflare allows {MAX_REDIRECTS}")
+    if sum("*" in l.split()[0] for l in rules) > 100:
+        fail("_redirects has more than 100 dynamic (splat) rules; Cloudflare allows 100")
+    return text
 
 
 def stamp_refs(html, versions):
@@ -593,8 +657,8 @@ def build_site(args, out):
     dev = args.dev
     today = datetime.date.fromisoformat(os.environ["BUILD_TODAY"]) if os.environ.get("BUILD_TODAY") else datetime.date.today()
     all_files = git_files(out)
-    for required in ["play/index.html", SW_SRC, "tools/build-sw.mjs", "tools/budget.ts", "math.css", "manifest.webmanifest", "js/app.js", HEADER, "site/index.html",
-                     "site/404.html", "site/.well-known/security.txt", "THIRD-PARTY-NOTICES.md"]:
+    for required in ["play/index.html", SW_SRC, "tools/build-sw.mjs", "tools/budget.ts", PRERENDER, PATHS_JS, "math.css", "manifest.webmanifest", "js/app.js", HEADER,
+                     "site/index.html", "site/404.html", "site/.well-known/security.txt", "THIRD-PARTY-NOTICES.md"]:
         if required not in all_files:
             fail(f"{required} is missing")
     check_vendor_sums(all_files)
@@ -707,9 +771,12 @@ def build_site(args, out):
     security_txt = (ROOT / "site/.well-known/security.txt").read_text()
     check_security_txt(security_txt, today)
     listed = sorted(u for u in pages if u not in ("/404.html", "/import/"))
+    # The route pages under <base>/ (prerender, below) are the game shell with their own head: one rule, with the game's policy
+    base = prerender_base()
+    with_policy = {u: (p[0], p[1]) for u, p in pages.items() if u != "/404.html"}
+    with_policy[f"{base}/*"] = (play_html, "play")
     generated = {
-        "_headers": headers_file({u: (p[0], p[1]) for u, p in pages.items() if u != "/404.html"}, args.preview),
-        "_redirects": REDIRECTS,
+        "_headers": headers_file(with_policy, args.preview),
         "robots.txt": f"User-agent: *\nAllow: /\n\nSitemap: {ORIGIN}/sitemap.xml\n",
         "sitemap.xml": '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
                        + "".join(f"  <url><loc>{ORIGIN}{u}</loc></url>\n" for u in listed) + "</urlset>\n",
@@ -718,8 +785,6 @@ def build_site(args, out):
         DS_TOKENS: tokens,
         ".assetsignore": "# Written by build.py: files wrangler does not upload as static assets\n.assetsignore\n",
     }
-    if sum(1 for l in REDIRECTS.splitlines() if l and not l.startswith("#")) > MAX_REDIRECTS:
-        fail(f"_redirects has more than {MAX_REDIRECTS} rules")
 
     # ---------- write the output ----------
     empty(out)
@@ -733,6 +798,11 @@ def build_site(args, out):
         dest = out / (url[1:] + ("index.html" if url.endswith("/") else ""))
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(html)
+    # The route pages, from the game shell as written above (openspec change indexable-routes, design D4); their share-link
+    # rewrites go into _redirects. Not in the precache or the first load: the shell is the one page a first visit loads.
+    routes = prerender(out, out / (APP[1:] + "index.html"))
+    check_route_pages(out, base, play_html, routes["pages"])
+    generated["_redirects"] = redirects_file(routes["rewrites"])
     for f, text in generated.items():
         (out / f).parent.mkdir(parents=True, exist_ok=True)
         (out / f).write_text(text)
@@ -742,9 +812,9 @@ def build_site(args, out):
 
     rel = out.relative_to(ROOT) if out.is_relative_to(ROOT) else out
     n = sum(1 for p in out.rglob("*") if p.is_file())
-    print(f"{rel}/: {n} files, {len(pages)} pages, {len(imports)} modules pinned, app.js v={versions['/js/app.js']}, "
-          f"sw.js VERSION={sw_version} ({len(precache)} files precached){' [dev]' if dev else ''}{' [preview]' if args.preview else ''}"
-          f"{' [no Studio voice]' if voice_off else ''}")
+    print(f"{rel}/: {n} files, {len(pages)} pages, {routes['pages']} route pages under {base}/ ({routes['indexed']} indexed), {len(imports)} modules pinned, "
+          f"app.js v={versions['/js/app.js']}, sw.js VERSION={sw_version} ({len(precache)} files precached){' [dev]' if dev else ''}"
+          f"{' [preview]' if args.preview else ''}{' [no Studio voice]' if voice_off else ''}")
 
 
 def empty(out):

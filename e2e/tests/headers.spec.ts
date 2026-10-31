@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import { createHash } from 'node:crypto';
 import { test, expect, APP } from './fixtures';
 
 /* Response headers (openspec change learnvedicmath, security-headers spec). build.py writes them into _headers;
@@ -128,4 +129,54 @@ test('the game page may ask for the camera and microphone; a grown-up page is re
   expect(await allows()).toEqual([true, true]);
   await page.goto('/parents/');
   expect(await allows()).toEqual([false, false]);
+});
+
+/* The game's route pages (openspec change indexable-routes, design D4, task 2.3): every file under /learn/ is the game
+   shell with its own head, so one rule, /learn/*, carries the game's policy; a path under /learn/ with no file is
+   answered with /learn/404.html (the shell, noindex) and status 404 and shows Home; a share link with a code is a 200
+   rewrite to its experience's page (_redirects); a missing script under /learn/ is a 404 too. */
+test.describe('route pages under /learn/', () => {
+  test('/learn/kata/sq5/12 is 200 with its own head and the game policy, from the one /learn/* rule', async ({ request }) => {
+    const res = await request.get('/learn/kata/sq5/12', { maxRedirects: 0 });
+    expect(res.status()).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('<title>Kata 12: Square numbers ending in 5 · Learn Vedic Math</title>');
+    expect(html).toContain('<link rel="canonical" href="https://learnvedicmath.com/learn/kata/sq5/12">');
+    expect(html).toContain('<meta name="robots" content="noindex, follow">');
+    const h = res.headers();
+    expect(h['content-security-policy']).toMatch(/frame-ancestors 'none'/);
+    expect(h['content-security-policy']).toContain("'wasm-unsafe-eval'");
+    expect(h['content-security-policy'].split(',').length, 'one policy, not two joined').toBe(1);
+    // Every inline script of the page is hashed into the policy it is sent with
+    for (const m of html.matchAll(/<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g)) {
+      if (/type="application\/json"/.test(m[1])) continue;
+      expect(h['content-security-policy']).toContain(`'sha256-${createHash('sha256').update(m[2]).digest('base64')}'`);
+    }
+    expect(h['permissions-policy']).toContain('camera=(self), microphone=(self)');
+    expect(h['cross-origin-opener-policy']).toBe('same-origin');
+    expect(h['content-security-policy-report-only']).toMatch(/require-trusted-types-for 'script'/);
+    expect(h['x-frame-options']).toBe('DENY');
+  });
+
+  test('/learn/arnea is 404: the shell with noindex, which shows Home with its nav', async ({ page }) => {
+    const res = await page.goto('/learn/arnea');
+    expect(res?.status()).toBe(404);
+    expect(res?.headers()['content-security-policy']).toMatch(/frame-ancestors 'none'/);
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, follow');
+    await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
+    await expect(page.locator('nav.md-nav a[href="#/"]')).toHaveText('Home');
+    expect(new URL(page.url()).pathname, 'the address keeps the path').toBe('/learn/arnea');
+  });
+
+  test('/learn/arena/ghosts/r/abc is 200: the Ghost Races page answers for a share code', async ({ request }) => {
+    const res = await request.get('/learn/arena/ghosts/r/abc', { maxRedirects: 0 });
+    expect(res.status()).toBe(200);
+    expect(await res.text()).toContain('<title>Ghost Races · Learn Vedic Math</title>');
+    expect(res.headers()['content-security-policy']).toMatch(/frame-ancestors 'none'/);
+  });
+
+  test('a missing /learn/x.js is 404', async ({ request }) => {
+    const res = await request.get('/learn/x.js', { maxRedirects: 0 });
+    expect(res.status()).toBe(404);
+  });
 });

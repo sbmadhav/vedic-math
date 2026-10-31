@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dir = mkdtempSync(join(tmpdir(), 'lvm-build-'));
 for (const f of ['build.py', '_config.yml', '.gitignore', 'play', 'site', 'theme', 'vendor', 'fonts', 'icons', 'thumbs', 'math.css', 'css', 'app/src/sw',
-  'tools/build-sw.mjs', 'tools/budget.ts', 'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'AGENTS.md', 'CODING_STANDARDS.md', 'README.md',
+  'tools/build-sw.mjs', 'tools/budget.ts', 'tools/prerender', 'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'AGENTS.md', 'CODING_STANDARDS.md', 'README.md',
   'wrangler.jsonc', 'workers/src', 'package.json', 'pnpm-workspace.yaml', 'tsconfig.base.json', 'vitest.config.ts',
   'cloud/firestore.rules', 'test/support/verify.mjs', '.github', 'tools/voice/ci-fetch.mjs', 'tools/sutra-voice/names.mjs'])
   if (existsSync(join(repo, f))) cpSync(join(repo, f), join(dir, f), { recursive: true });
@@ -539,4 +539,48 @@ test('the build prints the first-load table and fails above the budget: 20 KB in
       }));
     assert.doesNotThrow(() => build('--dev'), 'a --dev build has no PRECACHE and is not measured');
   } finally { setBudget(1e9); }
+});
+
+/* The route pages (openspec change indexable-routes, design D4 and D5, task 2.3): tools/prerender/write.ts writes
+   learn/<path>.html for every path of js/paths.js from the game shell, plus learn/404.html; _headers carries one rule
+   for /learn/*, with the game's policy; _redirects the 200 rewrites for share links; nothing of it is precached. */
+test('the build writes a page for every route under learn/, the 404 shell, one /learn/* header rule with the game policy, and the share-link rewrites', () => {
+  const log = build();
+  assert.match(log, /3469 route pages under \/learn\/ \(239 indexed\)/);
+  const learn = walk(join(out, 'learn')).filter(f => f.endsWith('.html'));
+  assert.equal(learn.length, 3470, '3,469 route pages and the 404 shell');
+  for (const f of ['learn/index.html', 'learn/skills.html', 'learn/kata/sq5/12.html', 'learn/sutras/s1.html', 'learn/arena/ghosts.html', 'learn/challenge/1000.html', 'learn/guide/around.html', 'learn/404.html'])
+    assert.ok(existsSync(join(out, f)), f);
+  const shell = read('play/index.html'), kata = read('learn/kata/sq5/12.html');
+  assert.equal(kata.slice(kata.indexOf('</head>')), shell.slice(shell.indexOf('</head>')), 'the same body as the game shell');
+  assert.match(kata, /<title>Kata 12: Square numbers ending in 5 · Learn Vedic Math<\/title>/);
+  assert.match(kata, /<link rel="canonical" href="https:\/\/learnvedicmath\.com\/learn\/kata\/sq5\/12">/);
+  assert.match(kata, /<meta property="og:url" content="https:\/\/learnvedicmath\.com\/learn\/kata\/sq5\/12">/);
+  assert.match(kata, /<meta name="robots" content="noindex, follow">/);
+  assert.doesNotMatch(read('learn/sutras/s1.html'), /noindex/);
+  assert.deepEqual(JSON.parse(kata.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports, importMap(), 'the stamped import map, as the shell');
+  const nf = read('learn/404.html');
+  assert.match(nf, /<meta name="robots" content="noindex, follow">/);
+  assert.doesNotMatch(nf, /rel="canonical"|og:url/);
+  const rules = headerRules();
+  assert.ok(rules['/learn/*'], 'one rule for every page under /learn/');
+  assert.equal(rules['/learn/*']['Content-Security-Policy'], rules['/play/']['Content-Security-Policy'], 'the game policy');
+  assert.equal(rules['/learn/*']['Content-Security-Policy-Report-Only'], rules['/play/']['Content-Security-Policy-Report-Only']);
+  assert.equal(rules['/learn/*']['Permissions-Policy'], 'camera=(self), microphone=(self)');
+  assert.equal(rules['/learn/*']['Cross-Origin-Opener-Policy'], 'same-origin');
+  assert.deepEqual(Object.keys(rules).filter(k => k.startsWith('/learn')), ['/learn/*'], 'no second rule Cloudflare would join with it');
+  for (const h of inlineHashes(kata)) assert.ok(parse(rules['/learn/*']['Content-Security-Policy'])['script-src'].includes(h), `${h} is in the policy`);
+  const redirects = read('_redirects');
+  for (const [from, to] of [['/learn/arena/ghosts/*', '/learn/arena/ghosts'], ['/learn/games/art/*', '/learn/games/art'], ['/learn/games/wall/*', '/learn/games/wall'], ['/learn/dojo/locks/*', '/learn/dojo/locks'], ['/learn/arena/day/*', '/learn/arena']])
+    assert.ok(redirects.split('\n').includes(`${from} ${to} 200`), `${from} ${to} 200`);
+  assert.match(redirects, /^\/vedic-math\/\* \/play\/ 301$/m, 'the old-origin rules stay');
+  assert.ok(!sw().precache.some(([u]) => u.startsWith('/learn/')), 'no route page is precached');
+  build('--dev');
+  assert.ok(existsSync(join(out, 'learn/kata/sq5/12.html')) && !read('learn/kata/sq5/12.html').includes('?v='), 'a --dev build writes the pages without stamps');
+});
+
+test('the build fails when a page under /learn/ has an inline script the others do not, naming the page', () => {
+  const r = withEdit('tools/prerender/write.ts', s => s.replace('html: withHead(shell, meta, ORIGIN + entry.path, entry.indexed)',
+    "html: withHead(shell, meta, ORIGIN + entry.path, entry.indexed).replace('</body>', (entry.path === '/learn/sutras/s1' ? '<script>1</script>' : '') + '</body>')"), () => tryBuild());
+  fails(r, /learn\/sutras\/s1\.html: its inline scripts differ from the game shell's/);
 });
