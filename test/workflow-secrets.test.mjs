@@ -1,6 +1,8 @@
 /* tools/check-workflow-secrets.mjs (openspec change learnvedicmath, deploy-pipeline spec; task 11.6): the production
    token only in ci.yml's deploy job (environment production), the R2 keys only in voice-upload, the preview token only
-   in preview.yml's preview job on pull_request. The real workflows pass; a workflow naming a token elsewhere fails. */
+   in preview.yml's preview job on pull_request and in e2e.yml's reference job (the pinned perf reference, openspec change
+   perf-gate-same-runner-post-deploy), in a workflow with no pull request trigger. The real workflows pass; a workflow
+   naming a token elsewhere fails. */
 import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -18,6 +20,9 @@ test('the workflows in this repo pass', () => {
   }
   assert.match(real['preview.yml'], /^on:\n {2}pull_request:/m);
   assert.doesNotMatch(real['preview.yml'].replace(/#.*$/gm, ''), /pull_request_target/);
+  // The pinned perf reference's upload: a job of its own in the preview environment, in a workflow no pull request runs
+  assert.match(real['e2e.yml'], /\n {2}reference:\n[\s\S]*?\n {4}environment: preview\n/);
+  assert.doesNotMatch(real['e2e.yml'].replace(/#.*$/gm, ''), /pull_request/);
 });
 
 /* A deploy job as ci.yml has it on main once the site deploys to Cloudflare */
@@ -34,6 +39,12 @@ test('a test workflow naming either token elsewhere fails the check', () => {
     ['e2e.yml', real['e2e.yml'] + job('leak', 'preview', 'CLOUDFLARE_PREVIEW_TOKEN'), /e2e\.yml: job leak names CLOUDFLARE_PREVIEW_TOKEN/],
     ['preview.yml', real['preview.yml'].replace('on:\n  pull_request:', 'on:\n  pull_request_target:'), /does not run on pull_request alone/],
     ['preview.yml', real['preview.yml'].replace('on:\n  pull_request:', 'on:\n  push:\n  pull_request:'), /does not run on pull_request alone/],
+    /* The pinned perf reference's upload (perf-gate-same-runner-post-deploy): e2e.yml's reference job only, in the
+       preview environment, in a workflow with no pull request trigger */
+    ['e2e.yml', real['e2e.yml'].replace(/\n {2}reference:\n[\s\S]*?(?=\n {2}[\w-]+:\n)/, '\n' + job('reference', 'production', 'CLOUDFLARE_PREVIEW_TOKEN').trimEnd()), /e2e\.yml: job reference names CLOUDFLARE_PREVIEW_TOKEN without environment preview/],
+    ['e2e.yml', real['e2e.yml'].replace('on:\n', 'on:\n  pull_request:\n'), /e2e\.yml: CLOUDFLARE_PREVIEW_TOKEN is used by a workflow with a pull request trigger/],
+    ['e2e.yml', real['e2e.yml'].replace('on:\n', 'on:\n  pull_request_target:\n'), /e2e\.yml: CLOUDFLARE_PREVIEW_TOKEN is used by a workflow with a pull request trigger/],
+    ['ci.yml', CI + job('reference', 'preview', 'CLOUDFLARE_PREVIEW_TOKEN'), /ci\.yml: job reference names CLOUDFLARE_PREVIEW_TOKEN; only preview\.yml job preview or e2e\.yml job reference may/],
     ['other.yml', `on:\n  push:\njobs:\n${job('up', 'production', 'R2_SECRET_ACCESS_KEY')}`, /other\.yml: job up names R2_SECRET_ACCESS_KEY/],
     /* A # inside quotes is not a comment, so a secret after it is still seen */
     ['other.yml', `on:\n  push:\njobs:\n  quoted:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo "a #b \${{ secrets.CLOUDFLARE_API_TOKEN }}"\n`, /other\.yml: job quoted names CLOUDFLARE_API_TOKEN/],

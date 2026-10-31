@@ -1,13 +1,15 @@
 /* Lighthouse load timings of the game (openspec change react-typescript, performance-budget spec, task 0.4; the
    preview gate of task 1.8 reads the same pages and settings from tools/lighthouserc.json).
 
-   Run from e2e/: node perf/lighthouse.mts [base URL] [--runs N] [--json <file>] [--production <url> --production-json <file>]
+   Run from e2e/: node perf/lighthouse.mts [base URL] [--runs N] [--json <file>] [--reference <url> --reference-json <file>]
    (base URL defaults to BASE_URL or https://learnvedicmath.com; Node 22.19 or newer runs the TypeScript as it is).
-   With --production (the preview's perf job; openspec change perf-same-runner) production is measured in the same job
-   as a reference: every page on each host in turn with the same runs, settings and fixed server latency, the hosts'
-   order swapping on each page (perf/interleave.mts), and production's results written to their own file. Both hosts
-   then see the same runner, so its CPU speed, which moves blocking time about two to one between GitHub's runners,
-   cancels in tools/perf-compare.ts (docs/perf/baseline.md, "The same-runner reference").
+   With --reference a second host is measured in the same job as the reference: production on a pull request (the
+   preview's perf job, which spells it --production and --production-json; openspec change perf-same-runner), the pinned
+   reference build after a deploy (e2e.yml's perf job; openspec change perf-gate-same-runner-post-deploy). Every page on
+   each host in turn with the same runs, settings and fixed server latency, the hosts' order swapping on each page
+   (perf/interleave.mts), and the reference's results written to their own file. Both hosts then see the same runner,
+   so its CPU speed, which moves blocking time about two to one between GitHub's runners, cancels in
+   tools/perf-compare.ts (docs/perf/baseline.md, "The same-runner reference").
 
    Lighthouse's mobile preset (its default): simulated slow 4G, 4x CPU slowdown, a Moto G Power sized screen,
    performance only, the median of each metric over N runs (5). Chromium is Playwright's, so no other browser install
@@ -170,18 +172,31 @@ const round = (k: keyof Metrics, v: number) => (k === 'cls' ? Math.round(v * 100
 
 async function main(argv: string[]) {
   const args = [...argv];
-  const opt = (name: string) => { const i = args.indexOf(name); if (i < 0) return undefined; const v = args[i + 1]; args.splice(i, 2); return v; };
+  const opt = (name: string) => {
+    const i = args.indexOf(name);
+    if (i < 0) return undefined;
+    const v = args[i + 1];
+    if (v === undefined || v.startsWith('--')) throw new Error(`${name} needs a value`);
+    args.splice(i, 2);
+    return v;
+  };
   const runOption = opt('--runs');
   const runs = runOption === undefined ? RC.ci.collect.numberOfRuns : Number(runOption);
   if (!Number.isSafeInteger(runs) || runs < 1) throw new Error('--runs must be a positive integer');
   const json = opt('--json');
-  const production = opt('--production')?.replace(/\/$/, '');
-  const productionJson = opt('--production-json');
-  if ((production === undefined) !== (productionJson === undefined)) throw new Error('--production <url> and --production-json <file> go together');
+  // --production and --production-json are the reference's names on a pull request, where production is the reference
+  const asProduction = { url: opt('--production'), json: opt('--production-json') };
+  const asReference = { url: opt('--reference'), json: opt('--reference-json') };
+  const given = [asProduction, asReference].filter(o => o.url !== undefined || o.json !== undefined);
+  if (given.length > 1) throw new Error('--reference and --production are one option: give one of them');
+  const ref = given[0];
+  if (ref && (ref.url === undefined || ref.json === undefined)) throw new Error('--reference <url> and --reference-json <file> go together');
+  const production = ref?.url?.replace(/\/$/, '');
   const base = (args[0] || process.env.BASE_URL || 'https://learnvedicmath.com').replace(/\/$/, '');
   type Site = { base: string; json?: string; label: string; pages: Record<string, { path: string; visit: string; median: Metrics; runs: Metrics[] }> };
-  const sites: Site[] = [{ base, json, label: 'preview', pages: {} }];
-  if (production) sites.push({ base: production, json: productionJson, label: 'production', pages: {} });
+  // The console's labels: the preview and production on a pull request, production and the reference after a deploy
+  const sites: Site[] = [{ base, json, label: ref === asReference ? 'measured' : 'preview', pages: {} }];
+  if (production) sites.push({ base: production, json: ref?.json, label: ref === asReference ? 'reference' : 'production', pages: {} });
   // Each page on every site in turn (both on this runner, minutes apart), the sites' order swapping page by page
   for (const { page: p, site } of interleave(RC.pages, sites)) {
     const all = await page(site.base, p.path, p.visit, runs);
