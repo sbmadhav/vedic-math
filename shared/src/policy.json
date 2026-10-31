@@ -14,7 +14,10 @@
   {"host": "https://cdn.jsdelivr.net", "csp": {},
    "why": "Natural voice library (voice worker only)", "when": "After the Player opts in and confirms the download"},
   {"host": "https://huggingface.co", "csp": {},
-   "why": "Natural voice model (voice worker only)", "when": "After the Player opts in and confirms the download"}
+   "why": "Natural voice model (voice worker only)", "when": "After the Player opts in and confirms the download"},
+  {"host": "https://challenges.cloudflare.com", "csp": {"script-src": "play", "frame-src": "play"},
+   "why": "Cloudflare Turnstile, the bot check before the first message to the Family (family-helpers design D18, ADR 0015); the Worker verifies its token server side",
+   "when": "Once per browser session, when a Player 13 or over who turned Talking with the Family on sends their first message; never for a Player whose Age answer is under 13"}
  ],
  "directives": [
   {"name": "default-src", "sources": ["'self'"]},

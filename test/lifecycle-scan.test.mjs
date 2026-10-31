@@ -45,8 +45,8 @@ test('the Sky (js/sky-view.js): no bare listeners, timers or frame loops; its li
   assert.ok((src.match(/\bon\([^;]*\bsignal\b/g) || []).length >= 4, 'pointer, scroll and motion listeners on the view signal');
 });
 
-test('the Family helpers (js/family-view.js, js/family-hook.js, js/family-helpers.js): no bare listeners, timers or frame loops', () => {
-  for (const f of ['family-view.js', 'family-hook.js', 'family-helpers.js']) {
+test('the Family helpers (js/family-view.js, js/family-hook.js, js/family-helpers.js, js/family-talk.js): no bare listeners, timers or frame loops', () => {
+  for (const f of ['family-view.js', 'family-hook.js', 'family-helpers.js', 'family-talk.js']) {
     assert.deepEqual(hits(f, /\.?addEventListener\(/), [], f);
     assert.deepEqual(hits(f, TIMERS), [], f);
   }

@@ -5,12 +5,15 @@
    - Never covers the question, the answer or the round's buttons (placeVisit), never takes focus, closes on one tap
      or Escape; Not now mutes automatic Visits for this browser session.
    - Text only until the owner's recording lands (design D13): nothing here speaks.
-   - Calm, Pause motion and reduced motion: a short fade, no movement (fx.noMotion, fx.onMotionChange). */
+   - Calm, Pause motion and reduced motion: a short fade, no movement (fx.noMotion, fx.onMotionChange).
+   - Talking with the Family (step 3, design D15 and D18): for a Player 13 and over who turned it on in Me (talkOn), a
+     help Visit loads js/family-talk.js, which adds the chat box to the bubble; Bolt joins the crew when he speaks. */
 import * as store from './store.js';
 import * as fx from './fx.js';
 import * as metrics from './metrics.js';
-import { on, later, child, onAbort } from './life.js';
+import { on, later, child, onAbort, lateImport } from './life.js';
 import { friendSVG } from './family.js';
+import { talkOn } from './family-hook.js';
 import { createCoach, planVisit, showMeTurn, placeVisit, exampleFor, skillInfo, bandFor, nickWords, helpSetting, memoryAfter, wasHard, FRIENDS, RULES } from './family-helpers.js';
 import { answerText } from './answers.js';
 import { TRICKS } from './vedic.js';
@@ -48,15 +51,20 @@ function close() {
 }
 
 const BTN = { show: 'Show me', hint: 'Another hint', notnow: 'Not now', thanks: 'Thanks!', next: 'Next' };
+/* Bolt speaks in the conversation (design D18): his name, and his own poses for the Family's (js/bolt.js POSES) */
+const nameOf = f => (f === 'bolt' ? 'Bolt' : FRIENDS[f].name);
+const BOLT_POSE = { idle: 'idle', talk: 'explain', wave: 'wink', cheer: 'cheer', think: 'think' };
+const poseOf = (f, pose) => (f === 'bolt' ? BOLT_POSE[pose] || 'idle' : pose);
 
-/* Opens a Visit. v: planVisit()'s { kind, level, turns, buttons }. r: the round { root, card, protect, hint, signal } */
-function open(v, r, { info, band, example, nick = '' }) {
+/* Opens a Visit. v: planVisit()'s { kind, level, turns, buttons }. r: the round { root, card, protect, hint, signal }.
+   c: the round's { skill, problem } for the conversation (null when the Visit has no question, as a leave Visit). */
+function open(v, r, { info, band, example, nick = '', c = null }) {
   close();
   const ctl = child(r.signal), vs = ctl.signal;
   const crew = [...new Set(v.turns.map(t => t.friend))];
   const el = document.createElement('div');
   el.className = `fh-visit fh-visit--${crew.length}`; el.dataset.level = String(v.level); el.dataset.kind = v.kind;
-  el.setAttribute('role', 'group'); el.setAttribute('aria-label', `Family helpers: ${crew.map(f => FRIENDS[f].name).join(', ')}`);
+  el.setAttribute('role', 'group'); el.setAttribute('aria-label', `Family helpers: ${crew.map(nameOf).join(', ')}`);
   el.innerHTML = `<div class="fh-bubble"><button type="button" class="fh-x" aria-label="Close">&times;</button><p class="fh-who"></p><div class="fh-say"></div><div class="fh-btns"></div></div>
     <div class="fh-crew">${crew.map(f => `<span class="fh-friend" data-f="${f}">${friendSVG(f)}</span>`).join('')}</div>`;
   current = { ctl, el, back: r.root.querySelector('input.ans-in, .pr-choice, [data-fh-ask]') };
@@ -68,16 +76,16 @@ function open(v, r, { info, band, example, nick = '' }) {
   still(); fx.onMotionChange(still, vs);
   const draw = () => {
     const t = turns[i], last = i === turns.length - 1;
-    el.querySelector('.fh-who').textContent = FRIENDS[t.friend].name;
-    el.querySelectorAll('.fh-friend').forEach(f => { const on = f.dataset.f === t.friend; f.classList.toggle('fh-on', on); f.querySelector('svg').setAttribute('data-pose', on ? t.pose || 'talk' : 'idle'); });
+    el.querySelector('.fh-who').textContent = nameOf(t.friend);
+    el.querySelectorAll('.fh-friend').forEach(f => { const on = f.dataset.f === t.friend; f.classList.toggle('fh-on', on); f.querySelector('svg').setAttribute('data-pose', on ? poseOf(f.dataset.f, t.pose || 'talk') : 'idle'); });
     el.dataset.speaker = t.friend; el.style.setProperty('--fh-tip', `${28 + crew.indexOf(t.friend) * 45}px`); /* the bubble points at its speaker */
     const ex = t.example ? `<p class="fh-ex">${t.example.q}</p>` : '';
     const steps = t.steps ? `<ol class="fh-steps">${t.steps.map(s => `<li>${s}</li>`).join('')}</ol>${t.example && t.example.answer ? `<p class="fh-ex-a">That one is <b>${t.example.answer}</b>. Now yours!</p>` : ''}` : '';
-    const box = el.querySelector('.fh-say'); box.innerHTML = `<p>${t.html}</p>${ex}${steps}`;
+    const box = el.querySelector('.fh-say'); box.innerHTML = `<p>${t.html}</p>${t.extra || ''}${ex}${steps}`; /* extra: the conversation's Sutra card or pointer (js/family-talk.js) */
     box.querySelectorAll('.fh-nick').forEach(n => { n.textContent = nick; }); /* the Nickname as text, never markup (js/family-helpers.js fill) */
     const btns = last ? v.buttons.filter(b => b !== 'show' || !turns.some(x => x.steps)) : ['next', 'notnow'];
     el.querySelector('.fh-btns').innerHTML = btns.map(b => `<button type="button" class="md-btn md-btn--sm${b === 'next' || b === 'show' || b === 'thanks' ? ' md-btn--primary' : ''}" data-fh="${b}">${BTN[b]}</button>`).join('');
-    fx.announce(`${FRIENDS[t.friend].name} says: ${box.querySelector('p').textContent}${t.example ? ' ' + plain(t.example.q) : ''}${t.steps ? ' ' + t.steps.map(plain).join(' ') : ''}`);
+    fx.announce(`${nameOf(t.friend)} says: ${box.querySelector('p').textContent}${t.example ? ' ' + plain(t.example.q) : ''}${t.steps ? ' ' + t.steps.map(plain).join(' ') : ''}`);
   };
   on(el, 'click', e => {
     const b = e.target.closest('button'); if (!b) return;
@@ -104,6 +112,15 @@ function open(v, r, { info, band, example, nick = '' }) {
   let queued = false; const again = () => { if (queued) return; queued = true; later(() => { queued = false; place(); }, 80, vs); };
   on(window, 'resize', again, vs); on(window, 'scroll', again, vs, { passive: true });
   on(window, 'hashchange', close, vs);
+  /* Talking with the Family (step 3): the chat box, only for a Player 13 and over who turned it on, loaded only then */
+  if (v.kind === 'help' && c && c.problem && talkOn(store.player(), store.savedGrade())) {
+    const api = {
+      r, c, info, band, signal: vs, place,
+      addTurns: list => { if (!list.length || !el.isConnected) return; i = turns.length; turns.push(...list); draw(); place(); },
+      addCrew: (id, svg) => { if (crew.includes(id) || !el.isConnected) return; crew.push(id); el.querySelector('.fh-crew').insertAdjacentHTML('beforeend', `<span class="fh-friend fh-friend--${id}" data-f="${id}">${svg}</span>`); }
+    };
+    lateImport(() => import('./family-talk.js'), 'family-talk.js', vs).then(m => { if (m && !vs.aborted && el.isConnected) m.mountTalk(el, api); });
+  }
 }
 
 /* Shows a planned Visit at once (planVisit()'s result) over a round { root, card, protect, hint, signal }: the same
@@ -131,7 +148,7 @@ export function mountFamily({ root, card = null, signal, area = 'practice', prot
     setGreeted();
     if (info.key) store.updatePlayer({ familyMem: memoryAfter(mem, info.key, { solved: plan.kind === 'cheer' }) });
     const cheer = plan.kind === 'cheer'; metrics.familyVisit(v.level, cheer);
-    open(v, at, { info, band, example, nick: nickWords(p.name) });
+    open(v, at, { info, band, example, nick: nickWords(p.name), c: s ? { skill: s, problem: c.problem || null } : null });
   }
   function note(ev) {
     const co = coachNow(), { s, info } = ctxInfo(), skill = (s && s.id) || area;
