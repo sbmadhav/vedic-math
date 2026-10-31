@@ -13,29 +13,6 @@ The game SHALL be served at `/learn/` with every screen at a path under it, the 
 - **WHEN** a Player opens `https://learnvedicmath.com/learn/arena`
 - **THEN** the Arena is shown
 
-### Requirement: Old links reach the same screen
-A link to an old route SHALL open the same screen on the new site. A hash route that arrives at the landing page (as GitHub's redirect delivers `sbmadhav.com/vedic-math/#/x` to `https://learnvedicmath.com/#/x`) SHALL be sent on to `/learn/x` before the landing page paints. Any request under `/play/` SHALL answer with a 301 to the same path under `/learn/`, and any request under `/vedic-math/` with a 301 to `/learn/`, as `_redirects` rules that run no server code; a hash route under `/learn/` SHALL become its path before the game paints. The hand-off import (`/import/`) SHALL send Players to `/learn/`.
-
-#### Scenario: Old deep link through the redirect
-- **WHEN** a visitor opens `https://learnvedicmath.com/#/sutras/ekadhikena`
-- **THEN** they land on `https://learnvedicmath.com/learn/sutras/ekadhikena` and the Sutra's Deep dive opens
-
-#### Scenario: Old path on the new host
-- **WHEN** a visitor opens `https://learnvedicmath.com/vedic-math/#/arena`
-- **THEN** the response is a 301 to `/learn/`, the address becomes `/learn/arena` and the Arena opens
-
-#### Scenario: A hash route in the old game address
-- **WHEN** a Player opens `https://learnvedicmath.com/play/#/arena`
-- **THEN** the response is a 301 to `/learn/`, the address becomes `/learn/arena` and the Arena is shown
-
-#### Scenario: An old game path
-- **WHEN** a visitor opens `https://learnvedicmath.com/play/sutras/ekadhikena/`
-- **THEN** the response is a 301 to `/learn/sutras/ekadhikena/`, with no server code run
-
-#### Scenario: A hand-off import
-- **WHEN** a Player finishes a hand-off at `/import/`
-- **THEN** they are sent to `/learn/`
-
 ## ADDED Requirements
 
 ### Requirement: Game paths with no file are rendered by the server
