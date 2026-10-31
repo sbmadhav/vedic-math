@@ -1,14 +1,16 @@
-/* Dot pictures (Which is more, Quick look): every dot sits inside the picture and the set is centred. */
-import test from './support/node-test.mjs';
+/* Dot pictures (Which is more, Quick look): every dot sits inside the picture and the set is centred. Ported from
+   test/viz.test.mjs with the module (openspec change react-typescript, task 3.1); the assertions are unchanged. */
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { dots } from '../js/viz.js';
+import { dots } from './viz.ts';
 
-const parse = s => {
-  const [, w, h] = s.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/).map(Number);
-  const cs = [...s.matchAll(/<circle cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"/g)].map(m => m.slice(1).map(Number));
+type Circle = [number, number, number];
+const parse = (s: string) => {
+  const [, w, h] = s.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/)!.map(Number) as [number, number, number];
+  const cs = [...s.matchAll(/<circle cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"/g)].map(m => m.slice(1).map(Number) as Circle);
   return { w, h, cs };
 };
-const box = cs => ({
+const box = (cs: Circle[]) => ({
   x0: Math.min(...cs.map(([x, , r]) => x - r)), x1: Math.max(...cs.map(([x, , r]) => x + r)),
   y0: Math.min(...cs.map(([, y, r]) => y - r)), y1: Math.max(...cs.map(([, y, r]) => y + r))
 });

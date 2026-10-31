@@ -4,129 +4,23 @@ import { byId } from './skills/index.js';
 import { checkOne } from './check.js';
 import { answerText } from './answers.js';
 import { shuffle } from './lib.js';
-import { mentalQ, FAMILIES } from './mental.js';
-import { levelFor } from './adapt.js';
-import { sfx, speakQuestion, sparkle, tick, wiggle, t, MODES } from './fx.js';
+import { sfx, speakQuestion, sparkle, tick, wiggle, t } from './fx.js';
 import { on, later, loop, child } from './life.js';
 import { keypadOnly } from './shell.js';
-import { SITE, APP_BASE } from './play/kit.js';
+import { dailySet, practiceNext } from '../shared/src/questions.ts';
+import { comboGain } from '../shared/src/scoring.ts';
 
-/* Question pools by League. The Pro League draws from the mental arithmetic families (js/mental.js) instead;
-   proV1 is the Pro pool before that change, kept only for Pro daily rounds dated before MENTAL_FROM. */
-const POOLS = {
-  explorer: ['k-add10', 'k-sub10', 'k-bonds', 'k-count', '1-doubles', '1-maketen', 'k-teens'],
-  challenger: ['3-mult', '3-div', 'v-sq5', 'v-by11', 'v-times5', 'v-ends10', '2-add100', '3-multtens', 'v-from9', 'v-by9s'],
-  proV1: ['v-near-base', 'v-duplex', '6-percent', '7-twostep', '8-exprules', 'v-sqroot', '6-exp', '8-multistep', '11-logs', 'v-square-near']
-};
-export const ROUND_SECS = 60;
+import { ROUND_SECS } from '../shared/src/questions.ts';
+export { ROUND_SECS };
 /* Untimed Arena Practice (openspec game-shell-and-calm): 20 questions, no clock, Finish at any time */
 export const UNTIMED_QS = 20;
-/* Pro daily rounds switch to mental arithmetic on Monday 2026-10-19, the first day of ISO week 2026-W43. Boards are
-   named after the Player's local date and ISO week, and the switch uses the same date, so no day's or week's Pro
-   Board mixes the old and new question sets. The Pro daily seed gains a version prefix at the same time. */
-export const MENTAL_FROM = '2026-10-19';
-/* The difficulty ramp of a Pro daily round, from its first item to its last (every Pro Player gets the same) */
-export const PRO_RAMP = [6, 16];
-
-/* Seeded random: same day + league = same questions for everyone */
-function mulberry32(a) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
-const hash = s => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; };
-const withSeed = (seedText, fn) => { const real = Math.random; if (seedText) Math.random = mulberry32(hash(seedText)); try { return fn(); } finally { Math.random = real; } };
-
-/* An Arena item from a generated question: four choices (for tap play) around the answer */
-const item = (p, league, extra) => {
-  const near = [...new Set([p.answer, p.answer + 1, p.answer - 1, p.answer + 2, p.answer + 10, p.answer - 10].filter(v => league !== 'explorer' || v >= 0))];
-  return { q: p.q, ...(p.say ? { say: p.say } : {}), viz: league === 'explorer' ? p.viz : '', answer: p.answer, choices: shuffle([p.answer, ...shuffle(near.slice(1)).slice(0, 3)]), ...extra };
-};
-/* One question from a skill pool at a generator level (1 to 3), or null when the skill gave an answer the keypad cannot take */
-function poolItem(pool, league, level, d) {
-  const s = byId[pool[Math.floor(Math.random() * pool.length)]]; if (!s) return null;
-  const p = s.gen(level);
-  if (p.kind !== 'num' || !Number.isInteger(p.answer) || Math.abs(p.answer) > 99999) return null;
-  return item(p, league, d === undefined ? { skill: s.id } : { skill: s.id, d });
-}
-const mentalItem = (family, d) => { const p = mentalQ(family, d); return item(p, 'pro', { family: p.family, d: p.d, ...(p.sutra ? { sutra: p.sutra } : {}) }); };
-
-/* n Arena items for a League (or the proV1 pool). seedText makes the set the same for everyone; null draws at random.
-   Pro: the families take turns in a seeded order, and difficulty rises evenly from ramp[0] to ramp[1]. */
-export function makeSet(league, seedText, n = 80, { ramp = PRO_RAMP } = {}) {
-  return withSeed(seedText, () => {
-    const out = [];
-    if (league === 'pro') {
-      const order = shuffle(FAMILIES);
-      for (let i = 0; i < n; i++) out.push(mentalItem(order[i % order.length], Math.round(ramp[0] + ((ramp[1] - ramp[0]) * i) / Math.max(1, n - 1))));
-      return out;
-    }
-    const pool = POOLS[league] || POOLS.challenger; let guard = 0;
-    while (out.length < n && guard++ < n * 20) { const it = poolItem(pool, league, league === 'explorer' ? 1 : 2); if (it) out.push(it); }
-    return out;
-  });
-}
-/* The daily round for a League on a local date (YYYY-MM-DD): the same questions in the same order for everyone */
-export function dailySet(league, day) {
-  if (league !== 'pro') return makeSet(league, `daily-${day}-${league}`);
-  if (day < MENTAL_FROM) return makeSet('proV1', `daily-${day}-pro`);
-  return makeSet('pro', `v2:daily-${day}-pro`, 80, { ramp: PRO_RAMP });
-}
-/* ---------- Challenge links (openspec change arena-challenge-link) ----------
-   #/arena/day/<YYYY-MM-DD>/<league>/<score>: the date and the League are the whole recipe for a daily round (dailySet),
-   so a link reproduces the sharer's round exactly, and the Score is the one to beat; nothing else is carried (design D1
-   and D3). The link names the live site whatever host built it (a preview or localhost link is no use to a friend):
-   SITE and APP_BASE live in js/play/kit.js, the one place share links are built. */
-export const LEAGUES = ['explorer', 'challenger', 'pro'];
-export const MAX_CHALLENGE_SCORE = 9999;
-const DAY_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
-/* A real calendar date written YYYY-MM-DD (2026-02-30 is not one) */
-export function realDay(day) {
-  const m = DAY_RE.exec(String(day || '')); if (!m) return false;
-  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
-  return d.getUTCFullYear() === +m[1] && d.getUTCMonth() === +m[2] - 1 && d.getUTCDate() === +m[3];
-}
-/* parts: what follows #/arena/day/ ([day, league] or [day, league, score]); today: the Player's local date (cloud.dayId);
-   league: the Player's League. Returns { day, league, score, ranked } or null when the date or League does not parse.
-   score is null unless the part is a whole number from 0 to 9999 (design D3); ranked is true only on the link's own date
-   in the Player's own League (design D2), and the caller checks it again when Start is tapped. */
-export function parseChallenge(parts, today, league) {
-  const p = Array.isArray(parts) ? parts.filter(x => x !== '') : [];
-  if (p.length < 2 || p.length > 3) return null;
-  const [day, lg, sc] = p;
-  if (!realDay(day) || !LEAGUES.includes(lg)) return null;
-  const score = sc !== undefined && /^\d{1,4}$/.test(sc) ? +sc : null;
-  return { day, league: lg, score, ranked: day === today && lg === league };
-}
-/* The one canonical link, always with its three parts (design D1); the Score is clamped to what the parser takes */
-export const challengeUrl = ({ day, league, score }) => `${SITE}${APP_BASE}#/arena/day/${day}/${league}/${Math.min(MAX_CHALLENGE_SCORE, Math.max(0, Math.round(Number(score) || 0)))}`;
-/* What Challenge a friend hands the share sheet (design D4 and D5): a title, three lines of words (the site, the round,
-   the League and the date; the Score and its parts; the invitation) and the link. The same words in every Mode: the
-   reader is the friend, and the League name already says which Mode. No Nickname, Rating, emoji, em dash, Sutra or Trick. */
-export function challengeShare({ league, day, score, right, wrong, bestCombo }) {
-  const name = (MODES[league] || MODES.challenger).name;
-  return {
-    title: 'Learn Vedic Math',
-    text: `Learn Vedic Math: Arena daily challenge, ${name} League, ${day}\nScore ${score}: ${right} right, ${wrong} missed, best combo ${bestCombo}x\nThe same questions for every ${name} today, ${ROUND_SECS} seconds, no sign-in. Can you beat it?`,
-    url: challengeUrl({ day, league, score })
-  };
-}
-/* The text a Player pastes when there is no share sheet: the three lines, then the link (what kit.share copies) */
-export const challengeText = r => { const s = challengeShare(r); return `${s.text}\n${s.url}`; };
-
-/* One Arena Practice question at difficulty d (1 to 20): a mental family for Pro, else the League's pool at the
-   generator level for d */
-export function practiceItem(league, d) {
-  if (league === 'pro') return mentalItem(FAMILIES[Math.floor(Math.random() * FAMILIES.length)], d);
-  const pool = POOLS[league] || POOLS.challenger;
-  for (let k = 0; k < 40; k++) { const it = poolItem(pool, league, levelFor(d), Math.round(d)); if (it) return it; }
-  return makeSet(league, null, 1)[0];
-}
-
-/* A Word problem (js/stories.js roundStory) as an Arena item: the Word problems round (openspec word-problems-more).
-   label: the Mode's Word problem label, shown over the question; the unit sits beside the entry. */
-export const storyItem = (p, league, label) => item(p, league, { story: p.story.id, label, ...(p.unit ? { unit: p.unit } : {}) });
-/* The Word problems round's length: reading takes longer than a bare question */
-export const STORY_QS = 10;
-
-/* The next Practice question: dial picks the difficulty, and Dial.fresh() keeps it from repeating this round */
-export const practiceNext = (league, dial) => dial.fresh(() => { const it = practiceItem(league, dial.lv); return [it.q, it]; });
+/* Challenge links (openspec change arena-challenge-link): the link's parts, text and parser live in shared/src/challenge.ts
+   (pure, a Duel's server can check the same link); the Arena view reaches them through this module, loaded on demand */
+export { LEAGUES, MAX_CHALLENGE_SCORE, realDay, parseChallenge, challengeUrl, challengeShare, challengeText } from '../shared/src/challenge.ts';
+/* The question sets (League pools, seeded daily rounds, Practice questions) moved to shared/src/questions.ts
+   (openspec change react-typescript, task 3.1), so a Duel's server can deal the same sets; re-exported here for the
+   Legacy views and tests that import them from this module */
+export { MENTAL_FROM, PRO_RAMP, makeSet, dailySet, practiceItem, practiceNext, storyItem, STORY_QS } from '../shared/src/questions.ts';
 
 const PAD = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '-', '0', 'del'];
 /* A physical keyboard on a touch screen, where the hidden input is read-only (js/shell.js keypadOnly): digits,
@@ -188,10 +82,10 @@ export function runArena(root, { league, day = null, dial, signal, onEnd, untime
     const p = at(), ok = checkOne({ kind: 'num', answer: p.answer }, String(v)).ok;
     if (dial) dial.hit(ok);
     answered.push({ item: p, ok });
-    if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); const gain = 10 + Math.min(combo - 1, 10) * 2; score += gain; right++; sfx('ok'); pop('+' + gain, true); }
+    if (ok) { combo++; bestCombo = Math.max(bestCombo, combo); const gain = comboGain(combo); score += gain; right++; sfx('ok'); pop('+' + gain, true); }
     else { combo = 0; wrong++; sfx('no'); pop(String(p.answer), false); }
     /* The pop is visual only; screen readers get one short status message per answer (WCAG 4.1.3) */
-    $('#arSay').textContent = ok ? `Right, plus ${10 + Math.min(combo - 1, 10) * 2}. Score ${score}.` : `Not quite. It was ${p.answer}.`;
+    $('#arSay').textContent = ok ? `Right, plus ${comboGain(combo)}. Score ${score}.` : `Not quite. It was ${p.answer}.`;
     $('#arScore').textContent = score; $('#arCombo').innerHTML = combo >= 2 ? `<b>${combo}x</b> combo` : '';
     celebrate(ok);
     i++;
@@ -259,10 +153,10 @@ export function runChallenge(root, ch, set, { onEnd, tap = false, signal, untime
   const answer = v => {
     if (over) return;
     const p = set[i], ok = p.kind === 'choice' ? String(v) === String(p.answer) : checkOne({ kind: 'num', answer: p.answer, tol: 1e-6 }, String(v)).ok;
-    if (ok) { combo++; right++; const gain = 10 + Math.min(combo - 1, 10) * 2; score += gain; sfx('ok'); pop('+' + gain, true); $('#arFix').textContent = ''; }
+    if (ok) { combo++; right++; const gain = comboGain(combo); score += gain; sfx('ok'); pop('+' + gain, true); $('#arFix').textContent = ''; }
     else { combo = 0; wrong++; sfx('no'); pop('', false); $('#arFix').innerHTML = `Answer: <b>${p.kind === 'choice' ? p.answer : answerText(p, byId[p.skill])}</b>${p.steps && p.steps[0] ? ` · ${p.steps[0]}` : ''}`; if (ch.lives) lives--; }
     /* One short status message per answer (WCAG 4.1.3); a miss is read from the answer line (#arFix) instead */
-    $('#arSay').textContent = ok ? `Right, plus ${10 + Math.min(combo - 1, 10) * 2}. Score ${score}.` : '';
+    $('#arSay').textContent = ok ? `Right, plus ${comboGain(combo)}. Score ${score}.` : '';
     $('#arScore').textContent = ch.goal === 'points' ? score : right; $('#arCombo').innerHTML = combo >= 2 ? `<b>${combo}x</b> combo` : '';
     celebrate(ok);
     if (ch.lives) $('#arTime').innerHTML = lives > 0 ? '&#9679;'.repeat(lives) : '0';

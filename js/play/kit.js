@@ -1,5 +1,6 @@
 /* Shared kit for the play experiences (Spellbook, Locks, Tala Lab and the rest, js/play/catalog.js): DOM helpers,
    seeded randomness, storage, sound, sharing and analytics. Pure helpers (rng, seeds, dates) have no DOM use, so node tests can import them. */
+import { SITE, APP_BASE } from '../../shared/src/site.ts';
 
 /* ---------- DOM ---------- */
 export const $ = (sel, root = document) => root.querySelector(sel);
@@ -81,10 +82,10 @@ export const sfx = name => ({
 }[name] || (() => {}))();
 
 /* ---------- Sharing ---------- */
-/* Where the game lives. Every share link is built from these two, so the move from /play/ to /learn/ (openspec change
-   indexable-routes, design D2) changes one line here. A challenge link (js/arena.js challengeUrl) names SITE whatever
-   host built it; the play experiences' shareUrl keeps the origin it runs on. */
-export const SITE = 'https://learnvedicmath.com', APP_BASE = '/play/';
+/* Where the game lives (shared/src/site.ts): every share link is built from these two, so the move from /play/ to /learn/
+   (openspec change indexable-routes, design D2) changes one line there. A challenge link (shared/src/challenge.ts) names
+   SITE whatever host built it; shareUrl below keeps the origin it runs on. */
+export { SITE, APP_BASE };
 /* The share sheet first, then the clipboard with the word "Copied. Paste it anywhere." through notify (the play toast
    by default; the Arena passes the app's fx.toast, since the play stylesheet is not on its page) */
 export async function share({ title = 'Vedic Math', text = '', url = '', notify = toast } = {}) {

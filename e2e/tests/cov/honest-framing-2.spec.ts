@@ -66,7 +66,8 @@ test('the shipped HTML, manifest and every app script make no Vedic-source claim
   }
   const paths = [...seen].map(u => new URL(u).pathname);
   // The crawl really reached the app: the entry, lazy modules, the skills and the voice worker
-  for (const f of ['app.js', 'sutras.js', 'videos.js', 'skills/index.js', 'voice-worker.js']) {
+  /* skills/index.js re-exports shared/src/skills/index.ts, which the build publishes at /js/ts/ (react-typescript task 3.1) */
+  for (const f of ['app.js', 'sutras.js', 'videos.js', 'ts/shared/src/skills/index.js', 'voice-worker.js']) {
     expect(paths, `scanned ${f}`).toContain(`/js/${f}`);
   }
   expect(hits).toEqual([]);
