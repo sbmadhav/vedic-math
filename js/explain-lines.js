@@ -13,7 +13,7 @@ import { TRICKS, BELTS } from './vedic.js';
 import { GAMES, LEVELS_PER_GAME } from './games.js';
 import { BADGES, STARS_PER_BELT, QUEST_POOL } from './gamify.js';
 import { MODES as PLAY_MODES } from './fx.js';
-import { MAX_LENGTH } from './watch.js';
+import { MAX_LENGTH, linksOut } from './watch.js';
 import * as LV from './levels.js';
 import { BG_NOTES, ROOTS_INTRO } from './sky-scene.js';
 import { LEDES, ledeFixed } from './ledes.js';
@@ -90,8 +90,18 @@ export function sutraSectionLines(c, part) {
   if (part === 'uses') return (d.uses || []).slice();
   return [];
 }
+/* A page introduction as its Listen button reads it (task 4.2), in the Mode's words: key lede:<id>, or
+   lede:<id>:<a>:<b> with the Player's own two numbers (a level's mastered and total Skills, the Sutras page's
+   collected and all), which play from clips or this device's voice. Without them, only the fixed lines. */
+export function ledeKeyLines(id, mode, nums = []) {
+  if (!Object.hasOwn(LEDES, id)) return [];
+  const live = nums.length === 2 && nums.every(x => /^\d+$/.test(x)), [a, b] = live ? nums.map(Number) : [0, 0];
+  const c = { mode, n: guideCounts(), modeName: (PLAY_MODES[mode] || PLAY_MODES.challenger).name, links: linksOut(mode), done: a, total: b, got: a, all: b };
+  return LEDES[id](c).flatMap(p => (typeof p === 'string' ? [p] : live ? [p.live] : []));
+}
 export function linesForKey(key, mode = 'challenger') {
-  const [kind, id, part] = String(key).split(':');
+  const [kind, id, part, ...rest] = String(key).split(':');
+  if (kind === 'lede') return ledeKeyLines(id, mode, part === undefined ? [] : [part, ...rest]);
   if (kind === 'skill') { const s = SKILLS.find(x => x.id === id); return s ? skillPageLines(s) : []; }
   if (kind === 'sutra-card') { const c = sutraById(id); return c ? sutraCardLines(c) : []; }
   if (kind === 'sutra') { const c = sutraById(id); return c ? sutraSectionLines(c, part) : []; }
@@ -106,5 +116,6 @@ export function linesForKey(key, mode = 'challenger') {
 export function listenKeys(mode = 'challenger') {
   const sut = [...SUTRAS.map(c => 's' + c.n), ...SUBSUTRAS.map(c => 'u' + c.n)];
   return [...SKILLS.map(s => 'skill:' + s.id), ...sut.map(id => 'sutra-card:' + id), ...sut.flatMap(id => SUTRA_PARTS.map(p => `sutra:${id}:${p}`)),
-    'history', ...sectionsFor(mode, guideCounts()).map(s => 'guide:' + s.id), ...GAMES.map(g => 'game:' + g.id), 'formats', 'roots'];
+    'history', ...sectionsFor(mode, guideCounts()).map(s => 'guide:' + s.id), ...GAMES.map(g => 'game:' + g.id), 'formats', 'roots',
+    ...Object.keys(LEDES).map(id => 'lede:' + id)];
 }

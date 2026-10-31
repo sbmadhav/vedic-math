@@ -18,7 +18,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 840677,
+  "total": 841671,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -54,7 +54,7 @@
    "/js/ambient.js": 4480,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 52439,
+   "/js/app.js": 52788,
    "/js/arena.js": 5691,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -63,7 +63,7 @@
    "/js/cloud-config.js": 588,
    "/js/cloud.js": 4437,
    "/js/connectors.js": 1891,
-   "/js/explain-lines.js": 2541,
+   "/js/explain-lines.js": 2855,
    "/js/family-helpers.js": 5263,
    "/js/family-hook.js": 775,
    "/js/family-lines.js": 2624,
@@ -156,12 +156,12 @@
    "/js/voice-index.js": 213,
    "/js/voice-plan.js": 2458,
    "/js/voice-worker.js": 877,
-   "/js/voice.js": 14365,
+   "/js/voice.js": 14663,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 25659,
-   "/play/": 4156,
-   "/sw.js": 6285,
+   "/math.css": 25689,
+   "/play/": 4164,
+   "/sw.js": 6280,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
@@ -333,6 +333,13 @@
     "from": 840716,
     "to": 840677,
     "why": "design audit plan B: math.css, theme/site.css and the game's modules use the 2.2.0 tokens and components (type sizes that equal a role, spacing and radius snapped to the scale within 2px, motion, layers, Bolt's fixed colours, scrim and media colours, category colours for Belts, balloons and grade tiles, .md-sr-only, .md-link, .md-icon-btn); file deltas: /math.css -84, /js/app.js +18, /js/games.js +17, /js/say.js +9, /js/install.js +8, /js/arena.js +6, /js/star.js -9, /js/vedic.js -11, /theme/learnvedicmath.css -11, /js/tour.js -2, /css/play/base.css +2, /play/ +6, /sw.js +12, -39 in all"
+   },
+   {
+    "date": "2026-10-30",
+    "pr": 180,
+    "from": 840677,
+    "to": 841671,
+    "why": "explanation-audio-rest: Listen buttons on the ten page introductions (ledeListen() and lede keys, ledeKeyLines() in js/explain-lines.js), in the video player and over the Me page badges (a Me page redraw stops them); normalize() reads an arrow to a worked example answer as \"gives\" (a list of pairs keeps \"to\") and a long digit string digit by digit; measured on the tree merged with main; files this branch does not touch keep the figures before it; file deltas: /js/app.js +349, /js/explain-lines.js +314, /js/voice.js +298, /math.css +30, /play/ +8, /sw.js -5; +994 in all"
    }
   ]
  },

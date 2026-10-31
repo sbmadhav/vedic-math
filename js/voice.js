@@ -131,6 +131,11 @@ const money = (d, c) => {
 export function normalize(input) {
   let s = String(input ?? '');
   // Structure first, while the tags still say what things are
+  /* An arrow to a worked example's answer (the highlighted result, unless it is a word such as "yes", or the number
+     that ends the line, unless the arrow is in a list of pairs such as "7 → 5, 13 → 4") reads "gives":
+     "then 25 → 4225" is "then 25, gives 4225" (openspec explanation-audio, design decision 9) */
+  s = s.replace(/\s*(?:→|&rarr;)\s*(?=<b class="hl\b[^>]*>(?:<[^>]+>)*(?![A-Za-z]{2}))/g, ', gives ');
+  s = s.replace(/(?<!(?:^|[,;(])\s*(?:[−-]|&minus;)?\d+\s*)\s*(?:→|&rarr;)\s*(?=(?:<[^>]+>\s*)*(?:[−-]|&minus;)?\d[\d.,]*(?:\s*<\/[^>]+>)*\s*\.?\s*$)/g, ', gives ');
   s = s.replace(/<br\s*\/?>/gi, '\n').replace(/<\/?(?:p|div|li|tr|h\d)\b[^>]*>/gi, '\n');
   s = s.replace(/<span class="mx"><span>([\s\S]*?)<\/span><span>([\s\S]*?)<\/span><span>([\s\S]*?)<\/span><span>([\s\S]*?)<\/span><\/span>/g,
     ' the matrix with top row $1, $2, and bottom row $3, $4, ' + MARK + ' ');
@@ -149,6 +154,7 @@ export function normalize(input) {
   s = s.replace(/[   ]/g, ' ');
   s = s.replace(/:[ \t]*\n\s*/g, ': ').replace(/\s*\n\s*/g, '. ');
   // Words written with digits
+  s = s.replace(/(?<![\d.]|\d,)\d{10,}(?!\d|[.,]\d)/g, m => m.split('').join(' ')); // a long digit string, digit by digit (the 1/19 example), but not a number with commas or a decimal point
   s = s.replace(/(\d)(?:,(\d{3}))+(?!\d)/g, m => m.replace(/,/g, '')); // 10,000 to 10000
   s = s.replace(/\b(\d+)ths\b/g, (m, d) => (+d >= 2 && +d <= 999 ? denomWord(+d, true) : m)); // "the 12ths" to "the twelfths"
   s = s.replace(/\b(\d+)(?:st|nd|rd|th)\b/g, (m, n) => ordinalWord(n) || m);

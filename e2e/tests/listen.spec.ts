@@ -300,6 +300,107 @@ test.describe('Listen', () => {
     expect((await events(page)).filter(e => e.startsWith('math/listen'))).toEqual(['math/listen/explanation']);
   });
 
+  /* explanation-audio 4.2: a page introduction reads its fixed lines whole and the Player's own numbers as the page
+     shows them; 4.3: a video's description, from the player (the Watch card is a button, so it cannot hold one);
+     4.4: the rules of the badges still to earn */
+  test('a page introduction plays its fixed lines in the studio voice and the Player\'s own numbers with the device voice', async ({ page }) => {
+    await needsStudioVoice(page);
+    const st = await setup(page);
+    await open(page, '#/sutras');
+    expect(await st.recordKey('lede:sutras')).toBe(1); // the fixed line; "You have collected 0 of 29." is the Player's own
+    const btn = page.getByRole('button', { name: 'Listen: about this page' });
+    const live = await page.evaluate(async key => {
+      const { normalize } = await e2eMod('voice');
+      const { linesForKey } = await e2eMod('explain-lines');
+      return normalize(linesForKey(key).at(-1));
+    }, (await btn.getAttribute('data-listen'))!);
+    expect(live).toMatch(/^You have collected \d+ of 29\.$/);
+    await btn.click();
+    await expect.poll(async () => (await vlog(page)).filter(e => e === 'studio:line' || e === 'builtin'), { timeout: 20_000 }).toEqual(['studio:line', 'builtin']);
+    await expect.poll(async () => (await spoken(page)).join(' ')).toBe(live);
+    await expect(btn).toHaveAttribute('aria-pressed', 'false', { timeout: 10_000 });
+  });
+
+  test('a page introduction reads the words the page shows with the device voice when none is recorded', async ({ page }) => {
+    await setup(page);
+    for (const route of ['#/learn', '#/grade/3', '#/games', '#/guide']) {
+      await open(page, route);
+      await page.evaluate(() => { (window as any).__spoken.length = 0; });
+      const btn = page.getByRole('button', { name: 'Listen: about this page' });
+      const [want, shown] = await page.evaluate(async key => {
+        const { normalize } = await e2eMod('voice');
+        const { linesForKey } = await e2eMod('explain-lines');
+        const lede = document.querySelector('#view .md-lede')!, kid = lede.querySelector(document.body.classList.contains('kidmode') ? '.kid' : '.pro');
+        return [linesForKey(key).map((t: string) => normalize(t)).join(' '), normalize((kid || lede).innerHTML)];
+      }, (await btn.getAttribute('data-listen'))!);
+      expect(want, route).toBe(shown); // the button reads the words on the page
+      await btn.click();
+      await expect.poll(async () => (await spoken(page)).join(' '), route).toBe(want);
+      await expect(btn).toHaveAttribute('aria-pressed', 'false');
+    }
+  });
+
+  test('the player reads the video\'s description, and pressing play stops it', async ({ page }) => {
+    await setup(page, { endAfter: 4000 });
+    await page.route(/^https:\/\/(www\.)?youtube(-nocookie)?\.com\//, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>video</title>' }));
+    await open(page, '#/watch');
+    await page.locator('.watch-card[data-watch]').first().click();
+    const dlg = page.locator('dialog.vm-player');
+    await expect(dlg).toBeVisible();
+    const why = await dlg.locator('.vp-why').evaluate(async el => (await e2eMod('voice')).normalize(el.innerHTML));
+    expect(why.length).toBeGreaterThan(10);
+    await expect(dlg.locator('.vp-desc')).toHaveText(/^.+ \(.+\)$/); // the description, then its channel
+    const btn = dlg.getByRole('button', { name: 'Listen: about this video' });
+    await btn.click();
+    await expect(btn).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(async () => (await spoken(page)).join(' ')).toContain(why.split(' ').slice(0, 3).join(' '));
+    await dlg.locator('.vp-play').click();
+    await expect(btn).toHaveAttribute('aria-pressed', 'false');
+    await dlg.locator('.vp-x').click();
+    await expect(dlg).toBeHidden();
+  });
+
+  test('the Me page reads the rules of the badges still to earn', async ({ page }) => {
+    await setup(page);
+    await open(page, '#/me');
+    const want = await page.evaluate(async () => {
+      const { normalize } = await e2eMod('voice');
+      return [...document.querySelectorAll('.badge:not(.got) small')].map(el => normalize(el.innerHTML));
+    });
+    expect(want.length).toBeGreaterThan(5);
+    await page.getByRole('button', { name: 'Listen: the badges to earn' }).click();
+    await expect.poll(async () => (await vlog(page)).filter(e => e === 'builtin').length, { timeout: 20_000 }).toBe(want.length);
+    await expect.poll(async () => (await spoken(page)).join(' ')).toBe(want.join(' '));
+  });
+
+  test('a Me page redraw stops the badges being read', async ({ page }) => {
+    await setup(page, { endAfter: 4000 });
+    await open(page, '#/me');
+    await page.getByRole('button', { name: 'Listen: the badges to earn' }).click();
+    await expect.poll(async () => (await spoken(page)).length).toBeGreaterThan(0);
+    const before = (await spoken(page)).length;
+    await page.locator('.av-pick[aria-pressed="false"]').first().click(); // a new avatar color redraws the page
+    await expect(page.getByRole('button', { name: 'Listen: the badges to earn' })).toHaveAttribute('aria-pressed', 'false');
+    await page.waitForTimeout(5000); // past the first rule's end: the next one must not start
+    expect((await spoken(page)).length).toBe(before);
+  });
+
+  /* explanation-audio design decision 9: an arrow to a worked example's answer is heard "gives", a list of pairs keeps
+     "to", and a long digit string is read digit by digit */
+  test('worked examples are heard "gives" the answer, a list of pairs "to", and a long digit string digit by digit', async ({ page }) => {
+    await setup(page);
+    await open(page, '#/sutras/s1');
+    const dlg = page.locator('dialog.sutra-modal');
+    await expect(dlg).toBeVisible();
+    await dlg.getByRole('button', { name: 'Listen: the worked examples' }).click();
+    await expect.poll(async () => (await spoken(page)).join(' '), { timeout: 20_000 }).toContain('then 25, gives 625');
+    await expect.poll(async () => (await spoken(page)).join(' ')).toContain('7 8 9 4 7 3 6 8 4 2 1 0 5 2 6 3 1 5, gives');
+    await page.evaluate(() => { (window as any).__spoken.length = 0; });
+    await open(page, '#/skill/v-osculator');
+    await page.getByRole('button', { name: 'Listen: the idea and how it works' }).click();
+    await expect.poll(async () => (await spoken(page)).join(' ')).toContain('7 to 5, 13 to 4, 19 to 2, 29 to 3');
+  });
+
   /* explanation-audio 4.1: the Star replay's steps, once they are all shown; ending the replay stops it */
   test('a Star replay reads its steps once they are all shown, and Escape stops it', async ({ page }) => {
     await setup(page, { endAfter: 4000 });
