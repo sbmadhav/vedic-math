@@ -210,37 +210,16 @@ jobs:
           cp perf/results/interactions.json perf/results/production/interactions.json
           pnpm exec playwright test -c perf/playwright.config.ts
 
-      # A runner's load can still move a Lighthouse median by a few hundred ms within a job (docs/perf/baseline.md), more
-      # than the 100 ms tolerance, so a miss is measured once more, only the kind that missed (the Lighthouse pages or
-      # the interactions, on both hosts), and only a miss in both runs fails the pull request. The first run's results
-      # stay in the artifact under results/first.
+      # Advisory (owner, 2026-10-31): a miss is reported in the table and as a warning, and never fails the pull request,
+      # so it is measured once, with no re-measure. The byte gate (build.py) still fails a pull request, and the check
+      # after a deploy (e2e.yml) still opens an issue.
       - name: Compare with production and the baseline
         id: compare
         run: |
           set +e
-          compare() {
-            node tools/perf-compare.ts docs/perf/baseline.json e2e/perf/results/lighthouse.json e2e/perf/results/interactions.json \
-              --production e2e/perf/results/production/lighthouse.json e2e/perf/results/production/interactions.json --out perf-table.md
-          }
-          compare; code=$?
-          if [ "$code" != 0 ]; then
-            echo "::warning::a median missed its tolerance; measuring again to confirm"
-            mkdir -p e2e/perf/results/first/production
-            cp e2e/perf/results/*.json e2e/perf/results/first/ && cp e2e/perf/results/production/*.json e2e/perf/results/first/production/
-            cd e2e
-            # An over row of a Lighthouse metric (any but inp and visible) re-measures the pages; an over interaction row the interactions
-            if grep '\*\*over\*\*' ../perf-table.md | grep -qvE '\| (inp|visible) \|'; then
-              node perf/lighthouse.mts "$BASE_URL" --json perf/results/lighthouse.json --production "$PRODUCTION_URL" --production-json perf/results/production/lighthouse.json
-            fi
-            if grep '\*\*over\*\*' ../perf-table.md | grep -qE '\| (inp|visible) \|'; then
-              BASE_URL="$PRODUCTION_URL" pnpm exec playwright test -c perf/playwright.config.ts \
-                && cp perf/results/interactions.json perf/results/production/interactions.json \
-                && pnpm exec playwright test -c perf/playwright.config.ts
-            fi
-            cd ..
-            compare; code=$?
-          fi
-          echo "code=$code" >> "$GITHUB_OUTPUT"
+          node tools/perf-compare.ts docs/perf/baseline.json e2e/perf/results/lighthouse.json e2e/perf/results/interactions.json \
+            --production e2e/perf/results/production/lighthouse.json e2e/perf/results/production/interactions.json --out perf-table.md
+          echo "code=$?" >> "$GITHUB_OUTPUT"
           cat perf-table.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Post the table on the pull request
@@ -256,11 +235,9 @@ jobs:
           if [ -n "$id" ]; then gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -f body="$body" >/dev/null
           else gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "$body"; fi
 
-      - name: Fail beyond the tolerances
+      - name: Warn beyond the tolerances
         if: steps.compare.outputs.code != '0'
-        run: |
-          echo "::error::a load or interaction median is beyond its tolerance against production measured in this job (see the table above)"
-          exit 1
+        run: echo "::warning::a load or interaction median is beyond its tolerance against production measured in this job (see the table on the pull request); advisory, it does not fail the pull request"
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
