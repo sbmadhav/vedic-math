@@ -18,7 +18,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 857810,
+  "total": 857953,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -76,7 +76,7 @@
    "/js/gamify.js": 3904,
    "/js/guide-art.js": 2484,
    "/js/guide.js": 10650,
-   "/js/handoff-schema.js": 6682,
+   "/js/handoff-schema.js": 6686,
    "/js/handoff.js": 4229,
    "/js/install-rules.js": 2226,
    "/js/install.js": 7151,
@@ -151,7 +151,7 @@
    "/js/sutras.js": 4223,
    "/js/tour.js": 2213,
    "/js/try.js": 4423,
-   "/js/ts/shared/src/family-talk.js": 5289,
+   "/js/ts/shared/src/family-talk.js": 5405,
    "/js/ts/shared/src/lib.js": 1775,
    "/js/ts/shared/src/mental.js": 2185,
    "/js/ts/shared/src/names.js": 696,
@@ -175,8 +175,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 25944,
-   "/play/": 4334,
-   "/sw.js": 6461,
+   "/play/": 4350,
+   "/sw.js": 6468,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
