@@ -73,7 +73,7 @@ export function sections(n) {
       tip: w('Nothing you type is kept or sent anywhere.', 'Nothing you type is stored, sent or put in the address.'),
       try: { href: '#/find', label: w('Open Find', 'Open Find') } },
 
-    { id: 'me', group: 'start', art: 'me', covers: ['#/me', '#/progress'],
+    { id: 'me', group: 'start', art: 'me', covers: ['#/me', '#/progress', '#/placement'], /* Find your level and Retake live on Me (openspec placement) */
       title: w('Me and badges', 'Me page and badges'),
       what: w('Your own page: your name, your color and your badges.', `Your profile: nickname, avatar color, Title, ${n.badges} badges, progress by level and settings.`),
       how: [
