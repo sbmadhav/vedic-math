@@ -1,7 +1,10 @@
 // Serves a build of this checkout for local end-to-end runs, the way Cloudflare Workers static assets serves it in
-// production (wrangler.jsonc): _headers applied, _redirects followed, auto-trailing-slash (/play -> /play/,
-// /play/index.html -> /play/), and /404.html with status 404 for anything missing. No proxy: the site loads nothing
-// from another origin on its own.
+// production (wrangler.jsonc): _headers applied; _redirects followed (a redirect status sends the Location, 200 serves
+// the target path's file under the request's own headers, a trailing * is a splat and :splat in the target is what it
+// matched); auto-trailing-slash (/play -> /play/, /play/index.html -> /play/, foo.html at /foo with /foo/ and
+// /foo.html redirected to it); and the nearest 404.html up from the requested path with status 404 for anything
+// missing (/learn/404.html under /learn/, /404.html elsewhere). No proxy: the site loads nothing from another origin
+// on its own.
 //   python3 build.py --dev && node e2e/local-server.mjs [port] [dir]        (default 8124 and _dev: no stamps, 'dev' worker)
 //   python3 build.py && node e2e/local-server.mjs 8124 _site                (what the deploy publishes, real worker)
 //   python3 build.py --target moved && node e2e/local-server.mjs 8124 _moved /vedic-math/
@@ -32,15 +35,25 @@ async function rules(file) {
   }
   return out;
 }
-const matches = (pattern, p) => (pattern.endsWith('*') ? p.startsWith(pattern.slice(0, -1)) : p === pattern);
+/* What a pattern's splat matched ('' for an exact match), or null */
+const splat = (pattern, p) => (pattern.endsWith('*') ? (p.startsWith(pattern.slice(0, -1)) ? p.slice(pattern.length - 1) : null) : p === pattern ? '' : null);
 const headersFile = await rules('_headers');
 const redirects = (await readFile(path.join(root, '_redirects'), 'utf8').catch(() => '')).split('\n')
   .filter(l => l.trim() && !l.startsWith('#')).map(l => l.trim().split(/\s+/));
 
+/* The first _redirects rule a path matches: where it goes and with what status (200 is a rewrite) */
+function redirectFor(pathname) {
+  for (const [from, to, code] of redirects) {
+    const rest = splat(from, pathname);
+    if (rest !== null) return { to: to.replace(':splat', rest), status: +code || 302 };
+  }
+  return null;
+}
+
 function send(res, status, file, body, urlPath) {
   const headers = { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream', 'cache-control': 'no-cache' };
   for (const r of headersFile) {
-    if (!matches(r.path, urlPath)) continue;
+    if (splat(r.path, urlPath) === null) continue;
     for (const [k, v] of r.headers) {
       const key = k.toLowerCase();
       const value = key.startsWith('content-security-policy') ? v.replace(/;\s*upgrade-insecure-requests/, '') : v;
@@ -51,22 +64,43 @@ function send(res, status, file, body, urlPath) {
   res.end(body);
 }
 
-async function find(rel) {
+/* The file at a path inside the build, or null */
+async function file(rel) {
   const p = path.join(root, rel);
   const inside = path.relative(root, p);
   if (inside.startsWith('..') || path.isAbsolute(inside)) return null;
   const s = await stat(p).catch(() => null);
-  return s ? { p, dir: s.isDirectory() } : null;
+  return s && s.isFile() ? p : null;
 }
-/* The index.html of the nearest folder above rel, below the root (the game's shell for a path under it), with the URL
-   path it is served at, so its own _headers rule applies; null when only the root has one */
-async function nearestShell(rel) {
-  for (let dir = path.posix.dirname(rel); dir !== '/' && dir !== '.'; dir = path.posix.dirname(dir)) {
-    const file = path.join(root, dir, 'index.html');
-    const body = await readFile(file).catch(() => null);
-    if (body) return { file, body, urlPath: prefix.replace(/\/$/, '') + dir + '/' };
+
+/* Cloudflare's auto-trailing-slash (wrangler.jsonc html_handling): foo/index.html is served at /foo/ and foo.html at
+   /foo; every other spelling of either (/foo, /foo/, /foo.html, /foo/index.html, /foo/index) redirects to that one.
+   Returns { file } to serve, { to } to redirect to, or null for nothing at that path. */
+async function resolve(rel) {
+  if (rel.endsWith('/index.html')) return { to: rel.slice(0, -'index.html'.length) };
+  if (rel.endsWith('/index') && await file(rel + '.html')) return { to: rel.slice(0, -'index'.length) };
+  if (rel.endsWith('.html') && await file(rel)) return { to: rel.slice(0, -'.html'.length) };
+  if (rel.endsWith('/')) {
+    const index = await file(rel + 'index.html');
+    if (index) return { file: index };
+    return (await file(rel.slice(0, -1) + '.html')) ? { to: rel.slice(0, -1) } : null;
   }
-  return null;
+  const exact = await file(rel);
+  if (exact) return { file: exact };
+  const html = await file(rel + '.html');
+  if (html) return { file: html };
+  return (await file(rel + '/index.html')) ? { to: rel + '/' } : null;
+}
+
+/* The nearest 404.html, from the requested path's folder up to the build's root (Cloudflare's 404-page handling) */
+async function notFound(rel) {
+  let dir = rel.endsWith('/') ? rel.slice(0, -1) : path.posix.dirname(rel);
+  for (;;) {
+    const f = await file(path.posix.join(dir || '/', '404.html'));
+    if (f) return f;
+    if (!dir || dir === '/') return null;
+    dir = path.posix.dirname(dir);
+  }
 }
 
 http.createServer(async (req, res) => {
@@ -74,30 +108,19 @@ http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://x');
     const pathname = decodeURIComponent(url.pathname);
     if (pathname === '/_csp') { res.writeHead(req.method === 'POST' ? 204 : 405); return res.end(); }
-    for (const [from, to, code] of redirects) {
-      if (matches(from, pathname)) { res.writeHead(+code || 302, { location: to + url.search }); return res.end(); }
-    }
-    if (!pathname.startsWith(prefix)) { res.writeHead(404); return res.end('Not found'); }
+    const rule = redirectFor(pathname);
+    if (rule && rule.status !== 200) { res.writeHead(rule.status, { location: rule.to + url.search }); return res.end(); }
+    const served = rule ? rule.to : pathname; // a 200 rewrite serves another path's file, under this path's headers
+    if (!served.startsWith(prefix)) { res.writeHead(404); return res.end('Not found'); }
     // Normalized, so // and encoded ../ cannot reach outside the build; nothing starting with . or _ but .well-known
-    const rel = path.posix.normalize('/' + pathname.slice(prefix.length));
-    if (/\/[._](?!well-known\/)/.test(rel)) { res.writeHead(404); return res.end('Not found'); }
-    const hit = await find(rel);
-    if (hit && hit.dir && !rel.endsWith('/')) { res.writeHead(307, { location: pathname + '/' + url.search }); return res.end(); }
-    if (rel.endsWith('/index.html')) { res.writeHead(307, { location: pathname.slice(0, -'index.html'.length) + url.search }); return res.end(); }
-    const target = hit && (hit.dir ? path.join(hit.p, 'index.html') : hit.p);
-    const body = target && await readFile(target).catch(() => null);
-    if (body) return send(res, 200, target, body, pathname);
-    // The game's screens are paths (openspec change indexable-routes): until task 2.3 writes a page per path and the
-    // game's own 404.html, a path with no file under the game's folder gets the game's shell (its index.html) with
-    // status 200 and the shell's own headers, as its prerendered page will be. A missing script, style or image (a
-    // path with an extension) and a path straight under the root still get /404.html, as on Cloudflare.
-    if (!path.extname(rel)) {
-      const shell = await nearestShell(rel);
-      if (shell) return send(res, 200, shell.file, shell.body, shell.urlPath);
-    }
-    const html = path.join(root, '404.html');
-    const nf = await readFile(html).catch(() => null);
-    if (nf) return send(res, 404, html, nf, pathname);
+    const rel = path.posix.normalize('/' + served.slice(prefix.length));
+    const hit = /\/[._](?!well-known\/)/.test(rel) ? null : await resolve(rel);
+    if (hit && hit.to) { res.writeHead(307, { location: prefix.slice(0, -1) + hit.to + url.search }); return res.end(); }
+    const body = hit && await readFile(hit.file).catch(() => null);
+    if (body) return send(res, 200, hit.file, body, pathname);
+    const nf = await notFound(rel);
+    const page = nf && await readFile(nf).catch(() => null);
+    if (page) return send(res, 404, nf, page, pathname);
     res.writeHead(404); res.end('Not found');
   } catch (e) { res.writeHead(500); res.end(String(e)); }
 }).listen(port, () => console.log(`Learn Vedic Math (${path.relative(repo, root) || '.'}) on http://localhost:${port}${prefix}`));
