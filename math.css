@@ -1143,6 +1143,15 @@ html.motion-paused .wb-card .md-switch .md-knob, body.calm .wb-card .md-switch .
 .dojo-stars { display: flex; gap: var(--space-1-5); margin-top: var(--space-1-5); }
 .dojo-star { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-2); border: 2px solid var(--edge); border-radius: var(--radius-pill); color: var(--ink); text-decoration: none; font-weight: 700; font-size: 13px; background: var(--card); }
 .dojo-star svg { width: 16px; height: 16px; }
+/* ---------- The Hook (js/hook.js in js/star.js, openspec hook): the dare's calculator and the reveal ----------
+   The calculator is a drawing (aria-hidden): its screen in the mono font and the keys typed so far. Its text changes key
+   by key with no movement, so it reads the same under no motion. Tokens only. */
+.hook-calc { display: grid; gap: var(--space-1); width: min(100%, 320px); padding: var(--space-2-5) var(--space-3); border-radius: var(--radius-md); border: 2px solid var(--edge); background: var(--bg-alt); }
+.hook-screen { display: block; min-height: 1.3em; padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); background: var(--ink); color: var(--on-accent); font: 500 1.6rem/1.2 var(--font-mono); text-align: right; }
+.hook-keys { min-height: 1.2em; font: 500 var(--text-small-size)/1.2 var(--font-mono); color: var(--ink-muted); letter-spacing: .04em; }
+.hook-calc--calm .hook-screen { color: var(--ink-muted); }
+.hook-note { margin: 0; font-weight: 700; color: var(--ink-muted); font-size: var(--text-small-size); }
+
 /* ---------- Placement (js/placement-view.js, openspec placement): the offer, the climb and the result ----------
    Tokens only, both schemes. The staircase is 12 bars that rise left to right; a climbed Step fills (a transition,
    none under no motion). Explorer's three choices are .pr-choice, big through .mode-explorer .pr-choice above. */

@@ -1,4 +1,4 @@
-import { test, expect, APP, open } from './fixtures';
+import { test, expect, APP, open, pickMode, skipPlacement } from './fixtures';
 
 /* Celebrations (openspec celebrations): the big confetti is only for true wins, such as a Star lit; everyday moments
    (picking a Mode, a right answer) get a small one, such as a card pop and a few sparkles. Nothing moves under reduced
@@ -82,6 +82,7 @@ test.describe('motion allowed', () => {
       const card = page.locator('.mode-card[data-mode="challenger"]');
       await card.click();
       await expect.poll(async () => (await fx(page)).sparkles).toBeGreaterThan(0);
+      await skipPlacement(page); /* the Placement offer follows the pick (openspec placement) */
       await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
       expect((await fx(page)).confetti).toBe(0);
       await expect(page.locator('.fx-sparkles')).toHaveCount(0); // they clean up after themselves
@@ -215,7 +216,7 @@ for (const [name, use, key] of STILL) {
       test.use({ seedMode: null });
       test('opens Home at once with no sparkles, no confetti and nothing moving', async ({ page }) => {
         await page.goto(APP);
-        await page.locator('.mode-card[data-mode="pro"]').click();
+        await pickMode(page, 'pro');
         await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
         expect(await fx(page)).toEqual({ confetti: 0, sparkles: 0 });
       });

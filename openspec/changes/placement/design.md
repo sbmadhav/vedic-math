@@ -160,3 +160,14 @@ These follow from `react-typescript` and the owner decisions above; review can c
 - R4: `placement.ts` and `hook.ts` in `app/src/logic/` (decision 15).
 - R5: superseded by `try-trick-in-modes`: there is no worked example card for the Hook to replace (decisions 10 and 16).
 - R6: a card's Try a trick plays before the Placement offer, which opens when it ends (decision 9).
+
+## Legacy build (owner-delegated, 2026-10-31)
+
+The owner asked on 2026-10-31 to finish everything as fast as possible, so this change was built on today's Legacy views instead of waiting for `react-typescript` phase 6 (R1 above). It is built to be migration-safe: no behavior the React port would have to undo.
+
+- The engine and tables are framework-free TypeScript in `shared/src/placement.ts` and `shared/src/placement-level.ts` (after #127 moved the generators there), so the React views import them as they are.
+- The screens are the Legacy route `#/placement` (`js/placement-view.js`, loaded on demand); the React route `/learn/placement` with `ClientOnly` replaces it in phase 4 (tasks 3.1 and 3.7 keep their React parts open).
+- The Hook plays inside the Legacy Star round (`js/star.js`, option `hook`) with its pure parts in `js/hook.js`; `Hook.tsx` and `Calculator.tsx` port it when the Star view moves (phase 4, task 7.2 of react-typescript).
+- Stored data is the shape decision 1 names (`S.placement`, `S.placementCard`, `placedBelt` on the Player, plus `S.hookSeen`), carried by the backup code's schema, so the React store reads it unchanged.
+- Builder calls: the pool's `3-twostep` (a Word problem Skill) became `3-dist`; the offer screen shows one plain line per Mode; the result for zero steps says "A good try! Bolt will start you at the first step." so it never shows "0 steps".
+

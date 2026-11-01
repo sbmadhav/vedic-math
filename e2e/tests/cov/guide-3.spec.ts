@@ -1,4 +1,4 @@
-import { test, expect, APP, open } from '../fixtures';
+import { test, expect, APP, open, pickMode } from '../fixtures';
 
 /* guide spec, Requirement "A first-visit tour": one test per scenario. The tour runs on a device that has never shown
    it (tourSeen: false) for a Player who has just picked a Mode. */
@@ -11,7 +11,7 @@ test.describe('a new Player on a fresh device', () => {
 
   test('First visit: picking Challenger opens Home with the tour on the Player strip and a step count', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('.mode-card[data-mode="challenger"]').click();
+    await pickMode(page, 'challenger');
     const dlg = tour(page);
     await expect(dlg).toBeVisible();
     await expect(dlg).toHaveAttribute('data-step', 'me');
@@ -22,7 +22,7 @@ test.describe('a new Player on a fresh device', () => {
 
   test('Shown once: after a skip the tour does not come back on Home or after a reload', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('.mode-card[data-mode="challenger"]').click();
+    await pickMode(page, 'challenger');
     await expect(tour(page)).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(tour(page)).toHaveCount(0);

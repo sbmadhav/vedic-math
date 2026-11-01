@@ -62,6 +62,7 @@ const loadLinks = onDemand(() => import('./connectors.js')); /* the Trick animat
 storiesFrom(() => import('./stories.js')); /* the Word problems load after the first paint (js/story-plan.js) */
 const loadArena = onDemand(() => import('./arena.js')), loadTour = onDemand(() => import('./tour.js')), loadKit = onDemand(() => import('./play/kit.js'));
 const loadPlacement = onDemand(() => import('./placement-view.js')); /* Placement's screens, only when #/placement opens (openspec placement) */
+const loadHook = onDemand(() => import('./hook.js')); /* the Hook, only for a Player who may be new (openspec hook) */
 const withArena = (area, signal, fn) => loadArena().then(A => { if (!signal.aborted) fn(A); }, () => { if (!signal.aborted) area.innerHTML = '<p class="md-lede">The round did not load. Check your connection and try again.</p>'; });
 let install = null, installLoad = null, earlyPrompt = null; const installQueue = [];
 function loadInstall() {
@@ -243,7 +244,8 @@ function modePicker({ signal } = {}) {
   view.querySelectorAll('[data-mode]').forEach(b => on(b, 'click', () => {
     if (picked) return; picked = true;
     fx.sfx('pop'); fx.setMode(b.dataset.mode); gm.startDay();
-    const go = () => { location.hash = afterPick(b.dataset.mode); render(); };
+    /* The route after the pick draws once: a changed hash renders through hashchange, the same hash through render() */
+    const go = () => { const to = afterPick(b.dataset.mode); if ((location.hash || '#/') === to) render(); else location.hash = to; };
     if (fx.noMotion()) return go();
     fx.pop(b, signal); fx.sparkle(b, { n: 10 }); fx.cheer(view.querySelector('.lv-family'), signal);
     later(go, 560, signal);
@@ -904,8 +906,13 @@ function starView(trick, n, { signal } = {}, back = null) {
   const fam = familyRound({ root: play.area, card: '.star-end', signal, area: 'star', protect: '.star-end-h, .star-end-sp, .star-acts, .star-talk', ctx: () => ({ skill: byId['v-' + trick] }) });
   fam.note({ type: 'raceStart' });
   const onEnd = ({ misses, lit }) => { const acts = play.area.querySelector('.star-acts'); if (acts && fam.askHTML) acts.insertAdjacentHTML('beforeend', fam.askHTML); fam.note({ type: 'roundEnd', misses, lit }); };
-  const run = runStar(play.area, { trick, star: n, signal, back, again: () => mount(ctx => starView(trick, n, ctx, back)), findVideo: starVideo, onEnd });
-  return { destroy: () => { fam.note({ type: 'raceEnd' }); run.destroy(); } }; /* a Star left before its end screen must not hold the next round's Visits */
+  /* The Hook (openspec hook): a Player who may be new (no answer yet, the Hook not seen) waits the few milliseconds js/hook.js
+     takes, which decides (a new Challenger or Pro Player, a Trick with a dare); everyone else starts the round at once */
+  let run = null;
+  const begin = hook => { if (signal.aborted) return; run = runStar(play.area, { trick, star: n, signal, back, again: () => mount(ctx => starView(trick, n, ctx, back)), findVideo: starVideo, onEnd, hook }); };
+  if (fx.mode() !== 'explorer' && store.count('answers') === 0 && !store.hookSeen()) loadHook().then(H => begin(H.hookFor(trick, fx.mode())), () => begin(null));
+  else begin(null);
+  return { destroy: () => { fam.note({ type: 'raceEnd' }); if (run) run.destroy(); } }; /* a Star left before its end screen must not hold the next round's Visits */
 }
 /* Try a trick (openspec try-trick-in-modes): the lesson of the Player's Mode, on one Sutra (js/try.js) */
 function tryView({ signal } = {}) {

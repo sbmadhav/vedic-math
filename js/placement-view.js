@@ -90,7 +90,9 @@ export function placementView(root, { signal }) {
       ${p.viz ? `<div class="mq-viz">${p.viz}</div>` : ''}${entry}
       <p class="place-acts place-acts--sm"><button type="button" class="md-btn md-btn--sm" id="plHear">${SPEAKER} ${explorer ? 'Hear it again' : 'Hear it'}</button><button type="button" class="md-btn md-btn--sm" id="plUnsure">I'm not sure</button></p>`;
     stairs();
-    input = false; later(() => { input = true; }, 350, ps); /* a tap just after the last answer is not an answer to this question */
+    /* A tap just after the last answer is not an answer to this one: the buttons wake a moment after the question draws */
+    const acts = [...main.querySelectorAll('.pr-choice, #plCheck, #plUnsure')]; acts.forEach(b => { b.disabled = true; }); input = false;
+    later(() => { acts.forEach(b => { b.disabled = false; }); input = true; }, 350, ps);
     main.querySelectorAll('.pr-choice').forEach(b => on(b, 'click', () => { if (!input) return; main.querySelectorAll('.pr-choice').forEach(x => x.setAttribute('aria-pressed', String(x === b))); answer(b.dataset.v === String(p.answer)); }, ps));
     const form = $('#plForm');
     if (form) on(form, 'submit', e => {

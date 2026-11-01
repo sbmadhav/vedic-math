@@ -68,7 +68,8 @@ test.describe('a new visitor', () => {
     await page.locator('.mode-card[data-mode="challenger"]').click();
     await page.locator('#plStart').click();
     await expect(step(page)).toHaveText('Step 1');
-    for (let i = 0; i < 3; i++) { await page.locator('#plUnsure').click(); if (i === 1) break; }
+    await page.locator('#plUnsure').click(); /* one miss: the climb goes on */
+    await expect(page.locator('#plSay')).toHaveText("Let's try a different one.");
     await page.goto(`${APP}#/`);
     await expect(page.locator('h1.home-h')).toBeVisible();
     const d = await saved(page);
@@ -89,13 +90,15 @@ test('a new Player added in Me gets the Mode picker, then the offer', async ({ p
 /* ---------- The climb (3.2, 3.3, 3.4) ---------- */
 /** Runs a scripted climb from the offer: fn(i) says whether answer i is right. Reads the right answer through the app's
     own engine: the test re-plays the same seeded draw with the module, question by question. */
-async function climbWith(page: Page, mode: Mode, script: boolean[], seed = 7) {
+async function climbWith(page: Page, mode: Mode, script: boolean[], seed = 7, { start = true } = {}) {
   // The engine, driven in the page with the same seed, gives the test each question's answer as the climb goes
-  await page.evaluate(async ([m, s]) => {
-    const P = await e2eMod('placement');
-    const w = window as any; w.__plEngine = { st: null, P, rand: P.rng(s), mode: m };
-  }, [mode, seed] as const);
-  await page.locator('#plStart').click();
+  if (start) {
+    await page.evaluate(async ([m, s]) => {
+      const P = await e2eMod('placement');
+      const w = window as any; w.__plEngine = { st: null, P, rand: P.rng(s), mode: m };
+    }, [mode, seed] as const);
+    await page.locator('#plStart').click();
+  }
   for (let i = 0; i < script.length; i++) {
     await expect(step(page)).toBeVisible();
     const right: string = await page.evaluate(() => {
@@ -130,7 +133,7 @@ test.describe('Explorer', () => {
     await expect(page.locator('.star-pad, .star-key')).toHaveCount(0);
     const values = await page.locator('#plMain .pr-choice').allTextContents();
     expect(new Set(values).size).toBe(3);
-    const right = await page.evaluate(() => String((window as any).__plEngine.p.answer));
+    const right: string = await page.evaluate(() => { const E = (window as any).__plEngine; E.p = E.P.asChoice(E.st.current.p, E.rand); return String(E.p.answer); }); /* the seventh question, as the engine draws it */
     expect(values).toContain(right);
     // a miss: a neutral line, the answer never shown, the next question on the same step from another Skill
     const miss = page.locator('#plMain .pr-choice').filter({ hasNotText: new RegExp(`^${right}$`) }).first();
@@ -189,14 +192,9 @@ test.describe('a seeded Explorer at grade 3', () => {
     await expect(first).toHaveAttribute('href', /^#\/skill\/3-/);
     await first.click();
     await expect(page.locator('.mq-crumbs')).toContainText('Grade 3');
-    await open(page, '#/game/make-ten');
-    await page.locator('#gShell [data-m="endless"]').click();
-    await page.locator('#gStart').click();
-    await expect(page.locator('#gHud .dial')).toHaveAttribute('aria-label', 'Difficulty 5 of 20');
-    await page.locator('#gQuit').click();
-    await open(page, '#/game/make-ten');
-    await page.locator('#gStart').click(); // Ranked
-    await expect(page.locator('#gHud .dial')).toHaveAttribute('aria-label', 'Difficulty 1 of 20');
+    // Practice reads the level when there is no Rating; a Ranked round keeps Explorer's start (ADR 0007)
+    const [practice, ranked] = await page.evaluate(async () => { const A = await e2eMod('adapt'); return [A.rating('game:make-ten', 'explorer', 0, { practice: true }), A.rating('game:make-ten', 'explorer')]; });
+    expect(practice).toBe(5); expect(ranked).toBe(1);
   });
 });
 
@@ -280,7 +278,7 @@ test.describe('an existing Challenger with progress', () => {
     // a lower retake: the new level is shown, no Rating goes down
     await page.locator('#mePlaceGo').click();
     await expect(page.locator('#plH')).toHaveText('Want to find your level?');
-    await climbWith(page, 'challenger', [true, false, false], 11); // grade 3 right, two misses at 4
+    await climbWith(page, 'challenger', [true, false, false]); // grade 3 right, two misses at 4 (the page's seed is the same, so the same questions)
     await expect(page.locator('#plH')).toHaveText('You climbed 1 step!');
     d = await saved(page);
     expect(d.placement).toMatchObject({ grade: '3', steps: 1 });
@@ -341,7 +339,7 @@ test.describe('Calm and reduced motion', () => {
     await expect(page.locator('#plQ')).toBeFocused();
     await expect(page.locator('#vmLive')).toContainText('Step 2.');
     await expect(page.locator('.place')).toHaveClass(/still/);
-    await climbWith(page, 'explorer', [false, false]);
+    await climbWith(page, 'explorer', [false, false], 7, { start: false });
     expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
     await expect(page.locator('#vmLive')).toContainText('You climbed 1 step! Bolt will start you there.');
     await expect(page.locator('#plH')).toBeFocused();
