@@ -18,29 +18,14 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 846845,
+  "total": 532840,
   "files": {
-   "/css/play/apprentice.css": 2206,
-   "/css/play/art.css": 2414,
-   "/css/play/base.css": 1123,
-   "/css/play/bets.css": 2299,
-   "/css/play/daily.css": 2136,
-   "/css/play/ghosts.css": 2520,
-   "/css/play/lens.css": 3156,
-   "/css/play/locks.css": 3552,
-   "/css/play/party.css": 3727,
-   "/css/play/scroll.css": 4427,
-   "/css/play/spells.css": 3925,
-   "/css/play/tala.css": 4330,
-   "/css/play/wall.css": 2204,
    "/ds/2.2.0/components.css": 6692,
    "/ds/2.2.0/header.js": 1166,
    "/ds/2.2.0/tokens.css": 2504,
    "/fonts/fredoka-latin-600-normal.woff2": 16454,
    "/fonts/fredoka-latin-700-normal.woff2": 15898,
-   "/fonts/jetbrains-mono-latin-500-normal.woff2": 21833,
    "/fonts/nunito-sans-latin-wght-normal.woff2": 31073,
-   "/fonts/space-grotesk-latin-wght-normal.woff2": 22282,
    "/icons/apple-touch-icon.png": 5919,
    "/icons/favicon-16.png": 482,
    "/icons/favicon-32.png": 915,
@@ -54,7 +39,7 @@
    "/js/ambient.js": 4480,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 52849,
+   "/js/app.js": 53096,
    "/js/arena.js": 4141,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -79,7 +64,6 @@
    "/js/handoff.js": 4229,
    "/js/install-rules.js": 2226,
    "/js/install.js": 7151,
-   "/js/landing-sky.js": 261,
    "/js/ledes.js": 1792,
    "/js/levels.js": 5022,
    "/js/lib.js": 153,
@@ -89,38 +73,8 @@
    "/js/metrics.js": 4201,
    "/js/nav.js": 1555,
    "/js/play/catalog.js": 1783,
-   "/js/play/exp/apprentice-core.js": 7279,
-   "/js/play/exp/apprentice.js": 3914,
-   "/js/play/exp/art-core.js": 5199,
-   "/js/play/exp/art-draw.js": 3622,
-   "/js/play/exp/art-sound.js": 1298,
-   "/js/play/exp/art.js": 15905,
-   "/js/play/exp/bets-core.js": 8496,
-   "/js/play/exp/bets.js": 5782,
-   "/js/play/exp/daily-core.js": 4854,
-   "/js/play/exp/daily.js": 6431,
-   "/js/play/exp/ghosts-core.js": 3200,
-   "/js/play/exp/ghosts.js": 6687,
-   "/js/play/exp/lens-cam.js": 4676,
-   "/js/play/exp/lens-core.js": 9184,
-   "/js/play/exp/lens.js": 7556,
-   "/js/play/exp/locks-core.js": 5459,
-   "/js/play/exp/locks.js": 8030,
-   "/js/play/exp/party-core.js": 6683,
-   "/js/play/exp/party.js": 10020,
-   "/js/play/exp/scroll-art.js": 3098,
-   "/js/play/exp/scroll-core.js": 12555,
-   "/js/play/exp/scroll.js": 10543,
-   "/js/play/exp/spells-core.js": 6602,
-   "/js/play/exp/spells.js": 9443,
-   "/js/play/exp/tala-audio.js": 3561,
-   "/js/play/exp/tala-core.js": 5945,
-   "/js/play/exp/tala.js": 15019,
-   "/js/play/exp/wall-core.js": 9208,
-   "/js/play/exp/wall.js": 9196,
    "/js/play/icons.js": 721,
-   "/js/play/kit.js": 3754,
-   "/js/play/life.js": 61,
+   "/js/play/offline-note.js": 951,
    "/js/prompt-slot.js": 629,
    "/js/related.js": 516,
    "/js/say-clips.js": 677,
@@ -164,7 +118,6 @@
    "/js/ts/shared/src/vedic.js": 10165,
    "/js/ts/shared/src/viz.js": 6019,
    "/js/vedic.js": 152,
-   "/js/videos.js": 20832,
    "/js/viz.js": 153,
    "/js/voice-index.js": 213,
    "/js/voice-plan.js": 2458,
@@ -172,9 +125,9 @@
    "/js/voice.js": 14663,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 25689,
-   "/play/": 4321,
-   "/sw.js": 6424,
+   "/math.css": 25766,
+   "/play/": 4338,
+   "/sw.js": 7614,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
@@ -367,6 +320,13 @@
     "from": 842086,
     "to": 846845,
     "why": "react-typescript task 3.1 (merged with main as of #180): shared/src/ holds the generators, Tricks, pictures, Arena sets, scoring, Nickname lists and the Word problem plan (story-plan.ts); until the framework build (task 2.1) bundles the game, build.py publishes them under /js/ts/ with their types taken out (+56337 in all), and the js/ modules they came from re-export them or shrink (-52148 in all); a static import of a re-export-only js/ module is pointed at its TypeScript module, so the first load requests each once and no deeper, and the re-export files stay published and precached; /js/app.js +61, /js/explain-lines.js +10, /js/family-view.js +6, /js/find.js +14, /js/games.js +15, /js/gamify.js +24, /js/levels.js +10, /js/metrics.js +17, /js/sky-view.js +7, /js/sky.js +20, /js/star.js +24, /js/stories.js +11, /js/sutra-progress.js +6, /js/sutra-tag-core.js +13, /js/try.js +7, /play/ +183, /sw.js +134; +4751 in all (/js/nav.js at CI's figure); re-based over #187 (842,086) on 2026-10-31: 846,845 with CI's /js/nav.js figure, +4,759"
+   },
+   {
+    "date": "2026-10-31",
+    "pr": "render-performance-build",
+    "from": 846845,
+    "to": 532840,
+    "why": "render-performance tasks 8.3, 8.4 and 7.1 (the preloads and the precache), on the Legacy game: the worker precaches the core only (openspec change render-performance, design D10, owner P5): the 29 Play experience modules (js/play/exp/), their 13 stylesheets (css/play/), js/play/kit.js, js/play/life.js and the video list js/videos.js leave the precache for the build's LAZY list and are saved the first time a page requests them, then carried across versions; the two fonts only the experiences use (Space Grotesk, JetBrains Mono) and the landing page's js/landing-sky.js leave it too; what came: /sw.js (the LAZY list, the carry-over, navigation preload, the cached? message), js/play/offline-note.js (new, the shelf's offline note), the note's call and the Retry button in js/app.js, the note's styles in math.css; measured on the tree merged with main as of #188 (846,845); 48 files gone (316487 bytes); file deltas: /sw.js +1190, /js/play/offline-note.js +951, /js/app.js +247, /math.css +77, /play/ +17; -314005 in all; /js/nav.js at CI's figure"
    }
   ]
  },
@@ -451,7 +411,10 @@
     "date": "2026-10-30",
     "pr": 182,
     "page": "deep-dive",
-    "lcp": { "from": 5730, "to": 5940 },
+    "lcp": {
+     "from": 5730,
+     "to": 5940
+    },
     "why": "design system 2.2.0 (#182, c34871a) moved production's Deep dive largest contentful paint up one step on GitHub's runners: the post-deploy check read 5760 / 5760 / 5790 / 5772 ms in the four jobs before its deploy and 5970 after it, and in one job the pr-177 preview (still 2.1.0) read 5810 against 5899 on production and 5910 on the pr-183 preview (2.2.0, the same files as production). The same two commits built and served locally on one runner read 5190 and 5190 ms (6 runs each), with the same 71 requests before the observed paint and the same blocking time, so no file or task of the change is slower in the simulation; what grew is what Cloudflare sends of the vendored stylesheets (ds components.css 6021 to 8273 bytes, tokens.css 3257 to 3360, Cloudflare's Brotli). The Deep dive's line is re-measured on the code live since #183 deployed (3f3fb61) the way of 2026-10-27, each number but tbt the median of five jobs' medians: perf.yml on main runs 41126051655, 41127211350 and 41128357766 (benchmarkIndex 2337, 2476, 4197), the post-deploy check of 3f3fb61 (e2e.yml run 41113259252, 2480) and the production side of run 41110930365 (2466); lcp 5805 / 5940 / 5790 / 5970 / 5955, median 5940. The other pages keep the 2026-10-27 numbers (their five-job medians, 5490 / 1260 / 5490 / 5490 ms, are within their limits); tbt keeps 159 (five jobs: 155). docs/perf/baseline.md, Re-measured on 2026-10-30"
    }
   ]
@@ -484,6 +447,21 @@
     "inp": 120,
     "visible": 40
    }
+  }
+ },
+ "budgets": {
+  "//": "The owner's absolute byte budgets (M5; openspec change render-performance, design D2, task 2.1 on the Legacy game), in Brotli bytes, read by tools/budget.ts on every build. failing: whether a miss fails the build; a line the start measurement missed stays reported until a pull request meets it and turns failing on in the same commit (D2 item 4). The start measurement of 2026-10-31 (main as of #188, render-performance-build): JS before play 303,919 bytes in 62 files (the page's scripts and the static module graph of /js/app.js), CSS before play 35,882 bytes in 5 files, the largest landing or grown-up page's JS 6,780 bytes (/import/).",
+  "jsBeforePlay": {
+   "limit": 153600,
+   "failing": false
+  },
+  "cssBeforePlay": {
+   "limit": 40960,
+   "failing": true
+  },
+  "sitePageJs": {
+   "limit": 15360,
+   "failing": true
   }
  }
 }

@@ -17,9 +17,21 @@
    site serves all of them); if the network serves anything else (a half-propagated deploy), the install fails and the
    browser tries again on the next visit, keeping the previous version.
 
+   What is precached (openspec change render-performance, design D10, owner P5): the core of the game, which is the
+   shell, every module of the static import graph and the late modules the core routes load (the Arena, the tour, the
+   Sutra tags, the stories, installing, the Family helpers), the styles, the design system, the body and heading fonts,
+   the icons and the manifest. The Play experiences (js/play/exp/, their styles in css/play/ and js/play/kit.js), the
+   video list (js/videos.js) and the two fonts only the experiences use are LAZY: build.py lists their stamped URLs but
+   the install never downloads them. The worker saves one the first time a page requests it, when the response is a
+   success of the expected type (never the 404 page), and a new version copies the saved ones it still uses from the
+   cache before it (the stamp is a content hash, so the same URL is the same bytes), so an experience opened once
+   stays offline across a deploy that does not change it. Saved stamped files are never trimmed with the runtime
+   entries: the build's own file count bounds them.
+
    Caching, by request:
    - Page loads (navigations) in /play/: network first so updates show up at once; the precached shell when offline
-     or slow. Routes are hash routes, so one shell serves them all.
+     or slow. Routes are hash routes, so one shell serves them all. Navigation preload (design D11): the browser
+     starts the page request as it starts this worker, and page() takes that response instead of fetching again.
    - Same-origin files with ?v=<hash>: cache first (they never change at a given URL).
    - Other same-origin files (fonts, icons, the manifest, vendored code): network first, cache fallback.
    - Studio voice audio (VOICE_ORIGIN, or /voice/ when the voice is static assets): cache first in
@@ -43,15 +55,19 @@ const KILL: boolean = false;
 /* build.py: precache (generated, do not edit) */
 const VERSION: string = 'dev';
 const PRECACHE: [string, string][] = [];
+const LAZY: string[] = [];
 /* /build.py: precache */
 const PREFIX: string = 'lvm-';
 const sw = self as unknown as ServiceWorkerGlobalScope;
 const CACHE = PREFIX + VERSION;
 const SCOPE = '/play/';
 const SHELL = SCOPE;
-const RUNTIME_MAX = 60; // entries kept beyond the precache list; the oldest go first
+const RUNTIME_MAX = 60; // plain-URL entries kept beyond the precache list; the oldest go first
 const NAV_TIMEOUT = 3500; // ms before a page load falls back to the saved shell
 const PRECACHED = new Set(PRECACHE.map(([u]) => new URL(u, location.origin).href));
+const KEPT = new Set(LAZY.map(u => new URL(u, location.origin).href)); // saved on first request, carried to the next version
+/* A saved stamped file must be what its name says: a module is JavaScript, a stylesheet is CSS (never the 404 page) */
+const TYPES: [RegExp, RegExp][] = [[/\.js$/, /javascript/], [/\.css$/, /text\/css/]];
 const VOICE_ORIGIN: string | null = 'https://voice.learnvedicmath.com'; // the R2 voice host (design D17); /voice/ when the voice is static assets; null with build.py --voice off
 const VOICE = '/voice/';
 const VOICE_CACHE = PREFIX + 'voice'; // kept across deploys (not a version cache)
@@ -104,7 +120,10 @@ if (VERSION === 'dev') {
       /* Keep this version and the one before it (a tab opened on it may still load a module); delete older ones.
          CacheStorage lists caches in the order they were created. */
       const ours = (await caches.keys()).filter(k => k.startsWith(PREFIX) && k !== CACHE && k !== VOICE_CACHE && k !== SOUNDS_CACHE);
+      await carryOver(ours);
       await Promise.all(ours.slice(0, -1).map(k => caches.delete(k)));
+      /* The browser sends the page request as it starts this worker, instead of after (design D11) */
+      try { await sw.registration.navigationPreload?.enable(); } catch { /* not supported: page() fetches as before */ }
       await sw.clients.claim();
     })());
   });
@@ -117,7 +136,7 @@ if (VERSION === 'dev') {
     if (url.origin !== location.origin) return;
     if (url.pathname.startsWith(API)) return;
 
-    if (req.mode === 'navigate') return url.pathname.startsWith(SCOPE) ? event.respondWith(page(req)) : undefined;
+    if (req.mode === 'navigate') return url.pathname.startsWith(SCOPE) ? event.respondWith(page(event)) : undefined;
     if (url.pathname.startsWith(VOICE)) return event.respondWith(voiceFile(req));
     if (url.pathname.startsWith(SOUNDS)) return event.respondWith(soundFile(req));
     /* Video pictures: network only. Offline the shelf has no videos anyway, and caching them would push the large
@@ -125,6 +144,20 @@ if (VERSION === 'dev') {
     if (url.pathname.startsWith(THUMBS)) return;
     if (url.searchParams.has('v')) return event.respondWith(versioned(req));
     event.respondWith(networkFirst(req));
+  });
+
+  /* A page asks which files are saved ({ type: 'cached?', urls }, answered on the message's port with
+     { type: 'cached', urls: the saved ones }): offline, the shelves mark an experience that was never opened */
+  sw.addEventListener('message', (event: ExtendableMessageEvent) => {
+    const data = event.data as { type?: unknown; urls?: unknown } | null;
+    const port = event.ports?.[0];
+    if (!data || data.type !== 'cached?' || !Array.isArray(data.urls) || !port) return;
+    const urls = data.urls.filter((u): u is string => typeof u === 'string');
+    event.waitUntil((async () => {
+      const saved: string[] = [];
+      for (const u of urls) if (await caches.match(new URL(u, location.origin).href)) saved.push(u);
+      port.postMessage({ type: 'cached', urls: saved });
+    })());
   });
 }
 
@@ -143,11 +176,13 @@ async function digest(res: Response): Promise<string> {
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 10);
 }
 
-/* Pages: network first; the precached shell of this version when offline or slow */
-async function page(req: Request): Promise<Response> {
+/* Pages: network first (the navigation preload's response when the browser started one, else a fetch); the precached
+   shell of this version when offline or slow */
+async function page(event: FetchEvent): Promise<Response> {
   try {
+    const net = Promise.resolve(event.preloadResponse).then((pre: Response | undefined) => pre || fetch(event.request));
     return await Promise.race([
-      fetch(req),
+      net,
       new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), NAV_TIMEOUT))
     ]);
   } catch {
@@ -156,14 +191,39 @@ async function page(req: Request): Promise<Response> {
   }
 }
 
-/* ?v= files: the same URL always holds the same bytes, so any of our caches can answer */
+/* ?v= files: the same URL always holds the same bytes, so any of our caches can answer. A miss is fetched and saved
+   when it is a success of the type its name says (a LAZY file saved this way is carried to the next version). */
 async function versioned(req: Request): Promise<Response> {
   const cache = await caches.open(CACHE);
   const hit = await cache.match(req) || await matchOlder(req);
   if (hit) return hit;
   const res = await fetch(req);
-  if (cacheable(res)) void put(cache, req, res.clone());
+  if (cacheable(res) && expected(req.url, res)) void put(cache, req, res.clone());
   return res;
+}
+
+/* The content type a stamped file's name promises; a file of another kind (or one without a type) is not checked */
+function expected(url: string, res: Response): boolean {
+  const path = new URL(url).pathname;
+  const rule = TYPES.find(([ext]) => ext.test(path));
+  if (!rule) return true;
+  const type = res.headers?.get('content-type') || '';
+  return rule[1].test(type);
+}
+
+/* A new version keeps the saved LAZY files the build still uses: copied from the caches before it (the newest copy
+   wins) before those are deleted. A changed file has a new stamp, so it is not in LAZY and is fetched on its next open. */
+async function carryOver(older: string[]): Promise<void> {
+  if (!KEPT.size || !older.length) return;
+  const cache = await caches.open(CACHE);
+  for (const name of [...older].reverse()) {
+    const old = await caches.open(name);
+    for (const key of await old.keys()) {
+      if (!KEPT.has(key.url) || await cache.match(key)) continue;
+      const res = await old.match(key);
+      if (res) { try { await cache.put(key, res); } catch { /* quota: fetched again on its next open */ } }
+    }
+  }
 }
 async function matchOlder(req: Request): Promise<Response | null> {
   for (const k of (await caches.keys()).filter(k => k.startsWith(PREFIX) && k !== CACHE && k !== VOICE_CACHE && k !== SOUNDS_CACHE).reverse()) {
@@ -233,11 +293,13 @@ async function networkFirst(req: Request): Promise<Response> {
 /* Only successful responses go in the cache: same-origin, or CORS from the voice host (no errors, redirects or opaque responses) */
 function cacheable(res: Response | undefined): boolean { return !!res && res.ok && (res.type === 'basic' || res.type === 'cors'); }
 
-/* Store a response, then trim runtime entries (anything not in the precache list) to RUNTIME_MAX, oldest first */
+/* Store a response, then trim runtime entries (plain URLs not in the precache list) to RUNTIME_MAX, oldest first.
+   Stamped files stay: the build's own file count bounds them, and an experience saved for offline must not be pushed
+   out by the vendor files another one loads. */
 async function put(cache: Cache, req: Request, res: Response): Promise<void> {
   try {
     await cache.put(req, res);
-    const extra = (await cache.keys()).filter(k => !PRECACHED.has(k.url));
+    const extra = (await cache.keys()).filter(k => !PRECACHED.has(k.url) && !new URL(k.url).searchParams.has('v'));
     for (const k of extra.slice(0, Math.max(0, extra.length - RUNTIME_MAX))) await cache.delete(k);
   } catch { /* quota or a locked cache: skip caching */ }
 }

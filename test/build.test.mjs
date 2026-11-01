@@ -39,7 +39,7 @@ const tryBuild = (args = [], extra = {}) => spawnSync('python3', ['build.py', '-
 const read = f => readFileSync(join(out, f), 'utf8');
 const sw = () => {
   const src = read('sw.js');
-  return { version: src.match(/const VERSION = '(\w+)';/)[1], precache: JSON.parse(src.match(/const PRECACHE = (\[[\s\S]*?\]);/)[1]) };
+  return { version: src.match(/const VERSION = '(\w+)';/)[1], precache: JSON.parse(src.match(/const PRECACHE = (\[[\s\S]*?\]);/)[1]), lazy: JSON.parse(src.match(/const LAZY = (\[[\s\S]*?\]);/)[1]) };
 };
 const importMap = () => JSON.parse(read('play/index.html').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
 const sha = f => createHash('sha256').update(readFileSync(join(out, f))).digest('hex').slice(0, 10);
@@ -66,7 +66,7 @@ test('the source in git is unstamped: no import map, plain URLs, a dev worker', 
   assert.ok(!html.includes('type="importmap"'));
   assert.ok(!/\?v=/.test(html));
   assert.match(html, /<script type="module" src="\/js\/app\.js"><\/script>/);
-  assert.match(src, /\nconst VERSION: string = 'dev';\nconst PRECACHE: \[string, string\]\[\] = \[\];\n/);
+  assert.match(src, /\nconst VERSION: string = 'dev';\nconst PRECACHE: \[string, string\]\[\] = \[\];\nconst LAZY: string\[\] = \[\];\n/);
   assert.ok(!existsSync(join(repo, 'index.html')), 'the game moved to play/index.html');
 });
 
@@ -134,26 +134,47 @@ test('the published design system drops its @font-face lines: the fonts are decl
   }
 });
 
-test('the precache list holds every import-map module, the shell, the styles, fonts, icons and manifest, each with its hash', () => {
+/* What the worker saves on first request instead of at install (openspec change render-performance, design D10): the
+   Play experiences and their styles, their kit and the video list (is_lazy in build.py) */
+const LAZY = /^\/(js\/play\/exp\/|css\/play\/|js\/play\/kit\.js|js\/play\/life\.js|js\/videos\.js)/;
+
+test('the precache list holds the core: every import-map module but the lazy ones, the shell, the styles, the body and heading fonts, icons and manifest, each with its hash', () => {
   build();
-  const { precache } = sw();
+  const { precache, lazy } = sw();
   const urls = new Map(precache);
-  for (const url of Object.values(importMap())) assert.ok(urls.has(url), `${url} is not precached`);
+  for (const url of Object.values(importMap())) {
+    if (LAZY.test(url)) assert.ok(lazy.includes(url) && !urls.has(url), `${url} is saved on first request, not precached`);
+    else if (url.startsWith('/js/landing-sky.js?')) assert.ok(!urls.has(url) && !lazy.includes(url), `${url}: the landing page's script is never requested under /play/`);
+    else assert.ok(urls.has(url), `${url} is not precached`);
+  }
+  assert.ok(lazy.length > 30 && lazy.every(u => LAZY.test(u) && /\?v=[0-9a-f]{10}$/.test(u)), 'LAZY holds the stamped URLs of the experiences, their styles, the kit and the video list');
+  for (const u of lazy) assert.ok(!urls.has(u), `${u} is in both lists`);
+  assert.ok(lazy.some(u => u.startsWith('/css/play/tala.css?v=')) && lazy.some(u => u.startsWith('/js/play/exp/tala.js?v=')) && lazy.some(u => u.startsWith('/js/videos.js?v=')));
+  assert.ok(urls.has(importMap()['/js/play/catalog.js']) && urls.has(importMap()['/js/arena.js']) && urls.has(importMap()['/js/stories.js']), 'the shelves, the Arena and the stories stay with the core');
   assert.equal(urls.get('/play/'), sha('play/index.html'));
   const css = read('play/index.html').match(/href="(\/math\.css\?v=\w+)"/)[1];
   assert.equal(urls.get(css), sha('math.css'));
   assert.equal(urls.get(importMap()['/js/app.js']), sha('js/app.js'));
   const tokens = read('play/index.html').match(/href="(\/ds\/2\.2\.0\/tokens\.css\?v=\w+)"/)[1];
   assert.equal(urls.get(tokens), sha('ds/2.2.0/tokens.css'), 'the published tokens.css, as served');
-  for (const u of ['/fonts/nunito-sans-latin-wght-normal.woff2', '/fonts/jetbrains-mono-latin-500-normal.woff2', '/icons/icon-192.png', '/icons/maskable-192.png', '/icons/maskable-512.png',
+  for (const u of ['/fonts/nunito-sans-latin-wght-normal.woff2', '/fonts/fredoka-latin-600-normal.woff2', '/fonts/fredoka-latin-700-normal.woff2', '/icons/icon-192.png', '/icons/maskable-192.png', '/icons/maskable-512.png',
     '/icons/favicon-16.png', '/icons/favicon-32.png', '/icons/favicon-48.png', '/icons/favicon.svg', '/icons/apple-touch-icon.png', '/manifest.webmanifest'])
     assert.equal(urls.get(u), sha(u.slice(1)), `${u} is precached with its hash`);
+  for (const u of ['/fonts/space-grotesk-latin-wght-normal.woff2', '/fonts/jetbrains-mono-latin-500-normal.woff2'])
+    assert.ok(!urls.has(u), `${u}: only the experiences use it, so it is saved when first used, never precached`);
+  assert.ok(!precache.some(([u]) => u.startsWith('/js/landing-sky.js')), 'the landing page\'s script is never requested under /play/');
   for (const [u, hash] of precache) {
     assert.ok(u.startsWith('/'), `${u} is not an absolute path`);
     assert.match(String(hash), /^[0-9a-f]{10}$/, `${u} has no hash`);
     assert.ok(!u.startsWith('/vendor/') && !u.startsWith('/thumbs/'), `${u} is fetched on first use, never precached`);
     assert.ok(!u.startsWith('/screenshots/'), `${u}: the install screenshots are for the browser's install dialog, never precached`);
+    assert.ok(!LAZY.test(u), `${u} is saved on first request, never precached`);
   }
+});
+
+test('a lazy module in the static import graph of js/app.js fails the build', () => {
+  const r = withEdit('js/app.js', s => s.replace("import './voice-plan.js';", "import './voice-plan.js';\nimport './play/kit.js';"), () => tryBuild());
+  fails(r, /js\/play\/kit\.js: in the static import graph of js\/app\.js/);
 });
 
 test('a second build gives the same output, and the build never edits the source', () => {
@@ -198,8 +219,48 @@ test('--dev builds the same layout with no stamps and the dev worker', () => {
   build('--dev');
   assert.ok(existsSync(join(out, 'play/index.html')) && existsSync(join(out, 'index.html')) && existsSync(join(out, '_headers')));
   assert.doesNotMatch(read('play/index.html'), /\?v=|type="importmap"/);
-  assert.match(read('sw.js'), /\nconst VERSION = 'dev';\nconst PRECACHE = \[\];\n/);
+  assert.match(read('sw.js'), /\nconst VERSION = 'dev';\nconst PRECACHE = \[\];\nconst LAZY = \[\];\n/);
   assert.doesNotMatch(read('_headers'), /X-Robots-Tag/);
+});
+
+/* Speculation Rules (openspec change render-performance, design D5, task 5.3): every landing and grown-up page carries one
+   block that prefetches plain same-origin page links on hover, allowed by its policy; it lists no URL, so no game path,
+   query or hash; the game page and the 404 page carry none */
+test('every landing and grown-up page carries one Speculation Rules block its policy allows; the game and the 404 page none', () => {
+  build();
+  const headers = read('_headers');
+  for (const f of ['index.html', 'parents/index.html', 'privacy/index.html', 'import/index.html']) {
+    const html = read(f);
+    const blocks = [...html.matchAll(/<script type="speculationrules">([\s\S]*?)<\/script>/g)];
+    assert.equal(blocks.length, 1, `${f} has one rules block`);
+    assert.ok(html.indexOf(blocks[0][0]) < html.indexOf('</head>'), `${f}: the block is in the head`);
+    const rules = JSON.parse(blocks[0][1]);
+    assert.deepEqual(Object.keys(rules), ['prefetch'], `${f}: prefetch only (the prerender rule waits for design D6)`);
+    assert.equal(rules.prefetch.length, 1);
+    assert.equal(rules.prefetch[0].eagerness, 'moderate');
+    const sel = rules.prefetch[0].where.selector_matches;
+    for (const part of ["a[href^='/']", ":not([href*='?'])", ":not([href*='#'])", ':not([download])', ':not([target=_blank])', ':not(.no-prefetch)']) assert.ok(sel.includes(part), `${f}: ${part}`);
+    assert.doesNotMatch(JSON.stringify(rules), /\/play|\/learn|https?:/, `${f}: no URL is listed`);
+    const hash = createHash('sha256').update(blocks[0][1]).digest('base64');
+    const url = f === 'index.html' ? '/' : '/' + f.replace('index.html', '');
+    const rule = headers.match(new RegExp(`^${url.replace(/[*.]/g, '\\$&')}\\n((?: {2}.*\\n)*)`, 'm'))[1];
+    assert.ok(rule.includes(`'sha256-${hash}'`), `${url}: the block's hash is in the page's policy`);
+  }
+  for (const f of ['play/index.html', '404.html']) assert.doesNotMatch(read(f), /speculationrules/, `${f} carries no rules block`);
+});
+
+/* Compressed and immutable delivery (openspec change render-performance, design D3, task 3.2): the folders every page
+   loads at ?v=<content hash> are immutable for a year; pages, the worker and plain files are not */
+test('_headers marks the stamped folders immutable for a year, from shared/src/policy.json, and nothing else', () => {
+  build();
+  const h = read('_headers');
+  const rule = p => h.match(new RegExp(`^${p.replace(/[*.]/g, '\\$&')}\\n((?: {2}.*\\n)*)`, 'm'))?.[1] ?? '';
+  const policy = JSON.parse(readFileSync(join(dir, 'shared/src/policy.json'), 'utf8')).immutable;
+  assert.deepEqual(policy.paths, ['/js/*', '/css/*', '/ds/*', '/theme/*', '/math.css']);
+  for (const p of policy.paths) assert.equal(rule(p), `  Cache-Control: ${policy.value}\n`, p);
+  assert.equal(policy.value, 'public, max-age=31536000, immutable');
+  for (const p of ['/*', '/play/', '/']) assert.doesNotMatch(rule(p), /Cache-Control/, `${p} keeps the default caching`);
+  assert.equal((h.match(/immutable/g) || []).length, policy.paths.length, 'no other path is immutable');
 });
 
 test('--preview sends X-Robots-Tag: noindex, nofollow on every response; production does not', () => {

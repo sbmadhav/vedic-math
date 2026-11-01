@@ -1333,6 +1333,9 @@ function arenaReview(T, answered) {
 /* A section's shelf of play experiences for this Mode (js/play/catalog.js) */
 function playShelf(section, heading) {
   const list = playIn(section, fx.mode()); if (!list.length) return '';
+  /* Offline, once the shelf is in the page: a card whose experience the worker never saved says it needs a connection
+     the first time (js/play/offline-note.js, loaded only then; openspec change render-performance, design D10) */
+  if (navigator.onLine === false) later(() => import('./play/offline-note.js').then(m => m.noteOffline(view)).catch(() => {}), 0, boot.signal);
   return `<section class="play-shelf" aria-labelledby="ps-${section}"><h2 class="mq-strand" id="ps-${section}">${heading}</h2><ul class="play-shelf-grid">${list.map(e => `<li><a class="play-card play-card--${e.color}" href="${e.route}"><span class="play-card-ic" aria-hidden="true">${PLAY_ICONS[e.icon] || ''}</span><b>${e.title}</b><em>${e.tag}</em><span>${e.blurb}</span></a></li>`).join('')}</ul></section>`;
 }
 /* Styles load with the page that needs them; the build stamps their URLs (the #vm-css map in play/index.html) */
@@ -1368,7 +1371,12 @@ function playView(hash, { signal }) {
     const head = view.querySelector('h1, h2'); if (head) { head.setAttribute('tabindex', '-1'); if (render.n > 1 && !view.contains(document.activeElement)) head.focus({ preventScroll: true }); }
   }).catch(() => {
     if (signal.aborted) return;
-    view.innerHTML = `<section class="md-section"><div class="md-wrap"><h1 class="md-heading">${e.title} did not open</h1><p class="md-lede">Check your connection and try again.</p><p><a class="md-btn md-btn--primary" href="${sec.href}">Back to ${sec.label}</a></p></div></section>`;
+    /* Its files are saved the first time it opens online (render-performance D10): offline before that, say so.
+       Retry loads the page again at this route, so the module is really asked for again (a failed import() can stay
+       failed for the life of the document). */
+    const why = navigator.onLine === false ? 'It needs a connection the first time. Connect and try again.' : 'Check your connection and try again.';
+    view.innerHTML = `<section class="md-section"><div class="md-wrap"><h1 class="md-heading">${e.title} did not open</h1><p class="md-lede">${why}</p><p><button type="button" class="md-btn md-btn--primary" id="pxRetry">Retry</button> <a class="md-btn" href="${sec.href}">Back to ${sec.label}</a></p></div></section>`;
+    on($('#pxRetry'), 'click', () => location.reload(), signal);
   });
 }
 
