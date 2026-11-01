@@ -18,7 +18,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 859551,
+  "total": 859552,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -88,7 +88,7 @@
    "/js/listen.js": 1335,
    "/js/mental.js": 155,
    "/js/metrics.js": 4201,
-   "/js/nav.js": 1554,
+   "/js/nav.js": 1555,
    "/js/play/catalog.js": 1783,
    "/js/play/exp/apprentice-core.js": 7279,
    "/js/play/exp/apprentice.js": 3914,
@@ -375,7 +375,7 @@
     "date": "2026-10-31",
     "pr": "age-bands-build",
     "from": 846845,
-    "to": 859551,
+    "to": 859552,
     "why": "age-bands (openspec change, built on the Legacy views by the owner's delegation): the Reading band logic and the copy table as shared TypeScript published under /js/ts/ (shared/src/bands.ts, copy.ts, voice-text.ts, all static imports of js/fx.js, so on the first load), the grade question as a new on-demand module (js/grade-question.js, in the precache only), the band rules in js/app.js (the Mode picker, Home, Practice, the Arena, games, the tower, Me), js/star.js, js/arena.js, js/fx.js, js/store.js, js/handoff-schema.js and js/sky-view.js, and the body.band-early rules in math.css; measured locally with --voice off on main as of #188; file deltas: /js/ts/shared/src/copy.js +4762 (new), /js/ts/shared/src/bands.js +2151 (new), /js/grade-question.js +1983 (new), /js/app.js +1186, /js/store.js +593, /js/fx.js +575, /js/handoff-schema.js +422, /js/arena.js +414, /math.css +380, /js/star.js +173, /sw.js +59, /play/ +48, /js/sky-view.js -39, /js/nav.js -1; +12706 in all"
    }
   ]
