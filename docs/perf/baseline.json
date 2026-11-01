@@ -18,8 +18,9 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 849706,
+  "total": 850252,
   "files": {
+   "/js/paths.js": 2776,
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
    "/css/play/base.css": 1123,
@@ -54,7 +55,7 @@
    "/js/ambient.js": 4480,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 52849,
+   "/js/app.js": 53229,
    "/js/arena.js": 4141,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -88,7 +89,6 @@
    "/js/mental.js": 155,
    "/js/metrics.js": 4201,
    "/js/nav.js": 1555,
-   "/js/paths.js": 2776,
    "/js/play/catalog.js": 1783,
    "/js/play/exp/apprentice-core.js": 7279,
    "/js/play/exp/apprentice.js": 3914,
@@ -173,9 +173,9 @@
    "/js/voice.js": 14663,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 25689,
-   "/play/": 4362,
-   "/sw.js": 6468,
+   "/math.css": 25896,
+   "/play/": 4335,
+   "/sw.js": 6454,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
@@ -371,10 +371,17 @@
    },
    {
     "date": "2026-10-31",
-    "pr": 190,
+    "pr": 189,
     "from": 846845,
-    "to": 849706,
-    "why": "indexable-routes task 1.1: the route table js/paths.js (new, 2,776 bytes as published: one row per route with its finite keys from the catalogs, toPath, toKey, allPaths; its two imports of re-export-only js/ modules are pointed at their TypeScript modules, as #127 does). Nothing imports it yet, but build.py pins every /js/ module in the import map and precaches it, so a new module counts here before any view loads it; the router, the hash shim and the prerender step read it from task 2.1 on. Measured on the tree merged with main as of #188, keeping CI's /js/nav.js figure (the local Brotli reads 1 byte less, as the 2026-10-30 entry says); file deltas: /js/paths.js +2776 (new), /play/ +41 (its import map entry), /sw.js +44 (its precache entry); +2861 in all"
+    "to": 847480,
+    "why": "indexable-routes task 3.1, view transitions inside the game (design D12): render() in js/app.js runs its DOM update inside document.startViewTransition when the browser has it and fx.noMotion() is false, skipping the first render, a redraw of the same route and a change while one is running, with focus and scroll after updateCallbackDone; math.css names the header, the nav and the Player chip (site-header, game-nav, player-chip) and sets the 180 ms fade; no new file; measured on the tree merged with main as of #188; file deltas: /js/app.js +380, /math.css +207, /sw.js +34, /play/ +14; /js/nav.js reads 1 byte smaller locally than CI's figure, which the baseline keeps (the #168 note); +635 in all as CI measures it"
+   },
+   {
+    "date": "2026-11-01",
+    "pr": 190,
+    "from": 847480,
+    "to": 850252,
+    "why": "indexable-routes 1.1, the route table (js/paths.js); re-measured on main as of the merge; CI figure for /js/nav.js; file deltas: /js/paths.js new 2776, /sw.js -4; +2772 in all"
    }
   ]
  },
