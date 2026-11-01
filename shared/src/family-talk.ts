@@ -83,7 +83,9 @@ function trickRow(t: Trick): TalkSkill {
   return {
     id: `v-${t.id}`, trick: t.id, title: t.title, idea: plainText(t.idea), sutra: t.sutra || '', meaning: t.meaning || '', arity,
     parts: TRICK_PARTS[t.id] ?? ['firstNumber', 'secondNumber'].slice(0, Math.min(2, arity)),
-    valid: nums => nums.length === arity && nums.every((n, i) => { const inp = t.inputs[i]; return !!inp && isInt(n) && n >= inp.min && n <= inp.max; }) && !t.valid(vals(nums)),
+    /* The input ranges are the animator's (what a learner types); the game's own generator can go past them (transpose's
+       d), so a number may be up to twice its range's reach, on the side the range allows */
+    valid: nums => nums.length === arity && nums.every((n, i) => { const inp = t.inputs[i]; if (!inp || !isInt(n)) return false; const reach = 2 * Math.max(Math.abs(inp.min), Math.abs(inp.max)); return n >= (inp.min < 0 ? -reach : inp.min) && n <= reach; }) && !t.valid(vals(nums)),
     answer: nums => Number(t.answer(vals(nums))),
     pieces: nums => (t.parts ? t.parts(vals(nums)).map(Number).filter(Number.isFinite) : []),
     question: nums => plainText(problemFor(t, vals(nums)).q),
