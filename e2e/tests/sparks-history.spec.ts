@@ -45,13 +45,17 @@ test('after a kata and a watched trick, Recent Sparks lists them newest first wi
   await expect(page.locator('.fx-toast', { hasText: '+5 Sparks' })).toHaveCount(1, { timeout: 1000 }); // once per Trick
 
   await open(page, '#/me');
-  await expect(rows(page)).toHaveCount(2);
-  await expect(rows(page).nth(0)).toHaveText('Watched a speed trick +5 just now');
-  await expect(rows(page).nth(1)).toHaveText(`Kata +${kata} just now`);
-  await expect(rows(page).nth(0).locator('time')).toHaveAttribute('datetime', /^\d{4}-\d\d-\d\dT/);
+  /* Today's quests may include Watch a speed trick or Finish a Dojo kata: their +25 rows come right after the award
+     that met them, so the trick and kata rows are read in order with any quest rows left out */
+  const own = rows(page).filter({ hasNotText: 'Quest complete' });
+  await expect(own).toHaveCount(2);
+  await expect(own.nth(0)).toHaveText('Watched a speed trick +5 just now');
+  await expect(own.nth(1)).toHaveText(`Kata +${kata} just now`);
+  await expect(own.nth(0).locator('time')).toHaveAttribute('datetime', /^\d{4}-\d\d-\d\dT/);
+  for (const q of await rows(page).filter({ hasText: 'Quest complete' }).allTextContents()) expect(q).toBe('Quest complete +25 just now');
   await expect(page.locator('.me-log')).toContainText('never sent anywhere');
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1') || '{}'));
-  expect(saved.sparksLog.map((e: { why: string; n: number }) => [e.why, e.n])).toEqual([['trick', 5], ['kata', kata]]);
+  expect(saved.sparksLog.filter((e: { why: string }) => e.why !== 'quest').map((e: { why: string; n: number }) => [e.why, e.n])).toEqual([['trick', 5], ['kata', kata]]);
 });
 
 test.describe('fifty kept', () => {

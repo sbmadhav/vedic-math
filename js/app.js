@@ -265,7 +265,7 @@ function modeIcon(id) {
 const QUEST_WHEN = { explorer: 'New quests every morning.', challenger: 'New quests at midnight, your time. Everyone in your Mode gets the same three.', pro: 'New quests at midnight, your time. Everyone in your Mode gets the same three.' };
 function questsHTML() {
   const qs = gm.quests();
-  return `<div class="md-card quest-card"><h2 class="mq-h3">Daily quests</h2><p class="listen-row">${listenBtn('from:.q-l', "today's quests")}</p><ul class="quests">${qs.map(q => `<li class="${q.done ? 'done' : ''}"><span class="q-check" aria-hidden="true">${q.done ? '&#10003;' : ''}</span><span class="q-t"><span class="q-l">${q.label}</span><span class="mq-bar"><i style="width:${pct(q.prog / q.goal)}%"></i></span></span><span class="q-n">${q.prog}/${q.goal}</span></li>`).join('')}</ul><p class="mq-small">Sparks are the points you earn for right answers. Each quest is worth 25 bonus Sparks.</p><p class="mq-small quest-when">${fx.t(QUEST_WHEN)}</p></div>`;
+  return `<div class="md-card quest-card"><h2 class="mq-h3">Daily quests</h2><p class="listen-row">${listenBtn('from:.q-l', "today's quests")}</p><ul class="quests">${qs.map(q => `<li class="${q.done ? 'done' : ''}"><span class="q-check" aria-hidden="true">${q.done ? '&#10003;' : ''}</span><span class="q-t"><span class="q-l">${q.label}</span><span class="mq-bar"><i style="width:${pct(q.prog / q.goal)}%"></i></span></span><span class="q-n">${q.prog}/${q.goal}</span></li>`).join('')}</ul><p class="mq-small">Sparks are the points you earn for right answers. Each quest is worth 25 bonus Sparks. <span class="quest-when">${fx.t(QUEST_WHEN)}</span></p></div>`;
 }
 function heroStats() {
   const p = store.player(), T = gm.titleInfo();
