@@ -2,7 +2,9 @@
    route table enumerates (allPaths() in js/paths.js) this writes <out>/learn/<path>.html: the game's shell, byte for
    byte, with that page's own <title>, meta description, canonical link, Open Graph title, description and URL, and
    `noindex, follow` on the pages design D5 keeps out of the index; plus <out>/learn/404.html, the shell with `noindex`
-   and no canonical, which Cloudflare's 404-page handling serves for any path under /learn/ with no file. No article
+   and no canonical, which Cloudflare's 404-page handling serves for any path under /learn/ with no file. Home is
+   learn/index.html, the shell itself: its head is already Home's, so the page written there is the shell byte for
+   byte (build.py fails otherwise, since the precache and the first load hash the shell). No article
    yet: tasks 5.1 to 5.3 add the public text into #view. Every page keeps the shell's scripts and stamps, so one
    _headers rule (/learn/*) covers them all; build.py fails when a page's inline scripts differ from the shell's.
 
@@ -12,13 +14,13 @@
    160 characters from the catalogs, with no em dash (test/prerender.test.mjs checks both).
 
    Run by build.py with the system node (22.18 or newer strips the types itself, as for tools/budget.ts):
-     node --no-warnings tools/prerender/write.ts --shell _site/play/index.html --out _site
-   It prints one JSON line: the page count, how many are indexed, the folder written, and the 200 rewrites for share
-   links that build.py puts in _redirects. test/prerender.test.mjs imports the functions and checks the pages in memory. */
+     node --no-warnings tools/prerender/write.ts --shell _site/learn/index.html --out _site
+   It prints one JSON line: the page count, how many are indexed, the folder written, the 200 rewrites for share
+   links and the alias 301s (design D2) that build.py puts in _redirects. test/prerender.test.mjs imports the functions and checks the pages in memory. */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { allPaths, BASE } from '../../js/paths.js';
+import { allPaths, ALIASES, BASE } from '../../js/paths.js';
 import { GRADES, SKILLS } from '../../js/skills/index.js';
 import { TRICKS } from '../../js/vedic.js';
 import { KATAS_PER_TRICK, STARS_PER_TRICK, TOPICS, PER_CHAPTER, CHALLENGE_COUNT } from '../../js/levels.js';
@@ -150,7 +152,7 @@ export function metaOf(key: string): Meta {
     learn/kata/sq5/12.html (served at its path by auto-trailing-slash) */
 export const fileOf = (path: string): string => (path.endsWith('/') ? `${path}index.html` : `${path}.html`).slice(1);
 
-/* The head lines the shell (play/index.html) carries once, each on its own line, which every page rewrites */
+/* The head lines the shell (learn/index.html) carries once, each on its own line, which every page rewrites */
 const TITLE = /<title>[^<]*<\/title>\n/, DESCRIPTION = /<meta name="description" content="[^"]*">\n/, CANONICAL = /<link rel="canonical" href="[^"]*">\n/;
 const OG_TITLE = /<meta property="og:title" content="[^"]*">\n/, OG_DESCRIPTION = /<meta property="og:description" content="[^"]*">\n/, OG_URL = /<meta property="og:url" content="[^"]*">\n/;
 
@@ -208,7 +210,7 @@ export function write(shellFile: string, out: string) {
     mkdirSync(dirname(dest), { recursive: true });
     writeFileSync(dest, p.html);
   }
-  return { pages: pages.length - 1, indexed: pages.filter(p => p.entry?.indexed).length, base: BASE, folder: BASE.slice(1), rewrites: rewrites() };
+  return { pages: pages.length - 1, indexed: pages.filter(p => p.entry?.indexed).length, base: BASE, folder: BASE.slice(1), rewrites: rewrites(), aliases: ALIASES as unknown as [string, string][] };
 }
 
 function main(argv: string[]) {

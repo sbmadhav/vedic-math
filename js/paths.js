@@ -4,9 +4,9 @@
    A route key is the hash form the router matches ('#/kata/sq5/12'). Its path is the key without its '#', under
    BASE, lowercase with no trailing slash ('/learn/kata/sq5/12'); Home is BASE + '/'. Four rows choose otherwise
    (design D2): the Skill map is BASE + '/skills', and a route's second name (tricks, progress, duel, learn) is an
-   alias path that answers 301 to the screen's one path. BASE is the one place the game's path base is written: it is
-   /play while the page is served there, and task 2.2 moves it to /learn with the page (design D2), so the router
-   (js/app.js), the e2e fixtures and the build follow in one line.
+   alias path that answers 301 to the screen's one path. BASE is the one place the game's path base is written (the page
+   is learn/index.html, served at /learn/; design D2), so the router (js/app.js), the e2e fixtures and the build follow
+   it; links from before the move reach the same screen through _redirects (design D9).
    Row fields:
    - pattern: the regex in js/app.js `routes`, the same source (test/paths.test.mjs matches them up)
    - kind: the route-view name for analytics (js/metrics.js routePath): {catalog:n} is capture n, lowercased, which
@@ -26,7 +26,7 @@ import { sections } from './guide.js';
 import { guideCounts } from './explain-lines.js';
 import { PLAY } from './play/catalog.js';
 
-export const BASE = '/play'; /* task 2.2: '/learn' */
+export const BASE = '/learn';
 
 const range = n => Array.from({ length: n }, (_, i) => i + 1);
 const GRADE_IDS = GRADES.map(g => String(g.id));

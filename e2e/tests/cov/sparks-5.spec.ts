@@ -73,7 +73,7 @@ test.describe('a Player who was "Level 6 · Sum Sprinter" loads the app after th
       expect(await chip.evaluate(e => [...e.children].filter(c => !c.classList.contains('md-sr-only')).map(c => c.textContent).join(''))).not.toMatch(/\d/); // on screen: the avatar and the bar (the name is for screen readers)
       // No "Level 6" anywhere on the Me page or the home page
       await expect(page.locator('body')).not.toContainText(/Level\s*6/i);
-      await page.goto('/play/');
+      await page.goto('/learn/');
       await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
       await expect(page.locator('#mqChip a.mq-chip')).toHaveAccessibleName('Swift Tiger 42, Sum Sprinter');
       await expect(page.locator('body')).not.toContainText(/Level\s*6\b/i);

@@ -64,7 +64,7 @@ test.describe('wide screen', () => {
     await page.goto('/?home');
     expect(await kinds(page)).toEqual(['brand', 'nav', 'theme']);
     const nav = page.locator('body > header nav');
-    for (const [name, href] of [['Learn', '/play/'], ['For parents', '/parents/'], ['For teachers', '/teachers/']])
+    for (const [name, href] of [['Learn', '/learn/'], ['For parents', '/parents/'], ['For teachers', '/teachers/']])
       await expect(nav.getByRole('link', { name, exact: true })).toHaveAttribute('href', href);
     await expect(page.locator('#exploreBtn, .xp-btn')).toHaveCount(0);
     await expect(page.locator('body > header.md-header')).toHaveCSS('position', 'sticky');

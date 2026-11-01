@@ -12,38 +12,40 @@
                                               (CI deploys this way while R2 is not set up: R2_ACCOUNT_ID is empty)
 
 The site is served by Cloudflare Workers static assets (wrangler.jsonc; openspec change learnvedicmath, design D1)
-from the root of learnvedicmath.com: the landing page at /, the game at /play/, the grown-up pages at /parents/,
+from the root of learnvedicmath.com: the landing page at /, the game at /learn/, the grown-up pages at /parents/,
 /teachers/, /privacy/ and /terms/, the hand-off import page at /import/. Modules are at /js/, styles at /css/ and
 /math.css. Nothing is loaded from another repo or site: the design system (vendor/design-system/2.2.0/, published at
 /ds/2.2.0/), the fonts (fonts/), the icons (icons/), the GoatCounter script and the Firebase SDK (vendor/) are served
 from this site, and every same-origin script and stylesheet a page loads is pinned with ?v=<hash>.
 
-The source in git is never stamped: play/index.html has no import map and loads plain /js/app.js and /math.css, and
+The source in git is never stamped: learn/index.html has no import map and loads plain /js/app.js and /math.css, and
 the worker source (app/src/sw/sw.ts) says VERSION = 'dev' with an empty PRECACHE. Stamps exist only in the build output. CI runs this script and
 deploys the output (.github/workflows/ci.yml).
 
 What the build does (target site):
 - Copies every file git knows about except the repo-only files (`exclude:` in _config.yml, and any path with a part
   starting with "." or "_"). The page sources in site/ and the pinned design system are placed instead.
-- Pages: play/index.html (the game) and every site/**/*.html. Each must hold the site header from
+- Pages: learn/index.html (the game) and every site/**/*.html. Each must hold the site header from
   theme/header.html exactly as the vendored compose.py writes it. A page may include a Markdown file with
   <!-- include-md: PATH -->, rendered here (the legal pages and /licenses/).
-- In play/index.html: an import map that pins every module under /js/ to ?v=<hash of that file>, and the #vm-css map
+- In learn/index.html: an import map that pins every module under /js/ to ?v=<hash of that file>, and the #vm-css map
   for the play stylesheets. In every page: each same-origin .js and .css it loads gets ?v=<hash>.
 - sw.js: app/src/sw/sw.ts with its types taken out (tools/build-sw.mjs, run with the system node, 22.13 or newer),
   then VERSION and the PRECACHE list between the "build.py: precache" markers. Every entry has the hash the worker
-  checks on install: the game shell /play/, every file it loads, every module at its import-map URL, the play
+  checks on install: the game shell /learn/, every file it loads, every module at its import-map URL, the play
   stylesheets, the fonts, the icons and the manifest.
 - _headers: the security headers on every response, and per page a Content-Security-Policy and a stricter
   Report-Only one, built from that page's inline script hashes and THIRD_PARTIES. No page carries a CSP <meta>.
-- _redirects (old /vedic-math/ links to /play/, the 200 rewrites for share links under /learn/), robots.txt,
+- _redirects (the game's old addresses: /play/ and old /vedic-math/ links to /learn/, the route aliases; the 200
+  rewrites for share links under /learn/), robots.txt,
   sitemap.xml, /.well-known/security.txt.
 - The route pages (openspec change indexable-routes, design D4): tools/prerender/write.ts (run with the system node,
   like the worker's type stripping) writes learn/<path>.html for every path the route table js/paths.js enumerates,
   the game shell with that page's own title, description, canonical, Open Graph tags and robots line, plus
   learn/404.html (the shell with noindex, which Cloudflare serves with status 404 for an unknown path under /learn/).
-  They all share the shell's inline scripts, so _headers has one rule for /learn/*; the build fails when one differs.
-- The first-load budget (tools/budget.ts): the Brotli size of everything a first visit to /play/ requests before the
+  They all share the shell's inline scripts, so _headers has one rule for /learn/* (the shell's own page /learn/
+  included); the build fails when one differs, or when the Home page it writes is not the shell byte for byte.
+- The first-load budget (tools/budget.ts): the Brotli size of everything a first visit to /learn/ requests before the
   first tap, printed on every build and failing above docs/perf/baseline.json (not for --dev).
 
 It fails on: stamps in the source; a CSP <meta>, an inline event handler or a javascript: URL in a page; text in
@@ -59,7 +61,11 @@ import argparse, base64, datetime, fnmatch, hashlib, html as htmllib, importlib.
 
 ROOT = pathlib.Path(__file__).resolve().parent
 ORIGIN = "https://learnvedicmath.com"
-APP = "/play/"
+APP = "/learn/"   # the game shell, learn/index.html (openspec change indexable-routes, design D2)
+# The game's old address (/play, /play/..., not /js/play/ or /css/play/), named in no published file but _redirects;
+# the manifest keeps its id, which names the installed app and never changes (design D10)
+OLD_GAME = re.compile(r"(?:(?<![\w.~-])|(?<=learnvedicmath\.com))/play(?![\w.-])")
+MANIFEST_ID = '"id": "/play/"'
 PATHS_JS = "js/paths.js"   # the route table; its BASE ('/learn') is where the route pages live (prerender_base)
 PRERENDER = "tools/prerender/write.ts"   # writes the route pages from the game shell (prerender)
 DS_DIR, DS_URL = "vendor/design-system/2.2.0", "/ds/2.2.0/"
@@ -395,7 +401,7 @@ def _rewrite(importer, text, all_files, shim=None):
 
 def check_budget(out, voice):
     """The first-load byte budget (openspec change react-typescript, performance-budget spec, task 1.8): tools/budget.ts
-    measures the Brotli size of everything a first visit to /play/ requests before the first tap (the page, what it
+    measures the Brotli size of everything a first visit to /learn/ requests before the first tap (the page, what it
     loads, the entry's static imports, sw.js and every file in PRECACHE), prints the table, and fails when the total is
     above docs/perf/baseline.json. A pull request that grows first load on purpose updates the baseline and says why.
     The baseline names the voice mode it was measured in (firstLoad.voice): js/voice-index.js and sw.js differ by mode,
@@ -461,6 +467,8 @@ def check_published(out, voice):
             fail(f"{rel}: names a speech provider ({host.group(0)}); the site must only play its own recorded files")
         if secret:
             fail(f"{rel}: holds something shaped like an API key or token ({secret.group(0)[:6]}...); keys stay in the shell that records")
+        if rel != "_redirects" and OLD_GAME.search(text.replace(MANIFEST_ID, "") if rel == "manifest.webmanifest" else text):
+            fail(f"{rel}: names the game's old address /play/; the game is at /learn/ (only _redirects maps old links; openspec change indexable-routes)")
         if rel != "_redirects" and "/vedic-math/" in text:
             fail(f"{rel}: names a /vedic-math/ path; the site is served from the root of learnvedicmath.com (only _redirects maps old links)")
         if "gstatic.com/firebasejs" in text:
@@ -708,16 +716,21 @@ def headers_file(pages, preview):
     return text
 
 
-REDIRECTS = ("# Written by build.py: old links from sbmadhav.com/vedic-math/ reach the game (the hash route rides along).\n"
-             "/vedic-math /play/ 301\n/vedic-math/* /play/ 301\n")
+# The game's old addresses, never removed (openspec change indexable-routes, design D9): /play/ and its paths move to
+# /learn/ (Cloudflare keeps the query, the browser the fragment, and the page's pre-paint script turns a #/ route into
+# its path), and the move's /vedic-math/ links end at /learn/ (the hash route rides along).
+REDIRECTS = ("# Written by build.py: the game's old addresses reach the same screen under /learn/.\n"
+             "/play /learn/ 301\n/play/* /learn/:splat 301\n/vedic-math /learn/ 301\n/vedic-math/* /learn/ 301\n")
 
 
-def redirects_file(rewrites):
+def redirects_file(rewrites, aliases):
     """_redirects: the old-origin rules, then the 200 rewrites for share links (openspec change indexable-routes, design
     D4): a path under a play experience with parameters (a Ghost race code, an Art piece, a Wall card, a Locks chapter)
     and an Arena challenge link are answered with their page, status 200, by Cloudflare without running code; the app
     reads the parameters from the address as today. One dynamic (splat) rule each, of Cloudflare's 100."""
-    text = REDIRECTS + "# Share links with codes open their experience's page (status 200), which reads the code from the address.\n"
+    text = REDIRECTS + "# A screen's second name answers 301 with its one path (design D2).\n"
+    text += "".join(f"{src} {dest} 301\n" for src, dest in aliases)
+    text += "# Share links with codes open their experience's page (status 200), which reads the code from the address.\n"
     text += "".join(f"{src} {dest} 200\n" for src, dest in rewrites)
     rules = [l for l in text.splitlines() if l and not l.startswith("#")]
     if len(rules) > MAX_REDIRECTS:
@@ -736,7 +749,7 @@ def stamp_refs(html, versions):
 
 
 def page_url(rel):
-    """site/parents/index.html -> /parents/; site/404.html -> /404.html; play/index.html -> /play/."""
+    """site/parents/index.html -> /parents/; site/404.html -> /404.html; learn/index.html -> /learn/."""
     rel = rel[len("site/"):] if rel.startswith("site/") else rel
     return "/" + (rel[: -len("index.html")] if rel.endswith("index.html") else rel)
 
@@ -745,7 +758,7 @@ def build_site(args, out):
     dev = args.dev
     today = datetime.date.fromisoformat(os.environ["BUILD_TODAY"]) if os.environ.get("BUILD_TODAY") else datetime.date.today()
     all_files = git_files(out)
-    for required in ["play/index.html", SW_SRC, "tools/build-sw.mjs", "tools/build-ts.mjs", POLICY_SRC, "tools/budget.ts", PRERENDER, PATHS_JS, "math.css", "manifest.webmanifest", "js/app.js", HEADER, "site/index.html",
+    for required in ["learn/index.html", SW_SRC, "tools/build-sw.mjs", "tools/build-ts.mjs", POLICY_SRC, "tools/budget.ts", PRERENDER, PATHS_JS, "math.css", "manifest.webmanifest", "js/app.js", HEADER, "site/index.html",
                      "site/404.html", "site/.well-known/security.txt", "THIRD-PARTY-NOTICES.md"]:
         if required not in all_files:
             fail(f"{required} is missing")
@@ -790,7 +803,7 @@ def build_site(args, out):
 
     compose, partial = load_compose(), (ROOT / HEADER).read_text()
     pages = {}  # url -> [html, kind]
-    for rel in ["play/index.html"] + sorted(f for f in all_files if f.startswith("site/") and f.endswith(".html")):
+    for rel in ["learn/index.html"] + sorted(f for f in all_files if f.startswith("site/") and f.endswith(".html")):
         html = (ROOT / rel).read_text()
         check_page(rel, html)
         if "<!-- md-header -->" in html:
@@ -802,7 +815,7 @@ def build_site(args, out):
                 fail(f"{rel}: its header differs from {HEADER}. Run python3 {DS_DIR}/compose.py {HEADER} {rel}")
         elif rel != "site/404.html":
             fail(f"{rel}: has no <!-- md-header --> block; every page uses the site header ({HEADER})")
-        pages[page_url(rel)] = [render_includes(rel, html).replace("{{year}}", str(today.year)), "play" if rel == "play/index.html" else "site"]
+        pages[page_url(rel)] = [render_includes(rel, html).replace("{{year}}", str(today.year)), "play" if rel == "learn/index.html" else "site"]
         if left := placeholders(pages[page_url(rel)][0]):
             fail(f"{rel}: shows the placeholder {left[0]}; a published page never shows a draft's [bracketed] text "
                  "(reword it, or move it to the draft's \"(remove before publishing)\" section)")
@@ -822,6 +835,7 @@ def build_site(args, out):
                 fail(f"{p}: import '{spec}' resolves to {resolved}, outside the versioned /js/ modules")
 
     imports = {f"/{p}": f"/{p}?v={versions['/' + p]}" for p in js}
+    route_links = []  # (page, path) for each link to a screen's path under APP
     play_css = {f"/{f}": versions["/" + f] for f in publish if f.startswith("css/") and f.endswith(".css")}
     for url, page in pages.items():
         html = page[0]
@@ -830,12 +844,14 @@ def build_site(args, out):
                          + '<script type="application/json" id="vm-css">' + json.dumps(play_css) + "</script>\n" + MAP_END + "\n")
             entry = re.search(r'<script type="module" src="/js/app\.js"></script>', html)
             if not entry:
-                fail("play/index.html: module entry script not found")
+                fail("learn/index.html: module entry script not found")
             html = html[:entry.start()] + map_block + html[entry.start():]
         if not dev:
             html = stamp_refs(html, versions)
         for m in re.finditer(r'(?:src|href)="(/[^"?#]*)', html):
-            if not (m.group(1).endswith("/") or m.group(1)[1:] in publish or m.group(1)[1:] in GENERATED):
+            if m.group(1).startswith(APP) and not m.group(1).endswith("/"):
+                route_links.append((url, m.group(1)))  # a route page: checked once the prerender has written them
+            elif not (m.group(1).endswith("/") or m.group(1)[1:] in publish or m.group(1)[1:] in GENERATED):
                 fail(f"{url}: loads or links {m.group(1)}, which is not published")
         page[0] = html
 
@@ -865,9 +881,12 @@ def build_site(args, out):
     security_txt = (ROOT / "site/.well-known/security.txt").read_text()
     check_security_txt(security_txt, today)
     listed = sorted(u for u in pages if u not in ("/404.html", "/import/"))
-    # The route pages under <base>/ (prerender, below) are the game shell with their own head: one rule, with the game's policy
+    # The route pages under <base>/ (prerender, below) are the game shell with their own head: one rule, with the game's
+    # policy, which also covers the shell at <base>/ (a second rule matching it would add a second policy)
     base = prerender_base()
-    with_policy = {u: (p[0], p[1]) for u, p in pages.items() if u != "/404.html"}
+    if APP != base + "/":
+        fail(f"{PATHS_JS}: BASE is {base}, but the game shell is published at {APP}; they move together")
+    with_policy = {u: (p[0], p[1]) for u, p in pages.items() if u not in ("/404.html", APP)}
     with_policy[f"{base}/*"] = (play_html, "play")
     generated = {
         "_headers": headers_file(with_policy, args.preview),
@@ -896,7 +915,13 @@ def build_site(args, out):
     # rewrites go into _redirects. Not in the precache or the first load: the shell is the one page a first visit loads.
     routes = prerender(out, out / (APP[1:] + "index.html"))
     check_route_pages(out, base, play_html, routes["pages"])
-    generated["_redirects"] = redirects_file(routes["rewrites"])
+    if (out / (APP[1:] + "index.html")).read_text() != play_html:
+        fail(f"{APP}: the Home page the prerender wrote differs from the shell; the precache and the first load hash the shell, "
+             f"so its head must be Home's (title, description, canonical {ORIGIN}{APP})")
+    for url, link in route_links:
+        if not (out / (link[1:] + ".html")).is_file():
+            fail(f"{url}: links {link}, which no route page answers (js/paths.js lists every screen's path)")
+    generated["_redirects"] = redirects_file(routes["rewrites"], routes["aliases"])
     for f, text in generated.items():
         (out / f).parent.mkdir(parents=True, exist_ok=True)
         (out / f).write_text(text)

@@ -80,7 +80,7 @@ test('the race track Landmark opens the Arena', async ({ page }) => {
 test.describe('the site-wide motion pause', () => {
   test.use({ reducedMotion: 'no-preference' });
   test('with html.motion-paused set before load, nothing on the Sky animates and every Star is shown', async ({ page }) => {
-    await page.route(/\/play\/(index\.html)?(\?.*)?$/, async route => {
+    await page.route(/\/learn\/[\w/-]*(\?.*)?$/, async route => {
       const res = await route.fetch();
       await route.fulfill({ response: res, body: (await res.text()).replace('<html lang="en">', '<html lang="en" class="motion-paused">') });
     });

@@ -1,7 +1,7 @@
 /* The prerendered route pages (openspec change indexable-routes, design D4 and D5, task 2.3): one page per allPaths()
    entry plus the 404 shell, each the game shell with its own head: a title that follows the view's document.title rule
    and is its own, a description under 160 characters with no em dash, a canonical without a query, Open Graph tags,
-   and `noindex, follow` on exactly the rows the route table does not index. Checked in memory from play/index.html;
+   and `noindex, follow` on exactly the rows the route table does not index. Checked in memory from learn/index.html;
    test/build.test.mjs checks the files the build writes and the _headers and _redirects rules around them. */
 import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
@@ -10,7 +10,7 @@ import { allPaths, BASE } from '../js/paths.js';
 import { PLAY } from '../js/play/catalog.js';
 import { routePages, metaOf, fileOf, rewrites, withHead, ORIGIN, NOINDEX, DESCRIPTION_MAX } from '../tools/prerender/write.ts';
 
-const shell = readFileSync(new URL('../play/index.html', import.meta.url), 'utf8');
+const shell = readFileSync(new URL('../learn/index.html', import.meta.url), 'utf8');
 const PAGES = routePages(shell), ROUTES = PAGES.filter(p => p.entry), NOT_FOUND = PAGES[PAGES.length - 1];
 const ALL = allPaths();
 const by = path => ROUTES.find(p => p.path === path);

@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const src = f => readFileSync(join(repo, f), 'utf8');
 const walk = d => readdirSync(join(repo, d)).flatMap(f => statSync(join(repo, d, f)).isDirectory() ? walk(join(d, f)) : [join(d, f)]);
-const pages = ['play/index.html', ...walk('site').filter(f => f.endsWith('.html'))];
+const pages = ['learn/index.html', ...walk('site').filter(f => f.endsWith('.html'))];
 
 /* Width, height and whether the PNG has an alpha channel, from its IHDR chunk */
 function png(f) {

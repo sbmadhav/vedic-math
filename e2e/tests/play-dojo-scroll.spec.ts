@@ -53,7 +53,7 @@ test('Spellbook: a keyboard cast keeps focus on the digits after each key press'
 });
 
 test('Spellbook: a learn link cannot skip ahead to a spell not yet unlocked', async ({ page }) => {
-  const later: string = await page.goto('/play/').then(() => page.evaluate(async () => (await e2eMod('play/exp/spells-core')).ORDER.challenger[2]));
+  const later: string = await page.goto('/learn/').then(() => page.evaluate(async () => (await e2eMod('play/exp/spells-core')).ORDER.challenger[2]));
   await open(page, `#/dojo/spells/learn/${later}`);
   /* a fresh Player gets the first lesson instead */
   const first: string = await page.evaluate(async () => (await e2eMod('play/exp/spells-core')).ORDER.challenger[0]);
@@ -243,7 +243,7 @@ test.describe('the scroll with two pieces found', () => {
 });
 
 test('Lost Scroll: a chapter 1 puzzle is solved and saved; in preview nothing is saved or counted', async ({ page, issues }) => {
-  const answer: number = await page.goto('/play/').then(() => page.evaluate(async () => (await e2eMod('play/exp/scroll-core')).puzzlesFor(1, 'challenger')[0].answer));
+  const answer: number = await page.goto('/learn/').then(() => page.evaluate(async () => (await e2eMod('play/exp/scroll-core')).puzzlesFor(1, 'challenger')[0].answer));
   await open(page, '#/sutras/lost-scroll/preview/1');
   await expect(page.locator('.sc-preview')).toContainText('nothing solved here is saved');
   await page.locator('#scAns').fill(String(answer));
@@ -266,7 +266,7 @@ test('Lost Scroll: a chapter 1 puzzle is solved and saved; in preview nothing is
 });
 
 test('Lost Scroll: solved rope, square and meter puzzles reopen showing their answer, and stay put', async ({ page, issues }) => {
-  await page.goto('/play/');
+  await page.goto('/learn/');
   const want = await page.evaluate(async () => {
     const S = await e2eMod('play/exp/scroll-core');
     const solved: Record<string, boolean> = {}, at: Record<string, [number, number, unknown]> = {};

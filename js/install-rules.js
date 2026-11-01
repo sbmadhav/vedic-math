@@ -7,8 +7,8 @@
    card on Home) and the Prompt slot (js/prompt-slot.js). */
 
 /* The installed app's scope: links outside it open in the browser (openspec install-app, "Links that leave the app").
-   Phase 2 of react-typescript moves it to /learn/ (task 2.10) together with the manifest. */
-export const SCOPE = '/play/';
+   The game's folder since openspec change indexable-routes (task 2.2), as the manifest's scope. */
+export const SCOPE = '/learn/';
 
 /* The Install nudge's schedule: "Not now" hides it for LATER_DAYS; after MAX_LATER of them it never comes back and
    only the Install guide's entry points remain (Me, the footer, the Guide) */

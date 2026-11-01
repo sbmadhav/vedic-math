@@ -4,11 +4,11 @@ import { test, expect } from '../fixtures';
    one test per scenario. */
 test.use({ seedMode: null });
 
-test('A card is a link: three links named by their call to action, to /play/?mode=<id>', async ({ page }) => {
+test('A card is a link: three links named by their call to action, to /learn/?mode=<id>', async ({ page }) => {
   await page.goto('/');
   for (const [id, name] of [['explorer', 'Explorer'], ['challenger', 'Challenger'], ['pro', 'Pro']]) {
     const card = page.getByRole('link', { name: `Start as ${name}` });
-    await expect(card).toHaveAttribute('href', `/play/?mode=${id}`);
+    await expect(card).toHaveAttribute('href', `/learn/?mode=${id}`);
     await expect(card.locator('.lv-mode-cta')).toBeVisible();
     await expect(card.locator('.lv-mode-cta')).toHaveText(`Start as ${name}`);
   }

@@ -166,7 +166,9 @@ test.describe('Home: three doors first', () => {
     await expect.poll(() => page.evaluate(() => localStorage.getItem('vm.homeMore'))).toBe('1'); /* the toggle event stores it after the click: wait for it before leaving */
     await open(page, '#/');
     await expect(page.locator('#homeMore')).toHaveAttribute('open', '');
-    expect(appErrors(issues)).toEqual([]);
+    /* No route page names an unknown Skill, so its path is answered by the game's 404 page (the shell, status 404;
+       indexable-routes task 2.3): the browser logs that status for the document, which is not an app error */
+    expect(appErrors(issues).filter(e => !e.includes(`404 (Not Found) (${new URL(page.url()).origin}${pathTo('#/skill/no-such-skill')})`))).toEqual([]);
   });
 
   test('Play this Star from Home: the Star\'s Back goes home; from the Dojo it goes back to the Dojo', async ({ page }) => {

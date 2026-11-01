@@ -20,10 +20,10 @@ test.describe('first visit', () => {
     await expect(page).toHaveTitle(/Learn Vedic Math$/);
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /Learn Vedic Math/);
-    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://learnvedicmath.com/play/');
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://learnvedicmath.com/learn/');
     await expect(page.locator('meta[name="viewport"]')).toHaveAttribute('content', /width=device-width/);
     await expect(page.locator('meta[name="theme-color"]')).toHaveCount(1);
-    // The game is its own installable app (scope /play/)
+    // The game is its own installable app (scope /learn/)
     await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', '/manifest.webmanifest');
     await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href', '/icons/apple-touch-icon.png');
     // The installed app on iPhone and iPad: its name under the icon and full screen (openspec change install-app)
@@ -125,15 +125,15 @@ test.describe('the site\'s own files', () => {
     expect(heavy).toEqual([]);
   });
 
-  test('the app manifest is Learn Vedic Math, scoped to /play/, with its own icons', async ({ request }) => {
+  test('the app manifest is Learn Vedic Math, scoped to /learn/, with its own icons', async ({ request }) => {
     const m = await request.get('/manifest.webmanifest');
     expect(m.status()).toBe(200);
     const json = await m.json();
     expect(json.name).toBe('Learn Vedic Math');
     expect(json.short_name).toBe('Vedic Math');
-    expect(json.id).toBe('/play/');
-    expect(json.scope).toBe('/play/');
-    expect(json.start_url).toBe('/play/?source=pwa');
+    expect(json.id).toBe('/play/'); // the id from before the move names the installed app and never changes (indexable-routes D10)
+    expect(json.scope).toBe('/learn/');
+    expect(json.start_url).toBe('/learn/?source=pwa');
     expect(json.display).toBe('standalone');
     expect(json.icons.some((i: { sizes: string }) => i.sizes === '192x192')).toBe(true);
     // Any-purpose and maskable cuts at 192 and 512 (openspec change install-app); "any" is the default purpose
@@ -149,7 +149,7 @@ test.describe('the site\'s own files', () => {
       expect(r.status(), s.src).toBe(200);
       expect(r.headers()['content-type'], s.src).toMatch(/image\/png/);
     }
-    for (const s of json.shortcuts) expect(s.url, s.name).toMatch(/^\/play\/#\//);
+    for (const s of json.shortcuts) expect(s.url, s.name).toMatch(/^\/learn\/[a-z][\w/-]*$/);
     expect(json.launch_handler.client_mode).toContain('navigate-existing');
     for (const i of json.icons) {
       expect(i.src, 'icons come from this site').toMatch(/^\/icons\//);
@@ -161,7 +161,7 @@ test.describe('the site\'s own files', () => {
       expect((await request.get(`/icons/${f}`)).status(), f).toBe(200);
   });
 
-  test('Chromium finds the game installable from /play/', async ({ page }, testInfo) => {
+  test('Chromium finds the game installable from /learn/', async ({ page }, testInfo) => {
     chromiumOnly(testInfo, 'the installability check is a Chromium DevTools call');
     await page.goto(APP);
     await expect(page.locator('#view h1, #view h2').first()).toBeVisible();

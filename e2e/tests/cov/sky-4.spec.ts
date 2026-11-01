@@ -53,7 +53,7 @@ test('After lighting a Star: Back to the Sky shows that Star lit, with focus on 
 test.describe('motion paused site-wide', () => {
   test.use({ reducedMotion: 'no-preference' });
   test('Motion paused: no layer moves and every Star and label is shown', async ({ page }) => {
-    await page.route(/\/play\/(index\.html)?(\?.*)?$/, async route => {
+    await page.route(/\/learn\/[\w/-]*(\?.*)?$/, async route => {
       const res = await route.fetch();
       await route.fulfill({ response: res, body: (await res.text()).replace('<html lang="en">', '<html lang="en" class="motion-paused">') });
     });

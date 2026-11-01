@@ -5,8 +5,8 @@ import { test, expect, APP, pathTo, appErrors, type Mode } from './fixtures';
    picker on a first visit to a page that needs a Mode, with no console error and no empty #view, and the address bar
    shows the path, never a #/ fragment. Seven Players: none, a new one in each Mode, and a returning one (played on an
    earlier day) in each Mode. The Kata, challenge and Level here are the first ones, open to every Player; locked steps
-   belong to locked.spec.ts (task 7.1). Until task 2.2 the game is served at /play/ (APP in fixtures.ts), and until 2.3
-   the local server stands in for each path's prerendered page with the game's shell (e2e/local-server.mjs). */
+   belong to locked.spec.ts (task 7.1). The game is served at /learn/ (APP in fixtures.ts), each path by its prerendered
+   page (task 2.3), which the local server serves as Cloudflare does (e2e/local-server.mjs). */
 
 /* [what it is, the path after APP, the address it ends at when that is another screen] */
 const KINDS: [string, string, string?][] = [

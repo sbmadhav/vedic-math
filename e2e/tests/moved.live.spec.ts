@@ -15,7 +15,7 @@ test.beforeEach(async ({ context }) => {
 
 test('the live moved page sends an empty device to the game on the same route', async ({ page }) => {
   await page.goto(MOVED + '#/arena');
-  await page.waitForURL(/learnvedicmath\.com\/play\/(#\/)?arena$/);
+  await page.waitForURL(/learnvedicmath\.com\/(play\/#\/|learn\/(#\/)?)arena$/);
 });
 
 test('the live moved page carries saved progress to /import/ in the fragment', async ({ page }) => {

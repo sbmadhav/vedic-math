@@ -42,7 +42,7 @@ test('Two Players on the same Star: Rating 3 draws from Katas near 18, Rating 17
   const low = await star2Katas(page);
   for (const n of low) { expect(n).toBeGreaterThanOrEqual(18); expect(n).toBeLessThanOrEqual(24); }
   // Leave before answering: the Rating is untouched
-  await page.goto('/play/#/learn');
+  await page.goto('/learn/skills');
   await page.evaluate(() => {
     const P = JSON.parse(localStorage.getItem('vm.players')!);
     P.list.push({ id: 'p2', name: 'Calm Otter 17', avatar: 'sky', mode: 'challenger', created: Date.now() }); P.active = 'p2';

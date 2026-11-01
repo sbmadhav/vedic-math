@@ -1,5 +1,5 @@
 /* Learn Vedic Math service worker: lets the game work offline. Published at /sw.js and registered by js/app.js with
-   scope /play/, so it controls the game only; the landing and grown-up pages are never controlled.
+   scope /learn/, so it controls the game only; the landing and grown-up pages are never controlled.
 
    TypeScript (openspec change react-typescript, design D9, task 1.5). python3 build.py publishes it as /sw.js with
    its types taken out (tools/build-sw.mjs, which keeps every line where it is), so the worker stays one classic
@@ -12,14 +12,15 @@
    every request to the network (and deletes this site's caches), so a --dev build or the unbuilt source never serves
    stale files.
 
-   One version at a time: /play/ carries the import map, so the shell and its modules must come from the same deploy.
+   One version at a time: /learn/ carries the import map, so the shell and its modules must come from the same deploy.
    Install fetches every file in PRECACHE and checks it against the hash build.py recorded (every entry has one; this
    site serves all of them); if the network serves anything else (a half-propagated deploy), the install fails and the
    browser tries again on the next visit, keeping the previous version.
 
    Caching, by request:
-   - Page loads (navigations) in /play/: network first so updates show up at once; the precached shell when offline
-     or slow. Routes are hash routes, so one shell serves them all.
+   - Page loads (navigations) in /learn/: network first so updates show up at once; the precached shell when offline
+     or slow. Every route page is the shell with its own head, and the router draws the view from the path, so the
+     one saved shell serves them all (openspec change indexable-routes, design D10).
    - Same-origin files with ?v=<hash>: cache first (they never change at a given URL).
    - Other same-origin files (fonts, icons, the manifest, vendored code): network first, cache fallback.
    - Studio voice audio (VOICE_ORIGIN, or /voice/ when the voice is static assets): cache first in
@@ -47,7 +48,7 @@ const PRECACHE: [string, string][] = [];
 const PREFIX: string = 'lvm-';
 const sw = self as unknown as ServiceWorkerGlobalScope;
 const CACHE = PREFIX + VERSION;
-const SCOPE = '/play/';
+const SCOPE = '/learn/';
 const SHELL = SCOPE;
 const RUNTIME_MAX = 60; // entries kept beyond the precache list; the oldest go first
 const NAV_TIMEOUT = 3500; // ms before a page load falls back to the saved shell

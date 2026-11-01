@@ -1,7 +1,7 @@
 // Serves a build of this checkout for local end-to-end runs, the way Cloudflare Workers static assets serves it in
 // production (wrangler.jsonc): _headers applied; _redirects followed (a redirect status sends the Location, 200 serves
 // the target path's file under the request's own headers, a trailing * is a splat and :splat in the target is what it
-// matched); auto-trailing-slash (/play -> /play/, /play/index.html -> /play/, foo.html at /foo with /foo/ and
+// matched); auto-trailing-slash (/learn -> /learn/, /learn/index.html -> /learn/, foo.html at /foo with /foo/ and
 // /foo.html redirected to it); and the nearest 404.html up from the requested path with status 404 for anything
 // missing (/learn/404.html under /learn/, /404.html elsewhere). No proxy: the site loads nothing from another origin
 // on its own.

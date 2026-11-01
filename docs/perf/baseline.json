@@ -16,9 +16,9 @@
   "why": "The pinned reference build the check after a deploy (e2e.yml, perf) measures beside production in the same job, so the runner's CPU speed cancels (openspec change perf-gate-same-runner-post-deploy, design D1 and D2): the main tip the pull request that added it was last merged with before it landed; that pull request changed no file a Player downloads, so production after it served this code. Moved only with a reason (baseline.md, The post-deploy reference)."
  },
  "firstLoad": {
-  "page": "/play/",
+  "page": "/learn/",
   "voice": "off",
-  "total": 851753,
+  "total": 852082,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -54,7 +54,7 @@
    "/js/ambient.js": 4480,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 54569,
+   "/js/app.js": 54600,
    "/js/arena.js": 4141,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -76,8 +76,8 @@
    "/js/guide-art.js": 2484,
    "/js/guide.js": 10653,
    "/js/handoff-schema.js": 6682,
-   "/js/handoff.js": 4229,
-   "/js/install-rules.js": 2226,
+   "/js/handoff.js": 4298,
+   "/js/install-rules.js": 2218,
    "/js/install.js": 7151,
    "/js/landing-sky.js": 261,
    "/js/ledes.js": 1792,
@@ -87,8 +87,8 @@
    "/js/listen.js": 1335,
    "/js/mental.js": 155,
    "/js/metrics.js": 4201,
-   "/js/nav.js": 1555,
-   "/js/paths.js": 2873,
+   "/js/nav.js": 1557,
+   "/js/paths.js": 2870,
    "/js/play/catalog.js": 1783,
    "/js/play/exp/apprentice-core.js": 7279,
    "/js/play/exp/apprentice.js": 3914,
@@ -120,7 +120,7 @@
    "/js/play/exp/wall-core.js": 9208,
    "/js/play/exp/wall.js": 9196,
    "/js/play/icons.js": 721,
-   "/js/play/kit.js": 3754,
+   "/js/play/kit.js": 3861,
    "/js/play/life.js": 61,
    "/js/prompt-slot.js": 629,
    "/js/related.js": 516,
@@ -172,10 +172,10 @@
    "/js/voice-worker.js": 877,
    "/js/voice.js": 14663,
    "/js/watch.js": 2376,
-   "/manifest.webmanifest": 605,
+   "/learn/": 4484,
+   "/manifest.webmanifest": 604,
    "/math.css": 25896,
-   "/play/": 4347,
-   "/sw.js": 6503,
+   "/sw.js": 6498,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
@@ -389,6 +389,13 @@
     "from": 850214,
     "to": 851753,
     "why": "indexable-routes task 2.1, the router on paths (design D3 and D9): render() in js/app.js derives the route key from location.pathname through js/paths.js (here, pathFor, linkTo, relink), turns a #/ fragment into its path before the view draws, a delegated click handler turns links into the game into pushState and a render, mount(), syncNav(), the Player chip and a MutationObserver over the page rewrite drawn #/ hrefs to paths, a second name or a trailing slash is replaced by the screen's one path, hashchange to #/x is a replaceState and a render, popstate renders, and syncNav() compares route keys; js/paths.js gains BASE as the one path base (/play until task 2.2 moves it to /learn) and derives the fixed paths and aliases from it; the tour selector in js/guide.js matches the Guide link in either form; no new file; measured on the tree merged with main as of #188, with CI's /js/nav.js figure (the #168 note); file deltas: /js/app.js +1346, /js/paths.js +113, /play/ +31, /js/guide.js +3, /sw.js +46; +1539 in all"
+   },
+   {
+    "date": "2026-11-01",
+    "pr": "routes-2-2-move",
+    "from": 851753,
+    "to": 852082,
+    "why": "indexable-routes task 2.2, the move (design D2 and D9), with tasks 2.1 and 2.3 merged in: the game's page is learn/index.html at /learn/, so the measured page is /learn/ (was /play/) and the shell gains the pre-paint script that turns an old #/ route into its path; js/paths.js BASE is /learn; the worker's scope, the manifest's start_url, scope and shortcuts and js/install-rules.js SCOPE read /learn/ (the manifest's id is unchanged); js/play/kit.js shareUrl builds the path under BASE (it imports BASE from js/paths.js); js/handoff.js opens the route's path; the route pages from task 2.3 are never requested by a first visit; file deltas: /learn/ +4484 (new) and /play/ -4347 (gone), /js/play/kit.js +107, /js/handoff.js +69, /js/app.js +31, /js/install-rules.js -8, /sw.js -5, /js/paths.js -3, /manifest.webmanifest -1; /js/nav.js +2 as CI measures it (1,557: a comment names learn/index.html; the local Brotli reads 1 byte less, the #168 note); +329 in all"
    }
   ]
  },

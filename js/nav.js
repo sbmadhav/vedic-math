@@ -1,7 +1,7 @@
 /* The game's menu by Mode (openspec change play-nav-by-mode). Pure: no DOM, no storage, so the unit tests read it.
    Challenger and Pro: four zones and Find. Explorer: three big picture tabs that say their name when Read aloud is on.
    Every route stays where it was (a zone is only how a page is reached), and data-match marks a zone current on every
-   route inside it. play/index.html holds navHTML('big') as the first paint; js/app.js swaps in the Mode's set. */
+   route inside it. learn/index.html holds navHTML('big') as the first paint; js/app.js swaps in the Mode's set. */
 
 const ICON = {
   /* Explorer's three pictures (24px line icons, currentColor) */

@@ -9,14 +9,14 @@ const at = (path: string) => ORIGIN + path;
 
 test('who answers what: pages, hashed files, sounds, voice and plain files go through the worker', () => {
   const sw = built();
-  expect(sw.request(at('/play/'), { mode: 'navigate' }).answered).toBe(true);
+  expect(sw.request(at('/learn/'), { mode: 'navigate' }).answered).toBe(true);
   expect(sw.request(at('/js/app.js?v=abcdef0123')).answered).toBe(true);
   expect(sw.request(at('/sounds/om.m4a?v=1')).answered).toBe(true);
   expect(sw.request('https://voice.learnvedicmath.com/l/0123456789abcd.m4a').answered).toBe(true);
   expect(sw.request(at('/vendor/tesseract/worker.min.js')).answered).toBe(true);
 });
 
-test('left to the browser: another origin, a POST, /api/, a page outside /play/ and video pictures', () => {
+test('left to the browser: another origin, a POST, /api/, a page outside /learn/ and video pictures', () => {
   const sw = built();
   expect(sw.request('https://firestore.googleapis.com/v1/projects/x').answered).toBe(false);
   expect(sw.request('https://www.youtube-nocookie.com/embed/x', { mode: 'navigate' }).answered).toBe(false);
@@ -43,10 +43,10 @@ test('a hashed file is cache first; a plain file is network first with the cache
 
 test('a page load is network first; offline it gets the saved shell of this version', async () => {
   const sw = built();
-  expect((await sw.request(at('/play/?source=pwa'), { mode: 'navigate' }).answer!).body).toBe(`net:${at('/play/?source=pwa')}`);
-  await sw.open('lvm-test123456').put(at('/play/'), response('the shell'));
+  expect((await sw.request(at('/learn/?source=pwa'), { mode: 'navigate' }).answer!).body).toBe(`net:${at('/learn/?source=pwa')}`);
+  await sw.open('lvm-test123456').put(at('/learn/'), response('the shell'));
   sw.net.up = false;
-  expect((await sw.request(at('/play/'), { mode: 'navigate' }).answer!).body).toBe('the shell');
+  expect((await sw.request(at('/learn/'), { mode: 'navigate' }).answer!).body).toBe('the shell');
 });
 
 test("a 'dev' worker has no fetch handler, so the browser goes to the network", () => {

@@ -39,7 +39,7 @@ test('Landing header: the brand, links to Play and the grown-up pages, and the c
   await page.goto('/?home'); // this device has a Player, who would otherwise go straight into the game
   expect(await kinds(page)).toEqual(['brand', 'nav', 'theme']);
   const links = await page.locator('body > header nav a').evaluateAll(as => as.map(a => a.getAttribute('href')));
-  expect(links).toEqual(['/play/', '/parents/', '/teachers/']);
+  expect(links).toEqual(['/learn/', '/parents/', '/teachers/']);
 });
 
 test('One line per menu item: the Arcade link\'s tooltip is the line Find\'s browse list shows for the Arcade', async ({ page }) => {

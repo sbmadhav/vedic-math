@@ -276,15 +276,15 @@ export const test = base.extend<Fixtures>({
 
 export { expect };
 
-export const APP = '/play/';
+export const APP = '/learn/';
 
 /* Route addresses (openspec change indexable-routes, design D2 and D3): every screen is a path under APP, its route
-   key without the '#' ('#/arena' is at '/play/arena'; Home is APP), lowercase, with the Skill map at skills and the
+   key without the '#' ('#/arena' is at '/learn/arena'; Home is APP), lowercase, with the Skill map at skills and the
    second names (tricks, progress, duel, learn) answering with their screen's one path. js/paths.js is the one table
-   (BASE there is APP without its slash; task 2.2 moves both to /learn); this mirror is what a spec expects to see in
+   (BASE there is APP without its slash, /learn since task 2.2); this mirror is what a spec expects to see in
    the address bar and in a drawn link's href. */
 const ONE_PATH: Record<string, string> = { '#/learn': 'skills', '#/tricks': 'dojo', '#/progress': 'me', '#/duel': 'arena/party' };
-/** The address of a route: pathTo('#/arena') is '/play/arena', pathTo('#/') is APP; a path is given back as it is. */
+/** The address of a route: pathTo('#/arena') is '/learn/arena', pathTo('#/') is APP; a path is given back as it is. */
 export function pathTo(route: string): string {
   if (route.startsWith('/')) return route;
   if (route === '#/' || route === '#' || route === '') return APP;
@@ -295,7 +295,7 @@ export function pathTo(route: string): string {
 const reEscape = (s: string) => s.replace(/[/.?+*^$()[\]{}|\\]/g, '\\$&');
 /** For toHaveURL: the page is at that route's address (and nothing follows it). */
 export const atRoute = (route: string) => new RegExp(`${reEscape(pathTo(route))}$`);
-/** The attribute selector of a link to a route, as the game draws it: a${hrefTo('#/arena')} is a[href="/play/arena"]. */
+/** The attribute selector of a link to a route, as the game draws it: a${hrefTo('#/arena')} is a[href="/learn/arena"]. */
 export const hrefTo = (route: string) => `[href="${pathTo(route)}"]`;
 
 /** Moves to a #/ route the way page.goto(`${APP}#/x`) did while every screen was a fragment of APP: inside the open
@@ -318,7 +318,7 @@ export async function withVideos(page: Page, transform: string) {
 }
 
 /** Opens the app at a route and waits for its view. open(page, '#/dojo') loads the page with that fragment (an old
-    link: the router turns it into its path before the view draws); open(page, '/play/dojo') loads that path cold. */
+    link: the router turns it into its path before the view draws); open(page, '/learn/dojo') loads that path cold. */
 export async function open(page: Page, route = '#/') {
   if (route.startsWith('/')) await page.goto(route);
   else await go(page, route);

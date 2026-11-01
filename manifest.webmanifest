@@ -3,8 +3,8 @@
   "short_name": "Vedic Math",
   "description": "Speed tricks from the sutras, a counting-to-calculus skill map, games and daily quests. Works offline once opened.",
   "id": "/play/",
-  "start_url": "/play/?source=pwa",
-  "scope": "/play/",
+  "start_url": "/learn/?source=pwa",
+  "scope": "/learn/",
   "display": "standalone",
   "orientation": "any",
   "lang": "en",
@@ -26,8 +26,8 @@
     { "src": "/screenshots/home-wide.png", "sizes": "1280x800", "type": "image/png", "form_factor": "wide", "label": "Home on a computer" }
   ],
   "shortcuts": [
-    { "name": "Today's Arena round", "short_name": "Arena", "description": "Sixty seconds, the same questions for everyone today", "url": "/play/#/arena" },
-    { "name": "Practice a skill", "short_name": "Practice", "description": "The skill map, from counting to calculus", "url": "/play/#/learn" },
-    { "name": "The 29 Sutras", "short_name": "Sutras", "description": "The sutras and sub-sutras, as cards to collect", "url": "/play/#/sutras" }
+    { "name": "Today's Arena round", "short_name": "Arena", "description": "Sixty seconds, the same questions for everyone today", "url": "/learn/arena" },
+    { "name": "Practice a skill", "short_name": "Practice", "description": "The skill map, from counting to calculus", "url": "/learn/skills" },
+    { "name": "The 29 Sutras", "short_name": "Sutras", "description": "The sutras and sub-sutras, as cards to collect", "url": "/learn/sutras" }
   ]
 }

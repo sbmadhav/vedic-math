@@ -139,7 +139,7 @@ const routes = [
 ];
 /* ---------- Route addresses (openspec change indexable-routes, design D3 and D9) ----------
    The router matches route keys in their #/ form ('#/kata/sq5/12'), so no view's pattern or body changes; the address
-   bar shows the key's path from js/paths.js ('/play/kata/sq5/12', under BASE, which task 2.2 moves to /learn). A #/
+   bar shows the key's path from js/paths.js ('/learn/kata/sq5/12', under BASE). A #/
    fragment still reaches the router (an old link, a Legacy view that sets location.hash): render() turns it into its
    path before the view draws, and a hashchange to one does the same without a reload, drawing only when the route
    changed (a write of the route on screen was a no-op as a fragment too). Links a view draws as #/ are rewritten to
@@ -1410,7 +1410,7 @@ function playShelf(section, heading) {
   const list = playIn(section, fx.mode()); if (!list.length) return '';
   return `<section class="play-shelf" aria-labelledby="ps-${section}"><h2 class="mq-strand" id="ps-${section}">${heading}</h2><ul class="play-shelf-grid">${list.map(e => `<li><a class="play-card play-card--${e.color}" href="${e.route}"><span class="play-card-ic" aria-hidden="true">${PLAY_ICONS[e.icon] || ''}</span><b>${e.title}</b><em>${e.tag}</em><span>${e.blurb}</span></a></li>`).join('')}</ul></section>`;
 }
-/* Styles load with the page that needs them; the build stamps their URLs (the #vm-css map in play/index.html) */
+/* Styles load with the page that needs them; the build stamps their URLs (the #vm-css map in learn/index.html) */
 const cssStamps = (() => { try { return JSON.parse(document.getElementById('vm-css')?.textContent || '{}'); } catch (e) { return {}; } })();
 function playCss(name) {
   const url = `/css/play/${name}.css`;
@@ -2024,7 +2024,7 @@ function icon(n) {
   return `<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">${I[n] || ''}</svg>`;
 }
 
-/* A Mode link from the landing page's Mode cards (openspec change landing-modes-and-return): /play/?mode=<id> with a
+/* A Mode link from the landing page's Mode cards (openspec change landing-modes-and-return): /learn/?mode=<id> with a
    known Mode sets it exactly as tapping that card on the Mode picker does, so Home opens instead of the picker. An
    unknown value changes nothing. Either way mode leaves the address, keeping the rest of the query and the route. */
 function modeFromLink() {
@@ -2062,8 +2062,8 @@ const preloadTags = () => later(() => {
   lateImport(loadArena, 'arena.js'); lateImport(loadTour, 'tour.js'); lateImport(loadKit, 'play/kit.js');
 }, 1000, boot.signal);
 if (document.readyState === 'complete') preloadTags(); else on(window, 'load', preloadTags, boot.signal, { once: true });
-/* Offline: /sw.js (scope /play/, the game only) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */
+/* Offline: /sw.js (scope /learn/, the game only) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
-  const registerSW = () => navigator.serviceWorker.register('/sw.js', { scope: '/play/' }).catch(() => {});
+  const registerSW = () => navigator.serviceWorker.register('/sw.js', { scope: '/learn/' }).catch(() => {});
   if (document.readyState === 'complete') registerSW(); else addEventListener('load', registerSW, { once: true });
 }

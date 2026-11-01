@@ -1,7 +1,7 @@
 import { test, expect, APP, open, cloudLog, heldClock, atRoute, hrefTo } from './fixtures';
 
-/* The app's router matches route keys (#/learn, #/dojo, ...) and shows each screen at its path (/play/skills,
-   /play/dojo; openspec change indexable-routes). Every top-level route renders, deep links work, and Back / Forward
+/* The app's router matches route keys (#/learn, #/dojo, ...) and shows each screen at its path (/learn/skills,
+   /learn/dojo; openspec change indexable-routes). Every top-level route renders, deep links work, and Back / Forward
    move between views. */
 
 /* nav: the menu zone marked current on the route (openspec change play-nav-by-mode) */

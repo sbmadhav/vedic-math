@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { createHash } from 'node:crypto';
-import { test, expect, APP } from './fixtures';
+import { test, expect, APP, hrefTo } from './fixtures';
 
 /* Response headers (openspec change learnvedicmath, security-headers spec). build.py writes them into _headers;
    Cloudflare (or e2e/local-server.mjs, or wrangler dev) sends them. Every response carries the common headers; each
@@ -70,7 +70,7 @@ test('/import/: its own policy with reporting, a Report-Only variant, and COOP s
 
 /* What COOP does to a cross-origin popup (security-headers spec, the export popup scenario; task 12.6). A stand-in
    for the Export page, answered by the test on another origin, posts to its opener: /import/ keeps that link, and
-   /play/ (same-origin, the negative control) cuts it, so the popup sees no opener and nothing arrives. */
+   /learn/ (same-origin, the negative control) cuts it, so the popup sees no opener and nothing arrives. */
 const EXPORT_STANDIN = 'https://export.invalid/vm-export/';
 type Inbox = { exportMessages: unknown[] };
 
@@ -97,7 +97,7 @@ test('/import/ keeps the link to a cross-origin popup, and its message arrives',
   await expect.poll(() => page.evaluate(() => (window as unknown as Inbox).exportMessages)).toEqual([{ from: 'export' }]);
 });
 
-test('/play/ (COOP same-origin) cuts the link to a cross-origin popup', async ({ page, browserName }) => {
+test('/learn/ (COOP same-origin) cuts the link to a cross-origin popup', async ({ page, browserName }) => {
   // Playwright's WebKit keeps the opener under COOP same-origin too (checked against production, 2026-10-28), so the
   // control only proves something on Chromium; the /import/ case above runs on every project.
   test.skip(browserName === 'webkit', 'Playwright WebKit does not cut the opener for COOP same-origin');
@@ -164,7 +164,7 @@ test.describe('route pages under /learn/', () => {
     expect(res?.headers()['content-security-policy']).toMatch(/frame-ancestors 'none'/);
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, follow');
     await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
-    await expect(page.locator('nav.md-nav a[href="#/"]')).toHaveText('Home');
+    await expect(page.locator(`nav.md-nav a${hrefTo('#/')}`)).toHaveText('Home'); /* the router draws the nav's links as paths (task 2.1) */
     expect(new URL(page.url()).pathname, 'the address keeps the path').toBe('/learn/arnea');
   });
 

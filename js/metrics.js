@@ -26,7 +26,7 @@ const flags = () => { try { return JSON.parse(get(FLAGS)) || {}; } catch (e) { r
 const setFlag = f => { const m = flags(); m[f] = true; put(FLAGS, JSON.stringify(m)); };
 
 /* The one place an event leaves: the shared helper, always safe to call. Titles are fixed words too.
-   play/index.html runs this module before the deferred js/analytics.js that defines siteTrack, so events
+   learn/index.html runs this module before the deferred js/analytics.js that defines siteTrack, so events
    from the first render wait here (at most 20) until the page has parsed, then go; if the helper never
    arrives (blocked, offline) they are dropped. */
 const early = [];
