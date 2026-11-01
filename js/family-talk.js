@@ -16,6 +16,7 @@
 import * as metrics from './metrics.js';
 import { on, later, onAbort } from './life.js';
 import { boltHTML } from './bolt.js';
+import { friendSVG } from './family.js';
 import { PART_LABELS, MAX_MESSAGE, MAX_LINE, talkSkill, questionNumbers, skillFacts, stripPersonal, checkActions, cluesUsed, leaksAnswer, scriptedLine, scriptedReply, isSpeaker } from '../shared/src/family-talk.ts';
 
 export const STATUS_URL = '/api/family/v1/status';
@@ -144,7 +145,7 @@ export async function mountTalk(el, api) {
     const clue = out.lines.some(l => l.clue) || out.actions.some(a => a.type === 'pointAt');
     out.lines.forEach((l, i) => words.push({ who: l.speaker, line: l.line, ...(i === 0 && clue ? { clue: true } : {}) }));
     if (clue && cluesUsed(words) === 1 && api.r.hint) api.r.hint(); /* the first clue counts as the round's Hint does (design D18) */
-    if (out.lines.some(l => l.speaker === 'bolt')) api.addCrew('bolt', boltHTML('idle'));
+    for (const l of out.lines) api.addCrew(l.speaker, l.speaker === 'bolt' ? boltHTML('idle') : friendSVG(l.speaker)); /* each speaker joins the crew the first time they speak */
     api.addTurns(out.lines.map((l, i) => turnFor(l, i === 0 ? out.actions : [], row, facts, api)));
   }, signal);
   return true;

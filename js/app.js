@@ -1158,6 +1158,7 @@ function parentNote() {
       pro: 'Separately from World boards, the site counts visits and actions in the app (pages opened, questions answered, rounds finished) to improve it, with GoatCounter and Cloudflare Web Analytics, anonymously: no cookies, no IDs and no names.',
     })}</p>
     <p class="pn-video">Video pictures come from this site, and a video loads from YouTube, in privacy-enhanced mode, only after a player presses play; YouTube's own rules apply once it plays. Watching posts nothing.</p>
+    <p class="pn-family">Talking with the Family (an option in Me for players 13 and over, off until turned on) sends each message with the Skill, the question's numbers and the words of that visit to our server, which asks an AI model (Claude, by Anthropic) to answer as Bolt and the Family; nothing about the player goes with it, nothing is kept, and a Cloudflare Turnstile bot check runs once per browser session before the first message. It is never offered to a player whose age answer is under 13.</p>
     <p class="pn-more">More in the <a href="/privacy/?home">privacy policy</a> and the <a href="/parents/?home">page for parents</a>.</p></details>`;
 }
 /* A Board: this device's entries for everyone; the World board only for a Player whose Age answer is 13 or over, and

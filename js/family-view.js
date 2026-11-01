@@ -88,7 +88,7 @@ function open(v, r, { info, band, example, nick = '', c = null }) {
     fx.announce(`${nameOf(t.friend)} says: ${box.querySelector('p').textContent}${t.example ? ' ' + plain(t.example.q) : ''}${t.steps ? ' ' + t.steps.map(plain).join(' ') : ''}`);
   };
   on(el, 'click', e => {
-    const b = e.target.closest('button'); if (!b) return;
+    const b = e.target.closest('button'); if (!b || (!b.dataset.fh && !b.classList.contains('fh-x'))) return; /* the chat box's Send is its own form's */
     const k = b.classList.contains('fh-x') ? 'close' : b.dataset.fh;
     if (k === 'next') { i++; draw(); return; }
     if (k === 'show') { coachNow().used(); metrics.family('show_me'); turns.push(showMeTurn({ band, info, example })); i = turns.length - 1; draw(); place(); return; }

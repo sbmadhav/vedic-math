@@ -18,7 +18,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 846845,
+  "total": 857809,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -54,7 +54,7 @@
    "/js/ambient.js": 4480,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 52849,
+   "/js/app.js": 53313,
    "/js/arena.js": 4141,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -65,9 +65,10 @@
    "/js/connectors.js": 1891,
    "/js/explain-lines.js": 2865,
    "/js/family-helpers.js": 5263,
-   "/js/family-hook.js": 775,
+   "/js/family-hook.js": 1094,
    "/js/family-lines.js": 2624,
-   "/js/family-view.js": 4202,
+   "/js/family-talk.js": 3940,
+   "/js/family-view.js": 4805,
    "/js/family.js": 1528,
    "/js/find.js": 6870,
    "/js/fx.js": 4050,
@@ -86,8 +87,8 @@
    "/js/life.js": 1103,
    "/js/listen.js": 1335,
    "/js/mental.js": 155,
-   "/js/metrics.js": 4201,
-   "/js/nav.js": 1555,
+   "/js/metrics.js": 4246,
+   "/js/nav.js": 1554,
    "/js/play/catalog.js": 1783,
    "/js/play/exp/apprentice-core.js": 7279,
    "/js/play/exp/apprentice.js": 3914,
@@ -150,6 +151,7 @@
    "/js/sutras.js": 4223,
    "/js/tour.js": 2213,
    "/js/try.js": 4423,
+   "/js/ts/shared/src/family-talk.js": 5289,
    "/js/ts/shared/src/lib.js": 1775,
    "/js/ts/shared/src/mental.js": 2185,
    "/js/ts/shared/src/names.js": 696,
@@ -172,9 +174,9 @@
    "/js/voice.js": 14663,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 25689,
-   "/play/": 4321,
-   "/sw.js": 6424,
+   "/math.css": 25944,
+   "/play/": 4334,
+   "/sw.js": 6461,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
@@ -451,7 +453,10 @@
     "date": "2026-10-30",
     "pr": 182,
     "page": "deep-dive",
-    "lcp": { "from": 5730, "to": 5940 },
+    "lcp": {
+     "from": 5730,
+     "to": 5940
+    },
     "why": "design system 2.2.0 (#182, c34871a) moved production's Deep dive largest contentful paint up one step on GitHub's runners: the post-deploy check read 5760 / 5760 / 5790 / 5772 ms in the four jobs before its deploy and 5970 after it, and in one job the pr-177 preview (still 2.1.0) read 5810 against 5899 on production and 5910 on the pr-183 preview (2.2.0, the same files as production). The same two commits built and served locally on one runner read 5190 and 5190 ms (6 runs each), with the same 71 requests before the observed paint and the same blocking time, so no file or task of the change is slower in the simulation; what grew is what Cloudflare sends of the vendored stylesheets (ds components.css 6021 to 8273 bytes, tokens.css 3257 to 3360, Cloudflare's Brotli). The Deep dive's line is re-measured on the code live since #183 deployed (3f3fb61) the way of 2026-10-27, each number but tbt the median of five jobs' medians: perf.yml on main runs 41126051655, 41127211350 and 41128357766 (benchmarkIndex 2337, 2476, 4197), the post-deploy check of 3f3fb61 (e2e.yml run 41113259252, 2480) and the production side of run 41110930365 (2466); lcp 5805 / 5940 / 5790 / 5970 / 5955, median 5940. The other pages keep the 2026-10-27 numbers (their five-job medians, 5490 / 1260 / 5490 / 5490 ms, are within their limits); tbt keeps 159 (five jobs: 155). docs/perf/baseline.md, Re-measured on 2026-10-30"
    }
   ]

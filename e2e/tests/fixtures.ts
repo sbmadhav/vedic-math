@@ -26,6 +26,12 @@ declare global {
 export const ANALYTICS = /(^https:\/\/[^/]*goatcounter\.com\/)|(^https:\/\/gc\.zgo\.at\/)|(^https?:\/\/[^/]+\/vendor\/goatcounter\/count\.js(\?|$))|(^https:\/\/(static\.)?cloudflareinsights\.com\/)/;
 export const FIREBASE_SDK = /^https?:\/\/[^/]+\/vendor\/firebase\/[\d.]+\//;
 export const FIREBASE_AUTH = /^https:\/\/(identitytoolkit|securetoken)\.googleapis\.com\//;
+/* Cloudflare Turnstile, the bot check before a Player's first message to the Family (openspec family-helpers step 3,
+   design D18). The suite never loads the live widget: its script becomes a small fake that renders nothing and passes a
+   token at once (recording each render in window.__e2eTurnstile), and any other request to the host answers empty. */
+export const TURNSTILE = /^https:\/\/challenges\.cloudflare\.com\//;
+const FAKE_TURNSTILE = `/* Turnstile fake for tests */ globalThis.__e2eTurnstile = globalThis.__e2eTurnstile || { renders: 0 };
+window.turnstile = { render(el, o) { globalThis.__e2eTurnstile.renders++; const id = 'e2e-widget-' + globalThis.__e2eTurnstile.renders; Promise.resolve().then(() => { if (o && typeof o.callback === 'function') o.callback('e2e-turnstile-token'); }); return id; }, remove() {}, reset() {}, getResponse() { return 'e2e-turnstile-token'; } };`;
 export const FIRESTORE = /^https:\/\/firestore\.googleapis\.com\//;
 
 /* GoatCounter's count.js defines window.goatcounter.count, and /js/analytics.js flushes its
@@ -208,6 +214,10 @@ export const test = base.extend<Fixtures>({
     await blockAnalytics(context);
     await installModules(context, baseURL);
     await voiceFrom(context);
+    // Turnstile is never the live one: the fake script passes a token at once; anything else from its host answers empty
+    await context.route(TURNSTILE, route => (/\/turnstile\/v0\/api\.js/.test(route.request().url())
+      ? route.fulfill({ status: 200, contentType: 'text/javascript', body: FAKE_TURNSTILE })
+      : route.fulfill({ status: 204 })));
     // Policy reports from test runs never reach a /_csp endpoint (production's monthly review would count them)
     await context.route(/^https?:\/\/[^/]+\/_csp(\?|$)/, route => route.fulfill({ status: 204 }));
     // The same no-op counter from the start, for pages whose queue flushes before the local count.js answer runs
