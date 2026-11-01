@@ -18,8 +18,9 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 848110,
+  "total": 851514,
   "files": {
+   "/js/paths.js": 2776,
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
    "/css/play/base.css": 1123,
@@ -54,7 +55,7 @@
    "/js/ambient.js": 4480,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 53037,
+   "/js/app.js": 53414,
    "/js/arena.js": 4141,
    "/js/backup.js": 3030,
    "/js/bolt.js": 1088,
@@ -172,9 +173,9 @@
    "/js/voice.js": 14837,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 25689,
-   "/play/": 4320,
-   "/sw.js": 6440,
+   "/math.css": 25896,
+   "/play/": 4334,
+   "/sw.js": 6470,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
@@ -370,10 +371,24 @@
    },
    {
     "date": "2026-10-31",
-    "pr": 191,
+    "pr": 189,
     "from": 846845,
-    "to": 848110,
-    "why": "muse-round-2 (measured on the tree merged with main as of #188): the backup code is shown in a field and restored from a field (js/backup.js, the Me page block in js/app.js); fraction, power and root choices get a spoken-words label (choiceLabel() in js/games.js, normalize() from js/voice.js); a studio line hands over to the device voice when Web Audio stays suspended (audioRunning() in js/voice.js); toasts go inside an open dialog (js/fx.js); the Ghost Races count shows alone (ghosts.js, ghosts.css) and \"1 miss\" (missWord() in ghosts-core.js); the total is CI's figure (/js/nav.js stays at its figure, one byte above the local Brotli, as #180 noted); file deltas: /js/backup.js +354, /js/games.js +198, /js/app.js +188, /js/voice.js +174, /js/fx.js +136, /js/play/exp/ghosts-core.js +76, /css/play/ghosts.css +69, /js/play/exp/ghosts.js +55, /sw.js +16, /play/ -1; +1265 in all"
+    "to": 847480,
+    "why": "indexable-routes task 3.1, view transitions inside the game (design D12): render() in js/app.js runs its DOM update inside document.startViewTransition when the browser has it and fx.noMotion() is false, skipping the first render, a redraw of the same route and a change while one is running, with focus and scroll after updateCallbackDone; math.css names the header, the nav and the Player chip (site-header, game-nav, player-chip) and sets the 180 ms fade; no new file; measured on the tree merged with main as of #188; file deltas: /js/app.js +380, /math.css +207, /sw.js +34, /play/ +14; /js/nav.js reads 1 byte smaller locally than CI's figure, which the baseline keeps (the #168 note); +635 in all as CI measures it"
+   },
+   {
+    "date": "2026-11-01",
+    "pr": 190,
+    "from": 847480,
+    "to": 850252,
+    "why": "indexable-routes 1.1, the route table (js/paths.js); re-measured on main as of the merge; CI figure for /js/nav.js; file deltas: /js/paths.js new 2776, /sw.js -4; +2772 in all"
+   },
+   {
+    "date": "2026-11-01",
+    "pr": 191,
+    "from": 850252,
+    "to": 851514,
+    "why": "muse-round-2: backup code field, restore paste field, fraction labels, toast host, read-aloud fallback; re-measured on main as of the merge; CI figure for /js/nav.js; file deltas: /css/play/ghosts.css +69, /js/app.js +185, /js/backup.js +354, /js/fx.js +136, /js/games.js +198, /js/play/exp/ghosts-core.js +76, /js/play/exp/ghosts.js +55, /js/voice.js +174, /play/ -1, /sw.js +16; +1262 in all"
    }
   ]
  },
