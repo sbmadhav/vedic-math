@@ -1060,7 +1060,7 @@ function wireVerses(root, signal) {
 }
 /* A Sutra card collected for the first time is a true win (openspec celebrations); opening it again is not */
 /* A card's first flip collects it: 5 Sparks, said once (every award is shown, openspec change muse-review-polish, design D4) */
-function collect(name) { if (store.markSeen('sutra:' + name)) { store.addSparks(5, 'sutra'); fx.toast('<b>Sutra card collected</b> <span class="fx-sparks">+5 Sparks</span>', 'ok'); fx.confetti(60); } }
+function collect(name) { if (store.markSeen('sutra:' + name)) { store.addSparks(5, 'sutra'); fx.confetti(60); fx.toast('<b>Sutra card collected</b> <span class="fx-sparks">+5 Sparks</span>', 'ok'); } }
 
 /* ---------- Sutra deep-dive modal: the card grows into it ---------- */
 let sutraDlg = null, sutraScene = null, sutraFrom = null, openedInPage = false; /* sutraScene: the open scene's controller */
