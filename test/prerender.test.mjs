@@ -20,9 +20,10 @@ const inline = html => [...html.matchAll(/<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*
   .filter(m => !/type=/i.test(m[1]) || /type="?(text\/javascript|module|importmap|application\/javascript)/i.test(m[1])).map(m => m[2]);
 const attr = (html, re) => { const m = html.match(re); return m ? m[1] : null; };
 const title = html => attr(html, /<title>([^<]*)<\/title>/);
-const description = html => attr(html, /<meta name="description" content="([^"]*)">/);
+const unescape = s => s && s.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+const description = html => unescape(attr(html, /<meta name="description" content="([^"]*)">/));
 const canonical = html => attr(html, /<link rel="canonical" href="([^"]*)">/);
-const og = (html, p) => attr(html, new RegExp(`<meta property="og:${p}" content="([^"]*)">`));
+const og = (html, p) => unescape(attr(html, new RegExp(`<meta property="og:${p}" content="([^"]*)">`)));
 
 test('one page per allPaths() entry (3,469) plus the 404 shell, each at learn/<path>.html, Home at learn/index.html', () => {
   assert.equal(ROUTES.length, ALL.length);
@@ -83,8 +84,8 @@ test(`every description is under ${DESCRIPTION_MAX} characters with no em dash, 
     assert.equal(og(p.html, 'description'), d, p.path);
   }
   const d = path => description(by(path).html);
-  assert.equal(d('/learn/kata/sq5/12'), 'Kata 12 of 50 for Square numbers ending in 5: a short drill of 5 to 8 problems in the Vedic Dojo, which opens the next one at 60% right.');
-  assert.match(d('/learn/sutras/s1'), /^Ekādhikena Pūrveṇa, &quot;By one more than the one before&quot;: /, 'the Sutra, its meaning and its plain explanation');
+  assert.equal(d('/learn/kata/sq5/12'), 'Kata 12 of 50 for Square numbers ending in 5: a short drill of 5 to 8 problems in the Vedic Dojo. Get 60% right to open the next.');
+  assert.match(d('/learn/sutras/s1'), /^Ekādhikena Pūrveṇa, "By one more than the one before": /, 'the Sutra, its meaning and its plain explanation');
   assert.match(d('/learn/skill/3-mult'), /^You only need a few facts by heart\.$/, "the Skill's idea, first sentence");
   assert.match(d('/learn/games/tala'), /^Tala Lab, konnakol rhythm math: Clap 3 against 4/);
   assert.match(d('/learn/dojo'), /21 speed tricks from the sutras in Bharati Krishna Tirtha's 1965 book/);

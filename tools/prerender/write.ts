@@ -117,7 +117,9 @@ export function metaOf(key: string): Meta {
       const c = (a[0] === 's' ? sutras : subsutras)[+a.slice(1) - 1];
       if (!c) throw new Error(`sutra ${a} is not in the catalog`);
       const kind = a[0] === 's' ? 'sutra' : 'sub-sutra';
-      return page(c.name, sentence(`${c.name}, "${c.meaning}": ${text(c.plain)}`, `${c.name}, "${c.meaning}": a ${kind} from Bharati Krishna Tirtha's 1965 book, with worked examples.`));
+      const book = `a ${kind} from Bharati Krishna Tirtha's 1965 book, with worked examples.`;
+      /* The longest names leave no room for the meaning in the fallback line */
+      return page(c.name, sentence(`${c.name}, "${c.meaning}": ${text(c.plain)}`, sentence(`${c.name}, "${c.meaning}": ${book}`, `${c.name}: ${book}`)));
     }
     case 'arena': return page('Arena', 'The Arena: answer as many as you can in a timed round; the daily round asks everyone in your Mode the same questions, so it is a fair race.');
     case 'games': return page('Games', `${games.length} games, each with its own leaderboard and ${LEVELS_PER_GAME} levels that open as your skill grows; every game adapts to you.`);
