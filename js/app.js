@@ -197,6 +197,7 @@ function render() {
   /* An old link's or a Legacy view's #/ fragment becomes its path before the view draws (design D9); the query stays */
   if (location.hash.startsWith('#/')) history.replaceState(history.state, '', pathFor(location.hash) + location.search);
   const h = here(), again = h === render.at; /* the route on screen drawn again (a hash write's second render) */
+  const one = toPath(h); if (one && one !== location.pathname) history.replaceState(history.state, '', one + location.search); /* a second name or a trailing slash: the screen's one path (design D2) */
   render.from = render.at; render.at = h; /* where a Star's Back button returns to */
   // Sutra deep dives open over the sutras page without re-rendering it
   const ms = h.match(/^#\/sutras\/(\w+)$/);
@@ -2039,6 +2040,10 @@ function modeFromLink() {
 /* ---------- Boot ---------- */
 const rm = $('#resetMode'); if (rm) rm.onclick = () => { store.setPlayerMode(null); fx.applyMode(); location.hash = '#/'; render(); window.scrollTo({ top: 0 }); };
 relink(document.body); /* the page's own #/ links (the nav, the footer) are paths too */
+/* Links drawn after a view mounted (Find results, a Deep dive's buttons, a module that loaded later) become paths too */
+new MutationObserver(records => {
+  for (const r of records) for (const n of r.addedNodes) if (n.nodeType === 1) { if (n.matches('a[href^="#/"]')) n.setAttribute('href', pathFor(n.getAttribute('href'))); relink(n); }
+}).observe(document.body, { childList: true, subtree: true });
 fx.applyMode();
 fx.applyPrefs(); /* body.calm and body.text-plus from this device's Calm and text size */
 fx.warmVoice(); /* the studio voice's core pack, while idle, when read aloud is on */

@@ -18,7 +18,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 851514,
+  "total": 851753,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -54,7 +54,7 @@
    "/js/ambient.js": 4480,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 54409,
+   "/js/app.js": 54569,
    "/js/arena.js": 4141,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -174,8 +174,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 25896,
-   "/play/": 4333,
-   "/sw.js": 6438,
+   "/play/": 4347,
+   "/sw.js": 6503,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
@@ -387,8 +387,8 @@
     "date": "2026-10-31",
     "pr": "routes-2-1-router",
     "from": 850214,
-    "to": 851514,
-    "why": "indexable-routes task 2.1, the router on paths (design D3 and D9): render() in js/app.js derives the route key from location.pathname through js/paths.js (here, pathFor, linkTo, relink), turns a #/ fragment into its path before the view draws, a delegated click handler turns links into the game into pushState and a render, mount(), syncNav() and the Player chip rewrite drawn #/ hrefs to paths, hashchange to #/x is a replaceState and a render, popstate renders, and syncNav() compares route keys; js/paths.js gains BASE as the one path base (/play until task 2.2 moves it to /learn) and derives the fixed paths and aliases from it; the tour selector in js/guide.js matches the Guide link in either form; no new file; measured on the tree merged with main as of #188, with CI's /js/nav.js figure (the #168 note); file deltas: /js/app.js +1186, /js/paths.js +113, /play/ +17, /js/guide.js +3, /sw.js -19; +1300 in all"
+    "to": 851753,
+    "why": "indexable-routes task 2.1, the router on paths (design D3 and D9): render() in js/app.js derives the route key from location.pathname through js/paths.js (here, pathFor, linkTo, relink), turns a #/ fragment into its path before the view draws, a delegated click handler turns links into the game into pushState and a render, mount(), syncNav(), the Player chip and a MutationObserver over the page rewrite drawn #/ hrefs to paths, a second name or a trailing slash is replaced by the screen's one path, hashchange to #/x is a replaceState and a render, popstate renders, and syncNav() compares route keys; js/paths.js gains BASE as the one path base (/play until task 2.2 moves it to /learn) and derives the fixed paths and aliases from it; the tour selector in js/guide.js matches the Guide link in either form; no new file; measured on the tree merged with main as of #188, with CI's /js/nav.js figure (the #168 note); file deltas: /js/app.js +1346, /js/paths.js +113, /play/ +31, /js/guide.js +3, /sw.js +46; +1539 in all"
    }
   ]
  },

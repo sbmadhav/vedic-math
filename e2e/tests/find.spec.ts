@@ -64,7 +64,7 @@ test('results come grouped and ranked: a Skill by name, a Sutra in plain letters
   await expect(page.locator('#findCount')).toHaveText(/\d+ results/);
   const skills = page.locator('#findOut .find-group', { has: page.locator('h2', { hasText: 'Skills' }) }).locator('.find-hit');
   expect(await skills.count()).toBeGreaterThanOrEqual(3);
-  for (const s of await skills.all()) expect(await s.getAttribute('href')).toMatch(/^#\/skill\/[\w-]+$/);
+  for (const s of await skills.all()) expect(await s.getAttribute('href')).toMatch(new RegExp(`^${APP}skill/[\\w-]+$`));
   await box.fill('urdhva');
   const sutras = page.locator('#findOut .find-group', { has: page.locator('h2', { hasText: 'Sutras' }) }).locator('.find-hit');
   await expect(sutras.first().locator('b')).toHaveText('Ūrdhva-Tiryagbhyām');
@@ -186,7 +186,7 @@ test.describe('no Mode yet', () => {
     await page.locator('#findIn').fill('fractions');
     const hit = page.locator('#findOut .find-group', { has: page.locator('h2', { hasText: 'Skills' }) }).locator('a.find-hit').first();
     const href = await hit.getAttribute('href');
-    expect(href).toMatch(/^#\/skill\/[\w-]+$/);
+    expect(href).toMatch(new RegExp(`^${APP}skill/[\\w-]+$`));
     await hit.click();
     await expect(page.locator('.mode-pick')).toBeVisible();
     await page.locator('[data-mode="challenger"]').click();

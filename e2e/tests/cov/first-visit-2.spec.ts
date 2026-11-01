@@ -43,7 +43,7 @@ test.describe('a new visitor on a phone', () => {
     expect(await page.evaluate(() => localStorage.getItem('mathquest.v1.' + JSON.parse(localStorage.getItem('vm.players')!).active))).toContain('"last":"v-from9"');
     await expect(page.locator('.mq-continue')).toHaveCount(0);
     const star = await page.locator('.dojo-card a.md-btn--primary').getAttribute('href');
-    expect(star).toMatch(/^#\/star\/from9\/\d$/);
+    expect(star).toMatch(new RegExp(`^${APP}star/from9/\\d$`));
   });
 });
 

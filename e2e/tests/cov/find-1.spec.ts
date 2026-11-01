@@ -37,7 +37,7 @@ test('A Skill by name: "fractions" lists Skills about fractions, each opening #/
   await page.locator('#findIn').fill('fractions');
   const skills = group(page, 'Skills');
   expect(await skills.count()).toBeGreaterThanOrEqual(3);
-  for (const s of await skills.all()) { expect(await s.getAttribute('href')).toMatch(/^#\/skill\/[\w-]+$/); await expect(s).toContainText(/fraction/i); }
+  for (const s of await skills.all()) { expect(await s.getAttribute('href')).toMatch(new RegExp(`^${APP}skill/[\\w-]+$`)); await expect(s).toContainText(/fraction/i); }
 });
 
 test('A Sutra in plain letters: "urdhva" lists Ūrdhva-Tiryagbhyām under Sutras, opening its deep dive', async ({ page }) => {
