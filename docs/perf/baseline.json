@@ -18,7 +18,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 857809,
+  "total": 857810,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -88,7 +88,7 @@
    "/js/listen.js": 1335,
    "/js/mental.js": 155,
    "/js/metrics.js": 4246,
-   "/js/nav.js": 1554,
+   "/js/nav.js": 1555,
    "/js/play/catalog.js": 1783,
    "/js/play/exp/apprentice-core.js": 7279,
    "/js/play/exp/apprentice.js": 3914,
