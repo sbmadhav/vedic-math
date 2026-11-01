@@ -64,10 +64,10 @@ export function setReading(r) {
   updatePlayer({ reading: 'grade' in r ? { grade: String(r.grade).toLowerCase(), at: Date.now() } : { age: r.age, at: Date.now() } });
 }
 export function clearReading() { delete player().reading; put(PKEY, P); emit('player', player()); }
-/* The optional home card that offers the grade question to a Player with a Mode and no Grade answer, on the progress
-   record: 'done' once answered, skipped or put off with Not now (the question stays in Me) */
-export const readingCard = () => (load(), S.readingCard || null);
-export function setReadingCard(v) { load(); S.readingCard = v; save(); }
+/* Whether the grade question was answered, skipped or put off with Not now, on the Player record: 'done' then, so neither
+   the first visit nor the home card asks again (the question stays in Me) */
+export const readingCard = () => (player().readingCard === 'done' ? 'done' : null);
+export function setReadingCard(v) { updatePlayer({ readingCard: v === 'done' ? 'done' : undefined }); }
 /* Read aloud, per Player (AB4): true, false, or undefined for the band's or the Mode's default (js/fx.js voiceOn) */
 export const playerVoice = () => { const v = player().voice; return typeof v === 'boolean' ? v : undefined; };
 export function setPlayerVoice(v) { updatePlayer({ voice: !!v }); }

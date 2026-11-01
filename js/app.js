@@ -214,7 +214,7 @@ function chip() {
   const el = $('#mqChip'); if (!el) return; const p = store.player(), T = gm.titleInfo(), belt = fx.mode() && fx.mode() !== 'explorer' ? gm.currentBelt() : null;
   el.innerHTML = `<a href="#/me" class="mq-chip">${avatar(p, 30)}<span class="md-sr-only">${esc(p.name)}, ${T.title}${belt ? `, ${belt.name}` : ''}</span>${belt ? `<span class="mq-chip-belt" style="--belt:${belt.color}" data-belt="${belt.id}" aria-hidden="true"></span>` : ''}<span class="mq-chip-t"><span class="mq-sparkbar"><i style="width:${pct(T.pct)}%"></i></span></span></a>`;
 }
-store.on(type => { if (type === 'sparks' || type === 'player' || type === 'belt' || type === 'star') chip(); if (type === 'player') syncNav(); });
+store.on(type => { if (type === 'sparks' || type === 'player' || type === 'belt' || type === 'star') chip(); if (type === 'player') { fx.applyMode(); syncNav(); } }); /* the band class follows the Player too (openspec change age-bands) */
 /* The bar to the next Title, as a progressbar with its Sparks in words */
 function titleBar(T, cls = 'mq-sparkbar mq-sparkbar--big') {
   const text = T.next ? `${T.into} of ${T.need} Sparks to ${T.next}` : 'Top Title reached';
@@ -251,7 +251,7 @@ function modePicker({ signal } = {}) {
   const wire = () => view.querySelectorAll('[data-mode]').forEach(b => on(b, 'click', () => {
     if (picked) return; picked = true;
     fx.sfx('pop'); fx.setMode(b.dataset.mode); gm.startDay();
-    const go = () => { location.hash = afterPick(b.dataset.mode); render(); };
+    const go = () => { const to = afterPick(b.dataset.mode); if ((location.hash || '#/') === to) render(); else location.hash = to; };
     if (fx.noMotion()) return go();
     fx.pop(b, signal); fx.sparkle(b, { n: 10 }); fx.cheer(view.querySelector('.lv-family'), signal);
     later(go, 560, signal);

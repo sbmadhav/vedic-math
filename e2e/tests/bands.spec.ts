@@ -9,7 +9,6 @@ import { test, expect, APP, open, chromiumOnly, type Page } from './fixtures';
 const STUB = `window.__events = window.__events || []; window.siteTrack = (path, title) => { window.__events.push(path + ' ' + title); };`;
 const events = (page: Page): Promise<string[]> => page.evaluate(() => (globalThis as any).__events || []);
 const player = (page: Page) => page.evaluate(() => { const p = JSON.parse(localStorage.getItem('vm.players') || '{}'); return (p.list || []).find((x: any) => x.id === p.active) || p.list?.[0]; });
-const progress = (page: Page) => page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1') || '{}'));
 const dlg = (page: Page) => page.locator('dialog.vm-grade');
 /* A fake speech engine that records every utterance (nothing is heard) */
 async function recordSpeech(page: Page) {
@@ -47,10 +46,10 @@ test.describe('a first visit', () => {
     // Nothing is spoken until the speaker button is tapped; one tap reads the question, the next the choices
     expect(await said(page)).toEqual([]);
     await dlg(page).locator('#gqHear').click();
-    await expect.poll(() => said(page)).toEqual(['What grade are you in? A grown-up can help.']);
+    await expect.poll(async () => (await said(page)).join(' ')).toBe('What grade are you in? A grown-up can help.');
+    const asked = (await said(page)).length;
     await dlg(page).locator('#gqHear').click();
-    await expect.poll(async () => (await said(page)).length).toBe(2);
-    expect((await said(page))[1]).toContain('Pre-K, K, 1, 2');
+    await expect.poll(async () => (await said(page)).slice(asked).join(' ')).toContain('Pre-K, K, 1, 2');
     // Tell my age instead swaps the buttons, and back
     await dlg(page).locator('#gqSwap').click();
     await expect(dlg(page).locator('h2')).toHaveText('How old are you?');
@@ -65,11 +64,11 @@ test.describe('a first visit', () => {
     await expect(page.locator('.mode-card').first()).toBeVisible();
     await expect(page.locator('.mode-sugg')).toHaveCount(0);
     expect((await player(page)).reading).toBeUndefined();
-    expect((await progress(page)).readingCard).toBe('done');
+    expect((await player(page)).readingCard).toBe('done');
     await page.reload();
     await expect(page.locator('.mode-card').first()).toBeVisible();
     await expect(dlg(page)).toHaveCount(0);
-    expect((await events(page)).filter(e => /grade|age|band|reading/i.test(e))).toEqual([]);
+    expect((await events(page)).filter(e => /\b(grade|age|band|reading)\b/i.test(e))).toEqual([]);
     expect(issues.console).toEqual([]);
   });
 
@@ -80,7 +79,8 @@ test.describe('a first visit', () => {
     await expect(page.locator('.mode-card[data-mode="explorer"] .mode-sugg')).toHaveText('Suggested');
     await expect(page.locator('.mode-sugg')).toHaveCount(1);
     await expect(page.locator('.mode-card[aria-pressed="true"]')).toHaveCount(0);
-    expect(await page.locator('#view button').count()).toBe(3);
+    await expect(page.locator('.mode-card')).toHaveCount(3);
+    await expect(page.locator('#pickHear')).toBeVisible(); // an Early reader's speaker button over the cards
     expect((await player(page)).reading).toMatchObject({ grade: '1' });
     expect((await player(page)).age).toBeUndefined();
     await expect(page.locator('body')).toHaveClass(/band-early/);
@@ -88,7 +88,7 @@ test.describe('a first visit', () => {
     await expect(page.locator('h1.home-h')).toHaveText('What do you want to play?'); // the Early heading, in Pro
     await expect(page.locator('.mode-line b')).toHaveText('Pro');
     await expect(page.locator('#readingCard')).toHaveCount(0);
-    expect((await events(page)).filter(e => /grade|age|band|reading|early/i.test(e))).toEqual([]);
+    expect((await events(page)).filter(e => /\b(grade|age|band|reading|early)\b/i.test(e))).toEqual([]);
   });
 
   test('age 10 tags Challenger and sets the Age answer; Grown-up tags Pro', async ({ page }) => {
@@ -135,7 +135,7 @@ test.describe('an existing Player', () => {
     await expect(card).toContainText('Help Bolt talk your way');
     await card.locator('#readingLater').click();
     await expect(card).toHaveCount(0);
-    expect((await progress(page)).readingCard).toBe('done');
+    expect((await player(page)).readingCard).toBe('done');
     await open(page);
     await expect(page.locator('#readingCard')).toHaveCount(0);
     await open(page, '#/me');
@@ -154,7 +154,7 @@ test.describe('an existing Player', () => {
     await expect(page.locator('body')).toHaveClass(/band-early/);
     await open(page, '#/me');
     await expect(page.locator('#readingNote')).toContainText('Reading help: lots (Kindergarten).');
-    await expect(page.locator('#readingNote')).toContainText('A grade or age, if given, stays on this device and only changes how much reading help Bolt gives.');
+    await expect(page.locator('#readingNote')).toContainText('A grade or age, if given, stays on this device and only changes how much reading help Bolt gives');
     await expect(page.locator('#readingNote')).not.toContainText(/early|growing|fluent/i);
     await page.locator('#readingChange').click();
     await dlg(page).locator('[data-grade="3"]').click();

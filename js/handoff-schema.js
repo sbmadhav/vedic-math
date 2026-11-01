@@ -153,7 +153,7 @@ function checkPlayValue(v, depth = 0, count = { n: 0 }) {
 
 function checkPlayer(p) {
   if (!isObj(p)) throw new Error('player is not an object');
-  for (const k of Object.keys(p)) if (!['id', 'name', 'avatar', 'mode', 'created', 'age', 'modeGuess', 'reading', 'voice'].includes(k)) throw new Error(`player: unknown field ${k.slice(0, 40)}`);
+  for (const k of Object.keys(p)) if (!['id', 'name', 'avatar', 'mode', 'created', 'age', 'modeGuess', 'reading', 'voice', 'readingCard'].includes(k)) throw new Error(`player: unknown field ${k.slice(0, 40)}`);
   if (typeof p.id !== 'string' || !ID_RE.test(p.id)) throw new Error('player: bad id');
   if (!validName(p.name)) throw new Error('player: bad Nickname');
   if (!AVATARS.includes(p.avatar)) throw new Error('player: bad avatar');
@@ -163,6 +163,7 @@ function checkPlayer(p) {
   if (!(p.modeGuess === undefined || p.modeGuess === true)) throw new Error('player: bad modeGuess');
   if (!okReading(p.reading)) throw new Error('player: bad Grade answer');
   if (!(p.voice === undefined || typeof p.voice === 'boolean')) throw new Error('player: bad Read aloud choice');
+  if (!(p.readingCard === undefined || p.readingCard === 'done')) throw new Error('player: bad grade question mark');
 }
 
 /* The whole payload, exactly as the schema says, or { ok: false, error } */
@@ -256,6 +257,7 @@ export function readDevice(get, keys, { now = Date.now(), random = Math.random }
     /* The Grade answer and the Read aloud choice (openspec change age-bands) move with the Player, as the Age answer does */
     if (p.reading !== undefined && p.reading !== null && okReading(p.reading)) q.reading = { ...('grade' in p.reading ? { grade: p.reading.grade } : { age: p.reading.age }), ...(p.reading.at !== undefined ? { at: p.reading.at } : {}) };
     if (typeof p.voice === 'boolean') q.voice = p.voice;
+    if (p.readingCard === 'done') q.readingCard = 'done';
     players.push(q); // parentOk, and any other field, stays behind
   }
   if (!players.length) return null;

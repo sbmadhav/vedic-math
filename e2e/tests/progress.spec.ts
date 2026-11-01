@@ -43,7 +43,8 @@ test('a new nickname, avatar color and a second player persist', async ({ page }
   await page.locator('.av-pick[data-c="plum"]').click();
   await expect(page.locator('.av-pick[data-c="plum"]')).toHaveAttribute('aria-pressed', 'true');
   await page.locator('#meAdd').click();
-  // A new player starts with the mode picker
+  // A new player starts with the grade question (openspec change age-bands), then the mode picker
+  await page.locator('dialog.vm-grade #gqSkip').click();
   await expect(page.locator('.mode-pick .mode-card')).toHaveCount(3);
   await page.locator('.mode-card[data-mode="pro"]').click();
   await page.reload();

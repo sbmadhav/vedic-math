@@ -191,8 +191,8 @@ type Fixtures = {
   /** The first-visit tour (openspec in-app-guide) counts as already shown on this device. Default true, so specs that
       open Home for a fresh Player are not covered by it; e2e/tests/guide.spec.ts turns it off. */
   tourSeen: boolean;
-  /** The grade question (openspec change age-bands) counts as already asked for the first Player (its card mark on the
-      progress record, mathquest.v1.p1 readingCard), so the Mode picker and Home are not covered by it. Default true;
+  /** The grade question (openspec change age-bands) counts as already asked for the first Player (readingCard on the
+      Player record), so the Mode picker and Home are not covered by it. Default true;
       e2e/tests/bands.spec.ts turns it off. A Grade answer itself is seeded with seedPlayer: { reading: { grade: 'k' } }. */
   gradeAsked: boolean;
   /** Requests that broke the live-dependency rules. Checked automatically after each test. */
@@ -224,13 +224,14 @@ export const test = base.extend<Fixtures>({
       try {
         if (!localStorage.getItem('vm.players')) {
           if (localStorage.getItem('vm.sound') === null) localStorage.setItem('vm.sound', '0');
-          if (mode) localStorage.setItem('vm.players', JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode, created: Date.now(), ...(consent || {}), ...(more || {}) }] }));
-          if (mode && progress) localStorage.setItem('mathquest.v1.p1', JSON.stringify(asked ? { ...progress, readingCard: 'done' } : progress));
+          // The grade question counts as asked (readingCard on the Player record) unless the spec turns gradeAsked off
+          const mark = asked ? { readingCard: 'done' } : {};
+          if (mode) localStorage.setItem('vm.players', JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode, created: Date.now(), ...mark, ...(consent || {}), ...(more || {}) }] }));
+          // A first visit to the game (no Mode): the Player the game would make, with the mark, so the Mode picker is not
+          // covered by the question. Only on the game's pages: the landing and import pages must find no Players.
+          else if (asked && /^\/play(\/|$)/.test(location.pathname)) localStorage.setItem('vm.players', JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode: null, created: Date.now(), ...mark }] }));
+          if (mode && progress) localStorage.setItem('mathquest.v1.p1', JSON.stringify(progress));
         }
-        // The grade question's mark, on the game's pages only (the landing and import pages write nothing and some specs
-        // check that). The first Player is always p1 (js/store.js), so the mark can be seeded before the record exists; a
-        // record with only the mark counts as never played (js/metrics.js and js/handoff.js read Sparks, answers and Skills)
-        if (asked && /^\/play(\/|$)/.test(location.pathname) && localStorage.getItem('mathquest.v1.p1') === null) localStorage.setItem('mathquest.v1.p1', JSON.stringify({ readingCard: 'done' }));
       } catch (e) { /* storage blocked: the app copes */ }
     }, [seedMode, seedConsent, seedProgress, seedPlayer, gradeAsked] as const);
     if (tourSeen) await context.addInitScript(() => { try { if (!localStorage.getItem('vm.tour')) localStorage.setItem('vm.tour', 'done'); } catch (e) { /* storage blocked */ } });

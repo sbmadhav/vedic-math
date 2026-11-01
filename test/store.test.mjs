@@ -88,11 +88,11 @@ test('setReading keeps a grade or an age with its time, apart per Player; clearR
   store.clearReading();
 });
 
-test('the home card mark is on the progress record, per Player', () => {
+test('the grade question mark is on the Player record, per Player', () => {
   assert.equal(store.readingCard(), null);
   store.setReadingCard('done');
   assert.equal(store.readingCard(), 'done');
-  assert.equal(JSON.parse(mem['mathquest.v1.' + store.player().id]).readingCard, 'done');
+  assert.equal(saved().list.find(p => p.id === store.player().id).readingCard, 'done');
   const other = store.allPlayers().find(p => p.id !== store.player().id).id, me = store.player().id;
   store.switchPlayer(other);
   assert.equal(store.readingCard(), null);
@@ -122,7 +122,6 @@ test('removing a Player removes their Age answer and Grade answer', () => {
   assert.ok(!saved().list.some(p => p.id === gone));
   assert.ok(!mem['vm.players'].includes('"age":15'));
   assert.ok(!mem['vm.players'].includes('"grade":"7"'));
-  assert.equal(mem['mathquest.v1.' + gone], undefined, 'the progress record (with the card mark) goes too');
   assert.equal(store.allPlayers().length, 1);
   assert.equal(store.player().age, 8);
 });

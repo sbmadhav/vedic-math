@@ -494,10 +494,10 @@ a.door .play-ic { width: 44px; height: 44px; } .door--coral .play-ic { backgroun
 
 /* The Early Reading band (openspec change age-bands, body.band-early from js/fx.js applyMode): larger buttons and more
    room between them in every Mode, tokens only; nothing else changes by band, and both color schemes are untouched. */
+body.band-early .md-btn, body.band-early .md-chip { min-height: 48px; }
 body.band-early .pr-choice { font: 700 2rem/1 var(--display); min-width: 96px; min-height: 84px; border-radius: var(--radius-lg); }
 body.band-early .pr-q { font-size: clamp(1.7rem, 5vw, 2.4rem); }
 body.band-early .pr-q.long { font: 600 1.4rem/1.5 var(--display); }
-body.band-early .md-btn, body.band-early .md-chip { min-height: 48px; }
 body.band-early .pr-choices, body.band-early .pr-actions { gap: var(--space-3); }
 body.band-early .star-choice { min-width: 120px; min-height: 64px; font-size: 1.5rem; }
 body.band-early .star-choices { gap: var(--space-4); }
@@ -510,6 +510,7 @@ body.band-early .ar-choices { gap: var(--space-4); }
 .vm-grade .gq-grid { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); }
 .vm-grade .gq-opt { min-height: 48px; font-size: 1.15rem; justify-content: center; }
 .gq-hear svg { width: 24px; height: 24px; }
+.vm-grade button { min-height: 44px; min-width: 44px; }
 .vm-grade .vs-foot { justify-content: space-between; }
 /* The Mode picker while the grade question is open (decision 2): the cards keep their place and are not painted */
 .mode-pick--wait .mode-card { visibility: hidden; }

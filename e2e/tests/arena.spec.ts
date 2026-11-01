@@ -440,7 +440,7 @@ test.describe('a Growing Challenger', () => {
     await expect(page.locator('.ar')).toHaveClass(/ar--bar/);
     await expect(page.locator('.ar-bar')).toBeVisible();
     await expect(page.locator('#arTime')).toBeAttached();
-    await expect(page.locator('#arTime')).not.toBeVisible();
+    await expect(page.locator('.ar-time')).toHaveClass(/md-sr-only/); // for screen readers only
     await expect(page.locator('.ar-pad')).toBeVisible();
     expect(await ticks(page)).toBe(0);
     await page.goto(`${APP}#/learn`);
@@ -462,9 +462,9 @@ test.describe('an Early Challenger', () => {
     await expect(page.locator('.ar-choice')).toHaveCount(0);
     await expect(page.locator('.ar-bar')).toBeVisible();
     await expect(page.locator('#arTime')).toHaveText(/^(60|59|58|57|56)$/);
-    await expect(page.locator('#arTime')).not.toBeVisible();
+    await expect(page.locator('.ar-time')).toHaveClass(/md-sr-only/); // for screen readers only
     expect(await ticks(page)).toBe(0);
-    await page.goto(`${APP}#/arena`);
+    await page.locator('#arStop').click(); // leave the round with nothing posted
     await page.locator('[data-t="untimed"]').click();
     await page.locator('#arGo').click();
     await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
