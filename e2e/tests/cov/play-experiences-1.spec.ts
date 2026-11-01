@@ -1,4 +1,4 @@
-import { test, expect, open, atRoute, hrefTo } from '../fixtures';
+import { test, expect, open, atRoute, hrefTo, pathTo } from '../fixtures';
 
 /* play-experiences spec, Requirements "Experiences live inside sections", "Section shelves by Mode", "Party Mode
    replaces the Duel", "Per Player state" and "Sparks from play, capped": one test per scenario. */

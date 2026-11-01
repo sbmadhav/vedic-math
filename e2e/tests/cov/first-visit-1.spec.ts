@@ -122,7 +122,7 @@ test.describe('Explorer', () => {
     await expect(card.locator('.sutra-say-name b[lang="sa-Latn"]')).not.toBeEmpty();
     await expect(card.getByRole('button', { name: /^Hear how to say / })).toBeVisible();
     await expect(card.locator('.sutra-say-kid')).not.toBeEmpty();
-    await expect(card.getByRole('link', { name: 'See how it works' })).toHaveAttribute('href', /^#\/sutras\/(s1|s14|s2|u8|u12)$/);
+    await expect(card.getByRole('link', { name: 'See how it works' })).toHaveAttribute('href', new RegExp(`^${APP}sutras/(s1|s14|s2|u8|u12)$`));
     const c = (await card.boundingBox())!, tiles = (await page.locator('.play-grid--big').boundingBox())!;
     expect(c.y + c.height).toBeLessThanOrEqual(tiles.y);
     /* More places after the tiles (openspec change play-nav-by-mode) */

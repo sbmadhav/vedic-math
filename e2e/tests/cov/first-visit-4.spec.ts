@@ -1,4 +1,4 @@
-import { test, expect, APP, atRoute } from '../fixtures';
+import { test, expect, APP, atRoute, pathTo } from '../fixtures';
 
 /* first-visit spec, Requirements "The Mode picker asks one question" and "The hero says little and the cards work every
    way" (openspec change play-nav-by-mode; before it "One plain lede, and the Mode cards stay" and "The app's hero says

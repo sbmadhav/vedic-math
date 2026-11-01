@@ -1,4 +1,4 @@
-import { test, expect, APP, open, ANALYTICS, chromiumOnly, typeAnswer } from './fixtures';
+import { test, expect, APP, open, ANALYTICS, chromiumOnly, typeAnswer, go } from './fixtures';
 
 /* Anonymous usage events (openspec analytics spec). This site's /js/analytics.js is replaced by a stub
    that only records window.siteTrack calls in window.__events, so no GoatCounter request is ever made and
@@ -16,9 +16,9 @@ test('each rendered route sends one route view, numbers collapsed; no GoatCounte
   context.on('request', r => { if (ANALYTICS.test(r.url())) gc.push(r.url()); });
   await open(page);
   await expect.poll(() => events(page)).toContain('math/view/home');
-  await page.goto(`${APP}#/arena`);
+  await go(page, '#/arena');
   await expect(page.locator('#arGo')).toBeVisible();
-  await page.goto(`${APP}#/game/times-sprint/1`);
+  await go(page, '#/game/times-sprint/1');
   await expect(page.locator('#gStart')).toBeVisible();
   const ev = (await events(page)).filter(e => e.startsWith('math/view/'));
   expect(ev).toEqual(['math/view/home', 'math/view/arena', 'math/view/game/times-sprint/level']);

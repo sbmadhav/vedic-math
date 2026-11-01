@@ -132,7 +132,7 @@ test.describe('Challenger', () => {
     await expect(page.locator('.try-end #tyQ')).toHaveText('Trick learned!');
     await expect(page.locator('.try-end-n')).toContainText('3 of 3 right.');
     await expect(page.locator('#tyGoOn')).toHaveAttribute('href', pathTo('#/star/sq5/1'));
-    await expect(page.locator('#tyHome')).toHaveAttribute('href', '#/');
+    await expect(page.locator('#tyHome')).toHaveAttribute('href', pathTo('#/'));
     await expect(page.locator('#tySutra')).toHaveAttribute('href', pathTo('#/sutras/s1'));
     const after = await progress(page);
     expect(after.sparks).toBe((before.sparks || 0) + 30);

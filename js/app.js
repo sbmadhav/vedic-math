@@ -246,7 +246,7 @@ on(window, 'hashchange', () => {
 on(window, 'popstate', () => { if (render.n) render(); }, boot.signal); /* Back and Forward between paths */
 /* A plain click on a link into the game (a #/ link, or a path under BASE) is a pushState and a render, never a page
    load; a modified click, a link with a target or download, and a link a view handled itself keep the browser's way */
-on(document, 'click', e => {
+on(window, 'click', e => { /* on window: after the page's own document listeners (a Sutra tag's event, a view's handler) */
   if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
   const a = e.target && e.target.closest && e.target.closest('a[href]'); if (!a || a.target || a.hasAttribute('download')) return;
   const link = linkTo(a); if (!link) return;
@@ -1170,7 +1170,7 @@ function openSutra(id, fromPage) {
   if (!sutraDlg) {
     sutraDlg = document.createElement('dialog'); sutraDlg.className = 'sutra-modal'; sutraDlg.setAttribute('aria-labelledby', 'sdTitle'); document.body.append(sutraDlg);
     sutraDlg.addEventListener('cancel', e => { e.preventDefault(); requestClose(); });
-    sutraDlg.addEventListener('click', e => { if (e.target === sutraDlg) requestClose(); if (e.target.closest('.sd-x')) requestClose(); const sw = e.target.closest('[data-swap]'); if (sw) { e.preventDefault(); location.replace(sw.getAttribute('href')); } if (e.target.closest('a[href^="#/skill"]')) { sutraDlg.close(); } });
+    sutraDlg.addEventListener('click', e => { if (e.target === sutraDlg) requestClose(); if (e.target.closest('.sd-x')) requestClose(); const sw = e.target.closest('[data-swap]'); if (sw) { e.preventDefault(); history.replaceState(history.state, '', sw.getAttribute('href')); render(); } if (e.target.closest('a[href^="#/skill"]')) { sutraDlg.close(); } });
   }
   const swapping = sutraDlg.open;
   if (sutraScene) sutraScene.abort();

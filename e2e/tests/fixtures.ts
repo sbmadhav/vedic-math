@@ -298,6 +298,15 @@ export const atRoute = (route: string) => new RegExp(`${reEscape(pathTo(route))}
 /** The attribute selector of a link to a route, as the game draws it: a${hrefTo('#/arena')} is a[href="/play/arena"]. */
 export const hrefTo = (route: string) => `[href="${pathTo(route)}"]`;
 
+/** Moves to a #/ route the way page.goto(`${APP}#/x`) did while every screen was a fragment of APP: inside the open
+    game page it is a fragment change (no new document, so what the page recorded stays, and the router turns it into
+    the path); from anywhere else it loads the page. */
+export async function go(page: Page, route: string) {
+  const here = (() => { try { return new URL(page.url()).pathname; } catch { return ''; } })();
+  if (here.startsWith(APP) && route.startsWith('#')) await page.evaluate(h => { location.hash = h; }, route);
+  else await page.goto(`${APP}${route === '#/' ? '' : route}`);
+}
+
 /** Serves the app a transformed video list. `transform` is JavaScript source for a function (list) => list, run in
     the page over the real js/videos.js (every other export passes through), so a scenario can hold its premise
     (a Skill with no hand-matched video, exactly one, a planted counting video) whatever the catalog grows into.
@@ -311,7 +320,8 @@ export async function withVideos(page: Page, transform: string) {
 /** Opens the app at a route and waits for its view. open(page, '#/dojo') loads the page with that fragment (an old
     link: the router turns it into its path before the view draws); open(page, '/play/dojo') loads that path cold. */
 export async function open(page: Page, route = '#/') {
-  await page.goto(route.startsWith('/') ? route : `${APP}${route === '#/' ? '' : route}`);
+  if (route.startsWith('/')) await page.goto(route);
+  else await go(page, route);
   await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
 }
 
