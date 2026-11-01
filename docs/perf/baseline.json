@@ -18,8 +18,9 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 847480,
+  "total": 850252,
   "files": {
+   "/js/paths.js": 2776,
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
    "/css/play/base.css": 1123,
@@ -174,7 +175,7 @@
    "/manifest.webmanifest": 605,
    "/math.css": 25896,
    "/play/": 4335,
-   "/sw.js": 6458,
+   "/sw.js": 6454,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
@@ -374,6 +375,13 @@
     "from": 846845,
     "to": 847480,
     "why": "indexable-routes task 3.1, view transitions inside the game (design D12): render() in js/app.js runs its DOM update inside document.startViewTransition when the browser has it and fx.noMotion() is false, skipping the first render, a redraw of the same route and a change while one is running, with focus and scroll after updateCallbackDone; math.css names the header, the nav and the Player chip (site-header, game-nav, player-chip) and sets the 180 ms fade; no new file; measured on the tree merged with main as of #188; file deltas: /js/app.js +380, /math.css +207, /sw.js +34, /play/ +14; /js/nav.js reads 1 byte smaller locally than CI's figure, which the baseline keeps (the #168 note); +635 in all as CI measures it"
+   },
+   {
+    "date": "2026-11-01",
+    "pr": 190,
+    "from": 847480,
+    "to": 850252,
+    "why": "indexable-routes 1.1, the route table (js/paths.js); re-measured on main as of the merge; CI figure for /js/nav.js; file deltas: /js/paths.js new 2776, /sw.js -4; +2772 in all"
    }
   ]
  },
