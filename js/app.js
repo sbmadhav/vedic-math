@@ -258,9 +258,11 @@ function afterPick(mode) {
   /* The Placement offer (openspec placement, design decision 9): once after the pick, for a Player with no Placement
      level who has not answered it (Start, Skip or Home's card); a page the visitor asked for before the pick comes first */
   const next = () => (!store.placement() && store.placementCard() !== 'done' ? '#/placement' : '#/');
+  if (!to) return next();
   if (to === '#/placement') return to;
-  if (!to || !/^#\/[\w\/-]+$/.test(to) || !routes.some(([re]) => re.test(to))) return next();
-  return buildIndex({ mode, counts: guideCounts() }).some(e => e.href === to) ? to : next();
+  /* A page asked for before the pick (a Find result, a link) goes there, or Home when the Mode cannot open it, never to the offer */
+  if (!/^#\/[\w\/-]+$/.test(to) || !routes.some(([re]) => re.test(to))) return '#/';
+  return buildIndex({ mode, counts: guideCounts() }).some(e => e.href === to) ? to : '#/';
 }
 function modeIcon(id) {
   const P = 'fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"';

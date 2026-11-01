@@ -10,7 +10,7 @@ const base = async (page: Page) => Number((await page.locator('#stQ').innerHTML(
 const tag = (page: Page) => page.locator('#stMain .star-tag');
 const saved = (page: Page) => page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.' + JSON.parse(localStorage.getItem('vm.players')!).active) || '{}'));
 async function seedProgress(page: Page, id: string, data: Record<string, unknown>) {
-  await page.addInitScript(([k, v]) => { if (!localStorage.getItem(k)) localStorage.setItem(k, v); }, [`mathquest.v1.${id}`, JSON.stringify(data)] as const);
+  await page.addInitScript(([k, v]) => { const cur = localStorage.getItem(k); if (!cur || /^\{"hookSeen":\d+\}$/.test(cur)) localStorage.setItem(k, JSON.stringify({ ...JSON.parse(cur || "{}"), ...JSON.parse(v) })); } /* over the fixtures' Hook-seen record (openspec hook) */, [`mathquest.v1.${id}`, JSON.stringify(data)] as const);
 }
 /** Problems (with key and numbers) of Katas a to b of sq5, from the app's own seeded Katas */
 const katasProblems = (page: Page, a: number, b: number) => page.evaluate(async ([a, b]) => {
@@ -37,7 +37,7 @@ async function star2Katas(page: Page) {
 
 test('Two Players on the same Star: Rating 3 draws from Katas near 18, Rating 17 from Katas near 34', async ({ page }) => {
   await seedProgress(page, 'p1', { ratings: { 'skill:v-sq5': 3 } });
-  await seedProgress(page, 'p2', { ratings: { 'skill:v-sq5': 17 } });
+  await seedProgress(page, 'p2', { ratings: { 'skill:v-sq5': 17 }, hookSeen: 1_700_000_000_000 }); /* past the Hook, like the fixtures' Player (openspec hook) */
   await open(page, '#/');
   const low = await star2Katas(page);
   for (const n of low) { expect(n).toBeGreaterThanOrEqual(18); expect(n).toBeLessThanOrEqual(24); }
