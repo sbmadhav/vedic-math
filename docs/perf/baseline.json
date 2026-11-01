@@ -18,7 +18,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 846845,
+  "total": 847480,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -54,7 +54,7 @@
    "/js/ambient.js": 4480,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 52849,
+   "/js/app.js": 53229,
    "/js/arena.js": 4141,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -172,9 +172,9 @@
    "/js/voice.js": 14663,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 25689,
-   "/play/": 4321,
-   "/sw.js": 6424,
+   "/math.css": 25896,
+   "/play/": 4335,
+   "/sw.js": 6458,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
@@ -367,6 +367,13 @@
     "from": 842086,
     "to": 846845,
     "why": "react-typescript task 3.1 (merged with main as of #180): shared/src/ holds the generators, Tricks, pictures, Arena sets, scoring, Nickname lists and the Word problem plan (story-plan.ts); until the framework build (task 2.1) bundles the game, build.py publishes them under /js/ts/ with their types taken out (+56337 in all), and the js/ modules they came from re-export them or shrink (-52148 in all); a static import of a re-export-only js/ module is pointed at its TypeScript module, so the first load requests each once and no deeper, and the re-export files stay published and precached; /js/app.js +61, /js/explain-lines.js +10, /js/family-view.js +6, /js/find.js +14, /js/games.js +15, /js/gamify.js +24, /js/levels.js +10, /js/metrics.js +17, /js/sky-view.js +7, /js/sky.js +20, /js/star.js +24, /js/stories.js +11, /js/sutra-progress.js +6, /js/sutra-tag-core.js +13, /js/try.js +7, /play/ +183, /sw.js +134; +4751 in all (/js/nav.js at CI's figure); re-based over #187 (842,086) on 2026-10-31: 846,845 with CI's /js/nav.js figure, +4,759"
+   },
+   {
+    "date": "2026-10-31",
+    "pr": 189,
+    "from": 846845,
+    "to": 847480,
+    "why": "indexable-routes task 3.1, view transitions inside the game (design D12): render() in js/app.js runs its DOM update inside document.startViewTransition when the browser has it and fx.noMotion() is false, skipping the first render, a redraw of the same route and a change while one is running, with focus and scroll after updateCallbackDone; math.css names the header, the nav and the Player chip (site-header, game-nav, player-chip) and sets the 180 ms fade; no new file; measured on the tree merged with main as of #188; file deltas: /js/app.js +380, /math.css +207, /sw.js +34, /play/ +14; /js/nav.js reads 1 byte smaller locally than CI's figure, which the baseline keeps (the #168 note); +635 in all as CI measures it"
    }
   ]
  },
