@@ -160,7 +160,7 @@ const knownId = (kind, id) => kind === 'grade' ? !!gradeOf(id) : kind === 'skill
 function render() {
   fx.stopSpeaking(); /* every voice: built-in, studio and natural */
   stopVerses(); /* a deep dive opens over the Sutras page without remounting it: a Listen still waiting for voices must not start behind it */
-  const h = location.hash || '#/';
+  const h = location.hash || '#/', again = h === render.at; /* the route on screen drawn again (a hash write's second render) */
   render.from = render.at; render.at = h; /* where a Star's Back button returns to */
   // Sutra deep dives open over the sutras page without re-rendering it
   const ms = h.match(/^#\/sutras\/(\w+)$/);
@@ -169,18 +169,35 @@ function render() {
   if (sutraDlg && sutraDlg.open) closeSutra(true);
   const hit = routes.find(([re]) => re.test(h)), picker = !fx.mode() && !/^#\/(watch|sutras(\/\w+)?|find|guide(\/[\w-]+)?)$/.test(h); /* the guide, Find and a Deep dive open without a mode too (openspec change sutras-first) */
   modePicker.pending = picker && hit && h !== '#/' ? h : null; /* the page asked for before a Mode, opened once one is picked (afterPick) */
-  mount(ctx => (picker ? modePicker(ctx) : hit ? hit[1](h.match(hit[0]), ctx) : home(ctx)));
-  const asSky = !picker && /^#?\/?$/.test(h) && SKY.skyOn(store.player()); /* home showed the Sky: the route view is sky */
-  setBgLevel(levelFor(h, { picker, sky: asSky })); /* the full background sky on the Mode picker and home, a quiet one elsewhere */
-  if ((location.hash || '#/') === h) metrics.view(h, knownId, picker, asSky); /* one anonymous route view (analytics spec); a view that redirected is counted when its target renders */
-  syncNav(h);
-  chip();
-  if (navSay) { const words = navSay; navSay = null; fx.speak(words); } /* an Explorer tab's name, after the view it opened has drawn (render stops every voice first) */
+  const first = !render.n++;
+  const update = () => {
+    mount(ctx => (picker ? modePicker(ctx) : hit ? hit[1](h.match(hit[0]), ctx) : home(ctx)));
+    const asSky = !picker && /^#?\/?$/.test(h) && SKY.skyOn(store.player()); /* home showed the Sky: the route view is sky */
+    setBgLevel(levelFor(h, { picker, sky: asSky })); /* the full background sky on the Mode picker and home, a quiet one elsewhere */
+    if ((location.hash || '#/') === h) metrics.view(h, knownId, picker, asSky); /* one anonymous route view (analytics spec); a view that redirected is counted when its target renders */
+    syncNav(h);
+    chip();
+    if (navSay) { const words = navSay; navSay = null; fx.speak(words); } /* an Explorer tab's name, after the view it opened has drawn (render stops every voice first) */
+  };
   /* Focus the new view's heading, unless the view already put focus somewhere in itself (the Sky, back from a Star) */
-  const head = view.querySelector('h1, h2'); if (head) { head.setAttribute('tabindex', '-1'); if (render.n++ && !view.contains(document.activeElement)) head.focus({ preventScroll: true }); }
-  if (render.n > 1) window.scrollTo({ top: 0 });
+  const settle = () => {
+    const head = view.querySelector('h1, h2'); if (head) { head.setAttribute('tabindex', '-1'); if (!first && !view.contains(document.activeElement)) head.focus({ preventScroll: true }); }
+    if (!first) window.scrollTo({ top: 0 });
+  };
+  transition(update, settle, first || again);
 }
 render.n = 0;
+/* Smooth moves between pages (openspec change indexable-routes, design D12): the route change's DOM update runs inside a
+   view transition when the browser has one and motion is allowed (fx.noMotion: reduced motion, Pause motion, Calm), so
+   the header, nav and Player chip (named in math.css) stay still while #view cross-fades. The first render, a redraw of
+   the same route (plain) and a change while one is running swap at once. after(): focus and scroll, once the update is done. */
+let moving = null; /* the view transition in flight */
+function transition(update, after, plain) {
+  if (plain || moving || fx.noMotion() || typeof document.startViewTransition !== 'function') { update(); after(); return; }
+  const t = moving = document.startViewTransition(update), done = () => { if (moving === t) moving = null; };
+  t.updateCallbackDone.then(after, e => { after(); throw e; }); /* a view that threw still gets focus and scroll, and the error is still reported */
+  t.finished.then(done, done);
+}
 window.addEventListener('hashchange', render);
 
 /* ---------- The menu by Mode (openspec change play-nav-by-mode, js/nav.js) ----------
@@ -1841,11 +1858,13 @@ function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw
     <h2 class="mq-strand">Backup</h2>
     <p class="mq-data"><button class="md-btn md-btn--sm" id="pExport">Copy backup code</button> <button class="md-btn md-btn--sm" id="pImport">Restore from code</button> <button class="md-btn md-btn--sm" id="pReset">Reset this player</button></p>
     <p class="pr-say" id="pMsg" role="status" aria-live="polite"></p>
+    <div class="me-restore" id="pCodeBox" hidden><label class="mq-small" for="pCode">Your backup code, every Player on this device. Copy it or write it down.</label><textarea class="md-input" id="pCode" readonly rows="3" spellcheck="false"></textarea></div>
+    <div class="me-restore" id="pPasteBox" hidden><label class="mq-small" for="pPaste">Paste a backup code here, then press Check this code. Nothing changes until you choose what to keep.</label><textarea class="md-input" id="pPaste" rows="3" spellcheck="false" autocomplete="off"></textarea><div class="me-acts"><button type="button" class="md-btn md-btn--sm md-btn--primary" id="pCheck">Check this code</button><button type="button" class="md-btn md-btn--sm" id="pPasteCancel">Cancel</button></div></div>
     <div class="md-card me-restore" id="pOffer" hidden>
       <h3 class="mq-h3" id="pOfferH" tabindex="-1">Restore from this code?</h3>
       <ul id="pOfferList"></ul>
       <p class="mq-small">With them come their Sparks, Medals, Stars, Ratings and settings. World board names and the Device board start fresh.</p>
-      <p class="mq-small" id="pOfferHere" hidden><b>This device already has progress:</b> <span></span>. Keep both adds the code's Players next to the ones here; each Player keeps their own progress.</p>
+      <p class="mq-small" id="pOfferHere" hidden><b>This device already has progress:</b> <span></span>. Use the code's replaces every Player and all progress on this device with the code's. Keep both adds the code's Players next to the ones here; each Player keeps their own progress.</p>
       <div class="me-acts" id="pOfferFresh"><button class="md-btn md-btn--sm md-btn--primary" id="pBring">Bring it</button><button class="md-btn md-btn--sm" id="pNotNow">Not now</button></div>
       <div class="me-acts" id="pOfferHas" hidden><button class="md-btn md-btn--sm" id="pKeep">Keep this device's</button><button class="md-btn md-btn--sm" id="pUse">Use the code's</button><button class="md-btn md-btn--sm md-btn--primary" id="pBoth">Keep both</button></div>
     </div>
@@ -1880,6 +1899,7 @@ function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw
   store.loadBackup().catch(() => {});
   const backup = fn => async () => { if (!bk) { try { bk = (await store.loadBackup()).meBackup({ $, msg }); } catch (e) { msg('The backup tools could not load. Check the connection, then try again.'); return; } } fn(bk); };
   listen($('#pExport'), backup(b => b.copy())); listen($('#pImport'), backup(b => b.restore()));
+  listen($('#pCheck'), backup(b => b.check())); listen($('#pPasteCancel'), backup(b => b.cancelPaste()));
   listen($('#pBring'), backup(b => b.choose('replace'))); listen($('#pUse'), backup(b => b.choose('replace'))); listen($('#pBoth'), backup(b => b.choose('both')));
   listen($('#pNotNow'), backup(b => b.keep())); listen($('#pKeep'), backup(b => b.keep()));
   $('#pReset').onclick = () => { if (confirm('Reset all progress for this player?')) { store.reset(); meView(ctx); msg('Progress reset.'); } };
