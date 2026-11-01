@@ -761,7 +761,7 @@ def build_site(args, out):
         for spec in _specs(text):
             if spec.endswith(".ts"):
                 fail(f"{s}: imports {spec}; a Trick module imports the published URL (/{TRICKS_URL}<name>.js or /js/<name>.js), never a .ts path")
-        publish[pub] = s
+        publish[pub] = pub  # the key is its own source: overrides holds the published text, so versions hash what is served
         overrides[pub] = _rewrite(s, text, all_files, shim).encode()
     # The published tokens.css drops its @font-face lines (they point at the old site's /assets/fonts/): theme/fonts.css
     # declares the fonts once, from /fonts/ on this site
