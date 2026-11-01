@@ -17,6 +17,7 @@ import * as metrics from './metrics.js';
 import { tag as sutraTag, tags, fillTags } from './sutra-tag-slot.js'; /* js/sutra-tag.js loads on demand (#126 review) */
 import { listenBtn, stopListen } from './listen.js';
 import { trickStoryNow, starSlot, loadStories } from './story-plan.js';
+import { choicesAround } from '../shared/src/bands.ts'; /* an Early reader's 3 choices (openspec change age-bands) */
 
 export const ROUND = 4;
 export const SPARK = { right: 10, comeback: 15, dare: 20 };
@@ -124,8 +125,8 @@ const esc = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 /* Text for the live region: no tags, and entities as words a screen reader reads */
 const said = h => String(h).replace(/<sup>2<\/sup>/g, ' squared').replace(/<sup>3<\/sup>/g, ' cubed').replace(/<[^>]+>/g, '').replace(/&minus;/g, '-').replace(/&times;/g, ' times ').replace(/&divide;/g, ' divided by ').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
 const SPARK_SVG = '<svg class="star-spark" viewBox="-12 -12 24 24" aria-hidden="true" focusable="false"><path d="M0-11C1.5-2 2-1.5 11 0C2 1.5 1.5 2 0 11C-1.5 2-2 1.5-11 0C-2-1.5-1.5-2 0-11Z"/></svg>';
-const PRAISE = ['Yes!', 'Nailed it.', 'Smooth.', 'Boom.', 'Right!'];
-const pickOne = a => a[Math.floor(Math.random() * a.length)];
+/* Bolt's lines come from the copy table by Reading band, then Mode (shared/src/copy.ts, openspec change age-bands):
+   bolt.right is the praise set, each line drawn in the handler that shows it (fx.line) */
 
 /* Plays one Star round in root. trick: a Trick id; star: 1 to 3; signal: the view's (everything stops when it aborts).
    back: { href, label } for the end screen's way out; again(): Play again; findVideo(trickId, mode): a Promise of
@@ -134,6 +135,11 @@ const pickOne = a => a[Math.floor(Math.random() * a.length)];
    Returns { destroy }, which saves the Rating. */
 export function runStar(root, { trick, star, signal, back = { href: '#/dojo', label: 'Back to the Dojo' }, again = null, findVideo = async () => null, onEnd = null } = {}) {
   const t = TRICKS.find(x => x.id === trick), skill = byId['v-' + trick], mode = fx.mode() || 'challenger', boxes = mode !== 'pro';
+  /* An Early reader answers every whole-number question by tapping one of 3 big buttons, in any Mode (openspec change
+     age-bands, star-round "Answer boxes by Mode"): the question shown (cur) gains choices, the round's state does not */
+  const early = fx.band() === 'early';
+  const asShown = p => (early && p.kind === 'num' && Number.isInteger(p.answer) ? { ...p, kind: 'choice', choices: choicesAround(p.answer, 3).map(String), answer: String(p.answer) } : p);
+  let cur = null;
   const round = child(signal), rs = round.signal;
   const rating = AD.skillRating('v-' + trick, mode), dial = new AD.Dial(rating);
   /* Word problems (openspec word-problems): question 3 for Challenger, 2 for Pro, once the Player has 20 saved answers */
@@ -198,7 +204,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     [...bx.children].forEach((b, i) => { b.textContent = entry[i] || ''; b.classList.toggle('f', i < entry.length); b.classList.toggle('held', cut > 0 && i < cut && entry.length >= cut); });
   }
   function type(k) {
-    if (!input) return; const p = st.current; if (p.kind === 'choice') return;
+    if (!input) return; const p = st.current; if (p.kind === 'choice' || (cur && cur.kind === 'choice')) return;
     if (p.kind === 'fields') {
       let v = fields[active] || '';
       if (k === 'del') v = v.slice(0, -1); else if (k === '-') v = v ? v : '-'; else if (v.length < 12) v += k;
@@ -209,14 +215,14 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
   }
   function go() {
     if (!input) return; const p = st.current;
-    if (p.kind === 'choice') return;
+    if (p.kind === 'choice' || (cur && cur.kind === 'choice')) return;
     if (p.kind === 'fields') {
       const empty = p.fields.findIndex((_, i) => !fields[i] || fields[i] === '-');
-      if (empty >= 0) { if ((fields[active] || '') && active !== empty) { active = empty; showEntry(); } else say('Fill in every box first.', 'think'); return; }
+      if (empty >= 0) { if ((fields[active] || '') && active !== empty) { active = empty; showEntry(); } else say(fx.copy('star.fillFirst'), 'think'); return; }
       return answer(p.fields.every((f, i) => checkOne({ kind: 'num', answer: f.answer }, fields[i]).ok));
     }
-    if (!entry || entry === '-') { say('Type an answer first.', 'think'); return; }
-    const r = checkOne(p, entry); if (r.notAnswer) { say('Type just the answer, like 56.', 'think'); return; }
+    if (!entry || entry === '-') { say(fx.copy('star.typeFirst'), 'think'); return; }
+    const r = checkOne(p, entry); if (r.notAnswer) { say(fx.copy('star.justAnswer'), 'think'); return; }
     answer(r.ok);
   }
   on(pad, 'click', e => { const b = e.target.closest('[data-k]'); if (!b) return; if (b.dataset.k === 'go') go(); else type(b.dataset.k); }, rs);
@@ -237,20 +243,21 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
   /* ---------- Phases ---------- */
   function ask() {
     st = withStory(st);
-    const ps = newPhase(), p = st.current; entry = ''; fields = []; active = 0;
+    const ps = newPhase(), p = st.current, q = cur = asShown(p); entry = ''; fields = []; active = 0;
     const tag = st.mode === 'rematch' ? '<span class="star-tag star-tag--rematch">Rematch</span>' : st.mode === 'dare' ? '<span class="star-tag star-tag--dare">Dare</span>' : `<span class="star-tag">Question ${st.k + 1} of ${st.qs.length}</span>`;
-    main.innerHTML = `<div class="star-ask">${tag}${p.story ? '<span class="star-story" id="stStory">Word problem</span>' : ''}<h2 class="star-q${p.story ? ' star-q--story' : said(p.q).length > 16 ? ' star-q--long' : ''}" id="stQ" tabindex="-1">${p.q}</h2>${entryHTML(p)}<p class="star-pop" id="stPop" aria-hidden="true"></p></div>`;
-    pad.hidden = p.kind === 'choice'; pad.querySelectorAll('button').forEach(b => (b.disabled = false));
+    main.innerHTML = `<div class="star-ask">${tag}${p.story ? '<span class="star-story" id="stStory">Word problem</span>' : ''}<h2 class="star-q${p.story ? ' star-q--story' : said(p.q).length > 16 ? ' star-q--long' : ''}" id="stQ" tabindex="-1">${p.q}</h2>${entryHTML(q)}<p class="star-pop" id="stPop" aria-hidden="true"></p></div>`;
+    pad.hidden = q.kind === 'choice'; pad.querySelectorAll('button').forEach(b => (b.disabled = false));
     if (st.mode === 'main' && canDare(st)) {
       if (!dareP) dareP = dareFor(trick, star, st.used);
-      dareBtn.innerHTML = `${SPARK_SVG}<span class="star-dare-t"><span class="star-dare-k">Dare</span><b>${dareP.q}</b><small>Double Sparks. A miss costs nothing.</small></span>`;
-      dareBtn.setAttribute('aria-label', `Take the Dare: ${said(dareP.q)}. Double Sparks, a miss costs nothing.`);
+      dareBtn.innerHTML = `${SPARK_SVG}<span class="star-dare-t"><span class="star-dare-k">Dare</span><b>${dareP.q}</b><small>${fx.copy('star.dareOffer')}</small></span>`;
+      dareBtn.setAttribute('aria-label', `${fx.copy('star.dareLabel')}: ${said(dareP.q)}. ${fx.copy('star.dareOffer')}`);
       dareBtn.hidden = false;
     } else dareBtn.hidden = true;
-    if (st.mode === 'rematch') say('Your turn. One just like it.', 'think');
-    else if (st.mode === 'dare') say('Brave! A harder one. A miss costs nothing.', 'explain');
-    else say(st.k === 0 ? `Star ${star}: four questions. Go!` : st.k === st.qs.length - 1 ? 'Last one!' : pickOne(['Next one.', 'Keep going.', 'You got this.']), 'idle');
-    root.querySelectorAll('.star-choice').forEach(b => on(b, 'click', () => { if (input) answer(b.dataset.v === p.answer); }, ps));
+    /* Bolt's line for this question, drawn now and kept until the next tap */
+    if (st.mode === 'rematch') say(fx.copy('star.rematch'), 'think');
+    else if (st.mode === 'dare') say(fx.copy('star.dare'), 'explain');
+    else say(st.k === 0 ? fx.copy('star.start', { n: star }) : st.k === st.qs.length - 1 ? fx.copy('star.last') : fx.line('bolt.next'), 'idle');
+    root.querySelectorAll('.star-choice').forEach(b => on(b, 'click', () => { if (input) answer(b.dataset.v === q.answer); }, ps));
     root.querySelectorAll('.star-field').forEach(b => on(b, 'click', () => { active = +b.dataset.f; showEntry(); }, ps));
     hud(); showEntry(); input = true; fx.speakQuestion(p);
     if (shown++) $('#stQ').focus({ preventScroll: true });
@@ -273,26 +280,29 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     root.querySelectorAll('.star-choice').forEach(b => { b.disabled = true; if (b.dataset.v === String(p.answer)) b.classList.add('ok'); });
     const then = (ms, fn) => later(fn, fx.noMotion() ? Math.max(ms, 900) : ms, phase.signal);
     const after = () => (st.mode === 'end' ? end() : ask());
+    /* Bolt's line, from the band's set (openspec change age-bands): drawn here, in the handler, and read aloud when the
+       Player's Read aloud is on (an Early reader's default) */
+    const tell = (line, pose, sparks) => { say(`${line}${sparks ? ` <span class="fx-sparks">+${sparks} Sparks</span>` : ''}`, pose); if (fx.voiceOn()) fx.speak(said(line)); };
     if (ty.includes('comeback')) {
-      say('Comeback! That is how you use a mistake. <span class="fx-sparks">+15 Sparks</span>', 'wink'); pop.textContent = '+15';
+      tell(fx.copy('star.comeback'), 'wink', 15); pop.textContent = '+15';
       fx.announce(`Right, ${said(ans)}. Comeback! 15 Sparks.`); small(12); then(1400, after);
     } else if (ty.includes('dare-won')) {
-      say(`Dare crushed! <span class="fx-sparks">+20 Sparks</span>`, 'cheer'); pop.textContent = '+20';
+      tell(fx.copy('star.dareWon'), 'cheer', 20); pop.textContent = '+20';
       fx.announce(`Right, ${said(ans)}. Dare won. 20 Sparks.`); small(12); then(1300, after);
     } else if (ty.includes('right')) {
-      say(`${pickOne(PRAISE)} <span class="fx-sparks">+10 Sparks</span>`, 'cheer'); pop.textContent = '+10';
+      tell(fx.line('bolt.right'), 'cheer', 10); pop.textContent = '+10';
       fx.announce(`Right, ${said(ans)}. 10 Sparks.`); small(); then(1100, after);
     } else if (ty.includes('reveal')) {
-      say(`Close! It is <b>${ans}</b>. Onward.`, 'think');
+      tell(fx.copy('star.reveal', { a: { html: `<b>${ans}</b>` } }), 'think');
       fx.announce(`Not quite. It is ${said(ans)}.`);
       const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'md-btn md-btn--primary star-next'; btn.id = 'stNext';
       btn.textContent = st.mode === 'end' ? 'See how you did' : 'Next question';
       main.querySelector('.star-ask').append(btn); on(btn, 'click', after, phase.signal); btn.focus({ preventScroll: true });
     } else if (ty.includes('dare-lost')) {
-      say('So close! A Dare miss costs nothing. Watch how it works.', 'surprised');
+      tell(fx.copy('star.dareLost'), 'surprised');
       fx.announce('Not quite. A Dare miss costs nothing. Here is how it works.'); then(900, () => replay(p, 'dare'));
     } else if (ty.includes('miss')) {
-      say('Not quite. Watch the trick on your numbers.', 'surprised');
+      tell(fx.copy('star.miss'), 'surprised');
       fx.announce('Not quite. Here is the trick on your numbers.'); then(900, () => replay(p, was));
     }
   }
@@ -304,7 +314,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     dareBtn.hidden = true; pad.querySelectorAll('button').forEach(b => (b.disabled = true));
     main.innerHTML = `<div class="star-replay"><span class="star-tag star-tag--trick">The Trick${sutraName() ? ` · <span lang="sa-Latn">${esc(sutraName())}</span>` : ''}</span><h2 class="star-q ${p.story ? 'star-q--story' : 'star-q--sm'}" id="stQ" tabindex="-1">${p.q}</h2>
       <ol class="star-steps" id="stSteps"></ol><p class="star-acts"><button type="button" class="md-btn md-btn--sm" id="stRSkip">Skip</button></p></div>`;
-    say(of === 'dare' ? 'Here is the Dare, step by step.' : 'Here is how the trick does it.', 'explain');
+    say(fx.copy(of === 'dare' ? 'star.replayDare' : 'star.replay'), 'explain');
     const list = $('#stSteps'), done = () => {
       replaySkip = null; const b = $('#stRSkip');
       b.textContent = of === 'dare' ? 'Back to the question' : 'Try one like it'; b.className = 'md-btn md-btn--primary'; b.id = 'stRGo';
@@ -324,7 +334,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
   /* After the second miss's replay, once a round: one short video for the Trick, if one is available */
   function offer() {
     const ps = newPhase();
-    say('Want to see a short video about this trick? It is optional.', 'explain');
+    say(fx.copy('star.offer'), 'explain');
     main.innerHTML = `<div class="star-offer"><span class="star-tag">Video</span><h2 class="star-q star-q--sm" tabindex="-1">${esc(video.title || t.title)}</h2>
       <div class="star-video" id="stVideo"></div><p class="star-acts"><button type="button" class="md-btn md-btn--primary" id="stWatch">Watch</button><button type="button" class="md-btn" id="stNoVid">No thanks</button></p></div>`;
     const close = () => { st = starNext(st).state; ask(); };
@@ -356,14 +366,14 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     const lit = !skipped && st.lit, nowLit = lit && store.lightStar(trick, star), litNow = store.starState(trick, star) === 'lit';
     dareBtn.hidden = true; pad.hidden = true; $('#stSkip').hidden = true; hud();
     const need = Math.max(0, TARGET - st.sparks);
-    const head = skipped ? (litNow ? `Star ${star} stays lit` : `Star ${star} skipped`) : lit ? `Star ${star} is lit!` : 'Round done';
-    const line = skipped ? (litNow ? 'A lit Star stays lit.' : 'Come back to it any time. Lighting it later clears the mark.')
-      : lit ? (nowLit ? 'It shines in your sky now.' : 'Still shining. Every round still earns Sparks.')
-      : litNow ? 'It stays lit. Every round still earns Sparks.' : `${need} more Sparks to light it.`;
+    const head = skipped ? fx.copy(litNow ? 'star.headStaysLit' : 'star.headSkipped', { n: star }) : lit ? fx.copy('star.headLit', { n: star }) : fx.copy('star.headDone');
+    const line = skipped ? fx.copy(litNow ? 'star.litStays' : 'star.skipLine')
+      : lit ? fx.copy(nowLit ? 'star.shines' : 'star.stillLit')
+      : litNow ? fx.copy('star.staysLit') : fx.copy('star.need', { n: need });
     main.innerHTML = `<div class="star-end"><h2 class="star-end-h" id="stQ" tabindex="-1">${head}</h2><p class="star-end-sp"><span class="fx-sparks">+${st.sparks} Sparks</span></p><p>${line}</p>${sutraTag('trickTagHTML', trick, { mode, surface: 'star' })}
       <p class="star-acts"><button type="button" class="md-btn md-btn--primary" id="stAgain">Play again</button><a class="md-btn" href="${esc(back.href)}" id="stBack">${esc(back.label)}</a></p></div>`;
     fillTags(main, rs);
-    say(lit ? 'You did it!' : skipped ? 'Okay. On to the next one when you are ready.' : 'Good practice. Every miss teaches.', lit ? 'cheer' : 'idle');
+    say(fx.copy(lit ? 'star.lit' : skipped ? 'star.skipped' : 'star.practice'), lit ? 'cheer' : 'idle');
     if (!skipped) fx.announce(`${head}. ${st.sparks} Sparks earned. ${line}`);
     fx.rollSparks(main, rs);
     if (lit) { fx.confetti(110); fx.sfx('level'); } /* a Star lit is a true win: the big confetti */

@@ -492,6 +492,34 @@ a.door .play-ic { width: 44px; height: 44px; } .door--coral .play-ic { backgroun
 .mode-explorer #prShow { display: none; }
 .mode-explorer .md-btn { min-height: 48px; }
 
+/* The Early Reading band (openspec change age-bands, body.band-early from js/fx.js applyMode): larger buttons and more
+   room between them in every Mode, tokens only; nothing else changes by band, and both color schemes are untouched. */
+body.band-early .pr-choice { font: 700 2rem/1 var(--display); min-width: 96px; min-height: 84px; border-radius: var(--radius-lg); }
+body.band-early .pr-q { font-size: clamp(1.7rem, 5vw, 2.4rem); }
+body.band-early .pr-q.long { font: 600 1.4rem/1.5 var(--display); }
+body.band-early .md-btn, body.band-early .md-chip { min-height: 48px; }
+body.band-early .pr-choices, body.band-early .pr-actions { gap: var(--space-3); }
+body.band-early .star-choice { min-width: 120px; min-height: 64px; font-size: 1.5rem; }
+body.band-early .star-choices { gap: var(--space-4); }
+body.band-early .ar-choice { min-height: 84px; }
+body.band-early .ar-choices { gap: var(--space-4); }
+/* The grade question (js/grade-question.js): a vm-sheet with Bolt's line, the grade or age buttons and its speaker button */
+.vm-grade .gq-bolt { display: flex; align-items: center; gap: var(--space-2-5); margin: var(--space-2) 0 var(--space-3-5); }
+.vm-grade .gq-bolt .bolt { width: 56px; height: 56px; }
+.vm-grade .gq-bolt .md-bubble { margin: 0; flex: 1; }
+.vm-grade .gq-grid { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); }
+.vm-grade .gq-opt { min-height: 48px; font-size: 1.15rem; justify-content: center; }
+.gq-hear svg { width: 24px; height: 24px; }
+.vm-grade .vs-foot { justify-content: space-between; }
+/* The Mode picker while the grade question is open (decision 2): the cards keep their place and are not painted */
+.mode-pick--wait .mode-card { visibility: hidden; }
+.mode-sugg { justify-self: start; }
+.pick-hear { margin: 0 0 var(--space-3); }
+/* The home card that offers the grade question (decision 2) */
+.reading-card { margin: var(--space-3) 0; }
+.reading-card .door-line { margin: var(--space-1-5) 0 var(--space-3); }
+.me-reading { margin-top: var(--space-3); }
+
 /* Dojo */
 .belt-row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .belt-chip { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-1-5) var(--space-3); border-radius: var(--radius-pill); border: 2px dashed var(--line); color: var(--ink-muted); font-weight: 700; font-size: var(--text-label-size); }

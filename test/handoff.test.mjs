@@ -350,3 +350,22 @@ test('the import page\'s result buckets are exactly the ones the analytics spec 
   assert.deepEqual([...src.matchAll(/math\/handoff\/([a-z-]+)/g)].map(x => x[1]), [], 'every count goes through count(result), never a literal path');
   for (const r of src.matchAll(/count\('([a-z-]+)'\)/g)) assert.ok(RESULTS.includes(r[1]), r[1]);
 });
+
+/* The Grade answer and the Read aloud choice (openspec change age-bands, ADR 0008) move with the Player, as the Age
+   answer does: packed, validated, and refused when off the schema */
+test('a Player\'s Grade answer and Read aloud choice are packed and validated; a bad one is refused', () => {
+  const d = device({ 'vm.players': players([{ ...P1, reading: { grade: 'k', at: 1_700_000_000_000 }, voice: false }, { ...P2, reading: { age: 15 } }]), 'mathquest.v1.p1': record() });
+  assert.deepEqual(d.players.list[0].reading, { grade: 'k', at: 1_700_000_000_000 });
+  assert.equal(d.players.list[0].voice, false);
+  assert.deepEqual(d.players.list[1].reading, { age: 15 });
+  assert.equal(S.validatePayload(S.payloadOf(d)).ok, true);
+  const dirty = device({ 'vm.players': players([{ ...P1, reading: { grade: '13' } }, { ...P2, reading: { age: 9, grade: '3' }, voice: 'yes' }]) });
+  assert.ok(!('reading' in dirty.players.list[0]), 'a grade off the list stays behind');
+  assert.ok(!('reading' in dirty.players.list[1]) && !('voice' in dirty.players.list[1]), 'an answer with both, and a voice that is not true or false, stay behind');
+  for (const [name, reading] of [['bad grade', { grade: 'x' }], ['both', { grade: 'k', age: 9 }], ['neither', { at: 1 }], ['extra field', { grade: 'k', band: 'early' }], ['bad age', { age: 500 }], ['bad time', { grade: 'k', at: -1 }]]) {
+    const p = goodPayload(); p.players.list[0].reading = reading;
+    assert.equal(S.validatePayload(p).ok, false, name);
+  }
+  const p = goodPayload(); p.players.list[0].voice = 'on';
+  assert.equal(S.validatePayload(p).ok, false, 'voice is true or false');
+});

@@ -337,3 +337,16 @@ test('story(): math/story/<practice|run|star>/<right|miss>, story/asking, fixed 
   assert.deepEqual(paths(), ['math/story/practice/right', 'math/story/practice/miss', 'math/story/run/right', 'math/story/run/miss', 'math/story/star/right', 'math/story/star/miss', 'math/story/asking']);
   for (const [, t] of sent) assert.match(t, /^Vedic Math: word problem( hint)?$/);
 });
+
+/* The grade question (openspec change age-bands, analytics delta "Grade answer"): answering it sends no event, and no
+   call site anywhere builds a path from the Grade answer or the band */
+test('js/grade-question.js sends nothing, and no analytics call site names a grade, an age or a band', () => {
+  const src = readFileSync(new URL('../js/grade-question.js', import.meta.url), 'utf8');
+  assert.deepEqual(callSites(src), [], 'answering the grade question sends no event');
+  assert.doesNotMatch(src, /siteTrack|metrics\./);
+  const dir = new URL('../js/', import.meta.url);
+  for (const f of readdirSync(dir).filter(f => f.endsWith('.js') && !SKIP.has(f))) {
+    const s = readFileSync(new URL(f, dir), 'utf8');
+    for (const c of callSites(s)) assert.doesNotMatch(c.args, /reading|band\(|\bgrade\b|\.age\b/, `${f}: ${c.fn}(${c.args})`);
+  }
+});

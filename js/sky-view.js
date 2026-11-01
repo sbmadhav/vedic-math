@@ -76,7 +76,7 @@ export function skyView(root, { signal, focus = null } = {}) {
   const path = next.length > 1 ? `<path class="sky-path" aria-hidden="true" d="${next.map((k, i) => `${i ? 'L' : 'M'}${starAt(k).join(' ')}`).join(' ')}"/>` : '';
   const at = sugg && boltSpot(sugg), lit = Object.keys(st.lit).filter(k => PATH.includes(k)).length;
   root.innerHTML = `<div class="sky-head"><div><span class="md-tag md-tag--plum">Star Quest</span><h1 class="md-heading sky-h">Your Sky</h1></div><a class="md-btn" href="#/places" id="skyPlaces">All places</a></div>
-    <p class="sky-next" id="skyNext">${sugg ? `Bolt suggests <a href="${href(sugg)}">${esc(title(parseKey(sugg).trick))}, Star ${parseKey(sugg).n}</a>. ${fx.t({ explorer: 'Every Star is open, so pick any one.', challenger: 'Every Star is open, so pick any one.', pro: 'Every Star is open; start anywhere.' })}` : 'Every Star in your Sky is lit. Play any of them again for Sparks.'} <span class="sky-count">${lit} of ${PATH.length} Stars lit.</span></p>
+    <p class="sky-next" id="skyNext">${sugg ? `${fx.copy('sky.suggests')} <a href="${href(sugg)}">${esc(title(parseKey(sugg).trick))}, Star ${parseKey(sugg).n}</a>. ${fx.copy('sky.next')}` : fx.copy('sky.allLit')} <span class="sky-count">${lit} of ${PATH.length} Stars lit.</span></p>
     <div class="sky-frame" id="skyFrame"><div class="sky${fx.noMotion() ? ' still' : ''}" id="sky">
       <svg class="sky-svg" viewBox="0 0 ${SKY_SIZE} ${SKY_SIZE}" role="group" aria-label="The Sky: ${CONSTELLATIONS.length} Constellations, ${PATH.length} Stars">
         ${layersSVG()}${wheelSVG()}${linesSVG(st)}${path}${namesSVG()}

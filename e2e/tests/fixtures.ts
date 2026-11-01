@@ -191,6 +191,10 @@ type Fixtures = {
   /** The first-visit tour (openspec in-app-guide) counts as already shown on this device. Default true, so specs that
       open Home for a fresh Player are not covered by it; e2e/tests/guide.spec.ts turns it off. */
   tourSeen: boolean;
+  /** The grade question (openspec change age-bands) counts as already asked for the first Player (its card mark on the
+      progress record, mathquest.v1.p1 readingCard), so the Mode picker and Home are not covered by it. Default true;
+      e2e/tests/bands.spec.ts turns it off. A Grade answer itself is seeded with seedPlayer: { reading: { grade: 'k' } }. */
+  gradeAsked: boolean;
   /** Requests that broke the live-dependency rules. Checked automatically after each test. */
   violations: string[];
   issues: Issues;
@@ -203,8 +207,9 @@ export const test = base.extend<Fixtures>({
   seedProgress: [null, { option: true }],
   seedPlayer: [null, { option: true }],
   tourSeen: [true, { option: true }],
+  gradeAsked: [true, { option: true }],
 
-  context: async ({ context, baseURL, seedMode, seedConsent, seedProgress, seedPlayer, tourSeen }, use) => {
+  context: async ({ context, baseURL, seedMode, seedConsent, seedProgress, seedPlayer, tourSeen, gradeAsked }, use) => {
     await blockAnalytics(context);
     await installModules(context, baseURL);
     await voiceFrom(context);
@@ -215,15 +220,19 @@ export const test = base.extend<Fixtures>({
     // A returning player with a mode, sound off. Only on an empty profile, so reloads keep progress.
     // Sound is off only when nothing set it yet: Playwright does not order this context script against a test's own
     // page.addInitScript, so a test that turns sound on (vm.sound '1') keeps it whichever script runs first.
-    await context.addInitScript(([mode, consent, progress, more]) => {
+    await context.addInitScript(([mode, consent, progress, more, asked]) => {
       try {
         if (!localStorage.getItem('vm.players')) {
           if (localStorage.getItem('vm.sound') === null) localStorage.setItem('vm.sound', '0');
           if (mode) localStorage.setItem('vm.players', JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode, created: Date.now(), ...(consent || {}), ...(more || {}) }] }));
-          if (mode && progress) localStorage.setItem('mathquest.v1.p1', JSON.stringify(progress));
+          if (mode && progress) localStorage.setItem('mathquest.v1.p1', JSON.stringify(asked ? { ...progress, readingCard: 'done' } : progress));
         }
+        // The grade question's mark, on the game's pages only (the landing and import pages write nothing and some specs
+        // check that). The first Player is always p1 (js/store.js), so the mark can be seeded before the record exists; a
+        // record with only the mark counts as never played (js/metrics.js and js/handoff.js read Sparks, answers and Skills)
+        if (asked && /^\/play(\/|$)/.test(location.pathname) && localStorage.getItem('mathquest.v1.p1') === null) localStorage.setItem('mathquest.v1.p1', JSON.stringify({ readingCard: 'done' }));
       } catch (e) { /* storage blocked: the app copes */ }
-    }, [seedMode, seedConsent, seedProgress, seedPlayer] as const);
+    }, [seedMode, seedConsent, seedProgress, seedPlayer, gradeAsked] as const);
     if (tourSeen) await context.addInitScript(() => { try { if (!localStorage.getItem('vm.tour')) localStorage.setItem('vm.tour', 'done'); } catch (e) { /* storage blocked */ } });
     await use(context);
   },

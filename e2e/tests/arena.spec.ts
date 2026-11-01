@@ -1,4 +1,5 @@
 import { test, expect, APP, open, cloudLog, heldClock, appErrors, typeAnswer, showWorld, needsWorldBoards, mod } from './fixtures';
+import { fakeAudio } from './audio-fake';
 
 /* Arena rounds start and take answers. Every test leaves before the 60 second round ends,
    so no score is ever submitted (and the fake SDK would record it if one were). */
@@ -418,4 +419,68 @@ test.describe('Calm on', () => {
     await page.locator('#arStop').click();
     expect((await cloudLog(page)).writes).toEqual([]);
   });
+});
+
+/* Timers by Reading band (openspec change age-bands, task 4.4): a Growing Player's Arena Practice keeps its clock as a bar
+   with no tick sound; an Early Challenger's daily round keeps the Challenger keypad and 60 second clock, as a bar with no
+   ticks; a Player with no band hears the countdown ticks (the sound spy works). Sound is on for these, through the fake
+   Web Audio engine of audio-fake.ts, which records every oscillator: a tick is the 1000 Hz square. */
+const ticks = (page: import('@playwright/test').Page) => page.evaluate(() => ((window as any).__audio.nodes as { kind: string; frequency: { value: number } }[]).filter(n => n.kind === 'osc' && n.frequency.value === 1000).length);
+const soundOn = (page: import('@playwright/test').Page) => page.addInitScript(() => { try { localStorage.setItem('vm.sound', '1'); } catch (e) { /* blocked */ } });
+
+test.describe('a Growing Challenger', () => {
+  test.use({ seedPlayer: { reading: { grade: '3', at: 1 } } });
+  test('Arena Practice has its clock as a bar, the seconds for screen readers only, and no tick sound', async ({ page }) => {
+    await soundOn(page); await fakeAudio(page);
+    await open(page, '#/arena');
+    await expect(page.locator('[data-t="daily"]')).toHaveAttribute('aria-pressed', 'true');
+    await page.locator('[data-t="practice"]').click();
+    await page.locator('#arGo').click();
+    await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
+    await expect(page.locator('.ar')).toHaveClass(/ar--bar/);
+    await expect(page.locator('.ar-bar')).toBeVisible();
+    await expect(page.locator('#arTime')).toBeAttached();
+    await expect(page.locator('#arTime')).not.toBeVisible();
+    await expect(page.locator('.ar-pad')).toBeVisible();
+    expect(await ticks(page)).toBe(0);
+    await page.goto(`${APP}#/learn`);
+    expect((await cloudLog(page)).writes).toEqual([]);
+  });
+});
+
+test.describe('an Early Challenger', () => {
+  test.use({ seedPlayer: { reading: { grade: 'k', at: 1 } } });
+  test('the daily round keeps the Challenger keypad and clock length, drawn as a bar with no ticks; Practice has no clock and 3 choices', async ({ page }) => {
+    await soundOn(page); await fakeAudio(page);
+    await open(page, '#/arena');
+    await expect(page.locator('[data-t="untimed"]')).toHaveAttribute('aria-pressed', 'true'); // Practice, no clock comes first
+    await expect(page.locator('#arCalmNote')).toHaveText('The daily race has a clock. Practice has no clock.');
+    await page.locator('[data-t="daily"]').click();
+    await page.locator('#arGo').click();
+    await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
+    await expect(page.locator('.ar-pad')).toBeVisible();
+    await expect(page.locator('.ar-choice')).toHaveCount(0);
+    await expect(page.locator('.ar-bar')).toBeVisible();
+    await expect(page.locator('#arTime')).toHaveText(/^(60|59|58|57|56)$/);
+    await expect(page.locator('#arTime')).not.toBeVisible();
+    expect(await ticks(page)).toBe(0);
+    await page.goto(`${APP}#/arena`);
+    await page.locator('[data-t="untimed"]').click();
+    await page.locator('#arGo').click();
+    await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
+    await expect(page.locator('.ar-choice')).toHaveCount(3);
+    await expect(page.locator('.ar-bar')).toHaveCount(0);
+    await expect(page.locator('#arNum')).toHaveText('1/20');
+    expect((await cloudLog(page)).writes).toEqual([]);
+  });
+});
+
+test('a Player with no band hears the countdown ticks', async ({ page }) => {
+  await soundOn(page); await fakeAudio(page);
+  await open(page, '#/arena');
+  await page.locator('#arGo').click();
+  await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
+  expect(await ticks(page)).toBeGreaterThan(0);
+  await expect(page.locator('#arTime')).toBeVisible();
+  await page.goto(`${APP}#/learn`);
 });

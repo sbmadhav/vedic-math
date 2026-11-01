@@ -18,7 +18,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 846845,
+  "total": 859464,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -54,8 +54,8 @@
    "/js/ambient.js": 4480,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 52849,
-   "/js/arena.js": 4141,
+   "/js/app.js": 54013,
+   "/js/arena.js": 4555,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
    "/js/celebrate.js": 3367,
@@ -70,12 +70,13 @@
    "/js/family-view.js": 4202,
    "/js/family.js": 1528,
    "/js/find.js": 6870,
-   "/js/fx.js": 4050,
+   "/js/fx.js": 4625,
    "/js/games.js": 12425,
    "/js/gamify.js": 3904,
+   "/js/grade-question.js": 1983,
    "/js/guide-art.js": 2484,
    "/js/guide.js": 10650,
-   "/js/handoff-schema.js": 6682,
+   "/js/handoff-schema.js": 7074,
    "/js/handoff.js": 4229,
    "/js/install-rules.js": 2226,
    "/js/install.js": 7151,
@@ -87,7 +88,7 @@
    "/js/listen.js": 1335,
    "/js/mental.js": 155,
    "/js/metrics.js": 4201,
-   "/js/nav.js": 1555,
+   "/js/nav.js": 1554,
    "/js/play/catalog.js": 1783,
    "/js/play/exp/apprentice-core.js": 7279,
    "/js/play/exp/apprentice.js": 3914,
@@ -134,11 +135,11 @@
    "/js/skills/upper.js": 165,
    "/js/sky-bg.js": 10972,
    "/js/sky-scene.js": 6249,
-   "/js/sky-view.js": 4465,
+   "/js/sky-view.js": 4426,
    "/js/sky.js": 3782,
    "/js/slokas.js": 16068,
-   "/js/star.js": 8965,
-   "/js/store.js": 5546,
+   "/js/star.js": 9138,
+   "/js/store.js": 6126,
    "/js/stories.js": 10311,
    "/js/story-plan.js": 210,
    "/js/sutra-ambience.js": 4169,
@@ -150,6 +151,8 @@
    "/js/sutras.js": 4223,
    "/js/tour.js": 2213,
    "/js/try.js": 4423,
+   "/js/ts/shared/src/bands.js": 2151,
+   "/js/ts/shared/src/copy.js": 4762,
    "/js/ts/shared/src/lib.js": 1775,
    "/js/ts/shared/src/mental.js": 2185,
    "/js/ts/shared/src/names.js": 696,
@@ -172,9 +175,9 @@
    "/js/voice.js": 14663,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 25689,
-   "/play/": 4321,
-   "/sw.js": 6424,
+   "/math.css": 26078,
+   "/play/": 4356,
+   "/sw.js": 6465,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
@@ -367,6 +370,13 @@
     "from": 842086,
     "to": 846845,
     "why": "react-typescript task 3.1 (merged with main as of #180): shared/src/ holds the generators, Tricks, pictures, Arena sets, scoring, Nickname lists and the Word problem plan (story-plan.ts); until the framework build (task 2.1) bundles the game, build.py publishes them under /js/ts/ with their types taken out (+56337 in all), and the js/ modules they came from re-export them or shrink (-52148 in all); a static import of a re-export-only js/ module is pointed at its TypeScript module, so the first load requests each once and no deeper, and the re-export files stay published and precached; /js/app.js +61, /js/explain-lines.js +10, /js/family-view.js +6, /js/find.js +14, /js/games.js +15, /js/gamify.js +24, /js/levels.js +10, /js/metrics.js +17, /js/sky-view.js +7, /js/sky.js +20, /js/star.js +24, /js/stories.js +11, /js/sutra-progress.js +6, /js/sutra-tag-core.js +13, /js/try.js +7, /play/ +183, /sw.js +134; +4751 in all (/js/nav.js at CI's figure); re-based over #187 (842,086) on 2026-10-31: 846,845 with CI's /js/nav.js figure, +4,759"
+   },
+   {
+    "date": "2026-10-31",
+    "pr": "age-bands-build",
+    "from": 846845,
+    "to": 859464,
+    "why": "age-bands (openspec change, built on the Legacy views by the owner's delegation): the Reading band logic and the copy table as shared TypeScript published under /js/ts/ (shared/src/bands.ts, copy.ts, voice-text.ts, all static imports of js/fx.js, so on the first load), the grade question as a new on-demand module (js/grade-question.js, in the precache only), the band rules in js/app.js (the Mode picker, Home, Practice, the Arena, games, the tower, Me), js/star.js, js/arena.js, js/fx.js, js/store.js, js/handoff-schema.js and js/sky-view.js, and the body.band-early rules in math.css; measured locally with --voice off on main as of #188; file deltas: /js/ts/shared/src/copy.js +4762 (new), /js/ts/shared/src/bands.js +2151 (new), /js/grade-question.js +1983 (new), /js/app.js +1164, /js/store.js +580, /js/fx.js +575, /js/arena.js +414, /js/handoff-schema.js +392, /math.css +389, /js/star.js +173, /sw.js +41, /js/sky-view.js -39, /play/ +35, /js/nav.js -1; +12619 in all"
    }
   ]
  },
@@ -451,7 +461,10 @@
     "date": "2026-10-30",
     "pr": 182,
     "page": "deep-dive",
-    "lcp": { "from": 5730, "to": 5940 },
+    "lcp": {
+     "from": 5730,
+     "to": 5940
+    },
     "why": "design system 2.2.0 (#182, c34871a) moved production's Deep dive largest contentful paint up one step on GitHub's runners: the post-deploy check read 5760 / 5760 / 5790 / 5772 ms in the four jobs before its deploy and 5970 after it, and in one job the pr-177 preview (still 2.1.0) read 5810 against 5899 on production and 5910 on the pr-183 preview (2.2.0, the same files as production). The same two commits built and served locally on one runner read 5190 and 5190 ms (6 runs each), with the same 71 requests before the observed paint and the same blocking time, so no file or task of the change is slower in the simulation; what grew is what Cloudflare sends of the vendored stylesheets (ds components.css 6021 to 8273 bytes, tokens.css 3257 to 3360, Cloudflare's Brotli). The Deep dive's line is re-measured on the code live since #183 deployed (3f3fb61) the way of 2026-10-27, each number but tbt the median of five jobs' medians: perf.yml on main runs 41126051655, 41127211350 and 41128357766 (benchmarkIndex 2337, 2476, 4197), the post-deploy check of 3f3fb61 (e2e.yml run 41113259252, 2480) and the production side of run 41110930365 (2466); lcp 5805 / 5940 / 5790 / 5970 / 5955, median 5940. The other pages keep the 2026-10-27 numbers (their five-job medians, 5490 / 1260 / 5490 / 5490 ms, are within their limits); tbt keeps 159 (five jobs: 155). docs/perf/baseline.md, Re-measured on 2026-10-30"
    }
   ]
