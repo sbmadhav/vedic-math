@@ -18,7 +18,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 861981,
+  "total": 861993,
   "files": {
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
@@ -54,7 +54,7 @@
    "/js/ambient.js": 4480,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 54342,
+   "/js/app.js": 54375,
    "/js/arena.js": 4141,
    "/js/backup.js": 2676,
    "/js/bolt.js": 1088,
@@ -178,8 +178,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 26259,
-   "/play/": 4388,
-   "/sw.js": 6510,
+   "/play/": 4386,
+   "/sw.js": 6491,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
@@ -377,7 +377,7 @@
     "date": "2026-11-01",
     "pr": "placement",
     "from": 846845,
-    "to": 861981,
+    "to": 861993,
     "why": "placement (built on the Legacy views): Placement's screens (js/placement-view.js), the climb (shared/src/placement.ts) and the Hook (js/hook.js) load on demand and count here only because they are precached for offline; the first paint gains the Placement level tables (shared/src/placement-level.ts, read by js/adapt.js), Home's card and Start here tile, the Skill map's Suggested for you, Me's Placement row and the Hook's call in js/star.js; file deltas: /js/placement-view.js +3740, /js/ts/shared/src/placement.js +3287, /js/hook.js +1840, /js/app.js +1493, /js/star.js +1389, /js/ts/shared/src/placement-level.js +1199, /math.css +570, /js/store.js +396, /js/handoff-schema.js +392, /js/adapt.js +339, /js/placement.js +201, /js/metrics.js +115; +15114 in all"
    }
   ]
