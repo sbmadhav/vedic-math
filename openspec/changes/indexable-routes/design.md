@@ -30,7 +30,7 @@ Every pattern in `js/app.js` `routes` on `main` (804e6df), with its path, how ma
 | --- | --- | --- | --- | --- | --- | --- |
 | `#/` | `home` (Mode picker on a first visit) | `/learn/` | 1 | yes (the picker is its first-visit face) | no | yes |
 | `#/learn` | `learnView`, the Skill map | `/learn/skills` (`/learn/learn` 301) | 1 | yes | no | yes |
-| `#/grade/<g>` | `gradeView`, a level (K, 1 to 12, V) | `/learn/grade/<g>` | 14 | yes | no | yes |
+| `#/grade/<g>` | `gradeView`, a level (K, 1 to 12, V) | `/learn/grade/<g>`, lowercase (`/learn/grade/k`) | 14 | yes | no | yes |
 | `#/skill/<id>` | `skillView`, lesson and Practice | `/learn/skill/<id>`, and `?problem=<level>-<seed>` (D8) | 136 | yes | no | yes (D5 for the 15 Trick lessons) |
 | `#/mix/<g>` | `mixView`, Endless practice | `/learn/mix/<g>` | 14 | no | no | no |
 | `#/mix/<g>/words` | `mixView`, only Word problems | `/learn/mix/<g>/words` | 14 | no | no | no |
@@ -49,19 +49,21 @@ Every pattern in `js/app.js` `routes` on `main` (804e6df), with its path, how ma
 | `#/arena` | `arenaView` | `/learn/arena` | 1 | yes | no | yes |
 | `#/duel` | redirect | `/learn/duel` 301 to `/learn/arena/party` | 0 | | | |
 | `#/games` | `gamesView` | `/learn/games` | 1 | yes | no | yes |
-| `#/game/<id>` | `gameView`, Ranked round | `/learn/game/<id>` | 15 | yes | no | yes |
-| `#/game/<id>/<n>` | `gameView`, a Level | `/learn/game/<id>/<n>` | 1,080 | no | open by Rating or a Medal on n-1 | no |
+| `#/game/<id>` | `gameView`, Ranked round | `/learn/game/<id>` | 14 | yes | no | yes |
+| `#/game/<id>/<n>` | `gameView`, a Level | `/learn/game/<id>/<n>` | 1,008 | no | open by Rating or a Medal on n-1 | no |
 | `#/watch` | `watchView` | `/learn/watch` | 1 | yes | no | yes |
 | `#/places` | `placesView` | `/learn/places` | 1 | no | no | no |
 | `#/tiles` | `home` with tiles | `/learn/tiles` | 1 | no | no | no |
 | `#/me`, `#/progress` | `meView` | `/learn/me` (`/learn/progress` 301) | 1 | no | no | no |
-| `#/guide`, `#/guide/<s>` | `guideView` (start, learn, tricks, play, extras) | `/learn/guide`, `/learn/guide/<s>` | 6 | yes | no | yes |
+| `#/guide`, `#/guide/<s>` | `guideView`, the Guide scrolled to section `<s>` (the 25 sections of `js/guide.js`) | `/learn/guide`, `/learn/guide/<s>` | 26 | yes | no | yes |
 | `#/find` | `findView` | `/learn/find` | 1 | yes (as today) | no | no |
 | `#/(dojo\|arena\|games\|sutras)/<exp>` | `playView`, 12 play experiences | `/learn/dojo/spells`, `/learn/arena/ghosts` and the rest | 12 | yes | Mode (`playOpen`, as today) | yes |
 | same, with parameters | `playView` with `params` (a Ghost race code, an Art piece, a Wall card, a Locks chapter, an Arena challenge link) | `/learn/<section>/<exp>/<params>` | 0: a 200 rewrite to the experience's page (D4) | as its experience | as its experience | no (canonical to the experience) |
 | anything else | `home` | `/learn/404.html` with 404 | 1 | | | no |
 
-Totals: 3,522 prerendered route pages plus the 404 shell; 220 indexed (1 Home, 1 Skill map, 14 levels, 136 Skills, 1 Arcade, 1 Dojo, 1 Sutras, 29 Deep dives, 1 Arena, 1 Games, 15 games, 1 Watch, 6 Guide, 12 play experiences). "Dojo" in this codebase is the Vedic Dojo at `#/dojo`: the 21 speed Tricks grouped into seven Belts, each Trick with its lesson, 50 Katas and three Stars, plus the Dojo shelf of play experiences (Sutra Spellbook at `#/dojo/spells`, Locks at `#/dojo/locks`). Explorer's Arcade has no Dojo card, but the route opens in every Mode.
+Totals: 3,469 prerendered route pages plus the 404 shell; 239 indexed (1 Home, 1 Skill map, 14 levels, 136 Skills, 1 Arcade, 1 Dojo, 1 Sutras, 29 Deep dives, 1 Arena, 1 Games, 14 games, 1 Watch, 26 Guide, 12 play experiences).
+
+Counted from the catalogs by `js/paths.js` (task 1.1, 2026-10-31; `test/paths.test.mjs` holds the numbers). The first draft said 3,522 and 220: it counted 15 games where `GAMES` in `js/games.js` has 14 (so 1,008 Levels, not 1,080), and 6 Guide pages where `#/guide/<s>` takes a section id and `js/guide.js` has 25 sections (so 26 pages, not 6; the group ids start, learn, tricks, play and extras are headings, not routes). Where this change says 3,522 or 3,523 elsewhere, read 3,469 and 3,470. Two more facts from the code: grade ids are `K` and `V` in the catalog, so their paths are lowercase (`/learn/grade/k`, `/learn/mix/v`) and `toKey()` gives the key back as the catalog writes it; and `build.py` pins and precaches every `/js/` module, so `js/paths.js` joins the first-load table as a precached file before anything imports it (its size is logged in `docs/perf/baseline.json`). "Dojo" in this codebase is the Vedic Dojo at `#/dojo`: the 21 speed Tricks grouped into seven Belts, each Trick with its lesson, 50 Katas and three Stars, plus the Dojo shelf of play experiences (Sutra Spellbook at `#/dojo/spells`, Locks at `#/dojo/locks`). Explorer's Arcade has no Dojo card, but the route opens in every Mode.
 
 ## Decisions
 

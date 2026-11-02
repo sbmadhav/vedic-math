@@ -77,15 +77,32 @@ export function writeBackup(txt, choice = 'replace') {
    so every setting and Player is read afresh. pending is the code awaiting a choice. */
 export function meBackup({ $, msg }) {
   let pending = null;
+  const show = (id, on) => { const el = $(id); if (el) el.hidden = !on; };
+  /* Copy backup code: the code goes to the clipboard and is shown, selected, in a field under the buttons, so it can
+     be checked, written down, or copied by hand where the clipboard is not allowed (Muse review round 2, item 3) */
   const copy = async () => {
     let code;
-    try { code = btoa(unescape(encodeURIComponent(exportData()))); } catch (e) { msg(e.message === 'too many Players' ? `One backup code holds up to ${MAX_PLAYERS} Players, and this device has more. Remove a Player you no longer need, then try again.` : 'This progress is too big for one backup code. Nothing was copied.'); return; }
-    try { await navigator.clipboard.writeText(code); msg('Backup code copied: every Player on this device. Paste it somewhere safe.'); } catch (e) { prompt('Copy this backup code:', code); }
+    try { code = btoa(unescape(encodeURIComponent(exportData()))); } catch (e) { show('#pCodeBox', false); msg(e.message === 'too many Players' ? `One backup code holds up to ${MAX_PLAYERS} Players, and this device has more. Remove a Player you no longer need, then try again.` : 'This progress is too big for one backup code. Nothing was copied.'); return; }
+    const field = $('#pCode'); if (field) field.value = code;
+    show('#pPasteBox', false); show('#pCodeBox', true);
+    let copied = false;
+    try { await navigator.clipboard.writeText(code); copied = true; } catch (e) { /* no clipboard: the field below is the copy */ }
+    msg(copied ? 'Backup code copied: every Player on this device. It is also shown below, so you can check it or write it down. Paste it somewhere safe.'
+      : 'This browser would not copy it. Select the code below and copy it yourself; it holds every Player on this device.');
+    if (field) { field.focus(); field.select(); }
   };
+  /* Restore from code opens a field to paste into; Check this code reads it and shows what it holds */
   const restore = () => {
-    const code = prompt('Paste your backup code:'); if (!code) return;
+    pending = null; show('#pOffer', false); show('#pCodeBox', false); show('#pPasteBox', true); msg('');
+    const field = $('#pPaste'); if (field) { field.value = ''; field.focus(); }
+  };
+  const cancelPaste = () => { show('#pPasteBox', false); msg(''); };
+  const check = () => {
+    const field = $('#pPaste'), code = field ? field.value : '';
+    if (!code.trim()) { msg('Paste a backup code first.'); if (field) field.focus(); return; }
     let text, payload;
-    try { text = decodeURIComponent(escape(atob(code.replace(/\s/g, '')))); payload = readBackup(text); } catch (e) { pending = null; $('#pOffer').hidden = true; msg('That code could not be used. Check that it was copied in full.'); return; }
+    try { text = decodeURIComponent(escape(atob(code.replace(/\s/g, '')))); payload = readBackup(text); } catch (e) { pending = null; show('#pOffer', false); msg('That code could not be used. Check that it was copied in full.'); if (field) field.focus(); return; }
+    show('#pPasteBox', false);
     const list = $('#pOfferList'); list.textContent = '';
     for (const q of payload.players.list) { const li = document.createElement('li'); const r = payload.records[q.id] || {}, s = Math.floor(r.sparks || r.xp || 0); /* a code from before Sparks holds XP, which becomes the same Sparks */ li.textContent = `${q.name}: ${s.toLocaleString('en')} Spark${s === 1 ? '' : 's'}`; list.append(li); }
     const here = restoreOffer(payload);
@@ -95,5 +112,5 @@ export function meBackup({ $, msg }) {
   };
   const choose = choice => { const text = pending; if (!text) return; pending = null; $('#pOffer').hidden = true; try { importData(text, choice); } catch (e) { msg('This browser would not let us save the progress, so nothing was changed. Make some room in its storage, then try again.'); return; } location.reload(); };
   const keep = () => { pending = null; $('#pOffer').hidden = true; msg('Nothing was changed.'); };
-  return { copy, restore, choose, keep };
+  return { copy, restore, check, cancelPaste, choose, keep };
 }

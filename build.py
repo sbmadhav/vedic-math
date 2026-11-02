@@ -31,9 +31,11 @@ What the build does (target site):
 - In play/index.html: an import map that pins every module under /js/ to ?v=<hash of that file>, and the #vm-css map
   for the play stylesheets. In every page: each same-origin .js and .css it loads gets ?v=<hash>.
 - sw.js: app/src/sw/sw.ts with its types taken out (tools/build-sw.mjs, run with the system node, 22.13 or newer),
-  then VERSION and the PRECACHE list between the "build.py: precache" markers. Every entry has the hash the worker
-  checks on install: the game shell /play/, every file it loads, every module at its import-map URL, the play
-  stylesheets, the fonts, the icons and the manifest.
+  then VERSION, the PRECACHE list and the LAZY list between the "build.py: precache" markers. Every PRECACHE entry has
+  the hash the worker checks on install: the game shell /play/, every file it loads, every module of the core at its
+  import-map URL, the body and heading fonts, the icons and the manifest. LAZY (openspec change render-performance,
+  design D10, owner P5) names the stamped URLs the install leaves out and the worker saves when a page first requests
+  them: the Play experiences and their styles, their kit and the video list (is_lazy()).
 - _headers: the security headers on every response, and per page a Content-Security-Policy and a stricter
   Report-Only one, built from that page's inline script hashes and THIRD_PARTIES. No page carries a CSP <meta>.
 - _redirects (old /vedic-math/ links to /play/), robots.txt, sitemap.xml, /.well-known/security.txt.
@@ -61,7 +63,20 @@ HEADER = "theme/header.html"
 EXPORT_PAGE = "https://sbmadhav.com/vm-export/"   # the one sbmadhav.com URL a published file may name (progress hand-off)
 MAP_START, MAP_END = "<!-- build.py: import map (generated, do not edit) -->", "<!-- /build.py: import map -->"
 SW_START, SW_END = "/* build.py: precache (generated, do not edit) */", "/* /build.py: precache */"
-SW_DEV = "const VERSION = 'dev';\nconst PRECACHE = [];"
+SW_DEV = "const VERSION = 'dev';\nconst PRECACHE = [];\nconst LAZY = [];"
+# Saved by the worker on first request, never precached (openspec change render-performance, design D10, owner P5): the
+# Play experiences and their styles and the video list. js/play/catalog.js and js/play/icons.js draw the
+# shelves, so they stay with the core. The landing page's own script is never requested under /play/, so it is in
+# neither list, and the two fonts only the experiences use are plain URLs the worker saves when first used.
+LAZY_PREFIXES = ("js/play/exp/", "css/play/")
+# The Family conversation (openspec family-helpers step 3) loads on demand for an opted-in Player 13 and over, and needs
+# the network anyway, so it is saved on first request too
+LAZY_FILES = ("js/play/life.js", "js/videos.js", "js/family-talk.js", "js/ts/shared/src/family-talk.js")  # js/play/kit.js stays core: js/app.js loads it a second after every page load
+NOT_PRECACHED = ("js/landing-sky.js", "fonts/space-grotesk-latin-wght-normal.woff2", "fonts/jetbrains-mono-latin-500-normal.woff2")
+
+
+def is_lazy(path):
+    return path.startswith(LAZY_PREFIXES) or path in LAZY_FILES
 BASELINE = "docs/perf/baseline.json"   # the first-load budget (check_budget)
 SW_SRC = "app/src/sw/sw.ts"   # published as /sw.js with its types taken out (worker_source)
 MARKERS = (".assetsignore", ".nojekyll")  # an earlier build: safe to empty
@@ -99,7 +114,7 @@ LINKS = {
     "www.khanacademy.org", "www.bprim.org", "github.com", "www.youtube.com", "www.vedicmaths.org", "www.thenewsminute.com",
     "www.ms.uky.edu", "www.jainqq.org", "www.desmos.com", "titus.uni-frankfurt.de", "sanskritdocuments.org", "projecteuler.net",
     "polypad.amplify.com", "nrich.maths.org", "namboothiri.com", "dharmawiki.org", "brilliant.org", "artofproblemsolving.com",
-    "www.w3.org", "www.sitemaps.org",  # XML namespaces, not requests
+    "www.w3.org", "www.sitemaps.org", "schema.org",  # XML namespaces and the JSON-LD vocabulary, not requests
     "www.ftc.gov", "www.ecfr.gov", "policies.google.com", "www.cloudflare.com", "www.goatcounter.com", "firebase.google.com",
     "support.google.com", "openfontlicense.org", "www.apache.org", "opensource.org",
 }
@@ -230,6 +245,69 @@ def ts_published(path):
     return TS_OUT + path[: -len(".ts")] + ".js"
 
 
+# The Trick pages' browser modules (openspec change trick-pages, design D4): every runtime .ts in tools/trick-pages/ is
+# published at /tricks/<name>.js with its types taken out, the way the modules under /js/ts/ are, and its imports of .ts
+# modules are rewritten to their published URLs by ts_modules. The generator and its data run in Node (pnpm gen:tricks)
+# and stay out, as do declarations and tests.
+TRICKS_SRC = "tools/trick-pages"
+TRICKS_OUT = "tricks/"
+TRICKS_NODE = ("generate.ts", "pages.ts")
+
+
+def trick_modules(all_files):
+    """{published path: source path}: tools/trick-pages/calculator.ts -> tricks/calculator.js"""
+    out = {}
+    for f in all_files:
+        name = f[len(TRICKS_SRC) + 1:]
+        if not f.startswith(TRICKS_SRC + "/") or "/" in name or not name.endswith(".ts") or name in TRICKS_NODE or name.endswith((".d.ts", ".test.ts")):
+            continue
+        out[TRICKS_OUT + name[: -len(".ts")] + ".js"] = f
+    return out
+
+
+def strip_ts(paths):
+    """{source path: JavaScript} for TypeScript files published as they are, with their types taken out (tools/build-ts.mjs)."""
+    if not paths:
+        return {}
+    node = shutil.which("node")
+    if not node:
+        fail("node is not installed: it takes the types out of the published TypeScript (tools/build-ts.mjs, Node 22.13 or newer)")
+    r = subprocess.run([node, "--no-warnings", str(ROOT / "tools/build-ts.mjs"), *[str(ROOT / f) for f in paths]], capture_output=True, text=True)
+    if r.returncode != 0:
+        fail(f"tools/build-ts.mjs failed:\n{r.stderr.strip()}")
+    res = json.loads(r.stdout)
+    rel = lambda k: pathlib.Path(k).resolve().relative_to(ROOT.resolve()).as_posix()
+    for k, why in res["errors"].items():
+        fail(f"{rel(k)}: {why} (a published module must be plain type syntax)")
+    return {rel(k): v for k, v in res["js"].items()}
+
+
+MODULE_SCRIPT = re.compile(r'<script type="module"(?:\s[^>]*)?>', re.I)
+
+
+def page_import_map(html, pinned, src):
+    """A page-local import map for a page outside the game that loads modules (openspec change trick-pages, design D4):
+    every module its module scripts reach statically, pinned to ?v=<hash>, so a nested import is fetched by its stamped
+    URL (stamp_refs stamps a page's own <script src>, not what that module imports). None when the page loads no module.
+    Written compact, before the first module script; the page's inline-script hashes cover it in _headers."""
+    entries = re.findall(r'<script type="module" src="(/[^"?#]+)"', html)
+    for m in INLINE_SCRIPT.finditer(html):
+        if re.search(r'\btype="module"', m.group(1), re.I):
+            entries += [s for s in _specs(m.group(2)) if s.startswith("/")]
+    seen, queue = [], list(entries)
+    while queue:
+        u = queue.pop()
+        if u in seen or u not in pinned:
+            continue
+        seen.append(u)
+        for s in _specs(src(u[1:]).decode()):
+            if s.startswith(("./", "../", "/")):
+                queue.append(posixpath.normpath(s if s.startswith("/") else posixpath.join(posixpath.dirname(u), s)))
+    if not seen:
+        return None
+    return '<script type="importmap">' + json.dumps({"imports": {u: pinned[u] for u in sorted(seen)}}, separators=(",", ":")) + "</script>\n"
+
+
 def ts_modules(all_files, js_sources):
     """The TypeScript modules the Legacy views reach (openspec change react-typescript, tasks 3.1 to 3.3). A js/ module
     that moved to shared/src/ or app/src/ keeps its URL and re-exports the .ts file; until the framework build (task 2.1)
@@ -335,13 +413,16 @@ def _rewrite(importer, text, all_files, shim=None):
     return "".join(out) + text[last:]
 
 
-def check_budget(out, voice):
+def check_budget(out, voice, trick_pages=()):
     """The first-load byte budget (openspec change react-typescript, performance-budget spec, task 1.8): tools/budget.ts
     measures the Brotli size of everything a first visit to /play/ requests before the first tap (the page, what it
     loads, the entry's static imports, sw.js and every file in PRECACHE), prints the table, and fails when the total is
     above docs/perf/baseline.json. A pull request that grows first load on purpose updates the baseline and says why.
     The baseline names the voice mode it was measured in (firstLoad.voice): js/voice-index.js and sw.js differ by mode,
-    so a build in another mode prints the table without failing, until a baseline for that mode is recorded."""
+    so a build in another mode prints the table without failing, until a baseline for that mode is recorded.
+    The Trick pages (openspec change trick-pages, design D7) have a budget of their own: each page's first load (the
+    page, what it links, its modules' static imports) against trickPage.max, in every voice mode, since none of it
+    depends on the voice."""
     node = shutil.which("node")
     if not node:
         fail("node is not installed: it measures the first-load budget (tools/budget.ts, Node 22.18 or newer)")
@@ -354,12 +435,18 @@ def check_budget(out, voice):
         if r.returncode != 0:
             fail(r.stderr.strip() or "tools/budget.ts could not measure the first load")
         print(f"  budget not checked: {BASELINE} was measured with --voice {mode}, this build is --voice {voice}")
-        return
-    r = subprocess.run([node, "--no-warnings", str(ROOT / "tools/budget.ts"), str(out), "--check", str(ROOT / BASELINE)],
-                       capture_output=True, text=True)
-    sys.stdout.write(r.stdout)
-    if r.returncode != 0:
-        fail(r.stderr.strip().replace("::error::", "") or "tools/budget.ts failed")
+    else:
+        r = subprocess.run([node, "--no-warnings", str(ROOT / "tools/budget.ts"), str(out), "--check", str(ROOT / BASELINE)],
+                           capture_output=True, text=True)
+        sys.stdout.write(r.stdout)
+        if r.returncode != 0:
+            fail(r.stderr.strip().replace("::error::", "") or "tools/budget.ts failed")
+    if trick_pages:
+        r = subprocess.run([node, "--no-warnings", str(ROOT / "tools/budget.ts"), str(out), "--check", str(ROOT / BASELINE),
+                            *[a for u in trick_pages for a in ("--page", u)]], capture_output=True, text=True)
+        sys.stdout.write(r.stdout)
+        if r.returncode != 0:
+            fail(r.stderr.strip().replace("::error::", "") or "tools/budget.ts failed on the Trick pages")
 
 
 def voice_off_sw(sw):
@@ -459,7 +546,16 @@ def check_security_txt(text, today):
 # ---------- pages ----------
 CSP_META = re.compile(r"""<meta\s+http-equiv=["']?Content-Security-Policy""", re.I)
 INLINE_SCRIPT = re.compile(r"<script(?![^>]*\bsrc=)([^>]*)>(.*?)</script>", re.S | re.I)
-RUNS = re.compile(r"""\btype=["']?(text/javascript|module|importmap|application/javascript)\b""", re.I)
+RUNS = re.compile(r"""\btype=["']?(text/javascript|module|importmap|application/javascript|speculationrules)\b""", re.I)
+# Speculation Rules on the landing and grown-up pages (openspec change render-performance, design D5, task 5.3): Chrome
+# prefetches a same-origin page link when it is hovered or touched (eagerness moderate), so the next document is here
+# before the tap; Safari and Firefox ignore the block. One selector rule, so no URL is listed: links with a query or a
+# hash (/play/?mode=..., /play/#/sutras/s1), downloads, new-tab links and .no-prefetch are left out. The block is an
+# inline script, so its hash goes into the page's policy (RUNS above). The prerender rule for the game waits for a
+# start-up that waits to be shown (design D6), and the game's own block for the React shell (app/src/root.tsx).
+SPECULATION = json.dumps({"prefetch": [{"where": {"selector_matches": "a[href^='/']:not([href*='?']):not([href*='#']):not([download]):not([target=_blank]):not(.no-prefetch)"},
+                                        "eagerness": "moderate"}]}, separators=(",", ":"))
+SPECULATION_TAG = f'<script type="speculationrules">{SPECULATION}</script>'
 INCLUDE_MD = re.compile(r"<!-- include-md: ([\w./-]+) -->")
 
 
@@ -624,6 +720,8 @@ def csp(html, page, report_only=False):
 
 
 COMMON_HEADERS = [tuple(h) for h in POLICY["headers"] if h[0] != "//"]
+# The folders every page loads at ?v=<content hash>: a year in the browser's cache, never asked again (headers_file)
+IMMUTABLE, IMMUTABLE_PATHS = POLICY["immutable"]["value"], tuple(POLICY["immutable"]["paths"])
 
 
 def headers_file(pages, preview):
@@ -632,6 +730,13 @@ def headers_file(pages, preview):
     microphone are named only here, never on /*: the game page allows them for this site (Math Lens asks for the camera,
     Tala Lab for the microphone, each after a tap), every other page turns them off."""
     rules = [("/*", COMMON_HEADERS + ([("X-Robots-Tag", "noindex, nofollow")] if preview else []))]
+    # Stamped files (openspec change render-performance, design D3, task 3.2): every same-origin script and stylesheet
+    # is loaded at ?v=<content hash>, a URL whose bytes never change, so a browser may keep it a year without asking
+    # again (Cloudflare's default, max-age=0 with must-revalidate, asked once per file on every visit without the
+    # worker). The rule is by folder, since Cloudflare matches paths, not queries; no page loads a plain URL under one,
+    # and the worker fetches plain URLs with cache: 'reload'. Pages, sw.js, fonts, icons and the manifest keep the default.
+    for path in IMMUTABLE_PATHS:
+        rules.append((path, [("Cache-Control", IMMUTABLE)]))
     for url, (html, kind) in sorted(pages.items()):
         rules.append((url, [("Cross-Origin-Opener-Policy", "same-origin-allow-popups" if url == "/import/" else "same-origin"),
                             ("Permissions-Policy", "camera=(self), microphone=(self)" if url == "/play/" else "camera=(), microphone=()"),
@@ -699,8 +804,18 @@ def build_site(args, out):
     # Published path -> source path. Pages are rendered separately; the design system goes to /ds/2.2.0/.
     publish = {f: f for f in files if not f.startswith("site/")}
     publish.update({DS_URL.lstrip("/") + f: f"{DS_DIR}/{f}" for f in DS_PUBLISHED})
-    # The TypeScript modules js/ imports, published under /js/ts/ with their types taken out (ts_modules)
-    ts_out, ts_js = ts_modules(all_files, {p: src(p).decode() for p in publish if p.startswith("js/") and p.endswith(".js")})
+    # The TypeScript modules js/ imports, published under /js/ts/ with their types taken out (ts_modules), and the Trick
+    # pages' browser modules (trick_modules), published at /tricks/<name>.js with their .ts imports rewritten the same way
+    tricks = trick_modules(all_files)
+    trick_js = strip_ts(sorted(tricks.values()))
+    sources = {p: src(p).decode() for p in publish if p.startswith("js/") and p.endswith(".js")}
+    sources.update(trick_js)
+    ts_out, ts_js = ts_modules(all_files, sources)
+    for pub, s in tricks.items():
+        if pub in publish:
+            fail(f"{pub}: is a source file and the Trick page module {s} at once")
+        publish[pub] = pub
+        overrides[pub] = ts_js.pop(s, trick_js[s]).encode()
     for f, text in {**ts_out, **ts_js}.items():
         if f in ts_out and f in publish:
             fail(f"{f}: is a source file and a published TypeScript module at once")
@@ -745,8 +860,21 @@ def build_site(args, out):
             resolved = posixpath.normpath(spec if spec.startswith("/") else posixpath.join(posixpath.dirname("/" + p), spec))
             if not resolved.startswith("/js/") or resolved[1:] not in publish:
                 fail(f"{p}: import '{spec}' resolves to {resolved}, outside the versioned /js/ modules")
+    # The Trick pages' modules (trick_modules) import the pinned /js/ modules and each other by published URL, never a
+    # .ts path or anything outside the two folders (openspec change trick-pages, design D4)
+    for p in sorted(tricks):
+        for m in IMPORT_RE.finditer(src(p).decode()):
+            spec = m.group(1) or m.group(2)
+            if re.match(r"https?://", spec):
+                fail(f"{tricks[p]}: imports {spec}; every module is served and pinned by this site")
+            if not spec.startswith(("./", "../", "/")):
+                fail(f"{tricks[p]}: bare import '{spec}' is not covered by the import map")
+            resolved = posixpath.normpath(spec if spec.startswith("/") else posixpath.join(posixpath.dirname("/" + p), spec))
+            if resolved.endswith(".ts") or not resolved.startswith(("/js/", "/" + TRICKS_OUT)) or resolved[1:] not in publish:
+                fail(f"{tricks[p]}: import '{spec}' resolves to {resolved}, outside the published /js/ and /{TRICKS_OUT} modules")
 
     imports = {f"/{p}": f"/{p}?v={versions['/' + p]}" for p in js}
+    pinned = {**imports, **{f"/{p}": f"/{p}?v={versions['/' + p]}" for p in tricks}}  # for the pages' own maps
     play_css = {f"/{f}": versions["/" + f] for f in publish if f.startswith("css/") and f.endswith(".css")}
     for url, page in pages.items():
         html = page[0]
@@ -757,14 +885,25 @@ def build_site(args, out):
             if not entry:
                 fail("play/index.html: module entry script not found")
             html = html[:entry.start()] + map_block + html[entry.start():]
+        elif not dev:
+            # A page outside the game that loads modules gets its own map, pinning every module those scripts reach
+            page_map = page_import_map(html, pinned, src)
+            if page_map:
+                first = MODULE_SCRIPT.search(html)
+                html = html[:first.start()] + page_map + html[first.start():]
         if not dev:
             html = stamp_refs(html, versions)
+        if page[1] == "site" and url != "/404.html":
+            head_end = html.find("</head>")
+            if head_end < 0:
+                fail(f"{url}: no </head> to put the Speculation Rules block in")
+            html = html[:head_end] + SPECULATION_TAG + "\n" + html[head_end:]
         for m in re.finditer(r'(?:src|href)="(/[^"?#]*)', html):
             if not (m.group(1).endswith("/") or m.group(1)[1:] in publish or m.group(1)[1:] in GENERATED):
                 fail(f"{url}: loads or links {m.group(1)}, which is not published")
         page[0] = html
 
-    # ---------- sw.js: precache list and VERSION ----------
+    # ---------- sw.js: precache list, LAZY list and VERSION ----------
     play_html = pages[APP][0]
     own = {APP: None, "/manifest.webmanifest": "manifest.webmanifest"}  # url -> published path (None: the shell)
     for u in re.findall(r'(?:src|href)="(/[^"]+)"', play_html):
@@ -777,14 +916,31 @@ def build_site(args, out):
     for u, p in own.items():
         if p is not None and p not in publish:
             fail(f"{u}: in the precache list but not published")
+    # The core is precached; a LAZY file is saved on first request (is_lazy), so none may be in the static import graph
+    # of js/app.js, which a first load requests before the worker has installed
+    graph, queue = set(), ["js/app.js"]
+    while queue:
+        p = queue.pop()
+        if p in graph or p not in publish:
+            continue
+        graph.add(p)
+        for spec in _specs(src(p).decode()):
+            queue.append(posixpath.normpath(spec[1:] if spec.startswith("/") else posixpath.join(posixpath.dirname(p), spec)))
+    for p in sorted(graph):
+        if is_lazy(p):
+            fail(f"{p}: in the static import graph of js/app.js, so a first load requests it, but build.py saves it on first request (is_lazy); "
+                 "load it on demand or take it off the lazy rule")
+    lazy = sorted(u for u, p in own.items() if p is not None and is_lazy(p))
+    own = {u: p for u, p in own.items() if p is None or not (is_lazy(p) or p in NOT_PRECACHED)}
     precache = [[u, h(play_html.encode()) if p is None else h(body(p))] for u, p in own.items()]
     if dev:
         sw_version = "dev"
     else:
         listing = "[\n" + ",\n".join(" " + json.dumps(e) for e in precache) + "\n]"
+        lazy_listing = "[\n" + ",\n".join(" " + json.dumps(u) for u in lazy) + "\n]"
         block = re.compile(re.escape(SW_START) + r".*?" + re.escape(SW_END), re.S)
-        sw_version = h((listing + block.sub(SW_START + SW_END, sw)).encode())
-        sw = block.sub(lambda m: f"{SW_START}\nconst VERSION = '{sw_version}';\nconst PRECACHE = {listing};\n{SW_END}", sw)
+        sw_version = h((listing + lazy_listing + block.sub(SW_START + SW_END, sw)).encode())
+        sw = block.sub(lambda m: f"{SW_START}\nconst VERSION = '{sw_version}';\nconst PRECACHE = {listing};\nconst LAZY = {lazy_listing};\n{SW_END}", sw)
 
     # ---------- generated files ----------
     security_txt = (ROOT / "site/.well-known/security.txt").read_text()
@@ -821,7 +977,7 @@ def build_site(args, out):
         (out / f).write_text(text)
     check_published(out, args.voice)
     if not dev:
-        check_budget(out, args.voice)
+        check_budget(out, args.voice, sorted(u for u in pages if u.startswith("/" + TRICKS_OUT)))
 
     rel = out.relative_to(ROOT) if out.is_relative_to(ROOT) else out
     n = sum(1 for p in out.rglob("*") if p.is_file())
@@ -875,7 +1031,7 @@ def build_moved(out):
         fail("sw.js: the precache markers, the KILL switch or PREFIX not found")
     sw = re.sub(r"const PREFIX = '[\w-]+';", "const PREFIX = 'vedic-math-';", sw.replace("const KILL = false;", "const KILL = true;", 1), count=1)
     sw_version = h(("moved\n" + block.sub(SW_START + SW_END, sw)).encode())
-    sw = block.sub(lambda m: f"{SW_START}\nconst VERSION = '{sw_version}';\nconst PRECACHE = [];\n{SW_END}", sw)
+    sw = block.sub(lambda m: f"{SW_START}\nconst VERSION = '{sw_version}';\nconst PRECACHE = [];\nconst LAZY = [];\n{SW_END}", sw)
     empty(out)
     (out / "js").mkdir()
     (out / "index.html").write_text(html)

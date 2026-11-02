@@ -310,7 +310,30 @@ test.describe('studio voice', () => {
     await page.locator('.mq-nav a[href="#/learn"]').first().click();
     await expect.poll(async () => (await vlog(page)).slice((await vlog(page)).indexOf('studio:line'))).toContain('stop');
     const after = await vlog(page);
-    expect(after.slice(after.lastIndexOf('stop') + 1).filter(e => e.startsWith('studio:'))).toEqual([]);
+    /* Nothing of the old line plays after the stop. The Learn page then reads its own Explorer tab name ("Learn"), a
+       line the fake directory has no clip for, so the studio voice declines it ('studio:missing') and the device
+       voice reads it: that is the new page's line, not the old one playing on */
+    expect(after.slice(after.lastIndexOf('stop') + 1).filter(e => e === 'studio:line' || e === 'studio:clips')).toEqual([]);
+  });
+
+  test('Web Audio that stays suspended: no clip plays into silence, the device voice says the line', async ({ page }) => {
+    await needsStudioVoice(page);
+    await fakeSpeech(page, [ENHANCED]);
+    const requests = await fakeStudio(page);
+    await page.addInitScript(() => {
+      try { localStorage.setItem('vm.voice', '0'); } catch (e) {} // read aloud off: only Hear it speaks, so the logs hold one line
+      const w = window as any, AC = w.AudioContext;
+      /* A context the browser never lets run (iOS before a tap, a kiosk policy): resume() resolves, the state stays suspended */
+      w.AudioContext = class extends AC { get state() { return 'suspended'; } resume() { return Promise.resolve(); } };
+    });
+    await open(page, '#/skill/k-count');
+    await page.locator('#practice').getByRole('button', { name: 'Hear it' }).click();
+    await expect.poll(async () => (await spoken(page)).map(s => s.text), { timeout: 10_000 }).toContain('How many dots are there?');
+    expect(requests.some(u => u.endsWith('/l/set.test.bin')), 'the studio index was asked for').toBe(true);
+    const log = await vlog(page);
+    expect(log).toContain('studio:suspended');
+    expect(log).toContain('builtin');
+    expect(log.filter(e => e === 'studio:line' || e === 'studio:clips')).toEqual([]);
   });
 });
 

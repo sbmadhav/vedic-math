@@ -1,4 +1,4 @@
-import { test, expect, APP, open } from '../fixtures';
+import { test, expect, APP, open, skipPlacement } from '../fixtures';
 
 /* celebrations spec, Requirements "Big confetti only for true wins", "Small animations for everyday moments", "Small
    animations stay cheap" and "Celebrations hold still under no motion" (openspec change celebrations): one test per
@@ -39,6 +39,7 @@ async function lightStar(page: Page) {
 const freshVisit = async (page: Page, mode: 'challenger' | 'pro') => {
   await page.goto(APP);
   await page.locator(`.mode-card[data-mode="${mode}"]`).click();
+  await skipPlacement(page); /* the Placement offer follows the pick (openspec placement) */
 };
 
 test.describe('motion allowed', () => {

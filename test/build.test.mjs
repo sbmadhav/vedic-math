@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dir = mkdtempSync(join(tmpdir(), 'lvm-build-'));
 for (const f of ['build.py', '_config.yml', '.gitignore', 'play', 'site', 'theme', 'vendor', 'fonts', 'icons', 'thumbs', 'math.css', 'css', 'app/src/sw',
-  'tools/build-sw.mjs', 'tools/build-ts.mjs', 'shared/src', 'tools/budget.ts', 'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'AGENTS.md', 'CODING_STANDARDS.md', 'README.md',
+  'tools/build-sw.mjs', 'tools/build-ts.mjs', 'shared/src', 'tools/budget.ts', 'tools/trick-pages', 'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'AGENTS.md', 'CODING_STANDARDS.md', 'README.md',
   'wrangler.jsonc', 'workers/src', 'package.json', 'pnpm-workspace.yaml', 'tsconfig.base.json', 'vitest.config.ts',
   'cloud/firestore.rules', 'test/support/verify.mjs', '.github', 'tools/voice/ci-fetch.mjs', 'tools/sutra-voice/names.mjs'])
   if (existsSync(join(repo, f))) cpSync(join(repo, f), join(dir, f), { recursive: true });
@@ -23,7 +23,8 @@ writeFileSync(join(dir, '_notes.txt'), 'starts with _');
 /* The first-load budget (tools/budget.ts, task 1.8): every test but the budget's own builds against a roomy limit, so an
    edit made to test something else never trips it; the budget tests set the limit to a real build's total */
 const BUDGET = join(dir, 'docs/perf/baseline.json');
-const setBudget = (total, files = {}) => { mkdirSync(dirname(BUDGET), { recursive: true }); writeFileSync(BUDGET, JSON.stringify({ firstLoad: { total, files } })); };
+/* trickMax: the Trick pages' own budget (trickPage.max, openspec change trick-pages); left out, those pages are measured but not checked */
+const setBudget = (total, files = {}, trickMax) => { mkdirSync(dirname(BUDGET), { recursive: true }); writeFileSync(BUDGET, JSON.stringify({ firstLoad: { total, files }, ...(trickMax ? { trickPage: { max: trickMax } } : {}) })); };
 setBudget(1e9);
 /* Run git and the build in the temp copy only. A pre-commit hook exports GIT_DIR, GIT_INDEX_FILE and friends;
    inherited, they would point `git init` at the real repository (which marks it core.bare = true) and make
@@ -39,7 +40,7 @@ const tryBuild = (args = [], extra = {}) => spawnSync('python3', ['build.py', '-
 const read = f => readFileSync(join(out, f), 'utf8');
 const sw = () => {
   const src = read('sw.js');
-  return { version: src.match(/const VERSION = '(\w+)';/)[1], precache: JSON.parse(src.match(/const PRECACHE = (\[[\s\S]*?\]);/)[1]) };
+  return { version: src.match(/const VERSION = '(\w+)';/)[1], precache: JSON.parse(src.match(/const PRECACHE = (\[[\s\S]*?\]);/)[1]), lazy: JSON.parse(src.match(/const LAZY = (\[[\s\S]*?\]);/)[1]) };
 };
 const importMap = () => JSON.parse(read('play/index.html').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
 const sha = f => createHash('sha256').update(readFileSync(join(out, f))).digest('hex').slice(0, 10);
@@ -66,7 +67,7 @@ test('the source in git is unstamped: no import map, plain URLs, a dev worker', 
   assert.ok(!html.includes('type="importmap"'));
   assert.ok(!/\?v=/.test(html));
   assert.match(html, /<script type="module" src="\/js\/app\.js"><\/script>/);
-  assert.match(src, /\nconst VERSION: string = 'dev';\nconst PRECACHE: \[string, string\]\[\] = \[\];\n/);
+  assert.match(src, /\nconst VERSION: string = 'dev';\nconst PRECACHE: \[string, string\]\[\] = \[\];\nconst LAZY: string\[\] = \[\];\n/);
   assert.ok(!existsSync(join(repo, 'index.html')), 'the game moved to play/index.html');
 });
 
@@ -80,6 +81,7 @@ test('--out inside the repo must start with _ (git and ESLint ignore _*/), and i
 test('the output has the pages at the root, is stamped, and holds only publishable files', () => {
   build();
   for (const f of ['play/index.html', 'index.html', 'js/app.js', 'parents/index.html', 'teachers/index.html', 'privacy/index.html', 'terms/index.html',
+    'tricks/index.html', 'tricks/square-numbers-ending-in-5/index.html', 'tricks/calculator.js', 'theme/tricks.css',
     'licenses/index.html', '404.html', 'sw.js', 'math.css', 'manifest.webmanifest', 'js/skills/index.js', 'ds/2.2.0/tokens.css', 'ds/2.2.0/components.css',
     'ds/2.2.0/header.js', 'theme/learnvedicmath.css', 'theme/fonts.css', 'fonts/nunito-sans-latin-wght-normal.woff2', 'icons/icon-192.png',
     '_headers', '_redirects', 'robots.txt', 'sitemap.xml', '.well-known/security.txt', '.assetsignore'])
@@ -122,6 +124,64 @@ test('static imports of a re-export-only js/ module point at its TypeScript modu
   assert.ok(existsSync(join(out, 'js/vedic.js')), 'the re-export file is still published, for a dynamic import');
 });
 
+/* The Trick pages (openspec change trick-pages, tasks 2.2 and 3.1; design D4): tools/trick-pages/calculator.ts is
+   published at /tricks/calculator.js with its types taken out and its .ts import rewritten, stamped like every page
+   script and pinned, with everything it reaches, by the page's own import map; never in the game's import map or the
+   precache; the 16 pages get a policy each and a sitemap entry; the source pages carry no map */
+test('the Trick pages: /tricks/calculator.js published from TypeScript, the page-local import map, 16 policies and sitemap entries', () => {
+  build();
+  const calc = read('tricks/calculator.js');
+  assert.doesNotMatch(calc, /import type|<T extends|: HTMLElement|: Trick\b|: Vals\b/, 'the types are taken out');
+  assert.match(calc, /from '\/js\/ts\/shared\/src\/vedic\.js'/, 'the catalog import points at its published URL');
+  assert.match(calc, /from '\/js\/life\.js'/);
+  assert.doesNotMatch(calc, /\.ts['"]/, 'no import of a .ts path');
+  const page = read('tricks/square-numbers-ending-in-5/index.html'), v = sha('tricks/calculator.js');
+  assert.match(page, new RegExp(`<script type="module" src="/tricks/calculator\\.js\\?v=${v}"></script>`), 'the entry script is stamped');
+  assert.ok(page.indexOf('<script type="importmap">') < page.indexOf('<script type="module"'), 'the map comes before the first module script');
+  const map = JSON.parse(page.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
+  const STATIC = /(?:^|[;\n}])\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|[;\n}])\s*import\s*['"]([^'"]+)['"]/g;
+  const seen = new Set(), queue = ['/tricks/calculator.js'];
+  while (queue.length) {
+    const u = queue.pop(); if (seen.has(u)) continue; seen.add(u);
+    assert.equal(map[u], `${u}?v=${sha(u.slice(1))}`, `${u} is pinned to its stamped URL`);
+    for (const m of read(u.slice(1)).matchAll(STATIC)) { const s = m[1] || m[2]; queue.push(s.startsWith('/') ? s : new URL(s, 'file://' + u).pathname); }
+  }
+  assert.deepEqual([...seen].sort(), Object.keys(map).sort(), 'the map holds exactly the graph');
+  assert.ok(seen.has('/js/ts/shared/src/vedic.js') && seen.has('/js/life.js'));
+  assert.ok(!('/tricks/calculator.js' in importMap()), "not in the game's import map");
+  assert.ok(!sw().precache.some(([u]) => u.startsWith('/tricks/')), 'never precached');
+  const rules = headerRules();
+  for (const [u, f] of [['/tricks/', 'tricks/index.html'], ['/tricks/square-numbers-ending-in-5/', 'tricks/square-numbers-ending-in-5/index.html']]) {
+    assert.ok(rules[u], `${u} has a rule`);
+    const csp = parse(rules[u]['Content-Security-Policy']);
+    for (const h of inlineHashes(read(f))) assert.ok(csp['script-src'].includes(h), `${u}: a hash for each inline script, the import map included`);
+    assert.equal(rules[u]['Permissions-Policy'], 'camera=(), microphone=()');
+    assert.ok(!/google|gstatic|firebase|youtube/.test(JSON.stringify(csp)), `${u} lists no Google or YouTube host`);
+  }
+  assert.equal(Object.keys(rules).filter(u => u.startsWith('/tricks/')).length, 16);
+  assert.equal([...read('sitemap.xml').matchAll(/<loc>([^<]+)<\/loc>/g)].filter(m => m[1].includes('/tricks/')).length, 16);
+  for (const f of walk(join(dir, 'site/tricks'))) assert.ok(!readFileSync(f, 'utf8').includes('importmap'), `${relative(dir, f)}: the source carries no map`);
+  // Every page outside the game that loads modules gets its own map: the landing page's sky modules were unpinned before
+  const landing = JSON.parse(read('index.html').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
+  assert.equal(landing['/js/life.js'], `/js/life.js?v=${sha('js/life.js')}`);
+  assert.ok(!read('parents/index.html').includes('importmap'), 'a page with no module gets no map');
+});
+
+/* Design D7: a budget per Trick page. The real figure is the gate; a 20 KB addition to the calculator fails it. */
+test('the build fails a Trick page above trickPage.max in the baseline', () => {
+  build();
+  const measured = JSON.parse(execFileSync('node', ['tools/budget.ts', out, '--page', '/tricks/multiply-numbers-near-100/', '--json', join(dir, '_page.json')], { cwd: dir, env, encoding: 'utf8' }) && readFileSync(join(dir, '_page.json'), 'utf8'));
+  assert.ok(measured.total > 50_000 && measured.total < 200_000, `a Trick page measures ${measured.total} bytes`);
+  assert.ok(measured.files['/tricks/calculator.js'] && measured.files['/js/ts/shared/src/vedic.js'] && measured.files['/theme/tricks.css'], 'the page, its modules and styles are counted');
+  assert.ok(!measured.files['/sw.js'], 'no worker');
+  setBudget(1e9, {}, measured.total);
+  try {
+    build();
+    const noise = randomBytes(10_000).toString('hex'); // 20,000 characters that barely compress
+    withEdit('tools/trick-pages/calculator.ts', s => s + `\n// ${noise}\n`, () => fails(tryBuild(), /Trick page budget: \/tricks\/[a-z0-9-]+\/ is \d+ bytes Brotli, above trickPage\.max/));
+  } finally { setBudget(1e9); }
+});
+
 test('the published design system drops its @font-face lines: the fonts are declared once, from /fonts/', () => {
   build();
   assert.doesNotMatch(read('ds/2.2.0/tokens.css'), /@font-face|\/assets\/fonts/);
@@ -134,26 +194,47 @@ test('the published design system drops its @font-face lines: the fonts are decl
   }
 });
 
-test('the precache list holds every import-map module, the shell, the styles, fonts, icons and manifest, each with its hash', () => {
+/* What the worker saves on first request instead of at install (openspec change render-performance, design D10): the
+   Play experiences and their styles and the video list (is_lazy in build.py) */
+const LAZY = /^\/(js\/play\/exp\/|css\/play\/|js\/play\/life\.js|js\/videos\.js|js\/family-talk\.js|js\/ts\/shared\/src\/family-talk\.js)/; /* and the Family conversation (family-helpers step 3) */
+
+test('the precache list holds the core: every import-map module but the lazy ones, the shell, the styles, the body and heading fonts, icons and manifest, each with its hash', () => {
   build();
-  const { precache } = sw();
+  const { precache, lazy } = sw();
   const urls = new Map(precache);
-  for (const url of Object.values(importMap())) assert.ok(urls.has(url), `${url} is not precached`);
+  for (const url of Object.values(importMap())) {
+    if (LAZY.test(url)) assert.ok(lazy.includes(url) && !urls.has(url), `${url} is saved on first request, not precached`);
+    else if (url.startsWith('/js/landing-sky.js?')) assert.ok(!urls.has(url) && !lazy.includes(url), `${url}: the landing page's script is never requested under /play/`);
+    else assert.ok(urls.has(url), `${url} is not precached`);
+  }
+  assert.ok(lazy.length > 30 && lazy.every(u => LAZY.test(u) && /\?v=[0-9a-f]{10}$/.test(u)), 'LAZY holds the stamped URLs of the experiences, their styles and the video list');
+  for (const u of lazy) assert.ok(!urls.has(u), `${u} is in both lists`);
+  assert.ok(lazy.some(u => u.startsWith('/css/play/tala.css?v=')) && lazy.some(u => u.startsWith('/js/play/exp/tala.js?v=')) && lazy.some(u => u.startsWith('/js/videos.js?v=')));
+  assert.ok(urls.has(importMap()['/js/play/catalog.js']) && urls.has(importMap()['/js/arena.js']) && urls.has(importMap()['/js/stories.js']), 'the shelves, the Arena and the stories stay with the core');
   assert.equal(urls.get('/play/'), sha('play/index.html'));
   const css = read('play/index.html').match(/href="(\/math\.css\?v=\w+)"/)[1];
   assert.equal(urls.get(css), sha('math.css'));
   assert.equal(urls.get(importMap()['/js/app.js']), sha('js/app.js'));
   const tokens = read('play/index.html').match(/href="(\/ds\/2\.2\.0\/tokens\.css\?v=\w+)"/)[1];
   assert.equal(urls.get(tokens), sha('ds/2.2.0/tokens.css'), 'the published tokens.css, as served');
-  for (const u of ['/fonts/nunito-sans-latin-wght-normal.woff2', '/fonts/jetbrains-mono-latin-500-normal.woff2', '/icons/icon-192.png', '/icons/maskable-192.png', '/icons/maskable-512.png',
+  for (const u of ['/fonts/nunito-sans-latin-wght-normal.woff2', '/fonts/fredoka-latin-600-normal.woff2', '/fonts/fredoka-latin-700-normal.woff2', '/icons/icon-192.png', '/icons/maskable-192.png', '/icons/maskable-512.png',
     '/icons/favicon-16.png', '/icons/favicon-32.png', '/icons/favicon-48.png', '/icons/favicon.svg', '/icons/apple-touch-icon.png', '/manifest.webmanifest'])
     assert.equal(urls.get(u), sha(u.slice(1)), `${u} is precached with its hash`);
+  for (const u of ['/fonts/space-grotesk-latin-wght-normal.woff2', '/fonts/jetbrains-mono-latin-500-normal.woff2'])
+    assert.ok(!urls.has(u), `${u}: only the experiences use it, so it is saved when first used, never precached`);
+  assert.ok(!precache.some(([u]) => u.startsWith('/js/landing-sky.js')), 'the landing page\'s script is never requested under /play/');
   for (const [u, hash] of precache) {
     assert.ok(u.startsWith('/'), `${u} is not an absolute path`);
     assert.match(String(hash), /^[0-9a-f]{10}$/, `${u} has no hash`);
     assert.ok(!u.startsWith('/vendor/') && !u.startsWith('/thumbs/'), `${u} is fetched on first use, never precached`);
     assert.ok(!u.startsWith('/screenshots/'), `${u}: the install screenshots are for the browser's install dialog, never precached`);
+    assert.ok(!LAZY.test(u), `${u} is saved on first request, never precached`);
   }
+});
+
+test('a lazy module in the static import graph of js/app.js fails the build', () => {
+  const r = withEdit('js/app.js', s => s.replace("import './voice-plan.js';", "import './voice-plan.js';\nimport './play/life.js';"), () => tryBuild());
+  fails(r, /js\/play\/life\.js: in the static import graph of js\/app\.js/);
 });
 
 test('a second build gives the same output, and the build never edits the source', () => {
@@ -198,8 +279,48 @@ test('--dev builds the same layout with no stamps and the dev worker', () => {
   build('--dev');
   assert.ok(existsSync(join(out, 'play/index.html')) && existsSync(join(out, 'index.html')) && existsSync(join(out, '_headers')));
   assert.doesNotMatch(read('play/index.html'), /\?v=|type="importmap"/);
-  assert.match(read('sw.js'), /\nconst VERSION = 'dev';\nconst PRECACHE = \[\];\n/);
+  assert.match(read('sw.js'), /\nconst VERSION = 'dev';\nconst PRECACHE = \[\];\nconst LAZY = \[\];\n/);
   assert.doesNotMatch(read('_headers'), /X-Robots-Tag/);
+});
+
+/* Speculation Rules (openspec change render-performance, design D5, task 5.3): every landing and grown-up page carries one
+   block that prefetches plain same-origin page links on hover, allowed by its policy; it lists no URL, so no game path,
+   query or hash; the game page and the 404 page carry none */
+test('every landing and grown-up page carries one Speculation Rules block its policy allows; the game and the 404 page none', () => {
+  build();
+  const headers = read('_headers');
+  for (const f of ['index.html', 'parents/index.html', 'privacy/index.html', 'import/index.html']) {
+    const html = read(f);
+    const blocks = [...html.matchAll(/<script type="speculationrules">([\s\S]*?)<\/script>/g)];
+    assert.equal(blocks.length, 1, `${f} has one rules block`);
+    assert.ok(html.indexOf(blocks[0][0]) < html.indexOf('</head>'), `${f}: the block is in the head`);
+    const rules = JSON.parse(blocks[0][1]);
+    assert.deepEqual(Object.keys(rules), ['prefetch'], `${f}: prefetch only (the prerender rule waits for design D6)`);
+    assert.equal(rules.prefetch.length, 1);
+    assert.equal(rules.prefetch[0].eagerness, 'moderate');
+    const sel = rules.prefetch[0].where.selector_matches;
+    for (const part of ["a[href^='/']", ":not([href*='?'])", ":not([href*='#'])", ':not([download])', ':not([target=_blank])', ':not(.no-prefetch)']) assert.ok(sel.includes(part), `${f}: ${part}`);
+    assert.doesNotMatch(JSON.stringify(rules), /\/play|\/learn|https?:/, `${f}: no URL is listed`);
+    const hash = createHash('sha256').update(blocks[0][1]).digest('base64');
+    const url = f === 'index.html' ? '/' : '/' + f.replace('index.html', '');
+    const rule = headers.match(new RegExp(`^${url.replace(/[*.]/g, '\\$&')}\\n((?: {2}.*\\n)*)`, 'm'))[1];
+    assert.ok(rule.includes(`'sha256-${hash}'`), `${url}: the block's hash is in the page's policy`);
+  }
+  for (const f of ['play/index.html', '404.html']) assert.doesNotMatch(read(f), /speculationrules/, `${f} carries no rules block`);
+});
+
+/* Compressed and immutable delivery (openspec change render-performance, design D3, task 3.2): the folders every page
+   loads at ?v=<content hash> are immutable for a year; pages, the worker and plain files are not */
+test('_headers marks the stamped folders immutable for a year, from shared/src/policy.json, and nothing else', () => {
+  build();
+  const h = read('_headers');
+  const rule = p => h.match(new RegExp(`^${p.replace(/[*.]/g, '\\$&')}\\n((?: {2}.*\\n)*)`, 'm'))?.[1] ?? '';
+  const policy = JSON.parse(readFileSync(join(dir, 'shared/src/policy.json'), 'utf8')).immutable;
+  assert.deepEqual(policy.paths, ['/js/*', '/css/*', '/ds/*', '/theme/*', '/math.css']);
+  for (const p of policy.paths) assert.equal(rule(p), `  Cache-Control: ${policy.value}\n`, p);
+  assert.equal(policy.value, 'public, max-age=31536000, immutable');
+  for (const p of ['/*', '/play/', '/']) assert.doesNotMatch(rule(p), /Cache-Control/, `${p} keeps the default caching`);
+  assert.equal((h.match(/immutable/g) || []).length, policy.paths.length, 'no other path is immutable');
 });
 
 test('--preview sends X-Robots-Tag: noindex, nofollow on every response; production does not', () => {
@@ -238,8 +359,10 @@ const headerRules = () => {
   return rules;
 };
 const parse = p => Object.fromEntries(p.split(/;\s*/).map(d => { const [k, ...v] = d.split(/\s+/); return [k, v]; }));
+/* The inline scripts a policy must allow: every one that runs (no type, or a module, import map or JavaScript type); a
+   data block (application/json, the Trick pages' application/ld+json) never runs and gets no hash, as in build.py */
 const inlineHashes = html => [...html.matchAll(/<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g)]
-  .filter(m => !/type="application\/json"/.test(m[1])).map(m => `'sha256-${createHash('sha256').update(m[2]).digest('base64')}'`);
+  .filter(m => !/\btype=/.test(m[1]) || /\btype="(module|importmap|text\/javascript|application\/javascript)"/.test(m[1])).map(m => `'sha256-${createHash('sha256').update(m[2]).digest('base64')}'`);
 
 test('every response carries the security headers, without HSTS preload', () => {
   build();

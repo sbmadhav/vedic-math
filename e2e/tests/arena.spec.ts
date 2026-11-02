@@ -182,6 +182,29 @@ test('second Arena round: keypad taps 1 then 2 enter 12', async ({ page, issues 
   expect(appErrors(issues), 'console errors').toEqual([]);
 });
 
+/* The result screen (openspec change arena-challenge-link): a daily result offers Challenge a friend beside Back to the
+   Arena; a Practice result does not. The share itself is covered in cov/arena-8.spec.ts. */
+test('the daily result offers Challenge a friend; a Practice result does not', async ({ page, issues }) => {
+  await heldClock(page);
+  await open(page, '#/arena');
+  await page.locator('#arGo').click();
+  await page.clock.runFor(2200);
+  await expect(page.locator('#arQ')).not.toBeEmpty();
+  await endRound(page);
+  await expect(page.locator('.play-shell .ar-result')).toBeVisible();
+  const acts = page.locator('.play-shell .lv-acts');
+  await expect(acts.locator('#arDone')).toHaveText('Back to the Arena');
+  await expect(acts.locator('#arShare')).toHaveText('Challenge a friend');
+  await expect(page.locator('#arDone')).toBeFocused();
+  await page.locator('#arDone').click();
+  await practiceRound(page);
+  await endRound(page);
+  await expect(page.locator('.play-shell .ar-result')).toContainText('Practice rounds do not count for the leaderboard.');
+  await expect(page.locator('#arShare')).toHaveCount(0);
+  expect((await cloudLog(page)).writes).toEqual([]);
+  expect(appErrors(issues), 'console errors').toEqual([]);
+});
+
 test.describe('explorer, second round', () => {
   test.use({ seedMode: 'explorer' });
   test('one tap answers exactly one question', async ({ page }) => {
@@ -255,7 +278,7 @@ function mentalAnswer(text: string) {
 }
 /* A Player's saved progress before the page loads (only on a fresh profile, like the fixtures' Player) */
 async function seedProgress(page: import('@playwright/test').Page, id: string, data: Record<string, unknown>) {
-  await page.addInitScript(([k, v]) => { if (!localStorage.getItem(k)) localStorage.setItem(k, v); }, [`mathquest.v1.${id}`, JSON.stringify(data)] as const);
+  await page.addInitScript(([k, v]) => { const cur = localStorage.getItem(k); if (!cur || /^\{"hookSeen":\d+\}$/.test(cur)) localStorage.setItem(k, JSON.stringify({ ...JSON.parse(cur || "{}"), ...JSON.parse(v) })); } /* over the fixtures' Hook-seen record (openspec hook) */, [`mathquest.v1.${id}`, JSON.stringify(data)] as const);
 }
 const savedRating = (page: import('@playwright/test').Page, key: string) =>
   page.evaluate(async k => (await e2eMod('store')).rating(k) as number, key);

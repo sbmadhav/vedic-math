@@ -27,14 +27,14 @@ test('Challenger and Pro: four zones and Find; Explorer: three picture tabs that
 
 test('each zone is current on the routes it holds', () => {
   const at = (mode, h) => (currentTab(mode, h) || {}).id || null;
-  for (const h of ['#/', '', '#/tiles', '#/places', '#/try']) assert.equal(at('challenger', h), 'home', h);
+  for (const h of ['#/', '', '#/tiles', '#/places', '#/try', '#/placement']) assert.equal(at('challenger', h), 'home', h);
   for (const h of ['#/learn', '#/grade/3', '#/skill/3-mult', '#/mix/3', '#/run/4', '#/sutras', '#/sutras/s1']) assert.equal(at('pro', h), 'learn', h);
   for (const h of ['#/arcade', '#/dojo', '#/tricks', '#/katas/sq5', '#/kata/sq5/2', '#/star/sq5/1', '#/skill/v-sq5', '#/arena', '#/arena/party', '#/duel', '#/tower', '#/tower/2', '#/challenge/12', '#/games', '#/game/make-ten', '#/game/make-ten/3', '#/dojo/spellbook'])
     assert.equal(at('challenger', h), 'arcade', h);
   assert.equal(at('challenger', '#/watch'), 'watch');
   for (const h of ['#/find', '#/guide', '#/guide/arena']) assert.equal(at('challenger', h), 'find', h);
   assert.equal(at('challenger', '#/me'), null, 'Me is the Player chip');
-  for (const h of ['#/', '#/arena', '#/games', '#/game/balloons', '#/watch', '#/try']) assert.equal(at('explorer', h), 'play', h);
+  for (const h of ['#/', '#/arena', '#/games', '#/game/balloons', '#/watch', '#/try', '#/placement']) assert.equal(at('explorer', h), 'play', h);
   for (const h of ['#/learn', '#/grade/K', '#/skill/k-count', '#/sutras', '#/sutras/s14']) assert.equal(at('explorer', h), 'learn', h);
   for (const h of ['#/me', '#/progress']) assert.equal(at('explorer', h), 'me', h);
 });

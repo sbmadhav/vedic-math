@@ -1,4 +1,4 @@
-import { test, expect, APP, open, appErrors, type Page } from './fixtures';
+import { test, expect, APP, open, appErrors, type Page, pickMode, skipPlacement } from './fixtures';
 
 /* Try a trick inside each Mode (openspec try-trick-in-modes): a Try a trick under each Mode card on the Mode picker and
    a card on each Mode's Home; each Mode's lesson teaches one Sutra on a worked example, then asks three questions,
@@ -49,7 +49,7 @@ test.describe('the Mode picker', () => {
 
   test('Challenger: picks the Mode with no guess, counts it, and teaches Ekādhikena Pūrveṇa on 35²', async ({ page, issues }) => {
     await page.goto(APP);
-    await page.locator('.mode-card[data-mode="challenger"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
+    await pickMode(page, 'challenger'); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
     await expect(page).toHaveURL(/#\/try$/);
     await expect(page.locator('#tyH')).toHaveText('Square numbers ending in 5');
     await expect(page.locator('.try-sutra b')).toHaveText('Ekādhikena Pūrveṇa');
@@ -77,6 +77,7 @@ test.describe('the Mode picker', () => {
     await page.goto(APP);
     await page.locator('.mode-card[data-mode="pro"]').focus();
     await page.keyboard.press('Enter');
+    await skipPlacement(page); /* the Placement offer follows the pick (openspec placement) */
     await page.locator('[data-try-open]').focus();
     await page.keyboard.press('Enter');
     await expect(page.locator('#tyH')).toHaveText('Multiply numbers near 100');
@@ -96,7 +97,7 @@ test.describe('the Mode picker', () => {
 
   test('Explorer: the 11 sandwich under Ūrdhva-Tiryagbhyām, three big buttons, and no Star anywhere', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('.mode-card[data-mode="explorer"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
+    await pickMode(page, 'explorer'); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
     await expect(page.locator('#tyH')).toHaveText('The 11 sandwich');
     await expect(page.locator('.try-sutra b')).toHaveText('Ūrdhva-Tiryagbhyām');
     await expect(page.locator('.try-sutra .sutra-tag-m')).toHaveText('Its name means straight down and across.');

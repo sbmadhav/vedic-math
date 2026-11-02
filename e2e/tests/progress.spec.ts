@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, needsWorldBoards } from './fixtures';
+import { test, expect, APP, open, cloudLog, needsWorldBoards, pickMode } from './fixtures';
 
 /* Progress lives in localStorage (vm.players, mathquest.v1.<player>) and survives a reload. */
 
@@ -45,7 +45,7 @@ test('a new nickname, avatar color and a second player persist', async ({ page }
   await page.locator('#meAdd').click();
   // A new player starts with the mode picker
   await expect(page.locator('.mode-pick .mode-card')).toHaveCount(3);
-  await page.locator('.mode-card[data-mode="pro"]').click();
+  await pickMode(page, 'pro');
   await page.reload();
   await open(page, '#/me');
   await expect(page.locator('.players .player')).toHaveCount(2);
@@ -231,10 +231,12 @@ test.describe('backup code', () => {
     await page.reload();
     await expect(page.locator('.players .player')).toHaveCount(1);
     const before = await stored(page);
-    page.on('dialog', d => d.accept(code));
     await page.locator('#pImport').click();
+    await page.locator('#pPaste').fill(code);
+    await page.locator('#pCheck').click();
     const offer = page.locator('#pOffer');
     await expect(offer).toBeVisible();
+    await expect(page.locator('#pPasteBox')).toBeHidden();
     await expect(offer.locator('#pOfferList li')).toHaveText(['Swift Tiger 42: 30 Sparks', /^[A-Z][a-z]+ [A-Z][a-z]+ \d\d: 70 Sparks$/, /^[A-Z][a-z]+ [A-Z][a-z]+ \d\d: 5 Sparks$/]);
     await expect(offer.locator('#pOfferHere')).toContainText('This device already has progress: Swift Tiger 42.');
     await expect(offer.locator('#pBring')).toBeHidden();
@@ -245,7 +247,10 @@ test.describe('backup code', () => {
     await expect(page.locator('#pMsg')).toHaveText('Nothing was changed.');
     expect(await stored(page)).toEqual(before);
     await page.locator('#pImport').click();
+    await page.locator('#pPaste').fill(code);
+    await page.locator('#pCheck').click();
     await expect(offer).toBeVisible();
+    await expect(offer.locator('#pOfferHere')).toContainText('Use the code\'s replaces every Player and all progress on this device');
     await offer.locator('#pUse').click();
     await expect(page.locator('.players .player')).toHaveCount(3);
     const s = await stored(page);
@@ -259,8 +264,9 @@ test.describe('backup code', () => {
     await open(page, '#/me');
     await page.evaluate(async () => { const s = await e2eMod('store'); s.addSparks(12); });
     const code = b64({ player: { id: 'p1', name: 'Bold Yak 55', avatar: 'plum', mode: 'pro', parentOk: 1 }, data: { skills: {}, sparks: 250, best: { 'run-1': 9 } } });
-    page.on('dialog', d => d.accept(code));
     await page.locator('#pImport').click();
+    await page.locator('#pPaste').fill(code);
+    await page.locator('#pCheck').click();
     await expect(page.locator('#pOfferList li')).toHaveText(['Bold Yak 55: 250 Sparks']);
     await page.locator('#pBoth').click();
     await expect(page.locator('.players .player')).toHaveCount(2);
@@ -285,6 +291,38 @@ test.describe('backup code', () => {
     await page.locator('#pExport').click();
     await expect(page.locator('#pMsg')).toHaveText('One backup code holds up to 12 Players, and this device has more. Remove a Player you no longer need, then try again.');
     expect(await page.evaluate(() => (window as any).__copied ?? null)).toBeNull();
+    await expect(page.locator('#pCodeBox')).toBeHidden();
+  });
+
+  /* Muse review round 2, item 3: the code is shown as well as copied, so it can be checked or written down; where the
+     clipboard is refused the field is the copy; Restore from code opens a field, and Cancel closes it with nothing changed */
+  test('Copy backup code shows the code it copied, and shows it alone when the clipboard is refused', async ({ page }) => {
+    await page.addInitScript(() => { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: (t: string) => { (window as any).__copied = t; return Promise.resolve(); } } }); });
+    await open(page, '#/me');
+    await page.locator('#pExport').click();
+    await expect(page.locator('#pMsg')).toContainText('It is also shown below');
+    const field = page.locator('#pCode');
+    await expect(field).toBeVisible();
+    await expect(field).toHaveAttribute('readonly', '');
+    expect(await field.inputValue()).toBe(await page.evaluate(() => (window as any).__copied));
+    expect(await field.evaluate((f: HTMLTextAreaElement) => f.selectionEnd - f.selectionStart), 'the code is selected, ready to copy by hand').toBeGreaterThan(20);
+    // The clipboard refuses: the field is the copy
+    await page.evaluate(() => { (navigator as any).clipboard.writeText = () => Promise.reject(new Error('no')); });
+    await page.locator('#pExport').click();
+    await expect(page.locator('#pMsg')).toContainText('Select the code below and copy it yourself');
+    await expect(field).toBeVisible();
+    expect(await field.inputValue()).toMatch(/^[A-Za-z0-9+/=]+$/);
+    // Restore opens its own field and hides the code; Cancel closes it with nothing changed
+    const before = await stored(page);
+    await page.locator('#pImport').click();
+    await expect(page.locator('#pPasteBox')).toBeVisible();
+    await expect(page.locator('#pPaste')).toBeFocused();
+    await expect(page.locator('#pCodeBox')).toBeHidden();
+    await page.locator('#pCheck').click();
+    await expect(page.locator('#pMsg')).toHaveText('Paste a backup code first.');
+    await page.locator('#pPasteCancel').click();
+    await expect(page.locator('#pPasteBox')).toBeHidden();
+    expect(await stored(page)).toEqual(before);
   });
 
   test('a code that is not a backup, or does not match the schema, changes nothing and says so', async ({ page }) => {
@@ -293,13 +331,14 @@ test.describe('backup code', () => {
     const player = { id: 'p1', name: 'Bold Yak 55', avatar: 'plum', mode: null, created: 1 };
     const payload = { v: 1, from: 'learnvedicmath.com', at: 1, players: { active: 'p1', list: [player] }, records: {}, settings: {} };
     const codes = ['not a code', b64({ ...payload, extra: 1 }), b64({ ...payload, v: 2 }), b64({ ...payload, players: { active: 'p1', list: [{ ...player, name: '<img src=x onerror=alert(1)>' }] } })];
-    let i = 0;
-    page.on('dialog', d => d.accept(codes[i++]));
-    for (const _ of codes) {
+    for (const code of codes) {
       await page.locator('#pMsg').evaluate(e => { e.textContent = ''; });
       await page.locator('#pImport').click();
+      await page.locator('#pPaste').fill(code);
+      await page.locator('#pCheck').click();
       await expect(page.locator('#pMsg')).toHaveText('That code could not be used. Check that it was copied in full.');
       await expect(page.locator('#pOffer')).toBeHidden();
+      await expect(page.locator('#pPasteBox'), 'the field stays open to fix the code').toBeVisible();
     }
     expect(await stored(page)).toEqual(before);
     await expect(page.locator('main img')).toHaveCount(0);

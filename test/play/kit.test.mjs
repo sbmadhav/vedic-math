@@ -1,6 +1,14 @@
 import test from '../support/node-test.mjs';
 import assert from 'node:assert/strict';
-import { rng, hashSeed, int, shuffle, seedOf, dayKey, dayNumber, b64url } from '../../js/play/kit.js';
+import { rng, hashSeed, int, shuffle, seedOf, dayKey, dayNumber, b64url, SITE, APP_BASE } from '../../js/play/kit.js';
+
+/* Every share link is built from these two (openspec change arena-challenge-link): the move to /learn/ (indexable-routes
+   design D2) changes APP_BASE here and nowhere else */
+test('the site and the game\'s base path, the one source for share links', () => {
+  assert.equal(SITE, 'https://learnvedicmath.com');
+  assert.match(APP_BASE, /^\/[a-z]+\/$/);
+  assert.equal(APP_BASE, '/play/');
+});
 
 test('seeded rng is deterministic and in [0, 1)', () => {
   const a = rng('x'), b = rng('x');

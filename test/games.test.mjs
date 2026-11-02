@@ -2,7 +2,20 @@
    Medal goals in difficulty-weighted points. The question ladders are checked in adapt.test.mjs. */
 import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
-import { GAMES, LEVELS, LEVELS_PER_GAME, levelMedal } from '../js/games.js';
+import { GAMES, LEVELS, LEVELS_PER_GAME, levelMedal, choiceLabel } from '../js/games.js';
+
+/* A choice shown as markup (a fraction, a power, a root) is named for screen readers with the words read aloud
+   says, never the bare digits "3 6" (Muse review round 2, item 2: More or less and Bigger slice) */
+test('a fraction, power or root choice is labelled in words', () => {
+  assert.equal(choiceLabel('<span class="fr"><span>3</span><span>6</span></span>'), 'three sixths');
+  assert.equal(choiceLabel('<span class="fr"><span>7</span><span>12</span></span>'), 'seven twelfths');
+  assert.equal(choiceLabel('<span class="fr"><span>1</span><span>2</span></span>'), 'one half');
+  assert.equal(choiceLabel('<span class="fr"><span>11</span><span>13</span></span>'), '11 thirteenths');
+  assert.equal(choiceLabel('2<sup>3</sup>'), '2 cubed');
+  assert.equal(choiceLabel('&radic;17'), 'the square root of 17');
+  assert.equal(choiceLabel('12 &times; 13'), '12 times 13');
+  assert.equal(choiceLabel('0.45'), '0.45');
+});
 
 test('there are 1,008 game levels: 14 games x 72', () => {
   assert.equal(GAMES.length, 14);

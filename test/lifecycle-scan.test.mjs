@@ -29,12 +29,27 @@ test('no bare addEventListener on a view or round root in js/app.js and js/arena
   assert.deepEqual(hits('arena.js', /\.?addEventListener\(/), []);
 });
 
-test('no bare timers or frame loops in js/games.js, js/arena.js, js/scenes.js and js/star.js', () => {
-  for (const f of ['games.js', 'arena.js', 'scenes.js', 'star.js']) assert.deepEqual(hits(f, TIMERS), [], f);
+test('no bare timers or frame loops in js/games.js, js/arena.js, js/scenes.js, js/star.js and js/hold.js', () => {
+  for (const f of ['games.js', 'arena.js', 'scenes.js', 'star.js', 'hold.js']) assert.deepEqual(hits(f, TIMERS), [], f);
+});
+
+test('the wait indicator (js/hold.js): no bare listeners; its timers and listeners go through life.js on a child signal', () => {
+  assert.deepEqual(hits('hold.js', /\.?addEventListener\(/), []);
+  const src = readFileSync(new URL('../js/hold.js', import.meta.url), 'utf8');
+  assert.match(src, /import \{[^}]*\bon\b[^}]*\blater\b[^}]*\bevery\b[^}]*\bchild\b[^}]*\} from '\.\/life\.js'/);
+  assert.match(src, /const life = child\(signal\)/);
 });
 
 test('no bare addEventListener in the Star round (js/star.js)', () => {
   assert.deepEqual(hits('star.js', /\.?addEventListener\(/), []);
+});
+
+test('the Hook (js/hook.js) has no listeners or timers of its own: js/star.js plays it through life.every and life.later', () => {
+  assert.deepEqual(hits('hook.js', /\.?addEventListener\(/), []);
+  assert.deepEqual(hits('hook.js', TIMERS), []);
+  const src = readFileSync(new URL('../js/star.js', import.meta.url), 'utf8');
+  assert.match(src, /import \{[^}]*\bevery\b[^}]*\} from '\.\/life\.js'/);
+  assert.match(src, /every\(\(\) => \{[\s\S]*?\}, hook\.keyMs, ps\)/, 'the calculator types on the dare phase signal');
 });
 
 test('the Sky (js/sky-view.js): no bare listeners, timers or frame loops; its listeners go through life.on', () => {
@@ -60,6 +75,15 @@ test('Try a trick (js/try.js): no bare listeners or timers; its listeners go thr
   const src = readFileSync(new URL('../js/try.js', import.meta.url), 'utf8');
   assert.match(src, /import \{[^}]*\bon\b[^}]*\bchild\b[^}]*\} from '\.\/life\.js'/);
   assert.match(src, /round = child\(signal\)/);
+  assert.doesNotMatch(src, /\.on(click|submit|keydown)\s*=/);
+});
+
+test('Placement (js/placement-view.js): no bare listeners or timers; its listeners go through life.on on the view signal or a child of it', () => {
+  assert.deepEqual(hits('placement-view.js', /\.?addEventListener\(/), []);
+  assert.deepEqual(hits('placement-view.js', TIMERS), []);
+  const src = readFileSync(new URL('../js/placement-view.js', import.meta.url), 'utf8');
+  assert.match(src, /import \{[^}]*\bon\b[^}]*\blater\b[^}]*\bchild\b[^}]*\} from '\.\/life\.js'/);
+  assert.match(src, /phase = child\(signal\)/, 'one child signal per question');
   assert.doesNotMatch(src, /\.on(click|submit|keydown)\s*=/);
 });
 
