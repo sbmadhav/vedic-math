@@ -59,12 +59,14 @@ const ROUTES = [
   [/^#\/kata\/([\w-]+)\/\d+$/, 'kata/{trick:1}/kata'],
   [/^#\/star\/([\w-]+)\/\d+$/, 'star/{trick:1}/star'],
   [/^#\/try$/, 'try'],
+  [/^#\/placement$/, 'placement'],
   [/^#\/tower$/, 'tower'],
   [/^#\/tower\/\d+$/, 'tower/chapter'],
   [/^#\/challenge\/\d+$/, 'challenge/challenge'],
   [/^#\/sutras$/, 'sutras'],
   [/^#\/sutras\/(\w+)$/, 'sutras/{sutra:1}'],
   [/^#\/arena$/, 'arena'],
+  [/^#\/arena\/day(?:\/.*)?$/, 'arena/day'], /* a challenge link (openspec change arena-challenge-link): never its date, League or Score; before the play pattern below, which would read day as an experience */
   [/^#\/duel$/, 'duel'],
   [/^#\/games$/, 'games'],
   [/^#\/game\/([\w-]+)$/, 'game/{game:1}'],
@@ -107,6 +109,11 @@ export function starEvent(kind, trick) {
   if (!STAR_EVENTS.includes(kind) || !TRICKS.some(t => t.id === trick)) return;
   send(`star/${kind}/${trick}`, 'Vedic Math: star quest');
 }
+
+/* ---------- Placement (openspec placement) ---------- */
+/* A Placement climb finished (a retake too). One fixed event: never the steps, the grade, the count, the time or the
+   Mode. Nothing is sent for a Skip or a climb left early, and Placement answers send no q_answered or first_win. */
+export function placementDone() { send('placement/done', 'Vedic Math: placement done'); }
 
 /* ---------- Listen buttons (openspec explanation-audio) ---------- */
 /* A Listen button was pressed to play an explanation. One fixed event: which explanation is never sent */
@@ -177,7 +184,8 @@ export function returnCheck(now = Date.now()) {
   if (days >= 7 && days <= 13 && !f.d7) { setFlag('d7'); send('return_d7', 'Vedic Math: back after a week'); }
 }
 
-/* ---------- Share actions (none yet; Phase 2 share buttons call this) ---------- */
+/* ---------- Share actions: Challenge a friend on an Arena daily result (result, openspec change arena-challenge-link);
+   challenge-link waits for its surface. One event per tap, whether the sheet opened, the text was copied or the Player cancelled. ---------- */
 export function shareClick(surface) {
   if (SHARE_SURFACES.includes(surface)) send('share_click/' + surface, 'Vedic Math: share');
 }

@@ -1,4 +1,4 @@
-import { test, expect, APP, open } from '../fixtures';
+import { test, expect, APP, open, pickMode } from '../fixtures';
 
 /* analytics spec, Requirement "Try a trick and Find are counted" (as modified by try-trick-in-modes): one test per scenario. The shared analytics.js is
    replaced by a stub that records window.siteTrack calls, so nothing is counted. */
@@ -14,7 +14,7 @@ test.describe('a new visitor', () => {
   test.use({ seedMode: null });
   test('Try a trick: from Pro Home it sends math/try/start and math/try/mode/pro once each, then the route view math/view/try, and nothing names the Player', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('.mode-card[data-mode="pro"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
+    await pickMode(page, 'pro'); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
     await expect(page.locator('#tyStart')).toBeVisible();
     const ev = await events(page), paths = ev.map(([p]) => p);
     expect(paths.filter(p => p.startsWith('math/try/'))).toEqual(['math/try/start', 'math/try/mode/pro']);

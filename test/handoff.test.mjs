@@ -37,6 +37,31 @@ test('the word lists, avatars and Nickname form match shared/src/names.ts (moved
   for (let i = 0; i < 200; i++) { const n = S.nameFrom(); assert.ok(S.validName(n), n); }
 });
 
+test('the Belt ids and the Placement grades match js/vedic.js BELTS and the Placement Steps (openspec placement)', async () => {
+  const { BELTS } = await import('../js/vedic.js');
+  assert.deepEqual(S.BELT_IDS, BELTS.map(b => b.id));
+  assert.deepEqual(S.PLACEMENT_GRADES, ['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']);
+});
+
+test('a Placement result, the card, hookSeen and placedBelt pack, validate and sanitize; anything off the schema is refused', () => {
+  const placed = record({ placement: { grade: '5', steps: 3, at: 1_700_000_000_000 }, placementCard: 'done', hookSeen: 1_700_000_000_000 });
+  const d = device({ 'vm.players': players([{ ...P1, placedBelt: 'yellow' }]), 'mathquest.v1.p1': placed });
+  assert.deepEqual(d.records.p1.placement, { grade: '5', steps: 3, at: 1_700_000_000_000 });
+  assert.equal(d.records.p1.placementCard, 'done'); assert.equal(d.records.p1.hookSeen, 1_700_000_000_000);
+  assert.equal(d.players.list[0].placedBelt, 'yellow');
+  const ok = S.payloadOf(d); assert.equal(S.validatePayload(ok).ok, true);
+  const dropped = device({ 'vm.players': players([{ ...P1, placedBelt: 'gold' }]), 'mathquest.v1.p1': record({ placement: { grade: 'x', steps: 3, at: 1 }, placementCard: 'later' }) });
+  assert.equal(dropped.players.list[0].placedBelt, undefined, 'a Belt that is not one stays behind');
+  assert.equal(dropped.records.p1.placement, undefined); assert.equal(dropped.records.p1.placementCard, undefined);
+  for (const [why, fn] of Object.entries({
+    'a grade off the list': p => { p.records.p1.placement.grade = '13'; },
+    'too many steps': p => { p.records.p1.placement.steps = 13; },
+    'a stray field in placement': p => { p.records.p1.placement.answers = [1]; },
+    'a card value that is not done': p => { p.records.p1.placementCard = 'later'; },
+    'a Belt that is not one': p => { p.players.list[0].placedBelt = 'gold'; },
+  })) { const p = JSON.parse(JSON.stringify(ok)); fn(p); assert.equal(S.validatePayload(p).ok, false, why); }
+});
+
 test('every vm.* key the app uses is either moved or excluded on purpose', () => {
   const walk = d => readdirSync(d).flatMap(f => { const p = join(d, f); return statSync(p).isDirectory() ? walk(p) : p.endsWith('.js') ? [p] : []; });
   const keys = new Set();

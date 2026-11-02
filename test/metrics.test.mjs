@@ -21,12 +21,14 @@ const PATH = /^math\/[a-z0-9_/:-]+$/;
 const SAMPLES = {
   '': 'home', '#/': 'home', '#/learn': 'learn', '#/grade/5': 'grade/5', '#/grade/K': 'grade/k',
   '#/skill/v-sq5': 'skill/v-sq5', '#/mix/3': 'mix/3', '#/mix/3/words': 'mix/3/words', '#/run/3': 'run/3', '#/arcade': 'arcade', '#/dojo': 'dojo', '#/tricks': 'tricks',
-  '#/katas/sq5': 'katas/sq5', '#/kata/sq5/4': 'kata/sq5/kata', '#/star/sq5/2': 'star/sq5/star', '#/try': 'try', '#/tower': 'tower', '#/tower/7': 'tower/chapter',
+  '#/katas/sq5': 'katas/sq5', '#/kata/sq5/4': 'kata/sq5/kata', '#/star/sq5/2': 'star/sq5/star', '#/try': 'try', '#/placement': 'placement', '#/tower': 'tower', '#/tower/7': 'tower/chapter',
   '#/challenge/123': 'challenge/challenge', '#/sutras': 'sutras', '#/sutras/s1': 'sutras/s1', '#/arena': 'arena',
   '#/duel': 'duel', '#/games': 'games', '#/game/times-sprint': 'game/times-sprint', '#/game/times-sprint/12': 'game/times-sprint/level',
   '#/watch': 'watch', '#/me': 'me', '#/progress': 'progress', '#/places': 'places', '#/tiles': 'tiles',
   '#/guide': 'guide', '#/guide/arena': 'guide/section', '#/find': 'find',
   '#/arena/ghosts/r/abc': 'play/ghosts', '#/dojo/spells': 'play/spells', '#/sutras/lost-scroll': 'play/lost-scroll',
+  /* a challenge link (openspec change arena-challenge-link): never its date, League or Score, and never play/unknown */
+  '#/arena/day/2026-10-30/challenger/240': 'arena/day', '#/arena/day/2026-10-30/challenger': 'arena/day', '#/arena/day/yesterday/wizard/lots': 'arena/day',
 };
 const known = (kind, id) => ({ grade: ['5', 'K', '3'], skill: ['v-sq5'], trick: ['sq5'], sutra: ['s1'], game: ['times-sprint'], play: ['ghosts', 'spells', 'lost-scroll'] }[kind] || []).includes(id);
 
@@ -47,6 +49,13 @@ test('ids not in the catalog (typed or stale links) are sent as unknown, other h
   assert.equal(M.routePath('#/game/My Name', known), 'other');
   assert.equal(M.routePath('#/whatever/123', known), 'other');
   assert.equal(M.routePath('#/arena?x=1', known), 'other');
+});
+
+test('a challenge link is the route view arena/day, with no date, League or Score in it (change arena-challenge-link)', () => {
+  clear();
+  M.view('#/arena/day/2026-10-30/challenger/240', known); M.view('#/arena/day/2026-10-30/pro', known); M.view('#/arena/day', known);
+  assert.deepEqual(paths(), ['math/view/arena/day', 'math/view/arena/day', 'math/view/arena/day']);
+  for (const [p, t] of sent) assert.ok(!/2026|240|challenger|pro/.test(p + t), p + t);
 });
 
 test('view() sends one math/view/<route> event; the Mode picker is pick-mode', () => {
@@ -157,6 +166,14 @@ test('answers: one q_answered per answer in untimed areas only', () => {
   clear(); mem['vm.metrics'] = JSON.stringify({ firstWin: true });
   M.answered('practice', true); M.answered('run', false); M.answered('kata', true); M.answered('arena', true); M.answered('star', false); M.answered('star', true);
   assert.deepEqual(paths(), ['math/q_answered/practice/right', 'math/q_answered/run/miss', 'math/q_answered/kata/right', 'math/q_answered/star/miss', 'math/q_answered/star/right']);
+});
+
+/* Placement (openspec placement, analytics spec "Placement done"): one fixed event, nothing in it */
+test('placementDone sends math/placement/done with a fixed title and nothing else; the path carries no step, grade or count', () => {
+  clear();
+  M.placementDone(); M.placementDone();
+  assert.deepEqual(sent, [['math/placement/done', 'Vedic Math: placement done'], ['math/placement/done', 'Vedic Math: placement done']]);
+  assert.doesNotMatch(sent[0][0] + sent[0][1], /\d/, 'no number in the path or title');
 });
 
 test('rounds: round2_start only when the second round of an area starts; r1, r2, r3plus', () => {

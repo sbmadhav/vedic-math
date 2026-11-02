@@ -195,6 +195,10 @@ type Fixtures = {
       Player record), so the Mode picker and Home are not covered by it. Default true;
       e2e/tests/bands.spec.ts turns it off. A Grade answer itself is seeded with seedPlayer: { reading: { grade: 'k' } }. */
   gradeAsked: boolean;
+  /** The Hook (openspec hook) counts as already seen by the seeded Player, so a spec that opens a Star for a fresh
+      Challenger or Pro gets the round at once. Default true; e2e/tests/hook.spec.ts turns it off. A first visit
+      (seedMode null) seeds no Player, so its new Player still gets the Hook. */
+  hookSeen: boolean;
   /** Requests that broke the live-dependency rules. Checked automatically after each test. */
   violations: string[];
   issues: Issues;
@@ -208,8 +212,9 @@ export const test = base.extend<Fixtures>({
   seedPlayer: [null, { option: true }],
   tourSeen: [true, { option: true }],
   gradeAsked: [true, { option: true }],
+  hookSeen: [true, { option: true }],
 
-  context: async ({ context, baseURL, seedMode, seedConsent, seedProgress, seedPlayer, tourSeen, gradeAsked }, use) => {
+  context: async ({ context, baseURL, seedMode, seedConsent, seedProgress, seedPlayer, tourSeen, gradeAsked, hookSeen }, use) => {
     await blockAnalytics(context);
     await installModules(context, baseURL);
     await voiceFrom(context);
@@ -220,7 +225,7 @@ export const test = base.extend<Fixtures>({
     // A returning player with a mode, sound off. Only on an empty profile, so reloads keep progress.
     // Sound is off only when nothing set it yet: Playwright does not order this context script against a test's own
     // page.addInitScript, so a test that turns sound on (vm.sound '1') keeps it whichever script runs first.
-    await context.addInitScript(([mode, consent, progress, more, asked]) => {
+    await context.addInitScript(([mode, consent, progress, more, asked, hook]) => {
       try {
         if (!localStorage.getItem('vm.players')) {
           if (localStorage.getItem('vm.sound') === null) localStorage.setItem('vm.sound', '0');
@@ -230,10 +235,12 @@ export const test = base.extend<Fixtures>({
           // A first visit to the game (no Mode): the Player the game would make, with the mark, so the Mode picker is not
           // covered by the question. Only on the game's pages: the landing and import pages must find no Players.
           else if (asked && /^\/play(\/|$)/.test(location.pathname)) localStorage.setItem('vm.players', JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode: null, created: Date.now(), ...mark }] }));
-          if (mode && progress) localStorage.setItem('mathquest.v1.p1', JSON.stringify(progress));
+          // The Hook seen (openspec hook): a seeded Player's record carries the flag unless the spec wants the Hook
+          const record = mode && (progress || hook) ? { ...(progress || {}), ...(hook && !(progress && 'hookSeen' in progress) ? { hookSeen: 1_700_000_000_000 } : {}) } : null;
+          if (record) localStorage.setItem('mathquest.v1.p1', JSON.stringify(record));
         }
       } catch (e) { /* storage blocked: the app copes */ }
-    }, [seedMode, seedConsent, seedProgress, seedPlayer, gradeAsked] as const);
+    }, [seedMode, seedConsent, seedProgress, seedPlayer, gradeAsked, hookSeen] as const);
     if (tourSeen) await context.addInitScript(() => { try { if (!localStorage.getItem('vm.tour')) localStorage.setItem('vm.tour', 'done'); } catch (e) { /* storage blocked */ } });
     await use(context);
   },
@@ -302,6 +309,25 @@ export async function withVideos(page: Page, transform: string) {
 export async function open(page: Page, hash = '#/') {
   await page.goto(`${APP}${hash === '#/' ? '' : hash}`);
   await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
+}
+
+/** The Placement offer (openspec placement) follows a new Player's Mode pick: "Skip, just play" takes them Home exactly as
+    before the change. A spec about something else presses it through here. */
+export async function skipPlacement(page: Page) {
+  const skip = page.locator('#plSkip');
+  await expect(skip).toBeVisible();
+  await skip.click();
+}
+/** A brand-new Challenger or Pro Player's first Star opens with the Hook's dare (openspec hook): Skip starts the round. */
+export async function skipHook(page: Page) {
+  const skip = page.locator('#hkSkip');
+  await expect(skip).toBeVisible();
+  await skip.click();
+}
+/** Picks a Mode card on the first visit and skips the Placement offer, landing on that Mode's Home. */
+export async function pickMode(page: Page, mode: Mode) {
+  await page.locator(`.mode-card[data-mode="${mode}"]`).click();
+  await skipPlacement(page);
 }
 
 /** A fake clock that moves only when the test moves it (page.clock.runFor / fastForward). page.clock.install()

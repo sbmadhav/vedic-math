@@ -350,3 +350,24 @@ test.describe('an Early Challenger', () => {
     expect((await cloudLog(page)).writes).toEqual([]);
   });
 });
+
+/* A choice shown as a fraction, a power or a root is named for screen readers with the words read aloud says
+   ("three sixths", "2 cubed"), never the bare digits "3 6" (Muse review round 2, item 2; choiceLabel in js/games.js). */
+test.describe('choices named as what they show', () => {
+  test.use({ seedMode: 'challenger' });
+
+  test('Bigger slice: each fraction button is named by its fraction, not its digits', async ({ page }) => {
+    await open(page, '#/game/frac-faceoff');
+    await page.locator('#gShell [data-m="endless"]').click();
+    await page.locator('#gStart').click();
+    await page.mouse.move(0, 0);
+    const btns = page.locator('#gArea .g-frac');
+    await expect(btns).toHaveCount(2);
+    const names = await btns.evaluateAll(bs => bs.map(b => b.getAttribute('aria-label')));
+    for (const n of names) {
+      expect(n, 'a fraction in words, "11 over 13", or a decimal').toMatch(/^(negative )?([A-Za-z]+ [a-z]+|\d+ [a-z]+s?|\d+ over \d+|0\.\d+)$/);
+      expect(n).not.toMatch(/^\d+\s+\d+$/);
+    }
+    await page.locator('#gQuit').click();
+  });
+});

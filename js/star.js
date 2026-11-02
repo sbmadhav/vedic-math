@@ -1,14 +1,17 @@
 /* A Star round (openspec star-round): 4 shuffled questions on one Trick, a replay of the Trick on the Player's own
    numbers after a miss, a rematch of the same kind (a Comeback when it is right), and one optional Dare.
    The round itself is a pure state machine (starRound, starAnswer, starNext, starDare) with no DOM, so every rule is
-   a node test; runStar() below draws it and is the only part that touches the page. */
+   a node test; runStar() below draws it and is the only part that touches the page.
+   The Hook (openspec hook, js/hook.js): a new Challenger or Pro Player's first Star opens with a dare to beat the
+   calculator, then a reveal of the Trick on the dare's numbers, then this round dealt easiest first. runStar() takes
+   the Hook as an option (hook: { dare, keyMs }) and plays its two phases before the first question. */
 import { starPool, starThird, sigOf, sigOfKey, dareFor } from './levels.js';
 import { TRICKS } from './vedic.js';
-import { byId } from './skills/index.js';
+import { byId, withPlain } from './skills/index.js';
 import { checkOne } from './check.js';
 import { answerText } from './answers.js';
 import { boltHTML, pose } from './bolt.js';
-import { on, later, child, onAbort } from './life.js';
+import { on, later, every, child, onAbort } from './life.js';
 import { facade } from './watch.js';
 import * as store from './store.js';
 import * as fx from './fx.js';
@@ -29,12 +32,13 @@ const shuffle = (arr, rand = Math.random) => { const a = arr.slice(); for (let i
    pool: the problems to deal from (default: the Star's band at this Rating, js/levels.js starPool).
    story(p): a Word problem on p's own numbers, or null (openspec word-problems); storyAt: the main question (from 0)
    it replaces, -1 for none. A rematch after a missed Word problem is a Word problem too; a Dare stays bare. */
-export function starRound({ trick, star, rating = 1, last = [], pool = null, third = null, rand = Math.random, story = null, storyAt = -1 } = {}) {
+export function starRound({ trick, star, rating = 1, last = [], pool = null, third = null, rand = Math.random, story = null, storyAt = -1, easiestFirst = false } = {}) {
   const band = pool || starPool(trick, star, rating);
   const lastSigs = new Set(last.map(k => band.find(p => p.key === k)).filter(Boolean).map(sigOf));
   if (!pool) for (const k of last) { const s = sigOfKey(trick, k); if (s) lastSigs.add(s); }
   const mixed = shuffle(band, rand), fresh = mixed.filter(p => !lastSigs.has(sigOf(p))), old = mixed.filter(p => lastSigs.has(sigOf(p)));
   const deck = fresh.concat(old), qs = deck.slice(0, ROUND);
+  if (easiestFirst) qs.sort((a, b) => (a.kata || 0) - (b.kata || 0)); /* the round after the Hook: quick wins first (hook spec) */
   if (story && storyAt >= 0 && qs[storyAt]) { const w = story(qs[storyAt]); if (w) qs[storyAt] = w; }
   return {
     trick, star, rand, story, storyAt, band: deck, third, qs, k: 0, mode: 'main', current: qs[0], replayOf: null, sparks: 0, misses: 0,
@@ -132,21 +136,25 @@ const SPARK_SVG = '<svg class="star-spark" viewBox="-12 -12 24 24" aria-hidden="
    back: { href, label } for the end screen's way out; again(): Play again; findVideo(trickId, mode): a Promise of
    { title, src, open? } (src: an embeddable video URL; open(opener): plays it elsewhere and resolves when closed) or null.
    onEnd({ misses, lit, skipped }): called once the end screen shows (the Family helpers, openspec family-helpers).
+   hook: { dare, keyMs } from js/hook.js hookFor(), for a new Player's first Star: the dare and the reveal play first and
+   the round is dealt easiest first (openspec hook); null plays the round as it is.
    Returns { destroy }, which saves the Rating. */
-export function runStar(root, { trick, star, signal, back = { href: '#/dojo', label: 'Back to the Dojo' }, again = null, findVideo = async () => null, onEnd = null } = {}) {
+export function runStar(root, { trick, star, signal, back = { href: '#/dojo', label: 'Back to the Dojo' }, again = null, findVideo = async () => null, onEnd = null, hook = null } = {}) {
   const t = TRICKS.find(x => x.id === trick), skill = byId['v-' + trick], mode = fx.mode() || 'challenger', boxes = mode !== 'pro';
   /* An Early reader answers every whole-number question by tapping one of 3 big buttons, in any Mode (openspec change
      age-bands, star-round "Answer boxes by Mode"): the question shown (cur) gains choices, the round's state does not */
   const early = fx.band() === 'early';
   const asShown = p => (early && p.kind === 'num' && Number.isInteger(p.answer) ? { ...p, kind: 'choice', choices: choicesAround(p.answer, 3).map(String), answer: String(p.answer) } : p);
-  let cur = null;
+  let shownQ = null; /* the question as shown (an Early reader's choices) */
   const round = child(signal), rs = round.signal;
-  const rating = AD.skillRating('v-' + trick, mode), dial = new AD.Dial(rating);
+  const rating = AD.skillRating('v-' + trick, mode, { practice: true }), dial = new AD.Dial(rating); /* a Star is Practice: a Placement level sets its start when there is no Rating (openspec placement) */
   /* Word problems (openspec word-problems): question 3 for Challenger, 2 for Pro, once the Player has 20 saved answers */
-  let st = starRound({ trick, star, rating, last: store.starLast(trick, star), story: p => trickStoryNow(trick, p, mode), storyAt: starSlot(mode, store.count('answers')) });
+  let st = starRound({ trick, star, rating, last: store.starLast(trick, star), story: p => trickStoryNow(trick, p, mode), storyAt: starSlot(mode, store.count('answers')), easiestFirst: !!(hook && hook.dare) });
   store.setStarLast(trick, star, roundKeys(st)); /* saved at the start, so leaving mid-round still counts as the last round */
   const wasLit = store.starState(trick, star) === 'lit';
   let video = null, phase = null, entry = '', fields = [], active = 0, input = false, dialSaved = false, dareP = null, replaySkip = null, shown = 0;
+  let hookP = null, onGo = null; /* the Hook's dare on screen (the entry answers it instead of st.current), and what Check does then */
+  const cur = () => hookP || st.current;
   Promise.resolve().then(() => findVideo(trick, mode)).then(v => { if (!rs.aborted) video = v || null; }).catch(() => {});
   const sutraName = () => (tags() ? tags().trickSutraName(trick) : ''); /* the Sutra the replay names (openspec change sutras-first); the header's tag has asked for its module by then */
   const videoAvailable = () => !!(video && video.src) && navigator.onLine !== false;
@@ -196,7 +204,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     return `<output class="star-plain" id="stOut" aria-live="off" aria-label="Your answer"></output>`;
   }
   function showEntry() {
-    const p = st.current;
+    const p = cur();
     if (p.kind === 'fields') { root.querySelectorAll('.star-field').forEach((b, i) => { b.querySelector('output').textContent = fields[i] || ''; b.setAttribute('aria-pressed', String(i === active)); }); return; }
     const out = $('#stOut'); if (out) out.textContent = entry;
     const bx = $('#stBoxes'); if (!bx) return;
@@ -204,7 +212,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     [...bx.children].forEach((b, i) => { b.textContent = entry[i] || ''; b.classList.toggle('f', i < entry.length); b.classList.toggle('held', cut > 0 && i < cut && entry.length >= cut); });
   }
   function type(k) {
-    if (!input) return; const p = st.current; if (p.kind === 'choice' || (cur && cur.kind === 'choice')) return;
+    if (!input) return; const p = cur(); if (p.kind === 'choice' || (!hookP && shownQ && shownQ.kind === 'choice')) return;
     if (p.kind === 'fields') {
       let v = fields[active] || '';
       if (k === 'del') v = v.slice(0, -1); else if (k === '-') v = v ? v : '-'; else if (v.length < 12) v += k;
@@ -214,8 +222,8 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     showEntry(); fx.sfx('tap');
   }
   function go() {
-    if (!input) return; const p = st.current;
-    if (p.kind === 'choice' || (cur && cur.kind === 'choice')) return;
+    if (!input) return; const p = cur();
+    if (p.kind === 'choice' || (!hookP && shownQ && shownQ.kind === 'choice')) return;
     if (p.kind === 'fields') {
       const empty = p.fields.findIndex((_, i) => !fields[i] || fields[i] === '-');
       if (empty >= 0) { if ((fields[active] || '') && active !== empty) { active = empty; showEntry(); } else say(fx.copy('star.fillFirst'), 'think'); return; }
@@ -223,6 +231,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     }
     if (!entry || entry === '-') { say(fx.copy('star.typeFirst'), 'think'); return; }
     const r = checkOne(p, entry); if (r.notAnswer) { say(fx.copy('star.justAnswer'), 'think'); return; }
+    if (onGo) { onGo(r.ok); return; } /* the Hook's dare: a race, not a question of the round */
     answer(r.ok);
   }
   on(pad, 'click', e => { const b = e.target.closest('[data-k]'); if (!b) return; if (b.dataset.k === 'go') go(); else type(b.dataset.k); }, rs);
@@ -243,9 +252,9 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
   /* ---------- Phases ---------- */
   function ask() {
     st = withStory(st);
-    const ps = newPhase(), p = st.current, q = cur = asShown(p); entry = ''; fields = []; active = 0;
+    const ps = newPhase(), p = st.current, q = shownQ = asShown(p); entry = ''; fields = []; active = 0;
     const tag = st.mode === 'rematch' ? '<span class="star-tag star-tag--rematch">Rematch</span>' : st.mode === 'dare' ? '<span class="star-tag star-tag--dare">Dare</span>' : `<span class="star-tag">Question ${st.k + 1} of ${st.qs.length}</span>`;
-    main.innerHTML = `<div class="star-ask">${tag}${p.story ? '<span class="star-story" id="stStory">Word problem</span>' : ''}<h2 class="star-q${p.story ? ' star-q--story' : said(p.q).length > 16 ? ' star-q--long' : ''}" id="stQ" tabindex="-1">${p.q}</h2>${entryHTML(q)}<p class="star-pop" id="stPop" aria-hidden="true"></p></div>`;
+    main.innerHTML = `<div class="star-ask">${tag}${p.story ? '<span class="star-story" id="stStory">Word problem</span>' : ''}<h2 class="star-q${p.story ? ' star-q--story' : said(p.q).length > 16 ? ' star-q--long' : ''}" id="stQ" tabindex="-1"${p.kata ? ` data-kata="${p.kata}"` : ''}>${p.q}</h2>${entryHTML(q)}<p class="star-pop" id="stPop" aria-hidden="true"></p></div>`;
     pad.hidden = q.kind === 'choice'; pad.querySelectorAll('button').forEach(b => (b.disabled = false));
     if (st.mode === 'main' && canDare(st)) {
       if (!dareP) dareP = dareFor(trick, star, st.used);
@@ -316,6 +325,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
       <ol class="star-steps" id="stSteps"></ol><p class="star-acts"><button type="button" class="md-btn md-btn--sm" id="stRSkip">Skip</button></p></div>`;
     say(fx.copy(of === 'dare' ? 'star.replayDare' : 'star.replay'), 'explain');
     const list = $('#stSteps'), done = () => {
+      held.stop(); /* the last step is here: the Player's own button takes over, so the wait indicator goes */
       replaySkip = null; const b = $('#stRSkip');
       b.textContent = of === 'dare' ? 'Back to the question' : 'Try one like it'; b.className = 'md-btn md-btn--primary'; b.id = 'stRGo';
       replaySkip = next; b.insertAdjacentHTML('beforebegin', listenBtn('from:.star-step > p', 'the steps')); b.focus({ preventScroll: true });
@@ -328,6 +338,10 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     };
     replaySkip = next; on($('#stRSkip'), 'click', () => replaySkip && replaySkip(), ps);
     onAbort(ps, stopListen); // the replay ending (Skip, Go, Escape) stops its Listen
+    /* The wait indicator (openspec change muse-review-polish, design D1): the steps hold the pad for 2.5 s each, so a
+       bar under it fills while they come, and Next (or Enter) goes on to the rematch at once, as Skip does. A choice
+       question has its pad hidden, so the bar goes under the steps instead. */
+    const held = fx.hold(pad.hidden ? $('.star-replay') : pad, (steps.length - 1) * 2500, early => { if (early) next(); }, { skippable: true, signal: ps });
     add();
   }
 
@@ -351,6 +365,61 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     on($('#stNoVid'), 'click', close, ps);
     $('#stWatch').focus({ preventScroll: true });
   }
+
+  /* ---------- The Hook (openspec hook, js/hook.js): the dare, then the reveal, then the round ---------- */
+  /* The dare: the problem with the round's own entry, and a calculator that types it one key every keyMs (none in Calm,
+     which states its time instead). The first of a right answer and the calculator's '=' decides; a wrong answer only
+     clears the entry. Seen as soon as it appears, so it never plays again for this Player. */
+  function hookDare() {
+    const ps = newPhase(), d = hook.dare, calm = fx.calmOn(), p = hookP = withPlain(skill, d.p);
+    store.setHookSeen();
+    entry = ''; fields = []; dareBtn.hidden = true;
+    main.innerHTML = `<div class="star-ask hook"><span class="star-tag star-tag--dare">Beat the calculator</span><h2 class="star-q${said(p.q).length > 16 ? ' star-q--long' : ''}" id="stQ" tabindex="-1">${p.q}</h2>${entryHTML(p)}
+      <div class="hook-calc${calm ? ' hook-calc--calm' : ''}" aria-hidden="true"><output class="hook-screen" id="hkScreen">0</output><span class="hook-keys" id="hkKeys"></span></div>
+      <p class="hook-note" id="hkNote">${calm ? `A calculator needs ${d.seconds} seconds to type this. Take your time.` : 'The calculator is typing. Beat it!'}</p>
+      <p class="star-acts"><button type="button" class="md-btn md-btn--sm" id="hkSkip">Skip</button></p><p class="star-pop" id="stPop" aria-hidden="true"></p></div>`;
+    pad.hidden = p.kind === 'choice'; pad.querySelectorAll('button').forEach(b => (b.disabled = false));
+    say(calm ? 'Can you beat a calculator? Answer in your own time.' : 'Can you beat the calculator? Go!', 'explain');
+    fx.announce(`Beat the calculator: ${said(p.q)}. ${calm ? `A calculator needs ${d.seconds} seconds to type this.` : 'The calculator is typing.'}`);
+    showEntry(); input = true; $('#stQ').focus({ preventScroll: true });
+    let typed = 0, decided = false;
+    const screen = $('#hkScreen'), keys = $('#hkKeys');
+    const decide = won => {
+      if (decided) return; decided = true; input = false; onGo = null; pad.querySelectorAll('button').forEach(b => (b.disabled = true));
+      const ans = ansOf(p), bx = $('#stBoxes'); if (bx && won) bx.classList.add('ok');
+      if (won) { say('You beat the calculator!', 'cheer'); fx.announce(`Right, ${said(ans)}. You beat the calculator!`); small(12); }
+      else { say('The calculator won this time. Want to see how to beat it?', 'wink'); fx.announce(`The calculator shows ${said(ans)}. The calculator won this time. Here is how to beat it.`); }
+      const acts = $('.star-acts'); acts.innerHTML = '<button type="button" class="md-btn md-btn--primary" id="hkShow">Show me</button>';
+      on($('#hkShow'), 'click', hookReveal, ps); $('#hkShow').focus({ preventScroll: true });
+      later(hookReveal, 3000, ps); /* or on its own after a moment */
+    };
+    if (!calm) every(() => {
+      if (typed >= d.keys.length) return;
+      const k = d.keys[typed++]; keys.textContent = d.keys.slice(0, typed).join(' ');
+      if (k === '=') { screen.textContent = String(d.result); decide(false); }
+      else if (/^\d$/.test(k)) screen.textContent = /^\d/.test(screen.textContent) && typed > 1 && /^\d$/.test(d.keys[typed - 2]) ? screen.textContent + k : k;
+    }, hook.keyMs, ps);
+    onGo = ok => { if (decided) return; if (ok) decide(true); else { entry = ''; showEntry(); say('Not yet. Try again!', 'think'); fx.sfx('no'); } };
+    on($('#hkSkip'), 'click', () => { if (decided) return; decided = true; hookDone(); }, ps);
+  }
+  /* The reveal: the Trick on the dare's numbers, step by step, every step announced, within 20 seconds; Skip or Escape
+     ends it at once, then the round starts */
+  function hookReveal() {
+    const ps = newPhase(), d = hook.dare, steps = t.steps(d.vals); let i = 0;
+    hookP = null; onGo = null; input = false; pad.querySelectorAll('button').forEach(b => (b.disabled = true));
+    main.innerHTML = `<div class="star-replay hook-reveal"><span class="star-tag star-tag--trick">The Trick${sutraName() ? ` · <span lang="sa-Latn">${esc(sutraName())}</span>` : ''}</span><h2 class="star-q star-q--sm" id="stQ" tabindex="-1">${d.p.q}</h2>
+      <ol class="star-steps" id="stSteps"></ol><p class="star-acts"><button type="button" class="md-btn md-btn--sm" id="stRSkip">Skip</button></p></div>`;
+    say('Here is how the trick beats it.', 'explain');
+    const list = $('#stSteps'), go = () => { if (ps.aborted) return; hookDone(); };
+    const add = () => {
+      const s = steps[i++], li = document.createElement('li'); li.className = 'star-step';
+      li.innerHTML = `<div class="anim-show">${s.show}</div><p>${s.say}</p>`; list.append(li); fx.announce(said(s.say));
+      if (i < steps.length) later(add, d.pace, ps); else later(go, 800, ps);
+    };
+    replaySkip = go; on($('#stRSkip'), 'click', go, ps);
+    add();
+  }
+  function hookDone() { hookP = null; onGo = null; replaySkip = null; ask(); }
 
   function skipStar() {
     if (st.mode === 'end') return;
@@ -382,11 +451,11 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     if (onEnd) try { onEnd({ misses: st.misses, lit, skipped }); } catch (e) {} /* the Family helpers come after the round (openspec family-helpers) */
   }
 
-  ask();
+  if (hook && hook.dare) hookDare(); else ask();
   /* Word problems (openspec word-problems): the stories are usually here before question 2; if they arrive while the
      story slot's question is on screen with nothing typed yet, it is asked again as the Word problem */
   loadStories().then(() => {
-    if (rs.aborted || !input || entry || fields.some(Boolean)) return;
+    if (rs.aborted || hookP || !input || entry || fields.some(Boolean)) return;
     const w = withStory(st); if (w !== st) { st = w; ask(); }
   }).catch(() => {});
   return { destroy: () => { saveDial(); round.abort(); } };

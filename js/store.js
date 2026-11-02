@@ -3,6 +3,7 @@
    Nothing here leaves the device except what cloud.js posts to World boards (nickname, color, score). */
 import { AVATARS, makeName } from '../shared/src/names.ts';
 import { validReading } from '../shared/src/bands.ts';
+import { withAward } from '../shared/src/sparks-log.ts';
 export const LEGACY = 'mathquest.v1', PKEY = 'vm.players'; /* js/backup.js reads these */
 const BOARD = 'vm.board';
 let S = null, P = null;
@@ -116,8 +117,15 @@ export const mastered = id => { const s = skill(id); return s.m >= 0.85 && s.n >
 export const started = id => skill(id).n > 0;
 export function level(id) { const s = skill(id); return s.m < 0.4 || s.n < 3 ? 1 : s.m < 0.75 ? 2 : 3; }
 
-/* Sparks: the one progress number, earned by everything (Practice included). Only this ISO week's total is kept. */
-export function addSparks(n, why = '') { load(); const before = S.sparks; S.sparks += n; S.weekSparks = S.weekSparks || {}; const wk = isoWeek(); S.weekSparks = { [wk]: (S.weekSparks[wk] || 0) + n }; save(); emit('sparks', { before, after: S.sparks, n, why }); }
+/* Sparks: the one progress number, earned by everything (Practice included). Only this ISO week's total is kept.
+   Every award is also logged (the Sparks history, openspec change muse-review-polish, design D4): S.sparksLog, the
+   newest LOG_CAP awards { n, why, at } with consecutive answers grouped (shared/src/sparks-log.ts has the rules), on
+   this device with the rest of the record, so backup and restore carry it (js/handoff-schema.js) and nothing sends it. */
+export { LOG_CAP } from '../shared/src/sparks-log.ts';
+import { LOG_CAP } from '../shared/src/sparks-log.ts';
+export function addSparks(n, why = '') { load(); const before = S.sparks; S.sparks += n; S.weekSparks = S.weekSparks || {}; const wk = isoWeek(); S.weekSparks = { [wk]: (S.weekSparks[wk] || 0) + n }; S.sparksLog = withAward(S.sparksLog, n, why || 'other', Date.now()); save(); emit('sparks', { before, after: S.sparks, n, why }); }
+/* The Sparks history, newest first (copies), never more than LOG_CAP whatever a record holds */
+export const sparksLog = () => (load(), (Array.isArray(S.sparksLog) ? S.sparksLog : []).slice(0, LOG_CAP).map(e => ({ ...e })));
 /* ISO week id like 2026-W42, in local time (matches cloud.weekId) */
 export function isoWeek(d = new Date()) {
   const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())), day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
@@ -163,6 +171,22 @@ export function skipStar(trick, n) { const k = starKey(trick, n), s = sky(); if 
 export const starStates = () => { const s = sky(); return { lit: { ...s.lit }, skipped: { ...s.skipped } }; };
 export const starLast = (trick, n) => (sky().last[starKey(trick, n)] || []).slice();
 export function setStarLast(trick, n, keys) { sky().last[starKey(trick, n)] = keys.slice(); save(); }
+
+/* Placement (openspec placement, ADR 0007): the result of a Placement climb, { grade ('K' or '1' to '12'), steps, at },
+   on the device only, in the Player's record (the backup code carries it, nothing is ever posted or sent). Not in
+   blank(): a record without it loads as before. placementCard: 'done' once the offer or Home's card has been answered,
+   so neither asks again on its own. hookSeen: when the Hook was shown or skipped (openspec hook), once per Player. */
+export const placement = () => (load(), S.placement || null);
+export function setPlacement({ grade, steps }) {
+  load(); S.placement = { grade: String(grade), steps: Math.max(0, Math.floor(Number(steps) || 0)), at: Date.now() }; save(); emit('placement', { ...S.placement });
+  return S.placement;
+}
+export const placementCard = () => (load(), S.placementCard || null);
+export function setPlacementCard(v = 'done') { load(); if (S.placementCard === v) return false; S.placementCard = v; save(); return true; }
+export const hookSeen = () => (load(), !!S.hookSeen);
+export function setHookSeen() { load(); if (S.hookSeen) return false; S.hookSeen = Date.now(); save(); return true; }
+/* Any progress: an answer, Sparks, a Rating, a lit or skipped Star (Home shows its Placement card to such a Player once) */
+export const hasProgress = () => { load(); const s = S.sky || {}; return (S.counts.answers || 0) > 0 || S.sparks > 0 || Object.keys(S.ratings || {}).length > 0 || Object.keys(s.lit || {}).length > 0 || Object.keys(s.skipped || {}).length > 0; };
 
 /* Kept Belts (openspec sky-home): { <belt id>: when }. A Belt is earned by lighting all 9 of its Stars, and once earned
    (or earned under the old mastery rule before the change) it is kept here and never goes back. */

@@ -7,10 +7,16 @@ import { buildWorker } from '../../../tools/build-sw.mjs';
 
 export const ORIGIN = 'https://learnvedicmath.com';
 
-/* A response as the worker sees it: the fields it reads, and a body the tests compare */
-export type FakeResponse = { ok: boolean; type: string; status: number; body: string; clone(): FakeResponse };
-export const response = (body: string, init: Partial<FakeResponse> = {}): FakeResponse =>
-  ({ ok: true, type: 'basic', status: 200, body, ...init, clone() { return this; } });
+/* A response as the worker sees it: the fields it reads, a body the tests compare, and its content type (the type a
+   stamped file's name promises by default, so a module reads as JavaScript and a stylesheet as CSS; `contentType`
+   in init gives another, '' none) */
+export type FakeResponse = { ok: boolean; type: string; status: number; body: string; headers: { get(name: string): string | null }; clone(): FakeResponse };
+export const typeOf = (url: string): string => (/\.css(\?|$)/.test(url) ? 'text/css' : /\.js(\?|$)/.test(url) ? 'text/javascript' : /\.html?(\?|$)|\/(\?|$)/.test(url) ? 'text/html' : 'application/octet-stream');
+export const response = (body: string, init: Partial<FakeResponse> & { contentType?: string } = {}): FakeResponse => {
+  const { contentType, ...rest } = init;
+  const type = contentType ?? typeOf(body.replace(/^[a-z]+:/, ''));
+  return { ok: true, type: 'basic', status: 200, body, headers: { get: (name: string) => (name.toLowerCase() === 'content-type' ? type || null : null) }, ...rest, clone() { return this; } };
+};
 
 /* One cache: url -> response, listed in insertion order as CacheStorage does. `slowPut` makes each put take a few
    random milliseconds, so puts can finish out of order. */
@@ -46,15 +52,25 @@ export function load({ edits = [], expose = [], slowPut = false }: Load = {}) {
   const listeners: Record<string, (event: unknown) => void> = {};
   const caches = new Map<string, FakeCache>();
   const open = (name: string) => { let c = caches.get(name); if (!c) { c = fakeCache(slowPut); caches.set(name, c); } return c; };
-  const net = { up: true, calls: [] as string[], body: 'net' };
+  /* The fake network: up or down, the URLs asked for, the body prefix of every answer, and a content type for every
+     answer when a test sets one (else the type the URL's name promises) */
+  const net = { up: true, calls: [] as string[], body: 'net', type: undefined as string | undefined };
+  /* The registration: unregister (the kill switch) and navigation preload, off until activate enables it */
+  const registration = { unregister: async () => true, navigationPreload: { enabled: false, enable: async () => { registration.navigationPreload.enabled = true; } } };
   const ctx: Record<string, unknown> = {
-    self: { addEventListener: (type: string, fn: (event: unknown) => void) => { listeners[type] = fn; }, skipWaiting: async () => {}, clients: { claim: async () => {} }, registration: { unregister: async () => true } },
-    caches: { open: async (name: string) => open(name), keys: async () => [...caches.keys()], delete: async (name: string) => caches.delete(name) },
+    self: { addEventListener: (type: string, fn: (event: unknown) => void) => { listeners[type] = fn; }, skipWaiting: async () => {}, clients: { claim: async () => {} }, registration },
+    caches: {
+      open: async (name: string) => open(name),
+      keys: async () => [...caches.keys()],
+      delete: async (name: string) => caches.delete(name),
+      /* CacheStorage.match: the first cache, in creation order, that holds the URL */
+      match: async (r: string | { url: string }) => { for (const c of caches.values()) { const hit = await c.match(r); if (hit) return hit; } return undefined; },
+    },
     fetch: async (req: string | { url: string }) => {
       const url = typeof req === 'string' ? new URL(req, ORIGIN).href : req.url;
       net.calls.push(url);
       if (!net.up) throw new TypeError('offline');
-      return response(`${net.body}:${url}`);
+      return response(`${net.body}:${url}`, net.type === undefined ? {} : { contentType: net.type });
     },
     Request: class { url: string; cache: string | undefined; constructor(url: string, init: { cache?: string } = {}) { this.url = new URL(url, ORIGIN).href; this.cache = init.cache; } },
     Response: class { constructor(public body: string, public init: unknown) {} },
@@ -72,5 +88,5 @@ export function load({ edits = [], expose = [], slowPut = false }: Load = {}) {
     listeners.fetch?.({ request: { method, url, mode }, respondWith: (p: Promise<FakeResponse>) => { answer = Promise.resolve(p); answer.catch(() => {}); } });
     return { answered: answer !== null, answer: answer as Promise<FakeResponse> | null };
   }
-  return { listeners, caches, open, net, fns, request };
+  return { listeners, caches, open, net, fns, request, registration };
 }

@@ -37,13 +37,31 @@ Owner-delegated, 2026-10-30. The button hands words to the device's own share sh
 
 Owner-delegated, 2026-10-30. The link opens the lobby ready to Start, not the countdown: a round that starts by itself would surprise a parent opening a link in a chat, and browsers block sound before a tap. "Opens straight into the round" in the feedback becomes "one tap on Start". On a device with no Mode the Mode picker comes first, as for every game route, and the challenge opens after it. That needs a hand-off: `afterPick()` in `js/app.js` only returns to a pending hash that `buildIndex()` lists, and a dynamic challenge hash is never listed, so it would fall back to `#/`. `afterPick()` gains an explicit case: a pending hash that `parseChallenge()` accepts is returned as it is (task 2.2).
 
+Amended while building (owner-delegated, 2026-10-31): `afterPick()` is synchronous and `parseChallenge()` lives in the on-demand Arena module, so the case is by shape, any pending hash under `#/arena/day/`. The Arena view then parses the link for real, and one that does not parse opens the plain lobby, which is exactly what `#/arena` does after the picker (the Arena is a Find entry in every Mode). A broken link therefore behaves like `#/arena` with or without a Mode, as the spec's "A broken link" scenario asks.
+
 ### D8. The share helper loads on the first tap
 
-Owner-delegated, 2026-10-30. `js/play/kit.js` is not in `js/app.js`'s static imports today; the button imports it on the first tap (it is already precached, so this works offline), so the first-load bytes grow only by the button and its text builder.
+Owner-delegated, 2026-10-30. `js/play/kit.js` is not in `js/app.js`'s static imports today; the button imports it on the first tap (it is already precached, so this works offline), so the first-load bytes grow only by the button and its text builder. Built: `share()` gains a `notify` option, because its "Copied. Paste it anywhere." toast is the play experiences' `.px-toast`, styled only by `css/play/base.css`, which the Arena page does not load; the Arena passes the app's own `fx.toast`. The text builder itself is in the on-demand Arena module (D12), so `js/app.js` grows only by the button, its handler and the lobby line.
 
 ### D9. Route placement
 
-Owner-delegated, 2026-10-30. `#/arena/day/...` matches the play experience pattern `#/(?:dojo|arena|games|sutras)/[a-z-]+(?:/.*)?$`, which would look for an experience named `day` and fall back to Home. The new route goes before that pattern in the route table, and `js/play/catalog.js` must never use the id `day` (a unit test says so).
+Owner-delegated, 2026-10-30. `#/arena/day/...` matches the play experience pattern `#/(?:dojo|arena|games|sutras)/[a-z-]+(?:/.*)?$`, which would look for an experience named `day` and fall back to Home. The new route goes before that pattern in the route table, and `js/play/catalog.js` must never use the id `day` (a unit test says so). The route matches `#/arena/day` and anything under it, so a broken link reaches the Arena (its parser rejects it and the plain lobby draws) instead of Home; the analytics route `arena/day` matches the same way and never counts a broken link as `play/unknown`.
+
+### D10. The friend's Practice round leaves the Arena Rating alone
+
+Owner-delegated, 2026-10-31. A daily round records its answers in the Dial and saves the Arena Rating, because its questions are at this Player's League. A friend's round from another League or day is a fixed set at someone else's level (a Pro opening a Challenger link plays Challenger questions), so it is dealt with no Dial, like the Word problems round (word-problems-more design D5): the Rating neither rises nor falls from it. Sparks, the Arena badge counts and `arenaBest` count as for any Arena round.
+
+### D11. The friend's round keeps its clock, Calm included
+
+Owner-delegated, 2026-10-31. The Score to beat was made in a 60-second race, so a friend's round is comparable only under the same clock: it plays timed in every Mode and with Calm on, as the daily challenge does. The lobby's Calm note says so ("Your friend's round keeps its clock too: the Score to beat was made in 60 seconds"). Practice rounds the Player picks themselves keep Calm's no-clock rule.
+
+### D12. The link's grammar lives in `shared/src`, and the base path in one constant
+
+Owner-delegated, 2026-10-31. PR #127 moved the League pools and `dailySet()` to `shared/src/questions.ts`, so the link's parser, text and URL (`parseChallenge()`, `challengeShare()`, `challengeText()`, `challengeUrl()`) are `shared/src/challenge.ts`, pure and without DOM, with their tests beside them (`shared/src/challenge.test.ts`); `js/arena.js` re-exports them for the Arena view, which loads it on demand, and a Duel's server can check the same link later. The link always names the live site (`SITE`) and the game's base path (`APP_BASE`), both in `shared/src/site.ts`: a share from a preview or localhost must open the real site, and the move from `/play/` to `/learn/` (indexable-routes design D2, whose URL inventory lists this link as a share link rewritten to the Arena page) changes that one constant. `js/play/kit.js` builds the play experiences' `shareUrl()` from the same `APP_BASE`. The share text is the same in every Mode (the reader is the friend, and the League name says which Mode), so `challengeText()` takes no Mode; Explorer differs only in the button's label.
+
+### D13. The result answers the Score to beat
+
+Owner-delegated, 2026-10-31. A challenge round's result (Ranked or the friend's Practice round) says in one line how it went against the link's Score: "You beat your friend's Score of 240!", "You matched your friend's Score of 240." or "Your friend's Score of 240 stands.", before the usual note. A link with no Score part gets no such line. The share loop is "can you beat it?", so the result answers the question; nothing is stored or sent for it.
 
 ## Claims from the feedback, checked
 

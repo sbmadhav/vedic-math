@@ -242,3 +242,14 @@ test('a rematch never repeats a question already in the round', () => {
   const st = round(); const seen = new Set(st.qs.map(sigOf));
   for (let i = 0; i < 6; i++) { const p = pickRematch(st, st.qs[0]); assert.ok(!seen.has(sigOf(p))); seen.add(sigOf(p)); }
 });
+
+/* The round after the Hook (openspec hook, placement task 4.3): dealt easiest first, by Kata number */
+test('starRound({ easiestFirst: true }) deals its 4 questions in Kata order, lowest first; without it they are shuffled', () => {
+  for (const seed of [1, 2, 3, 4, 5]) {
+    const st = starRound({ trick: 'from9', star: 1, rating: 1, rand: rng(seed), easiestFirst: true });
+    const katas = st.qs.map(p => p.kata);
+    assert.equal(katas.length, ROUND);
+    assert.deepEqual(katas, katas.slice().sort((a, b) => a - b), `seed ${seed}: ${katas}`);
+  }
+  assert.ok([1, 2, 3, 4, 5].some(seed => { const k = starRound({ trick: 'from9', star: 1, rating: 1, rand: rng(seed) }).qs.map(p => p.kata); return k.some((v, i) => i && v < k[i - 1]); }), 'a plain round is not always in Kata order');
+});

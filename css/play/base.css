@@ -5,7 +5,7 @@
 /* ---------- Experience chrome ---------- */
 .px-view { display: block; }
 .px-view .px-head { padding-block: var(--space-5) var(--space-3); }
-.px-back { display: inline-block; margin-bottom: var(--space-2); color: var(--ink-muted); text-decoration: none; font-weight: 700; }
+.px-back { display: inline-block; min-height: 24px; line-height: 24px; margin-bottom: var(--space-2); color: var(--ink-muted); text-decoration: none; font-weight: 700; } /* a 24 px target (openspec change muse-review-polish, design D6; WCAG 2.2 2.5.8) */
 .px-back:hover { color: var(--ink); }
 .px-title { font-size: clamp(1.8rem, 4vw, 2.8rem); margin: 0; }
 .px-intro { max-width: 60ch; }

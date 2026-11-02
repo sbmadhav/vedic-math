@@ -55,7 +55,7 @@ export function sections(n) {
       how: [
         w('Every right answer gives you Sparks.', 'A right answer on the first try earns 10 Sparks, plus up to 5 more for answers in a row; after a hint or a second try it earns 5. Games, katas, races and quests earn Sparks too.'),
         w('Sparks fill your bar. A full bar gives you a new Title, like Digit Dasher.', 'Sparks fill the bar to your next Title, from Number Rookie to Vedic Legend.'),
-        w('Little goals each day give you bonus Sparks.', 'Daily quests set three small goals each day, worth 25 bonus Sparks each. Challenger and Pro see them on Home.'),
+        w('Little goals each day give you bonus Sparks. New quests every morning.', 'Daily quests set three small goals each day, worth 25 bonus Sparks each. Challenger and Pro see them on Home. New quests come at midnight, your time, and everyone in your Mode gets the same three.'),
         w('The Keep going button takes you back to what you did last.', 'The Keep going card jumps back to the last skill you practiced.')
       ],
       tip: w('Come back every day. Seven days in a row earns a badge!', 'A few minutes every day beats one long session. Practicing seven days in a row earns the Week warrior badge.'),
@@ -73,7 +73,7 @@ export function sections(n) {
       tip: w('Nothing you type is kept or sent anywhere.', 'Nothing you type is stored, sent or put in the address.'),
       try: { href: '#/find', label: w('Open Find', 'Open Find') } },
 
-    { id: 'me', group: 'start', art: 'me', covers: ['#/me', '#/progress'],
+    { id: 'me', group: 'start', art: 'me', covers: ['#/me', '#/progress', '#/placement'], /* Find your level and Retake live on Me (openspec placement) */
       title: w('Me and badges', 'Me page and badges'),
       what: w('Your own page: your name, your color and your badges.', `Your profile: nickname, avatar color, Title, ${n.badges} badges, progress by level and settings.`),
       how: [
@@ -182,7 +182,7 @@ export function sections(n) {
       tip: w('Play every game once to earn a badge.', 'Play every game once for the Game explorer badge.'),
       try: { href: '#/games', label: 'Open Games' } },
 
-    { id: 'arena', group: 'play', art: 'timer', covers: ['#/arena'],
+    { id: 'arena', group: 'play', art: 'timer', covers: ['#/arena', '#/arena/day/2026-10-30/challenger/240'], /* a challenge link opens the Arena lobby (openspec change arena-challenge-link) */
       title: w('Race the clock', 'Arena: the daily race'),
       what: w('Answer as many as you can in 60 seconds.', '60 seconds, and the same questions for everyone in your league today, so it is a fair race.'),
       how: [
