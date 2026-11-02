@@ -340,6 +340,10 @@ _Avoid_: global leaderboard, online board
 A Board made only from the Players on this device. Always available, offline included. The only Board a Player under 13, or without an Age answer, sees.
 _Avoid_: local leaderboard, offline board
 
+**Warm-up**:
+The projector page at `/teachers/warm-up/` for a class screen: one Trick (the Trick of the day, or the teacher's pick) and three class problems that rise, each with a Reveal and the Trick's steps. A static page outside the game: no Mode, no Player, nothing stored, not a round and no Score (`teacher-warm-up` change). The `/teachers/` box also keeps Open the Arena beside it.
+_Avoid_: Smartboard warm-up (any projector or screen will do), quiz, round
+
 ## Star Quest
 
 **Sky**:

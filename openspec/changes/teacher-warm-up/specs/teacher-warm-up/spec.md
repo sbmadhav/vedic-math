@@ -29,11 +29,15 @@ The warm-up SHALL pick its Trick from the 15 Trick page Tricks by the local date
 - **THEN** every problem passes its Trick's `valid()`, and each Trick's three problems grow in size
 
 ### Requirement: Made for a projector and a clicker
-The problem's numbers SHALL be at least 20% of the viewport height. A Full screen button SHALL use the Fullscreen API, hidden where it is not supported. Right, Space and Page Down SHALL go on; Left and Page Up SHALL go back; R SHALL reveal, then show the steps. There SHALL be no clock and no sound, nothing SHALL move by itself, and the page SHALL work in Daybreak and Deep Space.
+The problem's numbers SHALL be at least 20% of the viewport height. A Full screen button SHALL use the Fullscreen API, hidden where it is not supported. Right, Space and Page Down SHALL go on (the next step of the screen, or the next screen at its end); Left and Page Up SHALL go back; R SHALL reveal, then show the steps. There SHALL be no clock and no sound, nothing SHALL move by itself, and the page SHALL work in Daybreak and Deep Space.
 
 #### Scenario: A presenter clicker
-- **WHEN** a teacher presses Page Down four times from the first screen
-- **THEN** the warm-up is on Problem 3
+- **WHEN** a teacher opens the warm-up for Multiply by 11 and presses Page Down four times from the first screen
+- **THEN** the worked example's three steps have appeared one by one and the warm-up is on Problem 1 (23 × 11), and Page Up goes back to the example with its steps
+
+#### Scenario: Full screen
+- **WHEN** the browser offers the Fullscreen API
+- **THEN** a Full screen button is shown, and where `document.fullscreenEnabled` is false it is hidden and the rest of the page works the same
 
 #### Scenario: Big enough for the back row
 - **WHEN** a problem is shown on a 1280 × 720 screen

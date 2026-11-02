@@ -405,6 +405,13 @@
     "from": 567842,
     "to": 580549,
     "why": "age-bands; re-measured on main as of the merge; CI figure for /js/nav.js; file deltas: /js/app.js +1245, /js/arena.js +402, /js/fx.js +571, /js/grade-question.js new 1983, /js/handoff-schema.js +406, /js/sky-view.js -39, /js/star.js +216, /js/store.js +578, /js/ts/shared/src/bands.js new 2151, /js/ts/shared/src/copy.js new 4762, /math.css +376, /play/ +21, /sw.js +35; +12707 in all"
+   },
+   {
+    "date": "2026-11-02",
+    "pr": 197,
+    "from": 580549,
+    "to": 580549,
+    "why": "teacher-warm-up; re-measured on main as of the merge; CI figure for /js/nav.js; file deltas: ; +0 in all"
    }
   ]
  },

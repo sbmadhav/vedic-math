@@ -48,7 +48,7 @@ test.describe('a first visit', () => {
 
 test.describe('JavaScript off', () => {
   test.use({ javaScriptEnabled: false, seedMode: null });
-  for (const url of ['/', '/parents/', '/teachers/', '/privacy/']) {
+  for (const url of ['/', '/parents/', '/teachers/', '/teachers/warm-up/', '/privacy/']) {
     test(`${url} shows its whole text, header and footer`, async ({ page }) => {
       await page.goto(url);
       await expect(page.locator('body > header .md-brand')).toBeVisible();
@@ -143,12 +143,23 @@ test.describe('pages for grown-ups', () => {
     await expect(page.locator('main')).toContainText('There are no class accounts or class leaderboards');
   });
 
-  test('/teachers/ has a 5-minute warm-up whose button opens the Arena', async ({ page }) => {
+  test('/teachers/ has a 5-minute warm-up whose main button opens the projector warm-up, with Open the Arena beside it', async ({ page }) => {
     await page.goto('/teachers/');
     const box = page.getByRole('region', { name: "A 5-minute warm-up for today's class" });
+    await expect(box).toContainText('No sign-in and no student accounts. This page stores nothing on this device.');
     await expect(box).toContainText('the same ones for every Player in the same Mode today');
     await expect(box).toContainText('With Calm on, the Arena starts on an untimed round: pick Daily challenge for the 60-second race.');
-    await box.getByRole('link', { name: 'Open the Arena' }).click();
+    await expect(box.getByRole('link', { name: 'Open the Arena' })).toHaveAttribute('href', '/play/#/arena');
+    await expect(box.getByRole('link', { name: 'Open the projector warm-up' })).toHaveClass(/md-btn--primary/);
+    await box.getByRole('link', { name: 'Open the projector warm-up' }).click();
+    await expect(page).toHaveURL(/\/teachers\/warm-up\/$/);
+    await expect(page.locator('#wuAt')).toHaveText(/^Today's trick/);
+    await expect(page.locator('main h1')).toHaveText('Projector warm-up');
+  });
+
+  test('/teachers/ keeps Open the Arena, which opens the Arena', async ({ page }) => {
+    await page.goto('/teachers/');
+    await page.getByRole('region', { name: "A 5-minute warm-up for today's class" }).getByRole('link', { name: 'Open the Arena' }).click();
     await expect(page).toHaveURL(/\/play\/#\/arena$/);
     await expect(page.locator('#view h1')).toHaveText('60 seconds. Same questions for everyone.');
   });
