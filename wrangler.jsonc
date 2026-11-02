@@ -2,7 +2,10 @@
 // Deployed by CI from deploy/ (npx wrangler deploy --config ../wrangler.jsonc) after python3 build.py writes _site/.
 // Every path is a static asset served without running code, with _site/_headers and _site/_redirects applied; the
 // Worker script (workers/src/index.ts, TypeScript bundled by wrangler) runs only for /_csp, the policy-violation report
-// endpoint (workers/src/csp.ts).
+// endpoint (workers/src/csp.ts), and /api/*: session tickets (workers/src/session.ts) and the Family conversation
+// (workers/src/family/, openspec family-helpers step 3), whose counts live in the VoiceLedger Durable Object
+// (workers/src/ledger.ts, SQLite). Its secrets (ANTHROPIC_API_KEY, TURNSTILE_SECRET, TICKET_KEY) are set with
+// wrangler secret put, never here; the conversation stays off (FAMILY_ON "0") until the owner sets them.
 {
   "$schema": "./deploy/node_modules/wrangler/config-schema.json",
   "name": "learnvedicmath",
@@ -14,7 +17,7 @@
     "html_handling": "auto-trailing-slash",
     // /404.html with status 404, not "single-page-application": the game's routes are hash routes
     "not_found_handling": "404-page",
-    "run_worker_first": ["/_csp"]
+    "run_worker_first": ["/_csp", "/api/*"]
   },
   // Attached once by the owner in the dashboard as custom domains; www answers with a 301 to the apex through a zone
   // Single Redirect rule (owner guide), because _redirects cannot match on the host
@@ -22,10 +25,12 @@
     { "pattern": "learnvedicmath.com", "custom_domain": true },
     { "pattern": "www.learnvedicmath.com", "custom_domain": true }
   ],
-  // The VoiceLedger Durable Object (workers/src/ledger.ts, SQLite): counts for the paid endpoints. Deployed before any
-  // route uses it, because a preview upload cannot apply a migration (openspec family-helpers step 3)
   "durable_objects": { "bindings": [{ "name": "VOICE_LEDGER", "class_name": "VoiceLedger" }] },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["VoiceLedger"] }],
+  // Talking with the Family (family-helpers design D18): the switch, the per-address limit and the $5 a day and $50 a
+  // month caps as request counts (about $0.004 a turn at list price), and the public Turnstile site key (empty until
+  // the owner creates the widget; the game reads it from /api/family/v1/status, so no file of the game holds it)
+  "vars": { "FAMILY_ON": "0", "FAMILY_TURNS_PER_HOUR": "20", "FAMILY_TURNS_PER_DAY": "1250", "FAMILY_TURNS_PER_MONTH": "12500", "TURNSTILE_SITE_KEY": "" },
   "workers_dev": true,
   "preview_urls": true,
   "observability": { "enabled": true, "head_sampling_rate": 1 }

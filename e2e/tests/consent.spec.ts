@@ -252,3 +252,42 @@ for (const mode of ['explorer', 'challenger', 'pro'] as const) {
     });
   });
 }
+
+/* An age given to the grade question is the Age answer (openspec change age-bands, decision 8; posting-consent delta):
+   age 15 there means the age question is never asked; a grade sets nothing; an existing Age answer is kept. Checked on
+   the Player record and through cloud.canPost, so it holds whether or not World boards are on. */
+test.describe('the grade question and the Age answer', () => {
+  const answer = async (page: Page, kind: 'grade' | 'age', value: string) => {
+    await open(page, '#/me');
+    await page.locator('#readingChange').click();
+    const dlg = page.locator('dialog.vm-grade');
+    await expect(dlg).toBeVisible();
+    if (kind === 'age') await dlg.locator('#gqSwap').click();
+    await dlg.locator(`[data-${kind}="${value}"]`).click();
+    await expect(dlg).toHaveCount(0);
+  };
+  test('age 15 at the grade question becomes the Age answer, so a post needs no age question', async ({ page }) => {
+    await answer(page, 'age', '15');
+    const p = await savedPlayer(page);
+    expect(p.age).toBe(15);
+    expect(p.reading).toMatchObject({ age: 15 });
+    expect(await page.evaluate(async () => (await e2eMod('cloud')).canPost())).not.toBe('needs-age');
+  });
+  test('grade 8 sets no Age answer: the age question still comes before anything is posted', async ({ page }) => {
+    await answer(page, 'grade', '8');
+    const p = await savedPlayer(page);
+    expect(p.age).toBeUndefined();
+    expect(p.reading).toMatchObject({ grade: '8' });
+    expect(await page.evaluate(async () => (await e2eMod('cloud')).canPost())).toBe('needs-age');
+  });
+  test.describe('an existing Age answer of 11', () => {
+    test.use({ seedConsent: { age: 11 } });
+    test('is kept when the grade question is answered with age 14', async ({ page }) => {
+      await answer(page, 'age', '14');
+      const p = await savedPlayer(page);
+      expect(p.age).toBe(11);
+      expect(p.reading).toMatchObject({ age: 14 });
+      expect(await page.evaluate(async () => (await e2eMod('cloud')).canPost())).toBe('device-only');
+    });
+  });
+});

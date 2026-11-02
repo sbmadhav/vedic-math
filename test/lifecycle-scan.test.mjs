@@ -60,8 +60,8 @@ test('the Sky (js/sky-view.js): no bare listeners, timers or frame loops; its li
   assert.ok((src.match(/\bon\([^;]*\bsignal\b/g) || []).length >= 4, 'pointer, scroll and motion listeners on the view signal');
 });
 
-test('the Family helpers (js/family-view.js, js/family-hook.js, js/family-helpers.js): no bare listeners, timers or frame loops', () => {
-  for (const f of ['family-view.js', 'family-hook.js', 'family-helpers.js']) {
+test('the Family helpers (js/family-view.js, js/family-hook.js, js/family-helpers.js, js/family-talk.js): no bare listeners, timers or frame loops', () => {
+  for (const f of ['family-view.js', 'family-hook.js', 'family-helpers.js', 'family-talk.js']) {
     assert.deepEqual(hits(f, /\.?addEventListener\(/), [], f);
     assert.deepEqual(hits(f, TIMERS), [], f);
   }
@@ -145,4 +145,14 @@ test('installing the app (js/install.js, js/prompt-slot.js): no bare listeners o
   assert.match(src, /on\(window, 'appinstalled', [^\n]*, ps\);/, 'appinstalled on the page signal');
   assert.match(src, /on\(slot, 'click', [\s\S]*?\}, ctl\.signal\);/, 'the nudge on a child of the view signal');
   assert.match(src, /every\([^\n]*, 2000, poll\.signal\)/, 'the nudge looks again on a child signal that stops after a minute');
+});
+
+test('the grade question (js/grade-question.js): no bare listeners or timers; its listeners go through life.on on a child signal', () => {
+  assert.deepEqual(hits('grade-question.js', /\.?addEventListener\(/), []);
+  assert.deepEqual(hits('grade-question.js', TIMERS), []);
+  const src = readFileSync(new URL('../js/grade-question.js', import.meta.url), 'utf8');
+  assert.match(src, /import \{[^}]*\bon\b[^}]*\bchild\b[^}]*\} from '\.\/life\.js'/);
+  assert.match(src, /const life = child\(signal\)/);
+  assert.ok((src.match(/^\s*on\(dlg, '/gm) || []).length >= 3 && (src.match(/, ls\);/g) || []).length >= 3, 'click, cancel and close on the dialog signal');
+  assert.doesNotMatch(src, /\.on(click|change|close)\s*=/);
 });

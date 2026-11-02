@@ -82,6 +82,7 @@ test.describe('a new visitor', () => {
 test('a new Player added in Me gets the Mode picker, then the offer', async ({ page }) => {
   await open(page, '#/me');
   await page.locator('#meAdd').click();
+  await page.locator('dialog.vm-grade #gqSkip').click(); // the grade question comes first (openspec change age-bands)
   await expect(page.locator('.mode-pick .mode-card')).toHaveCount(3);
   await page.locator('.mode-card[data-mode="explorer"]').click();
   await expect(page.locator('#plH')).toHaveText('Want to find your level?');

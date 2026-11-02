@@ -502,6 +502,35 @@ a.door .play-ic { width: 44px; height: 44px; } .door--coral .play-ic { backgroun
 .mode-explorer #prShow { display: none; }
 .mode-explorer .md-btn { min-height: 48px; }
 
+/* The Early Reading band (openspec change age-bands, body.band-early from js/fx.js applyMode): larger buttons and more
+   room between them in every Mode, tokens only; nothing else changes by band, and both color schemes are untouched. */
+body.band-early .md-btn, body.band-early .md-chip { min-height: 48px; }
+body.band-early .pr-choice { font: 700 2rem/1 var(--display); min-width: 96px; min-height: 84px; border-radius: var(--radius-lg); }
+body.band-early .pr-q { font-size: clamp(1.7rem, 5vw, 2.4rem); }
+body.band-early .pr-q.long { font: 600 1.4rem/1.5 var(--display); }
+body.band-early .pr-choices, body.band-early .pr-actions { gap: var(--space-3); }
+body.band-early .star-choice { min-width: 120px; min-height: 64px; font-size: 1.5rem; }
+body.band-early .star-choices { gap: var(--space-4); }
+body.band-early .ar-choice { min-height: 84px; }
+body.band-early .ar-choices { gap: var(--space-4); }
+/* The grade question (js/grade-question.js): a vm-sheet with Bolt's line, the grade or age buttons and its speaker button */
+.vm-grade .gq-bolt { display: flex; align-items: center; gap: var(--space-2-5); margin: var(--space-2) 0 var(--space-3-5); }
+.vm-grade .gq-bolt .bolt { width: 56px; height: 56px; }
+.vm-grade .gq-bolt .md-bubble { margin: 0; flex: 1; }
+.vm-grade .gq-grid { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); }
+.vm-grade .gq-opt { min-height: 48px; font-size: 1.15rem; justify-content: center; }
+.gq-hear svg { width: 24px; height: 24px; }
+.vm-grade button { min-height: 44px; min-width: 44px; }
+.vm-grade .vs-foot { justify-content: space-between; }
+/* The Mode picker while the grade question is open (decision 2): the cards keep their place and are not painted */
+.mode-pick--wait .mode-card { visibility: hidden; }
+.mode-sugg { justify-self: start; }
+.pick-hear { margin: 0 0 var(--space-3); }
+/* The home card that offers the grade question (decision 2) */
+.reading-card { margin: var(--space-3) 0; }
+.reading-card .door-line { margin: var(--space-1-5) 0 var(--space-3); }
+.me-reading { margin-top: var(--space-3); }
+
 /* Dojo */
 .belt-row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .belt-chip { display: inline-flex; align-items: center; gap: var(--space-2); padding: var(--space-1-5) var(--space-3); border-radius: var(--radius-pill); border: 2px dashed var(--line); color: var(--ink-muted); font-weight: 700; font-size: var(--text-label-size); }
@@ -1644,6 +1673,22 @@ html.motion-paused .fh-visit .fh-art .fh-body, body.calm .fh-visit .fh-art .fh-b
 .me-fam-when { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); font-weight: 600; }
 .me-fam-when legend { padding: 0; margin-bottom: var(--space-1); font-weight: 700; }
 .me-fam-when input { width: 18px; height: 18px; accent-color: var(--teal-strong); }
+/* Talking with the Family (step 3, js/family-talk.js): the chat box under the Visit's buttons, text only; Bolt joins the
+   crew when he speaks; the Sutra card and the pointer the actions draw; the question outlined for a moment on pointAt */
+.fh-talk { display: grid; gap: var(--space-1); margin-top: var(--space-2); padding-top: var(--space-2); border-top: 1px solid var(--edge); }
+.fh-talk-row { display: flex; gap: var(--space-2); }
+.fh-talk-in { flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 0 var(--space-3); border: 2px solid var(--edge); border-radius: var(--radius-md); background: var(--bg); color: var(--ink); font: inherit; }
+.fh-talk-in:focus-visible { outline: 3px solid var(--focus, var(--sky-strong)); outline-offset: 1px; }
+.fh-talk-send { min-height: 44px; margin: 0; }
+.fh-talk-busy .fh-talk-send { opacity: .6; pointer-events: none; }
+.fh-talk-note, .fh-talk-say { margin: 0; color: var(--ink-muted); }
+.fh-talk-say:empty { display: none; }
+.fh-turnstile { min-height: 65px; }
+.fh-turnstile[hidden] { display: none; }
+.fh-sutra, .fh-point { margin: 0 0 var(--space-2); font-size: var(--text-label-size); color: var(--ink-muted); }
+.fh-pointed { outline: 3px solid var(--sun); outline-offset: 4px; border-radius: var(--radius-md); }
+.fh-friend--bolt svg { height: 100%; width: auto; display: block; }
+.fh-visit--talk .fh-crew { height: 72px; }
 /* Try a trick (js/try.js, openspec try-trick-in-modes): the teaching card, three questions and the end card.
    Tokens only; nothing animates here (the sparkles after a right answer are js/celebrate.js, off under no motion). */
 .try { display: grid; gap: var(--space-3); justify-items: start; }

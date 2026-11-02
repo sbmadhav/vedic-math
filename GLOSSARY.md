@@ -13,7 +13,7 @@ A made-up name built from fixed word lists (adjective, noun, number). Never type
 _Avoid_: username, display name, handle
 
 **Mode**:
-The play level a Player chooses: Explorer (about 4 to 7), Challenger (about 8 to 12) or Pro (13 to adult). It sets the wording, the grade range and the controls. It says nothing about the Player's real age. Once a Player has a Placement level, that level, not the Mode, sets where Practice starts; and a Reading band adjusts wording and answers within the Mode. (Both proposed in the `placement` and `age-bands` changes.)
+The play level a Player chooses: Explorer (about 4 to 7), Challenger (about 8 to 12) or Pro (13 to adult). It sets the wording, the grade range and the controls. It says nothing about the Player's real age. A Reading band adjusts wording, read aloud, answer buttons and Practice clocks within the Mode, never the Mode or League; the Mode picker tags the Mode a Grade answer suggests, and the Player still chooses freely. Once a Player has a Placement level, that level, not the Mode, sets where Practice starts (proposed in the `placement` change).
 _Avoid_: difficulty, age group, kid mode (Explorer is not the site-wide kid mode)
 
 **League**:
@@ -25,11 +25,11 @@ A Player's reply to one neutral question about their age. It is the only thing t
 _Avoid_: age gate, age check, birthday
 
 **Grade answer**:
-A Player's reply to "What grade are you in?" (Pre-K to 12 or Grown-up), or their age if they chose to give it instead. Kept only on the device and never sent. It decides the Reading band and nothing else. (Proposed in the `age-bands` change.)
+A Player's reply to "What grade are you in?" (Pre-K to 12 or Grown-up), or their age if they chose to give it instead (`reading` on the Player record, `js/store.js`). Kept only on the device and never sent (ADR 0008); it moves only inside the Player's own progress (the backup code, the Hand-off). It decides the Reading band and nothing else; an age given here is also the Age answer when there is none (ADR 0001). A grown-up changes or clears it in Me, under "For grown-ups: Reading help".
 _Avoid_: grade level, age gate, school grade (in code), grade (alone: that is a Skill map page)
 
 **Reading band**:
-How much reading help a Player gets, from their Grade answer: Early (about 4 to 6), Growing (about 7 to 9) or Fluent (10 and up). It changes read aloud, wording, answer buttons, the number of choices, Practice timers and Bolt's tone, in every Mode, and never math difficulty. A Player with no Grade answer has no band. Never shown to the Player. (Proposed in the `age-bands` change.)
+How much reading help a Player gets, from their Grade answer (`shared/src/bands.ts` `bandOf`, `RULES`): Early (about 4 to 6), Growing (about 7 to 9) or Fluent (10 and up). It changes read aloud, wording, answer buttons, the number of choices, Practice timers and Bolt's tone, in every Mode, and never math difficulty (a lint rule and `test/bands-no-difficulty.test.mjs` keep it out of the engine). A Player with no Grade answer has no band. Never shown to the Player: a grown-up sees "Reading help: lots, some or a little" in Me.
 _Avoid_: age band (in copy), age group, reading level, kid mode
 
 **Parent step** (retired):
@@ -166,6 +166,14 @@ _Avoid_: popup, interruption, intervention
 Something that may start a Visit: 2 misses in a row on one Skill, 3 misses in a round, about 20 seconds idle on one question, Hint pressed twice, leaving a round early after misses, or a help phrase in listening mode. Never acted on mid-question in a timed race.
 _Avoid_: trigger (in copy), frustration detection
 
+**Talking with the Family**:
+The opt-in AI conversation layer of the Family helpers, for a Player whose saved answers say 13 or over: a chat box in a Visit's bubble where Bolt, Shunya, Nava and Eka answer in their own words (at most two replies a turn, one at a time), through our own Worker route and Claude Haiku 4.5, never with the answer. What a message sends: the Skill id, the question's numbers and the words of that Visit, with a session ticket after one Cloudflare Turnstile check per browser session. (The `family-helpers` change, step 3, design D15 and D18; ADR 0015.)
+_Avoid_: chatbot, AI tutor, assistant
+
+**Session ticket**:
+A short-lived proof the Worker signs (an HMAC over its scope, a random value and a 30-minute expiry) and hands out from `POST /api/session` after a Turnstile check; each paid route accepts only its own scope (`family` for the conversation, later `voice` and `room`). Never stored on a server and never tied to a Player. (`react-typescript` design D17, `family-helpers` design D18.)
+_Avoid_: token (that is Turnstile's), login, session cookie
+
 **Clue**:
 In talking with the Family (13 and over), one reply that hints at the question on screen, or points at a part of it. Each question has a few; at zero the speakers explain the method in general. Talk about the method or the Sutra in general uses none, and the first clue on a question counts as the round's Hint. (Proposed in the `family-helpers` change, design D18.)
 _Avoid_: hint token, credit
@@ -219,11 +227,11 @@ A website or game on the Watch shelf that opens in a new tab. Pro only, like eve
 _Avoid_: resource, external site
 
 **Read aloud**:
-The setting that speaks questions, hints and praise. On by default for Explorer, off for Challenger and Pro. Speech only ever follows a tap. (Proposed in the `age-bands` change: a choice per Player, on by default for the Early Reading band in every Mode.)
+The setting that speaks questions, hints and praise: a choice per Player (`voice` on the Player record). When the Player has not chosen, it is on for the Early Reading band in every Mode and off for Growing and Fluent; with no band, on for Explorer and off for Challenger and Pro. Speech only ever follows a tap.
 _Avoid_: TTS, narration, voice mode
 
 **Copy table**:
-The one list of app wording that varies by Mode or Reading band (`app/src/logic/copy.ts`): each line with its Mode variants or a default, and Early and Growing variants. (Proposed in the `age-bands` change.)
+The one list of app wording that varies by Mode or Reading band (`shared/src/copy.ts`, read through `fx.copy` and `fx.line`; the React game will read it through `useCopy`): each line with its Mode variants or a default, an Early variant (8 words or fewer a sentence) and, where the Mode copy runs long, a Growing variant. `pnpm --filter tools copy-table` prints it as Markdown for review.
 _Avoid_: strings file, translations, i18n
 
 **Built-in voice**:
