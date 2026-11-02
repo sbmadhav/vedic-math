@@ -196,7 +196,7 @@ test('the published design system drops its @font-face lines: the fonts are decl
 
 /* What the worker saves on first request instead of at install (openspec change render-performance, design D10): the
    Play experiences and their styles and the video list (is_lazy in build.py) */
-const LAZY = /^\/(js\/play\/exp\/|css\/play\/|js\/play\/life\.js|js\/videos\.js)/;
+const LAZY = /^\/(js\/play\/exp\/|css\/play\/|js\/play\/life\.js|js\/videos\.js|js\/family-talk\.js|js\/ts\/shared\/src\/family-talk\.js)/; /* and the Family conversation (family-helpers step 3) */
 
 test('the precache list holds the core: every import-map module but the lazy ones, the shell, the styles, the body and heading fonts, icons and manifest, each with its hash', () => {
   build();

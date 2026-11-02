@@ -27,7 +27,7 @@ import { on, later, every, child, onAbort, lateImport } from './life.js';
 import * as metrics from './metrics.js';
 import { boltHTML } from './bolt.js';
 import { FAMILY_SVG } from './family.js';
-import { familyRound } from './family-hook.js';
+import { familyRound, talkEligible } from './family-hook.js';
 import { runStar } from './star.js';
 import { storyPlan, loadStories, storiesNow, storiesFrom, LABEL as STORY_LABEL, ONLY as STORY_ONLY, ROUND as STORY_ROUND } from './story-plan.js';
 import { runTry, tryFor as tryOf, sutraOf, finished as tryFinished } from './try.js';
@@ -1277,6 +1277,7 @@ function parentNote() {
       pro: 'Separately from World boards, the site counts visits and actions in the app (pages opened, questions answered, rounds finished) to improve it, with GoatCounter and Cloudflare Web Analytics, anonymously: no cookies, no IDs and no names.',
     })}</p>
     <p class="pn-video">Video pictures come from this site, and a video loads from YouTube, in privacy-enhanced mode, only after a player presses play; YouTube's own rules apply once it plays. Watching posts nothing.</p>
+    <p class="pn-family">Talking with the Family (an option in Me for players 13 and over, off until turned on) sends each message with the Skill, the question's numbers and the words of that visit to our server, which asks an AI model (Claude, by Anthropic) to answer as Bolt and the Family; nothing about the player goes with it, nothing is kept, and a Cloudflare Turnstile bot check runs once per browser session before the first message. It is never offered to a player whose age answer is under 13.</p>
     <p class="pn-more">More in the <a href="/privacy/?home">privacy policy</a> and the <a href="/parents/?home">page for parents</a>.</p></details>`;
 }
 /* A Board: this device's entries for everyone; the World board only for a Player whose Age answer is 13 or over, and
@@ -1951,7 +1952,15 @@ function familySwitchHTML(p) {
   return `<div class="me-family md-card"><button type="button" class="md-switch" role="switch" id="familySwitch" aria-checked="${on}" aria-describedby="familyAbout"><span>Try the Nikhilam Family helpers</span><span class="md-track" aria-hidden="true"><span class="md-knob"></span></span></button>
     <p class="mq-small" id="familyAbout">${fx.t({ explorer: 'Shunya, Nava and Eka hop in when a question gets tricky. They give clues, never the answer.', challenger: 'Shunya, Nava and Eka, the Zero, Nine and One of the Nikhilam Family, are your study friends. When a question gets tricky they hop in with a hint, the method or an example on other numbers, never the answer.', pro: 'Shunya, Nava and Eka, the Zero, Nine and One of the Nikhilam Family, notice when a question is not going well and offer a hint, the method or a worked example on other numbers, never the answer.' })} Saved for this Player on this device.</p>
     ${on ? `<fieldset class="me-fam-when"><legend>When they help</legend>${FAMILY_WHEN.map(([v, l]) => `<label><input type="radio" name="familyHelp" value="${v}"${v === when ? ' checked' : ''}> ${l}</label>`).join('')}</fieldset>` : ''}
+    ${on && talkEligible(p.age, store.savedGrade()) ? familyTalkHTML(p) : ''}
     <p class="pr-say" id="familyMsg" role="status" aria-live="polite"></p></div>`;
+}
+/* "Talk with the Family" (openspec family-helpers step 3, helper-conversation spec, design D15 and D18): opt-in, and
+   only offered to a Player whose saved answers say 13 or over (talkEligible); nothing is offered to anyone else */
+function familyTalkHTML(p) {
+  const on = p.familyTalk === true;
+  return `<button type="button" class="md-switch" role="switch" id="familyTalkSwitch" aria-checked="${on}" aria-describedby="familyTalkAbout"><span>Talk with the Family</span><span class="md-track" aria-hidden="true"><span class="md-knob"></span></span></button>
+    <p class="mq-small" id="familyTalkAbout">Type a question in a visit and Bolt, Shunya, Nava or Eka answer in their own words: a hint, the method or an example on other numbers, never the answer. Each message sends the Skill, the question's numbers and the words of that visit to our server, which asks an AI model (Claude, by Anthropic) to reply; nothing about you goes with it, and nothing is kept. A quick bot check (Cloudflare Turnstile) runs once before your first message. For Players 13 and over. Don't share your name or where you live.</p>`;
 }
 /* The Trophy case on Me (openspec working-memory-scaffolds, trophy-case spec): every reward but Sparks in one place,
    each row with a link to where it is earned; the Badges follow it. Explorer is not offered Belts or Stars, so their
@@ -2058,6 +2067,7 @@ function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw
   const sky = $('#skySwitch'); if (sky) sky.onclick = () => { store.updatePlayer({ sky: sky.getAttribute('aria-checked') !== 'true' }); fx.sfx('pop'); meView(ctx); $('#skySwitch').focus(); $('#skyMsg').textContent = SKY.skyOn(store.player()) ? 'The Sky is your home now.' : 'Your home is the tile home again.'; };
   const fam = $('#familySwitch'); if (fam) fam.onclick = () => { store.updatePlayer({ family: fam.getAttribute('aria-checked') !== 'true' }); fx.sfx('pop'); meView(ctx); $('#familySwitch').focus(); $('#familyMsg').textContent = store.player().family ? 'The Family helpers are on.' : 'The Family helpers are off.'; };
   view.querySelectorAll('input[name="familyHelp"]').forEach(r => r.onchange = () => { store.updatePlayer({ familyHelp: r.value }); $('#familyMsg').textContent = r.value === 'off' ? 'They will stay away.' : r.value === 'ask' ? 'They come when you tap Ask a friend.' : 'They come when a question gets tricky, or when you ask.'; });
+  const talk = $('#familyTalkSwitch'); if (talk) talk.onclick = () => { store.updatePlayer({ familyTalk: talk.getAttribute('aria-checked') !== 'true' }); fx.sfx('pop'); meView(ctx); $('#familyTalkSwitch').focus(); $('#familyMsg').textContent = store.player().familyTalk ? 'Talking with the Family is on: ask them anything about a question.' : 'Talking with the Family is off.'; };
   $('#setSound').onchange = e => { fx.setSound(e.target.checked); fx.sfx('ok'); };
   $('#setBg').onchange = e => { setBg(e.target.checked); const t = document.getElementById('vmBg'); if (t) t.checked = e.target.checked; };
   $('#setCalm').onclick = e => { fx.setCalm(!fx.calmOn()); e.currentTarget.setAttribute('aria-checked', String(fx.calmOn())); };

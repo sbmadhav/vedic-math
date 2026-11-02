@@ -166,6 +166,14 @@ _Avoid_: popup, interruption, intervention
 Something that may start a Visit: 2 misses in a row on one Skill, 3 misses in a round, about 20 seconds idle on one question, Hint pressed twice, leaving a round early after misses, or a help phrase in listening mode. Never acted on mid-question in a timed race.
 _Avoid_: trigger (in copy), frustration detection
 
+**Talking with the Family**:
+The opt-in AI conversation layer of the Family helpers, for a Player whose saved answers say 13 or over: a chat box in a Visit's bubble where Bolt, Shunya, Nava and Eka answer in their own words (at most two replies a turn, one at a time), through our own Worker route and Claude Haiku 4.5, never with the answer. What a message sends: the Skill id, the question's numbers and the words of that Visit, with a session ticket after one Cloudflare Turnstile check per browser session. (The `family-helpers` change, step 3, design D15 and D18; ADR 0015.)
+_Avoid_: chatbot, AI tutor, assistant
+
+**Session ticket**:
+A short-lived proof the Worker signs (an HMAC over its scope, a random value and a 30-minute expiry) and hands out from `POST /api/session` after a Turnstile check; each paid route accepts only its own scope (`family` for the conversation, later `voice` and `room`). Never stored on a server and never tied to a Player. (`react-typescript` design D17, `family-helpers` design D18.)
+_Avoid_: token (that is Turnstile's), login, session cookie
+
 **Clue**:
 In talking with the Family (13 and over), one reply that hints at the question on screen, or points at a part of it. Each question has a few; at zero the speakers explain the method in general. Talk about the method or the Sutra in general uses none, and the first clue on a question counts as the round's Hint. (Proposed in the `family-helpers` change, design D18.)
 _Avoid_: hint token, credit

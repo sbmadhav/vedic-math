@@ -40,6 +40,10 @@ const REQUIRED = [
   'with GoatCounter and Cloudflare Web Analytics, anonymously: no cookies, no IDs and no names.',
   // videos (watch-shelf)
   "Video pictures come from this site, and a video loads from YouTube, in privacy-enhanced mode, only after a player presses play; YouTube's own rules apply once it plays.",
+  // talking with the Family (family-helpers step 3, helper-conversation spec): what a message sends, Turnstile, never under 13
+  'Talking with the Family (an option in Me for players 13 and over, off until turned on) sends each message with the Skill, the question\'s numbers and the words of that visit to our server',
+  'Cloudflare Turnstile bot check runs once per browser session before the first message',
+  'It is never offered to a player whose age answer is under 13.',
 ];
 async function expectNote(page: import('@playwright/test').Page, summary: string, now?: string) {
   const note = page.locator('details', { has: page.locator('summary', { hasText: summary }) }).first();

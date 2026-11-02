@@ -69,7 +69,9 @@ SW_DEV = "const VERSION = 'dev';\nconst PRECACHE = [];\nconst LAZY = [];"
 # shelves, so they stay with the core. The landing page's own script is never requested under /play/, so it is in
 # neither list, and the two fonts only the experiences use are plain URLs the worker saves when first used.
 LAZY_PREFIXES = ("js/play/exp/", "css/play/")
-LAZY_FILES = ("js/play/life.js", "js/videos.js")  # js/play/kit.js stays core: js/app.js loads it a second after every page load
+# The Family conversation (openspec family-helpers step 3) loads on demand for an opted-in Player 13 and over, and needs
+# the network anyway, so it is saved on first request too
+LAZY_FILES = ("js/play/life.js", "js/videos.js", "js/family-talk.js", "js/ts/shared/src/family-talk.js")  # js/play/kit.js stays core: js/app.js loads it a second after every page load
 NOT_PRECACHED = ("js/landing-sky.js", "fonts/space-grotesk-latin-wght-normal.woff2", "fonts/jetbrains-mono-latin-500-normal.woff2")
 
 
