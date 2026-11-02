@@ -313,3 +313,27 @@ test('the video list is not part of first loads, and the shelf requests it once'
   await expect(cards(page).first()).toBeVisible();
   expect(asked).toHaveLength(1);
 });
+
+/* The Video learner badge (Muse review round 2): a minute in the player earns it, and its toast shows inside the open
+   player dialog, which sits in the top layer above the page (fx.toast puts the toasts in the open dialog). */
+test.describe('the Video learner badge toast', () => {
+  test.use({ seedMode: 'challenger' });
+
+  test('after a minute in the player, the badge toast shows inside the dialog', async ({ page }) => {
+    await page.addInitScript(() => { (window as any).goatcounter ||= { count() {} }; });
+    await open(page, '#/watch');
+    await expect(cards(page).first()).toBeVisible();
+    await page.clock.install();
+    await cards(page).first().click();
+    const dlg = page.locator('dialog.vm-player');
+    await expect(dlg).toBeVisible();
+    await play(page); // the minute starts with play, not with the facade
+    await expect(dlg.locator('iframe')).toHaveCount(1);
+    await expect(page.locator('.fx-toast')).toHaveCount(0);
+    await page.clock.fastForward(61_000);
+    const toast = dlg.locator('.fx-toasts .fx-toast');
+    await expect(toast).toContainText('Badge earned: Video learner');
+    await expect(toast).toBeVisible();
+    expect(await page.evaluate(() => (JSON.parse(localStorage.getItem('mathquest.v1.p1') || '{}').badges || {}).watch ? 1 : 0)).toBe(1);
+  });
+});

@@ -9,6 +9,7 @@ import { evalNum } from './check.js';
 import { factStrategy } from './skills/middle.js';
 import * as V from './viz.js';
 import { sfx as tapSfx, speak as speakIt, noMotion } from './fx.js';
+import { normalize } from './voice.js';
 import { SUTRAS } from './sutras.js';
 import { pointsAt, levelStart } from './adapt.js';
 import { on, later, loop, child, onAbort } from './life.js';
@@ -23,6 +24,10 @@ function timer(root, secs, onEnd, signal) {
 const flash = (node, ok) => { tapSfx(ok ? 'ok' : 'no'); if (!node) return; node.classList.remove('g-ok', 'g-no'); void node.offsetWidth; node.classList.add(ok ? 'g-ok' : 'g-no'); };
 const fmt = n => (Number.isInteger(n) ? n.toLocaleString('en-US') : String(n)).replace('-', '&minus;');
 const frac = (n, d) => `<span class="fr"><span>${n}</span><span>${d}</span></span>`;
+/* What a screen reader calls a choice shown as markup: a fraction as "three sixths", a power as "2 cubed", a root as
+   "the square root of 17", the same words read aloud says (voice.js normalize()). Plain numbers need no label. */
+export const choiceLabel = html => normalize(html);
+const labelled = (btn, html) => { if (/<|&/.test(String(html))) btn.setAttribute('aria-label', choiceLabel(html)); return btn; };
 const nd = d => ri(10 ** (d - 1), 10 ** d - 1);
 /* Four choices: the answer plus three nearby wrong ones */
 const near = (ans, spread, n = 4, ok = () => true) => { const s = new Set([ans]); let g = 0; while (s.size < n && g++ < 120) { const v = ans + pick([-1, 1]) * ri(1, spread); if (v !== ans && ok(v)) s.add(v); } return shuffle([...s]); };
@@ -192,7 +197,7 @@ export const GAMES = [
         if (k.over(12)) return k.finish();
         const q = dial.fresh(() => moreQ(dial.lv)), big = Math.max(q.va, q.vb);
         row.innerHTML = ''; ctx.say('');
-        [[q.a, q.va], [q.b, q.vb]].forEach(([html, v]) => { const btn = el('button', { class: 'g-frac g-more' }, q.kind === 'dots' ? V.dots(v, v <= 6 ? 'dice' : 'line') : `<span class="g-big g-big-auto">${html}</span>`); btn.onclick = () => { const ok = v === big; k.mark(ok, row); ctx.say(ok ? 'Yes, that one is bigger!' : 'The other one was bigger.'); k.later(next, 650); }; row.append(btn); });
+        [[q.a, q.va], [q.b, q.vb]].forEach(([html, v]) => { const btn = el('button', { class: 'g-frac g-more' }, q.kind === 'dots' ? V.dots(v, v <= 6 ? 'dice' : 'line') : `<span class="g-big g-big-auto">${html}</span>`); if (q.kind !== 'dots') labelled(btn, html); btn.onclick = () => { const ok = v === big; k.mark(ok, row); ctx.say(ok ? 'Yes, that one is bigger!' : 'The other one was bigger.'); k.later(next, 650); }; row.append(btn); });
         if (dial.lv <= 4) speakIt('Which has more?');
       };
       next();
@@ -309,7 +314,7 @@ export const GAMES = [
           if (lv >= 13 && Math.random() < .4) { const dec = Math.round((c / d + pick([-1, 1]) * ri(1, 4) / 100) * 100) / 100; if (dec > 0 && dec < 1 && dec !== a / b) return [`fd${a}/${b}-${dec}`, [[frac(a, b), a / b, a, b], [String(dec), dec]]]; }
           return [`${a}/${b}-${c}/${d}`, [[frac(a, b), a / b, a, b], [frac(c, d), c / d, c, d]]]; });
         row.innerHTML = ''; fig.innerHTML = '';
-        q.forEach(([html, v]) => { const btn = el('button', { class: 'g-frac' }, html); btn.onclick = () => { const ok = v >= Math.max(q[0][1], q[1][1]); k.mark(ok, row); if (!ok && q[0][2] && q[1][2]) fig.innerHTML = V.fracBar(q[0][2], q[0][3], { w: 240 }) + V.fracBar(q[1][2], q[1][3], { w: 240, cls: 'vz-teal' }); k.answered(ok, 'The other one was bigger.', next, 'Right!'); }; row.append(btn); });
+        q.forEach(([html, v]) => { const btn = labelled(el('button', { class: 'g-frac' }, html), html); btn.onclick = () => { const ok = v >= Math.max(q[0][1], q[1][1]); k.mark(ok, row); if (!ok && q[0][2] && q[1][2]) fig.innerHTML = V.fracBar(q[0][2], q[0][3], { w: 240 }) + V.fracBar(q[1][2], q[1][3], { w: 240, cls: 'vz-teal' }); k.answered(ok, 'The other one was bigger.', next, 'Right!'); }; row.append(btn); });
       };
       next();
       k.timed(area, ctx.secs || 60);

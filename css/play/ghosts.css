@@ -70,6 +70,8 @@
 .gh-q { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: var(--space-3); font: 700 clamp(2rem, 9vw, 3.2rem)/1.1 var(--font-display); min-height: 1.4em; margin-bottom: var(--space-4); }
 .gh-q-text.is-count { color: var(--coral-strong); animation: gh-pop .5s ease; }
 .gh-q-eq { color: var(--ink-muted); }
+/* The 3, 2, 1 count stands alone: the equals sign and the answer box keep their place but stay out of sight */
+.gh-q.is-countdown .gh-q-eq, .gh-q.is-countdown .gh-typed { visibility: hidden; }
 .gh-typed { min-width: 2.6ch; padding: 2px var(--space-3); border-radius: var(--radius-md); border-bottom: 4px solid var(--coral); background: var(--bg-alt); text-align: center; white-space: pre; }
 .gh-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2-5); max-width: 340px; margin: 0 auto; }
 .gh-pad button { height: clamp(56px, 13vw, 66px); border-radius: var(--radius-lg); border: 2px solid var(--edge); background: var(--card); color: var(--ink); font: 700 1.6rem/1 var(--font-display); cursor: pointer; box-shadow: var(--shadow-ledge); touch-action: manipulation; transition: transform .08s, background .12s; }

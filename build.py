@@ -99,7 +99,7 @@ LINKS = {
     "www.khanacademy.org", "www.bprim.org", "github.com", "www.youtube.com", "www.vedicmaths.org", "www.thenewsminute.com",
     "www.ms.uky.edu", "www.jainqq.org", "www.desmos.com", "titus.uni-frankfurt.de", "sanskritdocuments.org", "projecteuler.net",
     "polypad.amplify.com", "nrich.maths.org", "namboothiri.com", "dharmawiki.org", "brilliant.org", "artofproblemsolving.com",
-    "www.w3.org", "www.sitemaps.org",  # XML namespaces, not requests
+    "www.w3.org", "www.sitemaps.org", "schema.org",  # XML namespaces and the JSON-LD vocabulary, not requests
     "www.ftc.gov", "www.ecfr.gov", "policies.google.com", "www.cloudflare.com", "www.goatcounter.com", "firebase.google.com",
     "support.google.com", "openfontlicense.org", "www.apache.org", "opensource.org",
 }
@@ -230,6 +230,69 @@ def ts_published(path):
     return TS_OUT + path[: -len(".ts")] + ".js"
 
 
+# The Trick pages' browser modules (openspec change trick-pages, design D4): every runtime .ts in tools/trick-pages/ is
+# published at /tricks/<name>.js with its types taken out, the way the modules under /js/ts/ are, and its imports of .ts
+# modules are rewritten to their published URLs by ts_modules. The generator and its data run in Node (pnpm gen:tricks)
+# and stay out, as do declarations and tests.
+TRICKS_SRC = "tools/trick-pages"
+TRICKS_OUT = "tricks/"
+TRICKS_NODE = ("generate.ts", "pages.ts")
+
+
+def trick_modules(all_files):
+    """{published path: source path}: tools/trick-pages/calculator.ts -> tricks/calculator.js"""
+    out = {}
+    for f in all_files:
+        name = f[len(TRICKS_SRC) + 1:]
+        if not f.startswith(TRICKS_SRC + "/") or "/" in name or not name.endswith(".ts") or name in TRICKS_NODE or name.endswith((".d.ts", ".test.ts")):
+            continue
+        out[TRICKS_OUT + name[: -len(".ts")] + ".js"] = f
+    return out
+
+
+def strip_ts(paths):
+    """{source path: JavaScript} for TypeScript files published as they are, with their types taken out (tools/build-ts.mjs)."""
+    if not paths:
+        return {}
+    node = shutil.which("node")
+    if not node:
+        fail("node is not installed: it takes the types out of the published TypeScript (tools/build-ts.mjs, Node 22.13 or newer)")
+    r = subprocess.run([node, "--no-warnings", str(ROOT / "tools/build-ts.mjs"), *[str(ROOT / f) for f in paths]], capture_output=True, text=True)
+    if r.returncode != 0:
+        fail(f"tools/build-ts.mjs failed:\n{r.stderr.strip()}")
+    res = json.loads(r.stdout)
+    rel = lambda k: pathlib.Path(k).resolve().relative_to(ROOT.resolve()).as_posix()
+    for k, why in res["errors"].items():
+        fail(f"{rel(k)}: {why} (a published module must be plain type syntax)")
+    return {rel(k): v for k, v in res["js"].items()}
+
+
+MODULE_SCRIPT = re.compile(r'<script type="module"(?:\s[^>]*)?>', re.I)
+
+
+def page_import_map(html, pinned, src):
+    """A page-local import map for a page outside the game that loads modules (openspec change trick-pages, design D4):
+    every module its module scripts reach statically, pinned to ?v=<hash>, so a nested import is fetched by its stamped
+    URL (stamp_refs stamps a page's own <script src>, not what that module imports). None when the page loads no module.
+    Written compact, before the first module script; the page's inline-script hashes cover it in _headers."""
+    entries = re.findall(r'<script type="module" src="(/[^"?#]+)"', html)
+    for m in INLINE_SCRIPT.finditer(html):
+        if re.search(r'\btype="module"', m.group(1), re.I):
+            entries += [s for s in _specs(m.group(2)) if s.startswith("/")]
+    seen, queue = [], list(entries)
+    while queue:
+        u = queue.pop()
+        if u in seen or u not in pinned:
+            continue
+        seen.append(u)
+        for s in _specs(src(u[1:]).decode()):
+            if s.startswith(("./", "../", "/")):
+                queue.append(posixpath.normpath(s if s.startswith("/") else posixpath.join(posixpath.dirname(u), s)))
+    if not seen:
+        return None
+    return '<script type="importmap">' + json.dumps({"imports": {u: pinned[u] for u in sorted(seen)}}, separators=(",", ":")) + "</script>\n"
+
+
 def ts_modules(all_files, js_sources):
     """The TypeScript modules the Legacy views reach (openspec change react-typescript, tasks 3.1 to 3.3). A js/ module
     that moved to shared/src/ or app/src/ keeps its URL and re-exports the .ts file; until the framework build (task 2.1)
@@ -335,13 +398,16 @@ def _rewrite(importer, text, all_files, shim=None):
     return "".join(out) + text[last:]
 
 
-def check_budget(out, voice):
+def check_budget(out, voice, trick_pages=()):
     """The first-load byte budget (openspec change react-typescript, performance-budget spec, task 1.8): tools/budget.ts
     measures the Brotli size of everything a first visit to /play/ requests before the first tap (the page, what it
     loads, the entry's static imports, sw.js and every file in PRECACHE), prints the table, and fails when the total is
     above docs/perf/baseline.json. A pull request that grows first load on purpose updates the baseline and says why.
     The baseline names the voice mode it was measured in (firstLoad.voice): js/voice-index.js and sw.js differ by mode,
-    so a build in another mode prints the table without failing, until a baseline for that mode is recorded."""
+    so a build in another mode prints the table without failing, until a baseline for that mode is recorded.
+    The Trick pages (openspec change trick-pages, design D7) have a budget of their own: each page's first load (the
+    page, what it links, its modules' static imports) against trickPage.max, in every voice mode, since none of it
+    depends on the voice."""
     node = shutil.which("node")
     if not node:
         fail("node is not installed: it measures the first-load budget (tools/budget.ts, Node 22.18 or newer)")
@@ -354,12 +420,18 @@ def check_budget(out, voice):
         if r.returncode != 0:
             fail(r.stderr.strip() or "tools/budget.ts could not measure the first load")
         print(f"  budget not checked: {BASELINE} was measured with --voice {mode}, this build is --voice {voice}")
-        return
-    r = subprocess.run([node, "--no-warnings", str(ROOT / "tools/budget.ts"), str(out), "--check", str(ROOT / BASELINE)],
-                       capture_output=True, text=True)
-    sys.stdout.write(r.stdout)
-    if r.returncode != 0:
-        fail(r.stderr.strip().replace("::error::", "") or "tools/budget.ts failed")
+    else:
+        r = subprocess.run([node, "--no-warnings", str(ROOT / "tools/budget.ts"), str(out), "--check", str(ROOT / BASELINE)],
+                           capture_output=True, text=True)
+        sys.stdout.write(r.stdout)
+        if r.returncode != 0:
+            fail(r.stderr.strip().replace("::error::", "") or "tools/budget.ts failed")
+    if trick_pages:
+        r = subprocess.run([node, "--no-warnings", str(ROOT / "tools/budget.ts"), str(out), "--check", str(ROOT / BASELINE),
+                            *[a for u in trick_pages for a in ("--page", u)]], capture_output=True, text=True)
+        sys.stdout.write(r.stdout)
+        if r.returncode != 0:
+            fail(r.stderr.strip().replace("::error::", "") or "tools/budget.ts failed on the Trick pages")
 
 
 def voice_off_sw(sw):
@@ -699,8 +771,18 @@ def build_site(args, out):
     # Published path -> source path. Pages are rendered separately; the design system goes to /ds/2.2.0/.
     publish = {f: f for f in files if not f.startswith("site/")}
     publish.update({DS_URL.lstrip("/") + f: f"{DS_DIR}/{f}" for f in DS_PUBLISHED})
-    # The TypeScript modules js/ imports, published under /js/ts/ with their types taken out (ts_modules)
-    ts_out, ts_js = ts_modules(all_files, {p: src(p).decode() for p in publish if p.startswith("js/") and p.endswith(".js")})
+    # The TypeScript modules js/ imports, published under /js/ts/ with their types taken out (ts_modules), and the Trick
+    # pages' browser modules (trick_modules), published at /tricks/<name>.js with their .ts imports rewritten the same way
+    tricks = trick_modules(all_files)
+    trick_js = strip_ts(sorted(tricks.values()))
+    sources = {p: src(p).decode() for p in publish if p.startswith("js/") and p.endswith(".js")}
+    sources.update(trick_js)
+    ts_out, ts_js = ts_modules(all_files, sources)
+    for pub, s in tricks.items():
+        if pub in publish:
+            fail(f"{pub}: is a source file and the Trick page module {s} at once")
+        publish[pub] = pub
+        overrides[pub] = ts_js.pop(s, trick_js[s]).encode()
     for f, text in {**ts_out, **ts_js}.items():
         if f in ts_out and f in publish:
             fail(f"{f}: is a source file and a published TypeScript module at once")
@@ -745,8 +827,21 @@ def build_site(args, out):
             resolved = posixpath.normpath(spec if spec.startswith("/") else posixpath.join(posixpath.dirname("/" + p), spec))
             if not resolved.startswith("/js/") or resolved[1:] not in publish:
                 fail(f"{p}: import '{spec}' resolves to {resolved}, outside the versioned /js/ modules")
+    # The Trick pages' modules (trick_modules) import the pinned /js/ modules and each other by published URL, never a
+    # .ts path or anything outside the two folders (openspec change trick-pages, design D4)
+    for p in sorted(tricks):
+        for m in IMPORT_RE.finditer(src(p).decode()):
+            spec = m.group(1) or m.group(2)
+            if re.match(r"https?://", spec):
+                fail(f"{tricks[p]}: imports {spec}; every module is served and pinned by this site")
+            if not spec.startswith(("./", "../", "/")):
+                fail(f"{tricks[p]}: bare import '{spec}' is not covered by the import map")
+            resolved = posixpath.normpath(spec if spec.startswith("/") else posixpath.join(posixpath.dirname("/" + p), spec))
+            if resolved.endswith(".ts") or not resolved.startswith(("/js/", "/" + TRICKS_OUT)) or resolved[1:] not in publish:
+                fail(f"{tricks[p]}: import '{spec}' resolves to {resolved}, outside the published /js/ and /{TRICKS_OUT} modules")
 
     imports = {f"/{p}": f"/{p}?v={versions['/' + p]}" for p in js}
+    pinned = {**imports, **{f"/{p}": f"/{p}?v={versions['/' + p]}" for p in tricks}}  # for the pages' own maps
     play_css = {f"/{f}": versions["/" + f] for f in publish if f.startswith("css/") and f.endswith(".css")}
     for url, page in pages.items():
         html = page[0]
@@ -757,6 +852,12 @@ def build_site(args, out):
             if not entry:
                 fail("play/index.html: module entry script not found")
             html = html[:entry.start()] + map_block + html[entry.start():]
+        elif not dev:
+            # A page outside the game that loads modules gets its own map, pinning every module those scripts reach
+            page_map = page_import_map(html, pinned, src)
+            if page_map:
+                first = MODULE_SCRIPT.search(html)
+                html = html[:first.start()] + page_map + html[first.start():]
         if not dev:
             html = stamp_refs(html, versions)
         for m in re.finditer(r'(?:src|href)="(/[^"?#]*)', html):
@@ -821,7 +922,7 @@ def build_site(args, out):
         (out / f).write_text(text)
     check_published(out, args.voice)
     if not dev:
-        check_budget(out, args.voice)
+        check_budget(out, args.voice, sorted(u for u in pages if u.startswith("/" + TRICKS_OUT)))
 
     rel = out.relative_to(ROOT) if out.is_relative_to(ROOT) else out
     n = sum(1 for p in out.rglob("*") if p.is_file())

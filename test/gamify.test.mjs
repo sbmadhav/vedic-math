@@ -8,7 +8,7 @@ globalThis.localStorage = { getItem: k => (k in mem ? mem[k] : null), setItem: (
 // toast() needs a little DOM; nothing here is rendered
 const toasts = [];
 const node = () => { const n = { classList: { add() {}, toggle() {}, remove() {} }, setAttribute() {}, append() {}, remove() {}, getContext: () => null }; Object.defineProperty(n, 'innerHTML', { set: v => toasts.push(v), get: () => '' }); return n; };
-globalThis.document = { querySelector: () => node(), createElement: node, body: node(), hidden: true };
+globalThis.document = { querySelector: () => node(), querySelectorAll: () => [], createElement: node, body: node(), hidden: true };
 globalThis.window = globalThis;
 // reduced motion, so a New Title's confetti draws nothing
 globalThis.matchMedia = () => ({ matches: true });

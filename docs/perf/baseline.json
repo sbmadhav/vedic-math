@@ -18,14 +18,20 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 853135,
+  "total": 861593,
   "files": {
+   "/js/ts/shared/src/sparks-log.js": 1172,
+   "/js/ts/shared/src/hold.js": 486,
+   "/js/hold.js": 1715,
+   "/js/ts/shared/src/site.js": 256,
+   "/js/ts/shared/src/challenge.js": 1476,
+   "/js/paths.js": 2850,
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
    "/css/play/base.css": 1188,
    "/css/play/bets.css": 2299,
    "/css/play/daily.css": 2194,
-   "/css/play/ghosts.css": 2520,
+   "/css/play/ghosts.css": 2589,
    "/css/play/lens.css": 3156,
    "/css/play/locks.css": 3552,
    "/css/play/party.css": 3727,
@@ -54,9 +60,9 @@
    "/js/ambient.js": 4480,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 53834,
-   "/js/arena.js": 4141,
-   "/js/backup.js": 2676,
+   "/js/app.js": 55685,
+   "/js/arena.js": 4272,
+   "/js/backup.js": 3030,
    "/js/bolt.js": 1088,
    "/js/celebrate.js": 3367,
    "/js/check.js": 2946,
@@ -70,14 +76,13 @@
    "/js/family-view.js": 4202,
    "/js/family.js": 1528,
    "/js/find.js": 6870,
-   "/js/fx.js": 4161,
-   "/js/games.js": 12425,
+   "/js/fx.js": 4302,
+   "/js/games.js": 12623,
    "/js/gamify.js": 4035,
    "/js/guide-art.js": 2484,
-   "/js/guide.js": 10675,
+   "/js/guide.js": 10720,
    "/js/handoff-schema.js": 6924,
    "/js/handoff.js": 4229,
-   "/js/hold.js": 1715,
    "/js/install-rules.js": 2226,
    "/js/install.js": 7151,
    "/js/landing-sky.js": 261,
@@ -87,8 +92,8 @@
    "/js/life.js": 1103,
    "/js/listen.js": 1335,
    "/js/mental.js": 155,
-   "/js/metrics.js": 4201,
-   "/js/nav.js": 1554,
+   "/js/metrics.js": 4331,
+   "/js/nav.js": 1555,
    "/js/play/catalog.js": 1783,
    "/js/play/exp/apprentice-core.js": 7279,
    "/js/play/exp/apprentice.js": 3914,
@@ -100,8 +105,8 @@
    "/js/play/exp/bets.js": 5782,
    "/js/play/exp/daily-core.js": 4854,
    "/js/play/exp/daily.js": 6431,
-   "/js/play/exp/ghosts-core.js": 3200,
-   "/js/play/exp/ghosts.js": 6687,
+   "/js/play/exp/ghosts-core.js": 3276,
+   "/js/play/exp/ghosts.js": 6742,
    "/js/play/exp/lens-cam.js": 4676,
    "/js/play/exp/lens-core.js": 9184,
    "/js/play/exp/lens.js": 7556,
@@ -120,7 +125,7 @@
    "/js/play/exp/wall-core.js": 9208,
    "/js/play/exp/wall.js": 9196,
    "/js/play/icons.js": 721,
-   "/js/play/kit.js": 3858,
+   "/js/play/kit.js": 4103,
    "/js/play/life.js": 61,
    "/js/prompt-slot.js": 629,
    "/js/related.js": 516,
@@ -151,18 +156,16 @@
    "/js/sutras.js": 4223,
    "/js/tour.js": 2213,
    "/js/try.js": 4423,
-   "/js/ts/shared/src/hold.js": 486,
    "/js/ts/shared/src/lib.js": 1775,
    "/js/ts/shared/src/mental.js": 2185,
    "/js/ts/shared/src/names.js": 696,
-   "/js/ts/shared/src/questions.js": 2346,
+   "/js/ts/shared/src/questions.js": 2412,
    "/js/ts/shared/src/scoring.js": 842,
    "/js/ts/shared/src/skills/early.js": 5417,
    "/js/ts/shared/src/skills/high.js": 9394,
    "/js/ts/shared/src/skills/index.js": 1101,
    "/js/ts/shared/src/skills/middle.js": 6234,
    "/js/ts/shared/src/skills/upper.js": 8124,
-   "/js/ts/shared/src/sparks-log.js": 1172,
    "/js/ts/shared/src/story-plan.js": 2039,
    "/js/ts/shared/src/vedic.js": 10165,
    "/js/ts/shared/src/viz.js": 6019,
@@ -172,12 +175,12 @@
    "/js/voice-index.js": 213,
    "/js/voice-plan.js": 2458,
    "/js/voice-worker.js": 877,
-   "/js/voice.js": 14663,
+   "/js/voice.js": 14837,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 26207,
-   "/play/": 4361,
-   "/sw.js": 6479,
+   "/math.css": 26448,
+   "/play/": 4401,
+   "/sw.js": 6538,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
@@ -370,6 +373,48 @@
     "from": 842086,
     "to": 846845,
     "why": "react-typescript task 3.1 (merged with main as of #180): shared/src/ holds the generators, Tricks, pictures, Arena sets, scoring, Nickname lists and the Word problem plan (story-plan.ts); until the framework build (task 2.1) bundles the game, build.py publishes them under /js/ts/ with their types taken out (+56337 in all), and the js/ modules they came from re-export them or shrink (-52148 in all); a static import of a re-export-only js/ module is pointed at its TypeScript module, so the first load requests each once and no deeper, and the re-export files stay published and precached; /js/app.js +61, /js/explain-lines.js +10, /js/family-view.js +6, /js/find.js +14, /js/games.js +15, /js/gamify.js +24, /js/levels.js +10, /js/metrics.js +17, /js/sky-view.js +7, /js/sky.js +20, /js/star.js +24, /js/stories.js +11, /js/sutra-progress.js +6, /js/sutra-tag-core.js +13, /js/try.js +7, /play/ +183, /sw.js +134; +4751 in all (/js/nav.js at CI's figure); re-based over #187 (842,086) on 2026-10-31: 846,845 with CI's /js/nav.js figure, +4,759"
+   },
+   {
+    "date": "2026-10-31",
+    "pr": 189,
+    "from": 846845,
+    "to": 847480,
+    "why": "indexable-routes task 3.1, view transitions inside the game (design D12): render() in js/app.js runs its DOM update inside document.startViewTransition when the browser has it and fx.noMotion() is false, skipping the first render, a redraw of the same route and a change while one is running, with focus and scroll after updateCallbackDone; math.css names the header, the nav and the Player chip (site-header, game-nav, player-chip) and sets the 180 ms fade; no new file; measured on the tree merged with main as of #188; file deltas: /js/app.js +380, /math.css +207, /sw.js +34, /play/ +14; /js/nav.js reads 1 byte smaller locally than CI's figure, which the baseline keeps (the #168 note); +635 in all as CI measures it"
+   },
+   {
+    "date": "2026-11-01",
+    "pr": 190,
+    "from": 847480,
+    "to": 850252,
+    "why": "indexable-routes 1.1, the route table (js/paths.js); re-measured on main as of the merge; CI figure for /js/nav.js; file deltas: /js/paths.js new 2776, /sw.js -4; +2772 in all"
+   },
+   {
+    "date": "2026-11-01",
+    "pr": 191,
+    "from": 850252,
+    "to": 851514,
+    "why": "muse-round-2: backup code field, restore paste field, fraction labels, toast host, read-aloud fallback; re-measured on main as of the merge; CI figure for /js/nav.js; file deltas: /css/play/ghosts.css +69, /js/app.js +185, /js/backup.js +354, /js/fx.js +136, /js/games.js +198, /js/play/exp/ghosts-core.js +76, /js/play/exp/ghosts.js +55, /js/voice.js +174, /play/ -1, /sw.js +16; +1262 in all"
+   },
+   {
+    "date": "2026-11-01",
+    "pr": 193,
+    "from": 851514,
+    "to": 855297,
+    "why": "PR #193 re-measured after main moved; re-measured on main as of the merge; CI figure for /js/nav.js; file deltas: /js/app.js +1301, /js/arena.js +131, /js/guide.js +39, /js/metrics.js +130, /js/play/kit.js +248, /js/ts/shared/src/challenge.js new 1476, /js/ts/shared/src/questions.js +66, /js/ts/shared/src/site.js new 256, /math.css +78, /play/ +32, /sw.js +26; +3783 in all"
+   },
+   {
+    "date": "2026-11-02",
+    "pr": 193,
+    "from": 855297,
+    "to": 855367,
+    "why": "arena-challenge-link; re-measured on main as of the merge; CI figure for /js/nav.js; file deltas: /js/paths.js +74, /play/ +1, /sw.js -5; +70 in all"
+   },
+   {
+    "date": "2026-11-02",
+    "pr": 195,
+    "from": 855367,
+    "to": 861593,
+    "why": "PR #195 re-measured after main moved; re-measured on main as of the merge; CI figure for /js/nav.js; file deltas: /css/play/base.css +65, /css/play/daily.css +58, /js/app.js +970, /js/fx.js +116, /js/gamify.js +131, /js/guide.js +31, /js/handoff-schema.js +242, /js/hold.js new 1715, /js/play/exp/locks.js +144, /js/play/kit.js +101, /js/star.js +204, /js/store.js +236, /js/ts/shared/src/hold.js new 486, /js/ts/shared/src/sparks-log.js new 1172, /math.css +474, /play/ +34, /sw.js +47; +6226 in all"
    }
   ]
  },
@@ -491,5 +536,20 @@
     "visible": 40
    }
   }
+ },
+ "trickPage": {
+  "//": "The Trick pages (openspec change trick-pages, design D7): one page's first load, Brotli, measured by tools/budget.ts --page (the page, every file it links, the static module graph of its module scripts; no worker, no precache). build.py fails any /tricks/ page above max. The first measurement was above the 80 KB the design hoped for, so the measured figure is recorded with a small margin, as design D7 says, not a round number: the shared site files are most of it (two fonts 46 KB, the design system and theme 15 KB, icons 9 KB, the catalog shared/src/vedic.ts 10 KB); the page, its stylesheet and the calculator are about 7 KB together.",
+  "max": 96000,
+  "page": "/tricks/multiply-numbers-near-100/",
+  "measured": 93259,
+  "files": 20,
+  "changes": [
+   {
+    "date": "2026-10-31",
+    "pr": "trick-pages",
+    "to": 93259,
+    "why": "First measurement: the largest of the 15 Trick pages (the index is 77,685 bytes); max is the figure plus about 3% for wording changes to the catalog, which the game's own gate also measures"
+   }
+  ]
  }
 }
