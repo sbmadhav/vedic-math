@@ -7,9 +7,11 @@
 import { handle as cspReport } from './csp.ts';
 import { handleSession } from './session.ts';
 import { handleStatus, handleTurn } from './family/turn.ts';
-import { VoiceLedger } from './ledger.ts';
+import type { VoiceLedger } from './ledger.ts';
 
-export { VoiceLedger };
+/* VOICE_LEDGER is the VoiceLedger Durable Object (./ledger.ts), held by its own Worker, learnvedicmath-ledger
+   (./ledger-worker.ts), and bound here by script_name: Cloudflare generates no preview URL for a Worker that implements
+   a Durable Object. */
 
 export type Env = {
   ASSETS: Fetcher;

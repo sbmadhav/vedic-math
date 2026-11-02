@@ -4,7 +4,7 @@
   "type": "module",
   "description": "The Cloudflare Worker of learnvedicmath.com (wrangler.jsonc main): today the /_csp report endpoint.",
   "scripts": {
-    "check": "wrangler deploy --config ../wrangler.jsonc --dry-run --outdir ../.wrangler/dry-run",
+    "check": "wrangler deploy --config ../wrangler.jsonc --dry-run --outdir ../.wrangler/dry-run && wrangler deploy --config ledger/wrangler.jsonc --dry-run --outdir ../.wrangler/dry-run-ledger",
     "typecheck": "tsc -p tsconfig.json"
   },
   "devDependencies": {

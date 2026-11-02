@@ -3,13 +3,15 @@
    here rather than from wrangler.jsonc, whose static assets (_site/) exist only after a build; the tests give the
    router a fake ASSETS binding, the VoiceLedger Durable Object (SQLite, as wrangler.jsonc declares it) and test values
    for the variables and secrets of the Family conversation (openspec family-helpers step 3). The secrets here are
-   test strings: the real ones exist only in Cloudflare (wrangler secret put) and never in a file. */
+   test strings: the real ones exist only in Cloudflare (wrangler secret put) and never in a file. The entry is
+   the ledger Worker's (src/ledger-worker.ts), which exports the VoiceLedger class the binding needs; the tests import
+   the main Worker's router (src/index.ts) themselves. */
 import { defineConfig } from 'vitest/config';
 import { cloudflareTest } from '@cloudflare/vitest-plugin';
 
 export default defineConfig({
   plugins: [cloudflareTest({
-    main: './src/index.ts',
+    main: './src/ledger-worker.ts',
     miniflare: {
       compatibilityDate: '2026-10-01',
       durableObjects: { VOICE_LEDGER: { className: 'VoiceLedger', useSQLite: true } },
