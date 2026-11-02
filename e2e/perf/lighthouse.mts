@@ -96,7 +96,9 @@ async function seedPlayer(ctx: BrowserContext, base: string) {
 async function workerReady(ctx: BrowserContext, base: string) {
   const page = await ctx.newPage();
   await page.route(ANALYTICS, r => r.abort());
-  await page.goto(`${base}/learn/`);
+  /* The game's first page as tools/lighthouserc.json names it: /play/, which after the /learn/ release is a 301 to
+     /learn/, so the same run measures a host before and after the move (indexable-routes; the paths move in react-typescript 2.7) */
+  await page.goto(`${base}/play/`);
   // Throws when no worker controls the page within a minute, so a "repeat" median always means a controlled page
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, undefined, { timeout: 60_000 });
   await page.close();
