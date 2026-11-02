@@ -131,6 +131,7 @@ test.describe('the Sky switch', () => {
       // A second Player on this device has not turned it on
       await page.goto(`${APP}#/me`);
       await page.locator('#meAdd').click();
+      await page.locator('dialog.vm-grade #gqSkip').click(); // a new Player is asked the grade question first (openspec change age-bands)
       await pickMode(page, 'pro');
       await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
       // Back to the first Player: still the Sky; turning it off brings the tile home back

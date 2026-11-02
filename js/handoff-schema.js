@@ -62,6 +62,7 @@ export const EXCLUDED = [
   'vm.familyMute', 'vm.familyHi', 'vm.familyTicket', // the Family helpers' Not now, greeting and conversation ticket, for one browser session (sessionStorage)
   'vm.install',                                    // the Install nudge's schedule (openspec change install-app): this site's app, not the old one
   'vm.split',                                      // one box instead of the answer slots (openspec change working-memory-scaffolds): new on this site, the old one never wrote it
+  'vm.voiceCopied',                                // the one-time copy of vm.voice to every Player (openspec change age-bands, AB4) runs again on a new device
 ];
 /* Parts the packer may leave out, biggest first, to fit MAX_PAYLOAD; the import page names them */
 export const OPTIONAL = ['play', 'seen', 'days', 'skyLast', 'questDay'];
@@ -81,6 +82,11 @@ export const validName = s => {
   return !!m && ADJ.includes(m[1]) && NOUN.includes(m[2]) && +m[3] >= 10;
 };
 const okAge = a => a === undefined || a === null || a === 'adult' || (Number.isInteger(a) && a >= 1 && a <= 120);
+/* The Grade answer (openspec change age-bands, ADR 0008): { grade } with one of these, or { age } like the Age answer,
+   each with the time it was given. It moves only inside the Player's own progress, here and in the backup code. */
+const READING_GRADES = ['pre-k', 'k', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', 'adult'];
+const okReading = r => r === undefined || (isObj(r) && Object.keys(r).every(k => k === 'grade' || k === 'age' || k === 'at') && (r.at === undefined || okTime(r.at))
+  && (('grade' in r) !== ('age' in r)) && ('grade' in r ? READING_GRADES.includes(r.grade) : r.age !== undefined && r.age !== null && okAge(r.age)));
 const okSetting = (k, v) => {
   const rule = SETTINGS[k];
   return typeof v === 'string' && (Array.isArray(rule) ? rule.includes(v) : rule.test(v));
@@ -162,7 +168,7 @@ function checkPlayValue(v, depth = 0, count = { n: 0 }) {
 
 function checkPlayer(p) {
   if (!isObj(p)) throw new Error('player is not an object');
-  for (const k of Object.keys(p)) if (!['id', 'name', 'avatar', 'mode', 'created', 'age', 'modeGuess', 'placedBelt'].includes(k)) throw new Error(`player: unknown field ${k.slice(0, 40)}`);
+  for (const k of Object.keys(p)) if (!['id', 'name', 'avatar', 'mode', 'created', 'age', 'modeGuess', 'reading', 'voice', 'readingCard', 'placedBelt'].includes(k)) throw new Error(`player: unknown field ${k.slice(0, 40)}`);
   if (!(p.placedBelt === undefined || BELT_IDS.includes(p.placedBelt))) throw new Error('player: bad placedBelt');
   if (typeof p.id !== 'string' || !ID_RE.test(p.id)) throw new Error('player: bad id');
   if (!validName(p.name)) throw new Error('player: bad Nickname');
@@ -171,6 +177,9 @@ function checkPlayer(p) {
   if (!okTime(p.created)) throw new Error('player: bad created time');
   if (!okAge(p.age)) throw new Error('player: bad Age answer');
   if (!(p.modeGuess === undefined || p.modeGuess === true)) throw new Error('player: bad modeGuess');
+  if (!okReading(p.reading)) throw new Error('player: bad Grade answer');
+  if (!(p.voice === undefined || typeof p.voice === 'boolean')) throw new Error('player: bad Read aloud choice');
+  if (!(p.readingCard === undefined || p.readingCard === 'done')) throw new Error('player: bad grade question mark');
 }
 
 /* The whole payload, exactly as the schema says, or { ok: false, error } */
@@ -264,6 +273,10 @@ export function readDevice(get, keys, { now = Date.now(), random = Math.random }
       mode: MODES.includes(p.mode) ? p.mode : null, created: okTime(p.created) ? p.created : now };
     if (p.age !== undefined && p.age !== null && okAge(p.age)) q.age = p.age;
     if (p.modeGuess === true) q.modeGuess = true;
+    /* The Grade answer and the Read aloud choice (openspec change age-bands) move with the Player, as the Age answer does */
+    if (p.reading !== undefined && p.reading !== null && okReading(p.reading)) q.reading = { ...('grade' in p.reading ? { grade: p.reading.grade } : { age: p.reading.age }), ...(p.reading.at !== undefined ? { at: p.reading.at } : {}) };
+    if (typeof p.voice === 'boolean') q.voice = p.voice;
+    if (p.readingCard === 'done') q.readingCard = 'done';
     if (BELT_IDS.includes(p.placedBelt)) q.placedBelt = p.placedBelt; // Bolt's start Belt from a Placement (openspec placement)
     players.push(q); // parentOk, and any other field, stays behind
   }

@@ -324,6 +324,33 @@ test.describe('Calm on', () => {
   });
 });
 
+/* An Early reader's timed game Level has no clock, as in Calm, and the result says a grown-up can turn the clock on
+   (openspec change age-bands, task 4.4; reading-bands "Early in a game Level") */
+test.describe('an Early Challenger', () => {
+  test.use({ seedProgress: { medals: { 'g:times-sprint:3': 1 } }, seedPlayer: { reading: { grade: 'k', at: 1 } } });
+  test('Times sprint Level 4 has no timer bar and ends after its questions; the ranked round keeps its clock', async ({ page }) => {
+    await open(page, '#/game/times-sprint/4');
+    await page.locator('#gStart').click();
+    await expect(page.locator('#gArea .g-q')).toContainText('×');
+    await expect(page.locator('.g-timer')).toHaveCount(0);
+    await expect(page.locator('body')).not.toHaveClass(/\bcalm\b/);
+    const perQ = await page.evaluate(async () => (await e2eMod('games')).GAMES.find((g: { id: string }) => g.id === 'times-sprint').perQ);
+    for (let k = 0; k < perQ; k++) {
+      const q = await page.locator('#gArea .g-q').textContent();
+      await page.locator('#gArea .ans-in').fill(await timesAnswer(page));
+      await page.locator('#gArea .ans-in').press('Enter');
+      if (k < perQ - 1) await expect(page.locator('#gArea .g-q')).not.toHaveText(q!);
+    }
+    await expect(page.locator('.lv-result h2')).toHaveText('Round done');
+    await expect(page.locator('.lv-result')).toContainText('Medals for this game need the clock. A grown-up can turn the clock on.');
+    await expect(page.locator('.lv-result')).not.toContainText('Turn Calm off');
+    await open(page, '#/game/times-sprint');
+    await page.locator('#gStart').click();
+    await expect(page.locator('#gArea .g-timer')).toBeAttached();
+    expect((await cloudLog(page)).writes).toEqual([]);
+  });
+});
+
 /* A choice shown as a fraction, a power or a root is named for screen readers with the words read aloud says
    ("three sixths", "2 cubed"), never the bare digits "3 6" (Muse review round 2, item 2; choiceLabel in js/games.js). */
 test.describe('choices named as what they show', () => {

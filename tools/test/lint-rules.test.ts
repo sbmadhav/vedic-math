@@ -24,13 +24,19 @@ function expected(source: string): string[] {
   });
 }
 
-/* Where a fixture is linted as if it lived */
-const virtualPath = (file: string) => (file.endsWith('.js') ? join(ROOT, 'js/play', file) : join(ROOT, 'app/src/components', file));
+/* Where a fixture is linted as if it lived: a legacy module (js/play/), a component (app/src/components/), or, for
+   <name>.engine.js and <name>.engine.ts, the engine file js/<name>.js or shared/src/<name>.ts (openspec change age-bands) */
+const virtualPath = (file: string) => {
+  const engine = file.match(/^(.+)\.engine\.(js|ts)$/);
+  if (engine) return join(ROOT, engine[2] === 'js' ? 'js' : 'shared/src', `${engine[1]}.${engine[2]}`);
+  return file.endsWith('.js') ? join(ROOT, 'js/play', file) : join(ROOT, 'app/src/components', file);
+};
 
 const files = readdirSync(FIXTURES).sort();
 
 for (const file of files.filter(f => /\.(tsx?|js)$/.test(f))) {
-  test(`ESLint: ${file}`, async () => {
+  /* The first lint of a run loads every plugin and parser: well over the default 5 seconds on a busy machine */
+  test(`ESLint: ${file}`, { timeout: 60_000 }, async () => {
     const source = readFileSync(join(FIXTURES, file), 'utf8');
     const [result] = await eslint.lintText(source, { filePath: virtualPath(file) });
     const fatal = result!.messages.filter(m => m.fatal);
@@ -50,5 +56,5 @@ for (const file of files.filter(f => f.endsWith('.css'))) {
 test('every rule of task 1.7 has a fixture', () => {
   const all = files.flatMap(f => expected(readFileSync(join(FIXTURES, f), 'utf8')));
   for (const rule of ['react/no-danger', 'no-restricted-properties', 'lvm/server-safe', 'lvm/legacy-imports', 'react-hooks/rules-of-hooks',
-    '@typescript-eslint/no-explicit-any', 'color-no-hex', 'function-disallowed-list', 'react/jsx-key']) expect(all, rule).toContain(rule);
+    '@typescript-eslint/no-explicit-any', 'color-no-hex', 'function-disallowed-list', 'react/jsx-key', 'no-restricted-imports']) expect(all, rule).toContain(rule);
 });

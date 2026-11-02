@@ -24,7 +24,7 @@ The operator of Learn Vedic Math is Madhav Srinivasan. You can reach us at priva
 
 The game saves these in your browser's storage on your device. We cannot see them, and they are not sent to us:
 
-- each Player on the device: the made-up Nickname, an avatar color, the Mode (Explorer, Challenger or Pro), when the Player was added, and the answer to the one age question (a number of years, or "adult");
+- each Player on the device: the made-up Nickname, an avatar color, the Mode (Explorer, Challenger or Pro), when the Player was added, the answer to the one age question (a number of years, or "adult"), and, if given, the answer to the grade question (a grade from Pre-K to 12, "adult", or an age), which only changes how much reading help the game gives and never leaves the device;
 - progress: Skills practised, Ratings, Sparks, Medals, Stars, Belts, Badges, days played, best results, and the Placement level (where practice starts) if the Player took a Placement; it is kept on this device with the rest of progress and is never sent;
 - the Device board (scores of the Players on this device);
 - settings: color scheme, read aloud, voice, music, Calm, Pause motion, text size, whether the tour was shown, the Family helpers' switches (including Talk with the Family, for Players 13 and older);

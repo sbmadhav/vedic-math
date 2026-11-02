@@ -21,7 +21,7 @@ const WINS = [
   ['js/app.js', 'if (done) fx.confetti(right === K.problems.length ? 90 : 40);', 'a kata cleared'],
   ['js/app.js', "store.touchDay(); if (medal === 3) fx.confetti(100); else if (medal) fx.confetti(40);", 'a challenge Medal'],
   ['js/app.js', "store.addSparks(5, 'sutra'); fx.confetti(60);", 'a Sutra card collected for the first time'],
-  ['js/app.js', "if (isBest) { fx.confetti(100); msg = 'New personal best for today!'; }", 'an Arena personal best'],
+  ['js/app.js', "if (isBest) { fx.confetti(100); msg = fx.copy('arena.newBest'); }", 'an Arena personal best'],
   ['js/app.js', '        if (medal === 3) fx.confetti(100); else if (medal) fx.confetti(40);', 'a game Level Medal'],
   ['js/app.js', 'if (isBest && score) fx.confetti(80);', 'a best ranked game score today'],
   ['js/play/exp/apprentice.js', 'if (after > before) { confetti(70);', 'the Apprentice earns a Belt'],
