@@ -415,7 +415,7 @@ Moving pictures that carry no information and take no input: the Sky in 3D, Sutr
 _Avoid_: effects, animations (too broad), graphics
 
 **Performance budget**:
-The written limits a build or pull request must meet: under 150 KB of Brotli-compressed JS before play, first contentful paint under 1.5 s on a mid phone over 4G, and the rest in `docs/perf/baseline.md`. CI fails when one is missed. (Proposed in the `render-performance` change.)
+The written limits a build or pull request must meet, of two kinds. The no-regression ceiling (`react-typescript`): nothing gets slower or heavier than `docs/perf/baseline.json` records (the first-load total, the Lighthouse medians, the interaction timings), and a pull request that improves a number records the new one in the same pull request, so the ceiling follows it down (the ratchet; `tools/budget.ts` prints the line to record). The owner's absolute limits (M5; `render-performance`): under 150 KB of Brotli-compressed JS before play, 40 KB of CSS, 15 KB of JS on a landing or grown-up page, first contentful paint under 1.5 s on a mid phone over 4G, and the rest in `docs/perf/baseline.md`; a limit the start measurement already missed is reported until a pull request meets it, then fails. CI fails when a failing one is missed.
 _Avoid_: target, goal (a budget fails the build)
 
 ## The move to learnvedicmath.com

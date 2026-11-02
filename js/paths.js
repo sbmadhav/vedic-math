@@ -45,6 +45,7 @@ export const ROWS = Object.freeze([
   row(/^#\/kata\/([\w-]+)\/(\d+)$/, 'kata/{trick:1}/kata', { lock: 'kata', keys: () => TRICKS.flatMap(t => range(KATAS_PER_TRICK).map(n => `#/kata/${t.id}/${n}`)) }),
   row(/^#\/star\/([\w-]+)\/(\d+)$/, 'star/{trick:1}/star', { keys: () => TRICKS.flatMap(t => range(STARS_PER_TRICK).map(n => `#/star/${t.id}/${n}`)) }),
   row(/^#\/try$/, 'try', { keys: () => ['#/try'] }),
+  row(/^#\/placement$/, 'placement', { keys: () => ['#/placement'] }), /* openspec change placement: the level climb, a Player's own screen, never indexed */
   row(/^#\/tower$/, 'tower', { keys: () => ['#/tower'] }),
   row(/^#\/tower\/(\d+)$/, 'tower/chapter', { keys: () => range(TOPICS.length).map(c => `#/tower/${c}`) }),
   row(/^#\/challenge\/(\d+)$/, 'challenge/challenge', { lock: 'challenge', keys: () => range(CHALLENGE_COUNT).map(id => `#/challenge/${id}`) }),

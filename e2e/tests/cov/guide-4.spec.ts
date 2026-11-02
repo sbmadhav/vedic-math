@@ -1,4 +1,4 @@
-import { test, expect, APP } from '../fixtures';
+import { test, expect, APP, pickMode } from '../fixtures';
 
 /* guide spec, Requirement "The tour is accessible": one test per scenario. */
 type Page = import('@playwright/test').Page;
@@ -8,7 +8,7 @@ test.use({ tourSeen: false, seedMode: null });
 
 test('Keyboard: Escape on any step closes the tour and records it as skipped', async ({ page }) => {
   await page.goto(APP);
-  await page.locator('.mode-card[data-mode="pro"]').click();
+  await pickMode(page, 'pro');
   const dlg = tour(page);
   await expect(dlg).toBeVisible();
   await dlg.locator('[data-act="next"]').click();
@@ -21,7 +21,7 @@ test('Keyboard: Escape on any step closes the tour and records it as skipped', a
 test('Phone: on a 390px screen the Guide step points at the Find trigger, and the trigger and the whole card are on screen', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 780 });
   await page.goto(APP);
-  await page.locator('.mode-card[data-mode="challenger"]').click(); /* the Find trigger is the menu's help (openspec change play-nav-by-mode) */
+  await pickMode(page, 'challenger'); /* the Find trigger is the menu's help (openspec change play-nav-by-mode) */
   const dlg = tour(page);
   await expect(dlg).toBeVisible();
   // Next through the steps to the Guide step; a tour with more than 8 steps or no guide step fails here, not at the timeout
@@ -39,7 +39,7 @@ test('Phone: on a 390px screen the Guide step points at the Find trigger, and th
 test('Calm: with Calm on the spotlight moves between steps without animation', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('vm.calm', '1'));
   await page.goto(APP);
-  await page.locator('.mode-card[data-mode="challenger"]').click();
+  await pickMode(page, 'challenger');
   const dlg = tour(page);
   await expect(dlg).toBeVisible();
   await dlg.locator('[data-act="next"]').click();

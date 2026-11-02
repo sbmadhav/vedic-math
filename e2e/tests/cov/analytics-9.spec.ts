@@ -1,4 +1,4 @@
-import { test, expect, APP, open } from '../fixtures';
+import { test, expect, APP, open, pickMode } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* analytics spec, Requirements "Star Quest counts", "Sky views are counted", "Guide and tour counts" and "Play
@@ -85,7 +85,7 @@ test.describe('the tour on a fresh device', () => {
   test.use({ tourSeen: false, seedMode: null });
   test('Tour finished: every step then Done sends start and finish once each, and no skip', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('.mode-card[data-mode="challenger"]').click();
+    await pickMode(page, 'challenger');
     const dlg = page.locator('dialog.vm-tour');
     await expect(dlg).toBeVisible();
     const n = Number((await dlg.locator('#tourN').textContent())!.match(/of (\d)/)![1]);
@@ -96,7 +96,7 @@ test.describe('the tour on a fresh device', () => {
   });
   test('Tour skipped with Escape: Escape on the second step sends start and skip once each', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('.mode-card[data-mode="pro"]').click();
+    await pickMode(page, 'pro');
     const dlg = page.locator('dialog.vm-tour');
     await expect(dlg).toBeVisible();
     await dlg.locator('[data-act="next"]').click();

@@ -33,6 +33,10 @@ export const ADJ = ['Swift', 'Clever', 'Mighty', 'Cosmic', 'Brave', 'Lucky', 'Su
 export const NOUN = ['Tiger', 'Falcon', 'Otter', 'Panda', 'Comet', 'Rocket', 'Koala', 'Dolphin', 'Phoenix', 'Lynx', 'Gecko', 'Orca', 'Yak', 'Robin', 'Badger', 'Narwhal'];
 export const AVATARS = ['coral', 'teal', 'sun', 'sky', 'plum'];
 export const MODES = ['explorer', 'challenger', 'pro'];
+/* The Belts in order (js/vedic.js BELTS; test/handoff.test.mjs checks they match): a Placement's placedBelt is one */
+export const BELT_IDS = ['white', 'yellow', 'orange', 'green', 'blue', 'purple', 'black'];
+/* The Placement level's grades (openspec placement): a record's placement.grade is one of these */
+export const PLACEMENT_GRADES = ['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
 const NAME_RE = /^([A-Z][a-z]+) ([A-Z][a-z]+) (\d{2})$/;
 
 const BIT = ['0', '1'];
@@ -83,7 +87,7 @@ const okSetting = (k, v) => {
 };
 
 /* ---------- progress record: field -> [kind, max] ---------- */
-const NUMS = { v: 9, sparks: 1e7, xp: 1e7, skyMigrated: 4102444800000 };
+const NUMS = { v: 9, sparks: 1e7, xp: 1e7, skyMigrated: 4102444800000, hookSeen: 4102444800000 };
 const MAPS = { days: 1e6, best: 1e9, badges: 4102444800000, counts: 1e9, seen: 4102444800000, medals: 3, katasDone: 4102444800000,
   ratings: 20, weekSparks: 1e7, belts: 4102444800000, weekXp: 1e7, stars: 3 };
 const SKILL = { n: 1e9, c: 1e9, m: 1, streak: 1e9, last: 4102444800000 };
@@ -91,7 +95,9 @@ const SKILL = { n: 1e9, c: 1e9, m: 1, streak: 1e9, last: 4102444800000 };
    { n, why, at, k? }, why a short lower-case word with : and - at most (quest, answer, play:locks) */
 const LOG_CAP = 50, LOG_WHY_RE = /^[a-z][a-z0-9:-]{0,40}$/;
 const okLog = e => isObj(e) && Object.keys(e).every(k => ['n', 'why', 'at', 'k'].includes(k)) && okNum(e.n, 1e7) && typeof e.why === 'string' && LOG_WHY_RE.test(e.why) && okTime(e.at) && (e.k === undefined || okNum(e.k, 1e9));
-const RECORD_FIELDS = new Set([...Object.keys(NUMS), ...Object.keys(MAPS), 'skills', 'last', 'grade', 'questDay', 'sky', 'sparksLog']);
+const RECORD_FIELDS = new Set([...Object.keys(NUMS), ...Object.keys(MAPS), 'skills', 'last', 'grade', 'questDay', 'sky', 'placement', 'placementCard', 'sparksLog']);
+/* A Placement result (openspec placement): the grade, the steps climbed (0 to 12) and when; nothing else */
+const okPlacement = v => isObj(v) && Object.keys(v).every(k => ['grade', 'steps', 'at'].includes(k)) && PLACEMENT_GRADES.includes(v.grade) && Number.isInteger(v.steps) && v.steps >= 0 && v.steps <= 12 && okTime(v.at);
 
 /* Strict check of one progress record. Returns the number of map entries, or throws with the reason. */
 function checkRecord(d) {
@@ -117,6 +123,8 @@ function checkRecord(d) {
         n++;
       }
     } else if (f === 'last' || f === 'grade') { if (!(v === null || okKey(v))) throw new Error(`record.${f}: bad value`); }
+    else if (f === 'placement') { if (!okPlacement(v)) throw new Error('placement: bad value'); }
+    else if (f === 'placementCard') { if (v !== 'done') throw new Error('placementCard: bad value'); }
     else if (f === 'questDay') {
       if (v === null) continue;
       if (!isObj(v) || !okKey(v.day) || Object.keys(v).some(k => !['day', 'base', 'done'].includes(k))) throw new Error('questDay: bad value');
@@ -154,7 +162,8 @@ function checkPlayValue(v, depth = 0, count = { n: 0 }) {
 
 function checkPlayer(p) {
   if (!isObj(p)) throw new Error('player is not an object');
-  for (const k of Object.keys(p)) if (!['id', 'name', 'avatar', 'mode', 'created', 'age', 'modeGuess'].includes(k)) throw new Error(`player: unknown field ${k.slice(0, 40)}`);
+  for (const k of Object.keys(p)) if (!['id', 'name', 'avatar', 'mode', 'created', 'age', 'modeGuess', 'placedBelt'].includes(k)) throw new Error(`player: unknown field ${k.slice(0, 40)}`);
+  if (!(p.placedBelt === undefined || BELT_IDS.includes(p.placedBelt))) throw new Error('player: bad placedBelt');
   if (typeof p.id !== 'string' || !ID_RE.test(p.id)) throw new Error('player: bad id');
   if (!validName(p.name)) throw new Error('player: bad Nickname');
   if (!AVATARS.includes(p.avatar)) throw new Error('player: bad avatar');
@@ -215,6 +224,8 @@ export function sanitizeRecord(d) {
   if (d.last === null || okKey(d.last)) out.last = d.last;
   if (d.grade === null || okKey(d.grade)) out.grade = d.grade;
   if (isObj(d.questDay) && okKey(d.questDay.day)) out.questDay = { day: d.questDay.day, base: filterMap(d.questDay.base, 1e9), done: filterMap(d.questDay.done, 4102444800000) };
+  if (isObj(d.placement)) { const p = { grade: String(d.placement.grade), steps: d.placement.steps, at: d.placement.at }; if (okPlacement(p)) out.placement = p; }
+  if (d.placementCard === 'done') out.placementCard = 'done';
   if (isObj(d.sky)) {
     out.sky = { lit: filterMap(d.sky.lit, 4102444800000), skipped: filterMap(d.sky.skipped, 4102444800000) };
     if (isObj(d.sky.last)) out.sky.last = Object.fromEntries(Object.entries(d.sky.last).filter(([k, a]) => okKey(k) && Array.isArray(a)).map(([k, a]) => [k, a.filter(okKey).slice(0, 50)]));
@@ -253,6 +264,7 @@ export function readDevice(get, keys, { now = Date.now(), random = Math.random }
       mode: MODES.includes(p.mode) ? p.mode : null, created: okTime(p.created) ? p.created : now };
     if (p.age !== undefined && p.age !== null && okAge(p.age)) q.age = p.age;
     if (p.modeGuess === true) q.modeGuess = true;
+    if (BELT_IDS.includes(p.placedBelt)) q.placedBelt = p.placedBelt; // Bolt's start Belt from a Placement (openspec placement)
     players.push(q); // parentOk, and any other field, stays behind
   }
   if (!players.length) return null;

@@ -118,3 +118,43 @@ test('Skill Ratings: a good session raises the Rating and moves the questions up
   assert.ok(A.levelFor(d.lv) >= 2, `dial ${d.lv}`);
   assert.ok(A.saveRating('skill:3-mult', d) > 5);
 });
+
+/* The Placement level (openspec placement, ratings spec "Starting Rating by Mode"): only Practice reads it, and only when
+   no Rating and no mastery band apply. LEVEL_START[the Mode's first grade] is the Mode's START, so a Player placed at
+   their Mode's start behaves as before. */
+test('Placement: LEVEL_START anchors each Mode\'s first grade to its START; skillStart is 10, 5, 1 below, at and above', () => {
+  assert.equal(A.LEVEL_START.K, A.START.explorer); assert.equal(A.LEVEL_START[3], A.START.challenger); assert.equal(A.LEVEL_START[8], A.START.pro);
+  assert.equal(A.skillStart(4, 6), 10); assert.equal(A.skillStart(6, 6), 5); assert.equal(A.skillStart(8, 6), 1); assert.equal(A.skillStart('K', 'K'), 5);
+});
+
+test('Placement: an Explorer placed at grade 5 starts Endless Make ten practice at 7, but a Ranked round at 1', () => {
+  fresh(); store.setPlacement({ grade: 5, steps: 5 });
+  assert.equal(A.rating('game:make-ten', 'explorer', 0, { practice: true }), 7);
+  assert.equal(A.rating('game:make-ten', 'explorer'), 1, 'Ranked rounds keep the Mode\'s start');
+  assert.equal(A.rating('arena:explorer', 'explorer', 0, { practice: true }), 7, 'Arena Practice too');
+  assert.equal(A.rating('arena:explorer', 'explorer'), 1, 'the daily Arena round does not');
+  store.setRating('game:make-ten', 3);
+  assert.equal(A.rating('game:make-ten', 'explorer', 0, { practice: true }), 3, 'a saved Rating wins over the level');
+});
+
+test('Placement: a Challenger placed at grade 3 (the Mode\'s first grade) starts a new game at 5, as one who skipped', () => {
+  fresh(); assert.equal(A.rating('game:times-sprint', 'challenger', 0, { practice: true }), 5);
+  store.setPlacement({ grade: 3, steps: 0 });
+  assert.equal(A.rating('game:times-sprint', 'challenger', 0, { practice: true }), 5);
+  assert.equal(A.rating('game:times-sprint', 'challenger'), 5);
+});
+
+test('Placement: a Skill below the level starts at 10 (level 2), at the level at 5, above at 1; the mastery band still wins; Tricks use their grade', () => {
+  fresh(); store.setPlacement({ grade: 6, steps: 3 });
+  assert.equal(A.skillRating('4-mult2', 'challenger', { practice: true }), 10);
+  assert.equal(A.levelFor(A.skillRating('4-mult2', 'challenger', { practice: true })), 2, 'the first 4-mult2 question is generated at level 2');
+  assert.equal(A.skillRating('6-ratio', 'challenger', { practice: true }), 5);
+  assert.equal(A.skillRating('8-pyth', 'challenger', { practice: true }), 1);
+  assert.equal(A.skillRating('v-sq5', 'challenger', { practice: true }), 10, 'a grade 4 Trick is below the level');
+  assert.equal(A.skillRating('v-sqroot', 'challenger', { practice: true }), 1, 'a grade 7 Trick is above it');
+  assert.equal(A.skillRating('4-mult2', 'challenger'), 5, 'without the Practice flag the Mode start');
+  for (let i = 0; i < 3; i++) store.record('4-mult2', false, false);
+  assert.equal(A.skillRating('4-mult2', 'challenger', { practice: true }), A.ratingFromLevel(1), 'a Skill practiced before Ratings keeps its mastery band');
+  store.setRating('skill:8-pyth', 14);
+  assert.equal(A.skillRating('8-pyth', 'challenger', { practice: true }), 14, 'a saved Skill Rating wins');
+});

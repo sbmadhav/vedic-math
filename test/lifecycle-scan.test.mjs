@@ -44,6 +44,14 @@ test('no bare addEventListener in the Star round (js/star.js)', () => {
   assert.deepEqual(hits('star.js', /\.?addEventListener\(/), []);
 });
 
+test('the Hook (js/hook.js) has no listeners or timers of its own: js/star.js plays it through life.every and life.later', () => {
+  assert.deepEqual(hits('hook.js', /\.?addEventListener\(/), []);
+  assert.deepEqual(hits('hook.js', TIMERS), []);
+  const src = readFileSync(new URL('../js/star.js', import.meta.url), 'utf8');
+  assert.match(src, /import \{[^}]*\bevery\b[^}]*\} from '\.\/life\.js'/);
+  assert.match(src, /every\(\(\) => \{[\s\S]*?\}, hook\.keyMs, ps\)/, 'the calculator types on the dare phase signal');
+});
+
 test('the Sky (js/sky-view.js): no bare listeners, timers or frame loops; its listeners go through life.on', () => {
   assert.deepEqual(hits('sky-view.js', /\.?addEventListener\(/), []);
   assert.deepEqual(hits('sky-view.js', TIMERS), []);
@@ -67,6 +75,15 @@ test('Try a trick (js/try.js): no bare listeners or timers; its listeners go thr
   const src = readFileSync(new URL('../js/try.js', import.meta.url), 'utf8');
   assert.match(src, /import \{[^}]*\bon\b[^}]*\bchild\b[^}]*\} from '\.\/life\.js'/);
   assert.match(src, /round = child\(signal\)/);
+  assert.doesNotMatch(src, /\.on(click|submit|keydown)\s*=/);
+});
+
+test('Placement (js/placement-view.js): no bare listeners or timers; its listeners go through life.on on the view signal or a child of it', () => {
+  assert.deepEqual(hits('placement-view.js', /\.?addEventListener\(/), []);
+  assert.deepEqual(hits('placement-view.js', TIMERS), []);
+  const src = readFileSync(new URL('../js/placement-view.js', import.meta.url), 'utf8');
+  assert.match(src, /import \{[^}]*\bon\b[^}]*\blater\b[^}]*\bchild\b[^}]*\} from '\.\/life\.js'/);
+  assert.match(src, /phase = child\(signal\)/, 'one child signal per question');
   assert.doesNotMatch(src, /\.on(click|submit|keydown)\s*=/);
 });
 

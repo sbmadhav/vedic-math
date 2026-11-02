@@ -1,4 +1,4 @@
-import { test, expect, APP } from '../fixtures';
+import { test, expect, APP, pickMode, skipPlacement } from '../fixtures';
 
 /* first-visit spec, Requirements "The Mode picker asks one question" and "The hero says little and the cards work every
    way" (openspec change play-nav-by-mode; before it "One plain lede, and the Mode cards stay" and "The app's hero says
@@ -16,7 +16,7 @@ const moving = (page: Page, sel: string) => page.evaluate(s => document.getAnima
 
 test('The cards still work: the Explorer card opens Explorer Home as before, no Try a trick opens and no guess is recorded', async ({ page }) => {
   await page.goto(APP);
-  await page.locator('.mode-card[data-mode="explorer"]').click();
+  await pickMode(page, 'explorer');
   await expect(page.locator('h1.home-h')).toHaveText('What do you want to play?');
   await expect(page).not.toHaveURL(/#\/try$/);
   expect((await player(page)).modeGuess).toBeUndefined();
@@ -59,6 +59,7 @@ test.describe('The cards draw the eye and work every way', () => {
       for (const t of await page.locator('.mode-pick .mode-card').all()) expect((await t.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       const card = page.locator('.mode-card[data-mode="pro"]');
       if (info.project.use.hasTouch) await card.tap(); else await card.click();
+      await skipPlacement(page); /* the Placement offer follows the pick (openspec placement) */
       await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
     });
   }
@@ -67,6 +68,7 @@ test.describe('The cards draw the eye and work every way', () => {
     await page.goto(APP);
     await page.locator('.mode-card[data-mode="explorer"]').focus();
     await page.keyboard.press('Enter');
+    await skipPlacement(page); /* the Placement offer follows the pick (openspec placement) */
     await expect(page.locator('h1.home-h')).toHaveText('What do you want to play?');
   });
 

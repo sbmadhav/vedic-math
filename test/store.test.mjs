@@ -313,6 +313,42 @@ test('readBackup checks a code without writing: an old single-Player code become
   assert.equal(store.restoreOffer(store.readBackup(JSON.stringify(seven))).both, false, '6 here plus 7 is over the cap');
 });
 
+/* Placement (openspec placement, task 2.2): the result, the card and the Hook flag live in the Player's record, travel
+   in the backup code and nowhere else; a record without them loads as before */
+test('Placement: a record without the fields loads as before; setPlacement saves grade, steps and when; the card and hookSeen are set once', () => {
+  store.reset();
+  assert.equal(store.placement(), null); assert.equal(store.placementCard(), null); assert.equal(store.hookSeen(), false); assert.equal(store.hasProgress(), false);
+  assert.ok(!('placement' in store.load()) && !('placementCard' in store.load()) && !('hookSeen' in store.load()), 'blank() adds none of them');
+  const seen = [], off = store.on(t => seen.push(t));
+  const p = store.setPlacement({ grade: 5, steps: 3 }); off();
+  assert.equal(p.grade, '5'); assert.equal(p.steps, 3); assert.ok(p.at > 0);
+  assert.deepEqual(store.placement(), p); assert.deepEqual(seen, ['placement']);
+  assert.equal(store.setPlacementCard(), true); assert.equal(store.placementCard(), 'done'); assert.equal(store.setPlacementCard(), false);
+  assert.equal(store.setHookSeen(), true); assert.equal(store.hookSeen(), true); assert.equal(store.setHookSeen(), false);
+  assert.equal(JSON.parse(mem['mathquest.v1.' + store.player().id]).placement.grade, '5', 'saved in the Player\'s record');
+  store.setPlacement({ grade: 'K', steps: 0 }); assert.equal(store.placement().grade, 'K', 'a retake replaces the result, even lower');
+  assert.equal(store.hasProgress(), false, 'a Placement is not progress');
+  store.setRating('game:make-ten', 3); assert.equal(store.hasProgress(), true);
+});
+
+test('Placement: the backup code carries placement, placementCard, hookSeen and the Player\'s placedBelt, and a round trip brings them back', async () => {
+  await store.loadBackup();
+  store.setPlacement({ grade: 9, steps: 6 }); store.setPlacementCard(); store.setHookSeen(); store.updatePlayer({ placedBelt: 'yellow' });
+  const code = store.exportData(), payload = JSON.parse(code), id = store.player().id;
+  assert.equal(payload.records[id].placement.grade, '9'); assert.equal(payload.records[id].placement.steps, 6); assert.equal(payload.records[id].placementCard, 'done'); assert.ok(payload.records[id].hookSeen > 0);
+  assert.equal(payload.players.list.find(p => p.id === id).placedBelt, 'yellow');
+  store.reset(); store.updatePlayer({ placedBelt: undefined }); delete store.player().placedBelt;
+  assert.equal(store.placement(), null);
+  store.importData(code, 'replace');
+  assert.equal(store.placement().grade, '9'); assert.equal(store.placement().steps, 6); assert.equal(store.placementCard(), 'done'); assert.equal(store.hookSeen(), true);
+  assert.equal(store.player().placedBelt, 'yellow');
+  // a code with a Placement off the schema is refused whole
+  const bad = JSON.parse(code); bad.records[id].placement = { grade: '13', steps: 1, at: 1_700_000_000_000 };
+  assert.throws(() => store.readBackup(JSON.stringify(bad)));
+  const badBelt = JSON.parse(code); badBelt.players.list[0].placedBelt = 'gold';
+  assert.throws(() => store.readBackup(JSON.stringify(badBelt)));
+});
+
 /* The Sparks history (openspec change muse-review-polish, design D4): every award is logged on the Player's record,
    newest first, 50 kept, and a backup code carries it */
 test('addSparks logs every award newest first, groups consecutive answers, and 60 awards keep 50', () => {

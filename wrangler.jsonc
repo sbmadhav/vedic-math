@@ -22,6 +22,10 @@
     { "pattern": "learnvedicmath.com", "custom_domain": true },
     { "pattern": "www.learnvedicmath.com", "custom_domain": true }
   ],
+  // The VoiceLedger Durable Object (workers/src/ledger.ts, SQLite): counts for the paid endpoints. Deployed before any
+  // route uses it, because a preview upload cannot apply a migration (openspec family-helpers step 3)
+  "durable_objects": { "bindings": [{ "name": "VOICE_LEDGER", "class_name": "VoiceLedger" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["VoiceLedger"] }],
   "workers_dev": true,
   "preview_urls": true,
   "observability": { "enabled": true, "head_sampling_rate": 1 }

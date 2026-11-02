@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, needsWorldBoards } from './fixtures';
+import { test, expect, APP, open, cloudLog, needsWorldBoards, pickMode } from './fixtures';
 
 /* Progress lives in localStorage (vm.players, mathquest.v1.<player>) and survives a reload. */
 
@@ -45,7 +45,7 @@ test('a new nickname, avatar color and a second player persist', async ({ page }
   await page.locator('#meAdd').click();
   // A new player starts with the mode picker
   await expect(page.locator('.mode-pick .mode-card')).toHaveCount(3);
-  await page.locator('.mode-card[data-mode="pro"]').click();
+  await pickMode(page, 'pro');
   await page.reload();
   await open(page, '#/me');
   await expect(page.locator('.players .player')).toHaveCount(2);

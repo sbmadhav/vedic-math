@@ -20,6 +20,7 @@ import * as cloud from './cloud.js';
 import * as LV from './levels.js';
 import { LEVELS, LEVELS_PER_GAME, levelMedal, boardGame } from './games.js';
 import * as AD from './adapt.js';
+import { suggestedGrades } from '../shared/src/placement-level.ts'; /* the Skill map's Suggested for you (openspec placement) */
 import { initAmbient, bgOn, setBg, setBgLevel, stop as stopMusic, isPlaying as musicOn } from './ambient.js';
 import { levelFor, BG_NOTES, ROOTS_INTRO } from './sky-scene.js';
 import { on, later, every, child, onAbort, lateImport } from './life.js';
@@ -61,6 +62,8 @@ const onDemand = load => { let p; return () => (p ||= load().catch(e => { p = nu
 const loadLinks = onDemand(() => import('./connectors.js')); /* the Trick animator's digit connectors, on first use */
 storiesFrom(() => import('./stories.js')); /* the Word problems load after the first paint (js/story-plan.js) */
 const loadArena = onDemand(() => import('./arena.js')), loadTour = onDemand(() => import('./tour.js')), loadKit = onDemand(() => import('./play/kit.js'));
+const loadPlacement = onDemand(() => import('./placement-view.js')); /* Placement's screens, only when #/placement opens (openspec placement) */
+const loadHook = onDemand(() => import('./hook.js')); /* the Hook, only for a Player who may be new (openspec hook) */
 const withArena = (area, signal, fn) => loadArena().then(A => { if (!signal.aborted) fn(A); }, () => { if (!signal.aborted) area.innerHTML = '<p class="md-lede">The round did not load. Check your connection and try again.</p>'; });
 let install = null, installLoad = null, earlyPrompt = null; const installQueue = [];
 function loadInstall() {
@@ -117,6 +120,7 @@ const routes = [
   [/^#\/kata\/([\w-]+)\/(\d+)$/, (m, ctx) => kataView(m[1], +m[2], ctx)],
   [/^#\/star\/([\w-]+)\/(\d+)$/, (m, ctx) => starView(m[1], +m[2], ctx)],
   [/^#\/try$/, (m, ctx) => tryView(ctx)],
+  [/^#\/placement$/, (m, ctx) => placementView(ctx)],
   [/^#\/tower$/, (m, ctx) => towerView(ctx)],
   [/^#\/tower\/(\d+)$/, (m, ctx) => chapterView(+m[1], ctx)],
   [/^#\/challenge\/(\d+)$/, (m, ctx) => challengeView(+m[1], ctx)],
@@ -259,7 +263,8 @@ function modePicker({ signal } = {}) {
   view.querySelectorAll('[data-mode]').forEach(b => on(b, 'click', () => {
     if (picked) return; picked = true;
     fx.sfx('pop'); fx.setMode(b.dataset.mode); gm.startDay();
-    const go = () => { location.hash = afterPick(b.dataset.mode); render(); };
+    /* The route after the pick draws once: a changed hash renders through hashchange, the same hash through render() */
+    const go = () => { const to = afterPick(b.dataset.mode); if ((location.hash || '#/') === to) render(); else location.hash = to; };
     if (fx.noMotion()) return go();
     fx.pop(b, signal); fx.sparkle(b, { n: 10 }); fx.cheer(view.querySelector('.lv-family'), signal);
     later(go, 560, signal);
@@ -269,7 +274,13 @@ function modePicker({ signal } = {}) {
    in this app the picked Mode can open (one of its Find entries), else Home. Kept in memory only, never stored. */
 function afterPick(mode) {
   const to = modePicker.pending; modePicker.pending = null;
-  if (!to || !/^#\/[\w\/-]+$/.test(to) || !routes.some(([re]) => re.test(to))) return '#/';
+  /* The Placement offer (openspec placement, design decision 9): once after the pick, for a Player with no Placement
+     level who has not answered it (Start, Skip or Home's card); a page the visitor asked for before the pick comes first */
+  const next = () => (!store.placement() && store.placementCard() !== 'done' ? '#/placement' : '#/');
+  if (!to) return next();
+  if (to === '#/placement') return to;
+  /* A page asked for before the pick (a Find result, a link) goes there, or Home when the Mode cannot open it, never to the offer */
+  if (!/^#\/[\w\/-]+$/.test(to) || !routes.some(([re]) => re.test(to))) return '#/';
   if (to.startsWith('#/arena/day/')) return to; /* a challenge link (openspec change arena-challenge-link, design D7): the Arena checks it, and one that does not parse opens the plain lobby, as #/arena does */
   return buildIndex({ mode, counts: guideCounts() }).some(e => e.href === to) ? to : '#/';
 }
@@ -303,7 +314,7 @@ function home(ctx = {}, { tiles = false } = {}) {
   let body = '';
   if (m === 'explorer') {
     body = `${sutraToSay()}<div class="play-grid play-grid--big">
-      ${tile('#/game/balloons', 'Balloon pop', 'Count and pop', 'coral', 'balloon')}
+      ${startHereTile()}${tile('#/game/balloons', 'Balloon pop', 'Count and pop', 'coral', 'balloon')}
       ${tile('#/skill/k-count', 'How many dots?', 'Count with ten frames', 'sun', 'dots')}
       ${tile('#/game/more-less', 'Which has more?', 'Big or small', 'teal', 'scale')}
       ${tile('#/game/make-ten', 'Make ten', 'Find the partners', 'sky', 'ten')}
@@ -311,7 +322,7 @@ function home(ctx = {}, { tiles = false } = {}) {
       ${tile('#/game/quick-look', 'Quick look', 'Flash dots', 'sun', 'eye')}
       ${tile('#/skill/k-shapes', 'Shape detective', 'Name that shape', 'teal', 'shape')}
       ${tile('#/arena', 'Race the clock', 'Tap fast!', 'coral', 'bolt')}
-    </div>${tryCard(m)}
+    </div>${placementCardHTML()}${tryCard(m)}
     <p class="mq-cta"><button class="md-btn" id="voiceBtn" aria-pressed="${fx.voiceOn()}">${icon('speaker')} Read questions aloud: ${fx.voiceOn() ? 'on' : 'off'}</button> <a class="md-btn" href="#/watch">${icon('play')} Watch and sing</a></p>
     <nav class="home-places" aria-label="More places"><span>More places:</span> <a class="md-chip" href="#/games">All games</a> <a class="md-chip" href="#/sutras">The sutras</a> <a class="md-chip" href="#/guide">How to play</a> <a class="md-chip" href="#/find">Find</a></nav>`; /* Explorer's menu has three tabs (openspec change play-nav-by-mode), so the places it left out are a tap away here */
   } else {
@@ -338,7 +349,7 @@ function home(ctx = {}, { tiles = false } = {}) {
       ? [tile('#/arena/party', 'Party Mode', 'Two to four players, one screen', 'sky', 'duel'), tile('#/games', 'Games', 'Times sprint, target, fractions', 'teal', 'game'), tile('#/sutras', 'Sutra cards', 'Collect all 29', 'plum', 'cards'), tile('#/watch', 'Watch and learn', 'Best trick videos', 'coral', 'play')]
       : [tile('#/sutras', 'Sutra deep dive', `${gm.collectedCount()} of ${SUTRAS.length + SUBSUTRAS.length} cards collected`, 'sun', 'cards'), tile('#/arena/party', 'Party Mode', 'Family math night', 'coral', 'duel'), tile('#/games', 'Puzzles and games', 'Hit the target and more', 'teal', 'game'), tile('#/watch', 'Watch shelf', '3Blue1Brown, Numberphile, more', 'sky', 'play')];
     const board = m === 'pro' ? `<div class="md-card board-card"><span class="md-tag md-tag--coral">Arena</span><h2 class="mq-h3">Today's leaderboard</h2><div id="homeBoard" class="lb-wrap"><p class="mq-small">Loading…</p></div>${parentNote()}</div>` : '';
-    body = `<div class="home-doors">${doors}</div>${tryCard(m)}${yourSutras(m, ss)}${heroStats()}${board ? `<div class="home-2">${questsHTML()}${board}</div>` : questsHTML()}
+    body = `<div class="home-doors">${doors}</div>${placementCardHTML()}${tryCard(m)}${yourSutras(m, ss)}${heroStats()}${board ? `<div class="home-2">${questsHTML()}${board}</div>` : questsHTML()}
       <details class="mq-more home-more" id="homeMore"${fx.homeMoreOpen() ? ' open' : ''}><summary>More ways to play</summary><div class="play-grid">${more.join('')}</div></details>`;
   }
   /* Home leads with the Sutras (openspec change sutras-first): Explorer keeps the Player strip on top; Challenger and Pro
@@ -354,6 +365,8 @@ function home(ctx = {}, { tiles = false } = {}) {
   if (hm) { if (ctx.signal) on(hm, 'toggle', keepMore, ctx.signal); else hm.ontoggle = keepMore; } /* home() also runs with no view signal (an unknown Skill falls back to it): then a property on an element of this view */
   const tc = $('[data-try-open]'), counted = () => metrics.tryStart(m); /* the Try a trick card counts as a Try a trick pressed */
   if (tc) { if (ctx.signal) on(tc, 'click', counted, ctx.signal); else tc.onclick = counted; }
+  const pn = $('#placeNotNow'), notNow = () => { store.setPlacementCard('done'); fx.sfx('tap'); mount(c => home(c, { tiles })); }; /* the Placement card goes, once (openspec placement) */
+  if (pn) { if (ctx.signal) on(pn, 'click', notNow, ctx.signal); else pn.onclick = notNow; }
   if (m === 'pro') loadBoard($('#homeBoard'), `daily-${cloud.dayId()}-pro`, 5);
   const sc = $('.sutra-say'); if (sc && ctx.signal) wireSay(sc, ctx.signal); /* Say it on Explorer's Sutra card: wired on the card, which every redraw replaces, so a redraw within the view adds no second listener */
   homeTour(ctx.signal);
@@ -388,6 +401,37 @@ function tryCard(m) {
     <p class="door-acts"><a class="md-btn" href="#/try" data-try-open>Try a trick</a></p></div>`;
 }
 
+/* Placement (openspec placement). Home's card for a Player who already has progress (design decision 7): once, until
+   Start or Not now; a Player with a Placement level or who answered the offer never sees it. Its Start is not the
+   page's primary button, so each Home keeps one primary action. */
+function placementCardHTML() {
+  if (store.placement() || store.placementCard() === 'done' || !store.hasProgress()) return '';
+  return `<div class="md-card place-home"><span class="md-tag md-tag--sky">Find your level</span><h2 class="mq-h3">Want to find your level?</h2>
+    <p class="door-line">${fx.t({ explorer: 'A few questions, one at a time, with no clock. Then Bolt knows where to start you.', challenger: 'About 3 minutes, no clock: a few questions that climb from easy to hard, so practice starts where you are. Nothing you have earned is lowered.', pro: 'About 3 minutes, no clock: a short climb from easy to hard sets where practice starts. Ratings only go up, and Ranked rounds are untouched.' })}</p>
+    <p class="door-acts"><a class="md-btn" href="#/placement" id="placeStart">Start</a><button type="button" class="md-btn md-btn--sm" id="placeNotNow">Not now</button></p></div>`;
+}
+/* Explorer Home's first tile for a placed Player (design decision 6, owner PL6): the first unmastered Skill of the
+   Placement level's grade */
+function startHereTile() {
+  const pl = store.placement(); if (!pl) return '';
+  const list = skillsFor(pl.grade), s = list.find(x => !store.mastered(x.id)) || list[0]; if (!s) return '';
+  return `<a class="play-tile play-tile--sun place-tile" id="startHere" href="#/skill/${s.id}"><span class="play-ic" aria-hidden="true">${icon('map')}</span><b>Start here</b><small>${esc(s.kid || s.title)}</small></a>`;
+}
+/* "about grade 5" for grown-ups (design decision 12): Kindergarten, grade N, or the course name with its grade for 9 to 12 */
+const gradeWords = g => { const x = gradeOf(g), n = Number(g); return String(g) === 'K' ? 'Kindergarten' : x && n >= 9 ? `${x.pro} (grade ${g})` : `grade ${g}`; };
+/* Me's Placement row (design decision 8): the level in grown-up words with when it was taken, and Retake (or Find your level) */
+function placementRowHTML() {
+  const pl = store.placement(), when = pl ? new Date(pl.at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+  return `<div class="me-place"><p class="mq-small" id="mePlace">${pl ? `Placement: about ${gradeWords(pl.grade)} (${esc(when)}). It only sets where practice starts, and it stays on this device.` : 'No Placement yet. A short, untimed climb finds where practice should start; nothing you have earned changes.'}</p>
+    <p class="me-acts"><a class="md-btn md-btn--sm" href="#/placement" id="mePlaceGo">${pl ? 'Retake' : 'Find your level'}</a></p></div>`;
+}
+/* The route: the screens load on demand (js/placement-view.js), so a first load never pays for them */
+function placementView({ signal } = {}) {
+  document.title = `Find your level · Learn Vedic Math`;
+  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow"><div id="plRoot" class="place-root"></div></div></section>`;
+  loadPlacement().then(m => { if (!signal.aborted) m.placementView($('#plRoot'), { signal }); }, () => { if (!signal.aborted) $('#plRoot').innerHTML = '<p class="md-lede">This page did not load. Check your connection and try again.</p>'; });
+}
+
 /* The Skill the Keep going card offers, or null. Challenger Home leaves it out when it is the Trick of the Star its
    first door offers, so a new Player is not shown the same trick twice above the fold (openspec find-and-home-polish). */
 function keepGoingSkill(m) {
@@ -401,12 +445,13 @@ function keepGoingSkill(m) {
 const litStars = () => { const { lit } = store.starStates(); return SKY.PATH.filter(k => lit[k]).length; };
 function skyHome({ signal } = {}) {
   document.title = `Learn Vedic Math`;
-  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}${newHereHTML()}<div class="in-slot" id="installSlot"></div><div id="skyHome"></div>${tryCard(fx.mode())}
+  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}${newHereHTML()}<div class="in-slot" id="installSlot"></div><div id="skyHome"></div>${placementCardHTML()}${tryCard(fx.mode())}
     <p class="mode-line">Mode: <b>${fx.MODES[fx.mode()].name}</b> <a href="#/me">Change</a></p></div></section>`;
   const back = (render.from || '').match(/^#\/star\/([\w-]+)\/(\d)$/);
   const out = skyView($('#skyHome'), { signal, focus: back ? `${back[1]}:${back[2]}` : null });
   const tc = $('[data-try-open]'), m = fx.mode(), counted = () => metrics.tryStart(m); /* the Sky is this Player's Home, so it keeps the Try a trick card too */
   if (tc) { if (signal) on(tc, 'click', counted, signal); else tc.onclick = counted; }
+  const pn = $('#placeNotNow'); if (pn && signal) on(pn, 'click', () => { store.setPlacementCard('done'); fx.sfx('tap'); mount(c => skyHome(c)); }, signal);
   homeTour(signal);
   withInstall(m => m.mountNudge($('#installSlot'), signal), signal);
   return out;
@@ -426,7 +471,9 @@ function placesView({ signal } = {}) {
 /* ---------- Learn ---------- */
 function learnView() {
   document.title = `Skill map · Learn Vedic Math`;
-  const m = fx.MODES[fx.mode()], mine = GRADES.filter(g => m.grades.map(String).includes(String(g.id))), rest = GRADES.filter(g => !mine.includes(g) && g.id !== 'V');
+  /* A placed Player sees the grades one below, at and one above their Placement level (openspec placement); the others their Mode's */
+  const m = fx.MODES[fx.mode()], pl = store.placement(), want = (pl ? suggestedGrades(pl.grade) : m.grades).map(String);
+  const mine = GRADES.filter(g => want.includes(String(g.id))), rest = GRADES.filter(g => !mine.includes(g) && g.id !== 'V');
   const card = g => { const st = gradeStats(g.id); return `<a class="mq-grade" href="#/grade/${g.id}"><span class="mq-grade-n">${gradeShort(g.id)}</span><span class="mq-grade-t"><b>${both(g.pro, g.kid)}</b><small>${g.band}</small></span><span class="mq-bar" role="progressbar" aria-label="Skills mastered" aria-valuemin="0" aria-valuemax="${st.total}" aria-valuenow="${st.done}" aria-valuetext="${st.done} of ${st.total} mastered"><i style="width:${pct(st.done / (st.total || 1))}%"></i></span></a>`; };
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${crumbs([null, 'Skill map'])}
@@ -434,7 +481,7 @@ function learnView() {
     <h1 class="md-heading">Pick a level</h1>
     <p class="md-lede">${ledeHTML('learn', { n: guideCounts() })}</p>${ledeListen('learn')}
     ${learnSutras()}
-    <h2 class="mq-strand">Suggested for ${m.name}</h2><div class="mq-grades">${mine.map(card).join('')}</div>
+    <h2 class="mq-strand">${pl ? 'Suggested for you' : `Suggested for ${m.name}`}</h2><div class="mq-grades">${mine.map(card).join('')}</div>
     <h2 class="mq-strand">Speed tricks</h2><div class="mq-grades">${card(gradeOf('V'))}</div>
     <details class="mq-more"><summary>All other levels</summary><div class="mq-grades">${rest.map(card).join('')}</div></details>
   </div></section>`;
@@ -556,7 +603,7 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
   const tales = storyPlan(mode || 'challenger', { answered: () => store.count('answers') });
   /* Only Word problems: the Skill's own story (a Word problem Skill), else one in the Mode's style on its numbers */
   const onlyStory = (sk, bare) => (bare.story ? null : storiesNow() && storiesNow().storyFor(sk, mode || 'challenger', { bare }));
-  const dialFor = id => { if (!dials.has(id)) dials.set(id, new AD.Dial(AD.skillRating(id, mode))); return dials.get(id); };
+  const dialFor = id => { if (!dials.has(id)) dials.set(id, new AD.Dial(AD.skillRating(id, mode, { practice: true }))); return dials.get(id); }; /* Practice: a Placement level sets the start when there is no Rating (openspec placement) */
   const saveDial = id => { const d = dials.get(id); if (!d || d.n < 4) return; AD.saveRating('skill:' + id, d); dials.set(id, new AD.Dial(d.d)); };
   const next = () => {
     if (question) question.abort();
@@ -884,8 +931,13 @@ function starView(trick, n, { signal } = {}, back = null) {
   const fam = familyRound({ root: play.area, card: '.star-end', signal, area: 'star', protect: '.star-end-h, .star-end-sp, .star-acts, .star-talk', ctx: () => ({ skill: byId['v-' + trick] }) });
   fam.note({ type: 'raceStart' });
   const onEnd = ({ misses, lit }) => { const acts = play.area.querySelector('.star-acts'); if (acts && fam.askHTML) acts.insertAdjacentHTML('beforeend', fam.askHTML); fam.note({ type: 'roundEnd', misses, lit }); };
-  const run = runStar(play.area, { trick, star: n, signal, back, again: () => mount(ctx => starView(trick, n, ctx, back)), findVideo: starVideo, onEnd });
-  return { destroy: () => { fam.note({ type: 'raceEnd' }); run.destroy(); } }; /* a Star left before its end screen must not hold the next round's Visits */
+  /* The Hook (openspec hook): a Player who may be new (no answer yet, the Hook not seen) waits the few milliseconds js/hook.js
+     takes, which decides (a new Challenger or Pro Player, a Trick with a dare); everyone else starts the round at once */
+  let run = null;
+  const begin = hook => { if (signal.aborted) return; run = runStar(play.area, { trick, star: n, signal, back, again: () => mount(ctx => starView(trick, n, ctx, back)), findVideo: starVideo, onEnd, hook }); };
+  if (fx.mode() !== 'explorer' && store.count('answers') === 0 && !store.hookSeen()) loadHook().then(H => begin(H.hookFor(trick, fx.mode())), () => begin(null));
+  else begin(null);
+  return { destroy: () => { fam.note({ type: 'raceEnd' }); if (run) run.destroy(); } }; /* a Star left before its end screen must not hold the next round's Visits */
 }
 /* Try a trick (openspec try-trick-in-modes): the lesson of the Player's Mode, on one Sutra (js/try.js) */
 function tryView({ signal } = {}) {
@@ -1165,8 +1217,10 @@ function parentNote() {
     : gate === 'needs-age' ? 'Right now nothing is posted for this player. They have not answered the age question yet; it is asked the first time a score would be posted.'
     : gate === 'device-only' ? "Nothing is posted for this player, because their age answer is under 13. Their scores stay on this device's board, and there is no way to turn World boards on for them."
     : "This player's scores and weekly Sparks post to World boards.";
+  const placed = store.placement(); /* the Placement level, for grown-ups only (openspec placement, parent-note spec) */
   return `<details class="mq-small pn"><summary class="md-link">${sum}</summary>
-    <p class="pn-now"><b>${now}</b></p>
+    <p class="pn-now"><b>${now}</b></p>${placed ? `
+    <p class="pn-place">Placement: ${esc(p.name)} placed at about ${gradeWords(placed.grade)}. It only sets where practice starts, and it stays on this device.</p>` : ''}
     <p>World boards run on Google Firebase. Three kinds of post go to boards for the player's league: the score of a Daily challenge in the Arena and the score of a Ranked round of a game (today's and this week's board for each), and the player's Sparks total for this week (one weekly board). Sparks come from all play, Practice included, so practice adds to that posted weekly total. Practice scores themselves never leave this device.</p>
     <p>Nothing is posted before a player answers one question about their age. The answer stays on this device and is never sent. Nothing is ever posted for a player whose answer is under 13: their scores rank on this device's board only.</p>
     <p>No identity exists until the first post: looking at World boards needs no sign-in. ${fx.t({
@@ -1275,7 +1329,7 @@ function arenaView({ signal } = {}, link = null) {
     <div class="md-card ar-shell" id="arShell"></div>
     ${playShelf('arena', 'More ways to race')}</div></section>`;
   const shell = $('#arShell'), rKey = 'arena:' + league, mode = fx.mode();
-  const arenaRating = () => Math.round(AD.rating(rKey, mode));
+  const arenaRating = () => Math.round(AD.rating(rKey, mode, 0, { practice: true })); /* where Practice rounds start: a Placement level sets it when there is no Rating (openspec placement) */
   const arenaRatingLine = () => `<small id="arRating" data-rating="${arenaRating()}">${fx.t({
     explorer: `Your Arena Rating: <b>${arenaRating()}</b> of 20. Practice rounds get harder as you get them right.`,
     challenger: `Your Arena Rating: <b>${arenaRating()}</b> of 20. Practice rounds start there and adapt to every answer.`,
@@ -1331,7 +1385,7 @@ function arenaView({ signal } = {}, link = null) {
        Word problems and a friend's round: their own questions, and the Arena Rating left as it was (word-problems-more design
        D5; arena-challenge-link design D10: the friend's set is another day's or League's, not this Player's level). */
     const fixed = words || friend;
-    const before = arenaRating(), dial = new AD.Dial(AD.rating(rKey, mode));
+    const before = arenaRating(), dial = new AD.Dial(AD.rating(rKey, mode, 0, { practice: type !== 'daily' })); /* the daily round keeps the Mode's start (ADR 0007) */
     const untimed = words || type === 'untimed' || (type === 'practice' && fx.calmOn());
     A.runArena(area, { league: friend ? ch.league : league, day: ranked ? day : friend ? ch.day : null, dial: fixed ? null : dial, signal: rsig, untimed, ...(words ? { deal: storyDeal(A, storiesNow()), count: A.STORY_QS } : {}), onEnd: async r => {
       metrics.roundEnd('arena', league);
@@ -1389,6 +1443,9 @@ function arenaReview(T, answered) {
 /* A section's shelf of play experiences for this Mode (js/play/catalog.js) */
 function playShelf(section, heading) {
   const list = playIn(section, fx.mode()); if (!list.length) return '';
+  /* Offline, once the shelf is in the page: a card whose experience the worker never saved says it needs a connection
+     the first time (js/play/offline-note.js, loaded only then; openspec change render-performance, design D10) */
+  if (navigator.onLine === false) later(() => import('./play/offline-note.js').then(m => m.noteOffline(view)).catch(() => {}), 0, boot.signal);
   return `<section class="play-shelf" aria-labelledby="ps-${section}"><h2 class="mq-strand" id="ps-${section}">${heading}</h2><ul class="play-shelf-grid">${list.map(e => `<li><a class="play-card play-card--${e.color}" href="${e.route}"><span class="play-card-ic" aria-hidden="true">${PLAY_ICONS[e.icon] || ''}</span><b>${e.title}</b><em>${e.tag}</em><span>${e.blurb}</span></a></li>`).join('')}</ul></section>`;
 }
 /* Styles load with the page that needs them; the build stamps their URLs (the #vm-css map in play/index.html) */
@@ -1424,7 +1481,12 @@ function playView(hash, { signal }) {
     const head = view.querySelector('h1, h2'); if (head) { head.setAttribute('tabindex', '-1'); if (render.n > 1 && !view.contains(document.activeElement)) head.focus({ preventScroll: true }); }
   }).catch(() => {
     if (signal.aborted) return;
-    view.innerHTML = `<section class="md-section"><div class="md-wrap"><h1 class="md-heading">${e.title} did not open</h1><p class="md-lede">Check your connection and try again.</p><p><a class="md-btn md-btn--primary" href="${sec.href}">Back to ${sec.label}</a></p></div></section>`;
+    /* Its files are saved the first time it opens online (render-performance D10): offline before that, say so.
+       Retry loads the page again at this route, so the module is really asked for again (a failed import() can stay
+       failed for the life of the document). */
+    const why = navigator.onLine === false ? 'It needs a connection the first time. Connect and try again.' : 'Check your connection and try again.';
+    view.innerHTML = `<section class="md-section"><div class="md-wrap"><h1 class="md-heading">${e.title} did not open</h1><p class="md-lede">${why}</p><p><button type="button" class="md-btn md-btn--primary" id="pxRetry">Retry</button> <a class="md-btn" href="${sec.href}">Back to ${sec.label}</a></p></div></section>`;
+    on($('#pxRetry'), 'click', () => location.reload(), signal);
   });
 }
 
@@ -1507,7 +1569,7 @@ function gameView(id, lvl = 0, { signal } = {}) {
     round = child(session.signal); const roundSignal = round.signal;
     /* Calm: a Practice round (a Level) of a timed game has no clock and ends after its questions; Ranked keeps the clock */
     const untimed = !!g.secs && mode !== 'ranked' && fx.calmOn();
-    const startD = L ? L.cfg.start : AD.rating('game:' + g.id, m), dial = new AD.Dial(startD, { floor: L ? L.cfg.floor : 1 });
+    const startD = L ? L.cfg.start : AD.rating('game:' + g.id, m, 0, { practice: mode === 'endless' }), dial = new AD.Dial(startD, { floor: L ? L.cfg.floor : 1 }); /* Endless practice starts at a Placement level with no Rating; a Ranked round at the Mode's start (ADR 0007) */
     area.innerHTML = `<div class="g-head"><span class="g-hud" id="gHud">${dialMeter(dial.lv)}<span class="g-pts"><b id="gPts">0</b> pts</span></span><span class="g-sayline" id="gSay" role="status" aria-live="polite"></span></div><div class="g-area" id="gArea"></div>`;
     const sayEl = $('#gSay', area), hudEl = $('#gHud', area);
     const hud = (d, pts, ok) => { hudEl.innerHTML = `${dialMeter(d.lv)}<span class="g-pts"><b id="gPts">${d.points.toLocaleString('en-US')}</b> pts</span>${ok && pts ? `<span class="g-gain">+${pts}</span>` : ''}${d.trend > 0 ? '<span class="g-trend up" role="img" aria-label="Getting harder">&#9650;</span>' : d.trend < 0 ? '<span class="g-trend down" role="img" aria-label="Getting easier">&#9660;</span>' : ''}`; };
@@ -1899,6 +1961,8 @@ function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw
     ${badges.some(b => !got[b.id]) ? `<p class="listen-row">${listenBtn('from:.badge:not(.got) small', 'the badges to earn')}</p>` : ''}<div class="badge-grid">${badges.map(b => `<div class="badge${got[b.id] ? ' got' : ''}"><span class="badge-medal" aria-hidden="true">${icon(got[b.id] ? 'star' : 'lock')}</span><b>${b.name}</b><small>${b.how}</small></div>`).join('')}</div></section>
     <h2 class="mq-strand">Play mode</h2>
     <div class="mode-pick mode-pick--sm">${Object.entries(fx.MODES).map(([id, m]) => `<button class="mode-card mode-card--${m.color}" data-mode="${id}" aria-pressed="${id === fx.mode()}"><span class="mode-ic" aria-hidden="true">${modeIcon(id)}</span><b>${m.name}</b><small>${m.ages}</small></button>`).join('')}</div>
+    <h2 class="mq-strand">Placement</h2>
+    ${placementRowHTML()}
     <h2 class="mq-strand">Players on this device</h2>
     <div class="players">${store.allPlayers().map(q => `<div class="player${q.id === p.id ? ' on' : ''}">${avatar(q, 40)}<span><b>${esc(q.name)}</b><small>${q.mode ? fx.MODES[q.mode].name : 'No mode yet'}</small></span>${q.id === p.id ? '<em>Playing</em>' : `<button class="md-btn md-btn--sm" data-switch="${q.id}">Switch</button><button class="md-btn md-btn--sm" data-del="${q.id}" aria-label="Remove ${esc(q.name)}">Remove</button>`}</div>`).join('')}
       <button class="md-btn md-btn--sm" id="meAdd">${icon('plus')} Add a player</button></div>

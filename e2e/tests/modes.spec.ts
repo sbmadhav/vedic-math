@@ -1,4 +1,4 @@
-import { test, expect, APP } from './fixtures';
+import { test, expect, APP, pickMode } from './fixtures';
 
 /* Play modes set the wording on this page only. The site-wide `kidmode` setting is never written. */
 
@@ -18,7 +18,7 @@ test.describe('mode picker', () => {
       await page.goto(APP);
       await expect(page.locator('h1')).toHaveText('Fast, fun math for every brain');
       await expect(page.locator('body')).toHaveClass(/mode-none/);
-      await page.locator(`.mode-card[data-mode="${m.id}"]`).click();
+      await pickMode(page, m.id); /* the pick, then Skip, just play on the Placement offer (openspec placement) */
 
       await expect(page.locator('h1.home-h')).toHaveText(m.heading);
       await expect(page.locator('.mode-line b')).toHaveText(m.name);
@@ -49,7 +49,7 @@ test.describe('mode picker', () => {
 
   test('a first visit never writes the kidmode key', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('.mode-card[data-mode="challenger"]').click();
+    await pickMode(page, 'challenger');
     await page.goto(`${APP}#/me`);
     await page.locator('.mode-pick--sm .mode-card[data-mode="explorer"]').click();
     await page.locator('.mode-pick--sm .mode-card[data-mode="pro"]').click();
@@ -131,7 +131,7 @@ test.describe('the Sky switch', () => {
       // A second Player on this device has not turned it on
       await page.goto(`${APP}#/me`);
       await page.locator('#meAdd').click();
-      await page.locator('.mode-card[data-mode="pro"]').click();
+      await pickMode(page, 'pro');
       await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
       // Back to the first Player: still the Sky; turning it off brings the tile home back
       await page.goto(`${APP}#/me`);

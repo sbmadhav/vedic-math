@@ -59,6 +59,7 @@ const ROUTES = [
   [/^#\/kata\/([\w-]+)\/\d+$/, 'kata/{trick:1}/kata'],
   [/^#\/star\/([\w-]+)\/\d+$/, 'star/{trick:1}/star'],
   [/^#\/try$/, 'try'],
+  [/^#\/placement$/, 'placement'],
   [/^#\/tower$/, 'tower'],
   [/^#\/tower\/\d+$/, 'tower/chapter'],
   [/^#\/challenge\/\d+$/, 'challenge/challenge'],
@@ -108,6 +109,11 @@ export function starEvent(kind, trick) {
   if (!STAR_EVENTS.includes(kind) || !TRICKS.some(t => t.id === trick)) return;
   send(`star/${kind}/${trick}`, 'Vedic Math: star quest');
 }
+
+/* ---------- Placement (openspec placement) ---------- */
+/* A Placement climb finished (a retake too). One fixed event: never the steps, the grade, the count, the time or the
+   Mode. Nothing is sent for a Skip or a climb left early, and Placement answers send no q_answered or first_win. */
+export function placementDone() { send('placement/done', 'Vedic Math: placement done'); }
 
 /* ---------- Listen buttons (openspec explanation-audio) ---------- */
 /* A Listen button was pressed to play an explanation. One fixed event: which explanation is never sent */
