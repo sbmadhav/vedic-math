@@ -10,6 +10,14 @@
    file it links or loads, and the static module graph of its module scripts (no worker, no precache), against
    trickPage.max in the baseline.
 
+   Before play (openspec change render-performance, design D2, tasks 2.1 and 2.3 on the Legacy game): within the game's
+   first load, what the page itself requests before the first tap, without the install's downloads: its JS (the page's
+   scripts and the entry's static module graph) and its CSS (the page's stylesheets), and for each landing or grown-up
+   page its JS (its scripts and their static graph). The owner's budgets (M5: 150 KB, 40 KB, 15 KB) are `budgets` in
+   docs/perf/baseline.json, each with a `failing` flag: a line the start measurement missed prints as missed and fails
+   nothing until a pull request meets it and turns `failing` on (design D2, item 4). The ratchet: a build more than 64
+   bytes under firstLoad.total, or a reported budget now met, prints the line to record. --json adds `beforePlay`.
+
    Usage:
      node tools/budget.ts [site]                       the table and the total (site defaults to _site)
      node tools/budget.ts [site] --check <baseline>    also fails when the total is above the baseline's
@@ -21,16 +29,22 @@
 
    Brotli at quality 11 on each file's bytes as published, so the number does not depend on a server's settings.
    Requests made after an idle timer (GoatCounter's count.js) and on a tap are not first load. */
-import { readFileSync, writeFileSync, existsSync, statSync, realpathSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, statSync, realpathSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { join, posix } from 'node:path';
+import { join, posix, relative } from 'node:path';
 import { brotliCompressSync, constants } from 'node:zlib';
 
 export const PAGE = '/play/';
 export const ENTRY = '/js/app.js';
 
 export type Measure = { total: number; files: Record<string, number> };
-export type Baseline = { firstLoad: Measure; trickPage?: { max: number } };
+/** What the game page itself requests before the first tap: its JS and CSS, file by file, and each landing or
+    grown-up page's JS */
+export type BeforePlay = { js: number; css: number; jsFiles: Record<string, number>; cssFiles: Record<string, number>; pages: Record<string, number> };
+/** One of the owner's absolute budgets: the limit in bytes, and whether a miss fails the build yet (design D2, item 4) */
+export type Budget = { limit: number; failing: boolean };
+export type Budgets = { jsBeforePlay?: Budget; cssBeforePlay?: Budget; sitePageJs?: Budget };
+export type Baseline = { firstLoad: Measure; trickPage?: { max: number }; budgets?: Budgets };
 
 const STATIC_IMPORT = /(?:^|[;\n}])\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|[;\n}])\s*import\s*['"]([^'"]+)['"]/g;
 
@@ -134,6 +148,89 @@ export const measurePage = (site: string, page: string): Measure => measureUrls(
 
 const kb = (n: number) => `${(n / 1024).toFixed(1)} KB`;
 
+/** The landing and grown-up pages of a build: every index.html and 404.html outside the game, as URLs */
+export function sitePages(site: string): string[] {
+  const out: string[] = [];
+  const walk = (dir: string) => {
+    for (const name of readdirSync(dir)) {
+      const p = join(dir, name);
+      if (statSync(p).isDirectory()) { if (!name.startsWith('.') && !name.startsWith('_') && relative(site, p) !== 'play') walk(p); }
+      else if (name === 'index.html' || name === '404.html') {
+        const rel = relative(site, p).split('\\').join('/');
+        out.push('/' + (rel.endsWith('index.html') ? rel.slice(0, -'index.html'.length) : rel));
+      }
+    }
+  };
+  walk(site);
+  return out.sort();
+}
+
+/** The same-origin scripts and stylesheets a page's tags load */
+function tags(site: string, page: string): { scripts: string[]; styles: string[] } {
+  const html = readFileSync(fileOf(site, page), 'utf8');
+  const scripts = new Set<string>(), styles = new Set<string>();
+  for (const m of html.matchAll(/<(script|link)\b[^>]*?\b(?:src|href)="(\/[^"]*)"[^>]*>/g)) {
+    if (!m[2] || /\brel="canonical"/.test(m[0])) continue;
+    const url = bare(m[2]);
+    if (m[1] === 'script' && url.endsWith('.js')) scripts.add(url);
+    else if (m[1] === 'link' && /\brel="stylesheet"/.test(m[0])) styles.add(url);
+  }
+  return { scripts: [...scripts], styles: [...styles] };
+}
+
+/** Before play: the game page's scripts and the entry's static graph, its stylesheets, and each site page's JS */
+export function beforePlay(site: string): BeforePlay {
+  const { scripts, styles } = tags(site, PAGE);
+  const js = new Set<string>(scripts);
+  addGraph(site, [ENTRY], js);
+  const jsFiles: Record<string, number> = {}, cssFiles: Record<string, number> = {};
+  for (const u of js) jsFiles[u] = sizeOf(site, u);
+  for (const u of styles) cssFiles[u] = sizeOf(site, u);
+  const pages: Record<string, number> = {};
+  for (const page of sitePages(site)) pages[page] = pageUrls(site, page).filter(u => u.endsWith('.js')).reduce((a, u) => a + sizeOf(site, u), 0);
+  const sum = (o: Record<string, number>) => Object.values(o).reduce((a, b) => a + b, 0);
+  return { js: sum(jsFiles), css: sum(cssFiles), jsFiles, cssFiles, pages };
+}
+
+/** The owner's budgets as lines: within, missed (reported, not failing yet) or over (failing), with the error to print */
+export function budgetLines(bp: BeforePlay, budgets: Budgets = {}): { line: string; over: boolean; failing: boolean; budgeted: boolean; error: string }[] {
+  const one = (what: string, n: number, files: Record<string, number> | null, b: Budget | undefined) => {
+    const count = files ? ` in ${Object.keys(files).length} files` : '';
+    if (!b) return { line: `  ${kb(n).padStart(9)}  ${what}${count} (no budget recorded)`, over: false, failing: false, budgeted: false, error: '' };
+    const over = n > b.limit;
+    const top = files ? Object.entries(files).sort((x, y) => y[1] - x[1])[0] : undefined;
+    const state = !over ? 'within' : b.failing ? `over by ${n - b.limit} bytes` : 'missed: reported until a pull request meets it (docs/perf/baseline.json budgets)';
+    const error = over && b.failing ? `${what} budget: ${n} bytes Brotli is over ${b.limit} bytes (docs/perf/baseline.json budgets)${top ? `; largest file: ${top[0]} (${top[1]} bytes)` : ''}` : '';
+    return { line: `  ${kb(n).padStart(9)}  ${what}${count}; budget ${kb(b.limit)}, ${state}`, over, failing: b.failing, budgeted: true, error };
+  };
+  const out = [one('JS before play', bp.js, bp.jsFiles, budgets.jsBeforePlay), one('CSS before play', bp.css, bp.cssFiles, budgets.cssBeforePlay)];
+  const largest = Object.entries(bp.pages).sort((a, b) => b[1] - a[1])[0];
+  if (largest) {
+    const r = one(`JS on a landing or grown-up page, the largest ${largest[0]}`, largest[1], null, budgets.sitePageJs);
+    out.push({ ...r, error: r.error ? `${r.error}; page ${largest[0]}` : '' });
+  }
+  return out;
+}
+
+/** Every failing budget that is over, one error a line; null when none */
+export function checkBudgets(bp: BeforePlay, base: Baseline): string | null {
+  const errors = budgetLines(bp, base.budgets).map(b => b.error).filter(Boolean);
+  return errors.length ? errors.join('\n') : null;
+}
+
+/** The ratchet (render-performance design D2, item 2): a first load well under the ceiling, or a reported budget met */
+export function ratchet(m: Measure, bp: BeforePlay, base: Baseline): string[] {
+  const out: string[] = [];
+  /* Not for a few bytes: a local build and CI's differ by one on /js/nav.js (docs/perf/baseline.md) */
+  if (m.total < base.firstLoad.total - 64) out.push(`  ${base.firstLoad.total - m.total} bytes under the baseline's ${base.firstLoad.total}: a pull request that lowers first load records ${m.total} as firstLoad.total in docs/perf/baseline.json, with a changes entry saying why`);
+  for (const b of budgetLines(bp, base.budgets)) if (b.budgeted && !b.over && !b.failing) out.push(`  met while still reported: ${b.line.trim()}; the pull request that meets it turns its failing flag on in docs/perf/baseline.json budgets`);
+  return out;
+}
+
+/** The before-play lines printed under the game's table */
+export const beforePlayTable = (bp: BeforePlay, budgets?: Budgets): string =>
+  ['  before play (what the page requests before the first tap, the install\'s downloads aside):', ...budgetLines(bp, budgets).map(b => '  ' + b.line)].join('\n');
+
 /** The table printed on every run: the biggest files, then the total against the limit */
 export function table(m: Measure, limit?: number, page = PAGE): string {
   const rows = Object.entries(m.files).sort((a, b) => b[1] - a[1]);
@@ -203,12 +300,15 @@ function main(argv: string[]) {
     return;
   }
   const m = measure(site);
+  const bp = beforePlay(site);
   console.log(table(m, base?.firstLoad.total));
-  if (json) writeFileSync(json, JSON.stringify(m, null, 1) + '\n');
+  console.log(beforePlayTable(bp, base?.budgets));
+  if (json) writeFileSync(json, JSON.stringify({ ...m, beforePlay: bp }, null, 1) + '\n');
   if (base) {
-    const err = check(m, base);
-    if (err) {
-      console.error(`::error::${err}`);
+    for (const note of ratchet(m, bp, base)) console.log(note);
+    for (const err of [check(m, base), checkBudgets(bp, base)]) {
+      if (!err) continue;
+      for (const line of err.split('\n')) console.error(`::error::${line}`);
       process.exitCode = 1;
     }
   }

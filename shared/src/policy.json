@@ -50,5 +50,10 @@
   ["Permissions-Policy", "geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), interest-cohort=(), browsing-topics=(), fullscreen=(self \"https://www.youtube-nocookie.com\"), autoplay=(self \"https://www.youtube-nocookie.com\"), encrypted-media=(self \"https://www.youtube-nocookie.com\"), picture-in-picture=(self \"https://www.youtube-nocookie.com\")"],
   ["//", "Relative, so a preview or a local run reports to its own /_csp, never to production's"],
   ["Reporting-Endpoints", "csp=\"/_csp\""]
- ]
+ ],
+ "immutable": {
+  "//": "Cache-Control for the folders every page loads at ?v=<content hash> (openspec change render-performance, design D3, task 3.2): a stamped URL's bytes never change, so a browser may keep the file a year without asking again; Cloudflare's default (max-age=0, must-revalidate) asked once per file on every visit without the worker. By folder, since Cloudflare matches paths, not queries; no page loads a plain URL under one, and the worker fetches plain URLs with cache: 'reload'. Pages, sw.js, fonts, icons and the manifest keep the default. build.py writes the rules into _headers (headers_file).",
+  "paths": ["/js/*", "/css/*", "/ds/*", "/theme/*", "/math.css"],
+  "value": "public, max-age=31536000, immutable"
+ }
 }

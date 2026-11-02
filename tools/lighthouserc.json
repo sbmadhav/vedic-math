@@ -1,5 +1,5 @@
 {
-  "//": "Lighthouse settings and pages of the performance checks (openspec change react-typescript, performance-budget spec). e2e/perf/lighthouse.mts measures the baseline with them (task 0.4) and the preview perf job reads the same file (task 1.8). Mobile preset: Lighthouse's default (simulated slow 4G, 4x CPU slowdown). serverResponseTime: the server latency, in ms, the simulation uses for the measured origin whichever host serves the page (lantern's own default for an origin it has no data for, and about what production's edge gave the baseline run); the simulation adds it to every request on the way to largest contentful paint, so left to the observed value a workers.dev preview, which answers 20 to 30 ms slower, read 170 to 380 ms over the baseline on the same code (docs/perf/baseline.md). The observed latency is still recorded, as lat. From phase 2 the paths move under /learn/ (task 2.7).",
+  "//": "Lighthouse settings and pages of the performance checks (openspec change react-typescript, performance-budget spec). e2e/perf/lighthouse.mts measures the baseline with them (task 0.4) and the preview perf job reads the same file (task 1.8). Mobile preset: Lighthouse's default (simulated slow 4G, 4x CPU slowdown). serverResponseTime: the server latency, in ms, the simulation uses for the measured origin whichever host serves the page (lantern's own default for an origin it has no data for, and about what production's edge gave the baseline run); the simulation adds it to every request on the way to largest contentful paint, so left to the observed value a workers.dev preview, which answers 20 to 30 ms slower, read 170 to 380 ms over the baseline on the same code (docs/perf/baseline.md). The observed latency is still recorded, as lat. From phase 2 the paths move under /learn/ (task 2.7). landing and parents (openspec change render-performance, task 1.1): the landing page and a grown-up page on a first visit; tools/perf-compare.ts gates a page only once docs/perf/baseline.json records it, so until the start measurement is recorded the two are measured and written to the results, not shown in the table.",
   "ci": {
     "collect": {
       "numberOfRuns": 5,
@@ -16,6 +16,8 @@
     { "name": "play-repeat", "path": "/play/", "visit": "repeat" },
     { "name": "arena", "path": "/play/#/arena", "visit": "returning" },
     { "name": "games", "path": "/play/#/games", "visit": "returning" },
-    { "name": "deep-dive", "path": "/play/#/sutras/s1", "visit": "returning" }
+    { "name": "deep-dive", "path": "/play/#/sutras/s1", "visit": "returning" },
+    { "name": "landing", "path": "/", "visit": "first" },
+    { "name": "parents", "path": "/parents/", "visit": "first" }
   ]
 }

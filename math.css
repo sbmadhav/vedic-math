@@ -1477,6 +1477,9 @@ html.motion-paused .tour-ring, body.calm .tour-ring, html.motion-paused .tour-ca
 .play-card b { font-family: var(--font-display); font-size: var(--text-card-title-size); }
 .play-card em { font-style: normal; font-weight: 700; color: var(--cs); }
 .play-card span:last-child { color: var(--ink-muted); font-size: var(--text-nav-size); }
+/* Offline, an experience the worker never saved (js/play/offline-note.js): the card stays a link, with a note */
+.play-card--off { border-style: dashed; }
+.play-card-off { color: var(--ink-muted); font-size: var(--text-nav-size); font-weight: 700; }
 .play-card { --cs: var(--coral-strong); }
 .play-card--coral { --c: var(--coral); --cs: var(--coral-strong); } .play-card--sun { --c: var(--sun-strong); --cs: var(--sun-strong); } .play-card--teal { --c: var(--teal); --cs: var(--teal-strong); }
 @media (prefers-reduced-motion: reduce) { .play-card { transition: none; } .play-card:hover, .play-card:focus-visible { transform: none; } }

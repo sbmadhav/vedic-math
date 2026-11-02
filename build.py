@@ -31,9 +31,11 @@ What the build does (target site):
 - In play/index.html: an import map that pins every module under /js/ to ?v=<hash of that file>, and the #vm-css map
   for the play stylesheets. In every page: each same-origin .js and .css it loads gets ?v=<hash>.
 - sw.js: app/src/sw/sw.ts with its types taken out (tools/build-sw.mjs, run with the system node, 22.13 or newer),
-  then VERSION and the PRECACHE list between the "build.py: precache" markers. Every entry has the hash the worker
-  checks on install: the game shell /play/, every file it loads, every module at its import-map URL, the play
-  stylesheets, the fonts, the icons and the manifest.
+  then VERSION, the PRECACHE list and the LAZY list between the "build.py: precache" markers. Every PRECACHE entry has
+  the hash the worker checks on install: the game shell /play/, every file it loads, every module of the core at its
+  import-map URL, the body and heading fonts, the icons and the manifest. LAZY (openspec change render-performance,
+  design D10, owner P5) names the stamped URLs the install leaves out and the worker saves when a page first requests
+  them: the Play experiences and their styles, their kit and the video list (is_lazy()).
 - _headers: the security headers on every response, and per page a Content-Security-Policy and a stricter
   Report-Only one, built from that page's inline script hashes and THIRD_PARTIES. No page carries a CSP <meta>.
 - _redirects (old /vedic-math/ links to /play/), robots.txt, sitemap.xml, /.well-known/security.txt.
@@ -61,7 +63,18 @@ HEADER = "theme/header.html"
 EXPORT_PAGE = "https://sbmadhav.com/vm-export/"   # the one sbmadhav.com URL a published file may name (progress hand-off)
 MAP_START, MAP_END = "<!-- build.py: import map (generated, do not edit) -->", "<!-- /build.py: import map -->"
 SW_START, SW_END = "/* build.py: precache (generated, do not edit) */", "/* /build.py: precache */"
-SW_DEV = "const VERSION = 'dev';\nconst PRECACHE = [];"
+SW_DEV = "const VERSION = 'dev';\nconst PRECACHE = [];\nconst LAZY = [];"
+# Saved by the worker on first request, never precached (openspec change render-performance, design D10, owner P5): the
+# Play experiences and their styles and the video list. js/play/catalog.js and js/play/icons.js draw the
+# shelves, so they stay with the core. The landing page's own script is never requested under /play/, so it is in
+# neither list, and the two fonts only the experiences use are plain URLs the worker saves when first used.
+LAZY_PREFIXES = ("js/play/exp/", "css/play/")
+LAZY_FILES = ("js/play/life.js", "js/videos.js")  # js/play/kit.js stays core: js/app.js loads it a second after every page load
+NOT_PRECACHED = ("js/landing-sky.js", "fonts/space-grotesk-latin-wght-normal.woff2", "fonts/jetbrains-mono-latin-500-normal.woff2")
+
+
+def is_lazy(path):
+    return path.startswith(LAZY_PREFIXES) or path in LAZY_FILES
 BASELINE = "docs/perf/baseline.json"   # the first-load budget (check_budget)
 SW_SRC = "app/src/sw/sw.ts"   # published as /sw.js with its types taken out (worker_source)
 MARKERS = (".assetsignore", ".nojekyll")  # an earlier build: safe to empty
@@ -531,7 +544,16 @@ def check_security_txt(text, today):
 # ---------- pages ----------
 CSP_META = re.compile(r"""<meta\s+http-equiv=["']?Content-Security-Policy""", re.I)
 INLINE_SCRIPT = re.compile(r"<script(?![^>]*\bsrc=)([^>]*)>(.*?)</script>", re.S | re.I)
-RUNS = re.compile(r"""\btype=["']?(text/javascript|module|importmap|application/javascript)\b""", re.I)
+RUNS = re.compile(r"""\btype=["']?(text/javascript|module|importmap|application/javascript|speculationrules)\b""", re.I)
+# Speculation Rules on the landing and grown-up pages (openspec change render-performance, design D5, task 5.3): Chrome
+# prefetches a same-origin page link when it is hovered or touched (eagerness moderate), so the next document is here
+# before the tap; Safari and Firefox ignore the block. One selector rule, so no URL is listed: links with a query or a
+# hash (/play/?mode=..., /play/#/sutras/s1), downloads, new-tab links and .no-prefetch are left out. The block is an
+# inline script, so its hash goes into the page's policy (RUNS above). The prerender rule for the game waits for a
+# start-up that waits to be shown (design D6), and the game's own block for the React shell (app/src/root.tsx).
+SPECULATION = json.dumps({"prefetch": [{"where": {"selector_matches": "a[href^='/']:not([href*='?']):not([href*='#']):not([download]):not([target=_blank]):not(.no-prefetch)"},
+                                        "eagerness": "moderate"}]}, separators=(",", ":"))
+SPECULATION_TAG = f'<script type="speculationrules">{SPECULATION}</script>'
 INCLUDE_MD = re.compile(r"<!-- include-md: ([\w./-]+) -->")
 
 
@@ -696,6 +718,8 @@ def csp(html, page, report_only=False):
 
 
 COMMON_HEADERS = [tuple(h) for h in POLICY["headers"] if h[0] != "//"]
+# The folders every page loads at ?v=<content hash>: a year in the browser's cache, never asked again (headers_file)
+IMMUTABLE, IMMUTABLE_PATHS = POLICY["immutable"]["value"], tuple(POLICY["immutable"]["paths"])
 
 
 def headers_file(pages, preview):
@@ -704,6 +728,13 @@ def headers_file(pages, preview):
     microphone are named only here, never on /*: the game page allows them for this site (Math Lens asks for the camera,
     Tala Lab for the microphone, each after a tap), every other page turns them off."""
     rules = [("/*", COMMON_HEADERS + ([("X-Robots-Tag", "noindex, nofollow")] if preview else []))]
+    # Stamped files (openspec change render-performance, design D3, task 3.2): every same-origin script and stylesheet
+    # is loaded at ?v=<content hash>, a URL whose bytes never change, so a browser may keep it a year without asking
+    # again (Cloudflare's default, max-age=0 with must-revalidate, asked once per file on every visit without the
+    # worker). The rule is by folder, since Cloudflare matches paths, not queries; no page loads a plain URL under one,
+    # and the worker fetches plain URLs with cache: 'reload'. Pages, sw.js, fonts, icons and the manifest keep the default.
+    for path in IMMUTABLE_PATHS:
+        rules.append((path, [("Cache-Control", IMMUTABLE)]))
     for url, (html, kind) in sorted(pages.items()):
         rules.append((url, [("Cross-Origin-Opener-Policy", "same-origin-allow-popups" if url == "/import/" else "same-origin"),
                             ("Permissions-Policy", "camera=(self), microphone=(self)" if url == "/play/" else "camera=(), microphone=()"),
@@ -860,12 +891,17 @@ def build_site(args, out):
                 html = html[:first.start()] + page_map + html[first.start():]
         if not dev:
             html = stamp_refs(html, versions)
+        if page[1] == "site" and url != "/404.html":
+            head_end = html.find("</head>")
+            if head_end < 0:
+                fail(f"{url}: no </head> to put the Speculation Rules block in")
+            html = html[:head_end] + SPECULATION_TAG + "\n" + html[head_end:]
         for m in re.finditer(r'(?:src|href)="(/[^"?#]*)', html):
             if not (m.group(1).endswith("/") or m.group(1)[1:] in publish or m.group(1)[1:] in GENERATED):
                 fail(f"{url}: loads or links {m.group(1)}, which is not published")
         page[0] = html
 
-    # ---------- sw.js: precache list and VERSION ----------
+    # ---------- sw.js: precache list, LAZY list and VERSION ----------
     play_html = pages[APP][0]
     own = {APP: None, "/manifest.webmanifest": "manifest.webmanifest"}  # url -> published path (None: the shell)
     for u in re.findall(r'(?:src|href)="(/[^"]+)"', play_html):
@@ -878,14 +914,31 @@ def build_site(args, out):
     for u, p in own.items():
         if p is not None and p not in publish:
             fail(f"{u}: in the precache list but not published")
+    # The core is precached; a LAZY file is saved on first request (is_lazy), so none may be in the static import graph
+    # of js/app.js, which a first load requests before the worker has installed
+    graph, queue = set(), ["js/app.js"]
+    while queue:
+        p = queue.pop()
+        if p in graph or p not in publish:
+            continue
+        graph.add(p)
+        for spec in _specs(src(p).decode()):
+            queue.append(posixpath.normpath(spec[1:] if spec.startswith("/") else posixpath.join(posixpath.dirname(p), spec)))
+    for p in sorted(graph):
+        if is_lazy(p):
+            fail(f"{p}: in the static import graph of js/app.js, so a first load requests it, but build.py saves it on first request (is_lazy); "
+                 "load it on demand or take it off the lazy rule")
+    lazy = sorted(u for u, p in own.items() if p is not None and is_lazy(p))
+    own = {u: p for u, p in own.items() if p is None or not (is_lazy(p) or p in NOT_PRECACHED)}
     precache = [[u, h(play_html.encode()) if p is None else h(body(p))] for u, p in own.items()]
     if dev:
         sw_version = "dev"
     else:
         listing = "[\n" + ",\n".join(" " + json.dumps(e) for e in precache) + "\n]"
+        lazy_listing = "[\n" + ",\n".join(" " + json.dumps(u) for u in lazy) + "\n]"
         block = re.compile(re.escape(SW_START) + r".*?" + re.escape(SW_END), re.S)
-        sw_version = h((listing + block.sub(SW_START + SW_END, sw)).encode())
-        sw = block.sub(lambda m: f"{SW_START}\nconst VERSION = '{sw_version}';\nconst PRECACHE = {listing};\n{SW_END}", sw)
+        sw_version = h((listing + lazy_listing + block.sub(SW_START + SW_END, sw)).encode())
+        sw = block.sub(lambda m: f"{SW_START}\nconst VERSION = '{sw_version}';\nconst PRECACHE = {listing};\nconst LAZY = {lazy_listing};\n{SW_END}", sw)
 
     # ---------- generated files ----------
     security_txt = (ROOT / "site/.well-known/security.txt").read_text()
@@ -976,7 +1029,7 @@ def build_moved(out):
         fail("sw.js: the precache markers, the KILL switch or PREFIX not found")
     sw = re.sub(r"const PREFIX = '[\w-]+';", "const PREFIX = 'vedic-math-';", sw.replace("const KILL = false;", "const KILL = true;", 1), count=1)
     sw_version = h(("moved\n" + block.sub(SW_START + SW_END, sw)).encode())
-    sw = block.sub(lambda m: f"{SW_START}\nconst VERSION = '{sw_version}';\nconst PRECACHE = [];\n{SW_END}", sw)
+    sw = block.sub(lambda m: f"{SW_START}\nconst VERSION = '{sw_version}';\nconst PRECACHE = [];\nconst LAZY = [];\n{SW_END}", sw)
     empty(out)
     (out / "js").mkdir()
     (out / "index.html").write_text(html)
