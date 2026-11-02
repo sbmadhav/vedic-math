@@ -1,7 +1,7 @@
 /* Discovery Locks (#/dojo/locks): puzzle machines that hide a speed trick. Feed a lock, predict it, beat it,
    then build its rule from tiles; only then does it tell you the sutra you discovered.
    Routes: #/dojo/locks (the map), #/dojo/locks/<chapter>[/<level>]. Logic lives in locks-core.js. */
-import { head, level, store, rng, pick, shuffle, tone, sfx, PENTA, say, confetti, track, reducedMotion, esc } from '../kit.js';
+import { head, level, store, rng, pick, shuffle, tone, sfx, PENTA, say, confetti, track, reducedMotion, esc, hold } from '../kit.js';
 import { on, later, loop, child } from '../life.js';
 import * as L from './locks-core.js';
 
@@ -219,7 +219,12 @@ export function mount({ root, signal, params }) {
           panel.querySelectorAll('.lk-goal i').forEach((el, i) => el.classList.toggle('is-on', i < count));
           panel.querySelector('.lk-goal')?.setAttribute('aria-label', `${count} of ${need} ${streakMode ? 'in a row' : 'right'}`);
           if (count >= need) later(cleared, 900, qctl.c.signal);
-          else { panel.querySelectorAll('.lk-pad button, .lk-lampkeys button').forEach(b => { b.disabled = true; }); later(next, ok ? 900 : 2300, qctl.c.signal); }
+          else {
+            panel.querySelectorAll('.lk-pad button, .lk-lampkeys button').forEach(b => { b.disabled = true; });
+            /* A miss holds the keys for 2.3 s while the comparison shows (openspec change muse-review-polish, design D1): a bar
+               under them fills while it does, and Next (or Enter) asks the next number at once. A right answer's 0.9 s is a beat. */
+            hold(panel.querySelector('.lk-pad, .lk-lampkeys'), ok ? 900 : 2300, next, { skippable: true, signal: qctl.c.signal });
+          }
         });
       };
       on(panel, 'click', e => {

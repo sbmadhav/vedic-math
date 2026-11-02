@@ -87,7 +87,11 @@ const NUMS = { v: 9, sparks: 1e7, xp: 1e7, skyMigrated: 4102444800000 };
 const MAPS = { days: 1e6, best: 1e9, badges: 4102444800000, counts: 1e9, seen: 4102444800000, medals: 3, katasDone: 4102444800000,
   ratings: 20, weekSparks: 1e7, belts: 4102444800000, weekXp: 1e7, stars: 3 };
 const SKILL = { n: 1e9, c: 1e9, m: 1, streak: 1e9, last: 4102444800000 };
-const RECORD_FIELDS = new Set([...Object.keys(NUMS), ...Object.keys(MAPS), 'skills', 'last', 'grade', 'questDay', 'sky']);
+/* The Sparks history (js/store.js sparksLog, openspec change muse-review-polish): up to LOG_CAP entries of
+   { n, why, at, k? }, why a short lower-case word with : and - at most (quest, answer, play:locks) */
+const LOG_CAP = 50, LOG_WHY_RE = /^[a-z][a-z0-9:-]{0,40}$/;
+const okLog = e => isObj(e) && Object.keys(e).every(k => ['n', 'why', 'at', 'k'].includes(k)) && okNum(e.n, 1e7) && typeof e.why === 'string' && LOG_WHY_RE.test(e.why) && okTime(e.at) && (e.k === undefined || okNum(e.k, 1e9));
+const RECORD_FIELDS = new Set([...Object.keys(NUMS), ...Object.keys(MAPS), 'skills', 'last', 'grade', 'questDay', 'sky', 'sparksLog']);
 
 /* Strict check of one progress record. Returns the number of map entries, or throws with the reason. */
 function checkRecord(d) {
@@ -127,6 +131,9 @@ function checkRecord(d) {
           n++;
         }
       }
+    } else if (f === 'sparksLog') {
+      if (!Array.isArray(v) || v.length > LOG_CAP || !v.every(okLog)) throw new Error('sparksLog: bad value');
+      n += v.length;
     }
     if (n > MAX_RECORD_KEYS) throw new Error('record: too many entries');
   }
@@ -212,6 +219,7 @@ export function sanitizeRecord(d) {
     out.sky = { lit: filterMap(d.sky.lit, 4102444800000), skipped: filterMap(d.sky.skipped, 4102444800000) };
     if (isObj(d.sky.last)) out.sky.last = Object.fromEntries(Object.entries(d.sky.last).filter(([k, a]) => okKey(k) && Array.isArray(a)).map(([k, a]) => [k, a.filter(okKey).slice(0, 50)]));
   }
+  if (Array.isArray(d.sparksLog)) out.sparksLog = d.sparksLog.filter(okLog).slice(0, LOG_CAP).map(e => ({ ...e }));
   // Over the cap (never seen in practice): the least useful maps go first
   for (const f of ['seen', 'days', 'counts', 'badges']) { try { checkRecord(out); break; } catch (e) { if (/too many/.test(e.message)) out[f] = {}; else throw e; } }
   try { checkRecord(out); } catch (e) { return null; }
