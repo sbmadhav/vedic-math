@@ -139,7 +139,10 @@ export function init() {
     if (type === 'mastered') { confetti(); toast('<b>Skill mastered!</b> A new ring is full.', 'win'); }
     if (type === 'answer' || type === 'count' || type === 'seen') { checkBadges(); if (type !== 'seen') checkQuests(); }
     if (type === 'star' || type === 'belt') { if (type === 'star') keepBelts(); checkBadges(); }
-    if (type === 'player' || type === 'import') { migrate(); if (type === 'player') startDay(); }
+    /* A Mode change (a player event): a quest of the new Mode that today's play already meets completes now, with its
+       message where the Mode was changed (Me), not at the next answer somewhere else (openspec change muse-review-polish,
+       design D3). It still counts only today's activity: the baseline is the day's, from startDay(). */
+    if (type === 'player' || type === 'import') { migrate(); if (type === 'player') { startDay(); checkQuests(); } }
   });
   migrate(); startDay(); atMidnight();
 }
