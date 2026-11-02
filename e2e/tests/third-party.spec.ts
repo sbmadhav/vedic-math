@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { test, expect, APP } from './fixtures';
+import { test, expect, APP, skipHook, pickMode } from './fixtures';
 import type { Page } from '@playwright/test';
 
 /* Third parties (openspec third-party-requests, change learnvedicmath, design D10, task 7.4). build.py holds the one
@@ -43,9 +43,10 @@ test.describe('a first-time visitor', () => {
     await expect(page.locator('h1').first()).toBeVisible();
     await page.goto(APP); // the game: a first visit meets the Mode picker
     await expect(page.locator('.mode-pick .mode-card')).toHaveCount(3);
-    await page.locator('.mode-card[data-mode="challenger"]').click(); // picks a Mode
+    await pickMode(page, 'challenger'); // picks a Mode, then skips the Placement offer
     await expect(page.locator('#view h1').first()).toBeVisible();
     await page.goto(`${APP}#/star/sq5/1`); // plays a Star: four right answers light it
+    await skipHook(page); /* a brand-new Player's first Star opens with the Hook (openspec hook) */
     for (let i = 1; i <= 4; i++) {
       await expect(page.locator('#stMain .star-tag')).toHaveText(`Question ${i} of 4`);
       await page.keyboard.type(await sq(page));

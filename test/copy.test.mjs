@@ -168,6 +168,8 @@ test('the parent note says what the privacy policy says, in every Mode', () => {
     // The launch has World boards off (tasks 1.8 and 8.5): the note says so without claiming nothing at all is sent
     // (the site still counts visits, said further down)
     'Right now no score is sent anywhere: World boards are switched off on this site, so every score stays in this browser.',
+    // The Placement level, for grown-ups only (openspec placement, parent-note spec): it sets where practice starts and stays on the device
+    'placed at about ${gradeWords(placed.grade)}. It only sets where practice starts, and it stays on this device.',
   ]) assert.ok(note.includes(s), s);
   assert.ok(!note.includes('nothing is sent anywhere'), 'analytics still counts visits, so the note never says nothing is sent');
   for (const gone of ['linkedin', 'LinkedIn', 'Parent step', 'turn on World boards for them, a grown-up', 'Entries are not deleted automatically']) assert.ok(!note.includes(gone), gone);

@@ -1,5 +1,5 @@
 import type { BrowserContext, Page, Route } from '@playwright/test';
-import { test, expect, APP, open, cloudLog, chromiumOnly, FIREBASE_SDK, FIREBASE_AUTH, FIRESTORE, showWorld, needsWorldBoards } from './fixtures';
+import { test, expect, APP, open, cloudLog, chromiumOnly, FIREBASE_SDK, FIREBASE_AUTH, FIRESTORE, showWorld, needsWorldBoards, pickMode } from './fixtures';
 import { fakeAudio, audioLog } from './audio-fake';
 import { fillAnswer } from './split-kit';
 
@@ -135,7 +135,7 @@ test.describe('first visit', () => {
   test('every route renders offline after one visit', async ({ page, context }) => {
     test.setTimeout(120_000);
     await page.goto(APP);
-    await page.locator('.mode-card[data-mode="pro"]').click();
+    await pickMode(page, 'pro');
     await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
     await workerReady(page);
     /* Watch's video list and the Play experiences are saved when first opened online, not at install (openspec change

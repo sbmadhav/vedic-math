@@ -1,4 +1,4 @@
-import { test, expect, APP, open } from '../fixtures';
+import { test, expect, APP, open, pickMode, skipHook } from '../fixtures';
 
 /* first-visit spec: one test per scenario. A Mode guess kept from before (openspec try-trick-in-modes: nothing sets one
    now), Back home from a Star opened from Home or from the end of a Try a trick, the three doors, More ways to play, the
@@ -33,7 +33,7 @@ test.describe('a new visitor', () => {
   test('Try a trick sets no guess: the Challenger card, then Try a trick on Home, sets Challenger with no guess and sends math/mode/challenger once', async ({ page }) => {
     await page.route(/\/js\/analytics\.js(\?.*)?$/, route => route.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
     await page.goto(APP);
-    await page.locator('.mode-card[data-mode="challenger"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
+    await pickMode(page, 'challenger'); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
     await expect(page.locator('#tyStart')).toBeVisible();
     const p = await player(page);
     expect(p.mode).toBe('challenger');
@@ -43,10 +43,11 @@ test.describe('a new visitor', () => {
 
   test('After the trial: Play Star 1 at the end of Try a trick, then the Star round\'s Back control, opens Home', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('.mode-card[data-mode="challenger"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
+    await pickMode(page, 'challenger'); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
     await page.locator('#tyStart').click();
     for (const a of [625, 2025, 4225]) { await page.locator('#tyIn').fill(String(a)); await page.keyboard.press('Enter'); await page.locator('#tyNext').click(); }
     await page.locator('#tyGoOn').click();
+    await skipHook(page); /* a brand-new Player's first Star opens with the Hook (openspec hook) */
     await expect(page.locator('#stExit')).toBeVisible();
     await page.locator('#stExit').click();
     await expect(page).toHaveURL(new RegExp(`${APP.replace(/\//g, '\\/')}#\\/$`));

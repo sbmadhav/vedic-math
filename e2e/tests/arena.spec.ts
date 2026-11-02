@@ -278,7 +278,7 @@ function mentalAnswer(text: string) {
 }
 /* A Player's saved progress before the page loads (only on a fresh profile, like the fixtures' Player) */
 async function seedProgress(page: import('@playwright/test').Page, id: string, data: Record<string, unknown>) {
-  await page.addInitScript(([k, v]) => { if (!localStorage.getItem(k)) localStorage.setItem(k, v); }, [`mathquest.v1.${id}`, JSON.stringify(data)] as const);
+  await page.addInitScript(([k, v]) => { const cur = localStorage.getItem(k); if (!cur || /^\{"hookSeen":\d+\}$/.test(cur)) localStorage.setItem(k, JSON.stringify({ ...JSON.parse(cur || "{}"), ...JSON.parse(v) })); } /* over the fixtures' Hook-seen record (openspec hook) */, [`mathquest.v1.${id}`, JSON.stringify(data)] as const);
 }
 const savedRating = (page: import('@playwright/test').Page, key: string) =>
   page.evaluate(async k => (await e2eMod('store')).rating(k) as number, key);
