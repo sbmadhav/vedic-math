@@ -2259,6 +2259,9 @@ const preloadTags = () => later(() => {
 if (document.readyState === 'complete') preloadTags(); else on(window, 'load', preloadTags, boot.signal, { once: true });
 /* Offline: /sw.js (scope /learn/, the game only) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
-  const registerSW = () => navigator.serviceWorker.register('/sw.js', { scope: '/learn/' }).catch(() => {});
+  /* Any other registration is the one this browser saved before the move, under the game's old scope: asked to update,
+     it gets the same /sw.js, which retires there (openspec change indexable-routes, design D10) */
+  const retireOld = () => navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => { if (new URL(r.scope).pathname !== '/learn/') r.update().catch(() => {}); })).catch(() => {});
+  const registerSW = () => navigator.serviceWorker.register('/sw.js', { scope: '/learn/' }).then(retireOld, () => {});
   if (document.readyState === 'complete') registerSW(); else addEventListener('load', registerSW, { once: true });
 }

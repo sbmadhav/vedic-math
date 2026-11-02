@@ -554,7 +554,8 @@ def check_published(out, voice):
             fail(f"{rel}: names a speech provider ({host.group(0)}); the site must only play its own recorded files")
         if secret:
             fail(f"{rel}: holds something shaped like an API key or token ({secret.group(0)[:6]}...); keys stay in the shell that records")
-        if rel != "_redirects" and OLD_GAME.search(text.replace(MANIFEST_ID, "") if rel == "manifest.webmanifest" else text):
+        # sw.js names it for its retiring branch (a worker still registered under /play/; indexable-routes task 2.4)
+        if rel not in ("_redirects", "sw.js") and OLD_GAME.search(text.replace(MANIFEST_ID, "") if rel == "manifest.webmanifest" else text):
             fail(f"{rel}: names the game's old address /play/; the game is at /learn/ (only _redirects maps old links; openspec change indexable-routes)")
         if rel != "_redirects" and "/vedic-math/" in text:
             fail(f"{rel}: names a /vedic-math/ path; the site is served from the root of learnvedicmath.com (only _redirects maps old links)")

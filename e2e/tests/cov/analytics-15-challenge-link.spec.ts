@@ -33,7 +33,7 @@ test('The button: each tap on Challenge a friend sends exactly one math/share_cl
   for (const [p, t] of await events(page)) expect(p + t, 'no Score or Nickname in any event').not.toMatch(/\b10\b|Swift|Tiger/);
 });
 
-test('Opening a link: the route view is math/view/arena/day, and no request but the page's own or event carries the fragment, the date or the Score', async ({ page }) => {
+test('Opening a link: the route view is math/view/arena/day, and no event and no request but the page itself carries the fragment, the date or the Score', async ({ page }) => {
   const requests: { url: string; body: string }[] = [];
   page.on('request', r => requests.push({ url: r.url(), body: r.postData() || '' }));
   await clockAt(page, new Date('2026-10-30T10:00:00'));

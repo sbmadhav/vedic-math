@@ -108,7 +108,8 @@ test('the output has the pages at the root, is stamped, and holds only publishab
 
 /* The move (openspec change indexable-routes, design D2 and D9, task 2.2): the game is at /learn/; every old address
    answers 301 with the same screen there, forever, and no published file but _redirects names /play/ (the manifest's
-   id, which names the installed app, never changes) */
+   id, which names the installed app, never changes; sw.js, whose retiring branch serves a worker still registered
+   under /play/, task 2.4) */
 test('_redirects moves /play/ and the old origin to /learn/ and answers the four aliases; nothing else names /play/', () => {
   build();
   const lines = read('_redirects').split('\n').filter(l => l && !l.startsWith('#'));
@@ -119,11 +120,12 @@ test('_redirects moves /play/ and the old origin to /learn/ and answers the four
   const old = /(?:(?<![\w.~-])|(?<=learnvedicmath\.com))\/play(?![\w.-])/;
   for (const p of walk(out)) {
     const rel = relative(out, p);
-    if (rel === '_redirects' || /\.(png|woff2|webp|m4a|gz|wasm|traineddata)$/.test(rel)) continue;
+    if (rel === '_redirects' || rel === 'sw.js' || /\.(png|woff2|webp|m4a|gz|wasm|traineddata)$/.test(rel)) continue;
     const text = readFileSync(p, 'utf8');
     assert.doesNotMatch(rel === 'manifest.webmanifest' ? text.replace('"id": "/play/"', '') : text, old, `${rel} names /play/`);
   }
   assert.equal(JSON.parse(read('manifest.webmanifest')).id, '/play/', 'the installed app keeps its id');
+  assert.match(read('sw.js'), /\nconst OLD_SCOPE = '\/play\/';/, 'the worker knows the old scope, to retire there');
   assert.ok(!existsSync(join(out, 'play')), 'nothing is published under play/');
   withEdit('js/life.js', s => s + "\n// location.assign('/play/#/arena')\n", () => fails(tryBuild(), /js\/life\.js: names the game's old address \/play\//));
 });
@@ -331,7 +333,7 @@ test('every landing and grown-up page carries one Speculation Rules block its po
     const rule = headers.match(new RegExp(`^${url.replace(/[*.]/g, '\\$&')}\\n((?: {2}.*\\n)*)`, 'm'))[1];
     assert.ok(rule.includes(`'sha256-${hash}'`), `${url}: the block's hash is in the page's policy`);
   }
-  for (const f of ['play/index.html', '404.html']) assert.doesNotMatch(read(f), /speculationrules/, `${f} carries no rules block`);
+  for (const f of ['learn/index.html', 'learn/sutras/s1.html', '404.html']) assert.doesNotMatch(read(f), /speculationrules/, `${f} carries no rules block`);
 });
 
 /* Compressed and immutable delivery (openspec change render-performance, design D3, task 3.2): the folders every page
@@ -752,6 +754,7 @@ test('the build fails when a page under /learn/ has an inline script the others 
   const r = withEdit('tools/prerender/write.ts', s => s.replace('html: withHead(shell, meta, ORIGIN + entry.path, entry.indexed)',
     "html: withHead(shell, meta, ORIGIN + entry.path, entry.indexed).replace('</body>', (entry.path === '/learn/sutras/s1' ? '<script>1</script>' : '') + '</body>')"), () => tryBuild());
   fails(r, /learn\/sutras\/s1\.html: its inline scripts differ from the game shell's/);
+  rmSync(out, { recursive: true, force: true }); // the failed build leaves a partial folder the next build would refuse
 });
 
 /* ---------- the Trick pages' browser modules (trick-pages design D4; teacher-warm-up design D7, task 1.2) ---------- */

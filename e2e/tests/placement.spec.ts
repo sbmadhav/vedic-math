@@ -176,7 +176,7 @@ test.describe('Explorer', () => {
     await expect(page.locator('h1.home-h')).toHaveText('What do you want to play?');
     const first = page.locator('.play-grid--big .play-tile').first();
     await expect(first).toHaveText(/Start here/);
-    await expect(first).toHaveAttribute('href', /^#\/skill\/2-/);
+    await expect(first).toHaveAttribute('href', new RegExp(`^${APP}skill/2-`));
     await expect(page.locator('.play-grid--big .play-tile')).toHaveCount(9);
     await open(page, '#/learn');
     await expect(page.locator('.mq-strand').first()).toHaveText('Suggested for you');
@@ -190,7 +190,7 @@ test.describe('a seeded Explorer at grade 3', () => {
     await open(page);
     const first = page.locator('.play-grid--big .play-tile').first();
     await expect(first).toContainText('Start here');
-    await expect(first).toHaveAttribute('href', /^#\/skill\/3-/);
+    await expect(first).toHaveAttribute('href', new RegExp(`^${APP}skill/3-`));
     await first.click();
     await expect(page.locator('.mq-crumbs')).toContainText('Grade 3');
     // Practice reads the level when there is no Rating; a Ranked round keeps Explorer's start (ADR 0007)
@@ -360,7 +360,8 @@ test('during and after a Placement no request carries the grade, the steps or an
   const log = await cloudLog(page);
   expect(log.writes).toEqual([]);
   expect(await context.cookies()).toEqual([]);
-  for (const r of reqs) expect(r).not.toMatch(/placement|grade=|steps|answer/i);
+  /* The screen's own address is its path since the move to /learn/ (indexable-routes): that bare page load is the one request naming it */
+  for (const r of reqs.filter(r => !/^GET \S+\/learn\/placement $/.test(r))) expect(r).not.toMatch(/placement|grade=|steps|answer/i);
   const ev = await events(page);
   expect(ev.filter(e => e.startsWith('math/placement/'))).toEqual(['math/placement/done']);
   expect(ev.some(e => /\/5\b|grade|steps/.test(e.replace('math/view/', '')))).toBe(false);

@@ -327,6 +327,27 @@ test.describe('the Install guide', () => {
   });
 });
 
+/* The manifest after the move to /learn/ (openspec change indexable-routes, design D10, task 2.4): the app starts and
+   stays under /learn/, its shortcuts are paths there, and its id stays /play/ so an app installed before the move
+   updates in place */
+test('the manifest: start_url, scope and shortcuts under /learn/, the id unchanged, each opening its screen as the Installed app', async ({ page, request }) => {
+  const m = await (await request.get('/manifest.webmanifest')).json();
+  expect([m.id, m.start_url, m.scope]).toEqual(['/play/', '/learn/?source=pwa', '/learn/']);
+  expect(m.shortcuts.map((s: { url: string }) => s.url)).toEqual(['/learn/arena', '/learn/skills', '/learn/sutras']);
+  await asInstalledApp(page);
+  for (const url of [m.start_url, ...m.shortcuts.map((s: { url: string }) => s.url)] as string[]) {
+    const res = await page.goto(url);
+    expect(res?.status(), url).toBe(200);
+    await expect(page.locator('#view h1, #view h2').first(), url).toBeVisible();
+    expect(new URL(page.url()).pathname, url).toBe(new URL(url, page.url()).pathname);
+  }
+  /* The outside-link rule reads /learn/: a link to a screen stays in the app */
+  await expect(page.locator('html')).toHaveClass(/\blv-installed\b/);
+  const inside = page.locator(`a[href^="${APP}"]:visible`).first();
+  await expect(inside).toBeVisible();
+  await expect(inside).not.toHaveAttribute('target', /.+/);
+});
+
 test.describe('the Installed app', () => {
   test.use({ seedProgress: RETURNING, userAgent: UA.androidChrome });
   for (const ios of [false, true]) {

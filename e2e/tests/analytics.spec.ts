@@ -25,6 +25,20 @@ test('each rendered route sends one route view, numbers collapsed; no GoatCounte
   expect(gc).toEqual([]);
 });
 
+/* Analytics on paths (openspec change indexable-routes, design D11, task 2.5): the route view is named from the route
+   key the router derived from the path, so the names are the same as before the move, and an old link counts once */
+test('a path, an old /play/#/ link and a query each send the same one route view, with no query in any event', async ({ page }) => {
+  for (const [url, view] of [['/learn/arena', 'math/view/arena'], ['/play/#/arena', 'math/view/arena'], ['/learn/#/arena', 'math/view/arena'],
+    ['/learn/game/times-sprint/1?problem=1-42&x=y', 'math/view/game/times-sprint/level'], ['/play/skills?x=1', 'math/view/learn']] as const) {
+    await page.goto(url);
+    await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
+    await expect.poll(() => events(page), url).toContain(view);
+    const ev = await events(page);
+    expect(ev.filter(e => e.startsWith('math/view/')), `${url}: one route view after the address became the path`).toEqual([view]);
+    for (const e of ev) expect(e, `${url}: no query in any event`).not.toMatch(/[?&=#]|problem|42/);
+  }
+});
+
 test.describe('first visit', () => {
   test.use({ seedMode: null });
   test('the Mode picker is counted as pick-mode', async ({ page }) => {

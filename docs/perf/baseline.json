@@ -18,7 +18,7 @@
  "firstLoad": {
   "page": "/learn/",
   "voice": "off",
-  "total": 582293,
+  "total": 583375,
   "files": {
    "/ds/2.2.0/components.css": 6692,
    "/ds/2.2.0/header.js": 1166,
@@ -37,9 +37,9 @@
    "/icons/maskable-512.png": 11879,
    "/js/adapt.js": 1997,
    "/js/ambient.js": 4480,
-   "/js/analytics.js": 1385,
+   "/js/analytics.js": 1622,
    "/js/answers.js": 912,
-   "/js/app.js": 60519,
+   "/js/app.js": 60656,
    "/js/arena.js": 4674,
    "/js/backup.js": 3030,
    "/js/bolt.js": 1088,
@@ -73,7 +73,7 @@
    "/js/life.js": 1103,
    "/js/listen.js": 1335,
    "/js/mental.js": 155,
-   "/js/metrics.js": 4476,
+   "/js/metrics.js": 4588,
    "/js/nav.js": 1555,
    "/js/paths.js": 2992,
    "/js/placement-view.js": 3740,
@@ -81,7 +81,7 @@
    "/js/play/catalog.js": 1783,
    "/js/play/icons.js": 721,
    "/js/play/kit.js": 4154,
-   "/js/play/offline-note.js": 951,
+   "/js/play/offline-note.js": 1056,
    "/js/prompt-slot.js": 629,
    "/js/related.js": 516,
    "/js/say-clips.js": 677,
@@ -139,10 +139,10 @@
    "/js/voice-worker.js": 877,
    "/js/voice.js": 14837,
    "/js/watch.js": 2376,
-   "/learn/": 4702,
+   "/learn/": 4719,
    "/manifest.webmanifest": 604,
    "/math.css": 27719,
-   "/sw.js": 7865,
+   "/sw.js": 8339,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
@@ -417,8 +417,8 @@
     "date": "2026-11-01",
     "pr": "learn-release",
     "from": 580549,
-    "to": 582293,
-    "why": "indexable-routes group 2, the /learn/ release (tasks 2.1 to 2.5 merged with main as of #197, #198 to #204): the measured page is /learn/ (was /play/; learn/index.html with the pre-paint script that turns an old #/ route into its path), the router on paths (js/app.js, js/paths.js with main's #/arena/day and #/placement rows), the worker's /learn/ scope with its retiring branch for /play/ and the shell fallback (sw.js), share links as paths (js/play/kit.js, shared/src/site.ts APP_BASE /learn/), the GoatCounter page view on the path (js/analytics.js); re-measured on the merge with --voice off; main's figure for /js/nav.js; file deltas: /js/app.js +1347, /js/guide.js +1, /js/handoff.js +69, /js/install-rules.js -8, /js/metrics.js -7, /js/paths.js +91, /js/play/kit.js +51, /js/ts/shared/src/challenge.js +16, /js/ts/shared/src/site.js +10, /learn/ new 4702, /manifest.webmanifest -1, /play/ removed, /sw.js +26; +1744 in all"
+    "to": 583375,
+    "why": "indexable-routes group 2, the /learn/ release (tasks 2.1 to 2.5, merged with main as of #204 and #197): the measured page is /learn/ (was /play/; learn/index.html, whose first script turns an old #/ route into its path), the router on paths (js/app.js; js/paths.js with main's #/arena/day and #/placement rows), the worker's retiring branch for a registration under /play/ and the shell fallback for every /learn/ page (sw.js), share and challenge links as paths (js/play/kit.js, shared/src/site.ts APP_BASE /learn/), GoatCounter's page view on the path (js/analytics.js); re-measured on the merge with --voice off; main's figure for /js/nav.js; file deltas: /js/analytics.js +237, /js/app.js +1484, /js/guide.js +1, /js/handoff.js +69, /js/install-rules.js -8, /js/metrics.js +105, /js/paths.js +91, /js/play/kit.js +51, /js/play/offline-note.js +105, /js/ts/shared/src/challenge.js +16, /js/ts/shared/src/site.js +10, /learn/ new 4719, /manifest.webmanifest -1, /play/ removed, /sw.js +500; +2826 in all"
    }
   ]
  },

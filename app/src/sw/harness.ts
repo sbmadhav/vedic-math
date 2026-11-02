@@ -46,9 +46,11 @@ export type Load = {
   /* The names of the worker's functions to reach (they are top-level function declarations) */
   expose?: string[];
   slowPut?: boolean;
+  /* The registration's scope (the game's, /learn/, unless a test runs the worker under the old /play/ scope) */
+  scope?: string;
 };
 
-export function load({ edits = [], expose = [], slowPut = false }: Load = {}) {
+export function load({ edits = [], expose = [], slowPut = false, scope = '/learn/' }: Load = {}) {
   const listeners: Record<string, (event: unknown) => void> = {};
   const caches = new Map<string, FakeCache>();
   const open = (name: string) => { let c = caches.get(name); if (!c) { c = fakeCache(slowPut); caches.set(name, c); } return c; };
@@ -56,7 +58,7 @@ export function load({ edits = [], expose = [], slowPut = false }: Load = {}) {
      answer when a test sets one (else the type the URL's name promises) */
   const net = { up: true, calls: [] as string[], body: 'net', type: undefined as string | undefined };
   /* The registration: unregister (the kill switch) and navigation preload, off until activate enables it */
-  const registration = { unregister: async () => true, navigationPreload: { enabled: false, enable: async () => { registration.navigationPreload.enabled = true; } } };
+  const registration = { scope: new URL(scope, ORIGIN).href, unregister: async () => true, navigationPreload: { enabled: false, enable: async () => { registration.navigationPreload.enabled = true; }, disable: async () => { registration.navigationPreload.enabled = false; } } };
   const ctx: Record<string, unknown> = {
     self: { addEventListener: (type: string, fn: (event: unknown) => void) => { listeners[type] = fn; }, skipWaiting: async () => {}, clients: { claim: async () => {} }, registration },
     caches: {
@@ -73,7 +75,7 @@ export function load({ edits = [], expose = [], slowPut = false }: Load = {}) {
       return response(`${net.body}:${url}`, net.type === undefined ? {} : { contentType: net.type });
     },
     Request: class { url: string; cache: string | undefined; constructor(url: string, init: { cache?: string } = {}) { this.url = new URL(url, ORIGIN).href; this.cache = init.cache; } },
-    Response: class { constructor(public body: string, public init: unknown) {} },
+    Response: class { constructor(public body: string, public init: unknown) {} static redirect(url: string, status = 302) { return { ok: false, type: 'basic', status, body: '', redirected: url, headers: { get: (name: string) => (name.toLowerCase() === 'location' ? url : null) }, clone() { return this; } }; } },
     location: { origin: ORIGIN }, URL, setTimeout, Promise, console, crypto,
   };
   let src: string = buildWorker();

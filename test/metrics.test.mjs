@@ -36,6 +36,19 @@ test('route views: every route collapses to its template, numbers become fixed w
   for (const [h, want] of Object.entries(SAMPLES)) assert.equal(M.routePath(h, known), want, h);
 });
 
+/* Analytics on paths (openspec change indexable-routes, design D11, task 2.5): the router derives the route key from
+   the path (js/paths.js toKey) and routePath takes that key, so a path sends the name its #/ route always sent */
+test('route views on paths: routePath(toKey(path)) is the name the #/ route sent, codes and seeds never in it', async () => {
+  const { toKey, toPath } = await import('../js/paths.js');
+  for (const [h, want] of Object.entries(SAMPLES)) {
+    const path = toPath(h || '#/');
+    if (!path || toKey(path) !== (h || '#/')) continue; // a second name (#/tricks, #/progress, #/duel) is its screen's one path
+    assert.equal(M.routePath(toKey(path), known), want, path);
+  }
+  assert.equal(M.routePath(toKey('/learn/arena/day/2026-10-30/challenger/240'), known), 'arena/day');
+  assert.equal(M.routePath(toKey('/learn/arena/ghosts/r/abc'), known), 'play/ghosts');
+});
+
 test('every route in the app router has a sample above', () => {
   const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
   const block = app.slice(app.indexOf('const routes = ['), app.indexOf('];', app.indexOf('const routes = [')));

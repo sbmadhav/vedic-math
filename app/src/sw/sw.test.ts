@@ -138,3 +138,53 @@ test("a page's 'cached?' message is answered on its port with the saved URLs amo
   await settled();
   expect(got).toBeNull();
 });
+
+/* The move to /learn/ (openspec change indexable-routes, design D10, task 2.4) */
+test('offline, every page load under /learn/ (a route path, a share code, a challenge link, a query, a miss) gets the saved shell; nothing outside /learn/ does', async () => {
+  const sw = built();
+  await sw.open('lvm-test123456').put(at('/learn/'), response('the shell'));
+  sw.net.up = false;
+  for (const path of ['/learn/games', '/learn/sutras/s1', '/learn/kata/sq5/12', '/learn/arena/ghosts/r/abc', '/learn/arena/day/2026-10-30/challenger/240', '/learn/skills?problem=1', '/learn/arnea'])
+    expect((await sw.request(at(path), { mode: 'navigate' }).answer!).body, path).toBe('the shell');
+  for (const path of ['/', '/parents/', '/tricks/divide-by-9/', '/learning'])
+    expect(sw.request(at(path), { mode: 'navigate' }).answered, path).toBe(false);
+});
+
+const retiring = () => load({ edits: [["const VERSION = 'dev';", "const VERSION = 'test123456';"]], scope: '/play/' });
+
+test('under the old /play/ scope the worker retires: each page load is a 301 to the same path under /learn/, query kept, online or offline', async () => {
+  const sw = retiring();
+  for (const up of [true, false]) {
+    sw.net.up = up;
+    for (const [from, to] of [['/play/', '/learn/'], ['/play/games', '/learn/games'], ['/play/sutras/s1', '/learn/sutras/s1'], ['/play/?source=pwa', '/learn/?source=pwa'], ['/play/kata/sq5/1?mode=pro', '/learn/kata/sq5/1?mode=pro']] as const) {
+      const r = sw.request(at(from), { mode: 'navigate' });
+      expect(r.answered, from).toBe(true);
+      const res = await r.answer! as FakeResponse & { redirected: string };
+      expect([res.status, res.redirected], from).toEqual([301, at(to)]);
+    }
+  }
+  expect(sw.net.calls).toEqual([]);
+});
+
+test('under the old /play/ scope the worker keeps no cache and answers nothing but page loads under /play/', () => {
+  const sw = retiring();
+  sw.listeners.install!({ waitUntil: () => {} });
+  expect([...sw.caches.keys()]).toEqual([]); // nothing precached
+  for (const u of ['/js/app.js?v=abcdef0123', '/sounds/om.m4a?v=1', '/manifest.webmanifest', '/vendor/tesseract/worker.min.js'])
+    expect(sw.request(at(u)).answered, u).toBe(false);
+  expect(sw.request('https://voice.learnvedicmath.com/l/0123456789abcd.m4a').answered).toBe(false);
+  expect(sw.request(at('/learn/games'), { mode: 'navigate' }).answered).toBe(false); // the /learn/ worker's
+  expect(sw.request(at('/parents/'), { mode: 'navigate' }).answered).toBe(false);
+  expect(sw.request(at('/play/games'), { method: 'POST', mode: 'navigate' }).answered).toBe(false);
+});
+
+test('under the old /play/ scope, activate deletes the old version caches and keeps this version, lvm-voice and lvm-sounds', async () => {
+  const sw = retiring();
+  for (const name of ['lvm-old0000000', 'lvm-test123456', 'lvm-voice', 'lvm-sounds', 'other-cache']) await sw.open(name).put(at('/x'), response('kept?'));
+  sw.registration.navigationPreload.enabled = true;
+  let done: Promise<void> = Promise.resolve();
+  sw.listeners.activate!({ waitUntil: (p: Promise<void>) => { done = p; } });
+  await done;
+  expect([...sw.caches.keys()]).toEqual(['lvm-test123456', 'lvm-voice', 'lvm-sounds', 'other-cache']);
+  expect(sw.registration.navigationPreload.enabled).toBe(false);
+});
