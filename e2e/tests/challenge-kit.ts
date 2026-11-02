@@ -11,7 +11,7 @@ export const NOW = new Date(`${DAY}T10:00:00`);
 /* The link's hash, with or without its Score part */
 export const link = (day: string, league: string, score?: string) => `#/arena/day/${day}/${league}${score === undefined ? '' : `/${score}`}`;
 /* The one canonical link the app writes (design D1): the live site, whatever host built it */
-export const siteLink = (day: string, league: string, score: number) => `https://learnvedicmath.com/play/#/arena/day/${day}/${league}/${score}`;
+export const siteLink = (day: string, league: string, score: number) => `https://learnvedicmath.com/learn/arena/day/${day}/${league}/${score}`;
 
 /* A fake clock held at a fixed local date, moved only by the test (as arena-5 does) */
 export async function clockAt(page: Page, when: Date) {

@@ -1,4 +1,4 @@
-/* Challenge links (openspec change arena-challenge-link): #/arena/day/<YYYY-MM-DD>/<league>/<score>. The date and the
+/* Challenge links (openspec change arena-challenge-link): /learn/arena/day/<YYYY-MM-DD>/<league>/<score>, the path of the route #/arena/day/... (indexable-routes). The date and the
    League are the whole recipe for a daily round (questions.ts dailySet), so a link reproduces the sharer's round exactly,
    and the Score is the one to beat; nothing else is carried (design D1 and D3). Pure: the Arena view (js/app.js) reads
    the link through js/arena.js, and a Duel's server can check the same link. */
@@ -53,7 +53,7 @@ export function parseChallenge(parts: unknown, today: string, league: string): C
 
 /* The one canonical link, always with its three parts (design D1); the Score is clamped to what the parser takes */
 export const challengeUrl = ({ day, league, score }: { day: string; league: string; score?: number | null }): string =>
-  `${SITE}${APP_BASE}#/arena/day/${day}/${league}/${Math.min(MAX_CHALLENGE_SCORE, Math.max(0, Math.round(Number(score) || 0)))}`;
+  `${SITE}${APP_BASE}arena/day/${day}/${league}/${Math.min(MAX_CHALLENGE_SCORE, Math.max(0, Math.round(Number(score) || 0)))}`;
 
 /* What Challenge a friend hands the share sheet (design D4 and D5): a title, three lines of words (the site, the round,
    the League and the date; the Score and its parts; the invitation) and the link. The same words in every Mode: the

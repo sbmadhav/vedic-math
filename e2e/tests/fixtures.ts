@@ -244,7 +244,7 @@ export const test = base.extend<Fixtures>({
           if (mode) localStorage.setItem('vm.players', JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode, created: Date.now(), ...mark, ...(consent || {}), ...(more || {}) }] }));
           // A first visit to the game (no Mode): the Player the game would make, with the mark, so the Mode picker is not
           // covered by the question. Only on the game's pages: the landing and import pages must find no Players.
-          else if (asked && /^\/play(\/|$)/.test(location.pathname)) localStorage.setItem('vm.players', JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode: null, created: Date.now(), ...mark }] }));
+          else if (asked && /^\/learn(\/|$)/.test(location.pathname)) localStorage.setItem('vm.players', JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode: null, created: Date.now(), ...mark }] }));
           // The Hook seen (openspec hook): a seeded Player's record carries the flag unless the spec wants the Hook
           const record = mode && (progress || hook) ? { ...(progress || {}), ...(hook && !(progress && 'hookSeen' in progress) ? { hookSeen: 1_700_000_000_000 } : {}) } : null;
           if (record) localStorage.setItem('mathquest.v1.p1', JSON.stringify(record));
@@ -303,9 +303,37 @@ export const test = base.extend<Fixtures>({
 
 export { expect };
 
-export const APP = '/play/';
+export const APP = '/learn/';
 
-/** Opens the app at a hash route (for example '#/dojo') and waits for the view to render. */
+/* Route addresses (openspec change indexable-routes, design D2 and D3): every screen is a path under APP, its route
+   key without the '#' ('#/arena' is at '/learn/arena'; Home is APP), lowercase, with the Skill map at skills and the
+   second names (tricks, progress, duel, learn) answering with their screen's one path. js/paths.js is the one table
+   (BASE there is APP without its slash, /learn since task 2.2); this mirror is what a spec expects to see in
+   the address bar and in a drawn link's href. */
+const ONE_PATH: Record<string, string> = { '#/learn': 'skills', '#/tricks': 'dojo', '#/progress': 'me', '#/duel': 'arena/party' };
+/** The address of a route: pathTo('#/arena') is '/learn/arena', pathTo('#/') is APP; a path is given back as it is. */
+export function pathTo(route: string): string {
+  if (route.startsWith('/')) return route;
+  if (route === '#/' || route === '#' || route === '') return APP;
+  const rest = ONE_PATH[route] ?? route.replace(/^#\//, '');
+  const code = /^(dojo|arena|games|sutras)\/[a-z-]+\//.test(rest); // a play experience's parameters (a share code) keep their case
+  return APP + (code ? rest : rest.toLowerCase());
+}
+const reEscape = (s: string) => s.replace(/[/.?+*^$()[\]{}|\\]/g, '\\$&');
+/** For toHaveURL: the page is at that route's address (and nothing follows it). */
+export const atRoute = (route: string) => new RegExp(`${reEscape(pathTo(route))}$`);
+/** The attribute selector of a link to a route, as the game draws it: a${hrefTo('#/arena')} is a[href="/learn/arena"]. */
+export const hrefTo = (route: string) => `[href="${pathTo(route)}"]`;
+
+/** Moves to a #/ route the way page.goto(`${APP}#/x`) did while every screen was a fragment of APP: inside the open
+    game page it is a fragment change (no new document, so what the page recorded stays, and the router turns it into
+    the path); from anywhere else it loads the page. */
+export async function go(page: Page, route: string) {
+  const here = (() => { try { return new URL(page.url()).pathname; } catch { return ''; } })();
+  if (here.startsWith(APP) && route.startsWith('#')) await page.evaluate(h => { location.hash = h; }, route);
+  else await page.goto(`${APP}${route === '#/' ? '' : route}`);
+}
+
 /** Serves the app a transformed video list. `transform` is JavaScript source for a function (list) => list, run in
     the page over the real js/videos.js (every other export passes through), so a scenario can hold its premise
     (a Skill with no hand-matched video, exactly one, a planted counting video) whatever the catalog grows into.
@@ -316,8 +344,11 @@ export async function withVideos(page: Page, transform: string) {
   await page.route(/\/js\/videos\.js(\?(?!e2e-real).*)?$/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body }));
 }
 
-export async function open(page: Page, hash = '#/') {
-  await page.goto(`${APP}${hash === '#/' ? '' : hash}`);
+/** Opens the app at a route and waits for its view. open(page, '#/dojo') loads the page with that fragment (an old
+    link: the router turns it into its path before the view draws); open(page, '/learn/dojo') loads that path cold. */
+export async function open(page: Page, route = '#/') {
+  if (route.startsWith('/')) await page.goto(route);
+  else await go(page, route);
   await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
 }
 

@@ -3,14 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Before paint: an old link's #/ route becomes its path under /learn/, query kept, before anything draws or loads
+     (openspec change indexable-routes, design D9); #view (the skip link) and other fragments stay -->
+<script>(function(l){if(/^#\//.test(l.hash))l.replace('/learn/'+l.hash.slice(2)+l.search)})(location)</script>
 <title>Learn Vedic Math</title>
 <meta name="description" content="Learn Vedic Math: speed tricks from the sutras, a counting-to-calculus skill map, games, daily quests and an Arena with Boards. Three Modes for every age.">
-<link rel="canonical" href="https://learnvedicmath.com/play/">
+<link rel="canonical" href="https://learnvedicmath.com/learn/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Learn Vedic Math">
 <meta property="og:title" content="Learn Vedic Math">
 <meta property="og:description" content="Learn Vedic Math: speed tricks from the sutras, a counting-to-calculus skill map, games, daily quests and an Arena with Boards. Three Modes for every age.">
-<meta property="og:url" content="https://learnvedicmath.com/play/">
+<meta property="og:url" content="https://learnvedicmath.com/learn/">
 <meta property="og:image" content="https://learnvedicmath.com/icons/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">

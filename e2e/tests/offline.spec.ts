@@ -1,9 +1,9 @@
 import type { BrowserContext, Page, Route } from '@playwright/test';
-import { test, expect, APP, open, cloudLog, chromiumOnly, FIREBASE_SDK, FIREBASE_AUTH, FIRESTORE, showWorld, needsWorldBoards, pickMode } from './fixtures';
+import { test, expect, APP, open, cloudLog, chromiumOnly, FIREBASE_SDK, FIREBASE_AUTH, FIRESTORE, showWorld, needsWorldBoards, hrefTo, pickMode, atRoute } from './fixtures';
 import { fakeAudio, audioLog } from './audio-fake';
 import { fillAnswer } from './split-kit';
 
-/* Offline: /sw.js (scope /play/) saves the app after one visit, so every route, the
+/* Offline: /sw.js (scope /learn/) saves the app after one visit, so every route, the
    Dojo and the games keep working without a connection, and the leaderboards fall back to this device.
    These are the only specs that let the service worker run (the config blocks it everywhere else).
    The same rules hold: the Firebase SDK is still the fake, and while "offline" every Google request is
@@ -34,12 +34,12 @@ const OWN_PREFIX = 'lvm-';
 async function workerReady(page: Page) {
   // Polls rather than using navigator.serviceWorker.ready, so a registration still installing is not taken for ready.
   await expect.poll(() => page.evaluate(async () => {
-    const reg = await navigator.serviceWorker.getRegistration('/play/');
-    const ours = reg && new URL(reg.scope).pathname === '/play/' && reg.active?.state === 'activated';
+    const reg = await navigator.serviceWorker.getRegistration('/learn/');
+    const ours = reg && new URL(reg.scope).pathname === '/learn/' && reg.active?.state === 'activated';
     return !!ours && navigator.serviceWorker.controller?.scriptURL === reg!.active!.scriptURL;
   }), { message: 'the game worker installs and controls the page', timeout: 30_000 }).toBe(true);
   return page.evaluate(async () => {
-    const reg = (await navigator.serviceWorker.getRegistration('/play/'))!;
+    const reg = (await navigator.serviceWorker.getRegistration('/learn/'))!;
     return { scope: reg.scope, script: reg.active!.scriptURL, controller: navigator.serviceWorker.controller!.scriptURL, caches: await caches.keys() };
   });
 }
@@ -58,14 +58,14 @@ async function goOnline(context: BrowserContext) {
 
 /** Proves the connection is really gone: a network-first URL the worker never saved cannot load. */
 async function expectOffline(page: Page) {
-  const got = await page.evaluate(() => fetch(`/play/offline-probe-${Date.now()}.txt`).then(r => `HTTP ${r.status}`, () => 'failed'));
+  const got = await page.evaluate(() => fetch(`/learn/offline-probe-${Date.now()}.txt`).then(r => `HTTP ${r.status}`, () => 'failed'));
   expect(got, 'a file that was never saved must fail offline').toBe('failed');
 }
 
-test('the worker registers with scope /play/, caches under lvm-, and every precached file is this site\'s', async ({ page, baseURL }) => {
+test('the worker registers with scope /learn/, caches under lvm-, and every precached file is this site\'s', async ({ page, baseURL }) => {
   await open(page);
   const sw = await workerReady(page);
-  expect(sw.scope).toBe(`${baseURL}/play/`);
+  expect(sw.scope).toBe(`${baseURL}/learn/`);
   expect(sw.script).toBe(`${baseURL}/sw.js`);
   expect(sw.controller).toBe(`${baseURL}/sw.js`);
   expect(sw.caches.length).toBeGreaterThanOrEqual(1);
@@ -77,7 +77,7 @@ test('the worker registers with scope /play/, caches under lvm-, and every preca
     const name = (await caches.keys()).filter(k => k.startsWith(prefix) && k !== prefix + 'voice').pop()!;
     return (await (await caches.open(name)).keys()).map(r => new URL(r.url).pathname + new URL(r.url).search);
   }, OWN_PREFIX);
-  expect(saved).toContain('/play/');
+  expect(saved).toContain('/learn/');
   expect(saved).toContain('/manifest.webmanifest');
   expect(saved.some(u => /^\/math\.css\?v=\w+$/.test(u))).toBe(true);
   for (const re of [/^\/ds\/2\.2\.0\/tokens\.css\?v=\w+$/, /^\/ds\/2\.2\.0\/components\.css\?v=\w+$/, /^\/theme\/learnvedicmath\.css\?v=\w+$/, /^\/js\/analytics\.js\?v=\w+$/,
@@ -97,13 +97,13 @@ test('the worker registers with scope /play/, caches under lvm-, and every preca
 });
 
 /* Saved on first request, never precached (build.py is_lazy) */
-const LAZY = /^\/(js\/play\/exp\/|css\/play\/|js\/play\/life\.js|js\/videos\.js)/;
+const LAZY = /^\/(js\/play\/exp\/|css\/play\/|js\/play\/life\.js|js\/videos\.js|js\/family-talk\.js|js\/ts\/shared\/src\/family-talk\.js)/;
 
 /* Navigation preload (render-performance design D11): the browser starts the page request as it starts the worker */
 test('the worker enables navigation preload when it activates', async ({ page }) => {
   await open(page);
   await workerReady(page);
-  const state = await page.evaluate(async () => (await (await navigator.serviceWorker.getRegistration('/play/'))!.navigationPreload.getState()).enabled);
+  const state = await page.evaluate(async () => (await (await navigator.serviceWorker.getRegistration('/learn/'))!.navigationPreload.getState()).enabled);
   expect(state).toBe(true);
 });
 
@@ -153,9 +153,9 @@ test.describe('first visit', () => {
     {
       const tab = await context.newPage();
       await tab.goto(`${APP}#/games`);
-      const art = tab.locator('a.play-card[href="#/games/art"]');
+      const art = tab.locator(`a.play-card${hrefTo('#/games/art')}`);
       await expect(art).toContainText('Needs a connection the first time');
-      await expect(tab.locator('a.play-card[href="#/games/tala"] .play-card-off')).toHaveCount(0);
+      await expect(tab.locator(`a.play-card${hrefTo('#/games/tala')} .play-card-off`)).toHaveCount(0);
       await tab.goto(`${APP}#/games/art`);
       await expect(tab.locator('#view h1')).toHaveText('Mandala Studio did not open');
       await expect(tab.locator('#view')).toContainText('It needs a connection the first time');
@@ -240,8 +240,8 @@ test('a Dojo kata and a game play offline, and the progress persists', async ({ 
   expect(sparks).toBeGreaterThan(30);
   await page.reload();
   await page.goto(`${APP}#/katas/sq5`);
-  await expect(page.locator('a.lv-node[href="#/kata/sq5/2"]')).toBeVisible();
-  await expect(page.locator('a.lv-node[href="#/kata/sq5/1"]')).toHaveAttribute('aria-label', 'Kata 1, done');
+  await expect(page.locator(`a.lv-node${hrefTo('#/kata/sq5/2')}`)).toBeVisible();
+  await expect(page.locator(`a.lv-node${hrefTo('#/kata/sq5/1')}`)).toHaveAttribute('aria-label', 'Kata 1, done');
   await page.goto(`${APP}#/me`);
   await expect(page.locator('.me-head')).toContainText(`${sparks} Sparks`);
   await page.goto(`${APP}#/game/times-sprint`);
@@ -330,7 +330,7 @@ test('the landing and grown-up pages are never controlled by the game worker', a
   await open(page);
   await workerReady(page);
   const regs = await page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).map(r => r.scope));
-  expect(regs).toEqual([`${baseURL}/play/`]);
+  expect(regs).toEqual([`${baseURL}/learn/`]);
   for (const url of ['/?home', '/parents/']) {
     const res = await page.goto(url);
     expect(res?.fromServiceWorker(), `${url} comes from the network`).toBe(false);
@@ -341,6 +341,67 @@ test('the landing and grown-up pages are never controlled by the game worker', a
 /* Studio voice (openspec better-voice; design D17): audio from the voice host (https://voice.learnvedicmath.com/) is
    cache first in lvm-voice, a cache every deploy keeps, so a line heard once plays offline. Needs the recordings on
    the voice host (the CI voice-upload job puts them there). Skipped when the host does not have them. The built-in voice is replaced by a recorder, so "builtin" in the log means the device would speak. */
+/* The move to /learn/ (openspec change indexable-routes, design D10, task 2.4): every page under /learn/ is the shell
+   with its own head, so offline the saved shell draws any path, and an old #/ link becomes its path first */
+test('offline, a path and an old #/ link under /learn/ open from the saved shell', async ({ page, context }) => {
+  await open(page);
+  await workerReady(page);
+  await goOffline(context);
+  await expectOffline(page);
+  for (const url of ['/learn/games', '/learn/#/games']) {
+    const tab = await context.newPage();
+    const res = await tab.goto(url);
+    expect(res?.fromServiceWorker(), `${url}: the page came from the worker`).toBe(true);
+    await expect(tab, url).toHaveURL(atRoute('#/games'));
+    await expect(tab, url).toHaveTitle(/^Games/);
+    await expect(tab.locator('#view h1, #view h2').first(), `${url} renders offline`).toBeVisible();
+    await tab.close();
+  }
+  await goOnline(context);
+});
+
+/* A browser that saved the game before the move: /sw.js registered under /play/ with its version cache, and a Studio
+   voice file heard then. Here both are made by hand on the landing page (nothing controls it), then the registration
+   gets this build's /sw.js, as its next update check does, and takes the retiring branch. */
+test('a worker registered under /play/ retires: /learn/games opens online and offline, no /play/ cache is left, and an earlier Studio voice file still plays', async ({ page, context }, testInfo) => {
+  chromiumOnly(testInfo, 'one engine is enough for the retiring branch');
+  test.setTimeout(60_000);
+  const VOICE_FILE = '/voice/l/0123456789abcd.m4a'; // a whole line's file (sw.ts VOICE_LINE), answered by the worker in every voice mode
+  await page.goto('/');
+  await page.evaluate(async v => {
+    await (await caches.open('lvm-old0000000')).put('/play/', new Response('the old shell', { headers: { 'content-type': 'text/html' } }));
+    await (await caches.open('lvm-voice')).put(v, new Response('an earlier line', { headers: { 'content-type': 'audio/mp4' } }));
+    await navigator.serviceWorker.register('/sw.js', { scope: '/play/' });
+  }, VOICE_FILE);
+  await expect.poll(() => page.evaluate(async () => {
+    const reg = await navigator.serviceWorker.getRegistration('/play/');
+    return !!reg && new URL(reg.scope).pathname === '/play/' && reg.active?.state === 'activated';
+  }), { message: 'the /play/ registration activates', timeout: 30_000 }).toBe(true);
+  expect(await page.evaluate(() => caches.keys()), 'the old version cache is gone').not.toContain('lvm-old0000000');
+
+  /* Online: an old /play/ path reaches its /learn/ path, and the game registers its own worker there */
+  await page.goto('/play/games');
+  await expect(page).toHaveURL(atRoute('#/games'));
+  await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
+  await workerReady(page);
+  const keys = await page.evaluate(() => caches.keys());
+  expect(keys).not.toContain('lvm-old0000000');
+  expect(keys).toContain('lvm-voice');
+
+  /* Offline: the retiring worker sends /play/games to /learn/games, which the /learn/ worker draws from the shell */
+  await goOffline(context);
+  await expectOffline(page);
+  for (const url of ['/play/games', '/learn/games']) {
+    const tab = await context.newPage();
+    await tab.goto(url);
+    await expect(tab, url).toHaveURL(atRoute('#/games'));
+    await expect(tab.locator('#view h1, #view h2').first(), `${url} renders offline`).toBeVisible();
+    expect(await tab.evaluate(v => fetch(v).then(r => r.text(), () => 'failed'), VOICE_FILE), 'the voice file heard before the move').toBe('an earlier line');
+    await tab.close();
+  }
+  await goOnline(context);
+});
+
 test.describe('studio voice offline', () => {
   test.use({ seedMode: 'explorer' });
 

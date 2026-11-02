@@ -1,5 +1,5 @@
 /* Learn Vedic Math service worker: lets the game work offline. Published at /sw.js and registered by js/app.js with
-   scope /play/, so it controls the game only; the landing and grown-up pages are never controlled.
+   scope /learn/, so it controls the game only; the landing and grown-up pages are never controlled.
 
    TypeScript (openspec change react-typescript, design D9, task 1.5). python3 build.py publishes it as /sw.js with
    its types taken out (tools/build-sw.mjs, which keeps every line where it is), so the worker stays one classic
@@ -12,7 +12,7 @@
    every request to the network (and deletes this site's caches), so a --dev build or the unbuilt source never serves
    stale files.
 
-   One version at a time: /play/ carries the import map, so the shell and its modules must come from the same deploy.
+   One version at a time: /learn/ carries the import map, so the shell and its modules must come from the same deploy.
    Install fetches every file in PRECACHE and checks it against the hash build.py recorded (every entry has one; this
    site serves all of them); if the network serves anything else (a half-propagated deploy), the install fails and the
    browser tries again on the next visit, keeping the previous version.
@@ -29,9 +29,11 @@
    entries: the build's own file count bounds them.
 
    Caching, by request:
-   - Page loads (navigations) in /play/: network first so updates show up at once; the precached shell when offline
-     or slow. Routes are hash routes, so one shell serves them all. Navigation preload (design D11): the browser
-     starts the page request as it starts this worker, and page() takes that response instead of fetching again.
+   - Page loads (navigations) in /learn/: network first so updates show up at once; the precached shell when offline
+     or slow. Every route page is the shell with its own head, and the router draws the view from the path, so the
+     one saved shell serves them all (openspec change indexable-routes, design D10). Navigation preload (render-performance
+     design D11): the browser starts the page request as it starts this worker, and page() takes that response instead
+     of fetching again.
    - Same-origin files with ?v=<hash>: cache first (they never change at a given URL).
    - Other same-origin files (fonts, icons, the manifest, vendored code): network first, cache fallback.
    - Studio voice audio (VOICE_ORIGIN, or /voice/ when the voice is static assets): cache first in
@@ -47,6 +49,14 @@
    Caches are named lvm-<VERSION>; this worker only deletes its own older lvm-<VERSION> caches (keeping the previous
    one for tabs still open on it), never lvm-voice or lvm-sounds.
 
+   THE OLD /play/ SCOPE (openspec change indexable-routes, design D10): the game moved from /play/ to /learn/, and a
+   browser that saved it before the move still has this file registered under /play/. That registration picks up
+   this same file on its next update check (js/app.js asks for one) and takes the retiring branch below: it keeps no
+   cache of its own (it deletes every lvm-<VERSION> cache but this version's, so the old /play/ cache goes), answers
+   each page load under /play/ with a redirect to the same path under /learn/ (query kept; the browser keeps the
+   fragment), lets every other request through, and leaves lvm-voice and lvm-sounds to the /learn/ worker. It stays
+   registered, so an old /play/ link opened offline still reaches /learn/, where the /learn/ worker serves the shell.
+
    KILL SWITCH (retire the worker): set KILL = true below and deploy. Browsers re-check /sw.js on the next visit; the
    new worker deletes every lvm-* cache and unregisters itself, and open tabs keep working from the network. Leave it
    deployed for a few weeks, then remove the register call in js/app.js and delete this file. build.py --target moved
@@ -60,7 +70,9 @@ const LAZY: string[] = [];
 const PREFIX: string = 'lvm-';
 const sw = self as unknown as ServiceWorkerGlobalScope;
 const CACHE = PREFIX + VERSION;
-const SCOPE = '/play/';
+const SCOPE = '/learn/';
+const OLD_SCOPE = '/play/'; // the game's address before indexable-routes: a registration there retires (design D10)
+const RETIRING = ((): boolean => { try { return new URL(sw.registration.scope).pathname === OLD_SCOPE; } catch { return false; } })();
 const SHELL = SCOPE;
 const RUNTIME_MAX = 60; // plain-URL entries kept beyond the precache list; the oldest go first
 const NAV_TIMEOUT = 3500; // ms before a page load falls back to the saved shell
@@ -100,6 +112,23 @@ if (VERSION === 'dev') {
       await sw.registration.unregister();
       /* No reload of open tabs: the app registers this file on every visit, so a reload would loop */
     })());
+  });
+} else if (RETIRING) {
+  sw.addEventListener('install', () => { void sw.skipWaiting(); });
+  sw.addEventListener('activate', event => {
+    event.waitUntil((async () => {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter(k => k.startsWith(PREFIX) && k !== CACHE && k !== VOICE_CACHE && k !== SOUNDS_CACHE).map(k => caches.delete(k)));
+      try { await sw.registration.navigationPreload?.disable(); } catch { /* not supported */ }
+      await sw.clients.claim();
+    })());
+  });
+  sw.addEventListener('fetch', (event: FetchEvent) => {
+    const req = event.request;
+    if (req.method !== 'GET' || req.mode !== 'navigate') return;
+    const url = new URL(req.url);
+    if (url.origin !== location.origin || !url.pathname.startsWith(OLD_SCOPE)) return;
+    event.respondWith(Promise.resolve(moved(url)));
   });
 } else {
   sw.addEventListener('install', event => {
@@ -159,6 +188,11 @@ if (VERSION === 'dev') {
       port.postMessage({ type: 'cached', urls: saved });
     })());
   });
+}
+
+/* A page under the old /play/ scope: the same path under /learn/, with its query (the 301 _redirects gives online) */
+function moved(url: URL): Response {
+  return Response.redirect(new URL(SCOPE + url.pathname.slice(OLD_SCOPE.length) + url.search, location.origin).href, 301);
 }
 
 /* Fetch one precache entry and check it against the hash build.py recorded. Every file belongs to this site, so a

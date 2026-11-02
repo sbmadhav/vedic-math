@@ -1,4 +1,4 @@
-import { test, expect, APP, open } from './fixtures';
+import { test, expect, APP, open, hrefTo } from './fixtures';
 import { fillAnswer } from './split-kit';
 
 /* Dojo katas are seeded, so the test reads the expected answers from the app's own module
@@ -13,11 +13,11 @@ const kataProblems = (page: import('@playwright/test').Page, trick: string, n: n
 
 test('kata 1: a right answer and a wrong answer get the right feedback, and the kata finishes as done, with Sparks and no stars', async ({ page }) => {
   await open(page, '#/dojo');
-  await page.locator('a.dojo-katas[href="#/katas/sq5"]').click();
+  await page.locator(`a.dojo-katas${hrefTo('#/katas/sq5')}`).click();
   await expect(page.locator('#view h1')).toContainText('50 katas');
   // Kata 2 is locked until kata 1 is cleared
   await expect(page.locator('.lv-node').nth(1)).toHaveClass(/locked/);
-  await page.locator('a.lv-node[href="#/kata/sq5/1"]').click();
+  await page.locator(`a.lv-node${hrefTo('#/kata/sq5/1')}`).click();
   await expect(page.locator('#view h1')).toContainText('Kata 1');
 
   const probs = await kataProblems(page, 'sq5', 1);
@@ -48,11 +48,11 @@ test('kata 1: a right answer and a wrong answer get the right feedback, and the 
   await expect(page.locator('#kata')).not.toContainText('★');
   await expect(page.locator('#kata .medal')).toHaveCount(0);
   await page.goto(`${APP}#/katas/sq5`);
-  await expect(page.locator('a.lv-node[href="#/kata/sq5/1"]')).toHaveAttribute('aria-label', 'Kata 1, done');
-  await expect(page.locator('a.lv-node[href="#/kata/sq5/2"]')).toBeVisible();
+  await expect(page.locator(`a.lv-node${hrefTo('#/kata/sq5/1')}`)).toHaveAttribute('aria-label', 'Kata 1, done');
+  await expect(page.locator(`a.lv-node${hrefTo('#/kata/sq5/2')}`)).toBeVisible();
   await expect(page.locator('#view .mq-small').first()).toContainText('1 of 50 done');
   await page.goto(`${APP}#/dojo`);
-  await expect(page.locator('a.dojo-katas[href="#/katas/sq5"]')).toContainText('Katas 1/50 done');
+  await expect(page.locator(`a.dojo-katas${hrefTo('#/katas/sq5')}`)).toContainText('Katas 1/50 done');
   await expect(page.locator('#view')).not.toContainText('★');
 });
 
@@ -114,8 +114,8 @@ test.describe('Dojo in Explorer', () => {
     await expect(page.locator('#view')).not.toContainText(/\d\/9 Stars/);
     await expect(page.locator('#view')).not.toContainText('Light all 9 Stars');
     await expect(page.locator('.dojo-star')).toHaveCount(0);
-    await expect(page.locator('#view a[href="#/sutras"]')).toHaveCount(1); /* Explorer has the Sutras (openspec change sutras-first) */
-    await expect(page.locator('#view a[href="#/arena"]')).toHaveCount(1);
+    await expect(page.locator(`#view a${hrefTo('#/sutras')}`)).toHaveCount(1); /* Explorer has the Sutras (openspec change sutras-first) */
+    await expect(page.locator(`#view a${hrefTo('#/arena')}`)).toHaveCount(1);
   });
   test.describe('with a White belt kept from Challenger', () => {
     test.use({ seedProgress: { v: 3, skills: {}, sparks: 0, days: {}, best: {}, last: null, grade: null, badges: { 'belt-white': 1700000000000 }, counts: {}, seen: {}, belts: { white: 1700000000000 } } });
@@ -134,5 +134,5 @@ test('Dojo in Challenger keeps the Star counts and the belts earned line', async
   await expect(page.locator('.md-lede')).toContainText('Light all 9 Stars');
   await expect(page.locator('#view')).toContainText('0 of 7 belts earned.');
   await expect(page.locator('.dojo-h small').first()).toHaveText('0/9 Stars');
-  await expect(page.locator('#view a[href="#/sutras"]')).toHaveCount(1);
+  await expect(page.locator(`#view a${hrefTo('#/sutras')}`)).toHaveCount(1);
 });

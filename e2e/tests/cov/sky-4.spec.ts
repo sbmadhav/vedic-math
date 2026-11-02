@@ -1,4 +1,4 @@
-import { test, expect, open, APP } from '../fixtures';
+import { test, expect, open, APP, atRoute } from '../fixtures';
 
 /* sky spec, Requirements "Landmarks", "All places", "Back to the Sky" and "The Sky's art and Calm": one test per
    scenario. */
@@ -14,7 +14,7 @@ test.use({ seedPlayer: { sky: true } });
 test('Arena Landmark: the race track Landmark opens the Arena', async ({ page }) => {
   await open(page);
   await page.locator('.sky-mark[data-landmark="arena"]').click();
-  await expect(page).toHaveURL(/#\/arena$/);
+  await expect(page).toHaveURL(atRoute('#/arena'));
   await expect(page.locator('#view h1')).toHaveText('60 seconds. Same questions for everyone.');
 });
 
@@ -24,12 +24,12 @@ test.describe('Star 2 of sq5 skipped', () => {
     await open(page);
     await page.locator('#skyPlaces').focus();
     await page.keyboard.press('Enter');
-    await expect(page).toHaveURL(/#\/places$/);
+    await expect(page).toHaveURL(atRoute('#/places'));
     await expect(page.locator('#view h1')).toHaveText('All places');
     const sk = page.getByRole('link', { name: 'Square numbers ending in 5, Star 2, skipped' });
     await sk.focus();
     await page.keyboard.press('Enter');
-    await expect(page).toHaveURL(/#\/star\/sq5\/2$/);
+    await expect(page).toHaveURL(atRoute('#/star/sq5/2'));
     await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
   });
 });
@@ -37,7 +37,7 @@ test.describe('Star 2 of sq5 skipped', () => {
 test('After lighting a Star: Back to the Sky shows that Star lit, with focus on it', async ({ page }) => {
   await open(page);
   await star(page, 'from9:1').click();
-  await expect(page).toHaveURL(/#\/star\/from9\/1$/);
+  await expect(page).toHaveURL(atRoute('#/star/from9/1'));
   for (let i = 1; i <= 4; i++) {
     await expect(page.locator('#stMain .star-tag')).toHaveText(`Question ${i} of 4`);
     await page.keyboard.type(await from9Answer(page)); await page.keyboard.press('Enter');
@@ -45,7 +45,7 @@ test('After lighting a Star: Back to the Sky shows that Star lit, with focus on 
   }
   await expect(page.locator('.star-end-h')).toHaveText('Star 1 is lit!');
   await page.locator('#stBack').click();
-  await expect(page).toHaveURL(new RegExp(`${APP.replace(/\//g, '\\/')}#\\/$`));
+  await expect(page).toHaveURL(atRoute('#/'));
   await expect(star(page, 'from9:1')).toHaveClass(/sky-star--lit/);
   await expect(star(page, 'from9:1')).toBeFocused();
 });
@@ -53,7 +53,7 @@ test('After lighting a Star: Back to the Sky shows that Star lit, with focus on 
 test.describe('motion paused site-wide', () => {
   test.use({ reducedMotion: 'no-preference' });
   test('Motion paused: no layer moves and every Star and label is shown', async ({ page }) => {
-    await page.route(/\/play\/(index\.html)?(\?.*)?$/, async route => {
+    await page.route(/\/learn\/[\w/-]*(\?.*)?$/, async route => {
       const res = await route.fetch();
       await route.fulfill({ response: res, body: (await res.text()).replace('<html lang="en">', '<html lang="en" class="motion-paused">') });
     });

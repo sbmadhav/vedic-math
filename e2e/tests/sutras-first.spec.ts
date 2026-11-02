@@ -1,4 +1,4 @@
-import { test, expect, APP, open, appErrors, mod, pickMode } from './fixtures';
+import { test, expect, APP, open, appErrors, mod, atRoute, hrefTo, pathTo, pickMode } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
 import { fakeAudio } from './audio-fake';
 
@@ -18,7 +18,7 @@ test.describe('Trick page', () => {
     await expect(tag.locator('b[lang="sa-Latn"]')).toHaveText('Ekādhikena Pūrveṇa');
     await expect(tag.locator('.sutra-tag-m')).toHaveText('By one more than the one before');
     await expect(tag.getByRole('button', { name: 'Hear how to say Ekādhikena Pūrveṇa' })).toBeVisible();
-    await expect(tag.locator('a.sutra-tag-a')).toHaveAttribute('href', '#/sutras/s1');
+    await expect(tag.locator('a.sutra-tag-a')).toHaveAttribute('href', pathTo('#/sutras/s1'));
     await expect(tag.getByRole('link', { name: /Ekādhikena Pūrveṇa.*By one more than the one before.*open its deep dive/ })).toBeVisible();
   });
 
@@ -61,10 +61,10 @@ test('From a Trick and back: following the tag opens the Deep dive, closing it s
   const dlg = page.locator('dialog.sutra-modal');
   await expect(dlg).toBeVisible();
   await expect(dlg.locator('#sdTitle')).toHaveText('Ekādhikena Pūrveṇa');
-  await expect(page).toHaveURL(/#\/sutras\/s1$/);
+  await expect(page).toHaveURL(atRoute('#/sutras/s1'));
   await dlg.locator('.sd-x').click();
   await expect(dlg).not.toBeVisible();
-  await expect(page).toHaveURL(/#\/skill\/v-sq5$/);
+  await expect(page).toHaveURL(atRoute('#/skill/v-sq5'));
   await expect(page.locator('.mq-sutra')).toBeVisible();
   const ev = await events(page);
   expect(ev.filter(([p]) => p.startsWith('math/sutra_tag/'))).toEqual([['math/sutra_tag/trick', 'Sutra tag: trick']]);
@@ -74,7 +74,7 @@ test('From a Trick and back: following the tag opens the Deep dive, closing it s
 test('Opened from outside the app, closing a Deep dive still shows the Sutras page', async ({ page }) => {
   await open(page, '#/sutras/s1');
   await page.locator('dialog.sutra-modal .sd-x').click();
-  await expect(page).toHaveURL(/#\/sutras$/);
+  await expect(page).toHaveURL(atRoute('#/sutras'));
   await expect(page.locator('.sutra-grid').first()).toBeVisible();
 });
 
@@ -82,7 +82,7 @@ test('Dojo: each of the 21 Trick cells has a tag link to its Sutra', async ({ pa
   await open(page, '#/dojo');
   const tags = page.locator('.dojo-cell a.sutra-tag-a');
   await expect(tags).toHaveCount(21);
-  await expect(page.locator('.dojo-cell').filter({ has: page.locator('a[href="#/skill/v-from9"]') }).locator('a.sutra-tag-a')).toHaveAttribute('href', '#/sutras/s2');
+  await expect(page.locator('.dojo-cell').filter({ has: page.locator(`a${hrefTo('#/skill/v-from9')}`) }).locator('a.sutra-tag-a')).toHaveAttribute('href', pathTo('#/sutras/s2'));
 });
 
 test('Katas list and a Kata: the tag is under the heading, and on the result', async ({ page }) => {
@@ -117,7 +117,7 @@ test('Before its module arrives the Katas page holds the tag\'s place, then show
   release();
   const tag = page.locator('#view h1 + .sutra-tag:not(.sutra-tag-slot)');
   await expect(tag.locator('b[lang="sa-Latn"]')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
-  await expect(tag.locator('a.sutra-tag-a')).toHaveAttribute('href', '#/sutras/s2');
+  await expect(tag.locator('a.sutra-tag-a')).toHaveAttribute('href', pathTo('#/sutras/s2'));
   await expect(page.locator('#view .sutra-tag-slot')).toHaveCount(0);
   const after = await page.locator('#view .md-lede').boundingBox();
   if ((page.viewportSize()?.width ?? 0) >= 700) expect(Math.abs(after!.y - before!.y)).toBeLessThanOrEqual(1); /* one line wide: nothing below moves */
@@ -143,7 +143,7 @@ test('A Kata result carries the tag as a link', async ({ page }) => {
     await page.locator('#kGo').click();
     await page.locator('#kGo').click();
   }
-  await expect(page.locator('.lv-result a.sutra-tag-a')).toHaveAttribute('href', '#/sutras/s2');
+  await expect(page.locator('.lv-result a.sutra-tag-a')).toHaveAttribute('href', pathTo('#/sutras/s2'));
 });
 
 test('Star: the header names the Sutra as text, the replay names it, and the end screen links to it', async ({ page }) => {
@@ -157,7 +157,7 @@ test('Star: the header names the Sutra as text, the replay names it, and the end
   await expect(page.locator('.star-replay .star-tag--trick')).toHaveText('The Trick · Ūrdhva-Tiryagbhyām');
   await page.keyboard.press('Escape');
   await page.locator('#stSkip').click();
-  await expect(page.locator('.star-end a.sutra-tag-a')).toHaveAttribute('href', '#/sutras/s3');
+  await expect(page.locator('.star-end a.sutra-tag-a')).toHaveAttribute('href', pathTo('#/sutras/s3'));
 });
 
 test.describe('a new visitor', () => {
@@ -176,13 +176,13 @@ test.describe('a new visitor', () => {
     await expect(tag.locator('.try-why')).toContainText('each distance from 100');
     await expect(page.locator('#tyStart')).toBeFocused();
     const link = tag.locator('a.sutra-tag-a');
-    await expect(link).toHaveAttribute('href', '#/sutras/s2');
+    await expect(link).toHaveAttribute('href', pathTo('#/sutras/s2'));
     await link.click();
     await expect(page.locator('dialog.sutra-modal #sdTitle')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
     expect((await events(page)).filter(([p]) => p.startsWith('math/sutra_tag/'))).toEqual([['math/sutra_tag/try', 'Sutra tag: try']]);
     await page.locator('dialog.sutra-modal .sd-x').click();
     await expect(page.locator('#tyStart')).toBeVisible();
-    expect(new URL(page.url()).hash).toBe('#/try');
+    await expect(page).toHaveURL(atRoute('#/try'));
   });
 
   test('A Deep dive opens without a Mode, and no Mode is stored', async ({ page }) => {
@@ -232,7 +232,7 @@ test('Watch: a Trick video names its Sutra, and its player shows the tag as a li
   const player = page.locator('dialog.vm-player');
   await expect(player).toBeVisible();
   const tag = player.locator('.vp-foot a.sutra-tag-a');
-  await expect(tag).toHaveAttribute('href', '#/sutras/s1');
+  await expect(tag).toHaveAttribute('href', pathTo('#/sutras/s1'));
   await tag.click();
   await expect(player).not.toBeVisible();
   await expect(page.locator('dialog.sutra-modal #sdTitle')).toHaveText('Ekādhikena Pūrveṇa');
@@ -244,7 +244,7 @@ test('Answer checker: the page says it uses the idea of Guṇitasamuccayaḥ, an
   await expect(tag.locator('.sutra-tag-k')).toHaveText('Uses the idea of');
   await expect(tag.locator('b[lang="sa-Latn"]')).toHaveText('Guṇitasamuccayaḥ');
   await open(page, '#/games');
-  await expect(page.locator('a.mq-game[href="#/game/check-it"] .sutra-tag b')).toHaveText('Guṇitasamuccayaḥ');
+  await expect(page.locator(`a.mq-game${hrefTo('#/game/check-it')} .sutra-tag b`)).toHaveText('Guṇitasamuccayaḥ');
 });
 
 test.describe('Explorer, Read aloud on by default', () => {
@@ -290,17 +290,17 @@ test.describe('Home', () => {
     await expect(tag.locator('.sutra-tag-m')).toHaveText('All from 9 and the last from 10');
     await expect(tag.locator('a')).toHaveCount(0);
     await expect(door).toContainText('Next Star: Subtract from 100, 1000, 10000, Star 1');
-    await expect(door.getByRole('link', { name: 'Play this Star' })).toHaveAttribute('href', '#/star/from9/1');
+    await expect(door.getByRole('link', { name: 'Play this Star' })).toHaveAttribute('href', pathTo('#/star/from9/1'));
     await expect(door.locator('.belts-mini .belt-mini')).toHaveCount(7);
     const learn = door.getByRole('link', { name: 'Learn the sutra' });
-    await expect(learn).toHaveAttribute('href', '#/sutras/s2');
+    await expect(learn).toHaveAttribute('href', pathTo('#/sutras/s2'));
     await learn.click();
     const dlg = page.locator('dialog.sutra-modal');
     await expect(dlg.locator('#sdTitle')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
     await dlg.locator('.sd-x').click();
     await expect(dlg).not.toBeVisible();
     await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
-    await expect(page).toHaveURL(/\/play\/(#\/)?$/);
+    await expect(page).toHaveURL(atRoute('#/'));
     expect((await events(page)).filter(([p]) => p.startsWith('math/sutra_tag/'))).toEqual([['math/sutra_tag/home', 'Sutra tag: home']]);
   });
   test('Challenger: the Sutra door is drawn whole with the first paint, so nothing moves when js/sutra-tag.js arrives', async ({ page }) => {
@@ -320,7 +320,7 @@ test.describe('Home', () => {
       await expect(rows).toHaveCount(3);
       await expect(rows.locator('b[lang="sa-Latn"]')).toHaveText(['Nikhilaṃ Navataścaramaṃ Daśataḥ', 'Ūrdhva-Tiryagbhyām', 'Ekādhikena Pūrveṇa']);
       await expect(rows.locator('.sutra-prog small')).toHaveText(['0 of 9 Stars lit', '1 of 9 Stars lit', '1 of 9 Stars lit']);
-      await expect(rows.nth(1)).toHaveAttribute('href', '#/sutras/s3');
+      await expect(rows.nth(1)).toHaveAttribute('href', pathTo('#/sutras/s3'));
       await expect(rows.first()).toHaveAccessibleName(/the sutra of your next Star/);
       await rows.nth(2).click();
       await expect(page.locator('dialog.sutra-modal #sdTitle')).toHaveText('Ekādhikena Pūrveṇa');
@@ -335,7 +335,7 @@ test.describe('Home', () => {
       await expect(doors.nth(0).locator('.md-tag')).toHaveText('Next sutra');
       await expect(doors.nth(0).locator('.door-line')).toContainText("A sutra is a one-line rule from Bharati Krishna Tirtha's 1965 book that replaces a long method.");
       await expect(doors.nth(0)).toContainText('0 of 7 belts, 0 of 63 Stars');
-      await expect(doors.nth(1)).toHaveAttribute('href', '#/arena');
+      await expect(doors.nth(1)).toHaveAttribute('href', pathTo('#/arena'));
       await expect(page.locator('.your-sutras a.your-sutra .sutra-prog small').first()).toHaveText('0 of 9 Stars lit · 0 of 3 Tricks mastered');
       await expect(page.locator('#view .md-btn--primary')).toHaveText(['Play this Star']);
     });
@@ -357,7 +357,7 @@ test.describe('Home', () => {
       const kid: string = await page.evaluate(async id => { const S = await e2eMod('sutras'); return [...S.SUTRAS.map((c: any) => ({ ...c, id: 's' + c.n })), ...S.SUBSUTRAS.map((c: any) => ({ ...c, id: 'u' + c.n }))].find((c: any) => c.id === id).kid; }, today);
       await expect(card.locator('.sutra-say-kid')).toHaveText(kid);
       const go = card.getByRole('link', { name: 'See how it works' });
-      await expect(go).toHaveAttribute('href', `#/sutras/${today}`);
+      await expect(go).toHaveAttribute('href', pathTo(`#/sutras/${today}`));
       const c = (await card.boundingBox())!, tiles = (await page.locator('.play-grid--big').boundingBox())!;
       expect(c.y + c.height).toBeLessThanOrEqual(tiles.y);
       await go.click();

@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, appErrors } from '../fixtures';
+import { test, expect, APP, open, cloudLog, appErrors, pathTo } from '../fixtures';
 import { DAY, NOW, link, clockAt, endRound, pressStart, dailyItems, answerRight, worldBoardsStandIn, scoreWrites, deviceBoard } from '../challenge-kit';
 
 /* arena spec (change arena-challenge-link), Requirements "A challenge link survives the Mode picker" (No Mode yet),
@@ -18,7 +18,7 @@ test.describe('No Mode yet', () => {
     await expect(page.locator('#view h1')).toHaveText('60 seconds. Same questions for everyone.');
     await expect(page.locator('#arFriend')).toHaveText(RANKED_LINE);
     await expect(page.locator('[data-t="daily"]')).toHaveAttribute('aria-pressed', 'true');
-    expect(new URL(page.url()).hash).toBe(link(DAY, 'challenger'));
+    expect(new URL(page.url()).pathname).toBe(pathTo(link(DAY, 'challenger'))); // the link's path (indexable-routes)
     expect(appErrors(issues), 'console errors').toEqual([]);
   });
 });

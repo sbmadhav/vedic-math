@@ -21,7 +21,7 @@ function site(files: Record<string, string>): string {
 }
 const filler = (n: number) => `/* ${'x'.repeat(n)} ${Array.from({ length: n / 4 }, (_, i) => `v${i}:${(i * 7919) % 1000}`).join(',')} */\n`;
 const FIXTURE = {
-  'play/index.html': '<!doctype html><html><head><link rel="canonical" href="/play/"><link rel="stylesheet" href="/math.css?v=1"><link rel="preload" href="/fonts/a.woff2" as="font"></head>'
+  'learn/index.html': '<!doctype html><html><head><link rel="canonical" href="/learn/"><link rel="stylesheet" href="/math.css?v=1"><link rel="preload" href="/fonts/a.woff2" as="font"></head>'
     + '<body><script type="module" src="/js/app.js?v=1"></script><script src="/js/analytics.js?v=1" defer></script></body></html>',
   'js/app.js': `import './a.js';\nconst late = () => import('./lazy.js');\n${filler(400)}`,
   'js/a.js': `export const a = 1;\n${filler(200)}`,
@@ -29,7 +29,7 @@ const FIXTURE = {
   'js/analytics.js': `console.log(1);\n${filler(100)}`,
   'math.css': `body { margin: 0 }\n${filler(300)}`,
   'fonts/a.woff2': 'font bytes',
-  'sw.js': 'const PRECACHE = [\n ["/play/", "aa"],\n ["/js/app.js?v=1", "bb"],\n ["/js/a.js?v=1", "cc"],\n ["/js/analytics.js?v=1", "dd"],\n ["/math.css?v=1", "ee"],\n ["/fonts/a.woff2", "ff"]\n];\nconst LAZY = [\n "/js/lazy.js?v=1"\n];\n',
+  'sw.js': 'const PRECACHE = [\n ["/learn/", "aa"],\n ["/js/app.js?v=1", "bb"],\n ["/js/a.js?v=1", "cc"],\n ["/js/analytics.js?v=1", "dd"],\n ["/math.css?v=1", "ee"],\n ["/fonts/a.woff2", "ff"]\n];\nconst LAZY = [\n "/js/lazy.js?v=1"\n];\n',
   'index.html': '<!doctype html><html><head><link rel="stylesheet" href="/math.css?v=1"></head><body><script src="/js/analytics.js?v=1" defer></script></body></html>',
   'parents/index.html': `<!doctype html><html><head></head><body><script src="/js/analytics.js?v=1" defer></script><script src="/js/lazy.js?v=1"></script></body></html>`,
   '404.html': '<!doctype html><html><body>lost</body></html>',

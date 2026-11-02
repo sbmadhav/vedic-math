@@ -7,10 +7,10 @@ import { readFileSync } from 'node:fs';
 import { TABS, tabsFor, currentTab, navHTML, NAV_LINES } from '../js/nav.js';
 import { sectionLines } from '../js/find.js';
 
-const page = readFileSync(new URL('../play/index.html', import.meta.url), 'utf8');
+const page = readFileSync(new URL('../learn/index.html', import.meta.url), 'utf8');
 const squash = h => h.replace(/>\s+</g, '><').trim();
 
-test('play/index.html holds the Challenger and Pro menu exactly as js/nav.js draws it', () => {
+test('learn/index.html holds the Challenger and Pro menu exactly as js/nav.js draws it', () => {
   const m = page.match(/<nav class="md-nav mq-nav" aria-label="Vedic Math">([\s\S]*?)<\/nav>/);
   assert.ok(m, 'the nav slot');
   assert.equal(squash(m[1]), squash(navHTML('big')));

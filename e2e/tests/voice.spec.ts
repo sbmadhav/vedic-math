@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { test, expect, open, needsStudioVoice, studioVoiceOn, type Page } from './fixtures';
+import { test, expect, open, needsStudioVoice, studioVoiceOn, type Page, hrefTo } from './fixtures';
 
 /* Built-in voice (openspec better-voice, part A): pitch 1 and a calm rate, never a robotic voice when a better one
    exists, and a one-time note in Me when every voice on the device is robotic. The browser's speech engine is
@@ -307,7 +307,7 @@ test.describe('studio voice', () => {
       await page.waitForTimeout(900);
       return vlog(page);
     }, { timeout: 15_000 }).toContain('studio:line');
-    await page.locator('.mq-nav a[href="#/learn"]').first().click();
+    await page.locator(`.mq-nav a${hrefTo('#/learn')}`).first().click();
     await expect.poll(async () => (await vlog(page)).slice((await vlog(page)).indexOf('studio:line'))).toContain('stop');
     const after = await vlog(page);
     /* Nothing of the old line plays after the stop. The Learn page then reads its own Explorer tab name ("Learn"), a

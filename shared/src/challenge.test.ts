@@ -11,14 +11,14 @@ import { SITE, APP_BASE } from './site.ts';
 
 const EMOJI = /\p{Extended_Pictographic}|[\u{1F1E6}-\u{1F1FF}]|‍|️/u;
 const SHARE = { league: 'challenger', day: '2026-10-30', score: 240, right: 14, wrong: 2, bestCombo: 9 };
-const parts = (url: string) => url.split('#/arena/day/')[1]!.split('/');
+const parts = (url: string) => url.split('/arena/day/')[1]!.split('/');
 
 test('challengeText: three lines of words and the link, the same shape in every League (design D4)', () => {
   assert.equal(ROUND_SECS, 60);
   const want: Record<string, string> = {
-    explorer: 'Learn Vedic Math: Arena daily challenge, Explorer League, 2026-10-30\nScore 240: 14 right, 2 missed, best combo 9x\nThe same questions for every Explorer today, 60 seconds, no sign-in. Can you beat it?\nhttps://learnvedicmath.com/play/#/arena/day/2026-10-30/explorer/240',
-    challenger: 'Learn Vedic Math: Arena daily challenge, Challenger League, 2026-10-30\nScore 240: 14 right, 2 missed, best combo 9x\nThe same questions for every Challenger today, 60 seconds, no sign-in. Can you beat it?\nhttps://learnvedicmath.com/play/#/arena/day/2026-10-30/challenger/240',
-    pro: 'Learn Vedic Math: Arena daily challenge, Pro League, 2026-10-30\nScore 240: 14 right, 2 missed, best combo 9x\nThe same questions for every Pro today, 60 seconds, no sign-in. Can you beat it?\nhttps://learnvedicmath.com/play/#/arena/day/2026-10-30/pro/240'
+    explorer: 'Learn Vedic Math: Arena daily challenge, Explorer League, 2026-10-30\nScore 240: 14 right, 2 missed, best combo 9x\nThe same questions for every Explorer today, 60 seconds, no sign-in. Can you beat it?\nhttps://learnvedicmath.com/learn/arena/day/2026-10-30/explorer/240',
+    challenger: 'Learn Vedic Math: Arena daily challenge, Challenger League, 2026-10-30\nScore 240: 14 right, 2 missed, best combo 9x\nThe same questions for every Challenger today, 60 seconds, no sign-in. Can you beat it?\nhttps://learnvedicmath.com/learn/arena/day/2026-10-30/challenger/240',
+    pro: 'Learn Vedic Math: Arena daily challenge, Pro League, 2026-10-30\nScore 240: 14 right, 2 missed, best combo 9x\nThe same questions for every Pro today, 60 seconds, no sign-in. Can you beat it?\nhttps://learnvedicmath.com/learn/arena/day/2026-10-30/pro/240'
   };
   for (const league of LEAGUES) {
     assert.equal(challengeText({ ...SHARE, league }), want[league], league);
@@ -44,11 +44,11 @@ test('challengeText holds nothing personal: no emoji, em dash, Nickname word, Ra
 
 test('challengeUrl: SITE, APP_BASE and always three parts, the Score clamped to 0 to 9999 (design D1, D3)', () => {
   assert.equal(SITE, 'https://learnvedicmath.com');
-  assert.equal(challengeUrl({ day: '2026-10-30', league: 'challenger', score: 240 }), `${SITE}${APP_BASE}#/arena/day/2026-10-30/challenger/240`);
-  assert.equal(challengeUrl({ day: '2026-10-30', league: 'pro', score: 12000 }), `${SITE}${APP_BASE}#/arena/day/2026-10-30/pro/${MAX_CHALLENGE_SCORE}`);
-  assert.equal(challengeUrl({ day: '2026-10-30', league: 'explorer', score: -3 }), `${SITE}${APP_BASE}#/arena/day/2026-10-30/explorer/0`);
-  assert.equal(challengeUrl({ day: '2026-10-30', league: 'explorer', score: null }), `${SITE}${APP_BASE}#/arena/day/2026-10-30/explorer/0`);
-  assert.equal(challengeUrl({ day: '2026-10-30', league: 'explorer', score: 36.4 }), `${SITE}${APP_BASE}#/arena/day/2026-10-30/explorer/36`);
+  assert.equal(challengeUrl({ day: '2026-10-30', league: 'challenger', score: 240 }), `${SITE}${APP_BASE}arena/day/2026-10-30/challenger/240`);
+  assert.equal(challengeUrl({ day: '2026-10-30', league: 'pro', score: 12000 }), `${SITE}${APP_BASE}arena/day/2026-10-30/pro/${MAX_CHALLENGE_SCORE}`);
+  assert.equal(challengeUrl({ day: '2026-10-30', league: 'explorer', score: -3 }), `${SITE}${APP_BASE}arena/day/2026-10-30/explorer/0`);
+  assert.equal(challengeUrl({ day: '2026-10-30', league: 'explorer', score: null }), `${SITE}${APP_BASE}arena/day/2026-10-30/explorer/0`);
+  assert.equal(challengeUrl({ day: '2026-10-30', league: 'explorer', score: 36.4 }), `${SITE}${APP_BASE}arena/day/2026-10-30/explorer/36`);
   /* The link the app writes is one the app reads back */
   const url = challengeUrl({ day: '2026-10-30', league: 'challenger', score: 240 });
   assert.deepEqual(parseChallenge(parts(url), '2026-10-30', 'challenger'), { day: '2026-10-30', league: 'challenger', score: 240, ranked: true } satisfies Challenge);

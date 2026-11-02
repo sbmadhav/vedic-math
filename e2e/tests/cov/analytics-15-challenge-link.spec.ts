@@ -1,4 +1,4 @@
-import { test, expect, APP, open } from '../fixtures';
+import { test, expect, APP, open, pathTo } from '../fixtures';
 import { DAY, NOW, link, clockAt, endRound, pressStart, dailyItems, answerRight, fakeShareSheet, shared } from '../challenge-kit';
 
 /* analytics spec (change arena-challenge-link), Requirement "Challenge links are counted without identifiers": one test
@@ -33,7 +33,7 @@ test('The button: each tap on Challenge a friend sends exactly one math/share_cl
   for (const [p, t] of await events(page)) expect(p + t, 'no Score or Nickname in any event').not.toMatch(/\b10\b|Swift|Tiger/);
 });
 
-test('Opening a link: the route view is math/view/arena/day, and no request or event carries the fragment, the date or the Score', async ({ page }) => {
+test('Opening a link: the route view is math/view/arena/day, and no event and no request but the page itself carries the fragment, the date or the Score', async ({ page }) => {
   const requests: { url: string; body: string }[] = [];
   page.on('request', r => requests.push({ url: r.url(), body: r.postData() || '' }));
   await clockAt(page, new Date('2026-10-30T10:00:00'));
@@ -43,13 +43,17 @@ test('Opening a link: the route view is math/view/arena/day, and no request or e
   await expect(page).toHaveTitle('Arena · Learn Vedic Math');
   for (const [p, t] of await events(page)) expect(p + t).not.toMatch(/2026-10-30|challenger\/240|240|#/);
   expect(requests.length).toBeGreaterThan(5);
-  for (const { url, body } of requests) {
+  /* Since the move to paths (openspec change indexable-routes, design D3 and D11) the link is the page's own address, so
+     this site's document request for it is the one request that names it; nothing else (no module, no analytics, no
+     other host) carries the date or the Score */
+  const own = (u: string) => new URL(u).origin === new URL(page.url()).origin && new URL(u).pathname === pathTo(link('2026-10-30', 'challenger', '240'));
+  for (const { url, body } of requests.filter(r => !own(r.url))) {
     expect(url, 'the fragment or the link\'s parts in a request URL').not.toMatch(/2026-10-30|challenger\/240|arena\/day|%23|#/);
     // Cache stamps (?v=<hash>) are content hashes, so the digits are compared without them
     expect(url.replace(/\?.*$/, ''), 'the Score in a request path').not.toMatch(/240/);
     expect(body, 'the fragment or the Score in a request body').not.toMatch(/2026-10-30|challenger\/240|arena\/day|\b240\b/);
   }
-  // The page's own address keeps the fragment: the browser never sends it
-  expect(new URL(page.url()).hash).toBe(link('2026-10-30', 'challenger', '240'));
+  // The page's own address is the link's path
+  expect(new URL(page.url()).pathname).toBe(pathTo(link('2026-10-30', 'challenger', '240')));
   expect(page.url().startsWith(`${new URL(page.url()).origin}${APP}`)).toBe(true);
 });

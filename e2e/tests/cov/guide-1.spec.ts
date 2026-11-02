@@ -1,4 +1,4 @@
-import { test, expect, APP, open, appErrors } from '../fixtures';
+import { test, expect, APP, open, appErrors, pathTo } from '../fixtures';
 
 /* guide spec, Requirement "A guide page": one test per scenario. e2e/tests/guide.spec.ts has the fuller checks;
    these assert each scenario's own observable. */
@@ -22,7 +22,7 @@ test('Reading the guide: a Challenger sees every section with what, how, a tip a
 test('Try it: the Katas section link opens the Katas page of a real Trick', async ({ page }) => {
   await open(page, '#/guide');
   await page.locator('#gd-katas .gd-try').click();
-  await expect(page).toHaveURL(/#\/katas\/[\w-]+$/);
+  await expect(page).toHaveURL(new RegExp(`${APP}katas/[\\w-]+$`));
   await expect(page.locator('#view h1')).toContainText(/katas/i);
 });
 
@@ -30,13 +30,14 @@ test('A new route: every route the menu bar and the section links reach is cover
   // test/guide.test.mjs reads the router's regexes and fails when a route has no section; here the shipped guide module
   // must cover every link the menu bar shows, so a new nav item without a section fails in the browser too
   await open(page, '#/guide');
-  const hrefs = await page.locator('.mq-nav a[href^="#/"]').evaluateAll(els => els.map(e => e.getAttribute('href')!));
+  const hrefs = await page.locator(`.mq-nav a[href^="${APP}"]`).evaluateAll(els => els.map(e => e.getAttribute('href')!));
+  const keys = hrefs.map(h => (h === pathTo('#/learn') ? '#/learn' : '#/' + h.slice(APP.length))); /* the menu's route keys */
   expect(hrefs.length).toBe(5); /* Home, Learn, Arcade, Watch, Find (openspec change play-nav-by-mode) */
   const uncovered = await page.evaluate(async (hrefs: string[]) => {
     const g = await e2eMod('guide');
     const covers: string[] = g.sections({}).flatMap((s: any) => s.covers || []);
     const base = (h: string) => '#/' + h.replace(/^#\//, '').split('/')[0];
     return hrefs.filter(h => !covers.some(c => c === h || base(c) === base(h)));
-  }, hrefs);
+  }, keys);
   expect(uncovered).toEqual([]);
 });

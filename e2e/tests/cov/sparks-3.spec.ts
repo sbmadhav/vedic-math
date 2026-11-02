@@ -59,7 +59,7 @@ test.describe('a Player who may post, with 120 Sparks (40 this week), opens a vi
     // Nothing new to post, so no weekly Sparks Board write either
     expect((await cloudLog(page)).writes.filter(w => /^boards\/xp-week-/.test(w.path))).toEqual([]);
     // The Me page still shows 120 Sparks
-    await page.goto('/play/#/me');
+    await page.goto('/learn/me');
     await expect(page.locator('.me-head')).toContainText('120 Sparks');
   });
 });

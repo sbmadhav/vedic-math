@@ -1,4 +1,4 @@
-import { test, expect, open, heldClock, typeAnswer, worldBoardsOn } from '../fixtures';
+import { test, expect, open, heldClock, typeAnswer, worldBoardsOn, go } from '../fixtures';
 
 /* openspec/specs/analytics/spec.md
    - Requirement: Share clicks / Scenario: Share button
@@ -143,7 +143,7 @@ test.describe('Events carry no identifiers: Event contents', () => {
 
     // Other routes, including numbered ones and a typed id not in the catalog
     for (const h of ['#/learn', '#/dojo', '#/tricks', '#/sutras', '#/games', '#/watch', '#/progress', '#/game/times-sprint/7', '#/katas/sq5']) await open(page, h);
-    await page.goto('/play/#/skill/my-secret-name');
+    await go(page, '#/skill/my-secret-name');
     await page.waitForTimeout(300);
     secrets.add('my-secret-name');
 

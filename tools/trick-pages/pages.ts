@@ -57,7 +57,7 @@ export const PAGES: readonly TrickPage[] = [
 ];
 
 /** The header's nav on a Trick page: the same links every site page has, none of them the current page */
-export const NAV = '<nav class="md-nav" aria-label="Learn Vedic Math"><a href="/play/">Learn</a><a href="/parents/">For parents</a><a href="/teachers/">For teachers</a></nav>';
+export const NAV = '<nav class="md-nav" aria-label="Learn Vedic Math"><a href="/learn/">Learn</a><a href="/parents/">For parents</a><a href="/teachers/">For teachers</a></nav>';
 
 /** The composed header block, written exactly as vendor/design-system/2.2.0/compose.py writes it from theme/header.html
     (the markers, the partial with its trailing newline normalized, the nav slot filled), so the build's header check
@@ -120,7 +120,7 @@ function head(title: string, description: string, url: string, jsonLd: string, o
 
 const FOOTER = `<footer class="lv-foot">
   <div class="md-wrap">
-    <p><a href="/play/">Learn</a> · <a href="${INDEX_URL}">Speed tricks</a> · <a href="/parents/">For parents</a> · <a href="/teachers/">For teachers</a> · <a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · <a href="/licenses/">Licences</a></p>
+    <p><a href="/learn/">Learn</a> · <a href="${INDEX_URL}">Speed tricks</a> · <a href="/parents/">For parents</a> · <a href="/teachers/">For teachers</a> · <a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · <a href="/licenses/">Licences</a></p>
   </div>
 </footer>`;
 
@@ -171,7 +171,7 @@ ${header}
   <div class="md-wrap lv-page tk-page">
     ${crumbs([['Home', '/?home'], ['Speed tricks', INDEX_URL], [t.title, null]])}
     <h1>${esc(t.title)}</h1>
-    <p class="tk-sutra">From the ${sutraKind(t)} <b lang="sa-Latn">${esc(sutraName(t))}</b>, <q>${esc(t.meaning)}</q>, in ${BOOK}. <a href="/play/#/sutras/${t.sutraId}">Deep dive into the ${sutraKind(t)}</a></p>
+    <p class="tk-sutra">From the ${sutraKind(t)} <b lang="sa-Latn">${esc(sutraName(t))}</b>, <q>${esc(t.meaning)}</q>, in ${BOOK}. <a href="/learn/sutras/${t.sutraId}">Deep dive into the ${sutraKind(t)}</a></p>
     <!-- The calculator (design D4): the Trick's own fields and limits; /tricks/calculator.js runs valid() and steps()
          from the catalog (shared/src/vedic.ts) for the typed numbers. Hidden with JavaScript off; unseen until the
          module marks it ready. -->
@@ -200,7 +200,7 @@ ${header}
         ${example}
       </ol>
     </section>
-    <p class="tk-practice"><a class="md-btn md-btn--primary" id="tkPractice" href="/play/#/skill/v-${t.id}">Practice this trick</a></p>
+    <p class="tk-practice"><a class="md-btn md-btn--primary" id="tkPractice" href="/learn/skill/v-${t.id}">Practice this trick</a></p>
     <p class="tk-more">All <a href="${INDEX_URL}">15 speed tricks</a>, each with its calculator. The speed tricks use sutras from ${BOOK}; the lessons, problems and pictures here are our own.</p>
   </div>
 </main>
@@ -241,7 +241,7 @@ ${header}
     <ul class="tk-list">
       ${items}
     </ul>
-    <p>Practice them with lessons, Katas and daily rounds in <a href="/play/">the game</a>. The sutras are not found in the Vedas: each one is ordinary algebra you can check, and the <a href="/play/#/sutras">29 sutras</a> page explains every one.</p>
+    <p>Practice them with lessons, Katas and daily rounds in <a href="/learn/">the game</a>. The sutras are not found in the Vedas: each one is ordinary algebra you can check, and the <a href="/learn/sutras">29 sutras</a> page explains every one.</p>
   </div>
 </main>
 

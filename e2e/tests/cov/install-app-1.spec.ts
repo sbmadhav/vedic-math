@@ -4,7 +4,7 @@ import { test, expect, open, chromiumOnly } from '../fixtures';
 
 test('The manifest: those fields, and both colors are the vendored design system\'s Daybreak --bg', async ({ request }) => {
   const m = await (await request.get('/manifest.webmanifest')).json();
-  expect([m.name, m.short_name, m.id, m.start_url, m.scope, m.display, m.lang]).toEqual(['Learn Vedic Math', 'Vedic Math', '/play/', '/play/?source=pwa', '/play/', 'standalone', 'en']);
+  expect([m.name, m.short_name, m.id, m.start_url, m.scope, m.display, m.lang]).toEqual(['Learn Vedic Math', 'Vedic Math', '/play/', '/learn/?source=pwa', '/learn/', 'standalone', 'en']);
   expect(m.description.length).toBeGreaterThan(20);
   const tokens = await (await request.get('/ds/2.2.0/tokens.css')).text();
   const bg = tokens.match(/:root\s*\{[\s\S]*?--bg:\s*(#[0-9A-Fa-f]{6})/)![1].toLowerCase();

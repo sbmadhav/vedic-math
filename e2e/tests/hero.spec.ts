@@ -53,7 +53,7 @@ for (const h of HEROES) {
       await page.goto(h.url);
       const cta = page.locator(h.cta);
       if (info.project.use.hasTouch) await cta.tap(); else await cta.click();
-      await expect(page).toHaveURL(/\/play\/$/);
+      await expect(page).toHaveURL(/\/learn\/$/);
     });
 
     test(`${h.label} works from the keyboard`, async ({ page }) => {
@@ -62,7 +62,7 @@ for (const h of HEROES) {
       await cta.focus();
       await expect(cta).toBeFocused();
       await page.keyboard.press('Enter');
-      await expect(page).toHaveURL(/\/play\/$/);
+      await expect(page).toHaveURL(/\/learn\/$/);
     });
 
     test.describe('motion allowed', () => {

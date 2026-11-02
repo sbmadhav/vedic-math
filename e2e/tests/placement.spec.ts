@@ -1,4 +1,4 @@
-import { test, expect, APP, open, appErrors, cloudLog, type Page, type Mode } from './fixtures';
+import { test, expect, APP, open, appErrors, cloudLog, type Page, type Mode, atRoute, pathTo } from './fixtures';
 
 /* Placement (openspec placement): the offer after the Mode pick, Skip, the untimed climb with Explorer's three big buttons
    and the usual entry elsewhere, the result in steps (never a grade), what the level sets (Practice starts, the Skill
@@ -25,7 +25,7 @@ test.describe('a new visitor', () => {
   test('picking Challenger shows the Placement offer before Home, with Start and Skip, just play; Skip lands Home with nothing saved', async ({ page, issues }) => {
     await page.goto(APP);
     await page.locator('.mode-card[data-mode="challenger"]').click();
-    await expect(page).toHaveURL(/#\/placement$/);
+    await expect(page).toHaveURL(atRoute('#/placement'));
     await expect(page.locator('#plH')).toHaveText('Want to find your level?');
     await expect(page.locator('.place-lede')).toHaveText('About 3 minutes. No clock.');
     await expect(page.locator('#plStart')).toHaveText('Start');
@@ -176,7 +176,7 @@ test.describe('Explorer', () => {
     await expect(page.locator('h1.home-h')).toHaveText('What do you want to play?');
     const first = page.locator('.play-grid--big .play-tile').first();
     await expect(first).toHaveText(/Start here/);
-    await expect(first).toHaveAttribute('href', /^#\/skill\/2-/);
+    await expect(first).toHaveAttribute('href', new RegExp(`^${APP}skill/2-`));
     await expect(page.locator('.play-grid--big .play-tile')).toHaveCount(9);
     await open(page, '#/learn');
     await expect(page.locator('.mq-strand').first()).toHaveText('Suggested for you');
@@ -190,7 +190,7 @@ test.describe('a seeded Explorer at grade 3', () => {
     await open(page);
     const first = page.locator('.play-grid--big .play-tile').first();
     await expect(first).toContainText('Start here');
-    await expect(first).toHaveAttribute('href', /^#\/skill\/3-/);
+    await expect(first).toHaveAttribute('href', new RegExp(`^${APP}skill/3-`));
     await first.click();
     await expect(page.locator('.mq-crumbs')).toContainText('Grade 3');
     // Practice reads the level when there is no Rating; a Ranked round keeps Explorer's start (ADR 0007)
@@ -210,7 +210,7 @@ test.describe('a seeded Challenger at grade 6', () => {
     await open(page, '#/me');
     await expect(page.locator('#mePlace')).toContainText('Placement: about grade 6');
     await expect(page.locator('#mePlaceGo')).toHaveText('Retake');
-    await expect(page.locator('#mePlaceGo')).toHaveAttribute('href', '#/placement');
+    await expect(page.locator('#mePlaceGo')).toHaveAttribute('href', pathTo('#/placement'));
   });
 });
 
@@ -250,7 +250,7 @@ test.describe('an existing Challenger with progress', () => {
     await open(page);
     const card = page.locator('.place-home');
     await expect(card).toBeVisible();
-    await expect(card.locator('#placeStart')).toHaveAttribute('href', '#/placement');
+    await expect(card.locator('#placeStart')).toHaveAttribute('href', pathTo('#/placement'));
     await expect(page.locator('#view .md-btn--primary')).toHaveCount(1); // the card's Start is not a primary button
     await card.locator('#placeNotNow').click();
     await expect(page.locator('.place-home')).toHaveCount(0);
@@ -299,14 +299,14 @@ test.describe('a new Challenger placed at grade 5', () => {
     await expect(page.locator('.sky-bolt')).toHaveAttribute('data-at', 'sq5:1');
     await open(page, '#/tiles');
     await expect(page.locator('.dojo-card')).toContainText('Next Star: Square numbers ending in 5, Star 1');
-    await expect(page.locator('.dojo-card a.md-btn--primary')).toHaveAttribute('href', '#/star/sq5/1');
+    await expect(page.locator('.dojo-card a.md-btn--primary')).toHaveAttribute('href', pathTo('#/star/sq5/1'));
   });
 });
 test.describe('a new Pro placed at grade 8', () => {
   test.use({ seedMode: 'pro', seedPlayer: { placedBelt: 'purple' }, seedProgress: { v: 3, skills: {}, placement: { grade: '8', steps: 1, at: 1_700_000_000_000 } } });
   test('the Sutra door offers a purple belt Trick\'s Star 1', async ({ page }) => {
     await open(page);
-    await expect(page.locator('.sutra-door a.md-btn--primary')).toHaveAttribute('href', '#/star/sqroot/1');
+    await expect(page.locator('.sutra-door a.md-btn--primary')).toHaveAttribute('href', pathTo('#/star/sqroot/1'));
   });
 });
 
@@ -360,7 +360,8 @@ test('during and after a Placement no request carries the grade, the steps or an
   const log = await cloudLog(page);
   expect(log.writes).toEqual([]);
   expect(await context.cookies()).toEqual([]);
-  for (const r of reqs) expect(r).not.toMatch(/placement|grade=|steps|answer/i);
+  /* The screen's own address is its path since the move to /learn/ (indexable-routes): that bare page load is the one request naming it */
+  for (const r of reqs.filter(r => !/^GET \S+\/learn\/placement $/.test(r))) expect(r).not.toMatch(/placement|grade=|steps|answer/i);
   const ev = await events(page);
   expect(ev.filter(e => e.startsWith('math/placement/'))).toEqual(['math/placement/done']);
   expect(ev.some(e => /\/5\b|grade|steps/.test(e.replace('math/view/', '')))).toBe(false);

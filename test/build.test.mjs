@@ -14,10 +14,11 @@ import { fileURLToPath } from 'node:url';
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dir = mkdtempSync(join(tmpdir(), 'lvm-build-'));
-for (const f of ['build.py', '_config.yml', '.gitignore', 'play', 'site', 'theme', 'vendor', 'fonts', 'icons', 'thumbs', 'math.css', 'css', 'app/src/sw',
+for (const f of ['build.py', '_config.yml', '.gitignore', 'learn', 'site', 'theme', 'vendor', 'fonts', 'icons', 'thumbs', 'math.css', 'css', 'app/src/sw',
   'tools/build-sw.mjs', 'tools/build-ts.mjs', 'shared/src', 'tools/budget.ts', 'tools/trick-pages', 'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'AGENTS.md', 'CODING_STANDARDS.md', 'README.md',
   'wrangler.jsonc', 'workers/src', 'package.json', 'pnpm-workspace.yaml', 'tsconfig.base.json', 'vitest.config.ts',
-  'cloud/firestore.rules', 'test/support/verify.mjs', '.github', 'tools/voice/ci-fetch.mjs', 'tools/sutra-voice/names.mjs'])
+  'cloud/firestore.rules', 'test/support/verify.mjs', '.github', 'tools/voice/ci-fetch.mjs', 'tools/sutra-voice/names.mjs',
+  'tools/prerender'])
   if (existsSync(join(repo, f))) cpSync(join(repo, f), join(dir, f), { recursive: true });
 writeFileSync(join(dir, '_notes.txt'), 'starts with _');
 /* The first-load budget (tools/budget.ts, task 1.8): every test but the budget's own builds against a roomy limit, so an
@@ -42,7 +43,7 @@ const sw = () => {
   const src = read('sw.js');
   return { version: src.match(/const VERSION = '(\w+)';/)[1], precache: JSON.parse(src.match(/const PRECACHE = (\[[\s\S]*?\]);/)[1]), lazy: JSON.parse(src.match(/const LAZY = (\[[\s\S]*?\]);/)[1]) };
 };
-const importMap = () => JSON.parse(read('play/index.html').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
+const importMap = () => JSON.parse(read('learn/index.html').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
 const sha = f => createHash('sha256').update(readFileSync(join(out, f))).digest('hex').slice(0, 10);
 const walk = d => readdirSync(d).flatMap(f => { const p = join(d, f); return statSync(p).isDirectory() ? walk(p) : [p]; });
 /* Edit a file in the temp copy for one build, then put it back */
@@ -63,12 +64,14 @@ function withFile(f, body, fn) {
 const fails = (r, re) => { assert.notEqual(r.status, 0, 'the build must fail'); assert.match(r.stderr, re); };
 
 test('the source in git is unstamped: no import map, plain URLs, a dev worker', () => {
-  const html = readFileSync(join(repo, 'play/index.html'), 'utf8'), src = readFileSync(join(repo, 'app/src/sw/sw.ts'), 'utf8');
+  const html = readFileSync(join(repo, 'learn/index.html'), 'utf8'), src = readFileSync(join(repo, 'app/src/sw/sw.ts'), 'utf8');
   assert.ok(!html.includes('type="importmap"'));
   assert.ok(!/\?v=/.test(html));
+  assert.match(html, /href="\/math\.css"/);
   assert.match(html, /<script type="module" src="\/js\/app\.js"><\/script>/);
   assert.match(src, /\nconst VERSION: string = 'dev';\nconst PRECACHE: \[string, string\]\[\] = \[\];\nconst LAZY: string\[\] = \[\];\n/);
-  assert.ok(!existsSync(join(repo, 'index.html')), 'the game moved to play/index.html');
+  assert.ok(!existsSync(join(repo, 'index.html')), 'the game is learn/index.html');
+  assert.ok(!existsSync(join(repo, 'play/index.html')), 'the game moved from play/ to learn/ (openspec change indexable-routes, task 2.2)');
 });
 
 test('--out inside the repo must start with _ (git and ESLint ignore _*/), and is never the repo itself', () => {
@@ -80,15 +83,15 @@ test('--out inside the repo must start with _ (git and ESLint ignore _*/), and i
 
 test('the output has the pages at the root, is stamped, and holds only publishable files', () => {
   build();
-  for (const f of ['play/index.html', 'index.html', 'js/app.js', 'parents/index.html', 'teachers/index.html', 'privacy/index.html', 'terms/index.html',
+  for (const f of ['learn/index.html', 'index.html', 'js/app.js', 'parents/index.html', 'teachers/index.html', 'privacy/index.html', 'terms/index.html',
     'tricks/index.html', 'tricks/square-numbers-ending-in-5/index.html', 'tricks/calculator.js', 'theme/tricks.css',
     'licenses/index.html', '404.html', 'sw.js', 'math.css', 'manifest.webmanifest', 'js/skills/index.js', 'ds/2.2.0/tokens.css', 'ds/2.2.0/components.css',
     'ds/2.2.0/header.js', 'theme/learnvedicmath.css', 'theme/fonts.css', 'fonts/nunito-sans-latin-wght-normal.woff2', 'icons/icon-192.png',
     '_headers', '_redirects', 'robots.txt', 'sitemap.xml', '.well-known/security.txt', '.assetsignore'])
     assert.ok(existsSync(join(out, f)), `${f} is published`);
   assert.match(sw().version, /^[0-9a-f]{10}$/);
-  assert.match(read('play/index.html'), /<script type="module" src="\/js\/app\.js\?v=[0-9a-f]{10}"><\/script>/);
-  assert.match(read('play/index.html'), /href="\/math\.css\?v=[0-9a-f]{10}"/);
+  assert.match(read('learn/index.html'), /<script type="module" src="\/js\/app\.js\?v=[0-9a-f]{10}"><\/script>/);
+  assert.match(read('learn/index.html'), /href="\/math\.css\?v=[0-9a-f]{10}"/);
   assert.match(read('index.html'), /href="\/theme\/site\.css\?v=[0-9a-f]{10}"/);
   for (const f of ['AGENTS.md', 'CODING_STANDARDS.md', 'README.md', 'build.py', '_config.yml', 'cloud', 'test', 'tools', '.github', '.gitignore', '_notes.txt', 'out', 'site',
     'moved', 'workers', 'app', 'shared', 'package.json', 'pnpm-workspace.yaml', 'tsconfig.base.json', 'vitest.config.ts', 'wrangler.jsonc', 'THIRD-PARTY-NOTICES.md', 'theme/header.html', 'vendor/design-system', 'docs', 'vendor/goatcounter/SHA256SUMS'])
@@ -99,8 +102,32 @@ test('the output has the pages at the root, is stamped, and holds only publishab
     if (rel === '_redirects' || /\.(png|woff2|webp|m4a|gz|wasm)$/.test(rel)) continue;
     assert.ok(!readFileSync(p, 'utf8').includes('/vedic-math/'), `${rel} names /vedic-math/`);
   }
-  assert.match(read('_redirects'), /^\/vedic-math \/play\/ 301$/m);
-  assert.match(read('_redirects'), /^\/vedic-math\/\* \/play\/ 301$/m);
+  assert.match(read('_redirects'), /^\/vedic-math \/learn\/ 301$/m);
+  assert.match(read('_redirects'), /^\/vedic-math\/\* \/learn\/ 301$/m);
+});
+
+/* The move (openspec change indexable-routes, design D2 and D9, task 2.2): the game is at /learn/; every old address
+   answers 301 with the same screen there, forever, and no published file but _redirects names /play/ (the manifest's
+   id, which names the installed app, never changes; sw.js, whose retiring branch serves a worker still registered
+   under /play/, task 2.4) */
+test('_redirects moves /play/ and the old origin to /learn/ and answers the four aliases; nothing else names /play/', () => {
+  build();
+  const lines = read('_redirects').split('\n').filter(l => l && !l.startsWith('#'));
+  const want = ['/play /learn/ 301', '/play/* /learn/:splat 301', '/vedic-math /learn/ 301', '/vedic-math/* /learn/ 301',
+    '/learn/learn /learn/skills 301', '/learn/tricks /learn/dojo 301', '/learn/duel /learn/arena/party 301', '/learn/progress /learn/me 301'];
+  assert.deepEqual(lines.slice(0, want.length), want, 'the old addresses come first, before the share-link rewrites');
+  for (const l of lines.slice(want.length)) assert.match(l, /^\/learn\/[\w/-]+\/\* \/learn\/[\w/-]+ 200$/, l);
+  const old = /(?:(?<![\w.~-])|(?<=learnvedicmath\.com))\/play(?![\w.-])/;
+  for (const p of walk(out)) {
+    const rel = relative(out, p);
+    if (rel === '_redirects' || rel === 'sw.js' || /\.(png|woff2|webp|m4a|gz|wasm|traineddata)$/.test(rel)) continue;
+    const text = readFileSync(p, 'utf8');
+    assert.doesNotMatch(rel === 'manifest.webmanifest' ? text.replace('"id": "/play/"', '') : text, old, `${rel} names /play/`);
+  }
+  assert.equal(JSON.parse(read('manifest.webmanifest')).id, '/play/', 'the installed app keeps its id');
+  assert.match(read('sw.js'), /\nconst OLD_SCOPE = '\/play\/';/, 'the worker knows the old scope, to retire there');
+  assert.ok(!existsSync(join(out, 'play')), 'nothing is published under play/');
+  withEdit('js/life.js', s => s + "\n// location.assign('/play/#/arena')\n", () => fails(tryBuild(), /js\/life\.js: names the game's old address \/play\//));
 });
 
 /* react-typescript task 3.1: a js/ module that only re-exports a TypeScript module is skipped by every static import,
@@ -187,7 +214,7 @@ test('the published design system drops its @font-face lines: the fonts are decl
   assert.doesNotMatch(read('ds/2.2.0/tokens.css'), /@font-face|\/assets\/fonts/);
   assert.match(read('theme/fonts.css'), /url\(\/fonts\/nunito-sans-latin-wght-normal\.woff2\)/);
   assert.equal(read('ds/2.2.0/components.css'), readFileSync(join(dir, 'vendor/design-system/2.2.0/components.css'), 'utf8'));
-  for (const page of ['play/index.html', 'index.html', 'parents/index.html']) {
+  for (const page of ['learn/index.html', 'index.html', 'parents/index.html']) {
     assert.doesNotMatch(read(page), /@font-face/, `${page} declares no fonts of its own`);
     assert.match(read(page), /<link rel="preload" href="\/fonts\/nunito-sans-latin-wght-normal\.woff2" as="font"/);
     assert.match(read(page), /<link rel="preload" href="\/fonts\/fredoka-latin-600-normal\.woff2" as="font"/);
@@ -204,18 +231,18 @@ test('the precache list holds the core: every import-map module but the lazy one
   const urls = new Map(precache);
   for (const url of Object.values(importMap())) {
     if (LAZY.test(url)) assert.ok(lazy.includes(url) && !urls.has(url), `${url} is saved on first request, not precached`);
-    else if (url.startsWith('/js/landing-sky.js?')) assert.ok(!urls.has(url) && !lazy.includes(url), `${url}: the landing page's script is never requested under /play/`);
+    else if (url.startsWith('/js/landing-sky.js?')) assert.ok(!urls.has(url) && !lazy.includes(url), `${url}: the landing page's script is never requested under /learn/`);
     else assert.ok(urls.has(url), `${url} is not precached`);
   }
   assert.ok(lazy.length > 30 && lazy.every(u => LAZY.test(u) && /\?v=[0-9a-f]{10}$/.test(u)), 'LAZY holds the stamped URLs of the experiences, their styles and the video list');
   for (const u of lazy) assert.ok(!urls.has(u), `${u} is in both lists`);
   assert.ok(lazy.some(u => u.startsWith('/css/play/tala.css?v=')) && lazy.some(u => u.startsWith('/js/play/exp/tala.js?v=')) && lazy.some(u => u.startsWith('/js/videos.js?v=')));
   assert.ok(urls.has(importMap()['/js/play/catalog.js']) && urls.has(importMap()['/js/arena.js']) && urls.has(importMap()['/js/stories.js']), 'the shelves, the Arena and the stories stay with the core');
-  assert.equal(urls.get('/play/'), sha('play/index.html'));
-  const css = read('play/index.html').match(/href="(\/math\.css\?v=\w+)"/)[1];
+  assert.equal(urls.get('/learn/'), sha('learn/index.html'));
+  const css = read('learn/index.html').match(/href="(\/math\.css\?v=\w+)"/)[1];
   assert.equal(urls.get(css), sha('math.css'));
   assert.equal(urls.get(importMap()['/js/app.js']), sha('js/app.js'));
-  const tokens = read('play/index.html').match(/href="(\/ds\/2\.2\.0\/tokens\.css\?v=\w+)"/)[1];
+  const tokens = read('learn/index.html').match(/href="(\/ds\/2\.2\.0\/tokens\.css\?v=\w+)"/)[1];
   assert.equal(urls.get(tokens), sha('ds/2.2.0/tokens.css'), 'the published tokens.css, as served');
   for (const u of ['/fonts/nunito-sans-latin-wght-normal.woff2', '/fonts/fredoka-latin-600-normal.woff2', '/fonts/fredoka-latin-700-normal.woff2', '/icons/icon-192.png', '/icons/maskable-192.png', '/icons/maskable-512.png',
     '/icons/favicon-16.png', '/icons/favicon-32.png', '/icons/favicon-48.png', '/icons/favicon.svg', '/icons/apple-touch-icon.png', '/manifest.webmanifest'])
@@ -238,12 +265,12 @@ test('a lazy module in the static import graph of js/app.js fails the build', ()
 });
 
 test('a second build gives the same output, and the build never edits the source', () => {
-  const before = ['play/index.html', 'app/src/sw/sw.ts'].map(f => readFileSync(join(dir, f), 'utf8'));
+  const before = ['learn/index.html', 'app/src/sw/sw.ts'].map(f => readFileSync(join(dir, f), 'utf8'));
   build();
-  const first = [read('play/index.html'), read('sw.js'), read('_headers')];
+  const first = [read('learn/index.html'), read('sw.js'), read('_headers')];
   build();
-  assert.deepEqual([read('play/index.html'), read('sw.js'), read('_headers')], first);
-  assert.deepEqual(['play/index.html', 'app/src/sw/sw.ts'].map(f => readFileSync(join(dir, f), 'utf8')), before);
+  assert.deepEqual([read('learn/index.html'), read('sw.js'), read('_headers')], first);
+  assert.deepEqual(['learn/index.html', 'app/src/sw/sw.ts'].map(f => readFileSync(join(dir, f), 'utf8')), before);
 });
 
 test('changing a module changes its import-map stamp, its precache entry and VERSION', () => {
@@ -269,16 +296,16 @@ test('changing the worker logic changes VERSION', () => {
 test('the build fails if stamps are committed to the source', () => {
   for (const [f, edit] of [
     ['app/src/sw/sw.ts', s => s.replace("const VERSION: string = 'dev';", "const VERSION: string = 'abc1234567';")],
-    ['play/index.html', s => s.replace('src="/js/app.js"', 'src="/js/app.js?v=abc1234567"')],
-    ['play/index.html', s => s.replace('<script type="module"', '<script type="importmap">{"imports":{}}</script>\n<script type="module"')],
+    ['learn/index.html', s => s.replace('src="/js/app.js"', 'src="/js/app.js?v=abc1234567"')],
+    ['learn/index.html', s => s.replace('<script type="module"', '<script type="importmap">{"imports":{}}</script>\n<script type="module"')],
     ['site/index.html', s => s.replace('href="/theme/site.css"', 'href="/theme/site.css?v=abc1234567"')],
   ]) withEdit(f, edit, () => fails(tryBuild(), /source must/));
 });
 
 test('--dev builds the same layout with no stamps and the dev worker', () => {
   build('--dev');
-  assert.ok(existsSync(join(out, 'play/index.html')) && existsSync(join(out, 'index.html')) && existsSync(join(out, '_headers')));
-  assert.doesNotMatch(read('play/index.html'), /\?v=|type="importmap"/);
+  assert.ok(existsSync(join(out, 'learn/index.html')) && existsSync(join(out, 'index.html')) && existsSync(join(out, '_headers')));
+  assert.doesNotMatch(read('learn/index.html'), /\?v=|type="importmap"/);
   assert.match(read('sw.js'), /\nconst VERSION = 'dev';\nconst PRECACHE = \[\];\nconst LAZY = \[\];\n/);
   assert.doesNotMatch(read('_headers'), /X-Robots-Tag/);
 });
@@ -306,7 +333,7 @@ test('every landing and grown-up page carries one Speculation Rules block its po
     const rule = headers.match(new RegExp(`^${url.replace(/[*.]/g, '\\$&')}\\n((?: {2}.*\\n)*)`, 'm'))[1];
     assert.ok(rule.includes(`'sha256-${hash}'`), `${url}: the block's hash is in the page's policy`);
   }
-  for (const f of ['play/index.html', '404.html']) assert.doesNotMatch(read(f), /speculationrules/, `${f} carries no rules block`);
+  for (const f of ['learn/index.html', 'learn/sutras/s1.html', '404.html']) assert.doesNotMatch(read(f), /speculationrules/, `${f} carries no rules block`);
 });
 
 /* Compressed and immutable delivery (openspec change render-performance, design D3, task 3.2): the folders every page
@@ -334,16 +361,16 @@ test('robots.txt allows crawling and names the sitemap, which lists the landing,
   build();
   assert.equal(read('robots.txt'), 'User-agent: *\nAllow: /\n\nSitemap: https://learnvedicmath.com/sitemap.xml\n');
   const urls = [...read('sitemap.xml').matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
-  for (const p of ['/', '/play/', '/parents/', '/teachers/', '/privacy/', '/terms/']) assert.ok(urls.includes('https://learnvedicmath.com' + p), p);
+  for (const p of ['/', '/learn/', '/parents/', '/teachers/', '/privacy/', '/terms/']) assert.ok(urls.includes('https://learnvedicmath.com' + p), p);
   assert.ok(!urls.some(u => /404|import/.test(u)));
-  for (const [page, url] of [['index.html', '/'], ['play/index.html', '/play/'], ['parents/index.html', '/parents/'], ['privacy/index.html', '/privacy/']])
+  for (const [page, url] of [['index.html', '/'], ['learn/index.html', '/learn/'], ['parents/index.html', '/parents/'], ['privacy/index.html', '/privacy/']])
     assert.match(read(page), new RegExp(`<link rel="canonical" href="https://learnvedicmath\\.com${url.replace(/\//g, '\\/')}">`), page);
 });
 
 test('the not-found page links to the landing page and the game', () => {
   build();
   const html = read('404.html');
-  assert.match(html, /href="\/play\/"/);
+  assert.match(html, /href="\/learn\/"/);
   assert.match(html, /href="\/\?home"/);
 });
 
@@ -383,7 +410,7 @@ test('every response carries the security headers, without HSTS preload', () => 
 test('each page has its own policy from its inline script hashes; COOP is same-origin except /import/', () => {
   build();
   const rules = headerRules();
-  for (const [url, file] of [['/', 'index.html'], ['/play/', 'play/index.html'], ['/parents/', 'parents/index.html'], ['/teachers/', 'teachers/index.html'], ['/privacy/', 'privacy/index.html'], ['/terms/', 'terms/index.html']]) {
+  for (const [url, file] of [['/', 'index.html'], ['/learn/*', 'learn/index.html'], ['/parents/', 'parents/index.html'], ['/teachers/', 'teachers/index.html'], ['/privacy/', 'privacy/index.html'], ['/terms/', 'terms/index.html']]) {
     const r = rules[url];
     assert.ok(r, `${url} has a rule`);
     const html = read(file), csp = parse(r['Content-Security-Policy']), ro = parse(r['Content-Security-Policy-Report-Only']);
@@ -399,7 +426,7 @@ test('each page has its own policy from its inline script hashes; COOP is same-o
     assert.ok('upgrade-insecure-requests' in csp);
     assert.equal(r['Cross-Origin-Opener-Policy'], 'same-origin');
     // The game asks for the camera (Math Lens) and the microphone (Tala Lab); no other page may
-    assert.equal(r['Permissions-Policy'], url === '/play/' ? 'camera=(self), microphone=(self)' : 'camera=(), microphone=()', url);
+    assert.equal(r['Permissions-Policy'], url === '/learn/*' ? 'camera=(self), microphone=(self)' : 'camera=(), microphone=()', url);
     assert.deepEqual(ro['style-src'], ["'self'"], 'the Report-Only policy tries style-src without unsafe-inline');
     assert.deepEqual(ro['require-trusted-types-for'], ["'script'"]);
     assert.ok(!('report-uri' in ro), 'the Report-Only policy reports through report-to only (batched)');
@@ -407,9 +434,9 @@ test('each page has its own policy from its inline script hashes; COOP is same-o
     assert.deepEqual(ro['report-to'], ['csp']);
     const all = JSON.stringify(csp);
     for (const gone of ['i.ytimg.com', 'gstatic.com/firebasejs', 'gc.zgo.at', 'sbmadhav.com', 'sbmadhav.goatcounter']) assert.ok(!all.includes(gone), `${url} allows ${gone}`);
-    if (url !== '/play/') assert.ok(!/google|gstatic|firebase|youtube/.test(all), `${url} lists a Google or YouTube host`);
+    if (url !== '/learn/*') assert.ok(!/google|gstatic|firebase|youtube/.test(all), `${url} lists a Google or YouTube host`);
   }
-  const play = parse(rules['/play/']['Content-Security-Policy']);
+  const play = parse(rules['/learn/*']['Content-Security-Policy']);
   assert.ok(play['script-src'].includes("'wasm-unsafe-eval'"), 'the Math Lens reader compiles WebAssembly (vendor/tesseract/)');
   assert.deepEqual(play['worker-src'], ["'self'"]);
   assert.ok(play['frame-src'].includes('https://www.youtube-nocookie.com'));
@@ -417,7 +444,7 @@ test('each page has its own policy from its inline script hashes; COOP is same-o
   // Launch state (tasks 1.8 and 8.5): js/cloud-config.js has FIREBASE = null, so no page lists a Firebase or Google
   // host; the test below builds with a config and checks the hosts come back
   if (/export const FIREBASE = null;/.test(readFileSync(join(dir, 'js/cloud-config.js'), 'utf8')))
-    assert.ok(!/firebase|googleapis|recaptcha|gstatic/.test(JSON.stringify(play)), 'device-only launch: /play/ lists no Firebase host');
+    assert.ok(!/firebase|googleapis|recaptcha|gstatic/.test(JSON.stringify(play)), 'device-only launch: /learn/* lists no Firebase host');
   else assert.ok(play['connect-src'].includes('https://firestore.googleapis.com'));
   assert.ok(play['connect-src'].includes('https://learnvedicmath.goatcounter.com'));
   assert.ok(!parse(rules['/']['Content-Security-Policy'])['script-src'].includes("'wasm-unsafe-eval'"));
@@ -450,9 +477,9 @@ test('the launch ships with Device boards only: js/cloud-config.js has no Fireba
   assert.match(cfg, /task 8\.5/i, 'the comment says which task turns World boards on');
 });
 
-test('with a Firebase config and an App Check key, /play/ lists the Firebase and App Check hosts and no other page does', () => {
+test('with a Firebase config and an App Check key, /learn/* lists the Firebase and App Check hosts and no other page does', () => {
   withEdit('js/cloud-config.js', ON, () => build());
-  const rules = headerRules(), play = parse(rules['/play/']['Content-Security-Policy']);
+  const rules = headerRules(), play = parse(rules['/learn/*']['Content-Security-Policy']);
   for (const h of ['https://firestore.googleapis.com', 'https://identitytoolkit.googleapis.com', 'https://securetoken.googleapis.com', 'https://content-firebaseappcheck.googleapis.com'])
     assert.ok(play['connect-src'].includes(h), h);
   assert.ok(play['frame-src'].includes('https://learnvedicmath.firebaseapp.com'), 'the authDomain');
@@ -462,10 +489,10 @@ test('with a Firebase config and an App Check key, /play/ lists the Firebase and
 
 test('the build fails on a CSP <meta> in a page, an inline event handler or a javascript: URL', () => {
   for (const [f, edit, re] of [
-    ['play/index.html', s => s.replace('<meta charset="utf-8">', `<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="default-src 'self'">`), /Content-Security-Policy/],
+    ['learn/index.html', s => s.replace('<meta charset="utf-8">', `<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="default-src 'self'">`), /Content-Security-Policy/],
     ['site/index.html', s => s.replace('<meta charset="utf-8">', `<meta charset="utf-8">\n<meta http-equiv="Content-Security-Policy" content="default-src 'self'">`), /Content-Security-Policy/],
-    ['play/index.html', s => s.replace('<button type="button" class="md-link mq-reset" id="resetMode">', '<button type="button" class="md-link mq-reset" id="resetMode" onclick="go()">'), /inline event handler/],
-    ['play/index.html', s => s.replace('href="#/learn"', 'href="javascript:void(0)"'), /javascript: URL/],
+    ['learn/index.html', s => s.replace('<button type="button" class="md-link mq-reset" id="resetMode">', '<button type="button" class="md-link mq-reset" id="resetMode" onclick="go()">'), /inline event handler/],
+    ['learn/index.html', s => s.replace('href="#/learn"', 'href="javascript:void(0)"'), /javascript: URL/],
   ]) withEdit(f, edit, () => fails(tryBuild(), re));
 });
 
@@ -491,7 +518,7 @@ test('the build fails on a file over 25 MiB', () => {
 
 test('the build fails when a page header differs from theme/header.html', () => {
   withEdit('site/parents/index.html', s => s.replace('aria-label="Learn Vedic Math, home"', 'aria-label="Home"'), () => fails(tryBuild(), /header differs from theme\/header\.html/));
-  withEdit('play/index.html', s => s.replace('<!-- md-header -->\n', ''), () => fails(tryBuild(), /md-header/));
+  withEdit('learn/index.html', s => s.replace('<!-- md-header -->\n', ''), () => fails(tryBuild(), /md-header/));
 });
 
 test('the build fails when a vendored file does not match its SHA256SUMS', () => {
@@ -579,7 +606,7 @@ test('--voice off: no published file names the voice host, the index names no re
   build('--voice', 'off');
   for (const f of walk(out)) assert.ok(!readFileSync(f, 'utf8').includes('voice.learnvedicmath.com'), `${relative(out, f)} names the voice host`);
   const rules = read('_headers');
-  assert.match(rules, /^\/play\/$/m);
+  assert.match(rules, /^\/learn\/\*$/m);
   assert.ok(!/voice\.learnvedicmath/.test(rules), 'no policy allows the voice host');
   const { STUDIO } = await import(join(out, 'js/voice-index.js') + '?off');
   assert.equal(STUDIO.tag, null, 'no recording: js/voice.js falls back to the built-in voice');
@@ -601,7 +628,7 @@ test('--voice off: no published file names the voice host, the index names no re
 
 test('every static page has a canonical link and Open Graph tags with the site image', () => {
   build();
-  for (const [page, url] of [['index.html', '/'], ['play/index.html', '/play/'], ['parents/index.html', '/parents/'], ['teachers/index.html', '/teachers/'],
+  for (const [page, url] of [['index.html', '/'], ['learn/index.html', '/learn/'], ['parents/index.html', '/parents/'], ['teachers/index.html', '/teachers/'],
     ['privacy/index.html', '/privacy/'], ['terms/index.html', '/terms/'], ['licenses/index.html', '/licenses/']]) {
     const html = read(page);
     assert.match(html, new RegExp(`<link rel="canonical" href="https://learnvedicmath\\.com${url.replace(/\//g, '\\/')}">`), page);
@@ -671,7 +698,7 @@ test('the build prints the first-load table and fails above the budget: 20 KB in
   const measured = JSON.parse(readFileSync(json, 'utf8'));
   try {
     setBudget(measured.total, measured.files);
-    assert.match(build(), /First load of \/play\/ \(Brotli, \d+ files\): \d+ bytes/);
+    assert.match(build(), /First load of \/learn\/ \(Brotli, \d+ files\): \d+ bytes/);
     const noise = randomBytes(20 * 1024);
     withEdit('js/app.js', src => `${src}\n/* ${noise.toString('base64')} */\n`, () =>
       fails(tryBuild(), /first-load budget: \d+ bytes Brotli is above the baseline's \d+ bytes \(docs\/perf\/baseline\.json\); largest new or grown file: \/js\/app\.js/));
@@ -683,6 +710,51 @@ test('the build prints the first-load table and fails above the budget: 20 KB in
       }));
     assert.doesNotThrow(() => build('--dev'), 'a --dev build has no PRECACHE and is not measured');
   } finally { setBudget(1e9); }
+});
+
+/* The route pages (openspec change indexable-routes, design D4 and D5, task 2.3): tools/prerender/write.ts writes
+   learn/<path>.html for every path of js/paths.js from the game shell, plus learn/404.html; _headers carries one rule
+   for /learn/*, with the game's policy; _redirects the 200 rewrites for share links; nothing of it is precached. */
+test('the build writes a page for every route under learn/, the 404 shell, one /learn/* header rule with the game policy, and the share-link rewrites', () => {
+  const log = build();
+  assert.match(log, /3470 route pages under \/learn\/ \(239 indexed\)/);
+  const learn = walk(join(out, 'learn')).filter(f => f.endsWith('.html'));
+  assert.equal(learn.length, 3471, '3,470 route pages and the 404 shell');
+  for (const f of ['learn/index.html', 'learn/skills.html', 'learn/kata/sq5/12.html', 'learn/sutras/s1.html', 'learn/arena/ghosts.html', 'learn/challenge/1000.html', 'learn/guide/around.html', 'learn/404.html'])
+    assert.ok(existsSync(join(out, f)), f);
+  const shell = read('learn/index.html'), kata = read('learn/kata/sq5/12.html');
+  assert.equal(kata.slice(kata.indexOf('</head>')), shell.slice(shell.indexOf('</head>')), 'the same body as the game shell');
+  assert.match(kata, /<title>Kata 12: Square numbers ending in 5 · Learn Vedic Math<\/title>/);
+  assert.match(kata, /<link rel="canonical" href="https:\/\/learnvedicmath\.com\/learn\/kata\/sq5\/12">/);
+  assert.match(kata, /<meta property="og:url" content="https:\/\/learnvedicmath\.com\/learn\/kata\/sq5\/12">/);
+  assert.match(kata, /<meta name="robots" content="noindex, follow">/);
+  assert.doesNotMatch(read('learn/sutras/s1.html'), /noindex/);
+  assert.deepEqual(JSON.parse(kata.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports, importMap(), 'the stamped import map, as the shell');
+  const nf = read('learn/404.html');
+  assert.match(nf, /<meta name="robots" content="noindex, follow">/);
+  assert.doesNotMatch(nf, /rel="canonical"|og:url/);
+  const rules = headerRules();
+  assert.ok(rules['/learn/*'], 'one rule for every page under /learn/');
+  assert.equal(read('learn/index.html'), shell, 'Home is the shell itself, so the precache hash holds');
+  assert.ok(parse(rules['/learn/*']['Content-Security-Policy'])['script-src'].includes("'wasm-unsafe-eval'"), 'the game policy');
+  assert.equal(rules['/learn/*']['Permissions-Policy'], 'camera=(self), microphone=(self)');
+  assert.equal(rules['/learn/*']['Cross-Origin-Opener-Policy'], 'same-origin');
+  assert.deepEqual(Object.keys(rules).filter(k => k.startsWith('/learn')), ['/learn/*'], 'no second rule Cloudflare would join with it');
+  for (const h of inlineHashes(kata)) assert.ok(parse(rules['/learn/*']['Content-Security-Policy'])['script-src'].includes(h), `${h} is in the policy`);
+  const redirects = read('_redirects');
+  for (const [from, to] of [['/learn/arena/ghosts/*', '/learn/arena/ghosts'], ['/learn/games/art/*', '/learn/games/art'], ['/learn/games/wall/*', '/learn/games/wall'], ['/learn/dojo/locks/*', '/learn/dojo/locks'], ['/learn/arena/day/*', '/learn/arena']])
+    assert.ok(redirects.split('\n').includes(`${from} ${to} 200`), `${from} ${to} 200`);
+  assert.match(redirects, /^\/vedic-math\/\* \/learn\/ 301$/m, 'the old-origin rules stay');
+  assert.ok(!sw().precache.some(([u]) => u.startsWith('/learn/') && u !== '/learn/'), 'the shell /learn/ is precached, no route page');
+  build('--dev');
+  assert.ok(existsSync(join(out, 'learn/kata/sq5/12.html')) && !read('learn/kata/sq5/12.html').includes('?v='), 'a --dev build writes the pages without stamps');
+});
+
+test('the build fails when a page under /learn/ has an inline script the others do not, naming the page', () => {
+  const r = withEdit('tools/prerender/write.ts', s => s.replace('html: withHead(shell, meta, ORIGIN + entry.path, entry.indexed)',
+    "html: withHead(shell, meta, ORIGIN + entry.path, entry.indexed).replace('</body>', (entry.path === '/learn/sutras/s1' ? '<script>1</script>' : '') + '</body>')"), () => tryBuild());
+  fails(r, /learn\/sutras\/s1\.html: its inline scripts differ from the game shell's/);
+  rmSync(out, { recursive: true, force: true }); // the failed build leaves a partial folder the next build would refuse
 });
 
 /* ---------- the Trick pages' browser modules (trick-pages design D4; teacher-warm-up design D7, task 1.2) ---------- */

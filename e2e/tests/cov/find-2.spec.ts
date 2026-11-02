@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, atRoute, pathTo } from '../fixtures';
 
 /* find spec, Requirements "A Play mode opens Me" (A Play mode), "The group that matches more comes first" (Multiply
    big numbers), "How words are matched" (A title made of an ignored word, A kind word), "A share of the words is enough"
@@ -15,7 +15,7 @@ test('A Play mode: "explorer" lists Explorer Mode, which opens Me', async ({ pag
   const m = group(page, 'Play modes').first();
   await expect(m.locator('b')).toHaveText('Explorer Mode');
   await m.click();
-  await expect(page).toHaveURL(/#\/me$/);
+  await expect(page).toHaveURL(atRoute('#/me'));
 });
 
 test('Multiply big numbers: the Tricks come first, led by Multiply any two numbers in one line', async ({ page }) => {
@@ -29,7 +29,7 @@ test('A title made of an ignored word: "Me" puts Me first', async ({ page }) => 
   await open(page, '#/find');
   await find(page, 'Me');
   await expect(hits(page).first().locator('b')).toHaveText('Me');
-  await expect(hits(page).first()).toHaveAttribute('href', '#/me');
+  await expect(hits(page).first()).toHaveAttribute('href', pathTo('#/me'));
 });
 
 test('A kind word: "games" lists the Games section and at least four games', async ({ page }) => {
@@ -58,8 +58,8 @@ test('What is Vedic math: Best match lists the Sutras section and the Sutra card
   await open(page, '#/find');
   await find(page, 'what is vedic math');
   const best = group(page, 'Best match');
-  await expect(best.nth(0)).toHaveAttribute('href', '#/sutras');
-  await expect(best.nth(1)).toHaveAttribute('href', '#/guide/sutras');
+  await expect(best.nth(0)).toHaveAttribute('href', pathTo('#/sutras'));
+  await expect(best.nth(1)).toHaveAttribute('href', pathTo('#/guide/sutras'));
 });
 
 test('For kids: "for kids", "children" and "my child" give Explorer Mode (opening Me), then the Play modes guide section', async ({ page }) => {
@@ -69,8 +69,8 @@ test('For kids: "for kids", "children" and "my child" give Explorer Mode (openin
     expect((await groups(page))[0], q).toBe('Best match');
     const best = group(page, 'Best match');
     await expect(best.nth(0).locator('b')).toHaveText('Explorer Mode');
-    await expect(best.nth(0)).toHaveAttribute('href', '#/me');
-    await expect(best.nth(1)).toHaveAttribute('href', '#/guide/modes');
+    await expect(best.nth(0)).toHaveAttribute('href', pathTo('#/me'));
+    await expect(best.nth(1)).toHaveAttribute('href', pathTo('#/guide/modes'));
   }
 });
 

@@ -38,7 +38,7 @@ test('the precache entries are every built file but the 3D ones, each with the h
 const SOURCE = `const KILL: boolean = false;\n${START}\n${DEV_BLOCK}\n${END}\nconst PREFIX: string = 'lvm-';\nconst VOICE_ORIGIN: string | null = 'https://voice.learnvedicmath.com'; // the voice host\n`;
 
 test('site mode writes VERSION and PRECACHE; VERSION changes with the list and with the worker source', () => {
-  const entries: [string, string][] = [['/play/', 'aaaaaaaaaa'], ['/js/app.js?v=bbbbbbbbbb', 'bbbbbbbbbb']];
+  const entries: [string, string][] = [['/learn/', 'aaaaaaaaaa'], ['/js/app.js?v=bbbbbbbbbb', 'bbbbbbbbbb']];
   const { code, version } = fill(SOURCE, { mode: 'site', entries, voiceOff: false });
   expect(version).toMatch(/^[0-9a-f]{10}$/);
   expect(code).toContain(`${START}\nconst VERSION: string = '${version}';\nconst PRECACHE: [string, string][] = ${listing(entries)};\n${END}`);

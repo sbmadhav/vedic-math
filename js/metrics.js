@@ -26,7 +26,7 @@ const flags = () => { try { return JSON.parse(get(FLAGS)) || {}; } catch (e) { r
 const setFlag = f => { const m = flags(); m[f] = true; put(FLAGS, JSON.stringify(m)); };
 
 /* The one place an event leaves: the shared helper, always safe to call. Titles are fixed words too.
-   play/index.html runs this module before the deferred js/analytics.js that defines siteTrack, so events
+   learn/index.html runs this module before the deferred js/analytics.js that defines siteTrack, so events
    from the first render wait here (at most 20) until the page has parsed, then go; if the helper never
    arrives (blocked, offline) they are dropped. */
 const early = [];
@@ -82,10 +82,13 @@ const ROUTES = [
   /* Play experiences: the page name inside its section (js/play/catalog.js), never the params after it */
   [/^#\/(dojo|arena|games|sutras)\/([a-z-]+)(?:\/.*)?$/, 'play/{play:2}'],
 ];
-/* The route-view path for a hash, or 'other'. known(kind, id) says whether id is in that catalog; an id
-   that is not (a typed or stale link) becomes 'unknown', so nothing typed is ever sent. */
-export function routePath(hash, known = () => false) {
-  const h = hash || '#/';
+/* The route-view path for a route key, or 'other'. The key is the one the router derived from the address
+   (js/paths.js toKey: /learn/arena is '#/arena', an old #/arena link the same once it became the path; openspec change
+   indexable-routes, design D11), so the event names stay as they were. known(kind, id) says whether id is in that
+   catalog; an id that is not (a typed or stale link) becomes 'unknown', so nothing typed is ever sent. A key never
+   holds the address's query. */
+export function routePath(key, known = () => false) {
+  const h = key || '#/';
   for (const [re, tpl] of ROUTES) {
     const m = h.match(re); if (!m) continue;
     return tpl.replace(/\{(\w+):(\d)\}/g, (_, kind, i) => {
@@ -97,8 +100,8 @@ export function routePath(hash, known = () => false) {
 }
 /* One route view per rendered route. picker: the Mode picker was shown instead of the route; sky: home showed the
    Sky (openspec sky-home), so the view is sky instead of home. */
-export function view(hash, known, picker = false, sky = false) {
-  const p = picker ? 'pick-mode' : routePath(hash, known);
+export function view(key, known, picker = false, sky = false) {
+  const p = picker ? 'pick-mode' : routePath(key, known);
   send('view/' + (p === 'home' && sky ? 'sky' : p), 'Vedic Math: page view');
 }
 

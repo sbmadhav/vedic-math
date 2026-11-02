@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, atRoute } from '../fixtures';
 
 /* lesson-practice spec (openspec change play-nav-by-mode), Requirements "A lesson ends in its practice", "Try it yourself
    starts a round on the Trick" and "A Star from a Deep dive goes back to it": one test per scenario. */
@@ -23,7 +23,7 @@ test.describe('Explorer', () => {
   test('Explorer: a Trick under Try it yourself opens the Trick page with its practice, and no Star starts', async ({ page }) => {
     await open(page, '#/sutras/s1');
     await page.locator('dialog.sutra-modal .sd-try li a.md-btn--primary').first().click();
-    await expect(page).toHaveURL(/#\/skill\/v-sq5$/);
+    await expect(page).toHaveURL(atRoute('#/skill/v-sq5'));
     await expect(page.locator('#practice .pr-q')).toBeVisible();
     await expect(page.locator('.play-shell')).toHaveCount(0);
   });
@@ -32,7 +32,7 @@ test.describe('Explorer', () => {
 test('Challenger: with no Stars lit, the first Trick of Ekādhikena Pūrveṇa starts Star 1 of squares ending in 5', async ({ page }) => {
   await open(page, '#/sutras/s1');
   await page.locator('dialog.sutra-modal .sd-try li a.md-btn--primary').first().click();
-  await expect(page).toHaveURL(/#\/star\/sq5\/1$/);
+  await expect(page).toHaveURL(atRoute('#/star/sq5/1'));
   await expect(page.locator('.play-shell')).toBeVisible();
 });
 
@@ -45,6 +45,6 @@ test('Back to the sutra: leaving that Star with Back opens the Deep dive again, 
   await expect(dlg.locator('#sdTitle')).toHaveText('Ekādhikena Pūrveṇa');
   await dlg.locator('.sd-x').click();
   await expect(dlg).toBeHidden();
-  await expect(page).toHaveURL(/#\/sutras$/);
+  await expect(page).toHaveURL(atRoute('#/sutras'));
   await expect(page.locator('.play-shell')).toHaveCount(0);
 });

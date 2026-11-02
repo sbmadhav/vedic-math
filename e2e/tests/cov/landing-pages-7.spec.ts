@@ -13,6 +13,6 @@ test('Landing labels: Start learning, Pick how you learn, and Learn in the heade
   await page.goto('/?home');
   await expect(page.locator('main a.lv-play')).toHaveText('Start learning');
   await expect(page.locator('#lv-modes-h')).toHaveText('Pick how you learn');
-  await expect(page.locator('body > header a[href="/play/"]')).toHaveText('Learn');
-  await expect(page.locator('footer a[href="/play/"]')).toHaveText('Learn');
+  await expect(page.locator('body > header a[href="/learn/"]')).toHaveText('Learn');
+  await expect(page.locator('footer a[href="/learn/"]')).toHaveText('Learn');
 });

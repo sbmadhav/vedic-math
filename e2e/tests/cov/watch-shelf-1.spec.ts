@@ -1,4 +1,4 @@
-import { test, expect, open, cloudLog } from '../fixtures';
+import { test, expect, open, cloudLog, hrefTo } from '../fixtures';
 import type { Page } from '@playwright/test';
 
 /* watch-shelf: "Videos live in their own data file".
@@ -29,8 +29,8 @@ test('home and a played game never request the video list', async ({ page }) => 
 
   // Into a game the way a Player would: the nav's Arcade, Games, then the game's card (openspec change play-nav-by-mode)
   await page.locator('.mq-nav').getByRole('link', { name: 'Arcade', exact: true }).click();
-  await page.locator('.arcade-doors a[href="#/games"]').click();
-  await page.locator('a.mq-game[href="#/game/times-sprint"]').click();
+  await page.locator(`.arcade-doors a${hrefTo('#/games')}`).click();
+  await page.locator(`a.mq-game${hrefTo('#/game/times-sprint')}`).click();
   await expect(page.locator('#view h1')).toHaveText(/Times sprint/);
   await page.locator('#gShell [data-m="endless"]').click();
   await page.locator('#gStart').click();

@@ -3,7 +3,7 @@
    Measures the Brotli-compressed size of everything a first visit to the game requests before the first tap, read
    from a build (python3 build.py --out <dir>): the page itself, every file it links or loads, the module graph its
    entry imports statically, every file the service worker's install downloads (PRECACHE in the built sw.js, counted
-   even when install ends after the tap) and sw.js itself, each unique file once. Phase 1 measures today's /play/,
+   even when install ends after the tap) and sw.js itself, each unique file once. Phase 1 measures today's /learn/,
    whose import map pins every module; from task 2.7 the first-load set comes from the client build's manifest.
 
    The Trick pages (openspec change trick-pages, design D7) are measured one page at a time with --page: the page, every
@@ -34,7 +34,7 @@ import { fileURLToPath } from 'node:url';
 import { join, posix, relative } from 'node:path';
 import { brotliCompressSync, constants } from 'node:zlib';
 
-export const PAGE = '/play/';
+export const PAGE = '/learn/';
 export const ENTRY = '/js/app.js';
 
 export type Measure = { total: number; files: Record<string, number> };
@@ -154,7 +154,7 @@ export function sitePages(site: string): string[] {
   const walk = (dir: string) => {
     for (const name of readdirSync(dir)) {
       const p = join(dir, name);
-      if (statSync(p).isDirectory()) { if (!name.startsWith('.') && !name.startsWith('_') && relative(site, p) !== 'play') walk(p); }
+      if (statSync(p).isDirectory()) { if (!name.startsWith('.') && !name.startsWith('_') && relative(site, p) !== PAGE.slice(1, -1)) walk(p); }
       else if (name === 'index.html' || name === '404.html') {
         const rel = relative(site, p).split('\\').join('/');
         out.push('/' + (rel.endsWith('index.html') ? rel.slice(0, -'index.html'.length) : rel));

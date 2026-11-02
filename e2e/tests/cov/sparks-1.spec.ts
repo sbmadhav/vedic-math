@@ -49,7 +49,7 @@ test('copy scan: the shipped HTML and every string in the app\'s scripts never s
     const hits: string[] = [];
     const seen = new Set<string>();
     const base = location.origin;
-    const html = await (await fetch('/play/', { cache: 'no-store' })).text();
+    const html = await (await fetch('/learn/', { cache: 'no-store' })).text();
     strip(html).split('\n').forEach(l => { if (saysXP(l)) hits.push('index.html: ' + l.trim().slice(0, 120)); });
     const manifest = await (await fetch('/manifest.webmanifest', { cache: 'no-store' })).text();
     if (saysXP(manifest)) hits.push('manifest.webmanifest');

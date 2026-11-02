@@ -1,4 +1,4 @@
-import { test, expect, APP } from './fixtures';
+import { test, expect, APP, atRoute } from './fixtures';
 
 /* The landing page and the pages for grown-ups (openspec change learnvedicmath: hosting "Returning Players go straight
    into the game", "Old links reach the same screen", "Not found"; landing-pages). The landing page is static, readable
@@ -36,13 +36,13 @@ test.describe('a first visit', () => {
     await expect(page.locator('main h2').first()).toHaveText('One short rule, one line of work');
     await expect(page.locator('#lv-modes-h')).toHaveText('Pick how you learn');
     await start.click();
-    await expect(page).toHaveURL(/\/play\/$/);
+    await expect(page).toHaveURL(/\/learn\/$/);
     await expect(page.locator('.mode-pick .mode-card')).toHaveCount(3);
   });
 
   test('an old game link (#/route) goes on to the game with the same route', async ({ page }) => {
     await page.goto('/#/sutras');
-    await expect(page).toHaveURL(/\/play\/#\/sutras$/);
+    await expect(page).toHaveURL(atRoute('#/sutras'));
   });
 });
 
@@ -61,7 +61,7 @@ test.describe('JavaScript off', () => {
 test.describe('a returning Player', () => {
   test('goes straight into the game, before the landing page paints', async ({ page }) => {
     const res = await page.goto('/');
-    await expect(page).toHaveURL(/\/play\/$/);
+    await expect(page).toHaveURL(/\/learn\/$/);
     await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
     expect(res).toBeTruthy();
   });
@@ -77,16 +77,16 @@ test.describe('a returning Player', () => {
 
   test('an old deep link reaches the same screen: /#/sutras/ekadhikena opens that Sutra in the game', async ({ page }) => {
     await page.goto('/#/sutras/s1');
-    await expect(page).toHaveURL(/\/play\/#\/sutras\/s1$/);
+    await expect(page).toHaveURL(atRoute('#/sutras/s1'));
     await expect(page.locator('#sdTitle')).toBeVisible();
   });
 
-  test('an old /vedic-math/ path on the new host answers 301 to /play/, and the route rides along', async ({ page, request }) => {
+  test('an old /vedic-math/ path on the new host answers 301 to /learn/, and the route rides along', async ({ page, request }) => {
     const res = await request.get('/vedic-math/x?y=1', { maxRedirects: 0 });
     expect(res.status()).toBe(301);
-    expect(res.headers()['location']).toMatch(/\/play\/(\?y=1)?$/);
+    expect(res.headers()['location']).toMatch(/\/learn\/(\?y=1)?$/);
     await page.goto('/vedic-math/#/arena');
-    await expect(page).toHaveURL(/\/play\/#\/arena$/);
+    await expect(page).toHaveURL(atRoute('#/arena'));
     await expect(page.locator('#view h1')).toHaveText('60 seconds. Same questions for everyone.');
   });
 });
@@ -95,14 +95,14 @@ test.describe('a returning Player', () => {
 test('the landing footer links Speed tricks at /tricks/', async ({ page }) => {
   await page.goto('/?home');
   await expect(page.locator('footer a[href="/tricks/"]')).toHaveText('Speed tricks');
-  await expect(page.locator('footer a[href="/play/"]')).toHaveText('Learn');
+  await expect(page.locator('footer a[href="/learn/"]')).toHaveText('Learn');
 });
 
 test('an unknown path answers 404 with a page that links to the landing page and the game', async ({ page }) => {
   const res = await page.goto('/plya/');
   expect(res!.status()).toBe(404);
-  await expect(page.locator('main a[href="/play/"]')).toHaveText('Start learning');
-  await expect(page.locator('footer a[href="/play/"]')).toHaveText('Learn');
+  await expect(page.locator('main a[href="/learn/"]')).toHaveText('Start learning');
+  await expect(page.locator('footer a[href="/learn/"]')).toHaveText('Learn');
   await expect(page.locator('main a[href="/?home"]')).toBeVisible();
 });
 
@@ -149,7 +149,7 @@ test.describe('pages for grown-ups', () => {
     await expect(box).toContainText('No sign-in and no student accounts. This page stores nothing on this device.');
     await expect(box).toContainText('the same ones for every Player in the same Mode today');
     await expect(box).toContainText('With Calm on, the Arena starts on an untimed round: pick Daily challenge for the 60-second race.');
-    await expect(box.getByRole('link', { name: 'Open the Arena' })).toHaveAttribute('href', '/play/#/arena');
+    await expect(box.getByRole('link', { name: 'Open the Arena' })).toHaveAttribute('href', '/learn/arena');
     await expect(box.getByRole('link', { name: 'Open the projector warm-up' })).toHaveClass(/md-btn--primary/);
     await box.getByRole('link', { name: 'Open the projector warm-up' }).click();
     await expect(page).toHaveURL(/\/teachers\/warm-up\/$/);
@@ -160,7 +160,7 @@ test.describe('pages for grown-ups', () => {
   test('/teachers/ keeps Open the Arena, which opens the Arena', async ({ page }) => {
     await page.goto('/teachers/');
     await page.getByRole('region', { name: "A 5-minute warm-up for today's class" }).getByRole('link', { name: 'Open the Arena' }).click();
-    await expect(page).toHaveURL(/\/play\/#\/arena$/);
+    await expect(page).toHaveURL(atRoute('#/arena'));
     await expect(page.locator('#view h1')).toHaveText('60 seconds. Same questions for everyone.');
   });
 
@@ -299,12 +299,12 @@ test.describe('Mode cards on a first visit', () => {
     test(`"Start as ${name}" is a link that opens the game on the ${name} Home, with no query left`, async ({ page }, info) => {
       await page.goto('/');
       const card = page.getByRole('link', { name: `Start as ${name}` });
-      await expect(card).toHaveAttribute('href', `/play/?mode=${id}`);
+      await expect(card).toHaveAttribute('href', `/learn/?mode=${id}`);
       await expect(card).toBeVisible();
       await expect(card.locator('.lv-mode-cta')).toHaveText(`Start as ${name}`);
       if (info.project.use.hasTouch) await card.tap(); else await card.click();
       await expect(page.locator('h1.home-h')).toHaveText(heading);
-      await expect(page).toHaveURL(/\/play\/(#\/)?$/);
+      await expect(page).toHaveURL(atRoute('#/'));
       expect(await activeMode(page)).toBe(id);
     });
   }
@@ -362,10 +362,10 @@ test.describe('welcome back', () => {
     await expect(page.locator('main a.lv-play')).toHaveText('Keep playing');
     const mine = page.getByRole('link', { name: 'Keep playing as Challenger' });
     await expect(mine).toHaveAttribute('aria-current', 'true');
-    await expect(mine).toHaveAttribute('href', '/play/');
+    await expect(mine).toHaveAttribute('href', '/learn/');
     await expect(mine.locator('.lv-mode-badge')).toHaveText('Your Mode');
-    await expect(page.getByRole('link', { name: 'Switch to Explorer' })).toHaveAttribute('href', '/play/?mode=explorer');
-    await expect(page.getByRole('link', { name: 'Switch to Pro' })).toHaveAttribute('href', '/play/?mode=pro');
+    await expect(page.getByRole('link', { name: 'Switch to Explorer' })).toHaveAttribute('href', '/learn/?mode=explorer');
+    await expect(page.getByRole('link', { name: 'Switch to Pro' })).toHaveAttribute('href', '/learn/?mode=pro');
     await expect(page.locator('.lv-mode-badge')).toHaveCount(1);
     expect(await page.evaluate(() => JSON.stringify(Object.entries(localStorage).sort()))).toBe(before);
   });
@@ -408,12 +408,12 @@ test.describe('the sutras and the method', () => {
     await expect(cards.locator('b[lang="sa-Latn"]')).toHaveText(['Ekādhikena Pūrveṇa', 'Nikhilaṃ Navataścaramaṃ Daśataḥ', 'Ūrdhva-Tiryagbhyām']);
     await expect(cards.locator('.lv-sutra-m')).toHaveText(['By one more than the one before', 'All from 9 and the last from 10', 'Vertically and crosswise']);
     await expect(cards.locator('.lv-sutra-ex')).toHaveText(['65²: 6 × 7 = 42, then 25, so 4225', '1000 − 368: 9 − 3, 9 − 6, 10 − 8, so 632', '21 × 13: 2, then 2 × 3 + 1 × 1 = 7, then 3, so 273']);
-    for (const [i, id] of ['s1', 's2', 's3'].entries()) await expect(cards.nth(i)).toHaveAttribute('href', `/play/#/sutras/${id}`);
+    for (const [i, id] of ['s1', 's2', 's3'].entries()) await expect(cards.nth(i)).toHaveAttribute('href', `/learn/sutras/${id}`);
     await expect(cards.locator('.lv-trick')).toHaveText(['Square numbers ending in 5', 'Subtract from 100, 1000, 10000', 'Multiply any two numbers in one line']);
     await expect(cards.first()).toHaveAccessibleName(/Square numbers ending in 5.*Ekādhikena Pūrveṇa.*By one more than the one before.*See how it works/);
     const note = sec.locator('.lv-sutras-note');
     await expect(note).toContainText("The 16 sutras and 13 sub-sutras are from Bharati Krishna Tirtha's book Vedic Mathematics, published in 1965. They are not found in the Vedas; each one is ordinary algebra you can check.");
-    await expect(note.getByRole('link', { name: 'See all 29 sutras' })).toHaveAttribute('href', '/play/#/sutras');
+    await expect(note.getByRole('link', { name: 'See all 29 sutras' })).toHaveAttribute('href', '/learn/sutras');
   });
 
   /* landing-interactive-hero (#172 review): the step buttons show only once the script runs, so a module that fails to
@@ -447,8 +447,8 @@ test.describe('the sutras and the method', () => {
 
   test('a Sutra card opens its Deep dive in the game, with no Mode picker and no Mode stored', async ({ page }) => {
     await page.goto('/');
-    await page.locator('a.lv-sutra[href="/play/#/sutras/s3"]').click();
-    await expect(page).toHaveURL(/\/play\/#\/sutras\/s3$/);
+    await page.locator('a.lv-sutra[href="/learn/sutras/s3"]').click();
+    await expect(page).toHaveURL(atRoute('#/sutras/s3'));
     await expect(page.locator('dialog.sutra-modal #sdTitle')).toHaveText('Ūrdhva-Tiryagbhyām');
     await expect(page.locator('.mode-pick')).toHaveCount(0);
     expect(await page.evaluate(() => { const p = JSON.parse(localStorage.getItem('vm.players') || 'null'); return p && p.list && p.list[0] ? p.list[0].mode : null; }) ?? null).toBeNull();

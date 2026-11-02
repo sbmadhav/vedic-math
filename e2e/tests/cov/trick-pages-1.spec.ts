@@ -11,8 +11,8 @@ test('Square numbers ending in 5: the heading, the Sutra line with its Deep dive
   await expect(sutra).toContainText('Ekādhikena Pūrveṇa');
   await expect(sutra).toContainText('By one more than the one before');
   await expect(sutra).toContainText("Bharati Krishna Tirtha's 1965 book");
-  await expect(sutra.locator('a')).toHaveAttribute('href', '/play/#/sutras/s1');
-  await expect(page.getByRole('link', { name: 'Practice this trick' })).toHaveAttribute('href', '/play/#/skill/v-sq5');
+  await expect(sutra.locator('a')).toHaveAttribute('href', '/learn/sutras/s1');
+  await expect(page.getByRole('link', { name: 'Practice this trick' })).toHaveAttribute('href', '/learn/skill/v-sq5');
   await expect(page.locator('body > header .md-brand')).toBeVisible();
   await expect(page.locator('footer')).toContainText('Privacy');
 });

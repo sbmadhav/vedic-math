@@ -29,7 +29,7 @@ async function shot(viewport, scale, hash, name) {
   await ctx.addInitScript(seed);
   await ctx.route(/goatcounter|cloudflareinsights/, r => r.fulfill({ status: 204 }));
   const page = await ctx.newPage();
-  await page.goto(`${BASE}/play/${hash}`);
+  await page.goto(`${BASE}/learn/${hash}`);
   await page.locator('#view h1, #view h2').first().waitFor();
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(400);

@@ -1,4 +1,4 @@
-import { test, expect, open, APP } from './fixtures';
+import { test, expect, open, APP, go } from './fixtures';
 import { SKILL, ON, visit, friends, say, btn, ask, missTwice, miss, nextQuestion, closeVisit, askFriend, turns, factors, overlaps, familyReady } from './family-kit';
 
 /* The Nikhilam Family helpers (openspec family-helpers): behaviors beyond the one-per-scenario coverage specs in
@@ -106,18 +106,18 @@ test.describe('helpers on', () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await open(page, SKILL);
     await miss(page);
-    await page.goto(`${APP}#/learn`);
+    await go(page, '#/learn');
     await expect(visit(page)).toBeVisible();
     await expect(visit(page)).toHaveAttribute('data-kind', 'leave');
     await expect(btn(page, 'Not now')).toBeVisible();
-    await page.goto(`${APP}#/dojo`);
+    await go(page, '#/dojo');
     await expect(visit(page)).toHaveCount(0);
   });
 
   test('leaving the page with a Visit open takes the Visit with it', async ({ page }) => {
     await open(page, SKILL);
     await askFriend(page);
-    await page.goto(`${APP}#/dojo`);
+    await go(page, '#/dojo');
     await expect(page.locator('#practice')).toHaveCount(0);
     await expect(visit(page)).toHaveCount(0);
     await expect(page.locator('.fh-layer .fh-visit')).toHaveCount(0);

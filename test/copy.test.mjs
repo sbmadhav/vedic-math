@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const walk = dir => readdirSync(dir).flatMap(f => { const p = join(dir, f); return statSync(p).isDirectory() ? walk(p) : [p]; });
 /* The game page, the landing and grown-up pages (site/), the header partial, the manifest and every script */
-const FILES = [join(root, 'play', 'index.html'), ...walk(join(root, 'site')).filter(f => f.endsWith('.html')), join(root, 'theme', 'header.html'),
+const FILES = [join(root, 'learn', 'index.html'), ...walk(join(root, 'site')).filter(f => f.endsWith('.html')), join(root, 'theme', 'header.html'),
   join(root, 'manifest.webmanifest'), ...walk(join(root, 'js')).filter(f => f.endsWith('.js'))];
 
 const BANNED = [/vedic sutras?\b/i, /traditional vedic mathematics/i, /from the vedas/i];
@@ -48,7 +48,7 @@ test('no em dashes in the repo documents', () => {
 });
 
 test('the footer credits the 1965 book', () => {
-  const html = readFileSync(join(root, 'play', 'index.html'), 'utf8');
+  const html = readFileSync(join(root, 'learn', 'index.html'), 'utf8');
   assert.match(html, /Speed tricks use sutras from Bharati Krishna Tirtha's 1965 book; lessons, problems and visuals are original\./);
 });
 
@@ -133,7 +133,7 @@ test('the parents summary claims only what the privacy policy says, and the teac
   assert.match(warm, /<h2 id="lv-warmup-h">A 5-minute warm-up for today's class<\/h2>/);
   /* The projector warm-up first, the Arena beside it (openspec change teacher-warm-up, task 3.1) */
   assert.match(warm, /<a class="md-btn md-btn--primary" href="\/teachers\/warm-up\/">Open the projector warm-up<\/a>/);
-  assert.match(warm, /<a class="md-btn" href="\/play\/#\/arena">Open the Arena<\/a>/);
+  assert.match(warm, /<a class="md-btn" href="\/learn\/arena">Open the Arena<\/a>/);
   assert.match(warm, /There are no class accounts or class leaderboards/);
   const app = readFileSync(join(root, 'js', 'app.js'), 'utf8');
   assert.match(app, /\[\/\^#\\\/arena\$\/, \(m, ctx\) => arenaView\(ctx\)\]/, 'the Arena route the button opens');

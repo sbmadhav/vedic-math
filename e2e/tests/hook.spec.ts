@@ -1,4 +1,4 @@
-import { test, expect, APP, open, heldClock, cloudLog, type Page } from './fixtures';
+import { test, expect, APP, open, heldClock, cloudLog, type Page, atRoute } from './fixtures';
 
 /* The Hook (openspec hook, from hook-first-star): a new Challenger or Pro Player's first Star opens with a dare to beat
    the calculator (one key every 0.45 s), a reveal of the Trick within 20 s, then the round dealt easiest first. Returning
@@ -159,7 +159,7 @@ test.describe('after Placement', () => {
       await heldClock(page);
       await open(page);
       await page.locator('.dojo-card a.md-btn--primary').click();
-      await expect(page).toHaveURL(/#\/star\/sq5\/1$/);
+      await expect(page).toHaveURL(atRoute('#/star/sq5/1'));
       await expect(dare(page)).toBeVisible();
       await expect(page.locator('#stQ')).toHaveText('852 = ?');
       await page.clock.runFor(2700);
@@ -172,7 +172,7 @@ test.describe('after Placement', () => {
     test('the suggested purple belt Star has no dare, and from9 then gets none either', async ({ page }) => {
       await open(page);
       await page.locator('.sutra-door a.md-btn--primary').click();
-      await expect(page).toHaveURL(/#\/star\/sqroot\/1$/);
+      await expect(page).toHaveURL(atRoute('#/star/sqroot/1'));
       await expect(tag(page)).toHaveText('Question 1 of 4');
       await expect(dare(page)).toHaveCount(0);
       await open(page, '#/star/from9/1');

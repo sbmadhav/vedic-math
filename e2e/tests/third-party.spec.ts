@@ -6,7 +6,7 @@ import type { Page } from '@playwright/test';
 /* Third parties (openspec third-party-requests, change learnvedicmath, design D10, task 7.4). build.py holds the one
    list of hosts the site may reach (THIRD_PARTIES, read from shared/src/policy.json, each with its reason and the action
    that first reaches it); this spec reads that list from the checkout, so a host a module starts to fetch from fails here as well as in the build. The
-   first visit the spec describes (the landing, /play/, a Mode, a Star, the Watch shelf and a video's player, without
+   first visit the spec describes (the landing, /learn/, a Mode, a Star, the Watch shelf and a video's player, without
    pressing play) reaches no Google or YouTube host, and nothing but this origin and the listed hosts. The hosts that
    need a tap are out of a first visit: the YouTube frame comes after play (tests/watch.spec.ts), Firebase after a
    Player 13 or over opens a World board (tests/csp.spec.ts, tests/arena.spec.ts), the natural voice after an opt-in.

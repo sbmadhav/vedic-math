@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, open, APP, pickMode } from './fixtures';
+import { test, expect, open, APP, atRoute, hrefTo, pathTo, pickMode } from './fixtures';
 
 /* The menu by Mode, Calm and sound, and lessons that end in practice (openspec change play-nav-by-mode). */
 type Page = import('@playwright/test').Page;
@@ -30,7 +30,7 @@ test.describe('zones', () => {
         expect(await tabs(page)).toEqual(['Home', 'Learn', 'Arcade', 'Watch', 'Find']);
         await expect(current(page)).toHaveText('Home');
         for (const a of await page.locator('header .mq-nav a').all()) expect(((await a.getAttribute('title')) || '').length).toBeGreaterThan(20);
-        await expect(page.locator('header .mq-nav a[href="#/arcade"]')).toHaveAttribute('title', /Dojo/);
+        await expect(page.locator(`header .mq-nav a${hrefTo('#/arcade')}`)).toHaveAttribute('title', /Dojo/);
       });
     });
   }
@@ -51,27 +51,27 @@ test.describe('zones', () => {
 
   test('the Arcade: the Dojo, the Arena and Games as cards with their lines, then Party Mode and the challenge tower', async ({ page }) => {
     await open(page);
-    await page.locator('header .mq-nav a[href="#/arcade"]').click();
-    await expect(page).toHaveURL(/#\/arcade$/);
+    await page.locator(`header .mq-nav a${hrefTo('#/arcade')}`).click();
+    await expect(page).toHaveURL(atRoute('#/arcade'));
     const doors = page.locator('.arcade-doors a.door');
     await expect(doors).toHaveCount(3);
-    expect(await doors.evaluateAll(as => as.map(a => a.getAttribute('href')))).toEqual(['#/dojo', '#/arena', '#/games']);
+    expect(await doors.evaluateAll(as => as.map(a => a.getAttribute('href')))).toEqual(['#/dojo', '#/arena', '#/games'].map(pathTo));
     for (const d of await doors.all()) expect((await d.locator('.door-line').innerText()).length).toBeGreaterThan(20);
-    await expect(page.locator('.play-grid a[href="#/arena/party"]')).toBeVisible();
-    await expect(page.locator('.play-grid a[href="#/tower"]')).toBeVisible();
+    await expect(page.locator(`.play-grid a${hrefTo('#/arena/party')}`)).toBeVisible();
+    await expect(page.locator(`.play-grid a${hrefTo('#/tower')}`)).toBeVisible();
     await doors.first().click();
-    await expect(page).toHaveURL(/#\/dojo$/);
+    await expect(page).toHaveURL(atRoute('#/dojo'));
     await expect(current(page)).toHaveText('Arcade');
   });
 
   test('Learn: the Sutras come first, with the cards collected, then the levels', async ({ page }) => {
     await open(page);
-    await page.locator('header .mq-nav a[href="#/learn"]').click();
+    await page.locator(`header .mq-nav a${hrefTo('#/learn')}`).click();
     const card = page.locator('#view a.learn-sutras');
     await expect(card).toContainText('Start with the sutras');
     await expect(card).toContainText('0 of 29 cards collected');
     const firstLink = await page.locator('#view .md-wrap a:not(.mq-crumbs a)').first().getAttribute('href');
-    expect(firstLink).toBe('#/sutras');
+    expect(firstLink).toBe(pathTo('#/sutras'));
     await card.click();
     await expect(page.locator('.sutra-grid').first()).toBeVisible();
     await expect(current(page)).toHaveText('Learn');
@@ -115,12 +115,12 @@ test.describe('Explorer tabs', () => {
   test('with Read aloud on, a tab says its name once, after its page has drawn', async ({ page }) => {
     await recordSpeech(page);
     await open(page);
-    await page.locator('header .mq-nav a[href="#/learn"]').click();
-    await expect(page).toHaveURL(/#\/learn$/);
+    await page.locator(`header .mq-nav a${hrefTo('#/learn')}`).click();
+    await expect(page).toHaveURL(atRoute('#/learn'));
     await expect.poll(() => said(page)).toEqual(['Learn']);
-    await page.locator('header .mq-nav a[href="#/learn"]').click(); /* its own page: at once */
+    await page.locator(`header .mq-nav a${hrefTo('#/learn')}`).click(); /* its own page: at once */
     await expect.poll(() => said(page)).toEqual(['Learn', 'Learn']);
-    await page.locator('header .mq-nav a[href="#/me"]').click();
+    await page.locator(`header .mq-nav a${hrefTo('#/me')}`).click();
     await expect.poll(() => said(page)).toEqual(['Learn', 'Learn', 'Me']);
   });
 
@@ -128,7 +128,7 @@ test.describe('Explorer tabs', () => {
     await recordSpeech(page);
     await page.addInitScript(() => { try { localStorage.setItem('vm.voice', '0'); } catch (e) { /* storage blocked */ } });
     await open(page);
-    await page.locator('header .mq-nav a[href="#/me"]').click();
+    await page.locator(`header .mq-nav a${hrefTo('#/me')}`).click();
     await expect(page.locator('#view h1')).toBeVisible();
     await page.waitForTimeout(300);
     expect(await said(page)).toEqual([]);
@@ -137,10 +137,10 @@ test.describe('Explorer tabs', () => {
   test('More places on Play: all games, the sutras, How to play and Find', async ({ page }) => {
     await open(page);
     const more = page.locator('nav.home-places');
-    expect(await more.locator('a').evaluateAll(as => as.map(a => a.getAttribute('href')))).toEqual(['#/games', '#/sutras', '#/guide', '#/find']);
+    expect(await more.locator('a').evaluateAll(as => as.map(a => a.getAttribute('href')))).toEqual(['#/games', '#/sutras', '#/guide', '#/find'].map(pathTo));
     await expect(page.locator('.play-grid--big .play-tile')).toHaveCount(8);
-    await more.locator('a[href="#/guide"]').click();
-    await expect(page).toHaveURL(/#\/guide$/);
+    await more.locator(`a${hrefTo('#/guide')}`).click();
+    await expect(page).toHaveURL(atRoute('#/guide'));
   });
 });
 
@@ -151,23 +151,23 @@ test.describe('Find', () => {
     await expect(page.locator('header .nav-find')).toHaveAttribute('aria-keyshortcuts', 'Control+K Meta+K');
     await page.locator('#practice .ans-in').first().focus();
     await page.keyboard.press('Control+k');
-    await expect(page).toHaveURL(/#\/find$/);
+    await expect(page).toHaveURL(atRoute('#/find'));
     await expect(page.locator('#findIn')).toBeFocused();
     await expect(current(page)).toContainText('Find');
     const help = page.locator('.find-help');
-    await expect(help.locator('a[href="#/guide"]')).toBeVisible();
+    await expect(help.locator(`a${hrefTo('#/guide')}`)).toBeVisible();
     await expect(help.locator('[data-find-tour]')).toBeVisible();
     expect(await page.locator('#findOut .find-list .find-hit b').allInnerTexts()).toEqual(['Home', 'Sutras', 'Learn', 'Arcade', 'Dojo', 'Arena', 'Games', 'Watch', 'Me', 'Guide']);
     await open(page, '#/dojo');
     await page.keyboard.press('Meta+k');
-    await expect(page).toHaveURL(/#\/find$/);
+    await expect(page).toHaveURL(atRoute('#/find'));
   });
 
   test('Take the tour on Find opens Home with the tour', async ({ page }) => {
     await open(page, '#/find');
     await page.locator('[data-find-tour]').click();
     await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(page).toHaveURL(/\/play\/(#\/?)?$/);
+    await expect(page).toHaveURL(atRoute('#/'));
   });
 
   test('not during a round: Ctrl K leaves a Star open', async ({ page }) => {
@@ -175,7 +175,7 @@ test.describe('Find', () => {
     await expect(page.locator('.play-shell')).toBeVisible();
     await page.keyboard.press('Control+k');
     await page.waitForTimeout(200);
-    await expect(page).toHaveURL(/#\/star\/sq5\/1$/);
+    await expect(page).toHaveURL(atRoute('#/star/sq5/1'));
     await expect(page.locator('.play-shell')).toBeVisible();
   });
 });
@@ -259,18 +259,18 @@ test.describe('lesson practice', () => {
     await open(page, '#/sutras/s1');
     const dlg = page.locator('dialog.sutra-modal');
     const first = dlg.locator('.sd-try li').first();
-    await expect(first.locator('a.md-btn--primary')).toHaveAttribute('href', '#/star/sq5/1');
-    await expect(first.locator('a.sd-how')).toHaveAttribute('href', '#/skill/v-sq5');
+    await expect(first.locator('a.md-btn--primary')).toHaveAttribute('href', pathTo('#/star/sq5/1'));
+    await expect(first.locator('a.sd-how')).toHaveAttribute('href', pathTo('#/skill/v-sq5'));
     await first.locator('a.md-btn--primary').click();
-    await expect(page).toHaveURL(/#\/star\/sq5\/1$/);
+    await expect(page).toHaveURL(atRoute('#/star/sq5/1'));
     await expect(page.locator('.play-shell')).toBeVisible();
     await expect(page.locator('#stExit')).toHaveText('Back');
     await page.locator('#stExit').click();
-    await expect(page).toHaveURL(/#\/sutras\/s1$/);
+    await expect(page).toHaveURL(atRoute('#/sutras/s1'));
     await expect(dlg).toBeVisible();
     await dlg.locator('.sd-x').click();
     await expect(dlg).toBeHidden();
-    await expect(page).toHaveURL(/#\/sutras$/);
+    await expect(page).toHaveURL(atRoute('#/sutras'));
   });
 
   test.describe('Explorer', () => {
@@ -279,7 +279,7 @@ test.describe('lesson practice', () => {
       await open(page, '#/skill/k-add10');
       await expect(page.locator('#practiceNow')).toHaveText(/Now you try/);
       await open(page, '#/sutras/s1');
-      await expect(page.locator('dialog.sutra-modal .sd-try li a.md-btn--primary').first()).toHaveAttribute('href', '#/skill/v-sq5');
+      await expect(page.locator('dialog.sutra-modal .sd-try li a.md-btn--primary').first()).toHaveAttribute('href', pathTo('#/skill/v-sq5'));
     });
   });
 });
@@ -292,7 +292,7 @@ test.describe('first visit', () => {
     expect(await page.locator('#view button').count()).toBe(3);
     await expect(page.locator('#view [data-try]')).toHaveCount(0);
     expect(await page.locator('.mode-go').allInnerTexts()).toEqual(['Start as Explorer', 'Start as Challenger', 'Start as Pro']);
-    expect(await page.locator('#view a').evaluateAll(as => as.map(a => a.getAttribute('href')))).toEqual(['#/guide']);
+    expect(await page.locator('#view a').evaluateAll(as => as.map(a => a.getAttribute('href')))).toEqual(['#/guide'].map(pathTo));
     await expect(page.locator('header .mq-nav')).toBeHidden();
     await pickMode(page, 'pro');
     await expect(page.locator('.home-h')).toBeVisible();

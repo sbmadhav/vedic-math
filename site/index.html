@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- Before paint: an old game link (#/route) goes on to /play/ with its route, and a device that already has Players
+<!-- Before paint: an old game link (#/route) goes straight to its path under /learn/, and a device that already has Players
      goes straight into the game unless the URL has ?home (links from the game carry it). With ?home on such a device,
      main waits unseen (html[data-lv-wait]) until the welcome back script after the Modes has set its words, so nothing
      shifts. Reads storage, writes nothing. -->
-<script>(function(){var l=location;try{if(/^#\//.test(l.hash)){l.replace('/play/'+l.hash);return;}var p=JSON.parse(localStorage.getItem('vm.players')||'null'),b=p&&Array.isArray(p.list)&&p.list.length;if(/(^|[?&])home(=|&|$)/.test(l.search.slice(1))){if(b)document.documentElement.setAttribute('data-lv-wait','');return;}if(b)l.replace('/play/');}catch(e){}})();</script>
+<script>(function(){var l=location;try{if(/^#\//.test(l.hash)){l.replace('/learn/'+l.hash.slice(2));return;}var p=JSON.parse(localStorage.getItem('vm.players')||'null'),b=p&&Array.isArray(p.list)&&p.list.length;if(/(^|[?&])home(=|&|$)/.test(l.search.slice(1))){if(b)document.documentElement.setAttribute('data-lv-wait','');return;}if(b)l.replace('/learn/');}catch(e){}})();</script>
 <title>Learn Vedic Math: speed tricks, practice and games for every age</title>
 <meta name="description" content="Learn Vedic Math is a free way to learn math for ages 4 to adult: speed tricks from Bharati Krishna Tirtha's 1965 book, practice from counting to calculus, games, daily Stars and Boards.">
 <link rel="canonical" href="https://learnvedicmath.com/">
@@ -42,7 +42,7 @@
 <header class="md-header md-header--tabs">
   <div class="md-wrap md-header-in">
     <a class="md-brand" href="/?home" aria-label="Learn Vedic Math, home"><svg class="lv-mark" viewBox="0 0 96 64" aria-hidden="true"><path d="M6 21C5 11 13 6 18 6C24 6 28 11 27 17C26 23 20 27 13 27C20 33 26 44 27 56" fill="none" stroke="var(--sky)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="14.5" cy="16.5" rx="1.8" ry="2.2" fill="var(--ink)"/><ellipse cx="20.5" cy="16.5" rx="1.8" ry="2.2" fill="var(--ink)"/><circle cx="46" cy="42" r="11" fill="var(--bolt-eye)" stroke="var(--sun)" stroke-width="7"/><ellipse cx="42.5" cy="41" rx="1.8" ry="2.2" fill="var(--on-accent)"/><ellipse cx="49.5" cy="41" rx="1.8" ry="2.2" fill="var(--on-accent)"/><path d="M43 45.5Q46 48.5 49 45.5" fill="none" stroke="var(--on-accent)" stroke-width="1.9" stroke-linecap="round"/><path d="M66.8 31.2C72 42 85 44 88 58" fill="none" stroke="var(--coral)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="76" cy="22" r="13" fill="var(--sun)" stroke="var(--coral)" stroke-width="7"/><ellipse cx="72" cy="21" rx="2" ry="2.5" fill="var(--on-accent)"/><ellipse cx="80" cy="21" rx="2" ry="2.5" fill="var(--on-accent)"/><path d="M72.5 26Q76 29.5 79.5 26" fill="none" stroke="var(--on-accent)" stroke-width="2.1" stroke-linecap="round"/></svg><span class="md-brand-t"><!-- slot:brand -->Learn Vedic Math<!-- /slot:brand --></span></a>
-    <!-- slot:nav --><nav class="md-nav" aria-label="Learn Vedic Math"><a href="/play/">Learn</a><a href="/parents/">For parents</a><a href="/teachers/">For teachers</a></nav><!-- /slot:nav -->
+    <!-- slot:nav --><nav class="md-nav" aria-label="Learn Vedic Math"><a href="/learn/">Learn</a><a href="/parents/">For parents</a><a href="/teachers/">For teachers</a></nav><!-- /slot:nav -->
     <button type="button" class="md-icon-btn md-theme" id="themeBtn" data-track="math" aria-label="Switch color scheme" title="Switch color scheme"><svg class="md-theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="var(--sun)" stroke="currentColor" stroke-width="2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg class="md-theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="var(--plum)" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="17" cy="5" r="1.2" fill="currentColor"/><circle cx="20.5" cy="9" r=".9" fill="currentColor"/></svg></button>
     <div class="md-header-end"><!-- slot:music --><!-- /slot:music --><!-- slot:end --><!-- /slot:end --></div>
   </div>
@@ -57,7 +57,7 @@
       <div class="lv-hero-t">
         <h1 class="lv-title">Math in your head, the sutra way</h1>
         <p class="lv-sub">Free, for ages 4 to adult.</p>
-        <p class="lv-cta-row"><a class="lv-play" href="/play/">Start learning<svg class="lv-play-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a></p>
+        <p class="lv-cta-row"><a class="lv-play" href="/learn/">Start learning<svg class="lv-play-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></a></p>
       </div>
       <!-- The Nikhilam Family (brand/nikhilam-family/): the header mark's drawings, larger, with a halo, cheeks and
            sparkles. Tokens only, so it follows Daybreak and Deep Space. Each pose is a transform attribute on an outer
@@ -130,33 +130,33 @@
         </figure>
       </div>
       <ul class="lv-sutra-cards">
-        <li><a class="lv-sutra" href="/play/#/sutras/s1"><span class="lv-trick">Square numbers ending in 5</span><b lang="sa-Latn">Ekādhikena Pūrveṇa</b><span class="lv-sutra-m">By one more than the one before</span><span class="lv-sutra-ex">65&sup2;: 6 &times; 7 = 42, then 25, so 4225</span><span class="lv-sutra-go">See how it works</span></a></li>
-        <li><a class="lv-sutra" href="/play/#/sutras/s2"><span class="lv-trick">Subtract from 100, 1000, 10000</span><b lang="sa-Latn">Nikhilaṃ Navataścaramaṃ Daśataḥ</b><span class="lv-sutra-m">All from 9 and the last from 10</span><span class="lv-sutra-ex">1000 &minus; 368: 9 &minus; 3, 9 &minus; 6, 10 &minus; 8, so 632</span><span class="lv-sutra-go">See how it works</span></a></li>
-        <li><a class="lv-sutra" href="/play/#/sutras/s3"><span class="lv-trick">Multiply any two numbers in one line</span><b lang="sa-Latn">Ūrdhva-Tiryagbhyām</b><span class="lv-sutra-m">Vertically and crosswise</span><span class="lv-sutra-ex">21 &times; 13: 2, then 2 &times; 3 + 1 &times; 1 = 7, then 3, so 273</span><span class="lv-sutra-go">See how it works</span></a></li>
+        <li><a class="lv-sutra" href="/learn/sutras/s1"><span class="lv-trick">Square numbers ending in 5</span><b lang="sa-Latn">Ekādhikena Pūrveṇa</b><span class="lv-sutra-m">By one more than the one before</span><span class="lv-sutra-ex">65&sup2;: 6 &times; 7 = 42, then 25, so 4225</span><span class="lv-sutra-go">See how it works</span></a></li>
+        <li><a class="lv-sutra" href="/learn/sutras/s2"><span class="lv-trick">Subtract from 100, 1000, 10000</span><b lang="sa-Latn">Nikhilaṃ Navataścaramaṃ Daśataḥ</b><span class="lv-sutra-m">All from 9 and the last from 10</span><span class="lv-sutra-ex">1000 &minus; 368: 9 &minus; 3, 9 &minus; 6, 10 &minus; 8, so 632</span><span class="lv-sutra-go">See how it works</span></a></li>
+        <li><a class="lv-sutra" href="/learn/sutras/s3"><span class="lv-trick">Multiply any two numbers in one line</span><b lang="sa-Latn">Ūrdhva-Tiryagbhyām</b><span class="lv-sutra-m">Vertically and crosswise</span><span class="lv-sutra-ex">21 &times; 13: 2, then 2 &times; 3 + 1 &times; 1 = 7, then 3, so 273</span><span class="lv-sutra-go">See how it works</span></a></li>
       </ul>
-      <p class="lv-sutras-note">The 16 sutras and 13 sub-sutras are from Bharati Krishna Tirtha's book <i>Vedic Mathematics</i>, published in 1965. They are not found in the Vedas; each one is ordinary algebra you can check. <a href="/play/#/sutras">See all 29 sutras</a></p>
+      <p class="lv-sutras-note">The 16 sutras and 13 sub-sutras are from Bharati Krishna Tirtha's book <i>Vedic Mathematics</i>, published in 1965. They are not found in the Vedas; each one is ordinary algebra you can check. <a href="/learn/sutras">See all 29 sutras</a></p>
     </div>
   </section>
 
   <!-- The Modes (openspec change landing-modes-and-return): each card is one link that opens the game in its Mode
-       (/play/?mode=<id>, read by js/app.js at boot). Its name is its whole text, ending in its call to action, so the
+       (/learn/?mode=<id>, read by js/app.js at boot). Its name is its whole text, ending in its call to action, so the
        visible words are all in it (WCAG 2.5.3). -->
   <section class="md-section md-band" aria-labelledby="lv-modes-h">
     <div class="md-wrap">
       <h2 class="md-heading" id="lv-modes-h">Pick how you learn</h2>
       <p class="md-lede">Tap one to start in that Mode. You can change it any time, and every Mode has the same tricks at its own pace.</p>
       <ul class="lv-modes">
-        <li><a class="lv-mode lv-mode--sun" data-mode="explorer" href="/play/?mode=explorer">
+        <li><a class="lv-mode lv-mode--sun" data-mode="explorer" href="/learn/?mode=explorer">
           <div class="lv-mode-top"><span class="lv-mode-ic" aria-hidden="true"><svg viewBox="0 0 32 32" width="30" height="30"><circle cx="16" cy="18" r="9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 9V4M12 5l4-1 4 1M12.5 17h.01M19.5 17h.01M13 21c2 1.5 4 1.5 6 0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><h3>Explorer</h3></div>
           <span class="lv-mode-about"><span class="lv-ages">About 4 to 7.</span> <span>Big buttons, pictures, counting and read aloud.</span></span>
           <span class="lv-mode-cta"><span id="lv-go-explorer">Start as Explorer</span><svg class="lv-mode-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         </a></li>
-        <li><a class="lv-mode lv-mode--sky" data-mode="challenger" href="/play/?mode=challenger">
+        <li><a class="lv-mode lv-mode--sky" data-mode="challenger" href="/learn/?mode=challenger">
           <div class="lv-mode-top"><span class="lv-mode-ic" aria-hidden="true"><svg viewBox="0 0 32 32" width="30" height="30"><path d="M17 3L7 18h8l-1 11 11-16h-8z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><h3>Challenger</h3></div>
           <span class="lv-mode-about"><span class="lv-ages">About 8 to 12.</span> <span>Speed tricks, Belts and daily challenges.</span></span>
           <span class="lv-mode-cta"><span id="lv-go-challenger">Start as Challenger</span><svg class="lv-mode-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         </a></li>
-        <li><a class="lv-mode lv-mode--plum" data-mode="pro" href="/play/?mode=pro">
+        <li><a class="lv-mode lv-mode--plum" data-mode="pro" href="/learn/?mode=pro">
           <div class="lv-mode-top"><span class="lv-mode-ic" aria-hidden="true"><svg viewBox="0 0 32 32" width="30" height="30"><path d="M5 26L13 8l5 10 3-5 6 13z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="24" cy="7" r="2.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><h3>Pro</h3></div>
           <span class="lv-mode-about"><span class="lv-ages">13 to adult.</span> <span>Algebra to calculus, sutra deep dives and Boards.</span></span>
           <span class="lv-mode-cta"><span id="lv-go-pro">Start as Pro</span><svg class="lv-mode-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
@@ -168,11 +168,11 @@
        already gone on to the game) the hero greets the active Player by Nickname and their Mode's card is marked.
        It reads storage and changes this page's text only: nothing is written or sent. Without JavaScript or storage the
        first-visit HTML above stays. The build allows this script by its hash in the page's policy (_headers). -->
-  <script>(function(){try{var P=JSON.parse(localStorage.getItem('vm.players')||'null');if(!P||!Array.isArray(P.list)||!P.list.length)return;var d=document,p=P.list.filter(function(x){return x&&x.id===P.active;})[0]||P.list[0]||{},M={explorer:'Explorer',challenger:'Challenger',pro:'Pro'},m=Object.prototype.hasOwnProperty.call(M,p.mode)?p.mode:'',n=typeof p.name==='string'?p.name.trim().slice(0,40):'';d.body.setAttribute('data-visit','back');d.querySelector('.lv-title').textContent=n?'Welcome back, '+n:'Welcome back';d.querySelector('.lv-sub').textContent='Pick up where you left off.';d.querySelector('.lv-play').firstChild.nodeValue='Keep playing';if(!m)return;[].forEach.call(d.querySelectorAll('.lv-mode[data-mode]'),function(a){var id=a.getAttribute('data-mode'),t=d.getElementById('lv-go-'+id);if(id===m){a.setAttribute('aria-current','true');a.setAttribute('href','/play/');t.textContent='Keep playing as '+M[id];var b=d.createElement('span');b.className='lv-mode-badge';b.textContent='Your Mode';a.querySelector('.lv-mode-top').appendChild(b);}else t.textContent='Switch to '+M[id];});}catch(e){}finally{document.documentElement.removeAttribute('data-lv-wait');}})();</script>
+  <script>(function(){try{var P=JSON.parse(localStorage.getItem('vm.players')||'null');if(!P||!Array.isArray(P.list)||!P.list.length)return;var d=document,p=P.list.filter(function(x){return x&&x.id===P.active;})[0]||P.list[0]||{},M={explorer:'Explorer',challenger:'Challenger',pro:'Pro'},m=Object.prototype.hasOwnProperty.call(M,p.mode)?p.mode:'',n=typeof p.name==='string'?p.name.trim().slice(0,40):'';d.body.setAttribute('data-visit','back');d.querySelector('.lv-title').textContent=n?'Welcome back, '+n:'Welcome back';d.querySelector('.lv-sub').textContent='Pick up where you left off.';d.querySelector('.lv-play').firstChild.nodeValue='Keep playing';if(!m)return;[].forEach.call(d.querySelectorAll('.lv-mode[data-mode]'),function(a){var id=a.getAttribute('data-mode'),t=d.getElementById('lv-go-'+id);if(id===m){a.setAttribute('aria-current','true');a.setAttribute('href','/learn/');t.textContent='Keep playing as '+M[id];var b=d.createElement('span');b.className='lv-mode-badge';b.textContent='Your Mode';a.querySelector('.lv-mode-top').appendChild(b);}else t.textContent='Switch to '+M[id];});}catch(e){}finally{document.documentElement.removeAttribute('data-lv-wait');}})();</script>
 
   <!-- Inside the game (openspec change landing-interactive-hero): Bolt and Math Lens, one honest line each. Bolt is
        the robot teacher of the Star rounds (js/bolt.js, idle pose; colours from tokens, so both schemes) and Math Lens
-       the camera digit puzzle (#/games/lens; its camera icon from js/play/icons.js). Both pictures are decorative: the
+       the camera digit puzzle (#/games/lens; its camera icon from js/learn/icons.js). Both pictures are decorative: the
        words name them. The hero picture stays the Nikhilam Family. -->
   <section class="md-section lv-inside" aria-labelledby="lv-inside-h">
     <div class="md-wrap">
@@ -219,7 +219,7 @@
 
 <footer class="lv-foot">
   <div class="md-wrap">
-    <p><a href="/play/">Learn</a> · <a href="/tricks/">Speed tricks</a> · <a href="/parents/">For parents</a> · <a href="/teachers/">For teachers</a> · <a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · <a href="/licenses/">Licences</a></p>
+    <p><a href="/learn/">Learn</a> · <a href="/tricks/">Speed tricks</a> · <a href="/parents/">For parents</a> · <a href="/teachers/">For teachers</a> · <a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · <a href="/licenses/">Licences</a></p>
   </div>
 </footer>
 <!-- The sutra way, step by step (openspec change landing-interactive-hero). A module, so it runs after parsing like a

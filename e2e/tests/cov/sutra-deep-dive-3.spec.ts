@@ -5,7 +5,7 @@ import { test, expect, APP } from '../fixtures';
 
 test.describe('a new visitor', () => {
   test.use({ seedMode: null });
-  test('A link from the landing page: /play/#/sutras/s2 opens the Nikhilaṃ Deep dive over the Sutras page, and no Mode is stored', async ({ page }) => {
+  test('A link from the landing page: /learn/sutras/s2 opens the Nikhilaṃ Deep dive over the Sutras page, and no Mode is stored', async ({ page }) => {
     await page.goto(`${APP}#/sutras/s2`);
     await expect(page.locator('dialog.sutra-modal #sdTitle')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
     await expect(page.locator('.sutra-grid').first()).toBeAttached();

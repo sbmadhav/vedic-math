@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, open, APP, needsStudioVoice, studioVoiceOn, type Page } from './fixtures';
+import { test, expect, open, APP, needsStudioVoice, studioVoiceOn, type Page, go } from './fixtures';
 
 /* Listen buttons (openspec explanation-audio): every explanation can be heard. Like voice.spec.ts, the studio voice
    is a fake index with tiny tone files (e2e/fixtures/voice/) served through page.route, and the device voice is a
@@ -155,7 +155,7 @@ test.describe('Listen', () => {
     await page.getByRole('button', { name: 'Listen: where Vedic math comes from' }).click();
     await expect.poll(async () => (await spoken(page)).length).toBeGreaterThan(0);
     const before = (await spoken(page)).length;
-    await page.goto(`${APP}#/learn`);
+    await go(page, '#/learn');
     await expect(page.locator('#view h1').first()).toBeVisible();
     await page.waitForTimeout(5000); // past the first sentence's end: the next one must not start
     expect((await spoken(page)).length).toBe(before);

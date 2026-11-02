@@ -6,6 +6,7 @@
    map's stamped ones, so the answer is this version's. Online, or without a controlling worker, nothing is asked.
    js/app.js loads this module only when the page is offline. */
 import { playFor } from './catalog.js';
+import { toKey } from '../paths.js';
 
 export const NOTE = 'Needs a connection the first time';
 
@@ -22,7 +23,9 @@ export function noteOffline(root) {
   if (!ctl) return Promise.resolve([]);
   const cards = new Map(); /* module URL -> [card, id] */
   for (const a of root.querySelectorAll('a.play-card[href]')) {
-    const hit = playFor(a.getAttribute('href'));
+    /* mount() draws a card's link as its path (openspec change indexable-routes, design D3): back to its route key */
+    const href = a.getAttribute('href') || '', key = href.startsWith('#') ? href : toKey(href.split(/[?#]/)[0]);
+    const hit = key && playFor(key);
     if (hit && !a.querySelector('.play-card-off')) cards.set(moduleUrl(hit[0].id), [a, hit[0].id]);
   }
   if (!cards.size) return Promise.resolve([]);

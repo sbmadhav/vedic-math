@@ -399,7 +399,7 @@ The Sky as a plain list: every Constellation with its Stars and their states, ev
 _Avoid_: sitemap, menu, index
 
 **Installed app**:
-The game opened from its home screen, dock or app list icon rather than in a browser tab: a standalone window (or `navigator.standalone` on iPhone and iPad) with the scope `/play/`. Links that leave the scope open in the browser. (`install-app` change.)
+The game opened from its home screen, dock or app list icon rather than in a browser tab: a standalone window (or `navigator.standalone` on iPhone and iPad) with the scope `/learn/`. Links that leave the scope open in the browser. (`install-app` change.)
 _Avoid_: PWA (in copy), native app, the app (when the browser tab is meant too)
 
 **Install guide**:
@@ -431,7 +431,7 @@ _Avoid_: target, goal (a budget fails the build)
 Proposed in the `learnvedicmath` change (`openspec/changes/learnvedicmath/`, ADRs 0004 to 0006).
 
 **Landing page**:
-The static page at `https://learnvedicmath.com/` that says what Vedic Math is and leads into the app at `/play/` (its Start learning button; the header and footer link is Learn). A device that already has Players goes straight past it into the game.
+The static page at `https://learnvedicmath.com/` that says what Vedic Math is and leads into the app at `/learn/` (its Start learning button; the header and footer link is Learn). A device that already has Players goes straight past it into the game.
 _Avoid_: home (Home is the game's first view), splash, homepage
 
 **Mode card** (landing page):
@@ -439,7 +439,7 @@ One of the three links under "Pick how you learn" on the Landing page, one per M
 _Avoid_: tile (tiles are on the game's Home)
 
 **Mode link**:
-`/play/?mode=<id>`: opens the game with that Mode set as if it were picked on the Mode picker, then drops `mode` from the address. An unknown id changes nothing.
+`/learn/?mode=<id>`: opens the game with that Mode set as if it were picked on the Mode picker, then drops `mode` from the address. An unknown id changes nothing.
 
 **Welcome back** (landing page):
 The Landing page's version for a device that already has Players, seen only through `/?home` (the brand link in the game): the hero greets the active Player by Nickname, its button reads Keep playing, and the Player's Mode card is marked Your Mode. It only reads storage; the first-visit version is the page's HTML.

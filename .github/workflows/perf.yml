@@ -6,7 +6,7 @@ name: Perf baseline
 # - Lighthouse load timings (e2e/perf/lighthouse.mts, pages and settings in tools/lighthouserc.json): mobile preset,
 #   the median of 5 runs per page;
 # - interaction timings (e2e/perf/interactions.ts): chromium with 4x CPU slowdown, 5 runs, medians;
-# - first-load bytes (tools/budget.ts): the Brotli size of everything a first visit to /play/ requests before the
+# - first-load bytes (tools/budget.ts): the Brotli size of everything a first visit to /learn/ requests before the
 #   first tap, read from a build of this commit (the same files as the live site when this commit publishes nothing new).
 # Run it by hand (optional base_url), or on a pull request that changes the measuring scripts. Nothing is posted or
 # counted: the e2e fixtures answer analytics locally and guard Firestore, and Lighthouse blocks the analytics hosts.

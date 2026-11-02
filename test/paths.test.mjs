@@ -42,37 +42,37 @@ test('toKey(toPath(k)) === k for every enumerated key, and allPaths() agrees wit
   }
 });
 
-test('every path is under /learn, lowercase, with no trailing slash; Home is /learn/', () => {
+test('every path is under BASE, lowercase, with no trailing slash; Home is BASE/', () => {
   for (const e of ALL) {
     if (e.key === '#/') { assert.equal(e.path, BASE + '/'); continue; }
-    assert.match(e.path, /^\/learn(\/[a-z0-9-]+)+$/, e.path);
+    assert.match(e.path, new RegExp(`^${BASE}(\\/[a-z0-9-]+)+$`), e.path);
   }
-  assert.equal(toPath('#/grade/K'), '/learn/grade/k');
-  assert.equal(toKey('/learn/grade/k'), '#/grade/K');
-  assert.equal(toKey('/learn/grade/v'), '#/grade/V');
-  assert.equal(toPath('#/learn'), '/learn/skills', 'the Skill map (design D2)');
+  assert.equal(toPath('#/grade/K'), `${BASE}/grade/k`);
+  assert.equal(toKey(`${BASE}/grade/k`), '#/grade/K');
+  assert.equal(toKey(`${BASE}/grade/v`), '#/grade/V');
+  assert.equal(toPath('#/learn'), `${BASE}/skills`, 'the Skill map (design D2)');
 });
 
 test('aliases map as design D2 says, in both directions', () => {
-  assert.deepEqual([...ALIASES].sort(), [['/learn/duel', '/learn/arena/party'], ['/learn/learn', '/learn/skills'], ['/learn/progress', '/learn/me'], ['/learn/tricks', '/learn/dojo']]);
+  assert.deepEqual([...ALIASES].sort(), [[`${BASE}/duel`, `${BASE}/arena/party`], [`${BASE}/learn`, `${BASE}/skills`], [`${BASE}/progress`, `${BASE}/me`], [`${BASE}/tricks`, `${BASE}/dojo`]]);
   for (const [from, to] of ALIASES) assert.equal(toKey(from), toKey(to), from);
-  assert.equal(toPath('#/tricks'), '/learn/dojo');
-  assert.equal(toPath('#/progress'), '/learn/me');
-  assert.equal(toPath('#/duel'), '/learn/arena/party');
-  assert.equal(toKey('/learn/learn'), '#/learn');
-  assert.equal(toKey('/learn/duel'), '#/arena/party');
+  assert.equal(toPath('#/tricks'), `${BASE}/dojo`);
+  assert.equal(toPath('#/progress'), `${BASE}/me`);
+  assert.equal(toPath('#/duel'), `${BASE}/arena/party`);
+  assert.equal(toKey(`${BASE}/learn`), '#/learn');
+  assert.equal(toKey(`${BASE}/duel`), '#/arena/party');
   assert.ok(!ALL.some(e => ALIASES.some(([from]) => from === e.path)), 'no alias is a page');
   assert.ok(!ALL.some(e => ['#/tricks', '#/progress', '#/duel'].includes(e.key)), 'a second name is never an enumerated key');
 });
 
 test('toKey: trailing slashes, Home, parameters that keep their case, numbers past the end, and paths that name no screen', () => {
-  assert.equal(toKey('/learn'), '#/');
-  assert.equal(toKey('/learn/'), '#/');
-  assert.equal(toKey('/learn/arena/'), '#/arena');
-  assert.equal(toKey('/learn/arena/ghosts/r/AbC9'), '#/arena/ghosts/r/AbC9');
-  assert.equal(toPath('#/arena/ghosts/r/AbC9'), '/learn/arena/ghosts/r/AbC9');
-  assert.equal(toKey('/learn/kata/sq5/99'), '#/kata/sq5/99', 'the view decides what an unknown number shows');
-  for (const p of ['/play/', '/', '/learning', '/learn/arnea', '/learn/Arena', '/learn/skill/', '', null]) assert.equal(toKey(p), null, String(p));
+  assert.equal(toKey(`${BASE}`), '#/');
+  assert.equal(toKey(`${BASE}/`), '#/');
+  assert.equal(toKey(`${BASE}/arena/`), '#/arena');
+  assert.equal(toKey(`${BASE}/arena/ghosts/r/AbC9`), '#/arena/ghosts/r/AbC9');
+  assert.equal(toPath('#/arena/ghosts/r/AbC9'), `${BASE}/arena/ghosts/r/AbC9`);
+  assert.equal(toKey(`${BASE}/kata/sq5/99`), '#/kata/sq5/99', 'the view decides what an unknown number shows');
+  for (const p of ['/other/', '/', `${BASE}ing`, `${BASE}/arnea`, `${BASE}/Arena`, `${BASE}/skill/`, '', null]) assert.equal(toKey(p), null, String(p));
   assert.equal(toPath('#/nowhere'), null);
   assert.equal(rowFor('#/nowhere'), null);
 });

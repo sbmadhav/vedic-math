@@ -27,9 +27,9 @@ for (const t of TRICK_PAGES) {
     await expect(page.locator('main h1')).toHaveCount(1);
     await expect(page.locator('main h1')).toHaveText(t.title);
     await expect(page.locator('#tkCalc')).toHaveAttribute('data-trick', t.trick);
-    await expect(page.locator('#tkPractice')).toHaveAttribute('href', `/play/#/skill/v-${t.trick}`);
+    await expect(page.locator('#tkPractice')).toHaveAttribute('href', `/learn/skill/v-${t.trick}`);
     await expect(page.locator('#tkPractice')).toHaveText('Practice this trick');
-    await expect(page.locator('.tk-sutra a')).toHaveAttribute('href', /^\/play\/#\/sutras\/[su]\d+$/);
+    await expect(page.locator('.tk-sutra a')).toHaveAttribute('href', /^\/learn\/sutras\/[su]\d+$/);
     // The worked example is written out, and the calculator starts on its numbers: Show steps draws the first step
     await expect(page.locator('.tk-steps li')).toHaveCount(await page.locator('.tk-steps li').count());
     expect(await page.locator('.tk-steps li').count()).toBeGreaterThanOrEqual(3);

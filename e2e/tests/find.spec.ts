@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, APP, open, appErrors } from './fixtures';
+import { test, expect, APP, open, appErrors, atRoute, hrefTo, pathTo } from './fixtures';
 
 /* Find (openspec find): a page in the menu bar with one box over every named thing, built in the page from the
    catalogs. Analytics is stubbed so the one fixed event can be checked; the request log shows nothing typed leaves. */
@@ -15,11 +15,11 @@ test.beforeEach(async ({ page }) => {
 
 test('Find in the menu bar opens the page with the box focused and Find current; empty, it shows the browse list', async ({ page, issues }) => {
   await open(page);
-  await page.locator('.mq-nav a[href="#/find"]').click();
-  await expect(page).toHaveURL(/#\/find$/);
+  await page.locator(`.mq-nav a${hrefTo('#/find')}`).click();
+  await expect(page).toHaveURL(atRoute('#/find'));
   await expect(page.locator('#view h1')).toHaveText('Find anything');
   await expect(page.locator('#findIn')).toBeFocused();
-  await expect(page.locator('.mq-nav a[href="#/find"]')).toHaveAttribute('aria-current', 'true');
+  await expect(page.locator(`.mq-nav a${hrefTo('#/find')}`)).toHaveAttribute('aria-current', 'true');
   await expect(page.locator('#findOut h2')).toHaveText('Browse');
   await expect(hits(page).locator('b')).toHaveText(['Home', 'Sutras', 'Learn', 'Arcade', 'Dojo', 'Arena', 'Games', 'Watch', 'Me', 'Guide']); /* with the Arcade zone (openspec change play-nav-by-mode) */
   for (const h of await hits(page).all()) expect((await h.locator('small').innerText()).length).toBeGreaterThan(20);
@@ -30,11 +30,11 @@ test('Find in the menu bar opens the page with the box focused and Find current;
 test('the / key opens Find from the Dojo, but not while typing in a field', async ({ page }) => {
   await open(page, '#/dojo');
   await page.keyboard.press('/');
-  await expect(page).toHaveURL(/#\/find$/);
+  await expect(page).toHaveURL(atRoute('#/find'));
   await expect(page.locator('#findIn')).toBeFocused();
   await page.keyboard.type('a/b');
   await expect(page.locator('#findIn')).toHaveValue('a/b');
-  await expect(page).toHaveURL(/#\/find$/);
+  await expect(page).toHaveURL(atRoute('#/find'));
 });
 
 test('the / key still opens Find after a Sutra card is flipped (an expanded control in the view is not a menu)', async ({ page }) => {
@@ -43,17 +43,17 @@ test('the / key still opens Find after a Sutra card is flipped (an expanded cont
   await face.click();
   await expect(face).toHaveAttribute('aria-expanded', 'true');
   await page.keyboard.press('/');
-  await expect(page).toHaveURL(/#\/find$/);
+  await expect(page).toHaveURL(atRoute('#/find'));
   await expect(page.locator('#findIn')).toBeFocused();
 });
 
 test('Enter with nothing typed or nothing matched opens nothing from the browse list', async ({ page }) => {
   await open(page, '#/find');
   await page.locator('#findIn').press('Enter');
-  await expect(page).toHaveURL(/#\/find$/);
+  await expect(page).toHaveURL(atRoute('#/find'));
   await page.locator('#findIn').fill('zzzz');
   await page.locator('#findIn').press('Enter');
-  await expect(page).toHaveURL(/#\/find$/);
+  await expect(page).toHaveURL(atRoute('#/find'));
   expect((await events(page)).filter(e => e.startsWith('math/find/'))).toEqual([]);
 });
 
@@ -64,17 +64,17 @@ test('results come grouped and ranked: a Skill by name, a Sutra in plain letters
   await expect(page.locator('#findCount')).toHaveText(/\d+ results/);
   const skills = page.locator('#findOut .find-group', { has: page.locator('h2', { hasText: 'Skills' }) }).locator('.find-hit');
   expect(await skills.count()).toBeGreaterThanOrEqual(3);
-  for (const s of await skills.all()) expect(await s.getAttribute('href')).toMatch(/^#\/skill\/[\w-]+$/);
+  for (const s of await skills.all()) expect(await s.getAttribute('href')).toMatch(new RegExp(`^${APP}skill/[\\w-]+$`));
   await box.fill('urdhva');
   const sutras = page.locator('#findOut .find-group', { has: page.locator('h2', { hasText: 'Sutras' }) }).locator('.find-hit');
   await expect(sutras.first().locator('b')).toHaveText('Ūrdhva-Tiryagbhyām');
-  await expect(sutras.first()).toHaveAttribute('href', '#/sutras/s3');
+  await expect(sutras.first()).toHaveAttribute('href', pathTo('#/sutras/s3'));
   await box.fill('take away');
   const tricks = page.locator('#findOut .find-group', { has: page.locator('h2', { hasText: 'Tricks' }) }).locator('.find-hit b');
   expect((await tricks.allInnerTexts()).slice(0, 3)).toContain('Subtract from 100, 1000, 10000');
   await box.fill('settings');
   await expect(hits(page).first().locator('b')).toHaveText('Me');
-  await expect(hits(page).first()).toHaveAttribute('href', '#/me');
+  await expect(hits(page).first()).toHaveAttribute('href', pathTo('#/me'));
   await box.fill('arena');
   await expect(hits(page).first().locator('b')).toHaveText('Arena');
   expect(await groups(page)).toEqual(expect.arrayContaining(['Sections', 'Guide']));
@@ -84,7 +84,7 @@ test('results come grouped and ranked: a Skill by name, a Sutra in plain letters
   await expect(video).toBeVisible();
   await video.click();
   await expect(page.locator('dialog.vm-player[open] .vp-play')).toBeVisible(); // the player, on its facade until play is pressed
-  await expect(page).toHaveURL(/#\/find$/);
+  await expect(page).toHaveURL(atRoute('#/find'));
 });
 
 test('at most eight results per kind; nothing matched says so and shows the browse list', async ({ page }) => {
@@ -94,7 +94,7 @@ test('at most eight results per kind; nothing matched says so and shows the brow
   await page.locator('#findIn').fill('zzzz');
   await expect(page.locator('#findCount')).toHaveText('Nothing matched');
   await expect(page.locator('.find-none')).toContainText('Nothing called that here');
-  await expect(page.locator('.find-none a[href="#/guide"]')).toBeVisible();
+  await expect(page.locator(`.find-none a${hrefTo('#/guide')}`)).toBeVisible();
   await expect(page.locator('#findOut h2').first()).toHaveText('Browse');
 });
 
@@ -112,7 +112,7 @@ test('keyboard: Enter opens the first result, Down moves to it, Escape clears th
   await expect(page.locator('#findOut h2').first()).toHaveText('Browse');
   await box.fill('squares');
   await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(/#\/skill\/v-sq5$/);
+  await expect(page).toHaveURL(atRoute('#/skill/v-sq5'));
   expect((await events(page)).filter(e => e.startsWith('math/find/'))).toEqual(['math/find/go']);
   expect((await events(page)).some(e => /squares/i.test(e))).toBe(false); /* the opened page's route view names a catalog id, never the text */
   expect(urls.some(u => /squares/i.test(u))).toBe(false);
@@ -132,10 +132,10 @@ test('questions and phrases: a share of the words, Best match for questions, Pla
   await expect(group(page, 'Tricks').first().locator('b')).toHaveText('Multiply any two numbers in one line');
   await box.fill('how does it work');
   expect(await groups(page)).toEqual(['Best match']);
-  await expect(page.locator('#findOut .find-group--top .find-hit').first()).toHaveAttribute('href', '#/guide');
+  await expect(page.locator('#findOut .find-group--top .find-hit').first()).toHaveAttribute('href', pathTo('#/guide'));
   await box.fill('what is vedic math');
   expect((await groups(page))[0]).toBe('Best match');
-  await expect(group(page, 'Best match').first()).toHaveAttribute('href', '#/sutras');
+  await expect(group(page, 'Best match').first()).toHaveAttribute('href', pathTo('#/sutras'));
   await box.fill('games');
   expect(await group(page, 'Games').count()).toBeGreaterThanOrEqual(4);
   await box.fill('arena zzzz');
@@ -144,11 +144,11 @@ test('questions and phrases: a share of the words, Best match for questions, Pla
   expect((await groups(page))[0]).toBe('Best match');
   const kids = group(page, 'Best match').first();
   await expect(kids.locator('b')).toHaveText('Explorer Mode');
-  await expect(kids).toHaveAttribute('href', '#/me');
+  await expect(kids).toHaveAttribute('href', pathTo('#/me'));
   // Every result keeps its title as its name, and the Best match group has its own border in the theme's tokens
   await expect(kids).toHaveAccessibleName(/^Explorer Mode/);
   await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(/#\/me$/);
+  await expect(page).toHaveURL(atRoute('#/me'));
   await expect(page.locator('.mode-pick--sm .mode-card[data-mode="explorer"]')).toBeVisible();
   expect((await events(page)).filter(e => e.startsWith('math/find/'))).toEqual(['math/find/go']);
   expect(urls.some(u => /zzzz|big(%20|\+| )numbers|for(%20|\+| )kids|does(%20|\+| )it/i.test(u))).toBe(false);
@@ -186,13 +186,13 @@ test.describe('no Mode yet', () => {
     await page.locator('#findIn').fill('fractions');
     const hit = page.locator('#findOut .find-group', { has: page.locator('h2', { hasText: 'Skills' }) }).locator('a.find-hit').first();
     const href = await hit.getAttribute('href');
-    expect(href).toMatch(/^#\/skill\/[\w-]+$/);
+    expect(href).toMatch(new RegExp(`^${APP}skill/[\\w-]+$`));
     await hit.click();
     await expect(page.locator('.mode-pick')).toBeVisible();
     await page.locator('[data-mode="challenger"]').click();
-    await expect(page).toHaveURL(new RegExp(`${href!.replace(/[/]/g, '\\/')}$`));
+    await expect(page).toHaveURL(atRoute(href!));
     await expect(page.locator('.mode-pick')).toHaveCount(0);
-    await expect(page.locator('.mq-nav a[href="#/learn"]')).toBeVisible();
+    await expect(page.locator(`.mq-nav a${hrefTo('#/learn')}`)).toBeVisible();
   });
   test('a result the picked Mode cannot open goes Home instead', async ({ page }) => {
     await open(page, '#/find');
@@ -200,7 +200,7 @@ test.describe('no Mode yet', () => {
     await page.locator('#findOut .find-group', { has: page.locator('h2', { hasText: 'Games' }) }).locator('a.find-hit').first().click();
     await expect(page.locator('.mode-pick')).toBeVisible();
     await page.locator('[data-mode="explorer"]').click();
-    await expect(page).toHaveURL(/#\/$/);
+    await expect(page).toHaveURL(atRoute('#/'));
     await expect(page.locator('#view h1')).toHaveText('What do you want to play?');
   });
 });

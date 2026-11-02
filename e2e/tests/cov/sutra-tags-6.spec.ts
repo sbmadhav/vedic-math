@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, atRoute } from '../fixtures';
 import AxeBuilder from '@axe-core/playwright';
 
 /* sutra-tags spec (openspec change sutras-first), Requirements "One tap to the Deep dive and one back", "Tags are not
@@ -11,7 +11,7 @@ test('From a Trick and back: following the tag on Square numbers ending in 5 ope
   const dlg = page.locator('dialog.sutra-modal');
   await expect(dlg.locator('#sdTitle')).toHaveText('Ekādhikena Pūrveṇa');
   await dlg.locator('.sd-x').click();
-  await expect(page).toHaveURL(/#\/skill\/v-sq5$/);
+  await expect(page).toHaveURL(atRoute('#/skill/v-sq5'));
   await expect(page.locator('.mq-sutra')).toBeVisible();
 });
 

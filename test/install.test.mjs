@@ -134,7 +134,7 @@ test('the Install guide has steps for every kind, with pictures it draws, and no
 
 test('the game page: theme-color is the Daybreak --bg, and the pre-paint script sets the Deep Space --bg before the first paint', () => {
   /* A meta tag cannot read a CSS token, so these are the two places the page spells a color out; they must be the tokens' values */
-  const html = readFileSync(new URL('../play/index.html', import.meta.url), 'utf8');
+  const html = readFileSync(new URL('../learn/index.html', import.meta.url), 'utf8');
   const tokens = readFileSync(new URL('../vendor/design-system/2.2.0/tokens.css', import.meta.url), 'utf8');
   const daybreak = tokens.match(/:root\s*\{[\s\S]*?--bg:\s*(#[0-9A-Fa-f]{6})/)[1].toLowerCase();
   const deepSpace = tokens.match(/:root\[data-theme="dark"\]\s*\{[\s\S]*?--bg:\s*(#[0-9A-Fa-f]{6})/)[1].toLowerCase();
@@ -154,7 +154,7 @@ test('the manifest: the game as its own app, every field the install screens use
   const m = JSON.parse(readFileSync(new URL('../manifest.webmanifest', import.meta.url), 'utf8'));
   assert.equal(m.name, 'Learn Vedic Math');
   assert.equal(m.short_name, 'Vedic Math');
-  assert.equal(m.id, '/play/');
+  assert.equal(m.id, '/play/', 'the id from before the move to /learn/ names the installed app, so it never changes (indexable-routes D10)');
   assert.equal(m.scope, R.SCOPE);
   assert.ok(m.start_url.startsWith(R.SCOPE));
   assert.equal(m.display, 'standalone');
@@ -172,5 +172,5 @@ test('the manifest: the game as its own app, every field the install screens use
     assert.deepEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [w, h], `${s.src} is ${s.sizes}`);
     assert.ok(s.label && s.label.length > 5, s.src);
   }
-  for (const s of m.shortcuts) assert.ok(s.url.startsWith(R.SCOPE + '#/'), s.url);
+  for (const s of m.shortcuts) assert.match(s.url, new RegExp(`^${R.SCOPE}[a-z][\\w/-]*$`), `${s.url}: a screen's path, no #/ route`);
 });

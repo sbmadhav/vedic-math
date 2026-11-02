@@ -1,13 +1,13 @@
 # Learn Vedic Math
 
-The site at https://learnvedicmath.com/, on Cloudflare Workers: the landing page at `/`, the game at `/play/`, moving from Legacy views (`js/`) to React and TypeScript one view at a time. A new fact goes in the file a pointer below names.
+The site at https://learnvedicmath.com/, on Cloudflare Workers: the landing page at `/`, the game at `/learn/` (old `/play/` links redirect there), moving from Legacy views (`js/`) to React and TypeScript one view at a time. A new fact goes in the file a pointer below names.
 
 ## Guardrails
 
 - Tests use the Firebase fake: never write to production Firestore from a test, and never submit an Arena or game score against the live backend.
 - Players whose Age answer is under 13 use Device boards only; nothing for them loads Firebase (ADR 0006).
 - Never commit studio voice audio or a speech service key; a changed spoken line needs a re-record and publish in the same PR.
-- Never commit cache stamps: the build stamps the published copy, so in git `play/index.html` loads plain `/js/app.js` and `/math.css` with no import map, and `app/src/sw/sw.ts` keeps `VERSION` at `'dev'` and `PRECACHE` empty.
+- Never commit cache stamps: the build stamps the published copy, so in git `learn/index.html` loads plain `/js/app.js` and `/math.css` with no import map, and `app/src/sw/sw.ts` keeps `VERSION` at `'dev'` and `PRECACHE` empty.
 - A non-trivial behavior change starts as an OpenSpec change in `openspec/changes/<name>/`, implemented after the owner approves it.
 - Write copy with commas, colons or parentheses; never an em dash.
 - Analytics (`window.siteTrack`) never sends personal data.

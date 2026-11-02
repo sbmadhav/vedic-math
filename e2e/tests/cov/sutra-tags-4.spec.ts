@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, pathTo } from '../fixtures';
 
 /* sutra-tags spec (openspec change sutras-first), Requirement "Tags on Arena results, Watch and games": one test per
    scenario. */
@@ -36,7 +36,7 @@ test('Watch: the player for a Square numbers ending in 5 video shows the Ekādhi
   const card = page.locator('.watch-card[data-tricks~="sq5"]').first();
   await expect(card.locator('.tagv--sutra')).toHaveText('Ekādhikena Pūrveṇa');
   await card.click();
-  await expect(page.locator('dialog.vm-player .vp-foot a.sutra-tag-a')).toHaveAttribute('href', '#/sutras/s1');
+  await expect(page.locator('dialog.vm-player .vp-foot a.sutra-tag-a')).toHaveAttribute('href', pathTo('#/sutras/s1'));
 });
 
 test('A game: the Answer checker page shows "Uses the idea of Guṇitasamuccayaḥ" with its meaning', async ({ page }) => {

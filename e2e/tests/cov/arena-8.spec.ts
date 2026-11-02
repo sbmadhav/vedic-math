@@ -104,7 +104,7 @@ test.describe('Explorer', () => {
     await btn.click();
     await expect.poll(async () => (await shared(page)).length).toBe(1);
     const [s] = await shared(page);
-    expect(s.url).toMatch(new RegExp(`^https://learnvedicmath\\.com/play/#/arena/day/${DAY}/explorer/\\d{1,4}$`));
+    expect(s.url).toMatch(new RegExp(`^https://learnvedicmath\\.com/learn/arena/day/${DAY}/explorer/\\d{1,4}$`));
     expect(s.text).toContain('Explorer League');
     expect(s.text).toContain('The same questions for every Explorer today');
     expect(s.text).not.toMatch(NOTHING_PERSONAL);

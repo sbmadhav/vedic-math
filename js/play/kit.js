@@ -82,7 +82,7 @@ export const sfx = name => ({
 }[name] || (() => {}))();
 
 /* ---------- Sharing ---------- */
-/* Where the game lives (shared/src/site.ts): every share link is built from these two, so the move from /play/ to /learn/
+/* Where the game lives (shared/src/site.ts): every share link is built from these two, so the move to /learn/
    (openspec change indexable-routes, design D2) changes one line there. A challenge link (shared/src/challenge.ts) names
    SITE whatever host built it; shareUrl below keeps the origin it runs on. */
 export { SITE, APP_BASE };
@@ -102,7 +102,9 @@ export const b64url = {
   enc: s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''),
   dec: s => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))))
 };
-export const shareUrl = hash => `${location.origin}${APP_BASE}${hash}`;
+/* A share link is the route's path ('#/arena/ghosts/r/abc' to /learn/arena/ghosts/r/abc), which _redirects answers with
+   the experience's page (openspec change indexable-routes, design D4) */
+export const shareUrl = hash => `${location.origin}${APP_BASE}${hash.replace(/^#\//, '')}`;
 
 /* ---------- Feedback ---------- */
 export function toast(text, ms = 2600) {

@@ -1,4 +1,4 @@
-import { test, expect, APP, open, appErrors, cloudLog, pickMode } from './fixtures';
+import { test, expect, APP, open, appErrors, cloudLog, atRoute, hrefTo, pickMode } from './fixtures';
 
 /* The in-app guide and the first-visit tour (openspec in-app-guide). This site's /js/analytics.js is replaced by a
    stub that records window.siteTrack calls, so the tour's events can be checked and nothing is counted. */
@@ -37,7 +37,7 @@ test.describe('the guide page', () => {
   test('a Try it link opens the real place: Katas opens the first trick\'s katas', async ({ page }) => {
     await open(page, '#/guide');
     await page.locator('#gd-katas .gd-try').click();
-    await expect(page).toHaveURL(/#\/katas\/from9$/);
+    await expect(page).toHaveURL(atRoute('#/katas/from9'));
     await expect(page.locator('#view h1')).toContainText('katas');
   });
 
@@ -50,7 +50,7 @@ test.describe('the guide page', () => {
 
   test('the footer links the guide', async ({ page }) => {
     await open(page, '#/learn');
-    await page.locator('footer a[href="#/guide"]').click();
+    await page.locator(`footer a${hrefTo('#/guide')}`).click();
     await expect(page.locator('#view h1')).toHaveText('How to use Vedic Math');
   });
 
@@ -62,7 +62,7 @@ test.describe('the guide page', () => {
       await expect(page.locator('#gd-stars, #gd-sky')).toHaveCount(0);
       await expect(page.locator('#gdh-around')).toHaveText('Find your way');
       await open(page); /* Explorer's menu is Play, Learn and Me; the guide is under More places (openspec change play-nav-by-mode) */
-      await expect(page.locator('.home-places a[href="#/guide"]')).toBeVisible();
+      await expect(page.locator(`.home-places a${hrefTo('#/guide')}`)).toBeVisible();
     });
   });
 
@@ -72,9 +72,9 @@ test.describe('the guide page', () => {
       await page.goto(`${APP}#/guide`);
       await expect(page.locator('#view h1')).toHaveText('How to use Vedic Math');
       await expect(page.locator('.mode-pick')).toHaveCount(0);
-      await page.locator('.gd-nomode a[href="#/"]').click();
+      await page.locator(`.gd-nomode a${hrefTo('#/')}`).click();
       await expect(page.locator('.mode-pick .mode-card').first()).toBeVisible();
-      await expect(page.locator('.gd-pickhelp a[href="#/guide"]')).toBeVisible();
+      await expect(page.locator(`.gd-pickhelp a${hrefTo('#/guide')}`)).toBeVisible();
     });
   });
 });
@@ -153,7 +153,7 @@ test.describe('the first-visit tour', () => {
     await expect(dlg).toBeVisible();
     while (await dlg.getAttribute('data-step') !== 'guide') await dlg.locator('[data-act="next"]').click();
     const vp = page.viewportSize()!;
-    for (const box of [await page.locator('.home-places a[href="#/guide"]').boundingBox(), await dlg.locator('.tour-card').boundingBox()]) {
+    for (const box of [await page.locator(`.home-places a${hrefTo('#/guide')}`).boundingBox(), await dlg.locator('.tour-card').boundingBox()]) {
       expect(box!.x).toBeGreaterThanOrEqual(0); expect(box!.y).toBeGreaterThanOrEqual(0);
       expect(box!.x + box!.width).toBeLessThanOrEqual(vp.width); expect(box!.y + box!.height).toBeLessThanOrEqual(vp.height);
     }
@@ -180,7 +180,7 @@ test.describe('the tour after the first visit', () => {
     await expect(tour(page)).toHaveCount(0);
     await page.goto(`${APP}#/guide`);
     await page.locator('.gd-top [data-gd="tour"]').click();
-    await expect(page).toHaveURL(/#\/$/);
+    await expect(page).toHaveURL(atRoute('#/'));
     await expect(tour(page)).toBeVisible();
     await expect(tour(page).locator('#tourN')).toContainText('1 of');
   });

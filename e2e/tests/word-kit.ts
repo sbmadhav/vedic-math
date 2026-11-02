@@ -76,7 +76,7 @@ export const spoken = (page: Page, html: string) => page.evaluate(async h => (aw
 /* ---------- Only Word problems and the Arena Word problems round (openspec change word-problems-more) ---------- */
 export const onlyChoice = (page: Page, only: boolean) => page.locator(`#mixOnly [data-only="${only ? 1 : 0}"]`);
 /** The Skill a mixed Practice question is from (the link over it) */
-export const skillOf = async (page: Page) => ((await box(page).locator('.pr-meter small a').getAttribute('href')) || '').replace('#/skill/', '');
+export const skillOf = async (page: Page) => ((await box(page).locator('.pr-meter small a').getAttribute('href')) || '').replace(/^.*\/skill\//, '');
 
 /** Records the answer of each story the Arena round deals (js/stories.js roundStory), so a spec can answer it right */
 export async function watchRoundStories(page: Page) {

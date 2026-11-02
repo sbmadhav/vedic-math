@@ -25,7 +25,7 @@ export const RESULTS = ['accepted', 'replaced', 'kept', 'declined', 'invalid', '
 const PLAY_RE = /^vm\.play\.(p[0-9a-z]{1,12})\.([a-z][a-z0-9-]{0,31})$/;
 const json = (st, k) => { try { return JSON.parse(st.get(k)); } catch (e) { return null; } };
 
-/* Players saved here, and whether any of them has progress (a first visit to /play/ makes a blank p1, which is not) */
+/* Players saved here, and whether any of them has progress (a first visit to the game makes a blank p1, which is not) */
 export function progressHere(st) {
   const P = json(st, 'vm.players');
   const list = P && Array.isArray(P.list) ? P.list.filter(p => p && typeof p.id === 'string') : [];
@@ -136,7 +136,8 @@ function count(result) {
 const $ = id => document.getElementById(id);
 const show = id => { for (const s of ['ho-offer', 'ho-bad', 'ho-none', 'ho-error']) $(s).hidden = s !== id; };
 const sparksOf = r => Math.floor((r && (r.sparks || r.xp)) || 0);
-const play = route => location.replace('/play/' + (route || ''));
+/* The game, on the route's path (a #/ route is '/learn/' and the route without its '#/'; openspec change indexable-routes, design D9) */
+const play = route => location.replace('/learn/' + (route || '').replace(/^#\//, ''));
 
 async function start() {
   const raw = typeof window.lvmHandoff === 'string' ? window.lvmHandoff : '';

@@ -1,4 +1,4 @@
-import { test, expect, open } from './fixtures';
+import { test, expect, open, atRoute, hrefTo } from './fixtures';
 
 /* View transitions inside the game (openspec change indexable-routes, design D12, page-transitions spec, task 3.1).
    The router runs a route change's DOM update inside document.startViewTransition when the browser has it and motion
@@ -21,13 +21,13 @@ async function countTransitions(page: Page) {
 }
 const transitions = (page: Page) => page.evaluate(() => (window as any).__vt as number);
 const supported = (page: Page) => page.evaluate(() => typeof (document as any).startViewTransition === 'function');
-const tab = (page: Page, href: string) => page.locator(`header .mq-nav a[href="${href}"]`);
+const tab = (page: Page, href: string) => page.locator(`header .mq-nav a${hrefTo(href)}`);
 const heading = (page: Page) => page.locator('#view h1');
 
 /** Taps a nav link and waits for its view: the heading has focus, as without a transition. */
 async function tapNav(page: Page, href: string, head: string | RegExp) {
   await tab(page, href).click();
-  await expect(page).toHaveURL(href === '#/' ? /\/play\/(#\/?)?$/ : new RegExp(`${href.replace(/[/#]/g, '\\$&')}$`));
+  await expect(page).toHaveURL(atRoute(href));
   await expect(heading(page)).toHaveText(head);
   await expect(heading(page)).toBeFocused();
 }
@@ -65,12 +65,12 @@ test.describe('with motion allowed', () => {
     await expect(page.locator('#stAgain')).toBeVisible();
     await page.locator('#stAgain').click();
     await expect(page.locator('#stSkip')).toBeVisible(); /* the round drawn again, in place */
-    await expect(page).toHaveURL(/#\/star\/sq5\/1$/);
+    await expect(page).toHaveURL(atRoute('#/star/sq5/1'));
     expect(await transitions(page), 'a redraw of the same route is a plain swap').toBe(0);
     /* The nav is hidden inside a round: the end screen's Back link (to the Dojo, on a cold open) is the next route change */
     await page.locator('#stSkip').click();
     await page.locator('#stBack').click();
-    await expect(page).toHaveURL(/#\/dojo$/);
+    await expect(page).toHaveURL(atRoute('#/dojo'));
     await expect(heading(page)).toBeFocused();
     expect(await transitions(page), 'the next route change runs inside one').toBe(1);
   });

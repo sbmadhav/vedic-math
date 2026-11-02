@@ -91,9 +91,9 @@ test('each Trick page has its title, description, canonical, Open Graph, JSON-LD
     assert.equal(html.match(/<h1>/g).length, 1, 'one h1');
     assert.ok(html.includes(`<b lang="sa-Latn">${sutraName(t)}</b>`), `${p.slug}: the Sutra's name`);
     assert.ok(html.includes(`<q>${t.meaning}</q>`), `${p.slug}: the meaning`);
-    assert.ok(html.includes(`href="/play/#/sutras/${t.sutraId}"`), `${p.slug}: the Deep dive link`);
+    assert.ok(html.includes(`href="/learn/sutras/${t.sutraId}"`), `${p.slug}: the Deep dive link`);
     assert.ok(html.includes("in Bharati Krishna Tirtha's 1965 book <i>Vedic Mathematics</i>"), `${p.slug}: the 1965 book`);
-    assert.ok(html.includes(`href="/play/#/skill/v-${t.id}">Practice this trick</a>`), `${p.slug}: Practice this trick`);
+    assert.ok(html.includes(`href="/learn/skill/v-${t.id}">Practice this trick</a>`), `${p.slug}: Practice this trick`);
     assert.ok(html.includes(`data-trick="${t.id}"`), `${p.slug}: the calculator's Trick`);
     for (const s of t.steps(vals(p))) assert.ok(html.includes(s.say), `${p.slug}: the step "${s.say}" is written out`);
     assert.equal(html.match(/<input type="number"/g).length, t.inputs.length, `${p.slug}: one field per input`);

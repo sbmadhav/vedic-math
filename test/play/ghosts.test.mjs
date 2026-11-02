@@ -59,7 +59,7 @@ test('ghost position: interpolated between answer times, clamped at the ends', (
 test('a 20 question ghost link stays under 500 characters, even with slow answers and misses', () => {
   const t = []; let acc = 0; for (let i = 0; i < 20; i++) t.push(acc += 29999);
   const g = G.makeGhost({ kind: 'comp1000', lv: 'pro', seed: 36 ** 5 - 1, n: 20, t, miss: Array.from({ length: 10 }, (_, i) => [i * 2, t[i * 2] - 5]), nick: [19, 19] });
-  const url = `https://learnvedicmath.com/play/#/arena/ghosts/r/${G.encode(g)}`;
+  const url = `https://learnvedicmath.com/learn/arena/ghosts/r/${G.encode(g)}`;
   assert.ok(url.length < 500, `${url.length}`);
   assert.ok(/^[A-Za-z0-9_-]+$/.test(G.encode(g)));
 });

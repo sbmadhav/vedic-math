@@ -117,9 +117,9 @@ test.describe('two Players on one device', () => {
     await page.waitForTimeout(800);
     expect(await said(page)).toBe('');
     await page.evaluate(async () => { (await e2eMod('store')).switchPlayer('pearly'); });
-    await page.goto('/play/#/me');
+    await page.goto('/learn/me');
     await expect(page.locator('#view h1')).toHaveText('Lucky Otter 17');
-    await page.goto('/play/#/skill/3-mult');
+    await page.goto('/learn/skill/3-mult');
     await expect(page.locator('#practice .pr-choice')).toHaveCount(3);
     await expect.poll(() => said(page), { timeout: 5000 }).not.toBe('');
     await expect(page.locator('body')).toHaveClass(/band-early/);

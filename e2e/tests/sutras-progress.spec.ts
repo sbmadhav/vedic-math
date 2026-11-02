@@ -1,4 +1,4 @@
-import { test, expect, open } from './fixtures';
+import { test, expect, open, hrefTo } from './fixtures';
 
 /* openspec change sutras-first, part 2: progress per Sutra on the Sutras page and in the Deep dive, from what the
    device keeps (nothing written, nothing sent), and the Sutras right after Home in every Mode's menu. */
@@ -54,12 +54,12 @@ test.describe('Explorer', () => {
   /* The Sutras are Learn's first card (openspec change play-nav-by-mode: Explorer's menu is Play, Learn and Me) */
   test('Learn opens the Sutras first, and the cards read in Explorer words with tricks practiced', async ({ page }) => {
     await open(page, '#/');
-    await page.locator('header .mq-nav a[href="#/learn"]').click();
+    await page.locator(`header .mq-nav a${hrefTo('#/learn')}`).click();
     await page.locator('#view a.learn-sutras').click();
     await expect(page.locator('#view .md-lede')).toContainText('tiny math rule with a long name');
     await expect(face(page, 's1').locator('.sutra-kid')).toHaveText('One more than the number before');
     await expect(face(page, 's1').locator('.sutra-prog small')).toHaveText('0 of 3 tricks practiced');
-    await expect(page.locator('header .mq-nav a[href="#/learn"]')).toHaveAttribute('aria-current', 'true');
+    await expect(page.locator(`header .mq-nav a${hrefTo('#/learn')}`)).toHaveAttribute('aria-current', 'true');
   });
   test('the Guide sends Explorer to the Sutras through Learn', async ({ page }) => {
     await open(page, '#/guide/sutras');
@@ -71,7 +71,7 @@ test.describe('Explorer', () => {
 test('Challenger menu: Home, Learn (with the Sutras first), Arcade, Watch, Find', async ({ page }) => {
   await open(page, '#/');
   expect((await page.locator('header .mq-nav a:visible').allInnerTexts()).map(t => t.trim().split('\n')[0].trim())).toEqual(['Home', 'Learn', 'Arcade', 'Watch', 'Find']);
-  await page.locator('header .mq-nav a[href="#/learn"]').click();
+  await page.locator(`header .mq-nav a${hrefTo('#/learn')}`).click();
   await expect(page.locator('#view a.learn-sutras')).toContainText('Bharati Krishna Tirtha');
 });
 

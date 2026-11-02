@@ -1,7 +1,7 @@
 import { gzipSync } from 'node:zlib';
 import type { Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, APP, chromiumOnly } from './fixtures';
+import { test, expect, APP, chromiumOnly, atRoute } from './fixtures';
 
 /* The hand-off import page, /import/ (openspec change learnvedicmath, design D9, progress-handoff spec; task 10.2).
    The moved page on sbmadhav.com sends a Player here with their progress in the fragment. The page takes the fragment
@@ -74,7 +74,7 @@ test.describe('a device with no progress here', () => {
     expect((await stored(page))['vm.players']).toBeUndefined();
     expect(issues.console, 'the import page logs no error').toEqual([]);
     await page.locator('#ho-bring').click();
-    await expect(page).toHaveURL(new RegExp(`${APP}#/arena$`));
+    await expect(page).toHaveURL(atRoute('#/arena'));
     const s = await stored(page);
     expect(await names(page)).toEqual(['Brave Otter 17', 'Cosmic Comet 33']);
     expect(JSON.parse(s['mathquest.v1.p1']).sparks).toBe(1234);
@@ -90,7 +90,7 @@ test.describe('a device with no progress here', () => {
     await page.goto(link(payload(), '#/dojo'));
     expect(await counts(page), 'nothing is counted before a choice').toEqual([]);
     await page.locator('#ho-not-now').click();
-    await expect(page).toHaveURL(new RegExp(`${APP}#/dojo$`));
+    await expect(page).toHaveURL(atRoute('#/dojo'));
     // The game makes its own blank first Player; nothing from the link is in it
     const s = await stored(page);
     expect(JSON.parse(s['mathquest.v1.p1'] || '{}').sparks || 0).toBe(0);
@@ -113,7 +113,7 @@ test.describe('a device with no progress here', () => {
     await expect(go).toBeVisible();
     await expectCount(page, 'invalid');
     await go.click();
-    await expect(page).toHaveURL(new RegExp(`${APP}$`));
+    await expect(page).toHaveURL(atRoute('#/'));
   });
 
   test('storage refuses every write: nothing is saved, the heading says so and takes focus, and the error shows', async ({ page }) => {
@@ -197,7 +197,7 @@ test.describe('a device that already has progress here', () => {
     await expect(page.locator('#ho-here')).toHaveText('Swift Tiger 42');
     await expect(page.locator('#ho-fresh')).toBeHidden();
     await page.locator('#ho-keep').click();
-    await expect(page).toHaveURL(new RegExp(`${APP}#/arena$`));
+    await expect(page).toHaveURL(atRoute('#/arena'));
     // The game itself fills in the record's defaults once it runs; the Players and the progress are this device's
     const after = await stored(page);
     expect(after['vm.players']).toBe(before['vm.players']);
@@ -210,7 +210,7 @@ test.describe('a device that already has progress here', () => {
   test('Use the old site\'s replaces this device\'s Players', async ({ page }) => {
     await page.goto(link(payload()));
     await page.locator('#ho-use').click();
-    await expect(page).toHaveURL(new RegExp(`${APP}#/arena$`));
+    await expect(page).toHaveURL(atRoute('#/arena'));
     expect(await names(page)).toEqual(['Brave Otter 17', 'Cosmic Comet 33']);
     expect(JSON.parse((await stored(page))['mathquest.v1.p1']).sparks).toBe(1234);
     await expectCount(page, 'replaced');
@@ -219,7 +219,7 @@ test.describe('a device that already has progress here', () => {
   test('Keep both adds the old site\'s Players next to this one, each with their own progress', async ({ page }) => {
     await page.goto(link(payload()));
     await page.locator('#ho-merge').click();
-    await expect(page).toHaveURL(new RegExp(`${APP}#/arena$`));
+    await expect(page).toHaveURL(atRoute('#/arena'));
     const s = await stored(page), P = JSON.parse(s['vm.players']);
     expect(P.list.map((p: any) => p.name)).toEqual(['Swift Tiger 42', 'Brave Otter 17', 'Cosmic Comet 33']);
     expect(JSON.parse(s['mathquest.v1.p1']).sparks).toBe(50);

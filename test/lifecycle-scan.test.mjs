@@ -11,7 +11,6 @@ const hits = (file, re, allowed = []) => src(file).flatMap((line, i) => (re.test
 
 /* Added once for the whole page, never per view */
 const PAGE_LISTENERS = [
-  /window\.addEventListener\('hashchange', render\)/, // the router
   /document\.addEventListener\('click', e => \{$/, // the Watch link handler (opens the video player)
   /sutraDlg\.addEventListener\(/, /playerDlg\.addEventListener\(/, /ageDlg\.addEventListener\(/, // dialogs created once
   /addEventListener\('load', registerSW, \{ once: true \}\)/, // service worker registration

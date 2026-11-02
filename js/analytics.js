@@ -40,7 +40,17 @@
     window.siteTrack('out/' + a.host + a.pathname.replace(/\/$/, ''), 'Outbound: ' + a.host);
   }, true);
 
+  /* The page view's path (openspec change indexable-routes, design D11): the address's path, never its query, so a
+     problem seed or a Mode link never reaches GoatCounter. A share or challenge link (/learn/arena/day/..., a 200
+     rewrite) is counted as the page that answers it, its canonical path, so its codes never do either. */
+  const pagePath = () => {
+    const c = document.querySelector('link[rel="canonical"][href]');
+    try { if (c) return new URL(c.href, location.href).pathname; } catch (e) { /* a broken canonical: the address */ }
+    return location.pathname;
+  };
+
   function load() {
+    window.goatcounter = Object.assign(window.goatcounter || {}, { path: pagePath });
     if (eventsOnly) window.goatcounter = Object.assign(window.goatcounter || {}, { no_onload: true });
     const s = document.createElement('script');
     s.async = true;

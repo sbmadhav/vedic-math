@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, atRoute } from '../fixtures';
 
 /* sky spec, Requirements "Star states on the Sky" and "A suggested path in Belt order": one test per scenario. */
 type Page = import('@playwright/test').Page;
@@ -21,7 +21,7 @@ test.describe('Star 2 of sq5 skipped', () => {
 test('Open from the start: a Player who lit nothing can start a black belt Star 3', async ({ page }) => {
   await open(page);
   await star(page, 'zero-sum:3').click();
-  await expect(page).toHaveURL(/#\/star\/zero-sum\/3$/);
+  await expect(page).toHaveURL(atRoute('#/star/zero-sum/3'));
   await expect(page.locator('.star-top .md-tag')).toHaveText('Star 3 of 3');
 });
 

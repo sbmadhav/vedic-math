@@ -229,7 +229,7 @@ test('js/arena.js hands the Arena view the challenge link helpers from shared/sr
   assert.equal(MAX_CHALLENGE_SCORE, 9999);
   assert.equal(realDay('2026-10-30'), true);
   assert.deepEqual(parseChallenge(['2026-10-30', 'challenger', '240'], '2026-10-30', 'challenger'), { day: '2026-10-30', league: 'challenger', score: 240, ranked: true });
-  assert.equal(challengeUrl(SHARE), `${SITE}${APP_BASE}#/arena/day/2026-10-30/challenger/240`);
+  assert.equal(challengeUrl(SHARE), `${SITE}${APP_BASE}arena/day/2026-10-30/challenger/240`);
   assert.equal(challengeText(SHARE), `${challengeShare(SHARE).text}\n${challengeShare(SHARE).url}`);
 });
 

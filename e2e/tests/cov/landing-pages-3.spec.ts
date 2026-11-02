@@ -14,7 +14,7 @@ test.beforeEach(async ({ page }) => {
 test.describe('a first visit', () => {
   test.use({ seedMode: null });
 
-  test('Counted: /play/?mode=pro sets Pro and sends one math/landing/mode/pro, naming no Player', async ({ page }) => {
+  test('Counted: /learn/?mode=pro sets Pro and sends one math/landing/mode/pro, naming no Player', async ({ page }) => {
     await page.goto(`${APP}?mode=pro`);
     await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
     expect(await mode(page)).toBe('pro');
@@ -24,16 +24,16 @@ test.describe('a first visit', () => {
     expect(new URL(page.url()).search).toBe('');
   });
 
-  test('Unknown value: /play/?mode=wizard shows the Mode picker, stores no Mode and leaves /play/', async ({ page }) => {
+  test('Unknown value: /learn/?mode=wizard shows the Mode picker, stores no Mode and leaves /learn/', async ({ page }) => {
     await page.goto(`${APP}?mode=wizard`);
     await expect(page.locator('.mode-pick .mode-card')).toHaveCount(3);
     expect(await mode(page)).toBeNull();
-    expect(new URL(page.url()).pathname + new URL(page.url()).search).toBe('/play/');
+    expect(new URL(page.url()).pathname + new URL(page.url()).search).toBe('/learn/');
     expect((await events(page)).filter(e => e.startsWith('math/landing/'))).toEqual([]);
   });
 });
 
-test('Switching: a Challenger opening /play/?mode=explorer gets the Explorer Home', async ({ page }) => {
+test('Switching: a Challenger opening /learn/?mode=explorer gets the Explorer Home', async ({ page }) => {
   await page.goto(`${APP}?mode=explorer`);
   await expect(page.locator('h1.home-h')).toHaveText('What do you want to play?');
   expect(await mode(page)).toBe('explorer');

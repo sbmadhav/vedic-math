@@ -5,7 +5,7 @@
    In order: unregister any service worker for /vedic-math/ and delete the vedic-math-* caches (never madhav-*, the
    main site's); read this browser's progress through the schema's allow-list (never World board identities or
    anything else); pack it into the fragment; record vm.migratedAt here; send one hand-off count; replace this page with
-   learnvedicmath.com/import/#v=1&d=...&r=<route>, or /play/<route> when nothing is saved. A fragment is never sent to
+   learnvedicmath.com/import/#v=1&d=...&r=<route>, or the route's path under /learn/ when nothing is saved. A fragment is never sent to
    any server. Too big to fit (never seen in practice): no redirect with data, the page says so and links the new site. */
 import { readDevice, pack, fragment, ROUTE_RE } from '/vedic-math/js/handoff-schema.js';
 
@@ -41,7 +41,7 @@ async function main() {
   await retireOld();
   let device = null;
   try { device = readDevice(k => localStorage.getItem(k), () => Object.keys(localStorage)); } catch (e) { device = null; }
-  if (!device) { count('empty'); return go(`${NEW}/play/${route}`); }
+  if (!device) { count('empty'); return go(`${NEW}/learn/${route.replace(/^#\//, '')}`); }
   let packed = null;
   try { packed = await pack(device); } catch (e) { packed = null; } // a browser without CompressionStream
   if (!packed || packed.tooBig) {

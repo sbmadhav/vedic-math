@@ -1,4 +1,4 @@
-import { test, expect, open, type Page } from '../fixtures';
+import { test, expect, open, type Page, atRoute } from '../fixtures';
 
 /* quests spec, Requirement "Changing Mode starts the new quests at zero", Scenario "A quest already met today"
    (openspec change muse-review-polish, design D3): a Challenger finishes an Arena round or tower challenge on a day
@@ -32,7 +32,7 @@ test.describe('a quest already met today completes at the Mode switch', () => {
     await expect(toast(page)).toHaveCount(1);
     await expect(toast(page)).toContainText('Finish an Arena round or tower challenge');
     await expect(toast(page)).toContainText('+25 Sparks');
-    await expect(page).toHaveURL(/#\/me$/);
+    await expect(page).toHaveURL(atRoute('#/me'));
     expect(Object.keys((await questDay(page)).done)).toEqual(['arena-1']);
     const qs = await page.evaluate(async () => ((await e2eMod('gamify')) as any).quests());
     expect(qs.find((q: any) => q.id === 'arena-1')).toMatchObject({ prog: 1, goal: 1, done: true });

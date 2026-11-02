@@ -1,4 +1,4 @@
-import { test, expect, APP, open, cloudLog, needsWorldBoards, pickMode } from './fixtures';
+import { test, expect, APP, open, cloudLog, needsWorldBoards, hrefTo, pickMode } from './fixtures';
 
 /* Progress lives in localStorage (vm.players, mathquest.v1.<player>) and survives a reload. */
 
@@ -28,7 +28,7 @@ test('Sparks, collected sutra cards, answers and the nickname survive a reload',
   await expect(page.locator('.md-lede')).toContainText('You have collected 1 of 29');
   // The skill shows as started on the Dojo map
   await page.goto(`${APP}#/dojo`);
-  await expect(page.locator('a.dojo-node[href="#/skill/v-sq5"]')).toHaveClass(/mq-going/);
+  await expect(page.locator(`a.dojo-node${hrefTo('#/skill/v-sq5')}`)).toHaveClass(/mq-going/);
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('mathquest.v1.p1') || 'null'));
   expect(saved.sparks).toBe(5);
   expect(saved.v).toBe(3);

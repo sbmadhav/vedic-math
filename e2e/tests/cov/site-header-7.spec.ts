@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, hrefTo } from '../fixtures';
 
 /* site-header spec, Requirement "Explorer's tabs say their names" (openspec change play-nav-by-mode): one test per
    scenario. speechSynthesis is replaced by a recorder (the try-trick and verses specs' pattern). */
@@ -22,7 +22,7 @@ test.use({ seedMode: 'explorer' });
 test('Read aloud on: tapping Learn opens the Learn page and "Learn" is spoken once', async ({ page }) => {
   await recordSpeech(page, true);
   await open(page);
-  await page.locator('header .mq-nav a[href="#/learn"]').click();
+  await page.locator(`header .mq-nav a${hrefTo('#/learn')}`).click();
   await expect(page.locator('#view h1')).toHaveText('Pick a level');
   await expect.poll(() => said(page)).toEqual(['Learn']);
   await page.waitForTimeout(300);
@@ -32,7 +32,7 @@ test('Read aloud on: tapping Learn opens the Learn page and "Learn" is spoken on
 test('Read aloud off: tapping Me opens the Me page and nothing is spoken', async ({ page }) => {
   await recordSpeech(page, false);
   await open(page);
-  await page.locator('header .mq-nav a[href="#/me"]').click();
+  await page.locator(`header .mq-nav a${hrefTo('#/me')}`).click();
   await expect(page.locator('#view h1')).toHaveText('Swift Tiger 42');
   await page.waitForTimeout(300);
   expect(await said(page)).toEqual([]);
