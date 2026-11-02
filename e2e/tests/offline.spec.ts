@@ -86,7 +86,25 @@ test('the worker registers with scope /play/, caches under lvm-, and every preca
   const map = await page.evaluate(() => JSON.parse(document.querySelector('script[type="importmap"]')?.textContent || '{"imports":{}}').imports as Record<string, string>);
   const modules = Object.values(map);
   expect(modules.length).toBeGreaterThan(20);
-  for (const u of modules) expect(saved, `${u} is saved for offline use`).toContain(u);
+  /* The core is precached; the Play experiences, their styles, their kit and the video list are saved when first opened
+     (openspec change render-performance, design D10, owner P5), and the two fonts only the experiences use with them */
+  for (const u of modules) {
+    if (LAZY.test(u) || u.startsWith('/js/landing-sky.js?')) expect(saved, `${u} is saved when first opened, never at install`).not.toContain(u);
+    else expect(saved, `${u} is saved for offline use`).toContain(u);
+  }
+  expect(saved.filter(u => LAZY.test(u)), 'no experience, play stylesheet or video list at install').toEqual([]);
+  expect(saved.filter(u => /^\/fonts\/(space-grotesk|jetbrains-mono)/.test(u)), 'the fonts only the experiences use').toEqual([]);
+});
+
+/* Saved on first request, never precached (build.py is_lazy) */
+const LAZY = /^\/(js\/play\/exp\/|css\/play\/|js\/play\/life\.js|js\/videos\.js)/;
+
+/* Navigation preload (render-performance design D11): the browser starts the page request as it starts the worker */
+test('the worker enables navigation preload when it activates', async ({ page }) => {
+  await open(page);
+  await workerReady(page);
+  const state = await page.evaluate(async () => (await (await navigator.serviceWorker.getRegistration('/play/'))!.navigationPreload.getState()).enabled);
+  expect(state).toBe(true);
 });
 
 /* The Installed app opens at the manifest's start_url, and its shortcuts at their own URLs (openspec change install-app):
@@ -120,8 +138,30 @@ test.describe('first visit', () => {
     await pickMode(page, 'pro');
     await expect(page.locator('h1.home-h')).toHaveText('Mental math, the sutra way');
     await workerReady(page);
+    /* Watch's video list and the Play experiences are saved when first opened online, not at install (openspec change
+       render-performance, design D10, owner P5): open the ones the offline round below visits, in a tab the worker controls */
+    for (const [hash, sel] of [['#/watch', '#view button.watch-card'], ['#/arena/party', '.px-view--party h1, .px-view--party h2'], ['#/games/tala', '.px-view--tala h1, .px-view--tala h2']]) {
+      const tab = await context.newPage();
+      await tab.goto(`${APP}${hash}`);
+      await expect(tab.locator(sel!).first()).toBeVisible();
+      await tab.close();
+    }
     await goOffline(context);
     await expectOffline(page);
+
+    /* An experience never opened online: the shelf card says so, and opening it offers Retry instead of a broken page */
+    {
+      const tab = await context.newPage();
+      await tab.goto(`${APP}#/games`);
+      const art = tab.locator('a.play-card[href="#/games/art"]');
+      await expect(art).toContainText('Needs a connection the first time');
+      await expect(tab.locator('a.play-card[href="#/games/tala"] .play-card-off')).toHaveCount(0);
+      await tab.goto(`${APP}#/games/art`);
+      await expect(tab.locator('#view h1')).toHaveText('Mandala Studio did not open');
+      await expect(tab.locator('#view')).toContainText('It needs a connection the first time');
+      await expect(tab.getByRole('button', { name: 'Retry' })).toBeVisible();
+      await tab.close();
+    }
 
     const ROUTES: [string, RegExp][] = [
       ['#/', /^Learn Vedic Math/], ['#/learn', /^Skill map/], ['#/dojo', /^Vedic Dojo/], ['#/arena', /^Arena/],
@@ -268,12 +308,13 @@ test('the design system, theme, fonts, icons and analytics script are served off
   const coral = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--coral').trim());
   expect(coral).not.toBe('');
   expect(await page.locator('.md-btn').first().evaluate(e => getComputedStyle(e).borderRadius)).not.toBe('0px');
-  // Fonts
+  // Fonts: the body and heading fonts are precached; Space Grotesk and JetBrains Mono, which only the Play experiences
+  // use, are saved when first used (render-performance design D8), so they are not asked for here
   const faces = await page.evaluate(async () => {
-    await Promise.all([document.fonts.load('600 20px Fredoka'), document.fonts.load('700 20px Fredoka'), document.fonts.load('400 16px "Nunito Sans"'), document.fonts.load('400 16px "Space Grotesk"'), document.fonts.load('500 16px "JetBrains Mono"')]);
+    await Promise.all([document.fonts.load('600 20px Fredoka'), document.fonts.load('700 20px Fredoka'), document.fonts.load('400 16px "Nunito Sans"')]);
     return [...document.fonts].map(f => `${f.family.replace(/"/g, '')} ${f.weight} ${f.status}`);
   });
-  for (const fam of ['Fredoka 600', 'Fredoka 700', 'Nunito Sans', 'Space Grotesk', 'JetBrains Mono'])
+  for (const fam of ['Fredoka 600', 'Fredoka 700', 'Nunito Sans'])
     expect(faces.find(f => f.startsWith(fam)), `${fam}: ${faces.join(', ')}`).toMatch(/loaded$/);
   // The theme switch (the design system's header.js), the manifest and its icons
   await page.locator('#themeBtn').click();
