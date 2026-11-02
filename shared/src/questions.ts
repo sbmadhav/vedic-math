@@ -8,6 +8,9 @@ import { mentalQ, FAMILIES, type Family } from './mental.ts';
 import type { Question } from './question.ts';
 
 export type League = 'explorer' | 'challenger' | 'pro';
+/* A timed Arena round's length in seconds: the daily challenge, every timed Practice and a challenge link's round (the
+   share text names it, challenge.ts) */
+export const ROUND_SECS = 60;
 
 /* Question pools by League. The Pro League draws from the mental arithmetic families (mental.ts) instead;
    proV1 is the Pro pool before that change, kept only for Pro daily rounds dated before MENTAL_FROM. */

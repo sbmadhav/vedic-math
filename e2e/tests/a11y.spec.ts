@@ -297,6 +297,43 @@ for (const scheme of ['light', 'dark'] as const) {
   });
 }
 
+/* A challenge link (openspec change arena-challenge-link, task 2.5): the lobby with the friend's line (Ranked, and the
+   Practice case with its extra chip) and the daily result with Challenge a friend, both schemes, at a phone width */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, challenge link`, () => {
+    test.use({ colorScheme: scheme });
+    /* The clock starts on a fixed date and keeps running (axe-core waits on timers, so a paused clock would hang it);
+       the round's end is jumped to with fastForward */
+    test.beforeEach(async ({ page }) => {
+      await page.addInitScript(() => { (window as any).goatcounter ||= { count() {} }; });
+      await page.clock.install({ time: new Date('2026-10-21T10:00:00') });
+    });
+    test('the Arena lobby with a friend\'s challenge (today, and yesterday as Practice) has no serious or critical axe violations', async ({ page }, testInfo) => {
+      chromiumOnly(testInfo);
+      await page.setViewportSize({ width: 375, height: 760 });
+      await open(page, '#/arena/day/2026-10-21/challenger/240');
+      await expect(page.locator('#arFriend')).toContainText('Score 240 to beat');
+      await page.waitForLoadState('networkidle');
+      expect(await serious(page, '#/arena')).toEqual([]);
+      await open(page, '#/arena/day/2026-10-20/challenger/240');
+      await expect(page.locator('[data-t="friend"]')).toHaveAttribute('aria-pressed', 'true');
+      await page.waitForLoadState('networkidle');
+      expect(await serious(page, '#/arena')).toEqual([]);
+    });
+    test('the daily result with Challenge a friend has no serious or critical axe violations', async ({ page }, testInfo) => {
+      chromiumOnly(testInfo);
+      await page.setViewportSize({ width: 375, height: 760 });
+      await open(page, '#/arena');
+      await page.locator('#arGo').click();
+      await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
+      await page.clock.fastForward(61_000);
+      await expect(page.locator('#arShare')).toBeVisible();
+      await page.waitForLoadState('networkidle');
+      expect(await serious(page, 'shell')).toEqual([]);
+    });
+  });
+}
+
 /* The sutra deep dive (openspec sutra-examples): worked examples all open, scrolled to the middle so the pinned
    footer and close button sit over the content, at desktop and phone widths, both schemes */
 for (const scheme of ['light', 'dark'] as const) {

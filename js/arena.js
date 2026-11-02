@@ -10,9 +10,13 @@ import { keypadOnly } from './shell.js';
 import { dailySet, practiceNext } from '../shared/src/questions.ts';
 import { comboGain } from '../shared/src/scoring.ts';
 
-export const ROUND_SECS = 60;
+import { ROUND_SECS } from '../shared/src/questions.ts';
+export { ROUND_SECS };
 /* Untimed Arena Practice (openspec game-shell-and-calm): 20 questions, no clock, Finish at any time */
 export const UNTIMED_QS = 20;
+/* Challenge links (openspec change arena-challenge-link): the link's parts, text and parser live in shared/src/challenge.ts
+   (pure, a Duel's server can check the same link); the Arena view reaches them through this module, loaded on demand */
+export { LEAGUES, MAX_CHALLENGE_SCORE, realDay, parseChallenge, challengeUrl, challengeShare, challengeText } from '../shared/src/challenge.ts';
 /* The question sets (League pools, seeded daily rounds, Practice questions) moved to shared/src/questions.ts
    (openspec change react-typescript, task 3.1), so a Duel's server can deal the same sets; re-exported here for the
    Legacy views and tests that import them from this module */

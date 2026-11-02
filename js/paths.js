@@ -62,6 +62,8 @@ export const ROWS = Object.freeze([
   /* #/guide/<s> scrolls the Guide to section s (js/guide.js sections), so each section is a page */
   row(/^#\/guide(?:\/([\w-]+))?$/, m => (m[1] ? 'guide/section' : 'guide'), { public: true, indexed: true, keys: () => ['#/guide', ...sections(guideCounts()).map(s => `#/guide/${s.id}`)] }),
   row(/^#\/find$/, 'find', { public: true, keys: () => ['#/find'] }),
+  /* An Arena challenge link (openspec change arena-challenge-link): open-ended codes, linkable, never indexed; /learn/arena/day/* is a 200 rewrite to the Arena's page */
+  row(/^#\/arena\/day(?:\/.*)?$/, 'arena/day', { keys: () => [] }),
   /* Play experiences (js/play/catalog.js): the page is the experience; what follows it is its parameters (a share code) */
   row(/^#\/(?:dojo|arena|games|sutras)\/[a-z-]+(?:\/.*)?$/, m => 'play/' + m[0].split('/')[2], { public: true, indexed: true, lock: 'mode', keys: () => PLAY.map(e => e.route) })
 ]);
