@@ -25,3 +25,12 @@ condition = "AND"
 paths = ['''^js/analytics\.js$''']
 regexTarget = "line"
 regexes = ['''^\s*const CF_TOKEN = '[0-9a-f]{32}';\s*(//[^'"`=]*)?$''']
+
+# A Claude model ID (claude-haiku-4-5-20251001) in a plan or doc reads as a generic API key: its date suffix has the
+# entropy of one. Only the generic rule, and only when the matched secret is exactly a model ID, so a real key on the
+# same line is still found. An Anthropic key starts sk-ant- and is caught by its own rule.
+[[allowlists]]
+description = "Claude model IDs, public names"
+targetRules = ["generic-api-key"]
+regexTarget = "secret"
+regexes = ['''^claude-(haiku|sonnet|opus|fable)-[0-9]+(-[0-9]+)?(-[0-9]{8})?$''']
