@@ -6,7 +6,7 @@ import { defineConfig } from 'vitest/config';
 import { cloudflareTest } from '@cloudflare/vitest-plugin';
 
 export default defineConfig({
-  plugins: [cloudflareTest({ main: './src/index.ts', miniflare: { compatibilityDate: '2026-10-01' } })],
+  plugins: [cloudflareTest({ main: './src/index.ts', miniflare: { compatibilityDate: '2026-10-01', durableObjects: { VOICE_LEDGER: { className: 'VoiceLedger', useSQLite: true } } } })],
   test: {
     name: 'workers',
     include: ['src/**/*.test.ts'],
