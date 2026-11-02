@@ -65,6 +65,7 @@ const ROUTES = [
   [/^#\/sutras$/, 'sutras'],
   [/^#\/sutras\/(\w+)$/, 'sutras/{sutra:1}'],
   [/^#\/arena$/, 'arena'],
+  [/^#\/arena\/day(?:\/.*)?$/, 'arena/day'], /* a challenge link (openspec change arena-challenge-link): never its date, League or Score; before the play pattern below, which would read day as an experience */
   [/^#\/duel$/, 'duel'],
   [/^#\/games$/, 'games'],
   [/^#\/game\/([\w-]+)$/, 'game/{game:1}'],
@@ -177,7 +178,8 @@ export function returnCheck(now = Date.now()) {
   if (days >= 7 && days <= 13 && !f.d7) { setFlag('d7'); send('return_d7', 'Vedic Math: back after a week'); }
 }
 
-/* ---------- Share actions (none yet; Phase 2 share buttons call this) ---------- */
+/* ---------- Share actions: Challenge a friend on an Arena daily result (result, openspec change arena-challenge-link);
+   challenge-link waits for its surface. One event per tap, whether the sheet opened, the text was copied or the Player cancelled. ---------- */
 export function shareClick(surface) {
   if (SHARE_SURFACES.includes(surface)) send('share_click/' + surface, 'Vedic Math: share');
 }

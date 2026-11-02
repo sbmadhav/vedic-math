@@ -8,6 +8,8 @@ export * from './skills/index.ts';
 export * from './vedic.ts';
 export { FAMILIES, mentalQ, sutraOfProduct, sutraOfSquare, type Family, type MentalQuestion } from './mental.ts';
 export * from './questions.ts';
+export * from './site.ts';
+export * from './challenge.ts';
 export * from './scoring.ts';
 export * from './names.ts';
 export * from './markup.ts';

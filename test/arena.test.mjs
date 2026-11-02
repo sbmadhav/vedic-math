@@ -4,12 +4,17 @@
 import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { TOPICS, PER_CHAPTER, CHALLENGE_COUNT, challenge, challengeSet, challengeKey, challengeMedal } from '../js/levels.js';
-import { makeSet, dailySet, practiceItem, MENTAL_FROM, PRO_RAMP } from '../js/arena.js';
+import { makeSet, dailySet, practiceItem, MENTAL_FROM, PRO_RAMP, LEAGUES, MAX_CHALLENGE_SCORE, realDay, parseChallenge, challengeUrl, challengeShare, challengeText } from '../js/arena.js';
 import { byId, SKILLS } from '../js/skills/index.js';
 import { checkOne } from '../js/check.js';
 import { verifyQuestion } from './support/verify.mjs';
 import { FAMILIES } from '../js/mental.js';
 import { createHash } from 'node:crypto';
+import { PLAY } from '../js/play/catalog.js';
+import { SITE, APP_BASE } from '../js/play/kit.js';
+import { MODES } from '../js/fx.js';
+import { TRICKS } from '../js/vedic.js';
+import { SUTRAS, SUBSUTRAS } from '../js/sutras.js';
 
 const CH = Array.from({ length: CHALLENGE_COUNT }, (_, i) => challenge(i + 1));
 const SETS = CH.map(c => challengeSet(c));
@@ -212,4 +217,36 @@ test('untimed Practice draws 20 adapting questions with no repeats', async () =>
     assert.ok(Math.max(...ds.slice(0, 11)) > ds[0], `${league}: right answers raise the difficulty (${ds})`);
     assert.ok(ds[19] < Math.max(...ds), `${league}: misses lower it (${ds})`);
   }
+});
+
+/* ---------- Challenge links (openspec change arena-challenge-link) ----------
+   The parser, link and text are tested in shared/src/challenge.test.ts beside the module; here are the checks that need the
+   game's own catalogs: the Sutra and Trick names, the Mode names and the play catalog. */
+const SHARE = { league: 'challenger', day: '2026-10-30', score: 240, right: 14, wrong: 2, bestCombo: 9 };
+
+test('js/arena.js hands the Arena view the challenge link helpers from shared/src/challenge.ts', () => {
+  assert.deepEqual(LEAGUES, ['explorer', 'challenger', 'pro']);
+  assert.equal(MAX_CHALLENGE_SCORE, 9999);
+  assert.equal(realDay('2026-10-30'), true);
+  assert.deepEqual(parseChallenge(['2026-10-30', 'challenger', '240'], '2026-10-30', 'challenger'), { day: '2026-10-30', league: 'challenger', score: 240, ranked: true });
+  assert.equal(challengeUrl(SHARE), `${SITE}${APP_BASE}#/arena/day/2026-10-30/challenger/240`);
+  assert.equal(challengeText(SHARE), `${challengeShare(SHARE).text}\n${challengeShare(SHARE).url}`);
+});
+
+test('the League names in the share text are the Mode names (js/fx.js MODES)', () => {
+  for (const league of LEAGUES) assert.ok(challengeShare({ ...SHARE, league }).text.startsWith(`Learn Vedic Math: Arena daily challenge, ${MODES[league].name} League, 2026-10-30`), league);
+});
+
+test('challengeText names no Sutra or Trick (design D5): a round mixes Tricks, and the result keeps its own review', () => {
+  const names = [...SUTRAS, ...SUBSUTRAS].flatMap(c => [c.name, c.meaning]), tricks = TRICKS.flatMap(t => [t.title, t.kid]).filter(Boolean);
+  assert.ok(names.length >= 58 && tricks.length >= 21);
+  for (const league of LEAGUES) {
+    const text = challengeText({ ...SHARE, league });
+    for (const n of [...names, ...tricks]) assert.ok(!text.toLowerCase().includes(n.toLowerCase()), `${league}: names ${n}`);
+    assert.ok(!/sutra|trick|nikhilam|ekadhikena|vedas/i.test(text), text);
+  }
+});
+
+test('no play experience is called day or lives at #/arena/day (design D9)', () => {
+  for (const e of PLAY) { assert.notEqual(e.id, 'day', e.id); assert.ok(!e.route.startsWith('#/arena/day'), e.route); }
 });

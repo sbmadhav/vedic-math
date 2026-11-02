@@ -153,7 +153,7 @@ The loop every feature serves: **Dare, Reveal, Prove, Race, Brag, Return**.
 
 - **Gate A** (trust and instruments): the 12 bugs are fixed and the events exist (`first_win`, `round_end`, `share_click`, `return_d7`, route views). Left: analytics on learnvedicmath.com needs its GoatCounter code (owner), then baselines are recorded.
 - **Gate B** (the Magic moment): 5 observed sessions where most Players get a first win within 90 seconds and choose a second round. Run it on the Hook and the first Star after Placement ships, not on a prototype of an idea that has since changed.
-- **Gate C** (brag and return): kids or parents share without being asked, and returns after 7 days trend up. Online Duels and challenge links are measured here.
+- **Gate C** (brag and return): kids or parents share without being asked, and returns after 7 days trend up. Online Duels and challenge links are measured here. The Arena's Challenge a friend button (`openspec/changes/arena-challenge-link/`) is the first share action, sending `share_click/result`, so the share rate below has a numerator; a challenge link opened is the route view `view/arena/day`.
 
 **Rules**
 
