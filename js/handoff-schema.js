@@ -59,7 +59,7 @@ export const EXCLUDED = [
   'vm.metrics', 'vm.firstSeen',                    // analytics milestones start fresh
   'vm.migratedAt',                                 // written by the hand-off itself, on each side
   'vm.voiceName', 'vm.naturalVoice', 'vm.naturalVoiceId', // this device's speech engine and its 100 MB download
-  'vm.familyMute', 'vm.familyHi',                 // the Family helpers' Not now and greeting, for one browser session (sessionStorage)
+  'vm.familyMute', 'vm.familyHi', 'vm.familyTicket', // the Family helpers' Not now, greeting and conversation ticket, for one browser session (sessionStorage)
   'vm.install',                                    // the Install nudge's schedule (openspec change install-app): this site's app, not the old one
   'vm.split',                                      // one box instead of the answer slots (openspec change working-memory-scaffolds): new on this site, the old one never wrote it
 ];

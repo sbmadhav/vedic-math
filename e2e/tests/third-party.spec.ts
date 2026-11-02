@@ -74,3 +74,25 @@ test.describe('a first-time visitor', () => {
     expect(hosts.has(new URL(baseURL!).host), 'the site itself was reached').toBe(true);
   });
 });
+
+/* Talking with the Family (openspec family-helpers step 3, helper-conversation spec "A Turnstile check once per browser
+   session", Scenario "An under-13 Player and Turnstile"): Cloudflare Turnstile is a listed third party that loads only
+   when a Player 13 or over sends their first message. A Player whose Age answer is under 13 is never offered the
+   conversation, so nothing reaches Turnstile or the conversation route for them, even with the switch forced on. */
+test.describe('an under-13 Player with the Family helpers on', () => {
+  test.use({ seedConsent: { age: 11 }, seedPlayer: { family: true, familyTalk: true } });
+
+  test('a Practice session with a Visit reaches neither Turnstile nor the conversation route', async ({ page }) => {
+    expect(thirdParties(), 'Turnstile is a listed third party').toContain('challenges.cloudflare.com');
+    const seen: string[] = [];
+    page.on('request', r => { if (/challenges\.cloudflare\.com|\/api\/family\/|\/api\/session/.test(r.url())) seen.push(r.url()); });
+    await page.goto(`${APP}#/skill/v-near-base`);
+    await expect(page.locator('#practice #prQ')).toBeVisible();
+    await page.locator('#practice [data-fh-ask]').click();
+    await expect(page.locator('.fh-visit')).toBeVisible();
+    await expect(page.locator('.fh-visit .fh-say')).not.toBeEmpty();
+    await expect(page.locator('.fh-visit .fh-talk')).toHaveCount(0);
+    await page.waitForLoadState('networkidle');
+    expect(seen).toEqual([]);
+  });
+});

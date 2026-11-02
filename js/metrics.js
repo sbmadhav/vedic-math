@@ -17,7 +17,7 @@ export const SHARE_SURFACES = ['result', 'challenge-link'];
 export const WIN_BUCKETS = ['under-30', '30-60', '60-90', '90-180', 'over-180'];
 export const STAR_EVENTS = ['lit', 'skipped', 'comeback', 'dare_taken', 'dare_won'];
 export const TOUR_EVENTS = ['start', 'finish', 'skip'];
-export const FAMILY_EVENTS = ['visit/1', 'visit/2', 'visit/3', 'cheer', 'ask', 'show_me', 'not_now'];
+export const FAMILY_EVENTS = ['visit/1', 'visit/2', 'visit/3', 'cheer', 'ask', 'show_me', 'not_now', 'talk', 'listen']; /* talk: a message sent to the Family; listen: listening mode turned on (step 3) */
 const ID = /^[a-z0-9][a-z0-9_-]{0,40}$/;
 
 const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
