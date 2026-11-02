@@ -362,7 +362,7 @@ const parse = p => Object.fromEntries(p.split(/;\s*/).map(d => { const [k, ...v]
 /* The inline scripts a policy must allow: every one that runs (no type, or a module, import map or JavaScript type); a
    data block (application/json, the Trick pages' application/ld+json) never runs and gets no hash, as in build.py */
 const inlineHashes = html => [...html.matchAll(/<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g)]
-  .filter(m => !/\btype=/.test(m[1]) || /\btype="(module|importmap|text\/javascript|application\/javascript)"/.test(m[1])).map(m => `'sha256-${createHash('sha256').update(m[2]).digest('base64')}'`);
+  .filter(m => !/\btype=/.test(m[1]) || /\btype="(module|importmap|speculationrules|text\/javascript|application\/javascript)"/.test(m[1])).map(m => `'sha256-${createHash('sha256').update(m[2]).digest('base64')}'`);
 
 test('every response carries the security headers, without HSTS preload', () => {
   build();
@@ -708,7 +708,7 @@ test('the Trick modules are published at /tricks/<name>.js with their types take
   assert.ok(!readFileSync(join(dir, 'site/teachers/warm-up/index.html'), 'utf8').includes('importmap'), 'the source page carries no map');
   const rules = headerRules();
   assert.ok(rules['/teachers/warm-up/'], 'the warm-up page has its own policy');
-  assert.match(rules['/teachers/warm-up/']['Content-Security-Policy'], /script-src 'self' 'sha256-[^']+' 'sha256-[^']+'/, 'two inline scripts: the color scheme script and the import map');
+  assert.match(rules['/teachers/warm-up/']['Content-Security-Policy'], /script-src 'self' 'sha256-[^']+' 'sha256-[^']+'/, 'the inline scripts: the color scheme script, the Speculation Rules and the import map');
   assert.deepEqual(parse(rules['/teachers/warm-up/']['Content-Security-Policy'])['script-src'].filter(s => s.startsWith("'sha256-")), inlineHashes(page), 'the hashes are those of the page as published, the import map among them');
   assert.equal(rules['/teachers/warm-up/']['Permissions-Policy'], 'camera=(), microphone=()');
   assert.match(read('sitemap.xml'), /<loc>https:\/\/learnvedicmath\.com\/teachers\/warm-up\/<\/loc>/);
