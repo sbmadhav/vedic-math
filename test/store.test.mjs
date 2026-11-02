@@ -348,3 +348,38 @@ test('Placement: the backup code carries placement, placementCard, hookSeen and 
   const badBelt = JSON.parse(code); badBelt.players.list[0].placedBelt = 'gold';
   assert.throws(() => store.readBackup(JSON.stringify(badBelt)));
 });
+
+/* The Sparks history (openspec change muse-review-polish, design D4): every award is logged on the Player's record,
+   newest first, 50 kept, and a backup code carries it */
+test('addSparks logs every award newest first, groups consecutive answers, and 60 awards keep 50', () => {
+  const fresh = store.addPlayer();
+  assert.deepEqual(store.sparksLog(), []);
+  store.addSparks(30, 'kata');
+  store.addSparks(10, 'answer'); store.addSparks(12, 'answer');
+  store.addSparks(25, 'quest');
+  const log = store.sparksLog();
+  assert.deepEqual(log.map(e => [e.why, e.n, e.k || 1]), [['quest', 25, 1], ['answer', 22, 2], ['kata', 30, 1]]);
+  for (const e of log) assert.ok(Number.isFinite(e.at) && e.at > 1_700_000_000_000, 'each entry says when');
+  for (let i = 0; i < 60; i++) store.addSparks(5, 'trick');
+  assert.equal(store.sparksLog().length, store.LOG_CAP);
+  assert.equal(store.LOG_CAP, 50);
+  assert.ok(store.sparksLog().every(e => e.why === 'trick'), 'the oldest entries went');
+  assert.equal(JSON.parse(mem['mathquest.v1.' + fresh.id]).sparksLog.length, 50, 'saved with the record, on this device');
+  store.removePlayer(fresh.id);
+});
+
+test('a backup code carries the Sparks history, and restoring it brings the log back', async () => {
+  await store.loadBackup();
+  store.addSparks(30, 'kata'); store.addSparks(5, 'trick');
+  const me = store.player().id, before = store.sparksLog();
+  assert.ok(before.length >= 2);
+  const code = store.exportData();
+  assert.deepEqual(JSON.parse(code).records[me].sparksLog, before, 'the code holds the log as saved');
+  store.addSparks(100, 'arena');
+  assert.equal(store.sparksLog()[0].why, 'arena');
+  store.importData(code, 'replace');
+  assert.deepEqual(store.sparksLog(), before, 'the restored record has the log the code held');
+  // A code with a log the schema refuses (markup in a why) restores nothing
+  const bad = JSON.parse(code); bad.records[me].sparksLog = [{ n: 5, why: '<b>x</b>', at: 1_700_000_000_000 }];
+  assert.throws(() => store.readBackup(JSON.stringify(bad)), /sparksLog/);
+});

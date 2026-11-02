@@ -38,6 +38,13 @@ h1:focus, h2:focus, [tabindex="-1"]:focus-visible { outline: none !important; }
 .md-brand svg.lv-mark { width: 48px; height: 32px; } /* the Nikhilam Family brand mark is 3:2, not square */
 html.motion-paused .md-brand svg, body.calm .md-brand svg, html.motion-paused .md-theme, body.calm .md-theme { transition: none; }
 html.motion-paused .md-brand:hover svg, body.calm .md-brand:hover svg, html.motion-paused .md-theme:hover, body.calm .md-theme:hover { transform: none; }
+/* Smooth moves between pages (openspec change indexable-routes, design D12): a route change runs inside a view transition
+   (js/app.js render), so the header, nav and Player chip stay still while the rest cross-fades in 180 ms, no slide. No
+   motion token is that long (--duration-medium, 250 ms, is past the spec's 200). Under no motion the router starts none. */
+.md-header { view-transition-name: site-header; }
+.mq-nav { view-transition-name: game-nav; }
+#mqChip { view-transition-name: player-chip; }
+::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation-duration: 180ms; }
 
 .mq-tight { padding-top: 36px; }
 .mq-narrow { max-width: 820px; }
@@ -108,8 +115,11 @@ html.motion-paused .lv-family *, body.calm .lv-family * { animation: none !impor
 .mq-cta { margin-top: var(--space-7); display: flex; flex-wrap: wrap; gap: var(--space-2-5); }
 
 /* Grade map */
-.mq-crumbs { font-size: var(--text-label-size); color: var(--ink-muted); margin-bottom: var(--space-3-5); display: flex; flex-wrap: wrap; gap: var(--space-1-5); }
+.mq-crumbs { font-size: var(--text-label-size); color: var(--ink-muted); margin-bottom: var(--space-3-5); display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1-5); }
 .mq-crumbs a { color: var(--sky-strong); font-weight: 700; }
+/* 24 px targets (openspec change muse-review-polish, design D6; WCAG 2.2 2.5.8): a 14 px label's link is a box at least
+   24 px tall, so it looks the same and a finger can hit it */
+.mq-crumbs a, .mq-crumbs span { display: inline-flex; align-items: center; min-height: 24px; }
 .mq-gradebar { display: flex; align-items: center; gap: var(--space-3-5); max-width: 640px; }
 .mq-gradejump { display: flex; gap: var(--space-2); margin: var(--space-3-5) 0 var(--space-1-5); flex-wrap: wrap; }
 .mq-gradejump a { text-decoration: none; }
@@ -569,6 +579,8 @@ a.door .play-ic { width: 44px; height: 44px; } .door--coral .play-ic { backgroun
 @keyframes arPulse { from { transform: scale(1.3); opacity: .4; } }
 .ar-result { display: grid; gap: var(--space-1); margin-bottom: var(--space-3-5); } .ar-result .md-stat { max-width: 300px; }
 .ar-msg { font-weight: 700; }
+/* A challenge link's line in the lobby (openspec change arena-challenge-link): the Score to beat, and why a round is Practice */
+.ar-friend { margin: 0 0 var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: color-mix(in srgb, var(--sun) 18%, var(--card)); color: var(--ink); font-weight: 700; overflow-wrap: anywhere; }
 .fx-sparks { font: 500 13px/1 var(--font-mono); color: var(--teal-strong); background: color-mix(in srgb, var(--teal) 14%, var(--card)); padding: var(--space-1) var(--space-2); border-radius: var(--radius-pill); }
 .ar { position: relative; }
 .ar-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2-5); margin-bottom: var(--space-2); }
@@ -642,6 +654,14 @@ a.door .play-ic { width: 44px; height: 44px; } .door--coral .play-ic { backgroun
 .av-pick { width: 32px; height: 32px; cursor: pointer; }
 .av-pick[aria-pressed="true"] { outline: 3px solid var(--ink); outline-offset: 2px; }
 .me-stats { margin-top: var(--space-4); }
+/* Recent Sparks (openspec change muse-review-polish, design D4): the last awards, newest first, what for and when */
+.me-log { margin-top: var(--space-4); }
+.me-log:hover { transform: none; }
+.sparks-log { list-style: none; margin: var(--space-2) 0; padding: 0; display: grid; gap: var(--space-1-5); }
+.sparks-log li { display: grid; grid-template-columns: 1fr auto auto; gap: var(--space-2-5); align-items: baseline; font-size: var(--text-small-size); }
+.sl-n { font: 500 13px/1 var(--font-mono); color: var(--teal-strong); }
+.sl-when { color: var(--ink-muted); font-size: var(--text-label-sm-size); white-space: nowrap; }
+.me-log-more { margin-top: var(--space-2); }
 /* The Trophy case (openspec working-memory-scaffolds): Belts, Stars, Medals and Sutra cards, then the Badges */
 .trophy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: var(--space-3); margin-bottom: var(--space-4); }
 .trophy { padding: var(--space-3-5) var(--space-4); border: 2px solid var(--edge); border-radius: var(--radius-lg); background: var(--card); box-shadow: var(--shadow-ledge); display: grid; gap: var(--space-2); align-content: start; }
@@ -689,6 +709,16 @@ a.door .play-ic { width: 44px; height: 44px; } .door--coral .play-ic { backgroun
 .fx-toast { padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg); border: 2px solid var(--edge); background: var(--card); color: var(--ink); box-shadow: var(--shadow-ledge); font-size: var(--text-small-size); animation: toastIn .35s var(--ease-spring); }
 .fx-toast.win { background: color-mix(in srgb, var(--sun) 30%, var(--card)); } .fx-toast.ok { background: color-mix(in srgb, var(--teal) 18%, var(--card)); }
 .fx-toast.out { opacity: 0; transform: translateY(10px); transition: var(--duration-slow); }
+
+/* The wait indicator (openspec change muse-review-polish, feedback-wait spec; js/hold.js): a thin bar right under a
+   held keypad that fills until input returns, with Next in untimed rounds. It holds still, with the time left as text
+   instead of the bar, under reduced motion, Pause motion or Calm (.still, which js/hold.js sets from the same rule). */
+.fx-hold { grid-column: 1 / -1; display: flex; align-items: center; gap: var(--space-3); width: 100%; min-height: 24px; margin-top: var(--space-2); }
+.fx-hold-bar { flex: 1; height: 4px; border-radius: var(--radius-pill); background: color-mix(in srgb, var(--ink) 12%, transparent); overflow: hidden; }
+.fx-hold-bar i { display: block; height: 100%; width: 0; background: var(--teal); border-radius: inherit; }
+.fx-hold-left { font: 500 13px/1 var(--font-mono); color: var(--ink-muted); white-space: nowrap; }
+.fx-hold:not(.still) .fx-hold-left, .fx-hold.still .fx-hold-bar { display: none; }
+.fx-hold.still .fx-hold-left { flex: 1; }
 @keyframes toastIn { from { transform: translateY(20px); opacity: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
@@ -842,6 +872,12 @@ html.motion-paused .vm-player[open], body.calm .vm-player[open] { animation: non
 .sd-foot a { text-decoration: none; min-width: 0; max-width: calc(50% - 5px); }
 .sd-foot a > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .sd-foot .sd-next { margin-left: auto; }
+/* On a phone the whole sutra name shows, on two lines if it must, instead of an ellipsis (openspec change
+   muse-review-polish, design D6) */
+@media (max-width: 400px) {
+  .sd-foot a { white-space: normal; text-align: center; }
+  .sd-foot a > span { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+}
 
 /* Animated scenes */
 .sc-stage { min-height: 220px; display: grid; place-items: center; }
@@ -1381,6 +1417,7 @@ html.motion-paused .md-switch .md-track, body.calm .md-switch .md-track, html.mo
 /* ---------- Guide (openspec in-app-guide): the guide page, its pictures and the first-visit tour. Tokens only. ---------- */
 .gd-new { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-3) 0; padding: var(--space-2) var(--space-3); border: 2px dashed var(--edge); border-radius: var(--radius-md); font-size: var(--text-nav-size); color: var(--ink-muted); background: var(--card); } /* a solid box: the background drawing never shows through its words */
 .gd-new a, .gd-new .md-link { font-weight: 700; }
+.gd-new .md-link { display: inline-block; min-height: 24px; line-height: 24px; } /* a 24 px target (design D6), in the line of text */
 .gd-new-ic { display: inline-flex; color: var(--teal-strong); }
 .gd-new-ic svg { width: 22px; height: 22px; }
 .gd-pickhelp a { font-weight: 700; }

@@ -29,8 +29,15 @@ test('no bare addEventListener on a view or round root in js/app.js and js/arena
   assert.deepEqual(hits('arena.js', /\.?addEventListener\(/), []);
 });
 
-test('no bare timers or frame loops in js/games.js, js/arena.js, js/scenes.js and js/star.js', () => {
-  for (const f of ['games.js', 'arena.js', 'scenes.js', 'star.js']) assert.deepEqual(hits(f, TIMERS), [], f);
+test('no bare timers or frame loops in js/games.js, js/arena.js, js/scenes.js, js/star.js and js/hold.js', () => {
+  for (const f of ['games.js', 'arena.js', 'scenes.js', 'star.js', 'hold.js']) assert.deepEqual(hits(f, TIMERS), [], f);
+});
+
+test('the wait indicator (js/hold.js): no bare listeners; its timers and listeners go through life.js on a child signal', () => {
+  assert.deepEqual(hits('hold.js', /\.?addEventListener\(/), []);
+  const src = readFileSync(new URL('../js/hold.js', import.meta.url), 'utf8');
+  assert.match(src, /import \{[^}]*\bon\b[^}]*\blater\b[^}]*\bevery\b[^}]*\bchild\b[^}]*\} from '\.\/life\.js'/);
+  assert.match(src, /const life = child\(signal\)/);
 });
 
 test('no bare addEventListener in the Star round (js/star.js)', () => {

@@ -2,6 +2,7 @@
    Mastery is a running score from 0 to 1: first tries count fully, a try after a hint counts half.
    Nothing here leaves the device except what cloud.js posts to World boards (nickname, color, score). */
 import { AVATARS, makeName } from '../shared/src/names.ts';
+import { withAward } from '../shared/src/sparks-log.ts';
 export const LEGACY = 'mathquest.v1', PKEY = 'vm.players'; /* js/backup.js reads these */
 const BOARD = 'vm.board';
 let S = null, P = null;
@@ -90,8 +91,15 @@ export const mastered = id => { const s = skill(id); return s.m >= 0.85 && s.n >
 export const started = id => skill(id).n > 0;
 export function level(id) { const s = skill(id); return s.m < 0.4 || s.n < 3 ? 1 : s.m < 0.75 ? 2 : 3; }
 
-/* Sparks: the one progress number, earned by everything (Practice included). Only this ISO week's total is kept. */
-export function addSparks(n, why = '') { load(); const before = S.sparks; S.sparks += n; S.weekSparks = S.weekSparks || {}; const wk = isoWeek(); S.weekSparks = { [wk]: (S.weekSparks[wk] || 0) + n }; save(); emit('sparks', { before, after: S.sparks, n, why }); }
+/* Sparks: the one progress number, earned by everything (Practice included). Only this ISO week's total is kept.
+   Every award is also logged (the Sparks history, openspec change muse-review-polish, design D4): S.sparksLog, the
+   newest LOG_CAP awards { n, why, at } with consecutive answers grouped (shared/src/sparks-log.ts has the rules), on
+   this device with the rest of the record, so backup and restore carry it (js/handoff-schema.js) and nothing sends it. */
+export { LOG_CAP } from '../shared/src/sparks-log.ts';
+import { LOG_CAP } from '../shared/src/sparks-log.ts';
+export function addSparks(n, why = '') { load(); const before = S.sparks; S.sparks += n; S.weekSparks = S.weekSparks || {}; const wk = isoWeek(); S.weekSparks = { [wk]: (S.weekSparks[wk] || 0) + n }; S.sparksLog = withAward(S.sparksLog, n, why || 'other', Date.now()); save(); emit('sparks', { before, after: S.sparks, n, why }); }
+/* The Sparks history, newest first (copies), never more than LOG_CAP whatever a record holds */
+export const sparksLog = () => (load(), (Array.isArray(S.sparksLog) ? S.sparksLog : []).slice(0, LOG_CAP).map(e => ({ ...e })));
 /* ISO week id like 2026-W42, in local time (matches cloud.weekId) */
 export function isoWeek(d = new Date()) {
   const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())), day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);

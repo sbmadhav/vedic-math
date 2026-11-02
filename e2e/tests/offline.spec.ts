@@ -370,7 +370,8 @@ test('a Sutra name heard once online lets every other name play offline', async 
     await expect(page.locator('#sdTitle')).toHaveText('Ūrdhva-Tiryagbhyām');
     await page.locator('dialog .say-btn').click();
     await expect.poll(() => audioLog(page).then(l => l.decoded)).toBe(2);
-    await expect(page.locator('.fx-toasts')).toHaveCount(0);
+    /* No failure message; the card's first-open "+5 Sparks" toast (muse-review-polish, every award is shown) is not one */
+    await expect(page.locator('.fx-toast:not(:has(.fx-sparks))')).toHaveCount(0);
   } finally {
     await goOnline(context); // back online even when an assertion above fails
   }

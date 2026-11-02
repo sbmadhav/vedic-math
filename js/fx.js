@@ -146,6 +146,11 @@ export { settingsHTML as voiceSettingsHTML, wireSettings as wireVoiceSettings } 
    under no motion (noMotion() above uses the same rule). */
 export { confetti, sparkle, pop, bounce, twinkle, wiggle, tick, cheer, rollUp, rollSparks } from './celebrate.js';
 
+/* ---------- Held input (openspec change muse-review-polish): js/hold.js ----------
+   hold(el, ms, then, { skippable, signal }) replaces later(then, ms, signal) where a round holds input for feedback:
+   a bar under the keypad after 1.2 s, and Next (Enter) in untimed rounds from 2 s. */
+export { hold } from './hold.js';
+
 /* ---------- Toasts ---------- */
 /* Which edge the toasts sit on (openspec find-and-home-polish): the bottom, unless a primary action is there. A round's
    number pad or answer choices (PADS) hold the lower part of the screen and move as feedback shows, so while one is on
@@ -168,7 +173,11 @@ function placeToasts(box) {
   } catch (e) { /* no layout (tests): the toasts stay at the bottom */ }
 }
 export function toast(html, tone = '') {
-  let box = document.querySelector('.fx-toasts'); if (!box) { box = document.createElement('div'); box.className = 'fx-toasts'; box.setAttribute('role', 'status'); box.setAttribute('aria-live', 'polite'); document.body.append(box); }
+  /* A modal dialog (the video player, a deep dive) sits in the top layer above everything in the body, so a toast
+     fired while one is open (the Video learner badge after a minute of play) goes inside it, where it can be seen */
+  const dialogs = document.querySelectorAll('dialog[open]'), host = dialogs.length ? dialogs[dialogs.length - 1] : document.body;
+  let box = document.querySelector('.fx-toasts'); if (!box) { box = document.createElement('div'); box.className = 'fx-toasts'; box.setAttribute('role', 'status'); box.setAttribute('aria-live', 'polite'); }
+  if (box.parentElement !== host) host.append(box);
   const el = document.createElement('div'); el.className = 'fx-toast ' + tone; el.innerHTML = html; box.append(el);
   placeToasts(box); setTimeout(() => placeToasts(box), 300); /* again once the answer's feedback has moved the page */
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 3200);

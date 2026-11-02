@@ -315,6 +315,7 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
       <ol class="star-steps" id="stSteps"></ol><p class="star-acts"><button type="button" class="md-btn md-btn--sm" id="stRSkip">Skip</button></p></div>`;
     say(of === 'dare' ? 'Here is the Dare, step by step.' : 'Here is how the trick does it.', 'explain');
     const list = $('#stSteps'), done = () => {
+      held.stop(); /* the last step is here: the Player's own button takes over, so the wait indicator goes */
       replaySkip = null; const b = $('#stRSkip');
       b.textContent = of === 'dare' ? 'Back to the question' : 'Try one like it'; b.className = 'md-btn md-btn--primary'; b.id = 'stRGo';
       replaySkip = next; b.insertAdjacentHTML('beforebegin', listenBtn('from:.star-step > p', 'the steps')); b.focus({ preventScroll: true });
@@ -327,6 +328,10 @@ export function runStar(root, { trick, star, signal, back = { href: '#/dojo', la
     };
     replaySkip = next; on($('#stRSkip'), 'click', () => replaySkip && replaySkip(), ps);
     onAbort(ps, stopListen); // the replay ending (Skip, Go, Escape) stops its Listen
+    /* The wait indicator (openspec change muse-review-polish, design D1): the steps hold the pad for 2.5 s each, so a
+       bar under it fills while they come, and Next (or Enter) goes on to the rematch at once, as Skip does. A choice
+       question has its pad hidden, so the bar goes under the steps instead. */
+    const held = fx.hold(pad.hidden ? $('.star-replay') : pad, (steps.length - 1) * 2500, early => { if (early) next(); }, { skippable: true, signal: ps });
     add();
   }
 
