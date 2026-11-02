@@ -52,6 +52,19 @@ test('the footer credits the 1965 book', () => {
   assert.match(html, /Speed tricks use sutras from Bharati Krishna Tirtha's 1965 book; lessons, problems and visuals are original\./);
 });
 
+/* The Trick pages (openspec change trick-pages, task 4.1): site/tricks/** is in FILES above, so the banned phrases and
+   the em dash scans cover every page; each Trick page also credits the 1965 book where it names its Sutra */
+test('every Trick page credits the 1965 book, and site/tricks/ is scanned', () => {
+  const pages = walk(join(root, 'site', 'tricks')).filter(f => f.endsWith('.html'));
+  assert.equal(pages.length, 16, 'the index and 15 Trick pages');
+  for (const f of pages) assert.ok(FILES.includes(f), `${relative(root, f)} is scanned`);
+  for (const f of pages.filter(f => !f.endsWith('tricks/index.html'))) {
+    const html = readFileSync(f, 'utf8');
+    assert.match(html, /From the (sub-)?sutra <b lang="sa-Latn">[^<]+<\/b>, <q>[^<]+<\/q>, in Bharati Krishna Tirtha's 1965 book <i>Vedic Mathematics<\/i>\./, relative(root, f));
+    assert.doesNotMatch(html, /from the Vedas(?! )|ancient Vedic|Vedic sutra/i, relative(root, f));
+  }
+});
+
 /* Sparks replace XP (sparks spec): no Player-facing text says XP or experience points. Comments are left out,
    so code may still explain the migration from xp; the weekly Board id keeps its lowercase xp-week- prefix. */
 const saysXP = l => /\bXP\b/.test(l) || /experience points/i.test(l);
@@ -188,7 +201,7 @@ test('the warm-up and the teachers box say the honest words and claim nothing ab
   assert.doesNotMatch(warm, /importmap|\?v=/);
   assert.match(warm, /<script src="\/js\/analytics\.js" defer><\/script>/);
   assert.doesNotMatch(warm.replace(/<!--[\s\S]*?-->/g, ''), /firebase|localStorage\.setItem|sessionStorage/i, 'nothing stored, no Firebase (comments aside, which say so)');
-  for (const f of ['warm-up.ts', 'step-board.ts', 'warm-up-problems.ts', 'warm-up-pick.ts', 'pages.ts']) {
+  for (const f of ['warm-up.ts', 'step-board.ts', 'warm-up-problems.ts', 'warm-up-pick.ts']) {
     const src = readFileSync(join(root, 'tools/trick-pages', f), 'utf8');
     assert.doesNotMatch(src, /—/, `${f}: no em dash`);
     assert.doesNotMatch(stripComments(src), /localStorage|sessionStorage|indexedDB|firebase|setTimeout|setInterval|requestAnimationFrame|\.addEventListener\(/i, `${f}: nothing stored, no clock, every listener through on() (comments aside, which say so)`);

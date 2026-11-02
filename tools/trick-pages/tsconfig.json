@@ -1,15 +1,11 @@
 {
-  "//": "The browser modules of the Trick pages and the warm-up (trick-pages design D4): DOM types; /tricks/<name>.js resolved to the .ts beside it; /js/vedic.js to the TypeScript it re-exports (shared/src/vedic.ts) and /js/life.js to life.d.ts here, the published URLs the modules import by. Run by the tools package's typecheck script. erasableSyntaxOnly: build.py publishes these with Node's type stripper, which takes only plain type syntax.",
+  "//": "The Trick pages (openspec change trick-pages, design D4): the browser module calculator.ts, the generator and its data. DOM types for the calculator. The catalog is imported from shared/src/vedic.ts (build.py publishes it under /js/ts/ and rewrites the import); /js/* imports (plain Legacy modules, fetched by their published URL) resolve to the declarations in types/js/. The warm-up (openspec change teacher-warm-up) imports its sibling modules by their published URL, /tricks/<name>.js, resolved to the .ts beside it. Run by the tools package's typecheck script, so pnpm typecheck covers it.",
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": [],
+    "types": ["node"],
     "erasableSyntaxOnly": true,
-    "paths": {
-      "/tricks/*": ["./*"],
-      "/js/vedic.js": ["../../shared/src/vedic.ts"],
-      "/js/life.js": ["./life"]
-    }
+    "paths": { "/js/*": ["./types/js/*"], "/tricks/*": ["./*"] }
   },
-  "include": ["*.ts"]
+  "include": ["*.ts", "types/**/*.d.ts"]
 }

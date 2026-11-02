@@ -2,7 +2,7 @@
   "name": "tools",
   "private": true,
   "type": "module",
-  "description": "Build and lint tools: the service worker's type stripping (build-sw.mjs), the precache plugin for the framework build (phase 2), the budget gate (budget.ts), this repo's ESLint rules (eslint-rules/).",
+  "description": "Build and lint tools: the service worker's type stripping (build-sw.mjs), the precache plugin for the framework build (phase 2), the budget gate (budget.ts), this repo's ESLint rules (eslint-rules/), the Trick pages' generator and calculator (trick-pages/).",
   "exports": {
     "./vite-plugin-precache": "./vite-plugin-precache.ts"
   },

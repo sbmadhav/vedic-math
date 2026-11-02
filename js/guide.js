@@ -182,7 +182,7 @@ export function sections(n) {
       tip: w('Play every game once to earn a badge.', 'Play every game once for the Game explorer badge.'),
       try: { href: '#/games', label: 'Open Games' } },
 
-    { id: 'arena', group: 'play', art: 'timer', covers: ['#/arena'],
+    { id: 'arena', group: 'play', art: 'timer', covers: ['#/arena', '#/arena/day/2026-10-30/challenger/240'], /* a challenge link opens the Arena lobby (openspec change arena-challenge-link) */
       title: w('Race the clock', 'Arena: the daily race'),
       what: w('Answer as many as you can in 60 seconds.', '60 seconds, and the same questions for everyone in your league today, so it is a fair race.'),
       how: [

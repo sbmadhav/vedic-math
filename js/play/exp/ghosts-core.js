@@ -40,6 +40,8 @@ export function questions(kind, lv, seed, n = 10) {
 /* ---------- Ghosts ---------- */
 /* A ghost: { v, kind, lv, seed, n, t: [ms at which answer i was correct, cumulative], miss: [[i, ms]], nick: [adj, animal] | null, who } */
 export function makeGhost({ kind, lv, seed, n, t, miss = [], nick = null, who = 'you' }) { return { v: VERSION, kind, lv, seed, n, t: t.slice(), miss: miss.map(m => m.slice()), nick, who }; }
+/* "0 misses", "1 miss", "2 misses": every place that counts misses says it this way (Muse review round 2, item 4) */
+export const missWord = n => `${n} miss${n === 1 ? '' : 'es'}`;
 export const total = g => g.t[g.t.length - 1] || 0;
 export const splits = g => g.t.map((x, i) => x - (i ? g.t[i - 1] : 0));
 

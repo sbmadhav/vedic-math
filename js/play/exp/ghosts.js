@@ -58,7 +58,7 @@ export function mount({ root, signal, params }) {
       const b = best();
       if (S.foe === 'best' && !b) S.foe = 'tortoise';
       foesEl.innerHTML = [
-        `<button type="button" role="radio" class="gh-foe gh-foe--best" data-foe="best" aria-checked="${S.foe === 'best'}" ${b ? '' : 'disabled'}>${runnerSvg('is-ghost')}<span><b>Your best ghost</b><small>${b ? `${G.fmt(G.total(b))}, ${b.miss.length} miss${b.miss.length === 1 ? '' : 'es'}` : 'Finish a race to make one'}</small></span></button>`,
+        `<button type="button" role="radio" class="gh-foe gh-foe--best" data-foe="best" aria-checked="${S.foe === 'best'}" ${b ? '' : 'disabled'}>${runnerSvg('is-ghost')}<span><b>Your best ghost</b><small>${b ? `${G.fmt(G.total(b))}, ${G.missWord(b.miss.length)}` : 'Finish a race to make one'}</small></span></button>`,
         ...G.PACERS.map(p => `<button type="button" role="radio" class="gh-foe gh-foe--${p.id}" data-foe="${p.id}" aria-checked="${S.foe === p.id}">${runnerSvg('is-ghost')}<span><b>${esc(p.name)}</b><small>${esc(p.blurb)}</small></span></button>`)
       ].join('');
       const runs = S.runs.filter(r => r.lv === lv).slice(-6).reverse();
@@ -96,7 +96,7 @@ export function mount({ root, signal, params }) {
       <section class="px-stage gh-invite">
         <div class="gh-invite-art">${runnerSvg('is-ghost is-float')}</div>
         <div><p class="gh-invite-big"><b>${esc(G.nickName(g.nick))}</b> sent you their ghost.</p>
-        <p>${esc(sp.name)}, ${g.n} questions. Their time: <b>${G.fmt(G.total(g))}</b> with ${g.miss.length} miss${g.miss.length === 1 ? '' : 'es'}.</p>
+        <p>${esc(sp.name)}, ${g.n} questions. Their time: <b>${G.fmt(G.total(g))}</b> with ${G.missWord(g.miss.length)}.</p>
         <p class="px-note">You get exactly the same questions. ${g.lv !== lv ? `This ghost raced at ${esc(g.lv)} level.` : ''}</p>
         <div class="px-row"><button type="button" class="md-btn md-btn--primary gh-go">Race their ghost</button><a class="md-btn" href="#/arena/ghosts">Not now</a></div></div>
       </section>`;
@@ -168,10 +168,11 @@ export function mount({ root, signal, params }) {
 
     /* 3, 2, 1, go */
     const countdown = (k) => {
-      qText.textContent = k ? String(k) : 'Go!'; qText.classList.add('is-count'); typedEl.textContent = ' ';
+      /* The count shows alone: the equals sign and the answer box wait, so "3 =" never reads as a clipped question */
+      qText.textContent = k ? String(k) : 'Go!'; qText.classList.add('is-count'); qText.parentElement.classList.add('is-countdown'); typedEl.textContent = ' ';
       say(k ? String(k) : 'Go!'); tone(k ? 440 : 880, { dur: k ? 0.12 : 0.25, gain: 0.1 });
       if (k) later(() => countdown(k - 1), reducedMotion() ? 600 : 800, sig);
-      else later(() => { qText.classList.remove('is-count'); started = true; t0 = performance.now(); show(); say(qs[0].say); tick(); }, 350, sig);
+      else later(() => { qText.classList.remove('is-count'); qText.parentElement.classList.remove('is-countdown'); started = true; t0 = performance.now(); show(); say(qs[0].say); tick(); }, 350, sig);
     };
     const tick = () => loop(now => {
       const ms = now - t0;
@@ -199,11 +200,11 @@ export function mount({ root, signal, params }) {
       track('ghosts/finish', `${G.SPRINTS[kind].name} ${n}`);
       if (won) { sfx('win'); confetti(50); } else sfx('ok');
       const headline = won ? `You beat ${foe.who === 'best' ? 'your best ghost' : name} by ${G.fmt(margin)}!` : `${foe.who === 'best' ? 'Your best ghost' : name} won by ${G.fmt(margin)}.`;
-      say(`${headline} Your time ${G.fmt(myT)} with ${miss.length} misses.${newBest ? ' New best ghost saved.' : ''}`);
+      say(`${headline} Your time ${G.fmt(myT)} with ${G.missWord(miss.length)}.${newBest ? ' New best ghost saved.' : ''}`);
       play.hidden = true; result.hidden = false;
       result.innerHTML = `<div class="gh-res px-stage">
           <p class="gh-res-big ${won ? 'is-won' : ''}">${esc(headline)}</p>
-          <div class="gh-stats"><div><span>You</span><b>${G.fmt(myT)}</b><small>${miss.length} miss${miss.length === 1 ? '' : 'es'}</small></div><div><span>${esc(name)}</span><b>${G.fmt(foeT)}</b><small>${foe.miss.length} miss${foe.miss.length === 1 ? '' : 'es'}</small></div></div>
+          <div class="gh-stats"><div><span>You</span><b>${G.fmt(myT)}</b><small>${G.missWord(miss.length)}</small></div><div><span>${esc(name)}</span><b>${G.fmt(foeT)}</b><small>${G.missWord(foe.miss.length)}</small></div></div>
           ${newBest ? `<p class="gh-newbest">New best ghost for ${esc(G.SPRINTS[kind].short)}, ${n} questions. It will race you next time.</p>` : ''}
           ${chart(mine, foe, name, qs)}
           <div class="gh-send">

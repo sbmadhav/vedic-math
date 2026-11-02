@@ -91,6 +91,13 @@ test.describe('a returning Player', () => {
   });
 });
 
+/* The landing footer links the Trick pages (openspec change trick-pages, task 3.2) */
+test('the landing footer links Speed tricks at /tricks/', async ({ page }) => {
+  await page.goto('/?home');
+  await expect(page.locator('footer a[href="/tricks/"]')).toHaveText('Speed tricks');
+  await expect(page.locator('footer a[href="/play/"]')).toHaveText('Learn');
+});
+
 test('an unknown path answers 404 with a page that links to the landing page and the game', async ({ page }) => {
   const res = await page.goto('/plya/');
   expect(res!.status()).toBe(404);

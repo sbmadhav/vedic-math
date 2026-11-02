@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 const repo = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dir = mkdtempSync(join(tmpdir(), 'lvm-build-'));
 for (const f of ['build.py', '_config.yml', '.gitignore', 'play', 'site', 'theme', 'vendor', 'fonts', 'icons', 'thumbs', 'math.css', 'css', 'app/src/sw',
-  'tools/build-sw.mjs', 'tools/build-ts.mjs', 'shared/src', 'tools/trick-pages', 'tools/budget.ts', 'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'AGENTS.md', 'CODING_STANDARDS.md', 'README.md',
+  'tools/build-sw.mjs', 'tools/build-ts.mjs', 'shared/src', 'tools/budget.ts', 'tools/trick-pages', 'manifest.webmanifest', 'js', 'sounds', 'THIRD-PARTY-NOTICES.md', 'docs/legal', 'moved', 'AGENTS.md', 'CODING_STANDARDS.md', 'README.md',
   'wrangler.jsonc', 'workers/src', 'package.json', 'pnpm-workspace.yaml', 'tsconfig.base.json', 'vitest.config.ts',
   'cloud/firestore.rules', 'test/support/verify.mjs', '.github', 'tools/voice/ci-fetch.mjs', 'tools/sutra-voice/names.mjs'])
   if (existsSync(join(repo, f))) cpSync(join(repo, f), join(dir, f), { recursive: true });
@@ -23,7 +23,8 @@ writeFileSync(join(dir, '_notes.txt'), 'starts with _');
 /* The first-load budget (tools/budget.ts, task 1.8): every test but the budget's own builds against a roomy limit, so an
    edit made to test something else never trips it; the budget tests set the limit to a real build's total */
 const BUDGET = join(dir, 'docs/perf/baseline.json');
-const setBudget = (total, files = {}) => { mkdirSync(dirname(BUDGET), { recursive: true }); writeFileSync(BUDGET, JSON.stringify({ firstLoad: { total, files } })); };
+/* trickMax: the Trick pages' own budget (trickPage.max, openspec change trick-pages); left out, those pages are measured but not checked */
+const setBudget = (total, files = {}, trickMax) => { mkdirSync(dirname(BUDGET), { recursive: true }); writeFileSync(BUDGET, JSON.stringify({ firstLoad: { total, files }, ...(trickMax ? { trickPage: { max: trickMax } } : {}) })); };
 setBudget(1e9);
 /* Run git and the build in the temp copy only. A pre-commit hook exports GIT_DIR, GIT_INDEX_FILE and friends;
    inherited, they would point `git init` at the real repository (which marks it core.bare = true) and make
@@ -80,6 +81,7 @@ test('--out inside the repo must start with _ (git and ESLint ignore _*/), and i
 test('the output has the pages at the root, is stamped, and holds only publishable files', () => {
   build();
   for (const f of ['play/index.html', 'index.html', 'js/app.js', 'parents/index.html', 'teachers/index.html', 'privacy/index.html', 'terms/index.html',
+    'tricks/index.html', 'tricks/square-numbers-ending-in-5/index.html', 'tricks/calculator.js', 'theme/tricks.css',
     'licenses/index.html', '404.html', 'sw.js', 'math.css', 'manifest.webmanifest', 'js/skills/index.js', 'ds/2.2.0/tokens.css', 'ds/2.2.0/components.css',
     'ds/2.2.0/header.js', 'theme/learnvedicmath.css', 'theme/fonts.css', 'fonts/nunito-sans-latin-wght-normal.woff2', 'icons/icon-192.png',
     '_headers', '_redirects', 'robots.txt', 'sitemap.xml', '.well-known/security.txt', '.assetsignore'])
@@ -120,6 +122,64 @@ test('static imports of a re-export-only js/ module point at its TypeScript modu
   for (const f of ['js/ts/shared/src/vedic.js', 'js/ts/shared/src/skills/index.js', 'js/ts/shared/src/story-plan.js']) assert.ok(seen.has(f), `${f} is in the graph`);
   assert.match(read('js/app.js'), /from '\/js\/ts\/shared\/src\/skills\/index\.js'/);
   assert.ok(existsSync(join(out, 'js/vedic.js')), 'the re-export file is still published, for a dynamic import');
+});
+
+/* The Trick pages (openspec change trick-pages, tasks 2.2 and 3.1; design D4): tools/trick-pages/calculator.ts is
+   published at /tricks/calculator.js with its types taken out and its .ts import rewritten, stamped like every page
+   script and pinned, with everything it reaches, by the page's own import map; never in the game's import map or the
+   precache; the 16 pages get a policy each and a sitemap entry; the source pages carry no map */
+test('the Trick pages: /tricks/calculator.js published from TypeScript, the page-local import map, 16 policies and sitemap entries', () => {
+  build();
+  const calc = read('tricks/calculator.js');
+  assert.doesNotMatch(calc, /import type|<T extends|: HTMLElement|: Trick\b|: Vals\b/, 'the types are taken out');
+  assert.match(calc, /from '\/js\/ts\/shared\/src\/vedic\.js'/, 'the catalog import points at its published URL');
+  assert.match(calc, /from '\/js\/life\.js'/);
+  assert.doesNotMatch(calc, /\.ts['"]/, 'no import of a .ts path');
+  const page = read('tricks/square-numbers-ending-in-5/index.html'), v = sha('tricks/calculator.js');
+  assert.match(page, new RegExp(`<script type="module" src="/tricks/calculator\\.js\\?v=${v}"></script>`), 'the entry script is stamped');
+  assert.ok(page.indexOf('<script type="importmap">') < page.indexOf('<script type="module"'), 'the map comes before the first module script');
+  const map = JSON.parse(page.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
+  const STATIC = /(?:^|[;\n}])\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|[;\n}])\s*import\s*['"]([^'"]+)['"]/g;
+  const seen = new Set(), queue = ['/tricks/calculator.js'];
+  while (queue.length) {
+    const u = queue.pop(); if (seen.has(u)) continue; seen.add(u);
+    assert.equal(map[u], `${u}?v=${sha(u.slice(1))}`, `${u} is pinned to its stamped URL`);
+    for (const m of read(u.slice(1)).matchAll(STATIC)) { const s = m[1] || m[2]; queue.push(s.startsWith('/') ? s : new URL(s, 'file://' + u).pathname); }
+  }
+  assert.deepEqual([...seen].sort(), Object.keys(map).sort(), 'the map holds exactly the graph');
+  assert.ok(seen.has('/js/ts/shared/src/vedic.js') && seen.has('/js/life.js'));
+  assert.ok(!('/tricks/calculator.js' in importMap()), "not in the game's import map");
+  assert.ok(!sw().precache.some(([u]) => u.startsWith('/tricks/')), 'never precached');
+  const rules = headerRules();
+  for (const [u, f] of [['/tricks/', 'tricks/index.html'], ['/tricks/square-numbers-ending-in-5/', 'tricks/square-numbers-ending-in-5/index.html']]) {
+    assert.ok(rules[u], `${u} has a rule`);
+    const csp = parse(rules[u]['Content-Security-Policy']);
+    for (const h of inlineHashes(read(f))) assert.ok(csp['script-src'].includes(h), `${u}: a hash for each inline script, the import map included`);
+    assert.equal(rules[u]['Permissions-Policy'], 'camera=(), microphone=()');
+    assert.ok(!/google|gstatic|firebase|youtube/.test(JSON.stringify(csp)), `${u} lists no Google or YouTube host`);
+  }
+  assert.equal(Object.keys(rules).filter(u => u.startsWith('/tricks/')).length, 16);
+  assert.equal([...read('sitemap.xml').matchAll(/<loc>([^<]+)<\/loc>/g)].filter(m => m[1].includes('/tricks/')).length, 16);
+  for (const f of walk(join(dir, 'site/tricks'))) assert.ok(!readFileSync(f, 'utf8').includes('importmap'), `${relative(dir, f)}: the source carries no map`);
+  // Every page outside the game that loads modules gets its own map: the landing page's sky modules were unpinned before
+  const landing = JSON.parse(read('index.html').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
+  assert.equal(landing['/js/life.js'], `/js/life.js?v=${sha('js/life.js')}`);
+  assert.ok(!read('parents/index.html').includes('importmap'), 'a page with no module gets no map');
+});
+
+/* Design D7: a budget per Trick page. The real figure is the gate; a 20 KB addition to the calculator fails it. */
+test('the build fails a Trick page above trickPage.max in the baseline', () => {
+  build();
+  const measured = JSON.parse(execFileSync('node', ['tools/budget.ts', out, '--page', '/tricks/multiply-numbers-near-100/', '--json', join(dir, '_page.json')], { cwd: dir, env, encoding: 'utf8' }) && readFileSync(join(dir, '_page.json'), 'utf8'));
+  assert.ok(measured.total > 50_000 && measured.total < 200_000, `a Trick page measures ${measured.total} bytes`);
+  assert.ok(measured.files['/tricks/calculator.js'] && measured.files['/js/ts/shared/src/vedic.js'] && measured.files['/theme/tricks.css'], 'the page, its modules and styles are counted');
+  assert.ok(!measured.files['/sw.js'], 'no worker');
+  setBudget(1e9, {}, measured.total);
+  try {
+    build();
+    const noise = randomBytes(10_000).toString('hex'); // 20,000 characters that barely compress
+    withEdit('tools/trick-pages/calculator.ts', s => s + `\n// ${noise}\n`, () => fails(tryBuild(), /Trick page budget: \/tricks\/[a-z0-9-]+\/ is \d+ bytes Brotli, above trickPage\.max/));
+  } finally { setBudget(1e9); }
 });
 
 test('the published design system drops its @font-face lines: the fonts are declared once, from /fonts/', () => {
@@ -238,8 +298,10 @@ const headerRules = () => {
   return rules;
 };
 const parse = p => Object.fromEntries(p.split(/;\s*/).map(d => { const [k, ...v] = d.split(/\s+/); return [k, v]; }));
+/* The inline scripts a policy must allow: every one that runs (no type, or a module, import map or JavaScript type); a
+   data block (application/json, the Trick pages' application/ld+json) never runs and gets no hash, as in build.py */
 const inlineHashes = html => [...html.matchAll(/<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g)]
-  .filter(m => !/type="application\/json"/.test(m[1])).map(m => `'sha256-${createHash('sha256').update(m[2]).digest('base64')}'`);
+  .filter(m => !/\btype=/.test(m[1]) || /\btype="(module|importmap|text\/javascript|application\/javascript)"/.test(m[1])).map(m => `'sha256-${createHash('sha256').update(m[2]).digest('base64')}'`);
 
 test('every response carries the security headers, without HSTS preload', () => {
   build();
@@ -567,19 +629,20 @@ test('the Trick modules are published at /tricks/<name>.js with their types take
   build();
   const warm = read('tricks/warm-up.js');
   assert.doesNotMatch(warm, /import type|: string|: number|\bas [A-Z]\w*[;)]|<KeyboardEvent>/, 'types taken out');
-  assert.match(warm, /^import \{ TRICKS, \} from '\/js\/ts\/shared\/src\/vedic\.js';$/m, 'the re-export-only js/vedic.js is skipped for its TypeScript module, as in a js/ module');
+  assert.match(warm, /from '\/js\/ts\/shared\/src\/vedic\.js'/, 'the catalog by its published URL');
   assert.match(warm, /from '\/js\/life\.js'/);
   const page = read('teachers/warm-up/index.html');
   const map = JSON.parse(page.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
-  for (const m of ['/tricks/warm-up.js', '/tricks/step-board.js', '/tricks/pages.js', '/tricks/warm-up-problems.js', '/tricks/warm-up-pick.js', '/js/ts/shared/src/vedic.js', '/js/ts/shared/src/lib.js', '/js/life.js'])
+  for (const m of ['/tricks/warm-up.js', '/tricks/step-board.js', '/tricks/warm-up-problems.js', '/tricks/warm-up-pick.js', '/js/ts/shared/src/vedic.js', '/js/ts/shared/src/lib.js', '/js/life.js'])
     assert.equal(map[m], `${m}?v=${sha(m.slice(1))}`, m);
+  assert.ok(!map['/tricks/calculator.js'], 'only the warm-up\'s own graph');
   assert.ok(!Object.keys(map).some(k => /app\.js|arena\.js/.test(k)), 'only the entry\'s graph, not every /js/ module');
   assert.match(page, /<script type="module" src="\/tricks\/warm-up\.js\?v=[0-9a-f]{10}"><\/script>/, 'the entry is stamped');
   assert.ok(page.indexOf('type="importmap"') < page.indexOf('src="/tricks/warm-up.js'), 'the map comes before the module');
   assert.match(page, /href="\/theme\/warm-up\.css\?v=[0-9a-f]{10}"/);
-  for (const f of walk(join(out, 'tricks')))
+  for (const f of walk(join(out, 'tricks')).filter(f => /warm-up|step-board/.test(f) && f.endsWith('.js')))
     for (const m of read(relative(out, f)).matchAll(/from '([^']+)'/g)) assert.ok(map[m[1]], `${relative(out, f)} imports ${m[1]}, which the warm-up's map pins`);
-  assert.deepEqual(walk(join(out, 'tricks')).map(f => relative(out, f)).sort(), ['tricks/pages.js', 'tricks/step-board.js', 'tricks/warm-up-pick.js', 'tricks/warm-up-problems.js', 'tricks/warm-up.js'], 'the runtime modules only: no declaration file, no .ts');
+  assert.deepEqual(walk(join(out, 'tricks')).map(f => relative(out, f)).filter(f => f.endsWith('.js')).sort(), ['tricks/calculator.js', 'tricks/step-board.js', 'tricks/warm-up-pick.js', 'tricks/warm-up-problems.js', 'tricks/warm-up.js'], 'the runtime modules only: no declaration file, no .ts, not the Node-only generator and pages');
   assert.ok(!sw().precache.some(([u]) => u.startsWith('/tricks/')), 'never precached: outside the game\'s first load');
   assert.ok(!readFileSync(join(dir, 'site/teachers/warm-up/index.html'), 'utf8').includes('importmap'), 'the source page carries no map');
   const rules = headerRules();
@@ -588,10 +651,4 @@ test('the Trick modules are published at /tricks/<name>.js with their types take
   assert.deepEqual(parse(rules['/teachers/warm-up/']['Content-Security-Policy'])['script-src'].filter(s => s.startsWith("'sha256-")), inlineHashes(page), 'the hashes are those of the page as published, the import map among them');
   assert.equal(rules['/teachers/warm-up/']['Permissions-Policy'], 'camera=(), microphone=()');
   assert.match(read('sitemap.xml'), /<loc>https:\/\/learnvedicmath\.com\/teachers\/warm-up\/<\/loc>/);
-});
-
-test('the build fails on a Trick module importing a .ts path or a module outside /js/ and /tricks/', () => {
-  withEdit('tools/trick-pages/warm-up.ts', s => s.replace("'/tricks/step-board.js'", "'/tricks/step-board.ts'"), () => fails(tryBuild(), /warm-up\.ts: imports \/tricks\/step-board\.ts/));
-  withEdit('tools/trick-pages/warm-up.ts', s => s.replace("'/tricks/step-board.js'", "'/css/play/base.css'"), () => fails(tryBuild(), /base\.css, outside the versioned \/js\/ and \/tricks\/ modules/));
-  withEdit('tools/trick-pages/warm-up.ts', s => s.replace("'/tricks/step-board.js'", "'https://example.com/step-board.js'"), () => fails(tryBuild(), /every module is served and pinned by this site/));
 });

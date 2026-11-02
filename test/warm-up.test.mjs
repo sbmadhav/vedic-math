@@ -4,23 +4,17 @@
 import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { TRICKS } from '../js/vedic.js';
-import { PAGES, TRICK_IDS, pageOf } from '../tools/trick-pages/pages.ts';
-import { PROBLEMS, problemText, answerText, rises, sizeOf } from '../tools/trick-pages/warm-up-problems.ts';
+import { PAGES } from '../tools/trick-pages/pages.ts';
+import { PROBLEMS, TRICK_IDS, SLUGS, problemText, answerText, rises, sizeOf } from '../tools/trick-pages/warm-up-problems.ts';
 import { dayNumber, trickOfDay, pickTrick } from '../tools/trick-pages/warm-up-pick.ts';
 
 const trick = id => TRICKS.find(t => t.id === id);
 
-test('the 15 Trick pages: ids from the catalog, unique slugs of lowercase words', () => {
+test('the warm-up names the 15 Trick pages exactly as tools/trick-pages/pages.ts does: the same Tricks, order and slugs', () => {
   assert.equal(PAGES.length, 15);
-  assert.deepEqual(TRICK_IDS, PAGES.map(p => p.id));
-  for (const p of PAGES) {
-    assert.ok(trick(p.id), `${p.id} is a Trick`);
-    assert.match(p.slug, /^[a-z0-9]+(-[a-z0-9]+)*$/, p.slug);
-  }
-  assert.equal(new Set(PAGES.map(p => p.slug)).size, 15, 'slugs are unique');
-  assert.equal(new Set(TRICK_IDS).size, 15, 'ids are unique');
-  assert.equal(pageOf('sq5')?.slug, 'square-numbers-ending-in-5');
-  assert.equal(pageOf('recip'), undefined, 'a Trick without a page');
+  assert.deepEqual(TRICK_IDS, PAGES.map(p => p.trick));
+  assert.deepEqual(SLUGS, Object.fromEntries(PAGES.map(p => [p.trick, p.slug])));
+  for (const id of TRICK_IDS) assert.ok(trick(id), `${id} is a Trick`);
 });
 
 test('every warm-up is for one of the 15, with a worked example and three problems its Trick takes', () => {

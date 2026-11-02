@@ -6,6 +6,18 @@
    No DOM, no imports: a test loads it in Node. */
 export type WarmUp = { example: number[]; problems: [number[], number[], number[]] };
 
+/** The 15 Tricks in the order of the Trick page table, with the slug of each page at /tricks/<slug>/. tools/trick-pages/
+    pages.ts holds the pages themselves and runs only in Node, so the warm-up keeps the two columns it needs here;
+    test/warm-up.test.mjs fails when they differ from pages.ts. */
+export const SLUGS: Readonly<Record<string, string>> = {
+  sq5: 'square-numbers-ending-in-5', 'near-base': 'multiply-numbers-near-100', crosswise: 'multiply-any-two-numbers-in-one-line',
+  from9: 'subtract-from-100-or-1000', by9s: 'multiply-by-9-99-or-999', ends10: 'multiply-when-last-digits-add-to-10',
+  'square-near': 'square-numbers-near-100', by11: 'multiply-by-11', div9: 'divide-by-9', check9: 'check-answers-with-digit-sums',
+  times5: 'multiply-by-5-25-50-or-125', 'sub-base': 'multiply-with-a-working-base', duplex: 'square-any-two-digit-number',
+  sqroot: 'square-roots-in-your-head', cuberoot: 'cube-roots-in-your-head',
+};
+export const TRICK_IDS: readonly string[] = Object.keys(SLUGS);
+
 export const PROBLEMS: Readonly<Record<string, WarmUp>> = {
   sq5: { example: [35], problems: [[25], [65], [115]] },
   'near-base': { example: [98, 97], problems: [[9, 7], [97, 96], [996, 988]] },

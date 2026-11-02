@@ -11,10 +11,10 @@
    Counted in fixed words (analytics spec): math/teachers/warmup/start/<trick> on the first Next of a page load,
    math/teachers/warmup/done/<trick> on reaching Practice at home, each once. Never anything about anyone.
    Published at /tricks/warm-up.js with its types taken out (build.py), which also writes the page's import map. */
-import { TRICKS, type Trick, type Vals } from '/js/vedic.js';
+import { TRICKS } from '../../shared/src/vedic.ts';
+import type { Trick, Vals } from '../../shared/src/vedic.ts';
 import { on } from '/js/life.js';
-import { PAGES, TRICK_IDS } from '/tricks/pages.js';
-import { PROBLEMS, problemText, answerText, type WarmUp } from '/tricks/warm-up-problems.js';
+import { PROBLEMS, TRICK_IDS, SLUGS, problemText, answerText, type WarmUp } from '/tricks/warm-up-problems.js';
 import { pickTrick } from '/tricks/warm-up-pick.js';
 import { stepBoard, type StepBoard } from '/tricks/step-board.js';
 
@@ -121,8 +121,8 @@ function revealMore() {
 }
 
 function load(id: string) {
-  const t = TRICKS.find(x => x.id === id), w = PROBLEMS[id], page = PAGES.find(p => p.id === id);
-  if (!t || !w || !page) throw new Error(`warm-up: no Trick ${id}`);
+  const t = TRICKS.find(x => x.id === id), w = PROBLEMS[id], slug = SLUGS[id];
+  if (!t || !w || !slug) throw new Error(`warm-up: no Trick ${id}`);
   trick = t; warm = w;
   title.textContent = t.title;
   sutraName.textContent = t.sutra;
@@ -131,8 +131,8 @@ function load(id: string) {
   exQ.textContent = problemText(id, w.example);
   exBoard = stepBoard(exBoardEl, t.steps(V(w.example)));
   boards = w.problems.map(vals => stepBoard(boardEl, t.steps(V(vals))));
-  home.href = `/tricks/${page.slug}/`;
-  home.textContent = `${SITE}/tricks/${page.slug}/`;
+  home.href = `/tricks/${slug}/`;
+  home.textContent = `${SITE}/tricks/${slug}/`;
   pick.value = id;
   screen = 0; beat = 0;
   delete stage.dataset.moved;
@@ -151,7 +151,8 @@ on(pick, 'change', () => { load(pick.value); history.replaceState(null, '', `?tr
 on(next, 'click', goOn, signal);
 on(back, 'click', goBack, signal);
 on(reveal, 'click', revealMore, signal);
-on<KeyboardEvent>(document, 'keydown', e => {
+on(document, 'keydown', ev => {
+  const e = ev as KeyboardEvent;
   if (e.altKey || e.ctrlKey || e.metaKey) return;
   const t = e.target;
   if (t instanceof HTMLElement && (t instanceof HTMLSelectElement || t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t.isContentEditable)) return;
