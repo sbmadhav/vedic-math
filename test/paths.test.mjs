@@ -18,7 +18,7 @@ function appRoutes() {
 
 test('every pattern in js/app.js routes has a row, in the same order, and no row is extra', () => {
   const app = appRoutes();
-  assert.equal(app.length, 30, 'the router has 30 patterns');
+  assert.equal(app.length, 31, 'the router has 31 patterns');
   assert.deepEqual(ROWS.map(r => r.pattern.source), app);
 });
 
