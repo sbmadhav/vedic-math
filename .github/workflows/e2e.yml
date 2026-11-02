@@ -200,6 +200,29 @@ jobs:
   # chromium only) on a runner of its own with 4 workers (openspec watch-shelf, design decision 6). Inside a shard it
   # shared three workers with every other project's specs, and one embed that loaded late under that load failed
   # the 10 s wait (run 40503901180) although the video played. The push run leaves it out.
+  # Edge compression (openspec change render-performance, design D3, task 3.1): the game page, the entry module, the
+  # stylesheet and the worker come back Brotli to a client that accepts it (each a 200 of its own content type, read
+  # to the end) and plain to one that does not. A miss means the host's compression setting changed: add a Cloudflare
+  # Compression Rule (docs/perf/baseline.md, "Compression and caching"). Daily and on demand, not after a push.
+  compression:
+    name: Text files are served with Brotli
+    if: ${{ github.event_name != 'push' && !inputs.perf_only }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BASE_URL: ${{ inputs.base_url || 'https://learnvedicmath.com' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      - name: Brotli on the page, the entry module, the stylesheet and the worker; none for identity
+        run: node tools/check-compression.mjs "$BASE_URL"
+
   videos:
     name: Every Watch shelf video still plays (chromium)
     needs: deploy

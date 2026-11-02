@@ -34,8 +34,8 @@ test.describe('a Challenger who lit Star 1 of Square numbers ending in 5', () =>
     await page.evaluate(() => { location.hash = '#/sutras/s1'; });
     await expect(page.locator('dialog.sutra-modal .sd-prog')).toBeVisible();
     const after = await page.evaluate(() => localStorage.getItem('mathquest.v1.p1'));
-    /* Opening a Deep dive collects its card and its 5 Sparks (it always has); the progress itself adds nothing else */
-    const strip = (s: string | null) => { const d = JSON.parse(s || '{}'); delete d.seen; delete d.sparks; delete d.weekSparks; delete d.xp; delete d.weekXp; delete d.counts; delete d.days; return d; };
+    /* Opening a Deep dive collects its card and its 5 Sparks (it always has), logged in the Sparks history (muse-review-polish); the progress itself adds nothing else */
+    const strip = (s: string | null) => { const d = JSON.parse(s || '{}'); delete d.seen; delete d.sparks; delete d.weekSparks; delete d.xp; delete d.weekXp; delete d.sparksLog; delete d.counts; delete d.days; return d; };
     expect(strip(after)).toEqual(strip(before));
     expect(sent.filter(u => /Stars lit|progress|sq5:1/.test(u))).toEqual([]);
   });

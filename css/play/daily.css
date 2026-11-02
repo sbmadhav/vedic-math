@@ -6,7 +6,7 @@
 .dn-chip { display: inline-flex; align-items: baseline; gap: var(--space-1-5); padding: var(--space-1-5) var(--space-3); border-radius: var(--radius-pill); background: var(--card); border: 2px solid var(--line); color: var(--ink-muted); font-weight: 700; font-size: .88rem; }
 .dn-chip b { font-family: var(--font-display); font-size: 1.1rem; color: var(--sun-strong); }
 .dn-chip--practice { border-style: dashed; }
-.dn-link { font-weight: 700; color: var(--teal-strong); }
+.dn-link { display: inline-block; min-height: 24px; line-height: 24px; font-weight: 700; color: var(--teal-strong); } /* a 24 px target (openspec change muse-review-polish, design D6) */
 
 /* ---------- Tier tabs ---------- */
 .dn-tiers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); margin-bottom: var(--space-3); }

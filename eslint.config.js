@@ -86,6 +86,16 @@ export default tseslint.config(
     rules: { 'lvm/legacy-imports': 'error' },
   },
   {
+    // The engine never reads the Reading band (openspec change age-bands, design decision 5): the question generators, the
+    // Skill map, scoring, the Dial, the levels, answer checking and Placement may not import the band or copy modules, so a
+    // band can only ever change presentation. Fixtures: tools/eslint-rules/fixtures/*.engine.{js,ts}.
+    files: ['shared/src/questions.ts', 'shared/src/scoring.ts', 'shared/src/question.ts', 'shared/src/skills/**/*.ts', 'shared/src/vedic.ts', 'shared/src/mental.ts', 'shared/src/story-plan.ts', 'shared/src/viz.ts',
+      'js/adapt.js', 'js/levels.js', 'js/check.js', 'js/placement.js', 'js/arena.js', 'js/mental.js', 'js/vedic.js', 'js/skills/**/*.js', 'js/stories.js', 'js/story-plan.js'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [{ regex: '(^|/)(bands|copy)(\\.ts|\\.js)?$', message: 'The engine never reads the Reading band or the copy table (openspec change age-bands, design decision 5): a band changes presentation only. Pass what a view decided in as an option instead.' }] }],
+    },
+  },
+  {
     files: ['tools/eslint-rules/*.js', 'eslint.config.js', 'stylelint.config.js', 'tools/*.mjs'],
     extends: [js.configs.recommended],
     languageOptions: { sourceType: 'module', globals: { ...globals.node } },

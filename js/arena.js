@@ -10,15 +10,27 @@ import { keypadOnly } from './shell.js';
 import { dailySet, practiceNext } from '../shared/src/questions.ts';
 import { comboGain } from '../shared/src/scoring.ts';
 
-export const ROUND_SECS = 60;
+import { ROUND_SECS } from '../shared/src/questions.ts';
+export { ROUND_SECS };
 /* Untimed Arena Practice (openspec game-shell-and-calm): 20 questions, no clock, Finish at any time */
 export const UNTIMED_QS = 20;
+/* Challenge links (openspec change arena-challenge-link): the link's parts, text and parser live in shared/src/challenge.ts
+   (pure, a Duel's server can check the same link); the Arena view reaches them through this module, loaded on demand */
+export { LEAGUES, MAX_CHALLENGE_SCORE, realDay, parseChallenge, challengeUrl, challengeShare, challengeText } from '../shared/src/challenge.ts';
 /* The question sets (League pools, seeded daily rounds, Practice questions) moved to shared/src/questions.ts
    (openspec change react-typescript, task 3.1), so a Duel's server can deal the same sets; re-exported here for the
    Legacy views and tests that import them from this module */
 export { MENTAL_FROM, PRO_RAMP, makeSet, dailySet, practiceItem, practiceNext, storyItem, STORY_QS } from '../shared/src/questions.ts';
 
 const PAD = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '-', '0', 'del'];
+/* The answer buttons shown for an item: its choices (4, around the answer), or n of them with the answer kept, in
+   ascending order when fewer are shown (the Early band's 3, openspec change age-bands) */
+function pickChoices(p, n) {
+  const all = p.choices || [];
+  if (n >= all.length) return all;
+  const others = shuffle(all.filter(c => String(c) !== String(p.answer))).slice(0, n - 1);
+  return [p.answer, ...others].sort((a, b) => a - b);
+}
 /* A physical keyboard on a touch screen, where the hidden input is read-only (js/shell.js keypadOnly): digits,
    the keys in allowed, Backspace and Enter type into it. One listener for the round, on its signal. */
 function physicalKeys(root, allowed, max, rs, submit) {
@@ -40,9 +52,12 @@ function physicalKeys(root, allowed, max, rs, submit) {
    every answer (openspec arena spec). The round runs under a child of signal, aborted when it ends or by destroy(),
    so its handlers never act on the next round drawn into the same root.
    untimed (Practice only): count questions (UNTIMED_QS by default) with no clock, a question counter and a Finish button.
-   deal (Practice only): draws each next item instead of the Dial (the Word problems round, storyItem). */
-export function runArena(root, { league, day = null, dial, signal, onEnd, untimed = false, deal = null, count = UNTIMED_QS }) {
-  const set = day ? dailySet(league, day) : null, tapMode = league === 'explorer';
+   deal (Practice only): draws each next item instead of the Dial (the Word problems round, storyItem).
+   Reading bands (openspec change age-bands; the caller reads the band, this round never does): tap makes a Practice
+   round tap play with choices answer buttons (an Early reader's 3, in any League); the daily round keeps the League's
+   input and its 4 choices for everyone (AB3). bar draws the clock as a bar alone, its seconds for screen readers only. */
+export function runArena(root, { league, day = null, dial, signal, onEnd, untimed = false, deal = null, count = UNTIMED_QS, tap = false, choices = 4, bar = false }) {
+  const set = day ? dailySet(league, day) : null, tapMode = league === 'explorer' || (!set && tap), nChoices = set ? 4 : choices;
   if (set) untimed = false; /* the daily round is a Ranked race: it always has its clock */
   const draw = deal || (() => practiceNext(league, dial));
   let cur = set ? null : draw();
@@ -50,8 +65,8 @@ export function runArena(root, { league, day = null, dial, signal, onEnd, untime
   const round = child(signal), rs = round.signal;
   let i = 0, score = 0, right = 0, wrong = 0, combo = 0, bestCombo = 0, over = false;
   const answered = []; /* every answered question and whether it was right: the round review (openspec change sutras-first) */
-  const clock = untimed ? `<div class="ar-time"><small>Question</small><b id="arNum">1/${count}</b></div>` : `<div class="ar-time"><small>Time</small><b id="arTime">${ROUND_SECS}</b></div>`;
-  root.innerHTML = `<div class="ar${untimed ? ' ar--untimed' : ''}">
+  const clock = untimed ? `<div class="ar-time"><small>Question</small><b id="arNum">1/${count}</b></div>` : `<div class="ar-time${bar ? ' md-sr-only' : ''}"><small>Time</small><b id="arTime">${ROUND_SECS}</b></div>`;
+  root.innerHTML = `<div class="ar${untimed ? ' ar--untimed' : ''}${bar && !untimed ? ' ar--bar' : ''}">
     <div class="ar-top"><div class="ar-score"><small>Score</small><b id="arScore">0</b></div><div class="ar-combo" id="arCombo" aria-live="polite"></div>${clock}</div>
     ${untimed ? '<p class="ar-fin"><button type="button" class="md-btn md-btn--sm" id="arFinish">Finish</button></p>' : '<div class="g-timer ar-bar"><span id="arBar"></span></div>'}
     <span class="md-tag md-tag--teal ar-story" id="arStory" hidden></span><div class="ar-q" id="arQ" aria-live="polite"></div><div class="ar-viz" id="arViz"></div>
@@ -62,7 +77,7 @@ export function runArena(root, { league, day = null, dial, signal, onEnd, untime
     qEl.innerHTML = p.q; $('#arViz').innerHTML = p.viz || '';
     qEl.classList.toggle('ar-q--story', !!p.story); tag.hidden = !p.story; tag.textContent = p.story ? p.label || '' : '';
     if (p.d) qEl.dataset.d = p.d; else delete qEl.dataset.d;
-    if (tapMode) { $('#arIn').innerHTML = `<div class="ar-choices">${p.choices.map(c => `<button class="ar-choice" data-v="${c}">${c}</button>`).join('')}</div>`; speakQuestion(p); }
+    if (tapMode) { const ch = pickChoices(p, nChoices); $('#arIn').innerHTML = `<div class="ar-choices">${ch.map(c => `<button class="ar-choice" data-v="${c}">${c}</button>`).join('')}</div>`; speakQuestion(p); }
     else { $('#arIn').innerHTML = `<form class="ar-form" id="arForm"><output class="ar-entry" id="arEntry" aria-label="Your answer"></output>${p.unit ? `<span class="ar-unit">${p.unit}</span>` : ''}<input class="ar-hidden" id="arType" inputmode="numeric" autocomplete="off" aria-label="Type your answer"><button class="md-btn md-btn--primary">Go</button></form><div class="ar-pad">${PAD.map(k => `<button type="button" class="ar-key" data-k="${k}">${k === 'del' ? 'Del' : k === '-' ? '&minus;' : k}</button>`).join('')}</div>`;
       const typ = $('#arType'); keypadOnly(typ); if (matchMedia('(pointer: fine)').matches) typ.focus({ preventScroll: true });
       on(typ, 'input', () => { typ.value = typ.value.replace(/[^0-9-]/g, '').slice(0, 7); $('#arEntry').textContent = typ.value; }, rs);
@@ -113,16 +128,16 @@ export function runArena(root, { league, day = null, dial, signal, onEnd, untime
 const PAD2 = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '-', '0', '.', '/', 'del'];
 /* opts.signal: as in runArena. untimed (Calm, openspec game-shell-and-calm): a Sprint runs UNTIMED_QS questions with
    no clock and a Finish button; the other formats run as they are (their Medal rules live in js/app.js). */
-export function runChallenge(root, ch, set, { onEnd, tap = false, signal, untimed = false }) {
+export function runChallenge(root, ch, set, { onEnd, tap = false, signal, untimed = false, choices = 4, bar = false }) {
   const round = child(signal), rs = round.signal;
   let i = 0, score = 0, right = 0, wrong = 0, combo = 0, lives = ch.lives, over = false;
   const t0 = performance.now(), secs = () => (performance.now() - t0) / 1000;
   const sprintUntimed = untimed && !!ch.secs;
   if (sprintUntimed) ch = { ...ch, secs: 0, total: UNTIMED_QS };
-  const total = ch.total || Infinity;
-  root.innerHTML = `<div class="ar">
+  const total = ch.total || Infinity, asBar = bar && !!ch.secs; /* the clock as a bar alone (Early and Growing, openspec change age-bands) */
+  root.innerHTML = `<div class="ar${asBar ? ' ar--bar' : ''}">
     <div class="ar-top"><div class="ar-score"><small>${ch.goal === 'points' ? 'Score' : 'Right'}</small><b id="arScore">0</b></div><div class="ar-combo" id="arCombo" aria-live="polite"></div>
-      <div class="ar-time"><small>${ch.secs ? 'Time' : ch.lives ? 'Lives' : 'Question'}</small><b id="arTime">${ch.secs || (ch.lives ? '&#9679;'.repeat(lives) : `1/${total}`)}</b></div></div>
+      <div class="ar-time${asBar ? ' md-sr-only' : ''}"><small>${ch.secs ? 'Time' : ch.lives ? 'Lives' : 'Question'}</small><b id="arTime">${ch.secs || (ch.lives ? '&#9679;'.repeat(lives) : `1/${total}`)}</b></div></div>
     ${ch.secs ? '<div class="g-timer ar-bar"><span id="arBar"></span></div>' : ''}${sprintUntimed ? '<p class="ar-fin"><button type="button" class="md-btn md-btn--sm" id="arFinish">Finish</button></p>' : ''}
     <div class="ar-q" id="arQ" aria-live="polite"></div><div class="ar-viz" id="arViz"></div>
     <div id="arIn"></div><p class="ar-fix" id="arFix" aria-live="polite"></p><div class="ar-pop" id="arPop" aria-hidden="true"></div><p class="md-sr-only" id="arSay" role="status"></p></div>`;
@@ -134,6 +149,7 @@ export function runChallenge(root, ch, set, { onEnd, tap = false, signal, untime
     $('#arQ').innerHTML = p.q; $('#arViz').innerHTML = p.viz || ''; /* a question about its picture needs the picture in every Mode (Muse review, item 5) */
     if (p.kind === 'choice' || tap) {
       const ch2 = p.kind === 'choice' ? p.choices : shuffle([...new Set([p.answer, p.answer + 1, p.answer - 1, p.answer + 2].map(v => Math.round(v * 1000) / 1000))]).slice(0, 4);
+      if (choices < ch2.length && p.kind !== 'choice') { ch2.splice(0, ch2.length, ...pickChoices({ answer: p.answer, choices: ch2 }, choices)); }
       $('#arIn').innerHTML = `<div class="ar-choices">${ch2.map(c => `<button class="ar-choice" data-v="${c}">${c}</button>`).join('')}</div>`; if (tap) speakQuestion(p);
     } else {
       $('#arIn').innerHTML = `<form class="ar-form" id="arForm"><output class="ar-entry" id="arEntry" aria-label="Your answer"></output><input class="ar-hidden" id="arType" inputmode="decimal" autocomplete="off" aria-label="Type your answer"><button class="md-btn md-btn--primary">Go</button></form><div class="ar-pad ar-pad--wide">${PAD2.map(k => `<button type="button" class="ar-key" data-k="${k}">${k === 'del' ? 'Del' : k === '-' ? '&minus;' : k}</button>`).join('')}</div>`;

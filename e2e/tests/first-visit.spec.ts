@@ -1,4 +1,4 @@
-import { test, expect, APP, open, appErrors, atRoute, hrefTo, pathTo } from './fixtures';
+import { test, expect, APP, open, appErrors, atRoute, hrefTo, pathTo, pickMode, skipHook } from './fixtures';
 
 /* The first visit (openspec first-visit, try-trick-in-modes, play-nav-by-mode): the Mode picker, whose three Mode cards
    are its only buttons, then each Mode's Try a trick from its Home (the lesson itself is in try-trick.spec.ts), Back home from a Star opened from Home,
@@ -26,7 +26,7 @@ test.describe('the landing', () => {
     await expect(page.locator('#view [data-try]')).toHaveCount(0);
     expect(await page.locator('#view button').count()).toBe(3);
     await expect(page.locator('.pick-h')).toHaveText('Pick who is playing');
-    await page.locator('.mode-card[data-mode="challenger"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
+    await pickMode(page, 'challenger'); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
     await expect(page).toHaveURL(atRoute('#/try'));
     await expect(page.locator('#tyStart')).toBeFocused();
     await page.locator('#tyStart').click();
@@ -50,7 +50,7 @@ test.describe('the landing', () => {
 
   test('the cards still work: Explorer opens the Explorer Home with no guess recorded', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('.mode-card[data-mode="explorer"]').click();
+    await pickMode(page, 'explorer');
     await expect(page.locator('h1.home-h')).toHaveText('What do you want to play?');
     await expect(page.locator('.play-grid--big .play-tile')).toHaveCount(8);
     await expect(page.locator('#homeMore')).toHaveCount(0);
@@ -63,10 +63,11 @@ test.describe('the landing', () => {
 
   test('Back from the Star at the end of Try a trick goes Home, where the mode line names no guess', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('.mode-card[data-mode="challenger"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
+    await pickMode(page, 'challenger'); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
     await page.locator('#tyStart').click();
     for (const a of [625, 2025, 4225]) { await page.locator('#tyIn').fill(String(a)); await page.keyboard.press('Enter'); await page.locator('#tyNext').click(); }
     await page.locator('#tyGoOn').click();
+    await skipHook(page); /* a brand-new Player's first Star opens with the Hook (openspec hook) */
     await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
     await expect(page.locator('#stExit')).toBeVisible();
     await page.locator('#stExit').click();
@@ -90,7 +91,7 @@ test.describe('Home on a 390 px phone after Try a trick', () => {
     test(`compact Player strip, no Keep going, Play this Star on screen (${scheme})`, async ({ page, issues }) => {
       await page.emulateMedia({ colorScheme: scheme });
       await page.goto(APP);
-      await page.locator('.mode-card[data-mode="challenger"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
+      await pickMode(page, 'challenger'); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
       await page.locator('#tyStart').click();
       for (const a of [625, 2025, 4225]) { await page.locator('#tyIn').fill(String(a)); await page.keyboard.press('Enter'); await page.locator('#tyNext').click(); }
       await page.locator('#tyHome').click();

@@ -18,14 +18,14 @@ function appRoutes() {
 
 test('every pattern in js/app.js routes has a row, in the same order, and no row is extra', () => {
   const app = appRoutes();
-  assert.equal(app.length, 30, 'the router has 30 patterns');
+  assert.equal(app.length, 32, 'the router has 32 patterns');
   assert.deepEqual(ROWS.map(r => r.pattern.source), app);
 });
 
 /* Design.md's inventory counted 15 games and 6 Guide pages; the catalogs hold 14 games (js/games.js GAMES) and
-   #/guide/<s> takes a section id, of which js/guide.js has 25, so the real totals are 3,469 pages and 239 indexed */
-test('allPaths() has 3,469 entries, 239 of them indexed, all with distinct keys and paths', () => {
-  assert.equal(ALL.length, 3469);
+   #/guide/<s> takes a section id, of which js/guide.js has 25, so the real totals are 3,470 pages and 239 indexed */
+test('allPaths() has 3,470 entries, 239 of them indexed, all with distinct keys and paths', () => {
+  assert.equal(ALL.length, 3470);
   assert.equal(ALL.filter(e => e.indexed).length, 239);
   assert.equal(new Set(ALL.map(e => e.key)).size, ALL.length);
   assert.equal(new Set(ALL.map(e => e.path)).size, ALL.length);

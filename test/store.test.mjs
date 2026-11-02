@@ -55,11 +55,73 @@ test('each Player keeps their own answer across switches', () => {
   assert.equal(store.player().parentOk, undefined);
 });
 
-test('removing a Player removes their Age answer', () => {
-  const gone = store.player().id;
+/* The Grade answer (openspec change age-bands, task 2.1; ADR 0008): on the Player record, apart per Player, in the backup
+   code, gone with the Player; the home card mark on the progress record; Read aloud per Player with the one-time copy */
+test('setReading keeps a grade or an age with its time, apart per Player; clearReading removes it; a bad answer throws', async () => {
+  const second = store.player().id, first = store.allPlayers().find(p => p.id !== second).id;
+  assert.equal(store.reading(), null);
+  store.setReading({ grade: 'K' });
+  assert.deepEqual(Object.keys(store.reading()).sort(), ['at', 'grade']);
+  assert.equal(store.reading().grade, 'k', 'lower case, as the buttons name it');
+  assert.ok(store.reading().at > 0);
+  assert.equal(saved().list.find(p => p.id === second).reading.grade, 'k');
+  store.switchPlayer(first);
+  assert.equal(store.reading(), null, 'the other Player has none');
+  store.setReading({ age: 15 });
+  assert.equal(store.reading().age, 15);
+  assert.equal(store.player().age, 8, 'setReading never touches the Age answer (the grade question does, only when there is none)');
+  for (const bad of [null, {}, { grade: '13' }, { age: 0 }, { age: '9' }, { grade: 'k', age: 9 }]) assert.throws(() => store.setReading(bad), JSON.stringify(bad));
+  assert.equal(store.reading().age, 15, 'a refused answer changes nothing');
+  /* The backup code carries it inside the Player's record, and a restore brings it back */
+  await store.loadBackup();
+  const code = store.exportData(), payload = JSON.parse(code);
+  assert.equal(payload.players.list.find(p => p.id === first).reading.age, 15);
+  assert.equal(payload.players.list.find(p => p.id === second).reading.grade, 'k');
+  store.clearReading();
+  assert.equal(store.reading(), null);
+  assert.ok(!('reading' in saved().list.find(p => p.id === first)));
+  store.importData(code, 'replace');
+  assert.equal(store.reading().age, 15, 'the round trip through the backup code');
+  store.switchPlayer(second);
+  assert.equal(store.reading().grade, 'k');
+  store.switchPlayer(first);
+  store.clearReading();
+});
+
+test('the grade question mark is on the Player record, per Player', () => {
+  assert.equal(store.readingCard(), null);
+  store.setReadingCard('done');
+  assert.equal(store.readingCard(), 'done');
+  assert.equal(saved().list.find(p => p.id === store.player().id).readingCard, 'done');
+  const other = store.allPlayers().find(p => p.id !== store.player().id).id, me = store.player().id;
+  store.switchPlayer(other);
+  assert.equal(store.readingCard(), null);
+  store.switchPlayer(me);
+});
+
+test('Read aloud is a choice per Player: unset until set, true or false, apart per Player', () => {
+  const me = store.player().id, other = store.allPlayers().find(p => p.id !== me).id;
+  assert.equal(store.playerVoice(), undefined);
+  store.setPlayerVoice(false);
+  assert.equal(store.playerVoice(), false);
+  assert.equal(saved().list.find(p => p.id === me).voice, false);
+  store.switchPlayer(other);
+  assert.equal(store.playerVoice(), undefined);
+  store.setPlayerVoice(true);
+  assert.equal(store.playerVoice(), true);
+  store.switchPlayer(me);
+  assert.equal(store.playerVoice(), false);
+});
+
+test('removing a Player removes their Age answer and Grade answer', () => {
+  const gone = store.allPlayers().find(p => p.age === 15).id; /* the second Player, playing again */
+  store.switchPlayer(gone);
+  store.setReading({ grade: '7' });
+  assert.ok(mem['vm.players'].includes('"grade":"7"'));
   store.removePlayer(gone);
   assert.ok(!saved().list.some(p => p.id === gone));
   assert.ok(!mem['vm.players'].includes('"age":15'));
+  assert.ok(!mem['vm.players'].includes('"grade":"7"'));
   assert.equal(store.allPlayers().length, 1);
   assert.equal(store.player().age, 8);
 });
@@ -311,4 +373,94 @@ test('readBackup checks a code without writing: an old single-Player code become
   assert.equal(store.restoreOffer(moved).both, true, '6 Players here plus 6 more is the cap, 12');
   const seven = { ...moved, players: { ...moved.players, list: [...moved.players.list, { ...moved.players.list[0], id: 'pextra' }] } };
   assert.equal(store.restoreOffer(store.readBackup(JSON.stringify(seven))).both, false, '6 here plus 7 is over the cap');
+});
+
+/* Read aloud per Player (openspec change age-bands, AB4): a device that set vm.voice copies it once to every Player who
+   has no choice, marks the copy done and leaves vm.voice in place; a Player who already chose keeps their choice */
+test('the one-time copy of vm.voice to every Player runs once and leaves vm.voice in place', async () => {
+  const fresh = {};
+  const ls = { getItem: k => (k in fresh ? fresh[k] : null), setItem: (k, v) => { fresh[k] = String(v); }, removeItem: k => { delete fresh[k]; }, get length() { return Object.keys(fresh).length; }, key: i => Object.keys(fresh)[i] ?? null };
+  fresh['vm.voice'] = '1';
+  fresh['vm.players'] = JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode: 'challenger', created: 1 }, { id: 'p2', name: 'Bold Yak 55', avatar: 'plum', mode: 'pro', created: 1, voice: false }] });
+  globalThis.localStorage = ls;
+  const S2 = await import('../js/store.js?copy-voice');
+  assert.equal(S2.player().voice, true, 'the first Player got the device setting');
+  assert.equal(S2.allPlayers()[1].voice, false, 'a Player who chose keeps the choice');
+  assert.equal(fresh['vm.voiceCopied'], '1');
+  assert.equal(fresh['vm.voice'], '1', 'left for a rollback');
+  const P = JSON.parse(fresh['vm.players']); P.list.push({ id: 'p3', name: 'Lucky Otter 17', avatar: 'sky', mode: null, created: 1 }); fresh['vm.players'] = JSON.stringify(P);
+  const S3 = await import('../js/store.js?copy-voice-again');
+  assert.equal(S3.allPlayers()[2].voice, undefined, 'the copy does not run twice');
+  globalThis.localStorage = { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; }, get length() { return Object.keys(mem).length; }, key: i => Object.keys(mem)[i] ?? null };
+});
+
+/* Placement (openspec placement, task 2.2): the result, the card and the Hook flag live in the Player's record, travel
+   in the backup code and nowhere else; a record without them loads as before */
+test('Placement: a record without the fields loads as before; setPlacement saves grade, steps and when; the card and hookSeen are set once', () => {
+  store.reset();
+  assert.equal(store.placement(), null); assert.equal(store.placementCard(), null); assert.equal(store.hookSeen(), false); assert.equal(store.hasProgress(), false);
+  assert.ok(!('placement' in store.load()) && !('placementCard' in store.load()) && !('hookSeen' in store.load()), 'blank() adds none of them');
+  const seen = [], off = store.on(t => seen.push(t));
+  const p = store.setPlacement({ grade: 5, steps: 3 }); off();
+  assert.equal(p.grade, '5'); assert.equal(p.steps, 3); assert.ok(p.at > 0);
+  assert.deepEqual(store.placement(), p); assert.deepEqual(seen, ['placement']);
+  assert.equal(store.setPlacementCard(), true); assert.equal(store.placementCard(), 'done'); assert.equal(store.setPlacementCard(), false);
+  assert.equal(store.setHookSeen(), true); assert.equal(store.hookSeen(), true); assert.equal(store.setHookSeen(), false);
+  assert.equal(JSON.parse(mem['mathquest.v1.' + store.player().id]).placement.grade, '5', 'saved in the Player\'s record');
+  store.setPlacement({ grade: 'K', steps: 0 }); assert.equal(store.placement().grade, 'K', 'a retake replaces the result, even lower');
+  assert.equal(store.hasProgress(), false, 'a Placement is not progress');
+  store.setRating('game:make-ten', 3); assert.equal(store.hasProgress(), true);
+});
+
+test('Placement: the backup code carries placement, placementCard, hookSeen and the Player\'s placedBelt, and a round trip brings them back', async () => {
+  await store.loadBackup();
+  store.setPlacement({ grade: 9, steps: 6 }); store.setPlacementCard(); store.setHookSeen(); store.updatePlayer({ placedBelt: 'yellow' });
+  const code = store.exportData(), payload = JSON.parse(code), id = store.player().id;
+  assert.equal(payload.records[id].placement.grade, '9'); assert.equal(payload.records[id].placement.steps, 6); assert.equal(payload.records[id].placementCard, 'done'); assert.ok(payload.records[id].hookSeen > 0);
+  assert.equal(payload.players.list.find(p => p.id === id).placedBelt, 'yellow');
+  store.reset(); store.updatePlayer({ placedBelt: undefined }); delete store.player().placedBelt;
+  assert.equal(store.placement(), null);
+  store.importData(code, 'replace');
+  assert.equal(store.placement().grade, '9'); assert.equal(store.placement().steps, 6); assert.equal(store.placementCard(), 'done'); assert.equal(store.hookSeen(), true);
+  assert.equal(store.player().placedBelt, 'yellow');
+  // a code with a Placement off the schema is refused whole
+  const bad = JSON.parse(code); bad.records[id].placement = { grade: '13', steps: 1, at: 1_700_000_000_000 };
+  assert.throws(() => store.readBackup(JSON.stringify(bad)));
+  const badBelt = JSON.parse(code); badBelt.players.list[0].placedBelt = 'gold';
+  assert.throws(() => store.readBackup(JSON.stringify(badBelt)));
+});
+
+/* The Sparks history (openspec change muse-review-polish, design D4): every award is logged on the Player's record,
+   newest first, 50 kept, and a backup code carries it */
+test('addSparks logs every award newest first, groups consecutive answers, and 60 awards keep 50', () => {
+  const fresh = store.addPlayer();
+  assert.deepEqual(store.sparksLog(), []);
+  store.addSparks(30, 'kata');
+  store.addSparks(10, 'answer'); store.addSparks(12, 'answer');
+  store.addSparks(25, 'quest');
+  const log = store.sparksLog();
+  assert.deepEqual(log.map(e => [e.why, e.n, e.k || 1]), [['quest', 25, 1], ['answer', 22, 2], ['kata', 30, 1]]);
+  for (const e of log) assert.ok(Number.isFinite(e.at) && e.at > 1_700_000_000_000, 'each entry says when');
+  for (let i = 0; i < 60; i++) store.addSparks(5, 'trick');
+  assert.equal(store.sparksLog().length, store.LOG_CAP);
+  assert.equal(store.LOG_CAP, 50);
+  assert.ok(store.sparksLog().every(e => e.why === 'trick'), 'the oldest entries went');
+  assert.equal(JSON.parse(mem['mathquest.v1.' + fresh.id]).sparksLog.length, 50, 'saved with the record, on this device');
+  store.removePlayer(fresh.id);
+});
+
+test('a backup code carries the Sparks history, and restoring it brings the log back', async () => {
+  await store.loadBackup();
+  store.addSparks(30, 'kata'); store.addSparks(5, 'trick');
+  const me = store.player().id, before = store.sparksLog();
+  assert.ok(before.length >= 2);
+  const code = store.exportData();
+  assert.deepEqual(JSON.parse(code).records[me].sparksLog, before, 'the code holds the log as saved');
+  store.addSparks(100, 'arena');
+  assert.equal(store.sparksLog()[0].why, 'arena');
+  store.importData(code, 'replace');
+  assert.deepEqual(store.sparksLog(), before, 'the restored record has the log the code held');
+  // A code with a log the schema refuses (markup in a why) restores nothing
+  const bad = JSON.parse(code); bad.records[me].sparksLog = [{ n: 5, why: '<b>x</b>', at: 1_700_000_000_000 }];
+  assert.throws(() => store.readBackup(JSON.stringify(bad)), /sparksLog/);
 });

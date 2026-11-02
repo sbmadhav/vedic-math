@@ -254,7 +254,7 @@ Next steps (owner guide, docs/owner-setup-learnvedicmath.md):
        git add js/cloud-config.js && git commit -m "World boards: the $PROJECT_ID Firebase project"
   2. Restrict the browser API key to the referrers ${REFERRERS}http://localhost:*/* and http://127.0.0.1:*/*,
      and to the APIs it uses.
-  3. After the deploy, open https://${DOMAINS_WANT[0]}/play/ as a Player 13 or older, play an Arena round, and check
+  3. After the deploy, open https://${DOMAINS_WANT[0]}/learn/ as a Player 13 or older, play an Arena round, and check
      the World board. Data appears in: https://console.firebase.google.com/project/$PROJECT_ID/firestore
 
 Hardening:

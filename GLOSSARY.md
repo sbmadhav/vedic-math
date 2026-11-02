@@ -13,7 +13,7 @@ A made-up name built from fixed word lists (adjective, noun, number). Never type
 _Avoid_: username, display name, handle
 
 **Mode**:
-The play level a Player chooses: Explorer (about 4 to 7), Challenger (about 8 to 12) or Pro (13 to adult). It sets the wording, the grade range and the controls. It says nothing about the Player's real age. Once a Player has a Placement level, that level, not the Mode, sets where Practice starts; and a Reading band adjusts wording and answers within the Mode. (Both proposed in the `placement` and `age-bands` changes.)
+The play level a Player chooses: Explorer (about 4 to 7), Challenger (about 8 to 12) or Pro (13 to adult). It sets the wording, the grade range and the controls. It says nothing about the Player's real age. A Reading band adjusts wording, read aloud, answer buttons and Practice clocks within the Mode, never the Mode or League; the Mode picker tags the Mode a Grade answer suggests, and the Player still chooses freely. Once a Player has a Placement level, that level, not the Mode, sets where Practice starts (proposed in the `placement` change).
 _Avoid_: difficulty, age group, kid mode (Explorer is not the site-wide kid mode)
 
 **League**:
@@ -25,11 +25,11 @@ A Player's reply to one neutral question about their age. It is the only thing t
 _Avoid_: age gate, age check, birthday
 
 **Grade answer**:
-A Player's reply to "What grade are you in?" (Pre-K to 12 or Grown-up), or their age if they chose to give it instead. Kept only on the device and never sent. It decides the Reading band and nothing else. (Proposed in the `age-bands` change.)
+A Player's reply to "What grade are you in?" (Pre-K to 12 or Grown-up), or their age if they chose to give it instead (`reading` on the Player record, `js/store.js`). Kept only on the device and never sent (ADR 0008); it moves only inside the Player's own progress (the backup code, the Hand-off). It decides the Reading band and nothing else; an age given here is also the Age answer when there is none (ADR 0001). A grown-up changes or clears it in Me, under "For grown-ups: Reading help".
 _Avoid_: grade level, age gate, school grade (in code), grade (alone: that is a Skill map page)
 
 **Reading band**:
-How much reading help a Player gets, from their Grade answer: Early (about 4 to 6), Growing (about 7 to 9) or Fluent (10 and up). It changes read aloud, wording, answer buttons, the number of choices, Practice timers and Bolt's tone, in every Mode, and never math difficulty. A Player with no Grade answer has no band. Never shown to the Player. (Proposed in the `age-bands` change.)
+How much reading help a Player gets, from their Grade answer (`shared/src/bands.ts` `bandOf`, `RULES`): Early (about 4 to 6), Growing (about 7 to 9) or Fluent (10 and up). It changes read aloud, wording, answer buttons, the number of choices, Practice timers and Bolt's tone, in every Mode, and never math difficulty (a lint rule and `test/bands-no-difficulty.test.mjs` keep it out of the engine). A Player with no Grade answer has no band. Never shown to the Player: a grown-up sees "Reading help: lots, some or a little" in Me.
 _Avoid_: age band (in copy), age group, reading level, kid mode
 
 **Parent step** (retired):
@@ -65,6 +65,10 @@ _Avoid_: sutra score, sutra level, mastery (that is one Skill's)
 **Verse** (śloka):
 A genuine Sanskrit verse, prose rule (sūtra) or Vedic mantra about mathematics from an older text, shown in Mathematics in Sanskrit verse at the end of the Sutras page (`js/slokas.js`). Verses are not the source of the Sutras; the only verse in the 1965 book (gopī bhāgya, π/10) is the Swami's own.
 _Avoid_: calling a Sutra a verse; "ancient" without a date
+
+**Trick page**:
+A static page at `/tricks/<slug>/` for one Trick, for search and sharing: its name, its Sutra, when to use it, the idea, a worked example, "Try it with your numbers" (the calculator, the game's animator as a small module) and "Practice this trick" into the game. Not a game view: generated from the catalog by `tools/trick-pages/` and committed under `site/tricks/`, with the index at `/tricks/` (`trick-pages` change).
+_Avoid_: lesson (the lesson is the game's `#/skill/v-<trick>` view), landing page, Sutra page
 
 **Deep dive**:
 The dialog that opens from a Sutra card's Learn more (route `#/sutras/<id>`): the plain explanation, an animated diagram, why it works, Worked examples, where it is used and further reading. Its close button and the footer to the previous and next Sutra stay pinned while it scrolls.
@@ -162,6 +166,14 @@ _Avoid_: popup, interruption, intervention
 Something that may start a Visit: 2 misses in a row on one Skill, 3 misses in a round, about 20 seconds idle on one question, Hint pressed twice, leaving a round early after misses, or a help phrase in listening mode. Never acted on mid-question in a timed race.
 _Avoid_: trigger (in copy), frustration detection
 
+**Talking with the Family**:
+The opt-in AI conversation layer of the Family helpers, for a Player whose saved answers say 13 or over: a chat box in a Visit's bubble where Bolt, Shunya, Nava and Eka answer in their own words (at most two replies a turn, one at a time), through our own Worker route and Claude Haiku 4.5, never with the answer. What a message sends: the Skill id, the question's numbers and the words of that Visit, with a session ticket after one Cloudflare Turnstile check per browser session. (The `family-helpers` change, step 3, design D15 and D18; ADR 0015.)
+_Avoid_: chatbot, AI tutor, assistant
+
+**Session ticket**:
+A short-lived proof the Worker signs (an HMAC over its scope, a random value and a 30-minute expiry) and hands out from `POST /api/session` after a Turnstile check; each paid route accepts only its own scope (`family` for the conversation, later `voice` and `room`). Never stored on a server and never tied to a Player. (`react-typescript` design D17, `family-helpers` design D18.)
+_Avoid_: token (that is Turnstile's), login, session cookie
+
 **Clue**:
 In talking with the Family (13 and over), one reply that hints at the question on screen, or points at a part of it. Each question has a few; at zero the speakers explain the method in general. Talk about the method or the Sutra in general uses none, and the first clue on a question counts as the round's Hint. (Proposed in the `family-helpers` change, design D18.)
 _Avoid_: hint token, credit
@@ -215,11 +227,11 @@ A website or game on the Watch shelf that opens in a new tab. Pro only, like eve
 _Avoid_: resource, external site
 
 **Read aloud**:
-The setting that speaks questions, hints and praise. On by default for Explorer, off for Challenger and Pro. Speech only ever follows a tap. (Proposed in the `age-bands` change: a choice per Player, on by default for the Early Reading band in every Mode.)
+The setting that speaks questions, hints and praise: a choice per Player (`voice` on the Player record). When the Player has not chosen, it is on for the Early Reading band in every Mode and off for Growing and Fluent; with no band, on for Explorer and off for Challenger and Pro. Speech only ever follows a tap.
 _Avoid_: TTS, narration, voice mode
 
 **Copy table**:
-The one list of app wording that varies by Mode or Reading band (`app/src/logic/copy.ts`): each line with its Mode variants or a default, and Early and Growing variants. (Proposed in the `age-bands` change.)
+The one list of app wording that varies by Mode or Reading band (`shared/src/copy.ts`, read through `fx.copy` and `fx.line`; the React game will read it through `useCopy`): each line with its Mode variants or a default, an Early variant (8 words or fewer a sentence) and, where the Mode copy runs long, a Growing variant. `pnpm --filter tools copy-table` prints it as Markdown for review.
 _Avoid_: strings file, translations, i18n
 
 **Built-in voice**:
@@ -241,8 +253,12 @@ _Avoid_: play button, speaker, read-aloud button (Read aloud is the setting)
 ## Rounds and results
 
 **Ranked round**:
-A round whose result counts on Boards: an Arena daily round, a ranked game round, the first attempt at the Daily Sutra, or a challenge-link round.
+A round whose result counts on Boards: an Arena daily round, a ranked game round, the first attempt at the Daily Sutra, or a Challenge link's round on its own date in its League (then it is that day's daily round; on any other day or in another League the friend's round is Practice).
 _Avoid_: competitive round, official round
+
+**Challenge link**:
+An Arena daily challenge link, `#/arena/day/<YYYY-MM-DD>/<league>/<score>`, carrying the date, the League and the Score to beat and nothing else (no Nickname, Rating or Player id). Made by **Challenge a friend** (Send to family in Explorer) on a daily result, with three lines of words. It opens the Arena lobby ready to Start, never a round: on its date in its League, Start plays that day's daily challenge, a Ranked round; on another day or in another League the friend's round plays as Practice, with today's challenge beside it. Defined in `shared/src/challenge.ts`.
+_Avoid_: invite link, challenge code, share code (Ghost Races and Daily Number have their own share links)
 
 **Calm**:
 A setting for play with no clocks in Practice and no motion. Ranked rounds keep their clock. It is saved per device, like sound.
@@ -308,6 +324,10 @@ _Avoid_: points total, result, Sparks
 Progress points a Player earns from everything they do, Practice included. They add up to one weekly total, and in a Star they light it. The only progress number besides Score.
 _Avoid_: XP, experience, points, score
 
+**Sparks history**:
+The Player's last 50 Sparks awards, newest first, each with its amount, what it was for and when, shown on the Me page as Recent Sparks. Consecutive answers in one round are one row. It is kept on the device with the Player's progress, carried by backup and restore, and never sent anywhere (`muse-review-polish` change).
+_Avoid_: ledger, transaction log, Sparks log (in copy; `sparksLog` is the record field)
+
 **Board**:
 A ranked list for one League and one period (a day or a week). Arena, each game, the Daily Sutra and weekly Sparks each have their own Boards.
 _Avoid_: leaderboard (fine in copy, not in this glossary), ranking, table
@@ -319,6 +339,10 @@ _Avoid_: global leaderboard, online board
 **Device board**:
 A Board made only from the Players on this device. Always available, offline included. The only Board a Player under 13, or without an Age answer, sees.
 _Avoid_: local leaderboard, offline board
+
+**Warm-up**:
+The projector page at `/teachers/warm-up/` for a class screen: one Trick (the Trick of the day, or the teacher's pick) and three class problems that rise, each with a Reveal and the Trick's steps. A static page outside the game: no Mode, no Player, nothing stored, not a round and no Score (`teacher-warm-up` change). The `/teachers/` box also keeps Open the Arena beside it.
+_Avoid_: Smartboard warm-up (any projector or screen will do), quiz, round
 
 ## Star Quest
 
@@ -399,7 +423,7 @@ Moving pictures that carry no information and take no input: the Sky in 3D, Sutr
 _Avoid_: effects, animations (too broad), graphics
 
 **Performance budget**:
-The written limits a build or pull request must meet: under 150 KB of Brotli-compressed JS before play, first contentful paint under 1.5 s on a mid phone over 4G, and the rest in `docs/perf/baseline.md`. CI fails when one is missed. (Proposed in the `render-performance` change.)
+The written limits a build or pull request must meet, of two kinds. The no-regression ceiling (`react-typescript`): nothing gets slower or heavier than `docs/perf/baseline.json` records (the first-load total, the Lighthouse medians, the interaction timings), and a pull request that improves a number records the new one in the same pull request, so the ceiling follows it down (the ratchet; `tools/budget.ts` prints the line to record). The owner's absolute limits (M5; `render-performance`): under 150 KB of Brotli-compressed JS before play, 40 KB of CSS, 15 KB of JS on a landing or grown-up page, first contentful paint under 1.5 s on a mid phone over 4G, and the rest in `docs/perf/baseline.md`; a limit the start measurement already missed is reported until a pull request meets it, then fails. CI fails when a failing one is missed.
 _Avoid_: target, goal (a budget fails the build)
 
 ## The move to learnvedicmath.com

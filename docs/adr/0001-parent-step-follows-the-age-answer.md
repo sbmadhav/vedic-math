@@ -14,4 +14,5 @@ Players choose their own Mode with no age check, so a 9-year-old can pick Pro. I
 
 - The Age answer is asked once per Player, neutrally (no hint that one answer unlocks more), and is stored only on the device.
 - Placement asks it up front once the Hook ships. Until then it is asked the first time a Score or XP total would be posted.
+- An age given to the grade question (the `age-bands` change, ADR 0008) is the Age answer when the Player has none, so the age question is not asked twice; a grade never sets or changes the Age answer, and neither answer ever makes posting less strict than the Age answer alone. Accepted by the owner on 2026-10-17 (AB2).
 - Get a legal read before promoting the site to schools.

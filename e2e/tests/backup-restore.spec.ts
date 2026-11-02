@@ -14,9 +14,11 @@ test.describe('restoring a crafted backup code', () => {
     const data = { skills: {}, sparks: X, best: { 'run-1': X, ['arena-' + day]: X, 'run-2': 7 }, last: X };
     const code = Buffer.from(JSON.stringify({ data }), 'utf8').toString('base64');
     const dialogs: string[] = [];
-    page.on('dialog', d => { dialogs.push(d.type()); d.type() === 'prompt' ? d.accept(code) : d.dismiss(); });
+    page.on('dialog', d => { dialogs.push(d.type()); d.dismiss(); });
     const before = await page.evaluate(() => localStorage.getItem('mathquest.v1.p1'));
     await page.locator('#pImport').click();
+    await page.locator('#pPaste').fill(code);
+    await page.locator('#pCheck').click();
     // The prompt lists what the code holds (textContent: the markup is text at most) and writes nothing until Bring it
     await expect(page.locator('#pOfferList li')).toHaveText([/^[A-Z][a-z]+ [A-Z][a-z]+ \d\d: 0 Sparks$/]);
     await expect(page.locator('img.injected')).toHaveCount(0);
@@ -34,6 +36,6 @@ test.describe('restoring a crafted backup code', () => {
     }
     await page.goto('/learn/run/1');
     await expect(page.locator('.md-lede')).toContainText('Your best: 0.');
-    expect(dialogs).toEqual(['prompt']);
+    expect(dialogs, 'the code is pasted into a field on the page, never a browser prompt').toEqual([]);
   });
 });

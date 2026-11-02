@@ -8,7 +8,7 @@ globalThis.localStorage = { getItem: k => (k in mem ? mem[k] : null), setItem: (
 // toast() needs a little DOM; nothing here is rendered
 const toasts = [];
 const node = () => { const n = { classList: { add() {}, toggle() {}, remove() {} }, setAttribute() {}, append() {}, remove() {}, getContext: () => null }; Object.defineProperty(n, 'innerHTML', { set: v => toasts.push(v), get: () => '' }); return n; };
-globalThis.document = { querySelector: () => node(), createElement: node, body: node(), hidden: true };
+globalThis.document = { querySelector: () => node(), querySelectorAll: () => [], createElement: node, body: node(), hidden: true };
 globalThis.window = globalThis;
 // reduced motion, so a New Title's confetti draws nothing
 globalThis.matchMedia = () => ({ matches: true });
@@ -274,4 +274,25 @@ test('badgesFor: Explorer is not listed the belt badges until earned, and sees S
   // Earned in Challenger, then switched to Explorer: the belt stays listed
   const kept = ids(gm.badgesFor('explorer', { 'belt-white': Date.now() }));
   assert.ok(kept.includes('belt-white') && !kept.includes('belt-green'));
+});
+
+/* A quest the day's play already met completes at the Mode switch (openspec change muse-review-polish, design D3) */
+test('a quest of the new Mode that today\'s play already meets completes at the switch, once, and not again at the next answer', () => {
+  // a date whose Challenger draw lacks the Arena quest and whose Explorer draw has it
+  let n = 20; while (!(pickHas(n, 'explorer', 'arena-1') && !pickHas(n, 'challenger', 'arena-1'))) n++;
+  fresh('challenger', n);
+  toasts.length = 0;
+  store.bump('arena'); // a tower challenge finished as a Challenger: no Challenger quest asks for it
+  assert.equal(toasts.filter(t => t.includes('Quest complete')).length, 0);
+  const sp0 = store.sparks();
+  store.updatePlayer({ mode: 'explorer' });
+  const done = toasts.filter(t => t.includes('Quest complete'));
+  assert.equal(done.length, 1, 'the Arena quest completes at the switch');
+  assert.match(done[0], /Finish an Arena round or tower challenge/);
+  assert.equal(store.sparks() - sp0, 25);
+  assert.equal(quest('arena-1').done, true);
+  toasts.length = 0;
+  store.record('k-add10', true, false);
+  assert.equal(toasts.filter(t => t.includes('Quest complete')).length, 0, 'the next answer shows no late quest message');
+  assert.equal(store.sparks() - sp0, 25 + 11, 'the answer paid its own Sparks only (10, plus 1 for a streak of 1)');
 });

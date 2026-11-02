@@ -40,6 +40,10 @@ const REQUIRED = [
   'with GoatCounter and Cloudflare Web Analytics, anonymously: no cookies, no IDs and no names.',
   // videos (watch-shelf)
   "Video pictures come from this site, and a video loads from YouTube, in privacy-enhanced mode, only after a player presses play; YouTube's own rules apply once it plays.",
+  // talking with the Family (family-helpers step 3, helper-conversation spec): what a message sends, Turnstile, never under 13
+  'Talking with the Family (an option in Me for players 13 and over, off until turned on) sends each message with the Skill, the question\'s numbers and the words of that visit to our server',
+  'Cloudflare Turnstile bot check runs once per browser session before the first message',
+  'It is never offered to a player whose age answer is under 13.',
 ];
 async function expectNote(page: import('@playwright/test').Page, summary: string, now?: string) {
   const note = page.locator('details', { has: page.locator('summary', { hasText: summary }) }).first();
@@ -591,3 +595,48 @@ test('Calm, text size and an untimed round send nothing about them', async ({ pa
   for (const r of out) { expect(r).not.toMatch(/calm/i); expect(r).not.toMatch(/vm\.text|text-plus|"a\+"/); }
   expect((await cloudLog(page)).writes).toEqual([]);
 });
+
+/* The Grade answer stays on the device (openspec change age-bands, task 5.1; ADR 0008; reading-bands "Nothing sent"): for
+   each band, a session with Practice, a Star, the Arena daily round and Me sends no request whose URL, headers or body
+   carries the Grade answer, the age or the band, and sets no cookie. The game's own files are named after what they hold
+   (shared/src/bands.ts), so same-origin GETs of files are left out, as in the Sky check above. */
+for (const [band, reading] of [['early', { grade: 'k', at: 1 }], ['growing', { age: 8, at: 1 }], ['fluent', { grade: '10', at: 1 }]] as const) {
+  test.describe(`a ${band} Challenger`, () => {
+    test.use({ seedPlayer: { reading }, seedConsent: { age: 'adult' } });
+    test('Practice, a Star, the daily round and Me send nothing about the grade, the age or the band, and set no cookie', async ({ page }, testInfo) => {
+      chromiumOnly(testInfo, 'app logic, the same in every engine');
+      const out: string[] = [];
+      page.on('request', r => { if (!sameOriginFile(r)) out.push(`${r.method()} ${r.url()}\n${JSON.stringify(r.headers())}\n${r.postData() || ''}`); });
+      await page.clock.install();
+      await open(page, '#/skill/3-mult');
+      const box = page.locator('#practice');
+      for (let k = 0; k < 3; k++) {
+        if (band === 'early') { await box.locator('.pr-choice').first().click(); if (await box.locator('#prCheck').getAttribute('data-next') === null) await box.locator('.pr-choice').first().click(); }
+        else await box.locator('#prShow').click();
+        await box.locator('#prCheck').click();
+      }
+      await page.goto(`${APP}#/star/sq5/1`);
+      await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
+      if (band === 'early') await page.locator('#stMain .star-choice').first().click();
+      else { await page.keyboard.type('1'); await page.keyboard.press('Enter'); }
+      await page.clock.runFor(1_500);
+      await page.goto(`${APP}#/arena`);
+      await page.locator('[data-t="daily"]').click();
+      await page.locator('#arGo').click();
+      await page.clock.runFor(2_500);
+      await expect(page.locator('#arQ')).not.toBeEmpty();
+      await typeAnswer(page, '1');
+      await page.locator('#arForm button').click();
+      await page.clock.fastForward(61_000);
+      await expect(page.locator('.ar-result')).toBeVisible();
+      await page.goto(`${APP}#/me`);
+      await expect(page.locator('#readingNote')).toBeVisible();
+      await page.clock.runFor(70_000); // past the weekly Sparks post's wait
+      expect(await page.evaluate(() => document.cookie)).toBe('');
+      const words = /reading|"grade"|grade=|"age"|age=|\bband\b|band-|early|growing|fluent|readingCard/i;
+      for (const r of out) expect(r, r.slice(0, 200)).not.toMatch(words);
+      for (const w of (await cloudLog(page)).writes) { expect(Object.keys(w.data).sort()).toEqual(['avatar', 'exp', 'name', 'score', 'ts']); expect(JSON.stringify(w)).not.toMatch(words); }
+      expect(await page.evaluate(() => JSON.parse(localStorage.getItem('vm.players')!).list[0].reading)).toMatchObject(reading);
+    });
+  });
+}

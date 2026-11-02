@@ -311,3 +311,28 @@ test.describe('Calm', () => {
     expect(await page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running').map(a => String((a.effect as KeyframeEffect | null)?.target && ((a.effect as KeyframeEffect).target as Element).className)))).toEqual([]);
   });
 });
+
+/* An Early reader answers a Star by tapping 3 big buttons, in any Mode (openspec change age-bands; star-round delta
+   "Early reader on 85 squared"), and Bolt's right-answer line comes from the Early set */
+test.describe('an Early Challenger', () => {
+  test.use({ seedPlayer: { reading: { grade: '1', at: 1 } } });
+  test('a Star shows 3 buttons with the square among them and no digit boxes; a right answer gets an Early line, never Boom', async ({ page }) => {
+    await open(page, '#/star/sq5/2');
+    await question(page, 1);
+    const n = await base(page);
+    const buttons = page.locator('#stMain .star-choice');
+    await expect(buttons).toHaveCount(3);
+    await expect(page.locator('#stBoxes')).toHaveCount(0);
+    await expect(page.locator('#stPad')).toBeHidden();
+    await expect(buttons.filter({ hasText: new RegExp(`^${n * n}$`) })).toHaveCount(1);
+    const values = (await buttons.allTextContents()).map(Number);
+    expect(values).toEqual([...values].sort((a, b) => a - b));
+    await buttons.filter({ hasText: new RegExp(`^${n * n}$`) }).click();
+    await expect(page.locator('#stSay')).toContainText(/You did it!|Yes!|Great job!/);
+    await expect(page.locator('#stSay')).not.toContainText(/Boom|Nailed|Smooth/);
+    await expect(page.locator('#stSay')).toContainText('+10 Sparks');
+    await question(page, 2);
+    await expect(page.locator('#stMain .star-choice')).toHaveCount(3);
+    await expect(page.locator('#stDare small')).toHaveText('Double Sparks. A miss is free.');
+  });
+});

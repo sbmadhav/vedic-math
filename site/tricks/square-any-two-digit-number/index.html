@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Square any two-digit number: the speed trick, step by step · Learn Vedic Math</title>
+<meta name="description" content="Square any two-digit number in one line with the duplex: a², then 2ab, then b², carrying right to left. Try it on your own number.">
+<link rel="canonical" href="https://learnvedicmath.com/tricks/square-any-two-digit-number/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Learn Vedic Math">
+<meta property="og:title" content="Square any two-digit number: the speed trick, step by step">
+<meta property="og:description" content="Square any two-digit number in one line with the duplex: a², then 2ab, then b², carrying right to left. Try it on your own number.">
+<meta property="og:url" content="https://learnvedicmath.com/tricks/square-any-two-digit-number/">
+<meta property="og:image" content="https://learnvedicmath.com/icons/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Learn Vedic Math logo: the digits one, zero and nine drawn as a smiling family">
+<script>try{var d=document.documentElement,t=localStorage.getItem('theme');if(t==='light'||t==='dark')d.dataset.theme=t;if(localStorage.getItem('motion-paused')==='1')d.classList.add('motion-paused');if(localStorage.getItem('vm.calm')==='1')d.classList.add('calm');}catch(e){}</script>
+<meta name="theme-color" content="#F6F7F9">
+<link rel="icon" href="/icons/favicon-16.png" sizes="16x16" type="image/png">
+<link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="/icons/favicon-48.png" sizes="48x48" type="image/png">
+<link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="preload" href="/fonts/nunito-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/fredoka-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/ds/2.2.0/tokens.css">
+<link rel="stylesheet" href="/theme/learnvedicmath.css">
+<link rel="stylesheet" href="/theme/fonts.css">
+<link rel="stylesheet" href="/ds/2.2.0/components.css">
+<link rel="stylesheet" href="/theme/site.css">
+<link rel="stylesheet" href="/theme/tricks.css">
+<script type="application/ld+json">[{"@context":"https://schema.org","@type":"LearningResource","name":"Square any two-digit number","description":"Square any two-digit number in one line with the duplex: a², then 2ab, then b², carrying right to left. Try it on your own number.","url":"https://learnvedicmath.com/tricks/square-any-two-digit-number/","teaches":"For ab²: write a², then 2 × a × b in the middle, then b², and carry from right to left.","educationalLevel":"Grade 6","isAccessibleForFree":true,"inLanguage":"en","learningResourceType":"interactive resource","isPartOf":{"@type":"WebSite","name":"Learn Vedic Math","url":"https://learnvedicmath.com/"}},{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://learnvedicmath.com/"},{"@type":"ListItem","position":2,"name":"Speed tricks","item":"https://learnvedicmath.com/tricks/"},{"@type":"ListItem","position":3,"name":"Square any two-digit number","item":"https://learnvedicmath.com/tricks/square-any-two-digit-number/"}]}]</script>
+</head>
+<body class="md-page md-root lv-tricks">
+<a class="md-skip" href="#main">Skip to content</a>
+<!-- md-header -->
+<!-- Learn Vedic Math header, derived from design system 2.2.0 header.html (/ds/2.2.0/): no Explore button, the Learn Vedic Math brand (the Nikhilam Family mark, brand/nikhilam-family/) linking to /?home, and every nav wrapping below 1180px. -->
+<header class="md-header md-header--tabs">
+  <div class="md-wrap md-header-in">
+    <a class="md-brand" href="/?home" aria-label="Learn Vedic Math, home"><svg class="lv-mark" viewBox="0 0 96 64" aria-hidden="true"><path d="M6 21C5 11 13 6 18 6C24 6 28 11 27 17C26 23 20 27 13 27C20 33 26 44 27 56" fill="none" stroke="var(--sky)" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="14.5" cy="16.5" rx="1.8" ry="2.2" fill="var(--ink)"/><ellipse cx="20.5" cy="16.5" rx="1.8" ry="2.2" fill="var(--ink)"/><circle cx="46" cy="42" r="11" fill="var(--bolt-eye)" stroke="var(--sun)" stroke-width="7"/><ellipse cx="42.5" cy="41" rx="1.8" ry="2.2" fill="var(--on-accent)"/><ellipse cx="49.5" cy="41" rx="1.8" ry="2.2" fill="var(--on-accent)"/><path d="M43 45.5Q46 48.5 49 45.5" fill="none" stroke="var(--on-accent)" stroke-width="1.9" stroke-linecap="round"/><path d="M66.8 31.2C72 42 85 44 88 58" fill="none" stroke="var(--coral)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="76" cy="22" r="13" fill="var(--sun)" stroke="var(--coral)" stroke-width="7"/><ellipse cx="72" cy="21" rx="2" ry="2.5" fill="var(--on-accent)"/><ellipse cx="80" cy="21" rx="2" ry="2.5" fill="var(--on-accent)"/><path d="M72.5 26Q76 29.5 79.5 26" fill="none" stroke="var(--on-accent)" stroke-width="2.1" stroke-linecap="round"/></svg><span class="md-brand-t"><!-- slot:brand -->Learn Vedic Math<!-- /slot:brand --></span></a>
+    <!-- slot:nav --><nav class="md-nav" aria-label="Learn Vedic Math"><a href="/learn/">Learn</a><a href="/parents/">For parents</a><a href="/teachers/">For teachers</a></nav><!-- /slot:nav -->
+    <button type="button" class="md-icon-btn md-theme" id="themeBtn" data-track="math" aria-label="Switch color scheme" title="Switch color scheme"><svg class="md-theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="var(--sun)" stroke="currentColor" stroke-width="2"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg class="md-theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="var(--plum)" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="17" cy="5" r="1.2" fill="currentColor"/><circle cx="20.5" cy="9" r=".9" fill="currentColor"/></svg></button>
+    <div class="md-header-end"><!-- slot:music --><!-- /slot:music --><!-- slot:end --><!-- /slot:end --></div>
+  </div>
+</header>
+<!-- /md-header -->
+
+<main id="main" tabindex="-1" class="md-section">
+  <div class="md-wrap lv-page tk-page">
+    <nav class="tk-crumbs" aria-label="Breadcrumb"><ol><li><a href="/?home">Home</a></li><li><a href="/tricks/">Speed tricks</a></li><li aria-current="page">Square any two-digit number</li></ol></nav>
+    <h1>Square any two-digit number</h1>
+    <p class="tk-sutra">From the sutra <b lang="sa-Latn">Ūrdhva Tiryagbhyām</b>, <q>Vertically and crosswise, used for squares</q>, in Bharati Krishna Tirtha's 1965 book <i>Vedic Mathematics</i>. <a href="/learn/sutras/s3">Deep dive into the sutra</a></p>
+    <!-- The calculator (design D4): the Trick's own fields and limits; /tricks/calculator.js runs valid() and steps()
+         from the catalog (shared/src/vedic.ts) for the typed numbers. Hidden with JavaScript off; unseen until the
+         module marks it ready. -->
+    <section class="tk-calc" id="tkCalc" data-trick="duplex" aria-labelledby="tk-calc-h">
+      <h2 id="tk-calc-h">Try it with your numbers</h2>
+      <form class="tk-in" id="tkForm" novalidate>
+        <label>Two-digit number<input type="number" inputmode="numeric" min="10" max="99" data-i="0" value="47"></label>
+        <div class="tk-btns"><button type="submit" class="md-btn md-btn--primary" id="tkShow">Show steps</button><button type="button" class="md-btn" id="tkRand">New numbers</button></div>
+      </form>
+      <p class="tk-err" id="tkErr" role="alert"></p>
+      <div class="tk-board" id="tkBoard"></div>
+      <div class="tk-nav" id="tkNav" role="group" aria-label="Step by step" hidden>
+        <p class="tk-at" id="tkAt" aria-live="polite" aria-atomic="true"></p>
+        <button type="button" class="md-btn" id="tkBack" aria-disabled="true">Back</button>
+        <button type="button" class="md-btn md-btn--primary" id="tkNext">Next</button>
+        <button type="button" class="md-btn" id="tkAll">Show all</button>
+      </div>
+    </section>
+    <h2>When to use it</h2>
+    <p>Squaring any two-digit number, like 47² or 83².</p>
+    <h2>The idea</h2>
+    <p>For ab²: write a², then 2 × a × b in the middle, then b², and carry from right to left.</p>
+    <section class="tk-example" aria-labelledby="tk-ex-h">
+      <h2 id="tk-ex-h">Worked example: 47²</h2>
+      <ol class="tk-steps">
+        <li><span class="tk-show"><b class="hl hl-coral">16</b> | <b class="hl hl-teal">56</b> | <b class="hl hl-sky">49</b></span><span class="tk-say">Digits 4 and 7. Left: 4² = 16. Middle: 2 × 4 × 7 = 56. Right: 7² = 49.</span></li>
+        <li><span class="tk-show"><b class="hl hl-coral">16</b> | <b class="hl hl-teal">56</b> | <b class="hl hl-sky">49</b></span><span class="tk-say">Keep one digit in each of the middle and right spots and carry the rest leftwards.</span></li>
+        <li><span class="tk-show"><b>2209</b></span><span class="tk-say">So 47² = 2209.</span></li>
+      </ol>
+    </section>
+    <p class="tk-practice"><a class="md-btn md-btn--primary" id="tkPractice" href="/learn/skill/v-duplex">Practice this trick</a></p>
+    <p class="tk-more">All <a href="/tricks/">15 speed tricks</a>, each with its calculator. The speed tricks use sutras from Bharati Krishna Tirtha's 1965 book <i>Vedic Mathematics</i>; the lessons, problems and pictures here are our own.</p>
+  </div>
+</main>
+
+<footer class="lv-foot">
+  <div class="md-wrap">
+    <p><a href="/learn/">Learn</a> · <a href="/tricks/">Speed tricks</a> · <a href="/parents/">For parents</a> · <a href="/teachers/">For teachers</a> · <a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · <a href="/licenses/">Licences</a></p>
+  </div>
+</footer>
+<script src="/ds/2.2.0/header.js" defer></script>
+<script type="module" src="/tricks/calculator.js"></script>
+<script src="/js/analytics.js" defer></script>
+</body>
+</html>

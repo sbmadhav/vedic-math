@@ -25,10 +25,10 @@ const description = html => unescape(attr(html, /<meta name="description" conten
 const canonical = html => attr(html, /<link rel="canonical" href="([^"]*)">/);
 const og = (html, p) => unescape(attr(html, new RegExp(`<meta property="og:${p}" content="([^"]*)">`)));
 
-test('one page per allPaths() entry (3,469) plus the 404 shell, each at learn/<path>.html, Home at learn/index.html', () => {
+test('one page per allPaths() entry (3,470) plus the 404 shell, each at learn/<path>.html, Home at learn/index.html', () => {
   assert.equal(ROUTES.length, ALL.length);
-  assert.equal(ROUTES.length, 3469);
-  assert.equal(PAGES.length, 3470);
+  assert.equal(ROUTES.length, 3470);
+  assert.equal(PAGES.length, 3471);
   assert.deepEqual(ROUTES.map(p => p.path), ALL.map(e => e.path), 'in route-table order');
   assert.equal(fileOf('/learn/'), 'learn/index.html');
   assert.equal(fileOf('/learn/skills'), 'learn/skills.html');
@@ -112,7 +112,7 @@ test('`noindex, follow` is on exactly the rows the route table does not index, a
     assert.equal((p.html.match(/<meta name="robots"/g) || []).length, has ? 1 : 0, p.path);
     if (has) count++;
   }
-  assert.equal(count, 3469 - 239);
+  assert.equal(count, 3470 - 239);
   assert.ok(by('/learn/challenge/30').html.includes(NOINDEX), 'a numbered step');
   assert.ok(by('/learn/find').html.includes(NOINDEX), 'Find is public but not indexed');
   assert.ok(!by('/learn/sutras/s1').html.includes(NOINDEX), 'a Deep dive is indexed');

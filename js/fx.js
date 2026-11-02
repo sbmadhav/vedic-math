@@ -2,6 +2,8 @@
    Sounds are generated in the browser and only follow a tap. Motion respects reduced-motion settings. */
 import * as store from './store.js';
 import * as voice from './voice.js';
+import { bandOf, rulesFor } from '../shared/src/bands.ts';
+import { copyFor, pickLine } from '../shared/src/copy.ts';
 
 /* ---------- Play modes (by vibe, not by age label on screen) ---------- */
 export const MODES = {
@@ -22,17 +24,35 @@ export function applyMode() {
   document.body.classList.add('mode-' + m);
   // Explorer and Challenger read the friendlier copy; Pro reads the grown-up copy
   document.body.classList.toggle('kidmode', m === 'explorer' || m === 'challenger'); // page-local wording only; the portfolio's kid mode setting is untouched
+  /* The Reading band (openspec change age-bands): Early's larger buttons and spacing come from body.band-early (math.css) */
+  document.body.classList.remove('band-early', 'band-growing', 'band-fluent', 'band-none');
+  document.body.classList.add('band-' + (band() || 'none'));
 }
 /* Pick copy by mode: t({ explorer, challenger, pro }) */
 export const t = o => o[mode()] ?? o.challenger ?? o.pro ?? Object.values(o)[0];
+
+/* ---------- Reading bands (openspec change age-bands, shared/src/bands.ts): the Grade answer's band, in every Mode ----------
+   band(): early, growing, fluent or null; rules(): what the band changes (RULES), or null with no answer. A band tunes
+   presentation only: nothing in the engine reads it (eslint.config.js keeps it out of the math modules). */
+export const band = () => bandOf(store.reading());
+export const rules = () => rulesFor(band());
+/* Copy by band, then Mode (shared/src/copy.ts): copy(key, vars) gives the line (or a line set, untouched); line(key)
+   draws one line of a set now, for the handler that shows it to keep */
+export const copy = (key, vars) => copyFor(key, { mode: mode(), band: band() }, vars);
+export const line = (key, vars) => pickLine(key, { mode: mode(), band: band() }, vars);
+/* No countdown tick sounds for Early and Growing (decision 4), in Ranked rounds too */
+const noTicks = () => { const r = rules(); return !!r && !r.ticks; };
 
 /* ---------- Settings ---------- */
 const pref = (k, d) => { try { const v = localStorage.getItem('vm.' + k); return v === null ? d : v === '1'; } catch (e) { return d; } };
 const setPref = (k, v) => { try { localStorage.setItem('vm.' + k, v ? '1' : '0'); } catch (e) {} };
 export const soundOn = () => pref('sound', true);
 export const setSound = v => setPref('sound', v);
-export const voiceOn = () => pref('voice', mode() === 'explorer');
-export const setVoice = v => { setPref('voice', v); if (v) voice.warmStudio(); };
+/* Read aloud is a choice per Player (openspec change age-bands, AB4): the Player's own choice, else the band's default
+   (on for Early, off for Growing and Fluent), else the Mode's (on for Explorer). vm.voice was copied to every Player
+   once (js/store.js copyVoice) and is not read any more. */
+export const voiceOn = () => { const v = store.playerVoice(); if (typeof v === 'boolean') return v; const r = rules(); return r ? r.voice : mode() === 'explorer'; };
+export const setVoice = v => { store.setPlayerVoice(v); if (v) voice.warmStudio(); };
 /* Once at start: when read aloud is on, the studio voice's core pack loads while the page is idle */
 export const warmVoice = () => { if (voiceOn()) voice.warmStudio(); };
 /* Home's More ways to play disclosure (openspec first-visit): closed until opened once on this device */
@@ -118,7 +138,7 @@ function tone(freq, start, dur, type = 'sine', vol = 0.12) {
 }
 export function sfx(kind) {
   if (!soundOn() || document.hidden) return;
-  if (kind === 'tick' && calmOn()) return; /* Calm: no countdown ticks, in Ranked rounds too */
+  if (kind === 'tick' && (calmOn() || noTicks())) return; /* Calm, Early and Growing: no countdown ticks, in Ranked rounds too */
   try {
     if (kind === 'ok') { tone(660, 0, .12, 'triangle'); tone(990, .09, .18, 'triangle'); }
     else if (kind === 'no') { tone(220, 0, .18, 'sawtooth', .05); }
@@ -146,6 +166,11 @@ export { settingsHTML as voiceSettingsHTML, wireSettings as wireVoiceSettings } 
    under no motion (noMotion() above uses the same rule). */
 export { confetti, sparkle, pop, bounce, twinkle, wiggle, tick, cheer, rollUp, rollSparks } from './celebrate.js';
 
+/* ---------- Held input (openspec change muse-review-polish): js/hold.js ----------
+   hold(el, ms, then, { skippable, signal }) replaces later(then, ms, signal) where a round holds input for feedback:
+   a bar under the keypad after 1.2 s, and Next (Enter) in untimed rounds from 2 s. */
+export { hold } from './hold.js';
+
 /* ---------- Toasts ---------- */
 /* Which edge the toasts sit on (openspec find-and-home-polish): the bottom, unless a primary action is there. A round's
    number pad or answer choices (PADS) hold the lower part of the screen and move as feedback shows, so while one is on
@@ -168,7 +193,11 @@ function placeToasts(box) {
   } catch (e) { /* no layout (tests): the toasts stay at the bottom */ }
 }
 export function toast(html, tone = '') {
-  let box = document.querySelector('.fx-toasts'); if (!box) { box = document.createElement('div'); box.className = 'fx-toasts'; box.setAttribute('role', 'status'); box.setAttribute('aria-live', 'polite'); document.body.append(box); }
+  /* A modal dialog (the video player, a deep dive) sits in the top layer above everything in the body, so a toast
+     fired while one is open (the Video learner badge after a minute of play) goes inside it, where it can be seen */
+  const dialogs = document.querySelectorAll('dialog[open]'), host = dialogs.length ? dialogs[dialogs.length - 1] : document.body;
+  let box = document.querySelector('.fx-toasts'); if (!box) { box = document.createElement('div'); box.className = 'fx-toasts'; box.setAttribute('role', 'status'); box.setAttribute('aria-live', 'polite'); }
+  if (box.parentElement !== host) host.append(box);
   const el = document.createElement('div'); el.className = 'fx-toast ' + tone; el.innerHTML = html; box.append(el);
   placeToasts(box); setTimeout(() => placeToasts(box), 300); /* again once the answer's feedback has moved the page */
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 400); }, 3200);

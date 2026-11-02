@@ -100,3 +100,10 @@ test('decode rejects ghosts that could never end: splits outside 0.01 s to 10 mi
   const g = G.decode(code([h(100), h(60000)].join(',')));
   assert.equal(G.total(g), 601000);
 });
+
+/* Every count of misses agrees in number: "1 miss", never "1 misses" (Muse review round 2, item 4) */
+test('misses are counted in words that agree with the number', () => {
+  assert.equal(G.missWord(0), '0 misses');
+  assert.equal(G.missWord(1), '1 miss');
+  assert.equal(G.missWord(2), '2 misses');
+});

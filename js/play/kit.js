@@ -1,6 +1,6 @@
 /* Shared kit for the play experiences (Spellbook, Locks, Tala Lab and the rest, js/play/catalog.js): DOM helpers,
    seeded randomness, storage, sound, sharing and analytics. Pure helpers (rng, seeds, dates) have no DOM use, so node tests can import them. */
-import { BASE } from '../paths.js';
+import { SITE, APP_BASE } from '../../shared/src/site.ts';
 
 /* ---------- DOM ---------- */
 export const $ = (sel, root = document) => root.querySelector(sel);
@@ -82,10 +82,16 @@ export const sfx = name => ({
 }[name] || (() => {}))();
 
 /* ---------- Sharing ---------- */
-export async function share({ title = 'Vedic Math', text = '', url = '' } = {}) {
+/* Where the game lives (shared/src/site.ts): every share link is built from these two, so the move to /learn/
+   (openspec change indexable-routes, design D2) changes one line there. A challenge link (shared/src/challenge.ts) names
+   SITE whatever host built it; shareUrl below keeps the origin it runs on. */
+export { SITE, APP_BASE };
+/* The share sheet first, then the clipboard with the word "Copied. Paste it anywhere." through notify (the play toast
+   by default; the Arena passes the app's fx.toast, since the play stylesheet is not on its page) */
+export async function share({ title = 'Vedic Math', text = '', url = '', notify = toast } = {}) {
   track('share', title);
   try { if (navigator.share) { await navigator.share({ title, text, url }); return 'shared'; } } catch (e) { if (e && e.name === 'AbortError') return 'cancelled'; }
-  try { await navigator.clipboard.writeText([text, url].filter(Boolean).join('\n')); toast('Copied. Paste it anywhere.'); return 'copied'; } catch (e) { return 'failed'; }
+  try { await navigator.clipboard.writeText([text, url].filter(Boolean).join('\n')); notify('Copied. Paste it anywhere.'); return 'copied'; } catch (e) { return 'failed'; }
 }
 /* Save a canvas as a PNG (art studio, share cards) */
 export function downloadCanvas(canvas, name = 'vedic-math.png') {
@@ -98,7 +104,7 @@ export const b64url = {
 };
 /* A share link is the route's path ('#/arena/ghosts/r/abc' to /learn/arena/ghosts/r/abc), which _redirects answers with
    the experience's page (openspec change indexable-routes, design D4) */
-export const shareUrl = hash => `${location.origin}${BASE}/${hash.replace(/^#\//, '')}`;
+export const shareUrl = hash => `${location.origin}${APP_BASE}${hash.replace(/^#\//, '')}`;
 
 /* ---------- Feedback ---------- */
 export function toast(text, ms = 2600) {
@@ -110,6 +116,9 @@ export function toast(text, ms = 2600) {
    wins only (a lock cracked, a Belt, a best, a puzzle solved); sparkle(el) and the other small ones are for everyday
    moments. All of them hold still under reduced motion, Pause motion and Calm. */
 export { confetti, sparkle, pop, bounce, twinkle, wiggle, tick } from '../celebrate.js';
+/* Held input (js/hold.js, openspec change muse-review-polish): hold(el, ms, then, { skippable, signal }) where an
+   experience holds input for feedback, so the Player sees the wait and, in an untimed round, can press Next */
+export { hold } from '../hold.js';
 
 /* ---------- Analytics (openspec analytics spec): math/play/<experience>/<action>, fixed words only ----------
    The second argument is ignored on purpose: titles and paths never carry scores, counts, seeds or typed text. */

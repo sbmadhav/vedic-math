@@ -173,13 +173,59 @@ test.describe('first visit', () => {
 
 test('the landing and grown-up pages have no serious or critical axe violations', async ({ page }, testInfo) => {
   chromiumOnly(testInfo);
-  for (const url of ['/?home', '/parents/', '/teachers/', '/privacy/', '/terms/', '/licenses/']) {
+  for (const url of ['/?home', '/parents/', '/teachers/', '/teachers/warm-up/', '/privacy/', '/terms/', '/licenses/']) {
     await page.goto(url);
     await expect(page.locator('main h1')).toBeVisible();
     const res = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
     expect(res.violations.filter(v => v.impact === 'serious' || v.impact === 'critical').map(v => `${url} ${v.id}: ${v.nodes.map(n => n.target.join(' ')).join(' | ')}`)).toEqual([]);
   }
 });
+
+/* The projector warm-up (openspec change teacher-warm-up, task 2.3): Today's trick with its example stepped, then a problem
+   with its answer and steps, in both schemes at a projector's size */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, warm-up`, () => {
+    test.use({ colorScheme: scheme, viewport: { width: 1280, height: 720 } });
+    test("/teachers/warm-up/ on Today's trick and on a revealed problem has no serious or critical axe violations", async ({ page }, testInfo) => {
+      chromiumOnly(testInfo);
+      await page.goto('/teachers/warm-up/?trick=sq5');
+      await expect(page.locator('#wuTitle')).toHaveText('Square numbers ending in 5');
+      await page.waitForLoadState('networkidle');
+      expect(await serious(page, '/teachers/warm-up/')).toEqual([]);
+      await page.locator('#wuNext').click();
+      await expect(page.locator('#wuExBoard .sb-step')).toHaveCount(1);
+      expect(await serious(page, '/teachers/warm-up/')).toEqual([]);
+      for (let i = 0; i < 3; i++) await page.locator('#wuNext').click();
+      await expect(page.locator('#wuAt')).toHaveText(/^Problem 1 of 3/);
+      await page.locator('#wuReveal').click();
+      await page.locator('#wuReveal').click();
+      await expect(page.locator('#wuBoard .sb-step')).toHaveCount(1);
+      expect(await serious(page, '/teachers/warm-up/')).toEqual([]);
+    });
+  });
+}
+
+/* The Trick pages (openspec change trick-pages, task 1.3): the index and two Trick pages, with the steps drawn, in both schemes */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, Trick pages`, () => {
+    test.use({ colorScheme: scheme });
+    for (const url of ['/tricks/', '/tricks/square-numbers-ending-in-5/', '/tricks/multiply-numbers-near-100/']) {
+      test(`${url} has no serious or critical axe violations`, async ({ page }, testInfo) => {
+        chromiumOnly(testInfo);
+        await page.goto(url);
+        await expect(page.locator('main h1')).toBeVisible();
+        if (url !== '/tricks/') {
+          await expect(page.locator('#tkCalc[data-ready]')).toBeVisible();
+          await page.locator('#tkShow').click();
+          await expect(page.locator('#tkBoard .tk-step')).toHaveCount(1);
+          await page.locator('#tkAll').click();
+        }
+        await page.waitForLoadState('networkidle');
+        expect(await serious(page, url)).toEqual([]);
+      });
+    }
+  });
+}
 
 /* The brand link's accessible name comes from its label, not from the mark (which is hidden), on the game and the landing page */
 test('the brand link is named "Learn Vedic Math, home" and its mark is decorative', async ({ page }, testInfo) => {
@@ -292,6 +338,43 @@ for (const scheme of ['light', 'dark'] as const) {
       await page.locator('[data-t="words"]').click();
       await page.locator('#arGo').click();
       await expect(page.locator('#arStory')).toBeVisible({ timeout: 6000 });
+      expect(await serious(page, 'shell')).toEqual([]);
+    });
+  });
+}
+
+/* A challenge link (openspec change arena-challenge-link, task 2.5): the lobby with the friend's line (Ranked, and the
+   Practice case with its extra chip) and the daily result with Challenge a friend, both schemes, at a phone width */
+for (const scheme of ['light', 'dark'] as const) {
+  test.describe(`${scheme} scheme, challenge link`, () => {
+    test.use({ colorScheme: scheme });
+    /* The clock starts on a fixed date and keeps running (axe-core waits on timers, so a paused clock would hang it);
+       the round's end is jumped to with fastForward */
+    test.beforeEach(async ({ page }) => {
+      await page.addInitScript(() => { (window as any).goatcounter ||= { count() {} }; });
+      await page.clock.install({ time: new Date('2026-10-21T10:00:00') });
+    });
+    test('the Arena lobby with a friend\'s challenge (today, and yesterday as Practice) has no serious or critical axe violations', async ({ page }, testInfo) => {
+      chromiumOnly(testInfo);
+      await page.setViewportSize({ width: 375, height: 760 });
+      await open(page, '#/arena/day/2026-10-21/challenger/240');
+      await expect(page.locator('#arFriend')).toContainText('Score 240 to beat');
+      await page.waitForLoadState('networkidle');
+      expect(await serious(page, '#/arena')).toEqual([]);
+      await open(page, '#/arena/day/2026-10-20/challenger/240');
+      await expect(page.locator('[data-t="friend"]')).toHaveAttribute('aria-pressed', 'true');
+      await page.waitForLoadState('networkidle');
+      expect(await serious(page, '#/arena')).toEqual([]);
+    });
+    test('the daily result with Challenge a friend has no serious or critical axe violations', async ({ page }, testInfo) => {
+      chromiumOnly(testInfo);
+      await page.setViewportSize({ width: 375, height: 760 });
+      await open(page, '#/arena');
+      await page.locator('#arGo').click();
+      await expect(page.locator('#arQ')).not.toBeEmpty({ timeout: 6000 });
+      await page.clock.fastForward(61_000);
+      await expect(page.locator('#arShare')).toBeVisible();
+      await page.waitForLoadState('networkidle');
       expect(await serious(page, 'shell')).toEqual([]);
     });
   });

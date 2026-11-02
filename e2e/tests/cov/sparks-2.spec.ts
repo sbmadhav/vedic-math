@@ -62,8 +62,9 @@ test.describe('restoring a backup code saved before the update', () => {
     // The backup code format from before Sparks: base64 of { player, data } with xp and weekXp
     const old = { player: { id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode: 'challenger' }, data: v2(900, {}) };
     const code = Buffer.from(JSON.stringify(old), 'utf8').toString('base64');
-    page.once('dialog', d => d.accept(code));
     await page.locator('#pImport').click();
+    await page.locator('#pPaste').fill(code);
+    await page.locator('#pCheck').click();
     // Restore from code asks first (progress-handoff spec): nothing played here yet, so Bring it; the page reloads
     await expect(page.locator('#pOfferList li')).toHaveText(['Swift Tiger 42: 900 Sparks']);
     await page.locator('#pBring').click();

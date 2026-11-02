@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { test, expect, APP } from './fixtures';
+import { test, expect, APP, skipHook, pickMode } from './fixtures';
 import type { Page } from '@playwright/test';
 
 /* Third parties (openspec third-party-requests, change learnvedicmath, design D10, task 7.4). build.py holds the one
@@ -43,9 +43,10 @@ test.describe('a first-time visitor', () => {
     await expect(page.locator('h1').first()).toBeVisible();
     await page.goto(APP); // the game: a first visit meets the Mode picker
     await expect(page.locator('.mode-pick .mode-card')).toHaveCount(3);
-    await page.locator('.mode-card[data-mode="challenger"]').click(); // picks a Mode
+    await pickMode(page, 'challenger'); // picks a Mode, then skips the Placement offer
     await expect(page.locator('#view h1').first()).toBeVisible();
     await page.goto(`${APP}#/star/sq5/1`); // plays a Star: four right answers light it
+    await skipHook(page); /* a brand-new Player's first Star opens with the Hook (openspec hook) */
     for (let i = 1; i <= 4; i++) {
       await expect(page.locator('#stMain .star-tag')).toHaveText(`Question ${i} of 4`);
       await page.keyboard.type(await sq(page));
@@ -71,5 +72,27 @@ test.describe('a first-time visitor', () => {
     const allowed = new Set([new URL(baseURL!).host, ...thirdParties()]);
     expect(reached.filter(([h]) => !allowed.has(h)).map(([, u]) => u), `a host not in build.py THIRD_PARTIES (${[...allowed].join(', ')})`).toEqual([]);
     expect(hosts.has(new URL(baseURL!).host), 'the site itself was reached').toBe(true);
+  });
+});
+
+/* Talking with the Family (openspec family-helpers step 3, helper-conversation spec "A Turnstile check once per browser
+   session", Scenario "An under-13 Player and Turnstile"): Cloudflare Turnstile is a listed third party that loads only
+   when a Player 13 or over sends their first message. A Player whose Age answer is under 13 is never offered the
+   conversation, so nothing reaches Turnstile or the conversation route for them, even with the switch forced on. */
+test.describe('an under-13 Player with the Family helpers on', () => {
+  test.use({ seedConsent: { age: 11 }, seedPlayer: { family: true, familyTalk: true } });
+
+  test('a Practice session with a Visit reaches neither Turnstile nor the conversation route', async ({ page }) => {
+    expect(thirdParties(), 'Turnstile is a listed third party').toContain('challenges.cloudflare.com');
+    const seen: string[] = [];
+    page.on('request', r => { if (/challenges\.cloudflare\.com|\/api\/family\/|\/api\/session/.test(r.url())) seen.push(r.url()); });
+    await page.goto(`${APP}#/skill/v-near-base`);
+    await expect(page.locator('#practice #prQ')).toBeVisible();
+    await page.locator('#practice [data-fh-ask]').click();
+    await expect(page.locator('.fh-visit')).toBeVisible();
+    await expect(page.locator('.fh-visit .fh-say')).not.toBeEmpty();
+    await expect(page.locator('.fh-visit .fh-talk')).toHaveCount(0);
+    await page.waitForLoadState('networkidle');
+    expect(seen).toEqual([]);
   });
 });

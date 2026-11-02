@@ -1,4 +1,4 @@
-import { test, expect, APP, open, appErrors, cloudLog, atRoute, hrefTo } from './fixtures';
+import { test, expect, APP, open, appErrors, cloudLog, atRoute, hrefTo, pickMode } from './fixtures';
 
 /* The in-app guide and the first-visit tour (openspec in-app-guide). This site's /js/analytics.js is replaced by a
    stub that records window.siteTrack calls, so the tour's events can be checked and nothing is counted. */
@@ -104,7 +104,7 @@ test.describe('the first-visit tour', () => {
 
   test('after the first mode pick it walks through each step to Done, once per device', async ({ page, issues }) => {
     await page.goto(APP);
-    await page.locator('.mode-card[data-mode="challenger"]').click();
+    await pickMode(page, 'challenger');
     const dlg = tour(page);
     await expect(dlg).toBeVisible();
     const n = Number((await dlg.locator('#tourN').textContent())!.match(/of (\d)/)![1]);
@@ -130,7 +130,7 @@ test.describe('the first-visit tour', () => {
 
   test('Escape on the second step skips it, returns focus to the page and it does not come back', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('.mode-card[data-mode="pro"]').click();
+    await pickMode(page, 'pro');
     const dlg = tour(page);
     await expect(dlg).toBeVisible();
     await dlg.locator('[data-act="next"]').click();
@@ -148,7 +148,7 @@ test.describe('the first-visit tour', () => {
 
   test('on every screen size the Guide step shows its link (Explorer: How to play under More places) and the whole card on screen', async ({ page }) => {
     await page.goto(APP);
-    await page.locator('.mode-card[data-mode="explorer"]').click();
+    await pickMode(page, 'explorer');
     const dlg = tour(page);
     await expect(dlg).toBeVisible();
     while (await dlg.getAttribute('data-step') !== 'guide') await dlg.locator('[data-act="next"]').click();
@@ -163,7 +163,7 @@ test.describe('the first-visit tour', () => {
   test('with Calm on nothing animates while it is open', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('vm.calm', '1'));
     await page.goto(APP);
-    await page.locator('.mode-card[data-mode="challenger"]').click();
+    await pickMode(page, 'challenger');
     const dlg = tour(page);
     await expect(dlg).toBeVisible();
     await dlg.locator('[data-act="next"]').click();

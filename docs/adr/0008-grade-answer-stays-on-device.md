@@ -1,6 +1,6 @@
 # The Grade answer stays on the device and only changes presentation
 
-Status: proposed in the `age-bands` change.
+Status: accepted, 2026-10-31 (built in the `age-bands` change: `reading` on the Player record in `js/store.js`, the band in `shared/src/bands.ts`).
 
 To fit reading help to each child, every Player is asked once "What grade are you in?" (or their age). A child's grade or age is personal information under COPPA once an operator collects it, and the site is directed to children. So the answer is kept only in the browser, in the Player's record, and is never in any request: not to Boards, not to analytics, not to Firebase. The operator never collects it. It only chooses a Reading band, which changes read aloud, wording, answer buttons, Practice timers and Bolt's tone, and never math difficulty, Leagues or Ranked rounds.
 

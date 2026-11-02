@@ -52,6 +52,19 @@ test('the footer credits the 1965 book', () => {
   assert.match(html, /Speed tricks use sutras from Bharati Krishna Tirtha's 1965 book; lessons, problems and visuals are original\./);
 });
 
+/* The Trick pages (openspec change trick-pages, task 4.1): site/tricks/** is in FILES above, so the banned phrases and
+   the em dash scans cover every page; each Trick page also credits the 1965 book where it names its Sutra */
+test('every Trick page credits the 1965 book, and site/tricks/ is scanned', () => {
+  const pages = walk(join(root, 'site', 'tricks')).filter(f => f.endsWith('.html'));
+  assert.equal(pages.length, 16, 'the index and 15 Trick pages');
+  for (const f of pages) assert.ok(FILES.includes(f), `${relative(root, f)} is scanned`);
+  for (const f of pages.filter(f => !f.endsWith('tricks/index.html'))) {
+    const html = readFileSync(f, 'utf8');
+    assert.match(html, /From the (sub-)?sutra <b lang="sa-Latn">[^<]+<\/b>, <q>[^<]+<\/q>, in Bharati Krishna Tirtha's 1965 book <i>Vedic Mathematics<\/i>\./, relative(root, f));
+    assert.doesNotMatch(html, /from the Vedas(?! )|ancient Vedic|Vedic sutra/i, relative(root, f));
+  }
+});
+
 /* Sparks replace XP (sparks spec): no Player-facing text says XP or experience points. Comments are left out,
    so code may still explain the migration from xp; the weekly Board id keeps its lowercase xp-week- prefix. */
 const saysXP = l => /\bXP\b/.test(l) || /experience points/i.test(l);
@@ -118,7 +131,9 @@ test('the parents summary claims only what the privacy policy says, and the teac
   ]) { assert.ok(facts.includes(claim), claim); assert.match(policy, inPolicy, claim); }
   const warm = page('teachers').match(/<section class="lv-callout"[\s\S]*?<\/section>/)?.[0] ?? '';
   assert.match(warm, /<h2 id="lv-warmup-h">A 5-minute warm-up for today's class<\/h2>/);
-  assert.match(warm, /<a class="md-btn md-btn--primary" href="\/learn\/arena">Open the Arena<\/a>/);
+  /* The projector warm-up first, the Arena beside it (openspec change teacher-warm-up, task 3.1) */
+  assert.match(warm, /<a class="md-btn md-btn--primary" href="\/teachers\/warm-up\/">Open the projector warm-up<\/a>/);
+  assert.match(warm, /<a class="md-btn" href="\/learn\/arena">Open the Arena<\/a>/);
   assert.match(warm, /There are no class accounts or class leaderboards/);
   const app = readFileSync(join(root, 'js', 'app.js'), 'utf8');
   assert.match(app, /\[\/\^#\\\/arena\$\/, \(m, ctx\) => arenaView\(ctx\)\]/, 'the Arena route the button opens');
@@ -155,6 +170,8 @@ test('the parent note says what the privacy policy says, in every Mode', () => {
     // The launch has World boards off (tasks 1.8 and 8.5): the note says so without claiming nothing at all is sent
     // (the site still counts visits, said further down)
     'Right now no score is sent anywhere: World boards are switched off on this site, so every score stays in this browser.',
+    // The Placement level, for grown-ups only (openspec placement, parent-note spec): it sets where practice starts and stays on the device
+    'placed at about ${gradeWords(placed.grade)}. It only sets where practice starts, and it stays on this device.',
   ]) assert.ok(note.includes(s), s);
   assert.ok(!note.includes('nothing is sent anywhere'), 'analytics still counts visits, so the note never says nothing is sent');
   for (const gone of ['linkedin', 'LinkedIn', 'Parent step', 'turn on World boards for them, a grown-up', 'Entries are not deleted automatically']) assert.ok(!note.includes(gone), gone);
@@ -166,4 +183,30 @@ test('the parent note says what the privacy policy says, in every Mode', () => {
 test('no Parent step is left in the game', () => {
   const app = readFileSync(join(root, 'js', 'app.js'), 'utf8');
   for (const gone of ['parent-step/', 'wbSwitch', 'wbCheck', 'inWords(', 'needs-parent', 'setParentOk']) assert.ok(!app.includes(gone), gone);
+});
+
+/* The projector warm-up and the /teachers/ box (openspec change teacher-warm-up, design D6; scenario "Honest words"): the
+   no sign-in sentence, a link to the privacy policy, the 1965 book credit, and no claim that a school needs no privacy
+   review or that the site is COPPA compliant (that is for the school and the lawyer, ADR 0006, learnvedicmath 13.1) */
+test('the warm-up and the teachers box say the honest words and claim nothing about privacy reviews or COPPA', () => {
+  const page = p => readFileSync(join(root, 'site', p, 'index.html'), 'utf8');
+  const HONEST = 'No sign-in and no student accounts. This page stores nothing on this device.';
+  const warm = page('teachers/warm-up'), box = page('teachers').match(/<section class="lv-callout"[\s\S]*?<\/section>/)?.[0] ?? '';
+  for (const [name, text] of [['teachers/warm-up', warm], ['the teachers box', box]]) {
+    assert.ok(text.includes(HONEST), `${name}: the no sign-in sentence`);
+    assert.match(text, /href="\/privacy\/"/, `${name}: links the privacy policy`);
+    assert.doesNotMatch(text, /privacy review|district review|IT approval|COPPA/i, `${name}: no claim about reviews or compliance`);
+    assert.doesNotMatch(text, /—|&mdash;/, `${name}: no em dash`);
+  }
+  assert.match(warm, /in Bharati Krishna Tirtha's 1965 book <i>Vedic Mathematics<\/i>/);
+  assert.match(warm, /<script type="module" src="\/tricks\/warm-up\.js"><\/script>/, 'the source page loads the plain module URL (the build stamps it and writes the import map)');
+  assert.doesNotMatch(warm, /importmap|\?v=/);
+  assert.match(warm, /<script src="\/js\/analytics\.js" defer><\/script>/);
+  assert.doesNotMatch(warm.replace(/<!--[\s\S]*?-->/g, ''), /firebase|localStorage\.setItem|sessionStorage/i, 'nothing stored, no Firebase (comments aside, which say so)');
+  for (const f of ['warm-up.ts', 'step-board.ts', 'warm-up-problems.ts', 'warm-up-pick.ts']) {
+    const src = readFileSync(join(root, 'tools/trick-pages', f), 'utf8');
+    assert.doesNotMatch(src, /—/, `${f}: no em dash`);
+    assert.doesNotMatch(stripComments(src), /localStorage|sessionStorage|indexedDB|firebase|setTimeout|setInterval|requestAnimationFrame|\.addEventListener\(/i, `${f}: nothing stored, no clock, every listener through on() (comments aside, which say so)`);
+  }
+  assert.match(readFileSync(join(root, 'tools/trick-pages/warm-up.ts'), 'utf8'), /import \{ on \} from '\/js\/life\.js'/);
 });

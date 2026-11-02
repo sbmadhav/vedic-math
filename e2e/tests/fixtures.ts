@@ -26,6 +26,12 @@ declare global {
 export const ANALYTICS = /(^https:\/\/[^/]*goatcounter\.com\/)|(^https:\/\/gc\.zgo\.at\/)|(^https?:\/\/[^/]+\/vendor\/goatcounter\/count\.js(\?|$))|(^https:\/\/(static\.)?cloudflareinsights\.com\/)/;
 export const FIREBASE_SDK = /^https?:\/\/[^/]+\/vendor\/firebase\/[\d.]+\//;
 export const FIREBASE_AUTH = /^https:\/\/(identitytoolkit|securetoken)\.googleapis\.com\//;
+/* Cloudflare Turnstile, the bot check before a Player's first message to the Family (openspec family-helpers step 3,
+   design D18). The suite never loads the live widget: its script becomes a small fake that renders nothing and passes a
+   token at once (recording each render in window.__e2eTurnstile), and any other request to the host answers empty. */
+export const TURNSTILE = /^https:\/\/challenges\.cloudflare\.com\//;
+const FAKE_TURNSTILE = `/* Turnstile fake for tests */ globalThis.__e2eTurnstile = globalThis.__e2eTurnstile || { renders: 0 };
+window.turnstile = { render(el, o) { globalThis.__e2eTurnstile.renders++; const id = 'e2e-widget-' + globalThis.__e2eTurnstile.renders; Promise.resolve().then(() => { if (o && typeof o.callback === 'function') o.callback('e2e-turnstile-token'); }); return id; }, remove() {}, reset() {}, getResponse() { return 'e2e-turnstile-token'; } };`;
 export const FIRESTORE = /^https:\/\/firestore\.googleapis\.com\//;
 
 /* GoatCounter's count.js defines window.goatcounter.count, and /js/analytics.js flushes its
@@ -191,6 +197,14 @@ type Fixtures = {
   /** The first-visit tour (openspec in-app-guide) counts as already shown on this device. Default true, so specs that
       open Home for a fresh Player are not covered by it; e2e/tests/guide.spec.ts turns it off. */
   tourSeen: boolean;
+  /** The grade question (openspec change age-bands) counts as already asked for the first Player (readingCard on the
+      Player record), so the Mode picker and Home are not covered by it. Default true;
+      e2e/tests/bands.spec.ts turns it off. A Grade answer itself is seeded with seedPlayer: { reading: { grade: 'k' } }. */
+  gradeAsked: boolean;
+  /** The Hook (openspec hook) counts as already seen by the seeded Player, so a spec that opens a Star for a fresh
+      Challenger or Pro gets the round at once. Default true; e2e/tests/hook.spec.ts turns it off. A first visit
+      (seedMode null) seeds no Player, so its new Player still gets the Hook. */
+  hookSeen: boolean;
   /** Requests that broke the live-dependency rules. Checked automatically after each test. */
   violations: string[];
   issues: Issues;
@@ -203,11 +217,17 @@ export const test = base.extend<Fixtures>({
   seedProgress: [null, { option: true }],
   seedPlayer: [null, { option: true }],
   tourSeen: [true, { option: true }],
+  gradeAsked: [true, { option: true }],
+  hookSeen: [true, { option: true }],
 
-  context: async ({ context, baseURL, seedMode, seedConsent, seedProgress, seedPlayer, tourSeen }, use) => {
+  context: async ({ context, baseURL, seedMode, seedConsent, seedProgress, seedPlayer, tourSeen, gradeAsked, hookSeen }, use) => {
     await blockAnalytics(context);
     await installModules(context, baseURL);
     await voiceFrom(context);
+    // Turnstile is never the live one: the fake script passes a token at once; anything else from its host answers empty
+    await context.route(TURNSTILE, route => (/\/turnstile\/v0\/api\.js/.test(route.request().url())
+      ? route.fulfill({ status: 200, contentType: 'text/javascript', body: FAKE_TURNSTILE })
+      : route.fulfill({ status: 204 })));
     // Policy reports from test runs never reach a /_csp endpoint (production's monthly review would count them)
     await context.route(/^https?:\/\/[^/]+\/_csp(\?|$)/, route => route.fulfill({ status: 204 }));
     // The same no-op counter from the start, for pages whose queue flushes before the local count.js answer runs
@@ -215,15 +235,22 @@ export const test = base.extend<Fixtures>({
     // A returning player with a mode, sound off. Only on an empty profile, so reloads keep progress.
     // Sound is off only when nothing set it yet: Playwright does not order this context script against a test's own
     // page.addInitScript, so a test that turns sound on (vm.sound '1') keeps it whichever script runs first.
-    await context.addInitScript(([mode, consent, progress, more]) => {
+    await context.addInitScript(([mode, consent, progress, more, asked, hook]) => {
       try {
         if (!localStorage.getItem('vm.players')) {
           if (localStorage.getItem('vm.sound') === null) localStorage.setItem('vm.sound', '0');
-          if (mode) localStorage.setItem('vm.players', JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode, created: Date.now(), ...(consent || {}), ...(more || {}) }] }));
-          if (mode && progress) localStorage.setItem('mathquest.v1.p1', JSON.stringify(progress));
+          // The grade question counts as asked (readingCard on the Player record) unless the spec turns gradeAsked off
+          const mark = asked ? { readingCard: 'done' } : {};
+          if (mode) localStorage.setItem('vm.players', JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode, created: Date.now(), ...mark, ...(consent || {}), ...(more || {}) }] }));
+          // A first visit to the game (no Mode): the Player the game would make, with the mark, so the Mode picker is not
+          // covered by the question. Only on the game's pages: the landing and import pages must find no Players.
+          else if (asked && /^\/learn(\/|$)/.test(location.pathname)) localStorage.setItem('vm.players', JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode: null, created: Date.now(), ...mark }] }));
+          // The Hook seen (openspec hook): a seeded Player's record carries the flag unless the spec wants the Hook
+          const record = mode && (progress || hook) ? { ...(progress || {}), ...(hook && !(progress && 'hookSeen' in progress) ? { hookSeen: 1_700_000_000_000 } : {}) } : null;
+          if (record) localStorage.setItem('mathquest.v1.p1', JSON.stringify(record));
         }
       } catch (e) { /* storage blocked: the app copes */ }
-    }, [seedMode, seedConsent, seedProgress, seedPlayer] as const);
+    }, [seedMode, seedConsent, seedProgress, seedPlayer, gradeAsked, hookSeen] as const);
     if (tourSeen) await context.addInitScript(() => { try { if (!localStorage.getItem('vm.tour')) localStorage.setItem('vm.tour', 'done'); } catch (e) { /* storage blocked */ } });
     await use(context);
   },
@@ -323,6 +350,25 @@ export async function open(page: Page, route = '#/') {
   if (route.startsWith('/')) await page.goto(route);
   else await go(page, route);
   await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
+}
+
+/** The Placement offer (openspec placement) follows a new Player's Mode pick: "Skip, just play" takes them Home exactly as
+    before the change. A spec about something else presses it through here. */
+export async function skipPlacement(page: Page) {
+  const skip = page.locator('#plSkip');
+  await expect(skip).toBeVisible();
+  await skip.click();
+}
+/** A brand-new Challenger or Pro Player's first Star opens with the Hook's dare (openspec hook): Skip starts the round. */
+export async function skipHook(page: Page) {
+  const skip = page.locator('#hkSkip');
+  await expect(skip).toBeVisible();
+  await skip.click();
+}
+/** Picks a Mode card on the first visit and skips the Placement offer, landing on that Mode's Home. */
+export async function pickMode(page: Page, mode: Mode) {
+  await page.locator(`.mode-card[data-mode="${mode}"]`).click();
+  await skipPlacement(page);
 }
 
 /** A fake clock that moves only when the test moves it (page.clock.runFor / fastForward). page.clock.install()

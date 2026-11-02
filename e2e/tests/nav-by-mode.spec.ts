@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, open, APP, atRoute, hrefTo, pathTo } from './fixtures';
+import { test, expect, open, APP, atRoute, hrefTo, pathTo, pickMode } from './fixtures';
 
 /* The menu by Mode, Calm and sound, and lessons that end in practice (openspec change play-nav-by-mode). */
 type Page = import('@playwright/test').Page;
@@ -294,7 +294,7 @@ test.describe('first visit', () => {
     expect(await page.locator('.mode-go').allInnerTexts()).toEqual(['Start as Explorer', 'Start as Challenger', 'Start as Pro']);
     expect(await page.locator('#view a').evaluateAll(as => as.map(a => a.getAttribute('href')))).toEqual(['#/guide'].map(pathTo));
     await expect(page.locator('header .mq-nav')).toBeHidden();
-    await page.locator('.mode-card[data-mode="pro"]').click();
+    await pickMode(page, 'pro');
     await expect(page.locator('.home-h')).toBeVisible();
     expect(await tabs(page)).toEqual(['Home', 'Learn', 'Arcade', 'Watch', 'Find']);
   });

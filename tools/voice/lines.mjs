@@ -25,6 +25,7 @@ import { allExplanationLines } from '../../js/explain-lines.js';
 import { VIDEOS, LINKS } from '../../js/videos.js';
 import { TEMPLATES, WRITTEN, storyFor } from '../../js/stories.js';
 import { NAV_LINES } from '../../js/nav.js';
+import { voiceLines as copyVoiceLines, COPY } from '../../shared/src/copy.ts';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const OUT = fileURLToPath(new URL('./out/', import.meta.url));
@@ -55,11 +56,21 @@ export function fixedLines() {
   return [...out];
 }
 
+/* ---------- Reading bands (openspec change age-bands, task 3.3): every `early` line and every Bolt line of the copy table
+   (shared/src/copy.ts), recorded whole; the grade question's own lines too. A line with a count is a Server line from
+   its sentence template (shared/src/voice-text.ts), never recorded once per number, so it is left out here. ---------- */
+export function bandLines() {
+  const out = new Set(copyVoiceLines());
+  for (const key of Object.keys(COPY)) if (key.startsWith('grade.')) out.add(COPY[key].default);
+  return [...out];
+}
+
 function main() {
   const whole = new Map(); // words -> source
   const addWhole = (t, src) => { const w = normalize(t); if (w && !whole.has(w)) whole.set(w, src); };
   for (const t of fixedLines()) addWhole(t, 'fixed');
   for (const t of NAV_LINES) addWhole(t, 'nav'); /* Explorer's menu tabs say their names (openspec change play-nav-by-mode) */
+  for (const t of bandLines()) addWhole(t, 'bands'); /* the Early and Bolt lines of the copy table (openspec change age-bands) */
   for (const { text, src } of allExplanationLines({ videos: VIDEOS, links: LINKS })) addWhole(text, 'explain:' + src);
   for (const s of wholeSkills()) {
     let quiet = 0, before = whole.size;

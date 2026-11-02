@@ -2,6 +2,8 @@
    Mastery is a running score from 0 to 1: first tries count fully, a try after a hint counts half.
    Nothing here leaves the device except what cloud.js posts to World boards (nickname, color, score). */
 import { AVATARS, makeName } from '../shared/src/names.ts';
+import { validReading } from '../shared/src/bands.ts';
+import { withAward } from '../shared/src/sparks-log.ts';
 export const LEGACY = 'mathquest.v1', PKEY = 'vm.players'; /* js/backup.js reads these */
 const BOARD = 'vm.board';
 let S = null, P = null;
@@ -25,7 +27,16 @@ function players() {
     const legacy = get(LEGACY); if (legacy && legacy.skills) put(LEGACY + '.p1', legacy);
     put(PKEY, P);
   }
+  copyVoice();
   return P;
+}
+/* Read aloud became a choice per Player (openspec change age-bands, AB4): a device that set the device-wide vm.voice
+   copies it once to every Player who has no choice yet, then stops reading vm.voice (left in place for one release, so a
+   rollback keeps the setting). The mark vm.voiceCopied keeps the copy from running twice. */
+function copyVoice() {
+  let v; try { v = localStorage.getItem('vm.voice'); if (v === null || localStorage.getItem('vm.voiceCopied')) return; } catch (e) { return; }
+  for (const p of P.list) if (typeof p.voice !== 'boolean') p.voice = v === '1';
+  put(PKEY, P); try { localStorage.setItem('vm.voiceCopied', '1'); } catch (e) {}
 }
 export const allPlayers = () => players().list;
 export const player = () => players().list.find(p => p.id === P.active) || P.list[0];
@@ -45,6 +56,22 @@ export function setAge(age) {
   if (!(age === 'adult' || (Number.isInteger(age) && age >= 1 && age <= 120))) throw new Error('bad age');
   updatePlayer({ age });
 }
+/* The Grade answer (openspec change age-bands, ADR 0008): { grade, at } or { age, at } on the Player record, which
+   shared/src/bands.ts turns into the Reading band. Kept only on this device, carried only inside the Player's own
+   progress (the backup code, the hand-off), never in a request. Removing the Player removes it. */
+export const reading = () => { const r = player().reading; return validReading(r) ? r : null; };
+export function setReading(r) {
+  if (!validReading(r)) throw new Error('bad reading');
+  updatePlayer({ reading: 'grade' in r ? { grade: String(r.grade).toLowerCase(), at: Date.now() } : { age: r.age, at: Date.now() } });
+}
+export function clearReading() { delete player().reading; put(PKEY, P); emit('player', player()); }
+/* Whether the grade question was answered, skipped or put off with Not now, on the Player record: 'done' then, so neither
+   the first visit nor the home card asks again (the question stays in Me) */
+export const readingCard = () => (player().readingCard === 'done' ? 'done' : null);
+export function setReadingCard(v) { updatePlayer({ readingCard: v === 'done' ? 'done' : undefined }); }
+/* Read aloud, per Player (AB4): true, false, or undefined for the band's or the Mode's default (js/fx.js voiceOn) */
+export const playerVoice = () => { const v = player().voice; return typeof v === 'boolean' ? v : undefined; };
+export function setPlayerVoice(v) { updatePlayer({ voice: !!v }); }
 /* Removing a Player drops their record and progress; cloud.js hears 'removed' and forgets their World board
    identity on this device (their entries already posted stay). */
 /* A removed Player's play-experience progress (vm.play.<player id>.<key>, js/play/kit.js) goes with them */
@@ -90,8 +117,15 @@ export const mastered = id => { const s = skill(id); return s.m >= 0.85 && s.n >
 export const started = id => skill(id).n > 0;
 export function level(id) { const s = skill(id); return s.m < 0.4 || s.n < 3 ? 1 : s.m < 0.75 ? 2 : 3; }
 
-/* Sparks: the one progress number, earned by everything (Practice included). Only this ISO week's total is kept. */
-export function addSparks(n, why = '') { load(); const before = S.sparks; S.sparks += n; S.weekSparks = S.weekSparks || {}; const wk = isoWeek(); S.weekSparks = { [wk]: (S.weekSparks[wk] || 0) + n }; save(); emit('sparks', { before, after: S.sparks, n, why }); }
+/* Sparks: the one progress number, earned by everything (Practice included). Only this ISO week's total is kept.
+   Every award is also logged (the Sparks history, openspec change muse-review-polish, design D4): S.sparksLog, the
+   newest LOG_CAP awards { n, why, at } with consecutive answers grouped (shared/src/sparks-log.ts has the rules), on
+   this device with the rest of the record, so backup and restore carry it (js/handoff-schema.js) and nothing sends it. */
+export { LOG_CAP } from '../shared/src/sparks-log.ts';
+import { LOG_CAP } from '../shared/src/sparks-log.ts';
+export function addSparks(n, why = '') { load(); const before = S.sparks; S.sparks += n; S.weekSparks = S.weekSparks || {}; const wk = isoWeek(); S.weekSparks = { [wk]: (S.weekSparks[wk] || 0) + n }; S.sparksLog = withAward(S.sparksLog, n, why || 'other', Date.now()); save(); emit('sparks', { before, after: S.sparks, n, why }); }
+/* The Sparks history, newest first (copies), never more than LOG_CAP whatever a record holds */
+export const sparksLog = () => (load(), (Array.isArray(S.sparksLog) ? S.sparksLog : []).slice(0, LOG_CAP).map(e => ({ ...e })));
 /* ISO week id like 2026-W42, in local time (matches cloud.weekId) */
 export function isoWeek(d = new Date()) {
   const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())), day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
@@ -137,6 +171,22 @@ export function skipStar(trick, n) { const k = starKey(trick, n), s = sky(); if 
 export const starStates = () => { const s = sky(); return { lit: { ...s.lit }, skipped: { ...s.skipped } }; };
 export const starLast = (trick, n) => (sky().last[starKey(trick, n)] || []).slice();
 export function setStarLast(trick, n, keys) { sky().last[starKey(trick, n)] = keys.slice(); save(); }
+
+/* Placement (openspec placement, ADR 0007): the result of a Placement climb, { grade ('K' or '1' to '12'), steps, at },
+   on the device only, in the Player's record (the backup code carries it, nothing is ever posted or sent). Not in
+   blank(): a record without it loads as before. placementCard: 'done' once the offer or Home's card has been answered,
+   so neither asks again on its own. hookSeen: when the Hook was shown or skipped (openspec hook), once per Player. */
+export const placement = () => (load(), S.placement || null);
+export function setPlacement({ grade, steps }) {
+  load(); S.placement = { grade: String(grade), steps: Math.max(0, Math.floor(Number(steps) || 0)), at: Date.now() }; save(); emit('placement', { ...S.placement });
+  return S.placement;
+}
+export const placementCard = () => (load(), S.placementCard || null);
+export function setPlacementCard(v = 'done') { load(); if (S.placementCard === v) return false; S.placementCard = v; save(); return true; }
+export const hookSeen = () => (load(), !!S.hookSeen);
+export function setHookSeen() { load(); if (S.hookSeen) return false; S.hookSeen = Date.now(); save(); return true; }
+/* Any progress: an answer, Sparks, a Rating, a lit or skipped Star (Home shows its Placement card to such a Player once) */
+export const hasProgress = () => { load(); const s = S.sky || {}; return (S.counts.answers || 0) > 0 || S.sparks > 0 || Object.keys(S.ratings || {}).length > 0 || Object.keys(s.lit || {}).length > 0 || Object.keys(s.skipped || {}).length > 0; };
 
 /* Kept Belts (openspec sky-home): { <belt id>: when }. A Belt is earned by lighting all 9 of its Stars, and once earned
    (or earned under the old mastery rule before the change) it is kept here and never goes back. */

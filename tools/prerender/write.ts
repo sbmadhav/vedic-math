@@ -102,6 +102,7 @@ export function metaOf(key: string): Meta {
     case 'katas': { const t = titled(tricks, a, 'trick'); return page(`${t.title} katas`, `${KATAS_PER_TRICK} katas for ${t.title}: short drills of 5 to 8 problems that get harder as you climb.`); }
     case 'kata': { const t = titled(tricks, a, 'trick'); return page(`Kata ${n}: ${t.title}`, `Kata ${n} of ${KATAS_PER_TRICK} for ${t.title}: a short drill of 5 to 8 problems in the Vedic Dojo. Get 60% right to open the next.`); }
     case 'star': { const t = titled(tricks, a, 'trick'); return page(`Star ${n}: ${t.title}`, `Star ${n} of ${STARS_PER_TRICK} for ${t.title}: a timed round in the Vedic Dojo. Light every Star of a belt's tricks to earn the belt.`); }
+    case 'placement': return page('Find your level', 'Find your level: a short climb of questions that starts you on the Skill map where you are, not at the beginning.');
     case 'try': return page('Try a trick', 'Try a speed trick with your own numbers and watch it work step by step.');
     case 'tower': {
       if (!a) return page('Challenge tower', `${topics.length} chapters of ${PER_CHAPTER} challenges in five formats: Sprint, Sharpshooter, Survival, Time attack and Boss rounds.`);

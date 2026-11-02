@@ -1,4 +1,4 @@
-import { test, expect, APP, open, appErrors, mod, atRoute, hrefTo, pathTo } from './fixtures';
+import { test, expect, APP, open, appErrors, mod, atRoute, hrefTo, pathTo, pickMode } from './fixtures';
 import AxeBuilder from '@axe-core/playwright';
 import { fakeAudio } from './audio-fake';
 
@@ -167,7 +167,7 @@ test.describe('a new visitor', () => {
     await stubAnalytics(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(APP);
-    await page.locator('.mode-card[data-mode="pro"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
+    await pickMode(page, 'pro'); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
     const tag = page.locator('.try-sutra.sutra-tag--full');
     await expect(tag.locator('.sutra-tag-k')).toHaveText('Sutra');
     await expect(tag.locator('b[lang="sa-Latn"]')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');

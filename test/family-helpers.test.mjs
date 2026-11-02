@@ -4,7 +4,7 @@ import test from './support/node-test.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createCoach, planVisit, showMeTurn, placeVisit, exampleFor, skillInfo, bandFor, nickWords, memoryAfter, wasHard, familyOn, helpSetting, fill, FRIENDS, RULES, FAMILY_DEFAULT } from '../js/family-helpers.js';
-import { helpersOn } from '../js/family-hook.js';
+import { helpersOn, talkEligible, talkOn } from '../js/family-hook.js';
 import { friendSVG, FRIEND_IDS, FRIEND_POSES } from '../js/family.js';
 import { byId } from '../js/skills/index.js';
 import { TRICKS } from '../js/vedic.js';
@@ -26,6 +26,26 @@ test('the switch is off by default; the hook and the engine read it the same way
   const cases = [{}, { family: true }, { family: false }, { family: true, familyHelp: 'ask' }, { family: true, familyHelp: 'off' }, { family: 'yes' }, null];
   for (const p of cases) assert.equal(helpersOn(p), familyOn(p) && helpSetting(p) !== 'off', JSON.stringify(p));
   assert.equal(helpSetting({ familyHelp: 'nonsense' }), 'always');
+});
+
+/* Talking with the Family (step 3, design D15): 13 and over by the Age answer, or with none a Grade answer of 9 or above */
+test('talking with the Family is offered to 13 and over only, off until turned on, and never under 13 whatever the Grade', () => {
+  assert.equal(talkEligible(13, null), true);
+  assert.equal(talkEligible(15, '3'), true);
+  assert.equal(talkEligible('adult', null), true);
+  assert.equal(talkEligible(12, '12'), false, 'an Age answer under 13 always rules it out');
+  assert.equal(talkEligible(11, null), false);
+  assert.equal(talkEligible(null, '9'), true);
+  assert.equal(talkEligible(undefined, 12), true);
+  assert.equal(talkEligible(null, '8'), false, 'grade 8 starts at 12 or 13');
+  assert.equal(talkEligible(null, 'K'), false);
+  assert.equal(talkEligible(null, 'V'), false);
+  assert.equal(talkEligible(null, null), false);
+  assert.equal(talkOn({ family: true, familyTalk: true, age: 15 }, null), true);
+  assert.equal(talkOn({ family: true, age: 15 }, null), false, 'off until turned on');
+  assert.equal(talkOn({ family: true, familyTalk: true, age: 11 }, '12'), false);
+  assert.equal(talkOn({ familyTalk: true, age: 15 }, null), false, 'the helpers must be on');
+  assert.equal(talkOn({ family: true, familyHelp: 'off', familyTalk: true, age: 15 }, null), false);
 });
 
 test('the band: a Grade answer when age-bands saves one, else the Mode', () => {
