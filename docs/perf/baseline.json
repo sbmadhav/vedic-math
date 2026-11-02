@@ -18,11 +18,11 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 855297,
+  "total": 855367,
   "files": {
    "/js/ts/shared/src/site.js": 256,
    "/js/ts/shared/src/challenge.js": 1476,
-   "/js/paths.js": 2776,
+   "/js/paths.js": 2850,
    "/css/play/apprentice.css": 2206,
    "/css/play/art.css": 2414,
    "/css/play/base.css": 1123,
@@ -176,8 +176,8 @@
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
    "/math.css": 25974,
-   "/play/": 4366,
-   "/sw.js": 6496,
+   "/play/": 4367,
+   "/sw.js": 6491,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
@@ -398,6 +398,13 @@
     "from": 851514,
     "to": 855297,
     "why": "PR #193 re-measured after main moved; re-measured on main as of the merge; CI figure for /js/nav.js; file deltas: /js/app.js +1301, /js/arena.js +131, /js/guide.js +39, /js/metrics.js +130, /js/play/kit.js +248, /js/ts/shared/src/challenge.js new 1476, /js/ts/shared/src/questions.js +66, /js/ts/shared/src/site.js new 256, /math.css +78, /play/ +32, /sw.js +26; +3783 in all"
+   },
+   {
+    "date": "2026-11-02",
+    "pr": 193,
+    "from": 855297,
+    "to": 855367,
+    "why": "arena-challenge-link; re-measured on main as of the merge; CI figure for /js/nav.js; file deltas: /js/paths.js +74, /play/ +1, /sw.js -5; +70 in all"
    }
   ]
  },
