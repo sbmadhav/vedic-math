@@ -1,0 +1,15 @@
+// The learnvedicmath-ledger Worker: only the VoiceLedger Durable Object (workers/src/ledger.ts, SQLite), bound by the
+// main Worker (../../wrangler.jsonc, script_name). It is its own Worker because Cloudflare generates no preview URL for a
+// Worker that implements a Durable Object. CI deploys it before the main Worker (npx wrangler deploy --config
+// ../workers/ledger/wrangler.jsonc from deploy/), so the binding always finds the class.
+{
+  "$schema": "../../deploy/node_modules/wrangler/config-schema.json",
+  "name": "learnvedicmath-ledger",
+  "compatibility_date": "2026-10-01",
+  "main": "../src/ledger-worker.ts",
+  "durable_objects": { "bindings": [{ "name": "VOICE_LEDGER", "class_name": "VoiceLedger" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["VoiceLedger"] }],
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": true, "head_sampling_rate": 1 }
+}

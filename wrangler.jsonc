@@ -22,10 +22,15 @@
     { "pattern": "learnvedicmath.com", "custom_domain": true },
     { "pattern": "www.learnvedicmath.com", "custom_domain": true }
   ],
-  // The VoiceLedger Durable Object (workers/src/ledger.ts, SQLite): counts for the paid endpoints. Deployed before any
-  // route uses it, because a preview upload cannot apply a migration (openspec family-helpers step 3)
-  "durable_objects": { "bindings": [{ "name": "VOICE_LEDGER", "class_name": "VoiceLedger" }] },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["VoiceLedger"] }],
+  // The VoiceLedger Durable Object (workers/src/ledger.ts, SQLite): counts for the paid endpoints. It lives in its own
+  // Worker, learnvedicmath-ledger (workers/ledger/wrangler.jsonc), because Cloudflare generates no preview URL for a
+  // Worker that implements a Durable Object. v2 deletes the class this Worker held from v1 (it held no data: the Family
+  // feature was off); CI deploys the ledger Worker first, so the binding below always finds the class
+  "durable_objects": { "bindings": [{ "name": "VOICE_LEDGER", "class_name": "VoiceLedger", "script_name": "learnvedicmath-ledger" }] },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["VoiceLedger"] },
+    { "tag": "v2", "deleted_classes": ["VoiceLedger"] }
+  ],
   "workers_dev": true,
   "preview_urls": true,
   "observability": { "enabled": true, "head_sampling_rate": 1 }

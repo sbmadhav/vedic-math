@@ -3,12 +3,11 @@
    run_worker_first. The router below knows one of them today, /_csp, the policy-violation report endpoint
    (./csp.ts); phase 2 adds /api/* and the server render of game pages (task 2.3). */
 import { handle as cspReport } from './csp.ts';
-import { VoiceLedger } from './ledger.ts';
+import type { VoiceLedger } from './ledger.ts';
 
-/* The VoiceLedger Durable Object (./ledger.ts) ships first with no route using it, so its migration reaches
-   production through a normal deploy before a preview needs it (wrangler versions upload cannot apply one); the
-   Family conversation (openspec family-helpers step 3) and the server voice use it later. */
-export { VoiceLedger };
+/* VOICE_LEDGER is the VoiceLedger Durable Object (./ledger.ts), held by its own Worker, learnvedicmath-ledger
+   (./ledger-worker.ts), and bound here by script_name: Cloudflare generates no preview URL for a Worker that implements
+   a Durable Object. The Family conversation (openspec family-helpers step 3) and the server voice use it later. */
 
 export type Env = { ASSETS: Fetcher; VOICE_LEDGER: DurableObjectNamespace<VoiceLedger> };
 

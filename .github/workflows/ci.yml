@@ -97,6 +97,7 @@ jobs:
         run: |
           npm ci --ignore-scripts
           npx wrangler deploy --config ../wrangler.jsonc --dry-run --outdir ../.wrangler/dry-run
+          npx wrangler deploy --config ../workers/ledger/wrangler.jsonc --dry-run --outdir ../.wrangler/dry-run-ledger
 
       # The exact files checked above are the ones deployed
       - name: Upload _site for the deploy job
@@ -274,4 +275,7 @@ jobs:
             exit 1
           fi
           npm ci --ignore-scripts
+          # The ledger Worker first: the main Worker binds its VoiceLedger class by script_name, so the class must exist
+          # before the main Worker's deploy that binds it (and deletes the old VoiceLedger class it held, migration v2)
+          npx wrangler deploy --config ../workers/ledger/wrangler.jsonc
           npx wrangler deploy --config ../wrangler.jsonc
