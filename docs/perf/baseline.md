@@ -175,6 +175,7 @@ The baseline is run 1. Task 0.4's repeatability check: the same job runs the scr
 
 - **Bytes:** a pull request that grows first load on purpose updates `firstLoad` in `baseline.json` (`node tools/budget.ts _site --json <file>`) and says why. Phase 2 measures `/learn/` and reads the client build's manifest (task 2.7). That pull request records the new page's first measurement next to this one.
 - **Timings:** they are re-measured with `perf.yml` and replaced only with a reason, such as a runner image change that moves every number. The re-measures of 2026-10-26 and 2026-10-27 (issue #117) took the median of several jobs' medians, as above.
+- **Trick pages** (openspec change `trick-pages`, design D7): `trickPage.max` in `baseline.json` is one Trick page's first load, Brotli, measured by `node tools/budget.ts _site --page /tricks/<slug>/` (the page, every file it links, the static module graph of its module scripts; no worker, no precache), and `build.py` fails any `/tricks/` page above it in every voice mode. First measured 2026-10-31 at 93,259 bytes for the largest page (20 files; the index 77,685): two fonts 46 KB, the design system and theme 15 KB, icons 9 KB, the catalog `shared/src/vedic.ts` 10 KB, the page with its stylesheet and calculator about 7 KB. The max is 96,000, the figure plus about 3% for wording changes to the catalog (which the game's own gate also measures); `trickPage.changes` records each move and why.
 
 ## Changes to the baseline
 
