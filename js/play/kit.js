@@ -114,6 +114,9 @@ export function toast(text, ms = 2600) {
    wins only (a lock cracked, a Belt, a best, a puzzle solved); sparkle(el) and the other small ones are for everyday
    moments. All of them hold still under reduced motion, Pause motion and Calm. */
 export { confetti, sparkle, pop, bounce, twinkle, wiggle, tick } from '../celebrate.js';
+/* Held input (js/hold.js, openspec change muse-review-polish): hold(el, ms, then, { skippable, signal }) where an
+   experience holds input for feedback, so the Player sees the wait and, in an untimed round, can press Next */
+export { hold } from '../hold.js';
 
 /* ---------- Analytics (openspec analytics spec): math/play/<experience>/<action>, fixed words only ----------
    The second argument is ignored on purpose: titles and paths never carry scores, counts, seeds or typed text. */
