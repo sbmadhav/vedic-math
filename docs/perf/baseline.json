@@ -18,7 +18,7 @@
  "firstLoad": {
   "page": "/learn/",
   "voice": "off",
-  "total": 583375,
+  "total": 583377,
   "files": {
    "/ds/2.2.0/components.css": 6692,
    "/ds/2.2.0/header.js": 1166,
@@ -74,7 +74,7 @@
    "/js/listen.js": 1335,
    "/js/mental.js": 155,
    "/js/metrics.js": 4588,
-   "/js/nav.js": 1555,
+   "/js/nav.js": 1557,
    "/js/paths.js": 2992,
    "/js/placement-view.js": 3740,
    "/js/placement.js": 201,
@@ -417,8 +417,8 @@
     "date": "2026-11-01",
     "pr": "learn-release",
     "from": 580549,
-    "to": 583375,
-    "why": "indexable-routes group 2, the /learn/ release (tasks 2.1 to 2.5, merged with main as of #204 and #197): the measured page is /learn/ (was /play/; learn/index.html, whose first script turns an old #/ route into its path), the router on paths (js/app.js; js/paths.js with main's #/arena/day and #/placement rows), the worker's retiring branch for a registration under /play/ and the shell fallback for every /learn/ page (sw.js), share and challenge links as paths (js/play/kit.js, shared/src/site.ts APP_BASE /learn/), GoatCounter's page view on the path (js/analytics.js); re-measured on the merge with --voice off; main's figure for /js/nav.js; file deltas: /js/analytics.js +237, /js/app.js +1484, /js/guide.js +1, /js/handoff.js +69, /js/install-rules.js -8, /js/metrics.js +105, /js/paths.js +91, /js/play/kit.js +51, /js/play/offline-note.js +105, /js/ts/shared/src/challenge.js +16, /js/ts/shared/src/site.js +10, /learn/ new 4719, /manifest.webmanifest -1, /play/ removed, /sw.js +500; +2826 in all"
+    "to": 583377,
+    "why": "indexable-routes group 2, the /learn/ release (tasks 2.1 to 2.5, merged with main as of #204 and #197): the measured page is /learn/ (was /play/; learn/index.html, whose first script turns an old #/ route into its path), the router on paths (js/app.js; js/paths.js with main's #/arena/day and #/placement rows), the worker's retiring branch for a registration under /play/ and the shell fallback for every /learn/ page (sw.js), share and challenge links as paths (js/play/kit.js, shared/src/site.ts APP_BASE /learn/), GoatCounter's page view on the path (js/analytics.js); re-measured on the merge with --voice off; /js/nav.js at CI's figure (1,557: this branch changes js/nav.js, so main's 1,555 does not hold); file deltas: /js/nav.js +2, /js/analytics.js +237, /js/app.js +1484, /js/guide.js +1, /js/handoff.js +69, /js/install-rules.js -8, /js/metrics.js +105, /js/paths.js +91, /js/play/kit.js +51, /js/play/offline-note.js +105, /js/ts/shared/src/challenge.js +16, /js/ts/shared/src/site.js +10, /learn/ new 4719, /manifest.webmanifest -1, /play/ removed, /sw.js +500; +2828 in all"
    }
   ]
  },
