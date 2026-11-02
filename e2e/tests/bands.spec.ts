@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, APP, open, chromiumOnly, type Page } from './fixtures';
+import { test, expect, APP, open, chromiumOnly, pickMode, type Page } from './fixtures';
 
 /* Reading bands (openspec change age-bands; reading-bands, band-copy, placement and star-round deltas): the grade
    question on a first visit, the home card and Me for an existing Player, the Mode picker's Suggested tag, and what each
@@ -84,7 +84,7 @@ test.describe('a first visit', () => {
     expect((await player(page)).reading).toMatchObject({ grade: '1' });
     expect((await player(page)).age).toBeUndefined();
     await expect(page.locator('body')).toHaveClass(/band-early/);
-    await page.locator('.mode-card[data-mode="pro"]').click();
+    await pickMode(page, 'pro'); // then the Placement offer, skipped (openspec placement)
     await expect(page.locator('h1.home-h')).toHaveText('What do you want to play?'); // the Early heading, in Pro
     await expect(page.locator('.mode-line b')).toHaveText('Pro');
     await expect(page.locator('#readingCard')).toHaveCount(0);
@@ -113,7 +113,7 @@ test.describe('a first visit', () => {
     await page.goto(APP);
     await page.keyboard.press('Escape');
     await expect(dlg(page)).toHaveCount(0);
-    await page.locator('.mode-card[data-mode="challenger"]').click();
+    await pickMode(page, 'challenger');
     await expect(page.locator('h1.home-h')).toBeVisible();
     await page.goto(`${APP}#/me`);
     await page.locator('#meAdd').click();

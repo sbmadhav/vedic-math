@@ -1605,7 +1605,7 @@ function gameView(id, lvl = 0, { signal } = {}) {
     const area = play.area;
     round = child(session.signal); const roundSignal = round.signal;
     /* Calm, or an Early reader (openspec change age-bands): a Practice round (a Level) of a timed game has no clock and ends after its questions; Ranked keeps the clock */
-    const untimed = !!g.secs && mode !== 'ranked' && fx.calmOn();
+    const untimed = !!g.secs && mode !== 'ranked' && (fx.calmOn() || fx.band() === 'early'); /* an Early reader too (openspec change age-bands) */
     const startD = L ? L.cfg.start : AD.rating('game:' + g.id, m, 0, { practice: mode === 'endless' }), dial = new AD.Dial(startD, { floor: L ? L.cfg.floor : 1 }); /* Endless practice starts at a Placement level with no Rating; a Ranked round at the Mode's start (ADR 0007) */
     area.innerHTML = `<div class="g-head"><span class="g-hud" id="gHud">${dialMeter(dial.lv)}<span class="g-pts"><b id="gPts">0</b> pts</span></span><span class="g-sayline" id="gSay" role="status" aria-live="polite"></span></div><div class="g-area" id="gArea"></div>`;
     const sayEl = $('#gSay', area), hudEl = $('#gHud', area);
