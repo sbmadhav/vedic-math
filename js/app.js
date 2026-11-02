@@ -133,6 +133,7 @@ const routes = [
   [/^#\/(me|progress)$/, (m, ctx) => meView(ctx)],
   [/^#\/guide(?:\/([\w-]+))?$/, (m, ctx) => guideView(m[1], ctx)],
   [/^#\/find$/, (m, ctx) => findView(ctx)],
+  [/^#\/arena\/day(?:\/.*)?$/, (m, ctx) => arenaView(ctx, m[0].split('/').slice(3))], /* a challenge link (openspec change arena-challenge-link), before the play pattern, which would read day as an experience (design D9) */
   /* Play experiences: pages inside a section, after the section's own routes (js/play/catalog.js) */
   [/^#\/(?:dojo|arena|games|sutras)\/[a-z-]+(?:\/.*)?$/, (m, ctx) => playView(m[0], ctx)]
 ];
@@ -160,7 +161,7 @@ const knownId = (kind, id) => kind === 'grade' ? !!gradeOf(id) : kind === 'skill
 function render() {
   fx.stopSpeaking(); /* every voice: built-in, studio and natural */
   stopVerses(); /* a deep dive opens over the Sutras page without remounting it: a Listen still waiting for voices must not start behind it */
-  const h = location.hash || '#/';
+  const h = location.hash || '#/', again = h === render.at; /* the route on screen drawn again (a hash write's second render) */
   render.from = render.at; render.at = h; /* where a Star's Back button returns to */
   // Sutra deep dives open over the sutras page without re-rendering it
   const ms = h.match(/^#\/sutras\/(\w+)$/);
@@ -169,18 +170,35 @@ function render() {
   if (sutraDlg && sutraDlg.open) closeSutra(true);
   const hit = routes.find(([re]) => re.test(h)), picker = !fx.mode() && !/^#\/(watch|sutras(\/\w+)?|find|guide(\/[\w-]+)?)$/.test(h); /* the guide, Find and a Deep dive open without a mode too (openspec change sutras-first) */
   modePicker.pending = picker && hit && h !== '#/' ? h : null; /* the page asked for before a Mode, opened once one is picked (afterPick) */
-  mount(ctx => (picker ? modePicker(ctx) : hit ? hit[1](h.match(hit[0]), ctx) : home(ctx)));
-  const asSky = !picker && /^#?\/?$/.test(h) && SKY.skyOn(store.player()); /* home showed the Sky: the route view is sky */
-  setBgLevel(levelFor(h, { picker, sky: asSky })); /* the full background sky on the Mode picker and home, a quiet one elsewhere */
-  if ((location.hash || '#/') === h) metrics.view(h, knownId, picker, asSky); /* one anonymous route view (analytics spec); a view that redirected is counted when its target renders */
-  syncNav(h);
-  chip();
-  if (navSay) { const words = navSay; navSay = null; fx.speak(words); } /* an Explorer tab's name, after the view it opened has drawn (render stops every voice first) */
+  const first = !render.n++;
+  const update = () => {
+    mount(ctx => (picker ? modePicker(ctx) : hit ? hit[1](h.match(hit[0]), ctx) : home(ctx)));
+    const asSky = !picker && /^#?\/?$/.test(h) && SKY.skyOn(store.player()); /* home showed the Sky: the route view is sky */
+    setBgLevel(levelFor(h, { picker, sky: asSky })); /* the full background sky on the Mode picker and home, a quiet one elsewhere */
+    if ((location.hash || '#/') === h) metrics.view(h, knownId, picker, asSky); /* one anonymous route view (analytics spec); a view that redirected is counted when its target renders */
+    syncNav(h);
+    chip();
+    if (navSay) { const words = navSay; navSay = null; fx.speak(words); } /* an Explorer tab's name, after the view it opened has drawn (render stops every voice first) */
+  };
   /* Focus the new view's heading, unless the view already put focus somewhere in itself (the Sky, back from a Star) */
-  const head = view.querySelector('h1, h2'); if (head) { head.setAttribute('tabindex', '-1'); if (render.n++ && !view.contains(document.activeElement)) head.focus({ preventScroll: true }); }
-  if (render.n > 1) window.scrollTo({ top: 0 });
+  const settle = () => {
+    const head = view.querySelector('h1, h2'); if (head) { head.setAttribute('tabindex', '-1'); if (!first && !view.contains(document.activeElement)) head.focus({ preventScroll: true }); }
+    if (!first) window.scrollTo({ top: 0 });
+  };
+  transition(update, settle, first || again);
 }
 render.n = 0;
+/* Smooth moves between pages (openspec change indexable-routes, design D12): the route change's DOM update runs inside a
+   view transition when the browser has one and motion is allowed (fx.noMotion: reduced motion, Pause motion, Calm), so
+   the header, nav and Player chip (named in math.css) stay still while #view cross-fades. The first render, a redraw of
+   the same route (plain) and a change while one is running swap at once. after(): focus and scroll, once the update is done. */
+let moving = null; /* the view transition in flight */
+function transition(update, after, plain) {
+  if (plain || moving || fx.noMotion() || typeof document.startViewTransition !== 'function') { update(); after(); return; }
+  const t = moving = document.startViewTransition(update), done = () => { if (moving === t) moving = null; };
+  t.updateCallbackDone.then(after, e => { after(); throw e; }); /* a view that threw still gets focus and scroll, and the error is still reported */
+  t.finished.then(done, done);
+}
 window.addEventListener('hashchange', render);
 
 /* ---------- The menu by Mode (openspec change play-nav-by-mode, js/nav.js) ----------
@@ -251,6 +269,7 @@ function modePicker({ signal } = {}) {
 function afterPick(mode) {
   const to = modePicker.pending; modePicker.pending = null;
   if (!to || !/^#\/[\w\/-]+$/.test(to) || !routes.some(([re]) => re.test(to))) return '#/';
+  if (to.startsWith('#/arena/day/')) return to; /* a challenge link (openspec change arena-challenge-link, design D7): the Arena checks it, and one that does not parse opens the plain lobby, as #/arena does */
   return buildIndex({ mode, counts: guideCounts() }).some(e => e.href === to) ? to : '#/';
 }
 function modeIcon(id) {
@@ -1231,13 +1250,17 @@ function queueSparksPost() {
   }, wait);
 }
 store.on(type => { if (type === 'sparks') queueSparksPost(); });
-function arenaView({ signal } = {}) {
+/* link: the parts of a challenge link after #/arena/day/ (openspec change arena-challenge-link), or null for #/arena */
+function arenaView({ signal } = {}, link = null) {
   document.title = `Arena · Learn Vedic Math`;
   const league = fx.MODES[fx.mode()].league, day = cloud.dayId(), wk = cloud.weekId();
-  /* Round type: daily (Ranked, always timed), practice (timed, untimed in Calm), untimed (Practice, no clock) or words
-     (Word problems, Practice with no clock: openspec word-problems-more). With Calm on, the untimed Practice round is
-     picked until the Player picks another this visit. */
+  /* Round type: daily (Ranked, always timed), practice (timed, untimed in Calm), untimed (Practice, no clock), words
+     (Word problems, Practice with no clock: openspec word-problems-more) or friend (a challenge link's round from another
+     day or League: Practice with the link's questions and its clock, arena-challenge-link design D2 and D11). With Calm
+     on, the untimed Practice round is picked until the Player picks another this visit. */
   let type = fx.calmOn() ? 'untimed' : 'daily';
+  /* A challenge link once js/arena.js has checked it (parseChallenge): { day, league, score, ranked }, or null */
+  let ch = null;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
     ${crumbs([null, 'Arena'])}
     <span class="md-tag md-tag--coral">Arena</span>
@@ -1253,9 +1276,18 @@ function arenaView({ signal } = {}) {
     challenger: `Your Arena Rating: <b>${arenaRating()}</b> of 20. Practice rounds start there and adapt to every answer.`,
     pro: `Arena Rating: <b>${arenaRating()}</b>/20. Practice rounds start there and adapt to every answer; the daily round is the same for everyone.`
   })}</small>`;
+  /* The friend's line (design D2 and D3): the Score to beat and, off the link's date or League, why the round is Practice */
+  const friendLine = () => {
+    if (!ch) return '';
+    const beat = ch.score === null ? "A friend's challenge" : `A friend's challenge: Score ${ch.score} to beat`;
+    if (ch.ranked) return `<p class="ar-friend" id="arFriend">${beat}. ${fx.t({ explorer: 'Start plays the very same questions!', challenger: "Start plays the same questions as your friend, as today's daily challenge.", pro: "Start plays the same questions as your friend, as today's daily challenge." })}</p>`;
+    const why = [ch.day !== cloud.dayId() ? `from ${ch.day}` : '', ch.league !== league ? `for the ${fx.MODES[ch.league].name} League` : ''].filter(Boolean).join(' and ') || 'from another day';
+    return `<p class="ar-friend" id="arFriend">${beat}. This challenge is ${why}, so here it plays as Practice, not on the Boards. Today's challenge is beside it.</p>`;
+  };
   const lobby = (result = '') => {
-    shell.innerHTML = `${result}<div class="g-optrow" role="group" aria-label="Round type"><button class="md-chip" aria-pressed="${type === 'daily'}" data-t="daily">Daily challenge</button><button class="md-chip" aria-pressed="${type === 'practice'}" data-t="practice">Practice round</button><button class="md-chip" aria-pressed="${type === 'untimed'}" data-t="untimed">Practice, no clock</button><button class="md-chip" aria-pressed="${type === 'words'}" data-t="words">${STORY_ROUND[mode] || STORY_ROUND.challenger}</button></div>
-      ${fx.calmOn() ? '<p class="ar-calm" id="arCalmNote">The daily challenge is a timed race for everyone. Practice has no clock in Calm.</p>' : ''}
+    const friend = !!ch && !ch.ranked;
+    shell.innerHTML = `${result}${friendLine()}<div class="g-optrow" role="group" aria-label="Round type">${friend ? `<button class="md-chip" aria-pressed="${type === 'friend'}" data-t="friend">Play your friend's round</button>` : ''}<button class="md-chip" aria-pressed="${type === 'daily'}" data-t="daily">Daily challenge</button><button class="md-chip" aria-pressed="${type === 'practice'}" data-t="practice">Practice round</button><button class="md-chip" aria-pressed="${type === 'untimed'}" data-t="untimed">Practice, no clock</button><button class="md-chip" aria-pressed="${type === 'words'}" data-t="words">${STORY_ROUND[mode] || STORY_ROUND.challenger}</button></div>
+      ${fx.calmOn() ? `<p class="ar-calm" id="arCalmNote">The daily challenge is a timed race for everyone. Practice has no clock in Calm.${friend ? " Your friend's round keeps its clock too: the Score to beat was made in 60 seconds." : ''}</p>` : ''}
       <p class="g-best">League: <b>${fx.MODES[fx.mode()].name}</b> · Your best today: <b>${store.best('arena-' + day)}</b><br>${arenaRatingLine()}</p>
       <button class="md-btn md-btn--primary ar-go" id="arGo">${icon('bolt')} Start</button>
       <div class="lb-cols"><div><h2 class="mq-h3">Today</h2><div id="lbDay" class="lb-wrap"></div></div><div><h2 class="mq-h3">This week</h2><div id="lbWeek" class="lb-wrap"></div></div></div>
@@ -1271,7 +1303,7 @@ function arenaView({ signal } = {}) {
   const countdown = () => {
     stop(); run = child(signal); loadArena().catch(() => {}); if (type === 'words') loadStories().catch(() => {});
     const old = shell.querySelector('.ar-result'); if (old) old.remove(); /* the last result goes; the new one shows in the shell */
-    play = openShell(type === 'daily' ? 'Arena: daily challenge' : 'Arena: Practice', { signal: run.signal, exitId: 'arStop', onExit: stop, focusBack: () => $('#arGo', shell) });
+    play = openShell(type === 'daily' ? 'Arena: daily challenge' : type === 'friend' ? "Arena: a friend's round" : 'Arena: Practice', { signal: run.signal, exitId: 'arStop', onExit: stop, focusBack: () => $('#arGo', shell) });
     const area = play.area, rsig = run.signal;
     let n = 3; area.innerHTML = `<div class="ar-count" aria-live="assertive">${n}</div>`; fx.sfx('tick');
     const count = child(rsig); /* leaving or stopping during the countdown means the round never starts */
@@ -1283,16 +1315,23 @@ function arenaView({ signal } = {}) {
   const start = (area, rsig) => withArena(area, rsig, A => {
     const words = type === 'words';
     if (words && !storiesNow()) { loadStories().then(() => { if (!rsig.aborted) start(area, rsig); }, () => { if (!rsig.aborted) area.innerHTML = '<p class="md-lede">The stories did not load. Check your connection and try again.</p>'; }); return; }
+    /* A challenge link's round is Ranked only while its date is still today and its League is this one (arena-challenge-link
+       design D2): a lobby opened at 23:58 and started after midnight plays the link's set as a friend's round and posts nothing.
+       Daily challenge picked beside a friend's Practice round is the Player's own daily round, nothing to re-check. */
+    const friend = !!ch && (type === 'friend' || (type === 'daily' && ch.ranked && !(ch.day === cloud.dayId() && ch.league === league)));
+    const ranked = type === 'daily' && !friend;
     track('arena/' + league + '/' + type, 'Arena round'); metrics.roundStart('arena');
     /* Practice: the Dial picks each question. Daily: it only records the answers (the questions are the same for everyone).
        Untimed: the Practice round with no clock, chosen or (for a Practice round) set by Calm. The daily round keeps its clock.
-       Word problems: no clock, its own questions, and the Arena Rating left as it was (word-problems-more design D5). */
+       Word problems and a friend's round: their own questions, and the Arena Rating left as it was (word-problems-more design
+       D5; arena-challenge-link design D10: the friend's set is another day's or League's, not this Player's level). */
+    const fixed = words || friend;
     const before = arenaRating(), dial = new AD.Dial(AD.rating(rKey, mode));
     const untimed = words || type === 'untimed' || (type === 'practice' && fx.calmOn());
-    A.runArena(area, { league, day: type === 'daily' ? day : null, dial: words ? null : dial, signal: rsig, untimed, ...(words ? { deal: storyDeal(A, storiesNow()), count: A.STORY_QS } : {}), onEnd: async r => {
+    A.runArena(area, { league: friend ? ch.league : league, day: ranked ? day : friend ? ch.day : null, dial: fixed ? null : dial, signal: rsig, untimed, ...(words ? { deal: storyDeal(A, storiesNow()), count: A.STORY_QS } : {}), onEnd: async r => {
       metrics.roundEnd('arena', league);
-      const after = words ? before : Math.round(AD.saveRating(rKey, dial) || before);
-      const moved = words || dial.n < 4 ? '' : fx.t({
+      const after = fixed ? before : Math.round(AD.saveRating(rKey, dial) || before);
+      const moved = fixed || dial.n < 4 ? '' : fx.t({
         explorer: after > before ? ` Your Arena Rating went up to ${after}!` : after < before ? ` Your Arena Rating is ${after} now.` : '',
         challenger: after > before ? ` Arena Rating up to ${after}.` : after < before ? ` Arena Rating now ${after}.` : '',
         pro: after > before ? ` Arena Rating up to ${after}.` : after < before ? ` Arena Rating down to ${after}.` : ''
@@ -1301,24 +1340,36 @@ function arenaView({ signal } = {}) {
       if (r.score > store.count('arenaBest')) store.bump('arenaBest', r.score - store.count('arenaBest'));
       const sp = Math.round(r.score / 5); if (sp) store.addSparks(sp, 'arena');
       let msg = '';
-      if (type === 'daily') {
+      if (ranked) {
         const isBest = store.setBest('arena-' + day, r.score);
         if (store.markSeen('daily:' + day)) store.bump('dailyDays');
         if (isBest) { fx.confetti(100); msg = 'New personal best for today!'; }
         postScore([`daily-${day}-${league}`, `week-${wk}-${league}`], r.score, `for today's ${fx.MODES[fx.mode()].name} race.`);
       }
+      /* The Score to beat, answered (arena-challenge-link design D3), on the friend's own round, Ranked or Practice */
+      const beat = ch && ch.score !== null && (ranked || friend) ? (r.score > ch.score ? `You beat your friend's Score of ${ch.score}! ` : r.score === ch.score ? `You matched your friend's Score of ${ch.score}. ` : `Your friend's Score of ${ch.score} stands. `) : '';
+      const note = msg || (friend ? "Your friend's round, played as Practice: it is not on the Boards." : type !== 'daily' ? 'Practice rounds do not count for the leaderboard.' : 'Play again to beat your best.');
       const T = await loadTags().catch(() => null); /* the round review's tags (js/sutra-tag.js, here long before a round ends) */
-      const res = `<div class="ar-result"><div class="md-stat"><div class="md-kicker">Score</div><div class="md-value">${r.score}</div><p>${r.right} right · ${r.wrong} missed · best combo ${r.bestCombo}x${moved}</p></div><p class="ar-msg">${msg || (type !== 'daily' ? 'Practice rounds do not count for the leaderboard.' : 'Play again to beat your best.')} <span class="fx-sparks">+${sp} Sparks</span></p>${T ? arenaReview(T, r.answered) : ''}</div>`;
+      const res = `<div class="ar-result"><div class="md-stat"><div class="md-kicker">Score</div><div class="md-value">${r.score}</div><p>${r.right} right · ${r.wrong} missed · best combo ${r.bestCombo}x${moved}</p></div><p class="ar-msg">${beat}${note} <span class="fx-sparks">+${sp} Sparks</span></p>${T ? arenaReview(T, r.answered) : ''}</div>`;
       /* The result shows in the shell; leaving it shows the lobby with the same result and focuses Start */
       const back = () => { lobby(res); stop(); };
       if (!play || rsig.aborted) { lobby(res); return; }
-      area.innerHTML = `${res}<p class="lv-acts"><button type="button" class="md-btn md-btn--primary" id="arDone">Back to the Arena</button></p>`;
+      /* Challenge a friend (openspec change arena-challenge-link): on a Ranked daily result only, in every Mode and for every
+         Player, under 13 included (design D6: the words go to the device's own share sheet or clipboard, and the site sends
+         nothing new). The share helper (js/play/kit.js) loads on the first tap (design D8). One share_click per tap, whether
+         the sheet opened, the text was copied or the Player cancelled (analytics spec). */
+      const shareBtn = ranked ? `<button type="button" class="md-btn" id="arShare">${fx.t({ explorer: 'Send to family', challenger: 'Challenge a friend', pro: 'Challenge a friend' })}</button>` : '';
+      area.innerHTML = `${res}<p class="lv-acts"><button type="button" class="md-btn md-btn--primary" id="arDone">Back to the Arena</button>${shareBtn}</p>`;
       play.setExit('Back', back);
       const done = $('#arDone', area); done.onclick = back; done.focus({ preventScroll: true });
+      if (ranked) $('#arShare', area).onclick = () => { metrics.shareClick('result'); const s = A.challengeShare({ league, day, score: r.score, right: r.right, wrong: r.wrong, bestCombo: r.bestCombo }); loadKit().then(K => K.share({ ...s, notify: fx.toast })).catch(() => {}); };
       fx.rollSparks(area, rsig);
     } });
   });
-  lobby();
+  /* A challenge link waits for js/arena.js to check it before the lobby draws (one draw, no flash): Daily challenge picked
+     on its own date in this League (Calm included, the daily keeps its clock), else the friend's round (design D2, D7) */
+  if (link) withArena(shell, signal, A => { ch = A.parseChallenge(link, cloud.dayId(), league); if (ch) type = ch.ranked ? 'daily' : 'friend'; lobby(); });
+  else lobby();
 }
 
 /* The round review (openspec change sutras-first): each Sutra that answered a question of the round, with right of
@@ -1849,11 +1900,13 @@ function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw
     <h2 class="mq-strand">Backup</h2>
     <p class="mq-data"><button class="md-btn md-btn--sm" id="pExport">Copy backup code</button> <button class="md-btn md-btn--sm" id="pImport">Restore from code</button> <button class="md-btn md-btn--sm" id="pReset">Reset this player</button></p>
     <p class="pr-say" id="pMsg" role="status" aria-live="polite"></p>
+    <div class="me-restore" id="pCodeBox" hidden><label class="mq-small" for="pCode">Your backup code, every Player on this device. Copy it or write it down.</label><textarea class="md-input" id="pCode" readonly rows="3" spellcheck="false"></textarea></div>
+    <div class="me-restore" id="pPasteBox" hidden><label class="mq-small" for="pPaste">Paste a backup code here, then press Check this code. Nothing changes until you choose what to keep.</label><textarea class="md-input" id="pPaste" rows="3" spellcheck="false" autocomplete="off"></textarea><div class="me-acts"><button type="button" class="md-btn md-btn--sm md-btn--primary" id="pCheck">Check this code</button><button type="button" class="md-btn md-btn--sm" id="pPasteCancel">Cancel</button></div></div>
     <div class="md-card me-restore" id="pOffer" hidden>
       <h3 class="mq-h3" id="pOfferH" tabindex="-1">Restore from this code?</h3>
       <ul id="pOfferList"></ul>
       <p class="mq-small">With them come their Sparks, Medals, Stars, Ratings and settings. World board names and the Device board start fresh.</p>
-      <p class="mq-small" id="pOfferHere" hidden><b>This device already has progress:</b> <span></span>. Keep both adds the code's Players next to the ones here; each Player keeps their own progress.</p>
+      <p class="mq-small" id="pOfferHere" hidden><b>This device already has progress:</b> <span></span>. Use the code's replaces every Player and all progress on this device with the code's. Keep both adds the code's Players next to the ones here; each Player keeps their own progress.</p>
       <div class="me-acts" id="pOfferFresh"><button class="md-btn md-btn--sm md-btn--primary" id="pBring">Bring it</button><button class="md-btn md-btn--sm" id="pNotNow">Not now</button></div>
       <div class="me-acts" id="pOfferHas" hidden><button class="md-btn md-btn--sm" id="pKeep">Keep this device's</button><button class="md-btn md-btn--sm" id="pUse">Use the code's</button><button class="md-btn md-btn--sm md-btn--primary" id="pBoth">Keep both</button></div>
     </div>
@@ -1888,6 +1941,7 @@ function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw
   store.loadBackup().catch(() => {});
   const backup = fn => async () => { if (!bk) { try { bk = (await store.loadBackup()).meBackup({ $, msg }); } catch (e) { msg('The backup tools could not load. Check the connection, then try again.'); return; } } fn(bk); };
   listen($('#pExport'), backup(b => b.copy())); listen($('#pImport'), backup(b => b.restore()));
+  listen($('#pCheck'), backup(b => b.check())); listen($('#pPasteCancel'), backup(b => b.cancelPaste()));
   listen($('#pBring'), backup(b => b.choose('replace'))); listen($('#pUse'), backup(b => b.choose('replace'))); listen($('#pBoth'), backup(b => b.choose('both')));
   listen($('#pNotNow'), backup(b => b.keep())); listen($('#pKeep'), backup(b => b.keep()));
   $('#pReset').onclick = () => { if (confirm('Reset all progress for this player?')) { store.reset(); meView(ctx); msg('Progress reset.'); } };

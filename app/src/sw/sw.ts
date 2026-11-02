@@ -20,7 +20,7 @@
    What is precached (openspec change render-performance, design D10, owner P5): the core of the game, which is the
    shell, every module of the static import graph and the late modules the core routes load (the Arena, the tour, the
    Sutra tags, the stories, installing, the Family helpers), the styles, the design system, the body and heading fonts,
-   the icons and the manifest. The Play experiences (js/play/exp/, their styles in css/play/ and js/play/kit.js), the
+   the icons and the manifest. The Play experiences (js/play/exp/ and their styles in css/play/; js/play/kit.js, which js/app.js loads after every page load, stays core), the
    video list (js/videos.js) and the two fonts only the experiences use are LAZY: build.py lists their stamped URLs but
    the install never downloads them. The worker saves one the first time a page requests it, when the response is a
    success of the expected type (never the 404 page), and a new version copies the saved ones it still uses from the

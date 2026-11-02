@@ -97,7 +97,7 @@ test('the worker registers with scope /play/, caches under lvm-, and every preca
 });
 
 /* Saved on first request, never precached (build.py is_lazy) */
-const LAZY = /^\/(js\/play\/exp\/|css\/play\/|js\/play\/kit\.js|js\/play\/life\.js|js\/videos\.js)/;
+const LAZY = /^\/(js\/play\/exp\/|css\/play\/|js\/play\/life\.js|js\/videos\.js)/;
 
 /* Navigation preload (render-performance design D11): the browser starts the page request as it starts the worker */
 test('the worker enables navigation preload when it activates', async ({ page }) => {

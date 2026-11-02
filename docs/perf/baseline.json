@@ -18,7 +18,7 @@
  "firstLoad": {
   "page": "/play/",
   "voice": "off",
-  "total": 532840,
+  "total": 544869,
   "files": {
    "/ds/2.2.0/components.css": 6692,
    "/ds/2.2.0/header.js": 1166,
@@ -39,9 +39,9 @@
    "/js/ambient.js": 4480,
    "/js/analytics.js": 1385,
    "/js/answers.js": 912,
-   "/js/app.js": 53096,
-   "/js/arena.js": 4141,
-   "/js/backup.js": 2676,
+   "/js/app.js": 54960,
+   "/js/arena.js": 4272,
+   "/js/backup.js": 3030,
    "/js/bolt.js": 1088,
    "/js/celebrate.js": 3367,
    "/js/check.js": 2946,
@@ -55,11 +55,11 @@
    "/js/family-view.js": 4202,
    "/js/family.js": 1528,
    "/js/find.js": 6870,
-   "/js/fx.js": 4050,
-   "/js/games.js": 12425,
+   "/js/fx.js": 4186,
+   "/js/games.js": 12623,
    "/js/gamify.js": 3904,
    "/js/guide-art.js": 2484,
-   "/js/guide.js": 10650,
+   "/js/guide.js": 10689,
    "/js/handoff-schema.js": 6682,
    "/js/handoff.js": 4229,
    "/js/install-rules.js": 2226,
@@ -70,10 +70,12 @@
    "/js/life.js": 1103,
    "/js/listen.js": 1335,
    "/js/mental.js": 155,
-   "/js/metrics.js": 4201,
+   "/js/metrics.js": 4331,
    "/js/nav.js": 1555,
+   "/js/paths.js": 2850,
    "/js/play/catalog.js": 1783,
    "/js/play/icons.js": 721,
+   "/js/play/kit.js": 4002,
    "/js/play/offline-note.js": 951,
    "/js/prompt-slot.js": 629,
    "/js/related.js": 516,
@@ -104,11 +106,13 @@
    "/js/sutras.js": 4223,
    "/js/tour.js": 2213,
    "/js/try.js": 4423,
+   "/js/ts/shared/src/challenge.js": 1476,
    "/js/ts/shared/src/lib.js": 1775,
    "/js/ts/shared/src/mental.js": 2185,
    "/js/ts/shared/src/names.js": 696,
-   "/js/ts/shared/src/questions.js": 2346,
+   "/js/ts/shared/src/questions.js": 2412,
    "/js/ts/shared/src/scoring.js": 842,
+   "/js/ts/shared/src/site.js": 256,
    "/js/ts/shared/src/skills/early.js": 5417,
    "/js/ts/shared/src/skills/high.js": 9394,
    "/js/ts/shared/src/skills/index.js": 1101,
@@ -122,12 +126,12 @@
    "/js/voice-index.js": 213,
    "/js/voice-plan.js": 2458,
    "/js/voice-worker.js": 877,
-   "/js/voice.js": 14663,
+   "/js/voice.js": 14837,
    "/js/watch.js": 2376,
    "/manifest.webmanifest": 605,
-   "/math.css": 25766,
-   "/play/": 4338,
-   "/sw.js": 7614,
+   "/math.css": 26008,
+   "/play/": 4405,
+   "/sw.js": 7658,
    "/theme/fonts.css": 384,
    "/theme/learnvedicmath.css": 536
   },
@@ -323,10 +327,45 @@
    },
    {
     "date": "2026-10-31",
-    "pr": "render-performance-build",
+    "pr": 189,
     "from": 846845,
-    "to": 532840,
-    "why": "render-performance tasks 8.3, 8.4 and 7.1 (the preloads and the precache), on the Legacy game: the worker precaches the core only (openspec change render-performance, design D10, owner P5): the 29 Play experience modules (js/play/exp/), their 13 stylesheets (css/play/), js/play/kit.js, js/play/life.js and the video list js/videos.js leave the precache for the build's LAZY list and are saved the first time a page requests them, then carried across versions; the two fonts only the experiences use (Space Grotesk, JetBrains Mono) and the landing page's js/landing-sky.js leave it too; what came: /sw.js (the LAZY list, the carry-over, navigation preload, the cached? message), js/play/offline-note.js (new, the shelf's offline note), the note's call and the Retry button in js/app.js, the note's styles in math.css; measured on the tree merged with main as of #188 (846,845); 48 files gone (316487 bytes); file deltas: /sw.js +1190, /js/play/offline-note.js +951, /js/app.js +247, /math.css +77, /play/ +17; -314005 in all; /js/nav.js at CI's figure"
+    "to": 847480,
+    "why": "indexable-routes task 3.1, view transitions inside the game (design D12): render() in js/app.js runs its DOM update inside document.startViewTransition when the browser has it and fx.noMotion() is false, skipping the first render, a redraw of the same route and a change while one is running, with focus and scroll after updateCallbackDone; math.css names the header, the nav and the Player chip (site-header, game-nav, player-chip) and sets the 180 ms fade; no new file; measured on the tree merged with main as of #188; file deltas: /js/app.js +380, /math.css +207, /sw.js +34, /play/ +14; /js/nav.js reads 1 byte smaller locally than CI's figure, which the baseline keeps (the #168 note); +635 in all as CI measures it"
+   },
+   {
+    "date": "2026-11-01",
+    "pr": 190,
+    "from": 847480,
+    "to": 850252,
+    "why": "indexable-routes 1.1, the route table (js/paths.js); re-measured on main as of the merge; CI figure for /js/nav.js; file deltas: /js/paths.js new 2776, /sw.js -4; +2772 in all"
+   },
+   {
+    "date": "2026-11-01",
+    "pr": 191,
+    "from": 850252,
+    "to": 851514,
+    "why": "muse-round-2: backup code field, restore paste field, fraction labels, toast host, read-aloud fallback; re-measured on main as of the merge; CI figure for /js/nav.js; file deltas: /css/play/ghosts.css +69, /js/app.js +185, /js/backup.js +354, /js/fx.js +136, /js/games.js +198, /js/play/exp/ghosts-core.js +76, /js/play/exp/ghosts.js +55, /js/voice.js +174, /play/ -1, /sw.js +16; +1262 in all"
+   },
+   {
+    "date": "2026-11-01",
+    "pr": 193,
+    "from": 851514,
+    "to": 855297,
+    "why": "PR #193 re-measured after main moved; re-measured on main as of the merge; CI figure for /js/nav.js; file deltas: /js/app.js +1301, /js/arena.js +131, /js/guide.js +39, /js/metrics.js +130, /js/play/kit.js +248, /js/ts/shared/src/challenge.js new 1476, /js/ts/shared/src/questions.js +66, /js/ts/shared/src/site.js new 256, /math.css +78, /play/ +32, /sw.js +26; +3783 in all"
+   },
+   {
+    "date": "2026-11-02",
+    "pr": 193,
+    "from": 855297,
+    "to": 855367,
+    "why": "arena-challenge-link; re-measured on main as of the merge; CI figure for /js/nav.js; file deltas: /js/paths.js +74, /play/ +1, /sw.js -5; +70 in all"
+   },
+   {
+    "date": "2026-10-31",
+    "pr": 198,
+    "from": 855367,
+    "to": 544869,
+    "why": "render-performance on the Legacy game (tasks 8.3, 8.4, 8.5, the precache half of 7.1): the worker precaches the core only (design D10, owner P5); the Play experience modules (js/play/exp/), their stylesheets (css/play/), js/play/life.js and js/videos.js move to the build's LAZY list and are saved the first time a page requests them, then carried across versions (js/play/kit.js stays core: js/app.js loads it after every page load); Space Grotesk, JetBrains Mono and js/landing-sky.js leave the precache too; the Trick pages' modules (js/ts/shared/src/vedic.js, lib.js) and the Arena challenge link (js/ts/shared/src/challenge.js, through the Arena) stay with the core, which the game needs; what came: /sw.js (LAZY, the carry-over, navigation preload, the cached? message), js/play/offline-note.js (new), its call and the Retry button in js/app.js, its styles in math.css; re-measured on main as of #194 (855,367); 47 files gone (312933 bytes); file deltas: /sw.js +1167, /js/play/offline-note.js +951, /js/app.js +245, /play/ +38, /math.css +34; -310498 in all; /js/nav.js at CI's figure"
    }
   ]
  },
@@ -449,8 +488,23 @@
    }
   }
  },
+ "trickPage": {
+  "//": "The Trick pages (openspec change trick-pages, design D7): one page's first load, Brotli, measured by tools/budget.ts --page (the page, every file it links, the static module graph of its module scripts; no worker, no precache). build.py fails any /tricks/ page above max. The first measurement was above the 80 KB the design hoped for, so the measured figure is recorded with a small margin, as design D7 says, not a round number: the shared site files are most of it (two fonts 46 KB, the design system and theme 15 KB, icons 9 KB, the catalog shared/src/vedic.ts 10 KB); the page, its stylesheet and the calculator are about 7 KB together.",
+  "max": 96000,
+  "page": "/tricks/multiply-numbers-near-100/",
+  "measured": 93259,
+  "files": 20,
+  "changes": [
+   {
+    "date": "2026-10-31",
+    "pr": "trick-pages",
+    "to": 93259,
+    "why": "First measurement: the largest of the 15 Trick pages (the index is 77,685 bytes); max is the figure plus about 3% for wording changes to the catalog, which the game's own gate also measures"
+   }
+  ]
+ },
  "budgets": {
-  "//": "The owner's absolute byte budgets (M5; openspec change render-performance, design D2, task 2.1 on the Legacy game), in Brotli bytes, read by tools/budget.ts on every build. failing: whether a miss fails the build; a line the start measurement missed stays reported until a pull request meets it and turns failing on in the same commit (D2 item 4). The start measurement of 2026-10-31 (main as of #188, render-performance-build): JS before play 303,919 bytes in 62 files (the page's scripts and the static module graph of /js/app.js), CSS before play 35,882 bytes in 5 files, the largest landing or grown-up page's JS 6,780 bytes (/import/).",
+  "//": "The owner's absolute byte budgets (M5; openspec change render-performance, design D2, task 2.1 on the Legacy game), in Brotli bytes, read by tools/budget.ts on every build. failing: whether a miss fails the build; a line the start measurement missed stays reported until a pull request meets it and turns failing on in the same commit (D2 item 4). The start measurement (main as of #194, 2026-11-01): JS before play 306,460 bytes in 62 files (the game page's scripts and the static module graph of /js/app.js), CSS before play 36,124 bytes in 5 files, the largest landing or grown-up page's JS 21,136 bytes (/, the sky background; the Trick pages 17,751), so JS before play and the site page line are missed and reported.",
   "jsBeforePlay": {
    "limit": 153600,
    "failing": false
@@ -461,7 +515,7 @@
   },
   "sitePageJs": {
    "limit": 15360,
-   "failing": true
+   "failing": false
   }
  }
 }

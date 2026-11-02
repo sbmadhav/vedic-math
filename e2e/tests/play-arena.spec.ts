@@ -209,3 +209,35 @@ test.describe('320 px wide', () => {
     }
   });
 });
+
+/* Ghost Races (Muse review round 2, item 4): the 3, 2, 1 count stands alone in the question slot, so it never reads
+   as a clipped question "3 =", and a race with one miss says "1 miss", not "1 misses" (missWord in ghosts-core.js).
+   The race is against the built-in pacer and nothing is sent: Send my ghost is never pressed. */
+test('Ghost Races: the count shows alone, and one miss is "1 miss"', async ({ page }) => {
+  await open(page, '#/arena/ghosts');
+  await page.getByRole('radio', { name: /^Doubles/ }).click();
+  await page.getByRole('button', { name: /Start race/ }).click();
+  const q = page.locator('.gh-q');
+  await expect(q.locator('.gh-q-text')).toHaveClass(/is-count/);
+  await expect(q.locator('.gh-q-eq')).toBeHidden();
+  await expect(q.locator('.gh-typed')).toBeHidden();
+  await expect(q.locator('.gh-q-text')).not.toHaveClass(/is-count/, { timeout: 10_000 });
+  await expect(q.locator('.gh-q-eq')).toBeVisible();
+  await expect(q.locator('.gh-typed')).toBeVisible();
+  await expect(q.locator('.gh-q-text')).toHaveText(/^Double \d+$/);
+  const n = await page.locator('.gh-count').evaluate(e => Number((e.textContent || '').split('/')[1]));
+  // A wrong answer of the right length on the first question is the one miss (judge() waits for every digit);
+  // then every double, typed from the keys, which moves on without Enter
+  const answer = async () => Number(((await q.locator('.gh-q-text').textContent()) || '').replace(/\D/g, '')) * 2;
+  const first = await answer();
+  await page.keyboard.type('9'.repeat(String(first).length));
+  await expect(page.locator('.gh-play')).toHaveClass(/is-miss/);
+  for (let k = 0; k < n; k++) {
+    await page.keyboard.type(String(await answer()));
+    if (k + 1 < n) await expect(page.locator('.gh-count')).toContainText(`${k + 2} / ${n}`);
+  }
+  const result = page.locator('.gh-result');
+  await expect(result).toBeVisible();
+  await expect(result.locator('.gh-stats small').first()).toHaveText('1 miss');
+  await expect(page.locator('#vmLive'), 'the spoken result line agrees too').toContainText(/with 1 miss\./);
+});

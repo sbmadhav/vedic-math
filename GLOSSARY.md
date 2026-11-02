@@ -66,6 +66,10 @@ _Avoid_: sutra score, sutra level, mastery (that is one Skill's)
 A genuine Sanskrit verse, prose rule (sūtra) or Vedic mantra about mathematics from an older text, shown in Mathematics in Sanskrit verse at the end of the Sutras page (`js/slokas.js`). Verses are not the source of the Sutras; the only verse in the 1965 book (gopī bhāgya, π/10) is the Swami's own.
 _Avoid_: calling a Sutra a verse; "ancient" without a date
 
+**Trick page**:
+A static page at `/tricks/<slug>/` for one Trick, for search and sharing: its name, its Sutra, when to use it, the idea, a worked example, "Try it with your numbers" (the calculator, the game's animator as a small module) and "Practice this trick" into the game. Not a game view: generated from the catalog by `tools/trick-pages/` and committed under `site/tricks/`, with the index at `/tricks/` (`trick-pages` change).
+_Avoid_: lesson (the lesson is the game's `#/skill/v-<trick>` view), landing page, Sutra page
+
 **Deep dive**:
 The dialog that opens from a Sutra card's Learn more (route `#/sutras/<id>`): the plain explanation, an animated diagram, why it works, Worked examples, where it is used and further reading. Its close button and the footer to the previous and next Sutra stay pinned while it scrolls.
 _Avoid_: modal, popup, detail page
@@ -241,8 +245,12 @@ _Avoid_: play button, speaker, read-aloud button (Read aloud is the setting)
 ## Rounds and results
 
 **Ranked round**:
-A round whose result counts on Boards: an Arena daily round, a ranked game round, the first attempt at the Daily Sutra, or a challenge-link round.
+A round whose result counts on Boards: an Arena daily round, a ranked game round, the first attempt at the Daily Sutra, or a Challenge link's round on its own date in its League (then it is that day's daily round; on any other day or in another League the friend's round is Practice).
 _Avoid_: competitive round, official round
+
+**Challenge link**:
+An Arena daily challenge link, `#/arena/day/<YYYY-MM-DD>/<league>/<score>`, carrying the date, the League and the Score to beat and nothing else (no Nickname, Rating or Player id). Made by **Challenge a friend** (Send to family in Explorer) on a daily result, with three lines of words. It opens the Arena lobby ready to Start, never a round: on its date in its League, Start plays that day's daily challenge, a Ranked round; on another day or in another League the friend's round plays as Practice, with today's challenge beside it. Defined in `shared/src/challenge.ts`.
+_Avoid_: invite link, challenge code, share code (Ghost Races and Daily Number have their own share links)
 
 **Calm**:
 A setting for play with no clocks in Practice and no motion. Ranked rounds keep their clock. It is saved per device, like sound.
