@@ -1,4 +1,4 @@
-import { test, expect, APP, open } from '../fixtures';
+import { test, expect, APP, open, pathTo } from '../fixtures';
 
 /* first-visit spec, the Requirements added by openspec change try-trick-in-modes: "Try a trick inside each Mode" (from
    Home since openspec change play-nav-by-mode: "Try a trick inside each Mode, from Home"), "Try a trick on Home", "Try a trick teaches its Sutra first",
@@ -131,7 +131,7 @@ test.describe('Challenger', () => {
     const before = await progress(page);
     await finishChallenger(page);
     await expect(page.locator('.try-end-n')).toContainText('3 of 3 right.');
-    await expect(page.locator('#tyGoOn')).toHaveAttribute('href', '#/star/sq5/1');
+    await expect(page.locator('#tyGoOn')).toHaveAttribute('href', pathTo('#/star/sq5/1'));
     await expect(page.locator('#tyHome')).toHaveText('Back home');
     await expect(page.locator('#tySutra')).toHaveText('Read about Ekādhikena Pūrveṇa');
     const after = await progress(page);

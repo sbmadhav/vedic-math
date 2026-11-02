@@ -1,4 +1,4 @@
-import { test, expect, APP, open, appErrors } from './fixtures';
+import { test, expect, APP, open, appErrors, atRoute, hrefTo, pathTo } from './fixtures';
 
 /* The first visit (openspec first-visit, try-trick-in-modes, play-nav-by-mode): the Mode picker, whose three Mode cards
    are its only buttons, then each Mode's Try a trick from its Home (the lesson itself is in try-trick.spec.ts), Back home from a Star opened from Home,
@@ -27,7 +27,7 @@ test.describe('the landing', () => {
     expect(await page.locator('#view button').count()).toBe(3);
     await expect(page.locator('.pick-h')).toHaveText('Pick who is playing');
     await page.locator('.mode-card[data-mode="challenger"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
-    await expect(page).toHaveURL(/#\/try$/);
+    await expect(page).toHaveURL(atRoute('#/try'));
     await expect(page.locator('#tyStart')).toBeFocused();
     await page.locator('#tyStart').click();
     await expect(page.locator('#tyIn')).toBeFocused();
@@ -70,7 +70,7 @@ test.describe('the landing', () => {
     await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
     await expect(page.locator('#stExit')).toBeVisible();
     await page.locator('#stExit').click();
-    await expect(page).toHaveURL(new RegExp(`${APP.replace(/\//g, '\\/')}#\\/$`));
+    await expect(page).toHaveURL(atRoute('#/'));
     await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');
     await expect(page.locator('.mode-line')).toHaveText(/Mode: Challenger Change$/);
     await expect(page.locator('.home-doors .door')).toHaveCount(3);
@@ -114,7 +114,7 @@ test.describe('Keep going for another Skill', () => {
   test.use({ seedProgress: { v: 3, skills: {}, sparks: 0, days: {}, last: '3-mult' } });
   test('a Challenger who last practiced another Skill is offered it', async ({ page }) => {
     await open(page);
-    await expect(page.locator('.mq-continue')).toHaveAttribute('href', '#/skill/3-mult');
+    await expect(page.locator('.mq-continue')).toHaveAttribute('href', pathTo('#/skill/3-mult'));
   });
 });
 
@@ -136,7 +136,7 @@ test.describe('Home: three doors first', () => {
     // The rest waits under More ways to play, closed by default
     const more = page.locator('#homeMore');
     await expect(more).not.toHaveAttribute('open', /.*/);
-    for (const href of ['#/arena/party', '#/games', '#/sutras', '#/watch']) await expect(more.locator(`.play-tile[href="${href}"]`)).toHaveCount(1);
+    for (const href of ['#/arena/party', '#/games', '#/sutras', '#/watch']) await expect(more.locator(`.play-tile${hrefTo(href)}`)).toHaveCount(1);
     await expect(more.locator('.play-tile').first()).toBeHidden();
     await expect(page.locator('.quest-card .mq-small')).toContainText('Sparks are the points you earn for right answers');
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
@@ -166,7 +166,9 @@ test.describe('Home: three doors first', () => {
     await expect.poll(() => page.evaluate(() => localStorage.getItem('vm.homeMore'))).toBe('1'); /* the toggle event stores it after the click: wait for it before leaving */
     await open(page, '#/');
     await expect(page.locator('#homeMore')).toHaveAttribute('open', '');
-    expect(appErrors(issues)).toEqual([]);
+    /* No route page names an unknown Skill, so its path is answered by the game's 404 page (the shell, status 404;
+       indexable-routes task 2.3): the browser logs that status for the document, which is not an app error */
+    expect(appErrors(issues).filter(e => !e.includes(`404 (Not Found) (${new URL(page.url()).origin}${pathTo('#/skill/no-such-skill')})`))).toEqual([]);
   });
 
   test('Play this Star from Home: the Star\'s Back goes home; from the Dojo it goes back to the Dojo', async ({ page }) => {
@@ -177,10 +179,10 @@ test.describe('Home: three doors first', () => {
     await page.locator('#stExit').click();
     await expect(page.locator('h1.home-h')).toBeVisible();
     await open(page, '#/dojo');
-    await page.locator('.dojo-star[href="#/star/from9/1"]').click();
+    await page.locator(`.dojo-star${hrefTo('#/star/from9/1')}`).click();
     await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
     await page.locator('#stExit').click();
-    await expect(page).toHaveURL(/#\/dojo$/);
+    await expect(page).toHaveURL(atRoute('#/dojo'));
   });
 
   test.describe('Pro', () => {
@@ -191,16 +193,16 @@ test.describe('Home: three doors first', () => {
       await expect(doors).toHaveCount(3);
       await expect(doors.nth(0)).toHaveClass(/sutra-door/);
       await expect(doors.nth(0).locator('.md-btn--primary')).toHaveText('Play this Star');
-      await expect(doors.nth(0).getByRole('link', { name: 'Open the Dojo' })).toHaveAttribute('href', '#/dojo');
+      await expect(doors.nth(0).getByRole('link', { name: 'Open the Dojo' })).toHaveAttribute('href', pathTo('#/dojo'));
       await expect(doors.nth(0)).toContainText('0 of 7 belts');
-      await expect(doors.nth(1)).toHaveAttribute('href', '#/arena');
+      await expect(doors.nth(1)).toHaveAttribute('href', pathTo('#/arena'));
       await expect(doors.nth(1)).toContainText("Today's Arena round");
-      await expect(doors.nth(2)).toHaveAttribute('href', '#/learn');
+      await expect(doors.nth(2)).toHaveAttribute('href', pathTo('#/learn'));
       await expect(page.locator('#view .md-btn--primary')).toHaveCount(1);
       const board = (await page.locator('.board-card').boundingBox())!, last = (await doors.nth(2).boundingBox())!;
       expect(board.y).toBeGreaterThanOrEqual(last.y + last.height);
       await expect(page.locator('#homeBoard')).toBeVisible();
-      for (const href of ['#/sutras', '#/arena/party', '#/games', '#/watch']) await expect(page.locator(`#homeMore .play-tile[href="${href}"]`)).toHaveCount(1);
+      for (const href of ['#/sutras', '#/arena/party', '#/games', '#/watch']) await expect(page.locator(`#homeMore .play-tile${hrefTo(href)}`)).toHaveCount(1);
     });
   });
 
@@ -210,7 +212,7 @@ test.describe('Home: three doors first', () => {
       await open(page);
       await expect(page.locator('.play-grid--big .play-tile')).toHaveCount(8);
       await expect(page.locator('#voiceBtn')).toBeVisible();
-      await expect(page.locator('a.md-btn[href="#/watch"]')).toBeVisible();
+      await expect(page.locator(`a.md-btn${hrefTo('#/watch')}`)).toBeVisible();
       await expect(page.locator('#homeMore, .home-doors')).toHaveCount(0);
     });
   });

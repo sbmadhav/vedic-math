@@ -1,7 +1,8 @@
-import { test, expect, APP, open, cloudLog, heldClock } from './fixtures';
+import { test, expect, APP, open, cloudLog, heldClock, atRoute, hrefTo } from './fixtures';
 
-/* The app is a hash router (#/learn, #/dojo, ...). Every top-level route renders, deep links work,
-   and Back / Forward move between views. */
+/* The app's router matches route keys (#/learn, #/dojo, ...) and shows each screen at its path (/learn/skills,
+   /learn/dojo; openspec change indexable-routes). Every top-level route renders, deep links work, and Back / Forward
+   move between views. */
 
 /* nav: the menu zone marked current on the route (openspec change play-nav-by-mode) */
 const ROUTES = [
@@ -50,15 +51,15 @@ test('nav links move between views, and Back / Forward follow', async ({ page })
   await nav.getByRole('link', { name: 'Learn', exact: true }).click();
   await expect(page.locator('#view h1')).toHaveText('Pick a level');
   await nav.getByRole('link', { name: 'Arcade', exact: true }).click(); /* Games is in the Arcade (openspec change play-nav-by-mode) */
-  await page.locator('.arcade-doors a[href="#/games"]').click();
+  await page.locator(`.arcade-doors a${hrefTo('#/games')}`).click();
   await expect(page.locator('#view h1')).toHaveText('Games that build number sense');
   await nav.getByRole('link', { name: 'Watch', exact: true }).click();
   await expect(page.locator('#view h1')).toHaveText('Short videos that show how');
   await page.goBack();
-  await expect(page).toHaveURL(/#\/games$/);
+  await expect(page).toHaveURL(atRoute('#/games'));
   await expect(page.locator('#view h1')).toHaveText('Games that build number sense');
   await page.goBack();
-  await expect(page).toHaveURL(/#\/arcade$/);
+  await expect(page).toHaveURL(atRoute('#/arcade'));
   await page.goBack();
   await expect(page.locator('#view h1')).toHaveText('Pick a level');
   await page.goForward();
@@ -118,7 +119,7 @@ test('a sutra deep link opens the deep-dive dialog over the sutras page', async 
   await expect(page.locator('.sutra-grid').first()).toBeAttached();
   await dlg.locator('.sd-x').click();
   await expect(dlg).toBeHidden();
-  await expect(page).toHaveURL(/#\/sutras$/);
+  await expect(page).toHaveURL(atRoute('#/sutras'));
 });
 
 test('a sutra card flips, then Learn more opens the dialog and Back closes it', async ({ page }) => {

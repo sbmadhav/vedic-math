@@ -1,4 +1,4 @@
-import { test, expect, APP, open, chromiumOnly } from './fixtures';
+import { test, expect, APP, open, chromiumOnly, atRoute, go } from './fixtures';
 import { UA, RETURNING, offerInstall, asInstalledApp, recordEvents, events, installState, seedInstallState } from './install-helpers';
 
 /* Installing the game as an app (openspec change install-app): the Install nudge on Home, the Install guide, the
@@ -76,7 +76,7 @@ test.describe('the Install nudge', () => {
     await offerInstall(page);
     await page.waitForTimeout(500);
     await expect(nudge(page)).toHaveCount(0);
-    await page.goto(`${APP}#/me`);
+    await go(page, '#/me');
     await expect(page.locator('#meInstall')).toBeVisible();
   });
 
@@ -92,7 +92,7 @@ test.describe('the Install nudge', () => {
     await offerInstall(page);
     await page.waitForTimeout(500);
     await expect(page.locator('.in-nudge')).toHaveCount(0);
-    await page.goto(`${APP}#/`);
+    await go(page, '#/');
     await expect(nudge(page)).toBeVisible();
   });
 
@@ -120,7 +120,7 @@ test.describe('the Install nudge', () => {
     await expect(nudge(page)).toHaveCount(0);
     expect((await installState(page)).installed).toBeGreaterThan(0);
     await expect.poll(() => events(page)).toContain('math/install/installed');
-    await page.goto(`${APP}#/me`);
+    await go(page, '#/me');
     await expect(page.locator('#meInstall')).toHaveCount(0);
     await expect(page.locator('#installWrap')).toBeHidden();
   });
@@ -133,13 +133,13 @@ test.describe('the Install nudge', () => {
     await expect(page.locator('#meInstall')).toHaveCount(0);
     await expect(page.locator('#installWrap')).toBeHidden();
     /* A new page load where the browser offers again (the app was removed): the card is back on the next render */
-    await page.goto(`${APP}#/learn`);
+    await go(page, '#/learn');
     await page.reload();
     await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
     await offerInstall(page);
-    await page.goto(`${APP}#/me`);
+    await go(page, '#/me');
     await expect(page.locator('#meInstall')).toBeVisible();
-    await page.goto(`${APP}#/guide/offline`);
+    await go(page, '#/guide/offline');
     await expect(page.locator('#gd-offline [data-gd="install"]')).toBeVisible();
     await page.evaluate(() => window.dispatchEvent(new Event('appinstalled')));
     await expect(page.locator('#gd-offline [data-gd="install"]')).toHaveCount(0);
@@ -158,7 +158,7 @@ test.describe('the Install nudge', () => {
       await expect(nudge(page)).toHaveCount(1);
       await expect(nudge(page)).toContainText('Grown-ups: add Vedic Math to this device');
       await nudge(page).getByRole('button', { name: 'Not now' }).click();
-      await page.goto(`${APP}#/me`);
+      await go(page, '#/me');
       await page.locator('#meInstall').click();
       await expect(guide(page).locator('h2')).toHaveText('For a grown-up: add the app');
     });
@@ -341,9 +341,9 @@ test.describe('the Installed app', () => {
         await expect(page.locator('#installWrap')).toBeHidden();
         await expect(page.locator('header .md-brand')).toHaveAttribute('href', '#/');
         await expect(page.locator('html')).toHaveClass(/\blv-installed\b/);
-        await page.goto(`${APP}#/me`);
+        await go(page, '#/me');
         await expect(page.locator('#meInstall')).toHaveCount(0);
-        await page.goto(`${APP}#/guide/offline`);
+        await go(page, '#/guide/offline');
         await expect(page.locator('#gd-offline [data-gd="install"]')).toHaveCount(0);
         await expect.poll(() => events(page)).toContain('math/install/opened');
       });
@@ -364,7 +364,7 @@ test.describe('the Installed app', () => {
     await other.close();
     await expect(page).toHaveURL(new RegExp(`${APP}`));
     await page.locator('footer a.mq-guide').click();
-    await expect(page).toHaveURL(/#\/guide$/);
+    await expect(page).toHaveURL(atRoute('#/guide'));
     await expect(page.locator('footer a.mq-guide')).not.toHaveAttribute('target', /.+/);
   });
 });

@@ -16,7 +16,7 @@ Only the owner reads the report. This is a personal project kept by one person, 
 
 Everything served at https://learnvedicmath.com/, built from the default branch of this repo:
 
-- The landing page, the grown-up pages and the game at `/play/`, with the response headers the build writes (`_headers`: Content-Security-Policy, HSTS, Permissions-Policy, COOP) and the service worker (`/sw.js`).
+- The landing page, the grown-up pages and the game at `/learn/`, with the response headers the build writes (`_headers`: Content-Security-Policy, HSTS, Permissions-Policy, COOP) and the service worker (`/sw.js`).
 - The import page at `/import/`, where the Hand-off from sbmadhav.com lands (`js/handoff.js`, `js/handoff-schema.js`), and the Moved page this repo publishes at https://sbmadhav.com/vedic-math/ while the move lasts (`moved/`).
 - The Worker (`workers/src/`). Its only route is `/_csp`, the policy-violation report endpoint; no other path runs code (`wrangler.jsonc`).
 - The code served from this site instead of a third party: the Firebase SDK (`vendor/firebase/`), the design system and GoatCounter's `count.js`, each pinned with checksums, and Tesseract for Math Lens (`vendor/tesseract/`).

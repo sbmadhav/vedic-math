@@ -1,4 +1,4 @@
-import { test, expect, APP, type Page } from '../fixtures';
+import { test, expect, APP, type Page, atRoute } from '../fixtures';
 
 /* sutra-deep-dive spec, Requirements "Pinned footer" and "Pinned close button and one-row footer links": one test per
    scenario. */
@@ -37,7 +37,7 @@ test('Move on from anywhere: at the bottom of Nikhilaṃ, Next opens Ūrdhva-Tir
   const d = dlg(page);
   await scrollTo(d, 'bottom');
   await d.locator('.sd-foot a.sd-next').click();
-  await expect(page).toHaveURL(/#\/sutras\/s3$/);
+  await expect(page).toHaveURL(atRoute('#/sutras/s3'));
   await expect(d.locator('#sdTitle')).toHaveText('Ūrdhva-Tiryagbhyām');
   await expect.poll(() => d.evaluate(el => el.scrollTop)).toBe(0);
 });

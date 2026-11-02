@@ -68,7 +68,7 @@ test.describe('Viewing a World board on a fresh device', () => {
     test.use({ seedMode: null });
     test('a first visit that opens the Arena makes no sign-in and creates no identity', async ({ page }) => {
       await seedRows(page);
-      await page.goto('/play/#/arena');
+      await page.goto('/learn/arena');
       await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
       // With no Age answer only the Device board is shown: nothing is read either
       if (await page.locator('#lbDay').count()) await expect(page.locator('#lbDay [data-src="world"], #lbDay [data-show-world]')).toHaveCount(0);

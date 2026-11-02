@@ -24,7 +24,7 @@ How code, copy and tests are written here, each rule with its reason.
 
 - New code is TypeScript, and React for views (the migration, openspec change `react-typescript`).
 - React components and hooks are server-safe: before writing one, read `docs/agent/migration.md`, "Server-safe code" (what a server render may read, and how content markup renders).
-- Module imports in `js/` are relative or absolute paths inside `/js/`. The build pins each `/js/` module in the import map; a bare specifier falls outside the map, a path outside `/js/` is left unpinned, and a full URL runs another site's code. `lvm/legacy-imports` and `build.py` both fail on any other import.
+- Module imports in `js/` are relative or absolute paths inside `/js/`, or a TypeScript module under `/shared/src/` or `/app/src/` that the build publishes under `/js/ts/` (`docs/agent/build-and-checks.md`). The build pins each `/js/` module in the import map; a bare specifier falls outside the map, a path outside `/js/` is left unpinned, and a full URL runs another site's code. `lvm/legacy-imports` and `build.py` both fail on any other import.
 
 ## Tests: one Playwright test per behavior change
 

@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, hrefTo } from '../fixtures';
 import { UA, RETURNING } from '../install-helpers';
 
 /* install-app spec (openspec change install-app), Requirement "One prompt at a time": one test per scenario. Safari on
@@ -29,7 +29,7 @@ test('A toast on Home: the nudge waits and shows after the toast has gone', asyn
 test('Another prompt: while another prompt holds the Prompt slot, the nudge does not show', async ({ page }) => {
   await open(page, '#/learn');
   await page.evaluate(async () => { const slot = await e2eMod('prompt-slot'); slot.claim('family', new AbortController().signal); });
-  await page.locator('nav.mq-nav a[href="#/"]').click();
+  await page.locator(`nav.mq-nav a${hrefTo('#/')}`).click();
   await expect(page.locator('h1.home-h')).toBeVisible();
   await page.waitForTimeout(2500);
   await expect(nudge(page)).toHaveCount(0);

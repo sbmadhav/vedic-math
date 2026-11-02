@@ -1,5 +1,6 @@
 /* Shared kit for the play experiences (Spellbook, Locks, Tala Lab and the rest, js/play/catalog.js): DOM helpers,
    seeded randomness, storage, sound, sharing and analytics. Pure helpers (rng, seeds, dates) have no DOM use, so node tests can import them. */
+import { BASE } from '../paths.js';
 
 /* ---------- DOM ---------- */
 export const $ = (sel, root = document) => root.querySelector(sel);
@@ -95,7 +96,9 @@ export const b64url = {
   enc: s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''),
   dec: s => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))))
 };
-export const shareUrl = hash => `${location.origin}/play/${hash}`;
+/* A share link is the route's path ('#/arena/ghosts/r/abc' to /learn/arena/ghosts/r/abc), which _redirects answers with
+   the experience's page (openspec change indexable-routes, design D4) */
+export const shareUrl = hash => `${location.origin}${BASE}/${hash.replace(/^#\//, '')}`;
 
 /* ---------- Feedback ---------- */
 export function toast(text, ms = 2600) {

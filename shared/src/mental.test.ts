@@ -1,19 +1,20 @@
 /* Mental arithmetic families for the Pro Arena (openspec arena spec): every answer is a whole number of at most
    7 digits, worked out again from the question text by the independent checker, and questions get bigger as
-   the difficulty rises. */
-import test from './support/node-test.mjs';
+   the difficulty rises. Ported from test/mental.test.mjs with the module (openspec change react-typescript, task 3.1);
+   the assertions are unchanged. */
+import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { FAMILIES, mentalQ, sutraOfProduct, sutraOfSquare } from '../js/mental.js';
-import { verifyQuestion, plain } from './support/verify.mjs';
+import { FAMILIES, mentalQ, sutraOfProduct, sutraOfSquare, type MentalQuestion } from './mental.ts';
+import { verifyQuestion, plain } from '../../test/support/verify.mjs';
 
 /* A seeded Math.random, so every run checks the same questions */
-function seeded(seed, fn) {
+function seeded<T>(seed: number, fn: () => T): T {
   const real = Math.random; let a = seed;
   Math.random = () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   try { return fn(); } finally { Math.random = real; }
 }
 const N = 200;
-const draws = {};
+const draws: Record<string, MentalQuestion[]> = {};
 for (const f of FAMILIES) for (let d = 1; d <= 20; d++) draws[`${f} ${d}`] = seeded(d * 1000 + FAMILIES.indexOf(f), () => Array.from({ length: N }, () => mentalQ(f, d)));
 
 test('five families, as the arena spec names them', () => {
@@ -26,7 +27,7 @@ test('200 questions per family and difficulty: whole answers of at most 7 digits
     const [f, d] = k.split(' ');
     qs.forEach((p, i) => {
       const id = `${k} #${i + 1}: ${plain(p.q)}`;
-      assert.equal(p.family, f, id); assert.equal(p.d, +d, id);
+      assert.equal(p.family, f, id); assert.equal(p.d, +d!, id);
       assert.ok(Number.isInteger(p.answer) && p.answer > 0, `${id}: answer ${p.answer}`);
       assert.ok(String(p.answer).length <= 7, `${id}: ${p.answer} does not fit the keypad`);
       const r = verifyQuestion({ ...p, kind: 'num' });
@@ -37,15 +38,15 @@ test('200 questions per family and difficulty: whole answers of at most 7 digits
 });
 
 test('the questions are the families they claim, with no algebra, powers above 2 or logarithms', () => {
-  const shape = { mul2x2: /^\d{2} \* \d{2} = \?$/, square: /^\d{2,3}\^\(2\) = \?$/, percent: /^What is \d+(\.5)?% of \d+\?$/, nearBase: /^\d{2,4} \* \d{2,4} = \?$/, divide: /^\d+ \/ \d+ = \?$/ };
-  for (const [k, qs] of Object.entries(draws)) qs.forEach(p => assert.match(plain(p.q), shape[p.family], k));
+  const shape: Record<string, RegExp> = { mul2x2: /^\d{2} \* \d{2} = \?$/, square: /^\d{2,3}\^\(2\) = \?$/, percent: /^What is \d+(\.5)?% of \d+\?$/, nearBase: /^\d{2,4} \* \d{2,4} = \?$/, divide: /^\d+ \/ \d+ = \?$/ };
+  for (const [k, qs] of Object.entries(draws)) qs.forEach(p => assert.match(plain(p.q), shape[p.family]!, k));
   for (const qs of Object.values(draws)) qs.forEach(p => assert.doesNotMatch(p.q, /x|log|<sup>(?!2<)/));
-  for (let d = 1; d <= 20; d++) draws[`nearBase ${d}`].forEach(p => { const [a, b] = plain(p.q).match(/\d+/g).map(Number); for (const n of [a, b]) assert.ok(n !== 100 && n !== 1000 && (Math.abs(n - 100) <= 20 || Math.abs(n - 1000) <= 99), `nearBase ${d}: ${n}`); });
+  for (let d = 1; d <= 20; d++) draws[`nearBase ${d}`]!.forEach(p => { const [a, b] = plain(p.q).match(/\d+/g)!.map(Number); for (const n of [a!, b!]) assert.ok(n !== 100 && n !== 1000 && (Math.abs(n - 100) <= 20 || Math.abs(n - 1000) <= 99), `nearBase ${d}: ${n}`); });
 });
 
 test('the median answer rises with difficulty: bottom, middle and top thirds of each ladder', () => {
-  const med = (f, d) => { const xs = draws[`${f} ${d}`].map(p => p.answer).sort((a, b) => a - b); return xs[N / 2]; };
-  const avg = (f, a, b) => { let s = 0; for (let d = a; d <= b; d++) s += med(f, d); return s / (b - a + 1); };
+  const med = (f: string, d: number) => { const xs = draws[`${f} ${d}`]!.map(p => p.answer).sort((a, b) => a - b); return xs[N / 2]!; };
+  const avg = (f: string, a: number, b: number) => { let s = 0; for (let d = a; d <= b; d++) s += med(f, d); return s / (b - a + 1); };
   for (const f of FAMILIES) {
     const lo = avg(f, 1, 7), mid = avg(f, 8, 14), hi = avg(f, 15, 20);
     assert.ok(lo < mid && mid < hi, `${f}: ${lo}, ${mid}, ${hi}`);
@@ -70,7 +71,7 @@ test('each Pro question names the Sutra that answers it, from its own numbers', 
     const f = k.split(' ')[0];
     if (f === 'nearBase') assert.equal(q.sutra, 's2', k);
     else if (f === 'percent' || f === 'divide') assert.equal(q.sutra, null, k);
-    else if (f === 'square') { const n = Number(plain(q.q).match(/^(\d+)/)[1]); assert.equal(q.sutra, sutraOfSquare(n), k); }
-    else { const [a, b] = plain(q.q).match(/\d+/g).map(Number); assert.equal(q.sutra, sutraOfProduct(a, b), k); }
+    else if (f === 'square') { const n = Number(plain(q.q).match(/^(\d+)/)![1]); assert.equal(q.sutra, sutraOfSquare(n), k); }
+    else { const [a, b] = plain(q.q).match(/\d+/g)!.map(Number); assert.equal(q.sutra, sutraOfProduct(a!, b!), k); }
   }
 });

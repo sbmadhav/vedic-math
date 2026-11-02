@@ -1,4 +1,4 @@
-import { test, expect, APP } from '../fixtures';
+import { test, expect, APP, atRoute, pathTo } from '../fixtures';
 
 /* first-visit spec, Requirements "The Mode picker asks one question" and "The hero says little and the cards work every
    way" (openspec change play-nav-by-mode; before it "One plain lede, and the Mode cards stay" and "The app's hero says
@@ -18,7 +18,7 @@ test('The cards still work: the Explorer card opens Explorer Home as before, no 
   await page.goto(APP);
   await page.locator('.mode-card[data-mode="explorer"]').click();
   await expect(page.locator('h1.home-h')).toHaveText('What do you want to play?');
-  await expect(page).not.toHaveURL(/#\/try$/);
+  await expect(page).not.toHaveURL(atRoute('#/try'));
   expect((await player(page)).modeGuess).toBeUndefined();
 });
 
@@ -36,7 +36,7 @@ test('One choice: the three Mode cards are the only buttons, ending in Start as 
   await expect(page.locator('#view button')).toHaveCount(3);
   await expect(page.getByRole('button', { name: /Try a trick/ })).toHaveCount(0);
   expect(await page.locator('.mode-pick .mode-go').allInnerTexts()).toEqual(['Start as Explorer', 'Start as Challenger', 'Start as Pro']);
-  expect(await page.locator('#view a').evaluateAll(as => as.map(a => a.getAttribute('href')))).toEqual(['#/guide']);
+  expect(await page.locator('#view a').evaluateAll(as => as.map(a => a.getAttribute('href')))).toEqual(['#/guide'].map(pathTo));
 });
 
 test('The hero says little: the headline and the line, at most 14 words, with the Nikhilam Family, no Bolt and no button', async ({ page }) => {

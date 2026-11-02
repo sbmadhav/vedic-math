@@ -6,10 +6,10 @@ import { test, expect, open } from '../fixtures';
 test.use({ serviceWorkers: 'allow' });
 test.skip(({ browserName }) => browserName === 'webkit', 'Playwright WebKit does not route requests from worker-controlled pages (offline.spec.ts)');
 
-test('Offline from the home screen: /play/?source=pwa and each shortcut come from the worker and render', async ({ page, context, request }) => {
+test('Offline from the home screen: /learn/?source=pwa and each shortcut come from the worker and render', async ({ page, context, request }) => {
   const m = await (await request.get('/manifest.webmanifest')).json();
   await open(page);
-  await expect.poll(() => page.evaluate(async () => !!navigator.serviceWorker.controller && (await navigator.serviceWorker.getRegistration('/play/'))?.active?.state === 'activated'), { timeout: 30_000 }).toBe(true);
+  await expect.poll(() => page.evaluate(async () => !!navigator.serviceWorker.controller && (await navigator.serviceWorker.getRegistration('/learn/'))?.active?.state === 'activated'), { timeout: 30_000 }).toBe(true);
   const saved = await page.evaluate(async () => {
     const name = (await caches.keys()).filter(k => /^lvm-/.test(k) && k !== 'lvm-voice' && k !== 'lvm-sounds').pop()!;
     return (await (await caches.open(name)).keys()).map(r => new URL(r.url).pathname);

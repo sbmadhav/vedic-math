@@ -63,21 +63,21 @@ jobs:
         run: python3 build.py --out _site --voice "$VOICE"
 
       - name: Every page header is the composed theme/header.html
-        run: python3 vendor/design-system/2.2.0/compose.py --check theme/header.html play/index.html $(find site -name '*.html')
+        run: python3 vendor/design-system/2.2.0/compose.py --check theme/header.html learn/index.html $(find site -name '*.html')
 
       - name: The build is stamped, has its headers and no repo-only files
         run: |
           set -e
           err() { echo "::error::$1"; exit 1; }
-          grep -q '<script type="importmap">' _site/play/index.html || err "_site/play/index.html has no import map"
-          grep -Eq '"/js/app\.js": "/js/app\.js\?v=[0-9a-f]{10}"' _site/play/index.html || err "_site/play/index.html does not pin app.js in the import map"
-          grep -Eq '<script type="module" src="/js/app\.js\?v=[0-9a-f]{10}"></script>' _site/play/index.html || err "_site/play/index.html loads app.js without a ?v= stamp"
-          grep -Eq 'href="/math\.css\?v=[0-9a-f]{10}"' _site/play/index.html || err "_site/play/index.html loads math.css without a ?v= stamp"
+          grep -q '<script type="importmap">' _site/learn/index.html || err "_site/learn/index.html has no import map"
+          grep -Eq '"/js/app\.js": "/js/app\.js\?v=[0-9a-f]{10}"' _site/learn/index.html || err "_site/learn/index.html does not pin app.js in the import map"
+          grep -Eq '<script type="module" src="/js/app\.js\?v=[0-9a-f]{10}"></script>' _site/learn/index.html || err "_site/learn/index.html loads app.js without a ?v= stamp"
+          grep -Eq 'href="/math\.css\?v=[0-9a-f]{10}"' _site/learn/index.html || err "_site/learn/index.html loads math.css without a ?v= stamp"
           ! grep -rlq 'http-equiv="Content-Security-Policy"' _site --include='*.html' || err "a published page carries a policy <meta>; the policy belongs in _headers"
-          grep -q '^/play/$' _site/_headers || err "_site/_headers has no rule for /play/"
+          grep -q '^/learn/\*$' _site/_headers || err "_site/_headers has no rule for /learn/*"
           grep -q "Content-Security-Policy: default-src 'self'" _site/_headers || err "_site/_headers has no Content-Security-Policy"
           grep -Eq "^const VERSION = '[0-9a-f]{10}';" _site/sw.js || err "_site/sw.js VERSION is not a stamped hash"
-          grep -q '"/play/", "' _site/sw.js || err "_site/sw.js does not precache the game shell"
+          grep -q '"/learn/", "' _site/sw.js || err "_site/sw.js does not precache the game shell"
           grep -q "^const VERSION: string = 'dev';" app/src/sw/sw.ts || err "app/src/sw/sw.ts in git must keep VERSION = 'dev'"
           for f in index.html _redirects robots.txt sitemap.xml .well-known/security.txt 404.html; do test -f "_site/$f" || err "_site/$f is missing"; done
           for f in AGENTS.md CODING_STANDARDS.md README.md GLOSSARY.md CONTRIBUTING.md SECURITY.md LICENSE LICENSE-CONTENT.md THIRD-PARTY-NOTICES.md build.py _config.yml wrangler.jsonc cloud test e2e docs tools site moved workers app shared deploy node_modules package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json vitest.config.ts eslint.config.js stylelint.config.js .npmrc .gitleaks.toml .github .githooks; do

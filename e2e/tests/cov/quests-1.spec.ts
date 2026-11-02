@@ -86,7 +86,7 @@ test.describe('Next day', () => {
 
     // The app is opened again the next day
     await page.clock.setSystemTime(new Date(2026, 2, 11, 9, 0, 0));
-    await page.goto('/play/');
+    await page.goto('/learn/');
     await open(page, '#/');
     expect(await page.evaluate(() => { const d = new Date(); return d.getDate(); })).toBe(11);
 

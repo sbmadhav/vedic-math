@@ -1,7 +1,7 @@
 /* Vitest for the whole repo (openspec change react-typescript, task 1.6; it replaces node --test). One project per
    place tests live: the legacy tests in test/ (node:test style, through test/support/node-test.mjs, until their
-   module converts and the test moves next to it), the build tools, the service worker, and the Worker, whose tests
-   run inside the Workers runtime (workers/vitest.config.ts). `pnpm test` runs them all. */
+   module converts and the test moves next to it), the build tools, the code the game and the Worker share (shared/),
+   the service worker, and the Worker, whose tests run inside the Workers runtime (workers/vitest.config.ts). `pnpm test` runs them all. */
 import { defineConfig } from 'vitest/config';
 import { fileURLToPath } from 'node:url';
 
@@ -32,6 +32,14 @@ export default defineConfig({
           name: 'tools',
           root: './tools',
           include: ['**/*.test.ts'],
+          environment: 'node',
+        },
+      },
+      {
+        test: {
+          name: 'shared',
+          root: './shared',
+          include: ['src/**/*.test.ts'],
           environment: 'node',
         },
       },

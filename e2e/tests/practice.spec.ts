@@ -214,7 +214,7 @@ test('10 right answers raise the Skill Rating and move later questions to level 
   const p = await progress(page);
   expect(p.ratings['skill:3-mult']).toBeGreaterThan(5);
   // Leaving the Skill keeps the Rating, and the next visit starts there
-  await page.goto('/play/#/learn');
+  await page.goto('/learn/skills');
   await open(page, '#/skill/3-mult');
   await expect(q).not.toHaveAttribute('data-level', '1');
 });

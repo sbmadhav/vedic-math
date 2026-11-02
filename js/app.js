@@ -28,7 +28,7 @@ import { boltHTML } from './bolt.js';
 import { FAMILY_SVG } from './family.js';
 import { familyRound } from './family-hook.js';
 import { runStar } from './star.js';
-import { storyPlan, loadStories, storiesNow, LABEL as STORY_LABEL, ONLY as STORY_ONLY, ROUND as STORY_ROUND } from './story-plan.js';
+import { storyPlan, loadStories, storiesNow, storiesFrom, LABEL as STORY_LABEL, ONLY as STORY_ONLY, ROUND as STORY_ROUND } from './story-plan.js';
 import { runTry, tryFor as tryOf, sutraOf, finished as tryFinished } from './try.js';
 import * as SKY from './sky.js';
 import { skyView, placesHTML } from './sky-view.js';
@@ -38,6 +38,7 @@ import { ICONS as PLAY_ICONS } from './play/icons.js';
 import { GROUPS, sectionsFor, tryFor, say, resolveTour, tourDue, tourState, setTourState } from './guide.js';
 import { sectionLines, buildIndex, rank, countOf, kindLabel } from './find.js';
 import { setOf as navSetOf, navHTML } from './nav.js';
+import { BASE, toPath, toKey } from './paths.js'; /* the route table: a key's path and back (openspec change indexable-routes) */
 import { artFor } from './guide-art.js';
 import { guideCounts, rootNote } from './explain-lines.js';
 import { ledeHTML } from './ledes.js';
@@ -58,6 +59,7 @@ const boot = new AbortController(); /* the page's lifetime: never aborted */
 /* Off the first load's critical path (docs/perf/baseline.md); a failed load is asked for again */
 const onDemand = load => { let p; return () => (p ||= load().catch(e => { p = null; throw e; })); };
 const loadLinks = onDemand(() => import('./connectors.js')); /* the Trick animator's digit connectors, on first use */
+storiesFrom(() => import('./stories.js')); /* the Word problems load after the first paint (js/story-plan.js) */
 const loadArena = onDemand(() => import('./arena.js')), loadTour = onDemand(() => import('./tour.js')), loadKit = onDemand(() => import('./play/kit.js'));
 const withArena = (area, signal, fn) => loadArena().then(A => { if (!signal.aborted) fn(A); }, () => { if (!signal.aborted) area.innerHTML = '<p class="md-lede">The round did not load. Check your connection and try again.</p>'; });
 let install = null, installLoad = null, earlyPrompt = null; const installQueue = [];
@@ -120,7 +122,7 @@ const routes = [
   [/^#\/challenge\/(\d+)$/, (m, ctx) => challengeView(+m[1], ctx)],
   [/^#\/sutras$/, (m, ctx) => sutrasView(ctx)],
   /* A Deep dive reached from another page of the app (a Sutra tag) closes back to that page; from outside, to the Sutras page */
-  [/^#\/sutras\/(\w+)$/, (m, ctx) => { const inApp = !!render.from && render.from !== location.hash && !/^#\/star\//.test(render.from); sutrasView(ctx); openSutra(m[1], inApp); }], /* back from a Star its Try it yourself started: closing goes to the Sutras page, never back into the round */
+  [/^#\/sutras\/(\w+)$/, (m, ctx) => { const inApp = !!render.from && render.from !== render.at && !/^#\/star\//.test(render.from); sutrasView(ctx); openSutra(m[1], inApp); }], /* back from a Star its Try it yourself started: closing goes to the Sutras page, never back into the round */
   [/^#\/arena$/, (m, ctx) => arenaView(ctx)],
   [/^#\/duel$/, () => { location.replace('#/arena/party'); }], /* Duel became Party Mode (openspec play-experiences) */
   [/^#\/games$/, (m, ctx) => gamesView(ctx)],
@@ -135,6 +137,38 @@ const routes = [
   /* Play experiences: pages inside a section, after the section's own routes (js/play/catalog.js) */
   [/^#\/(?:dojo|arena|games|sutras)\/[a-z-]+(?:\/.*)?$/, (m, ctx) => playView(m[0], ctx)]
 ];
+/* ---------- Route addresses (openspec change indexable-routes, design D3 and D9) ----------
+   The router matches route keys in their #/ form ('#/kata/sq5/12'), so no view's pattern or body changes; the address
+   bar shows the key's path from js/paths.js ('/learn/kata/sq5/12', under BASE). A #/
+   fragment still reaches the router (an old link, a Legacy view that sets location.hash): render() turns it into its
+   path before the view draws, and a hashchange to one does the same without a reload, drawing only when the route
+   changed (a write of the route on screen was a no-op as a fragment too). Links a view draws as #/ are rewritten to
+   paths (relink), so middle-click, Copy link and crawlers get a real address, and a click on any link into the game is
+   a pushState and a render, never a page load. #view (the skip link) and other fragments are left alone. */
+/* The path for a route key; a key the table does not know keeps its form under BASE, and the view decides (Home) */
+const pathFor = key => toPath(key) || BASE + key.slice(1);
+/* The route key the address names: a #/ fragment not yet turned into its path, else the path's key; a path under
+   BASE that names no screen keeps its form, so the router shows Home and analytics counts it as an unknown route */
+function here() {
+  const h = location.hash;
+  if (h.startsWith('#/')) return h;
+  const p = location.pathname;
+  return toKey(p) || (p.startsWith(BASE + '/') ? '#' + p.slice(BASE.length) : '#/');
+}
+/* The route key a link opens inside the game and the address it gets ({ key, to }), or null for any other link: a
+   fragment such as #view, another page, another site. A #/ link keeps the query as a fragment change did. */
+function linkTo(a) {
+  const href = a.getAttribute('href') || '';
+  if (href.startsWith('#/')) return { key: href, to: pathFor(href) + location.search };
+  if (!href || href.startsWith('#')) return null;
+  let u; try { u = new URL(href, location.href); } catch (e) { return null; }
+  if (u.origin !== location.origin || u.hash) return null;
+  const key = toKey(u.pathname);
+  return key ? { key, to: pathFor(key) + u.search } : null;
+}
+const keyOf = a => { const l = linkTo(a); return l ? l.key : null; };
+/* Every #/ link under root gets its path */
+const relink = root => root.querySelectorAll('a[href^="#/"]').forEach(a => a.setAttribute('href', pathFor(a.getAttribute('href'))));
 /* The view on screen: its AbortController and the destroy() it returned, if any */
 let life = null;
 function teardown() {
@@ -149,6 +183,7 @@ function mount(fn) {
   const ctl = new AbortController(), mine = { ctl, destroy: null }; life = mine;
   wireListen(view, ctl.signal); /* every Listen button the view draws (openspec explanation-audio) */
   const out = fn({ signal: ctl.signal });
+  relink(view); /* the view's #/ links become paths (design D3) */
   fillTags(view, ctl.signal); /* a Sutra tag drawn before js/sutra-tag.js was here */
   if (life === mine && out && typeof out.destroy === 'function') mine.destroy = out.destroy;
 }
@@ -159,7 +194,10 @@ const knownId = (kind, id) => kind === 'grade' ? !!gradeOf(id) : kind === 'skill
 function render() {
   fx.stopSpeaking(); /* every voice: built-in, studio and natural */
   stopVerses(); /* a deep dive opens over the Sutras page without remounting it: a Listen still waiting for voices must not start behind it */
-  const h = location.hash || '#/';
+  /* An old link's or a Legacy view's #/ fragment becomes its path before the view draws (design D9); the query stays */
+  if (location.hash.startsWith('#/')) history.replaceState(history.state, '', pathFor(location.hash) + location.search);
+  const h = here(), again = h === render.at; /* the route on screen drawn again (a hash write's second render) */
+  const one = toPath(h); if (one && one !== location.pathname) history.replaceState(history.state, '', one + location.search); /* a second name or a trailing slash: the screen's one path (design D2) */
   render.from = render.at; render.at = h; /* where a Star's Back button returns to */
   // Sutra deep dives open over the sutras page without re-rendering it
   const ms = h.match(/^#\/sutras\/(\w+)$/);
@@ -168,19 +206,55 @@ function render() {
   if (sutraDlg && sutraDlg.open) closeSutra(true);
   const hit = routes.find(([re]) => re.test(h)), picker = !fx.mode() && !/^#\/(watch|sutras(\/\w+)?|find|guide(\/[\w-]+)?)$/.test(h); /* the guide, Find and a Deep dive open without a mode too (openspec change sutras-first) */
   modePicker.pending = picker && hit && h !== '#/' ? h : null; /* the page asked for before a Mode, opened once one is picked (afterPick) */
-  mount(ctx => (picker ? modePicker(ctx) : hit ? hit[1](h.match(hit[0]), ctx) : home(ctx)));
-  const asSky = !picker && /^#?\/?$/.test(h) && SKY.skyOn(store.player()); /* home showed the Sky: the route view is sky */
-  setBgLevel(levelFor(h, { picker, sky: asSky })); /* the full background sky on the Mode picker and home, a quiet one elsewhere */
-  if ((location.hash || '#/') === h) metrics.view(h, knownId, picker, asSky); /* one anonymous route view (analytics spec); a view that redirected is counted when its target renders */
-  syncNav(h);
-  chip();
-  if (navSay) { const words = navSay; navSay = null; fx.speak(words); } /* an Explorer tab's name, after the view it opened has drawn (render stops every voice first) */
+  const first = !render.n++;
+  const update = () => {
+    mount(ctx => (picker ? modePicker(ctx) : hit ? hit[1](h.match(hit[0]), ctx) : home(ctx)));
+    const asSky = !picker && /^#?\/?$/.test(h) && SKY.skyOn(store.player()); /* home showed the Sky: the route view is sky */
+    setBgLevel(levelFor(h, { picker, sky: asSky })); /* the full background sky on the Mode picker and home, a quiet one elsewhere */
+    if (here() === h) metrics.view(h, knownId, picker, asSky); /* one anonymous route view (analytics spec); a view that redirected is counted when its target renders */
+    syncNav(h);
+    chip();
+    if (navSay) { const words = navSay; navSay = null; fx.speak(words); } /* an Explorer tab's name, after the view it opened has drawn (render stops every voice first) */
+  };
   /* Focus the new view's heading, unless the view already put focus somewhere in itself (the Sky, back from a Star) */
-  const head = view.querySelector('h1, h2'); if (head) { head.setAttribute('tabindex', '-1'); if (render.n++ && !view.contains(document.activeElement)) head.focus({ preventScroll: true }); }
-  if (render.n > 1) window.scrollTo({ top: 0 });
+  const settle = () => {
+    const head = view.querySelector('h1, h2'); if (head) { head.setAttribute('tabindex', '-1'); if (!first && !view.contains(document.activeElement)) head.focus({ preventScroll: true }); }
+    if (!first) window.scrollTo({ top: 0 });
+  };
+  transition(update, settle, first || again);
 }
 render.n = 0;
-window.addEventListener('hashchange', render);
+/* Smooth moves between pages (openspec change indexable-routes, design D12): the route change's DOM update runs inside a
+   view transition when the browser has one and motion is allowed (fx.noMotion: reduced motion, Pause motion, Calm), so
+   the header, nav and Player chip (named in math.css) stay still while #view cross-fades. The first render, a redraw of
+   the same route (plain) and a change while one is running swap at once. after(): focus and scroll, once the update is done. */
+let moving = null; /* the view transition in flight */
+function transition(update, after, plain) {
+  if (plain || moving || fx.noMotion() || typeof document.startViewTransition !== 'function') { update(); after(); return; }
+  const t = moving = document.startViewTransition(update), done = () => { if (moving === t) moving = null; };
+  t.updateCallbackDone.then(after, e => { after(); throw e; }); /* a view that threw still gets focus and scroll, and the error is still reported */
+  t.finished.then(done, done);
+}
+/* A Legacy view's location.hash write, or location.replace('#/...'): the fragment becomes its path without a reload,
+   and the view draws only when the route changed. #view (the skip link) and other fragments are left alone. */
+on(window, 'hashchange', () => {
+  const h = location.hash; if (!h.startsWith('#/')) return;
+  const to = pathFor(h), same = to === location.pathname;
+  history.replaceState(history.state, '', to + location.search);
+  if (!same) render();
+}, boot.signal);
+on(window, 'popstate', () => { if (render.n) render(); }, boot.signal); /* Back and Forward between paths */
+/* A plain click on a link into the game (a #/ link, or a path under BASE) is a pushState and a render, never a page
+   load; a modified click, a link with a target or download, and a link a view handled itself keep the browser's way */
+on(window, 'click', e => { /* on window: after the page's own document listeners (a Sutra tag's event, a view's handler) */
+  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  const a = e.target && e.target.closest && e.target.closest('a[href]'); if (!a || a.target || a.hasAttribute('download')) return;
+  const link = linkTo(a); if (!link) return;
+  e.preventDefault();
+  if (link.to === location.pathname + location.search) return; /* the page on screen: as a link to the fragment shown */
+  history.pushState(null, '', link.to);
+  render();
+}, boot.signal);
 
 /* ---------- The menu by Mode (openspec change play-nav-by-mode, js/nav.js) ----------
    Challenger and Pro: Home, Learn, Arcade, Watch and the Find trigger; Explorer: Play, Learn and Me as big picture tabs.
@@ -189,18 +263,19 @@ window.addEventListener('hashchange', render);
 const navEl = $('.mq-nav');
 const MAC = (() => { try { return /Mac|iP(hone|ad|od)/.test(navigator.platform || navigator.userAgent || ''); } catch (e) { return false; } })();
 let navSay = null; /* words an Explorer tab says once the view it opens has drawn */
-function syncNav(h = location.hash || '#/') {
+function syncNav(h = here()) {
   if (!navEl) return;
   const m = fx.mode(), set = navSetOf(m);
   if (navEl.dataset.set !== set) { if (navEl.dataset.set || set !== 'big') navEl.innerHTML = navHTML(set); navEl.dataset.set = set; navEl.classList.toggle('mq-nav--x', set === 'explorer'); }
+  relink(navEl); /* the tabs are paths too; data-match and the lines are keyed by route */
   const kbd = navEl.querySelector('.nav-kbd'); if (kbd && MAC) kbd.textContent = '\u2318 K';
   const lines = Object.fromEntries(sectionLines(m).map(l => [l.href, l.plain]));
-  navEl.querySelectorAll('a[href]').forEach(a => { a.setAttribute('aria-current', String(h === a.getAttribute('href') || (!!a.dataset.match && new RegExp(a.dataset.match).test(h)))); const line = lines[a.getAttribute('href')]; if (line) a.title = line; });
+  navEl.querySelectorAll('a[href]').forEach(a => { const k = keyOf(a); a.setAttribute('aria-current', String(h === k || (!!a.dataset.match && new RegExp(a.dataset.match).test(h)))); const line = lines[k]; if (line) a.title = line; });
 }
 /* An Explorer tab says its name when Read aloud is on: after the route it opens has drawn, or at once on its own page */
 if (navEl) on(navEl, 'click', e => {
   const a = e.target.closest('a[data-say]'); if (!a || !fx.voiceOn()) return;
-  if ((location.hash || '#/') === a.getAttribute('href')) fx.speak(a.dataset.say); else navSay = a.dataset.say;
+  if (here() === keyOf(a)) fx.speak(a.dataset.say); else navSay = a.dataset.say;
 }, boot.signal);
 
 /* Player chip in the nav: avatar, the bar of Sparks to the next Title (no number) and, for Challenger and Pro, the
@@ -208,6 +283,7 @@ if (navEl) on(navEl, 'click', e => {
 function chip() {
   const el = $('#mqChip'); if (!el) return; const p = store.player(), T = gm.titleInfo(), belt = fx.mode() && fx.mode() !== 'explorer' ? gm.currentBelt() : null;
   el.innerHTML = `<a href="#/me" class="mq-chip">${avatar(p, 30)}<span class="md-sr-only">${esc(p.name)}, ${T.title}${belt ? `, ${belt.name}` : ''}</span>${belt ? `<span class="mq-chip-belt" style="--belt:${belt.color}" data-belt="${belt.id}" aria-hidden="true"></span>` : ''}<span class="mq-chip-t"><span class="mq-sparkbar"><i style="width:${pct(T.pct)}%"></i></span></span></a>`;
+  relink(el);
 }
 store.on(type => { if (type === 'sparks' || type === 'player' || type === 'belt' || type === 'star') chip(); if (type === 'player') syncNav(); });
 /* The bar to the next Title, as a progressbar with its Sparks in words */
@@ -1094,7 +1170,7 @@ function openSutra(id, fromPage) {
   if (!sutraDlg) {
     sutraDlg = document.createElement('dialog'); sutraDlg.className = 'sutra-modal'; sutraDlg.setAttribute('aria-labelledby', 'sdTitle'); document.body.append(sutraDlg);
     sutraDlg.addEventListener('cancel', e => { e.preventDefault(); requestClose(); });
-    sutraDlg.addEventListener('click', e => { if (e.target === sutraDlg) requestClose(); if (e.target.closest('.sd-x')) requestClose(); const sw = e.target.closest('[data-swap]'); if (sw) { e.preventDefault(); location.replace(sw.getAttribute('href')); } if (e.target.closest('a[href^="#/skill"]')) { sutraDlg.close(); } });
+    sutraDlg.addEventListener('click', e => { if (e.target === sutraDlg) requestClose(); if (e.target.closest('.sd-x')) requestClose(); const sw = e.target.closest('[data-swap]'); if (sw) { e.preventDefault(); history.replaceState(history.state, '', sw.getAttribute('href')); render(); } if (e.target.closest('a[href^="#/skill"]')) { sutraDlg.close(); } });
   }
   const swapping = sutraDlg.open;
   if (sutraScene) sutraScene.abort();
@@ -1334,7 +1410,7 @@ function playShelf(section, heading) {
   const list = playIn(section, fx.mode()); if (!list.length) return '';
   return `<section class="play-shelf" aria-labelledby="ps-${section}"><h2 class="mq-strand" id="ps-${section}">${heading}</h2><ul class="play-shelf-grid">${list.map(e => `<li><a class="play-card play-card--${e.color}" href="${e.route}"><span class="play-card-ic" aria-hidden="true">${PLAY_ICONS[e.icon] || ''}</span><b>${e.title}</b><em>${e.tag}</em><span>${e.blurb}</span></a></li>`).join('')}</ul></section>`;
 }
-/* Styles load with the page that needs them; the build stamps their URLs (the #vm-css map in play/index.html) */
+/* Styles load with the page that needs them; the build stamps their URLs (the #vm-css map in learn/index.html) */
 const cssStamps = (() => { try { return JSON.parse(document.getElementById('vm-css')?.textContent || '{}'); } catch (e) { return {}; } })();
 function playCss(name) {
   const url = `/css/play/${name}.css`;
@@ -1645,7 +1721,7 @@ function wireWorldBoards(root) {
 /* The guide's data is js/guide.js, its pictures js/guide-art.js, the tour js/tour.js. Counts come from the catalogs. */
 /* Take the tour (guide, Home note): the next Home render plays it whatever vm.tour says */
 let tourAsked = false;
-function askTour() { tourAsked = true; if ((location.hash || '#/') === '#/' || location.hash === '#') render(); else location.hash = '#/'; }
+function askTour() { tourAsked = true; if (here() === '#/') render(); else location.hash = '#/'; }
 /* "New here?" on Home while the Player has not played on an earlier day */
 function newHereHTML() {
   if (store.playedBefore()) return '';
@@ -1658,7 +1734,7 @@ function homeTour(signal) {
   const again = $('#tourAgain'); if (again) again.onclick = askTour;
   const replay = tourAsked; tourAsked = false;
   if (!signal || !fx.mode()) return;
-  if (!replay && !tourDue({ mode: fx.mode(), state: tourState(), hash: location.hash, fresh: store.sparks() === 0 })) return;
+  if (!replay && !tourDue({ mode: fx.mode(), state: tourState(), hash: here(), fresh: store.sparks() === 0 })) return;
   claimSlot('tour', signal); /* the tour is a prompt too: nothing else asks for attention while it is due or open (openspec change install-app) */
   later(() => {
     const has = sel => { const el = document.querySelector(sel); if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
@@ -1762,7 +1838,7 @@ document.addEventListener('keydown', e => {
   const t = e.target, typing = t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
   if ((typing && !combo) || document.querySelector('dialog[open]') || document.querySelector('header [aria-expanded="true"]') || document.querySelector('.play-shell')) return; /* a header menu (Calm and sound) is open, or a round fills the screen; an expanded control in the view, like a flipped Sutra card, does not count */
   e.preventDefault();
-  if ((location.hash || '#/') === '#/find') { const i = $('#findIn'); if (i) i.focus(); } else location.hash = '#/find';
+  if (here() === '#/find') { const i = $('#findIn'); if (i) i.focus(); } else location.hash = '#/find';
 });
 
 /* ---------- Me: profile, badges, players, settings ---------- */
@@ -1948,7 +2024,7 @@ function icon(n) {
   return `<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">${I[n] || ''}</svg>`;
 }
 
-/* A Mode link from the landing page's Mode cards (openspec change landing-modes-and-return): /play/?mode=<id> with a
+/* A Mode link from the landing page's Mode cards (openspec change landing-modes-and-return): /learn/?mode=<id> with a
    known Mode sets it exactly as tapping that card on the Mode picker does, so Home opens instead of the picker. An
    unknown value changes nothing. Either way mode leaves the address, keeping the rest of the query and the route. */
 function modeFromLink() {
@@ -1963,6 +2039,11 @@ function modeFromLink() {
 
 /* ---------- Boot ---------- */
 const rm = $('#resetMode'); if (rm) rm.onclick = () => { store.setPlayerMode(null); fx.applyMode(); location.hash = '#/'; render(); window.scrollTo({ top: 0 }); };
+relink(document.body); /* the page's own #/ links (the nav, the footer) are paths too */
+/* Links drawn after a view mounted (Find results, a Deep dive's buttons, a module that loaded later) become paths too */
+new MutationObserver(records => {
+  for (const r of records) for (const n of r.addedNodes) if (n.nodeType === 1) { if (n.matches('a[href^="#/"]')) n.setAttribute('href', pathFor(n.getAttribute('href'))); relink(n); }
+}).observe(document.body, { childList: true, subtree: true });
 fx.applyMode();
 fx.applyPrefs(); /* body.calm and body.text-plus from this device's Calm and text size */
 fx.warmVoice(); /* the studio voice's core pack, while idle, when read aloud is on */
@@ -1981,8 +2062,8 @@ const preloadTags = () => later(() => {
   lateImport(loadArena, 'arena.js'); lateImport(loadTour, 'tour.js'); lateImport(loadKit, 'play/kit.js');
 }, 1000, boot.signal);
 if (document.readyState === 'complete') preloadTags(); else on(window, 'load', preloadTags, boot.signal, { once: true });
-/* Offline: /sw.js (scope /play/, the game only) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */
+/* Offline: /sw.js (scope /learn/, the game only) saves this version of the app after the page has loaded. Not on plain http, except localhost for testing. */
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) {
-  const registerSW = () => navigator.serviceWorker.register('/sw.js', { scope: '/play/' }).catch(() => {});
+  const registerSW = () => navigator.serviceWorker.register('/sw.js', { scope: '/learn/' }).catch(() => {});
   if (document.readyState === 'complete') registerSW(); else addEventListener('load', registerSW, { once: true });
 }

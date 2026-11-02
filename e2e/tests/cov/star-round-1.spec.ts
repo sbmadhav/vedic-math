@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, APP } from '../fixtures';
 
 /* openspec star-round, Requirement: Three Stars per Trick
    - Count: 63 Stars, three for each of the 21 Tricks
@@ -40,7 +40,7 @@ test.describe('Count', () => {
     const hrefs = await stars.evaluateAll(els => els.map(e => e.getAttribute('href') || ''));
     const byTrick = new Map<string, number[]>();
     for (const h of hrefs) {
-      const m = h.match(/^#\/star\/([^/]+)\/(\d)$/);
+      const m = h.match(new RegExp(`^${APP}star/([^/]+)/(\\d)$`));
       expect(m, `Star link ${h}`).not.toBeNull();
       byTrick.set(m![1], [...(byTrick.get(m![1]) || []), Number(m![2])]);
     }

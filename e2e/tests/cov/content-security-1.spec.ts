@@ -21,7 +21,7 @@ async function watchViolations(page: Page) {
 const directives = (csp: string) => Object.fromEntries(csp.split(';').map(d => d.trim().split(/\s+/)).map(([k, ...v]) => [k, v]));
 
 test('Built page: every page is sent with its own policy, and no published page carries a policy <meta>', async ({ page, baseURL }) => {
-  for (const path of ['/', '/play/', '/parents/', '/teachers/', '/privacy/', '/terms/']) {
+  for (const path of ['/', '/learn/', '/parents/', '/teachers/', '/privacy/', '/terms/']) {
     const csp = directives(await policyOf(page, baseURL, path));
     expect(csp['default-src'], path).toEqual(["'self'"]);
     expect(csp['object-src'], path).toEqual(["'none'"]);

@@ -1,4 +1,4 @@
-import { test, expect, open, heldClock, cloudLog, appErrors, APP } from '../fixtures';
+import { test, expect, open, heldClock, cloudLog, appErrors, APP, atRoute } from '../fixtures';
 
 /* view-lifecycle spec, "Leaving a page stops everything it started / Leave during a game's answer hold".
    WHEN a Player misses a question in a game and leaves the page during the hold
@@ -47,7 +47,7 @@ test.describe('leave during a game\'s answer hold', () => {
     // Leave during the hold
     await page.clock.runFor(300);
     await page.evaluate(() => { location.hash = '#/learn'; });
-    await expect(page).toHaveURL(new RegExp(`${APP.replace(/\//g, '\\/')}#/learn$`));
+    await expect(page).toHaveURL(atRoute('#/learn'));
     await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
     const view = page.locator('#view');
     const before = await view.innerHTML();
@@ -58,7 +58,7 @@ test.describe('leave during a game\'s answer hold', () => {
     await page.clock.runFor(65_000);
 
     // No later question, explanation or result from the game on the new page
-    await expect(page).toHaveURL(/#\/learn$/);
+    await expect(page).toHaveURL(atRoute('#/learn'));
     await expect(page.locator('#gArea, #gShell, #gSay, .g-q, .g-tip, .g-timer')).toHaveCount(0);
     await expect(page.locator('.lv-result')).toHaveCount(0);
     await expect(view).not.toContainText('Times sprint');

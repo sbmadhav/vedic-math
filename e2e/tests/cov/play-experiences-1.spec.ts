@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, atRoute, hrefTo, pathTo } from '../fixtures';
 
 /* play-experiences spec, Requirements "Experiences live inside sections", "Section shelves by Mode", "Party Mode
    replaces the Duel", "Per Player state" and "Sparks from play, capped": one test per scenario. */
@@ -9,9 +9,9 @@ const progress = (page: Page) => page.evaluate(() => { const p = JSON.parse(loca
 test('Opening Tala Lab: #/games/tala shows Tala Lab, the Arcade (Games\' zone) is current in the nav, and Back returns to #/games', async ({ page }) => {
   await open(page, '#/games/tala');
   await expect(page.locator('#view h1').first()).toHaveText('Tala Lab');
-  await expect(page.locator('.mq-nav a[href="#/arcade"]')).toHaveAttribute('aria-current', 'true'); /* Games is in the Arcade (openspec change play-nav-by-mode) */
+  await expect(page.locator(`.mq-nav a${hrefTo('#/arcade')}`)).toHaveAttribute('aria-current', 'true'); /* Games is in the Arcade (openspec change play-nav-by-mode) */
   await page.locator('.px-back').first().click();
-  await expect(page).toHaveURL(/#\/games$/);
+  await expect(page).toHaveURL(atRoute('#/games'));
 });
 
 test.describe('Explorer', () => {
@@ -26,7 +26,7 @@ test.describe('Explorer', () => {
       await expect(page.locator('#view h1')).toHaveText(`${title} is for older players`);
       const offered = await page.locator('#view .play-card').evaluateAll(as => as.map(a => a.getAttribute('href')));
       expect(offered.length).toBeGreaterThan(0);
-      for (const href of offered) expect(['#/games/tala', '#/games/art', '#/games/lens', '#/arena/party', '#/arena/ghosts', '#/arena/daily-number']).toContain(href);
+      for (const href of offered) expect(['#/games/tala', '#/games/art', '#/games/lens', '#/arena/party', '#/arena/ghosts', '#/arena/daily-number'].map(pathTo)).toContain(href);
       expect(await page.evaluate(() => Object.keys(localStorage).filter(k => k.startsWith('vm.play.')))).toEqual([]);
     }
   });
@@ -34,7 +34,7 @@ test.describe('Explorer', () => {
 
 test('An old Duel link: #/duel becomes #/arena/party and Party Mode shows', async ({ page }) => {
   await open(page, '#/duel');
-  await expect(page).toHaveURL(/#\/arena\/party$/);
+  await expect(page).toHaveURL(atRoute('#/arena/party'));
   await expect(page.locator('#view h1').first()).toHaveText('Party Mode');
   await expect(page.locator('.pt-start')).toBeVisible();
 });

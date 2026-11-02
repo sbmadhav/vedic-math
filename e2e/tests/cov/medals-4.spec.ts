@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, hrefTo } from '../fixtures';
 
 /* medals spec:
    - Requirement: Katas are done or not done
@@ -16,9 +16,9 @@ test.describe('Dojo counts', () => {
     await open(page, '#/dojo');
     const total = page.locator('#view p.mq-small').filter({ hasText: 'katas done' });
     await expect(total).toHaveText('5 of 1,050 katas done');
-    await expect(page.locator('a.dojo-katas[href="#/katas/sq5"]')).toHaveText(/Katas 3\/50 done/);
-    await expect(page.locator('a.dojo-katas[href="#/katas/from9"]')).toHaveText(/Katas 2\/50 done/);
-    await expect(page.locator('a.dojo-katas[href="#/katas/by11"]')).toHaveText(/Katas 0\/50 done/);
+    await expect(page.locator(`a.dojo-katas${hrefTo('#/katas/sq5')}`)).toHaveText(/Katas 3\/50 done/);
+    await expect(page.locator(`a.dojo-katas${hrefTo('#/katas/from9')}`)).toHaveText(/Katas 2\/50 done/);
+    await expect(page.locator(`a.dojo-katas${hrefTo('#/katas/by11')}`)).toHaveText(/Katas 0\/50 done/);
     // No star count anywhere a Kata count is shown
     await expect(page.locator('#view')).not.toContainText('★');
     await expect(total).not.toHaveText(STAR_COUNT);
@@ -30,12 +30,12 @@ test.describe('Dojo counts', () => {
     await expect(page.locator('#view h1')).toContainText('50 katas');
     await expect(page.locator('#view .mq-small').first()).toContainText('3 of 50 done');
     for (const n of [1, 2, 3]) {
-      const node = page.locator(`a.lv-node[href="#/kata/sq5/${n}"]`);
+      const node = page.locator(`a.lv-node${hrefTo(`#/kata/sq5/${n}`)}`);
       await expect(node).toHaveAttribute('aria-label', `Kata ${n}, done`);
       await expect(node.locator('.kata-mark')).toHaveClass(/\bon\b/);
     }
     // Kata 4 is open (Kata 3 is done) but not done; Kata 5 stays locked
-    const k4 = page.locator('a.lv-node[href="#/kata/sq5/4"]');
+    const k4 = page.locator(`a.lv-node${hrefTo('#/kata/sq5/4')}`);
     await expect(k4).toHaveAttribute('aria-label', 'Kata 4');
     await expect(k4.locator('.kata-mark')).not.toHaveClass(/\bon\b/);
     await expect(page.locator('.lv-node.locked[aria-label="Kata 5, locked"]')).toBeVisible();

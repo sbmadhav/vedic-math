@@ -1,4 +1,4 @@
-import { test, expect, APP, open } from '../fixtures';
+import { test, expect, APP, open, go } from '../fixtures';
 import { UA, RETURNING, offerInstall } from '../install-helpers';
 
 /* install-app spec (openspec change install-app), Requirement "The Install nudge on Home": one test per scenario. The
@@ -27,7 +27,7 @@ test.describe('Chrome on Android', () => {
     await offerInstall(page);
     await page.waitForTimeout(800);
     await expect(page.locator('.in-nudge')).toHaveCount(0);
-    await page.goto(`${APP}#/`);
+    await go(page, '#/');
     await expect(nudge(page)).toBeVisible();
   });
 

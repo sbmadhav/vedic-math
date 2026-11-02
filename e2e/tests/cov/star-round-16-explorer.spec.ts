@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, hrefTo } from '../fixtures';
 
 /* star-round spec, Requirement "Explorer's Dojo offers no Stars", Scenario "Dojo in Explorer": an Explorer Player opens the
    Dojo and sees the Tricks in their seven belt groups, no Star count or "belts earned" line, the line that belts and
@@ -13,6 +13,6 @@ test.describe('Dojo in Explorer', () => {
     await expect(page.locator('#view')).not.toContainText(/\d+\/9 Stars/);
     await expect(page.locator('#view')).not.toContainText(/belts earned/);
     await expect(page.locator('#view')).toContainText('Belts and Stars come with Challenger and Pro.');
-    await expect(page.locator('#view a[href="#/sutras"]')).toHaveCount(1);
+    await expect(page.locator(`#view a${hrefTo('#/sutras')}`)).toHaveCount(1);
   });
 });

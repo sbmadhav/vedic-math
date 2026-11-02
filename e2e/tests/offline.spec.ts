@@ -1,9 +1,9 @@
 import type { BrowserContext, Page, Route } from '@playwright/test';
-import { test, expect, APP, open, cloudLog, chromiumOnly, FIREBASE_SDK, FIREBASE_AUTH, FIRESTORE, showWorld, needsWorldBoards } from './fixtures';
+import { test, expect, APP, open, cloudLog, chromiumOnly, FIREBASE_SDK, FIREBASE_AUTH, FIRESTORE, showWorld, needsWorldBoards, hrefTo } from './fixtures';
 import { fakeAudio, audioLog } from './audio-fake';
 import { fillAnswer } from './split-kit';
 
-/* Offline: /sw.js (scope /play/) saves the app after one visit, so every route, the
+/* Offline: /sw.js (scope /learn/) saves the app after one visit, so every route, the
    Dojo and the games keep working without a connection, and the leaderboards fall back to this device.
    These are the only specs that let the service worker run (the config blocks it everywhere else).
    The same rules hold: the Firebase SDK is still the fake, and while "offline" every Google request is
@@ -34,12 +34,12 @@ const OWN_PREFIX = 'lvm-';
 async function workerReady(page: Page) {
   // Polls rather than using navigator.serviceWorker.ready, so a registration still installing is not taken for ready.
   await expect.poll(() => page.evaluate(async () => {
-    const reg = await navigator.serviceWorker.getRegistration('/play/');
-    const ours = reg && new URL(reg.scope).pathname === '/play/' && reg.active?.state === 'activated';
+    const reg = await navigator.serviceWorker.getRegistration('/learn/');
+    const ours = reg && new URL(reg.scope).pathname === '/learn/' && reg.active?.state === 'activated';
     return !!ours && navigator.serviceWorker.controller?.scriptURL === reg!.active!.scriptURL;
   }), { message: 'the game worker installs and controls the page', timeout: 30_000 }).toBe(true);
   return page.evaluate(async () => {
-    const reg = (await navigator.serviceWorker.getRegistration('/play/'))!;
+    const reg = (await navigator.serviceWorker.getRegistration('/learn/'))!;
     return { scope: reg.scope, script: reg.active!.scriptURL, controller: navigator.serviceWorker.controller!.scriptURL, caches: await caches.keys() };
   });
 }
@@ -58,14 +58,14 @@ async function goOnline(context: BrowserContext) {
 
 /** Proves the connection is really gone: a network-first URL the worker never saved cannot load. */
 async function expectOffline(page: Page) {
-  const got = await page.evaluate(() => fetch(`/play/offline-probe-${Date.now()}.txt`).then(r => `HTTP ${r.status}`, () => 'failed'));
+  const got = await page.evaluate(() => fetch(`/learn/offline-probe-${Date.now()}.txt`).then(r => `HTTP ${r.status}`, () => 'failed'));
   expect(got, 'a file that was never saved must fail offline').toBe('failed');
 }
 
-test('the worker registers with scope /play/, caches under lvm-, and every precached file is this site\'s', async ({ page, baseURL }) => {
+test('the worker registers with scope /learn/, caches under lvm-, and every precached file is this site\'s', async ({ page, baseURL }) => {
   await open(page);
   const sw = await workerReady(page);
-  expect(sw.scope).toBe(`${baseURL}/play/`);
+  expect(sw.scope).toBe(`${baseURL}/learn/`);
   expect(sw.script).toBe(`${baseURL}/sw.js`);
   expect(sw.controller).toBe(`${baseURL}/sw.js`);
   expect(sw.caches.length).toBeGreaterThanOrEqual(1);
@@ -77,7 +77,7 @@ test('the worker registers with scope /play/, caches under lvm-, and every preca
     const name = (await caches.keys()).filter(k => k.startsWith(prefix) && k !== prefix + 'voice').pop()!;
     return (await (await caches.open(name)).keys()).map(r => new URL(r.url).pathname + new URL(r.url).search);
   }, OWN_PREFIX);
-  expect(saved).toContain('/play/');
+  expect(saved).toContain('/learn/');
   expect(saved).toContain('/manifest.webmanifest');
   expect(saved.some(u => /^\/math\.css\?v=\w+$/.test(u))).toBe(true);
   for (const re of [/^\/ds\/2\.2\.0\/tokens\.css\?v=\w+$/, /^\/ds\/2\.2\.0\/components\.css\?v=\w+$/, /^\/theme\/learnvedicmath\.css\?v=\w+$/, /^\/js\/analytics\.js\?v=\w+$/,
@@ -200,8 +200,8 @@ test('a Dojo kata and a game play offline, and the progress persists', async ({ 
   expect(sparks).toBeGreaterThan(30);
   await page.reload();
   await page.goto(`${APP}#/katas/sq5`);
-  await expect(page.locator('a.lv-node[href="#/kata/sq5/2"]')).toBeVisible();
-  await expect(page.locator('a.lv-node[href="#/kata/sq5/1"]')).toHaveAttribute('aria-label', 'Kata 1, done');
+  await expect(page.locator(`a.lv-node${hrefTo('#/kata/sq5/2')}`)).toBeVisible();
+  await expect(page.locator(`a.lv-node${hrefTo('#/kata/sq5/1')}`)).toHaveAttribute('aria-label', 'Kata 1, done');
   await page.goto(`${APP}#/me`);
   await expect(page.locator('.me-head')).toContainText(`${sparks} Sparks`);
   await page.goto(`${APP}#/game/times-sprint`);
@@ -289,7 +289,7 @@ test('the landing and grown-up pages are never controlled by the game worker', a
   await open(page);
   await workerReady(page);
   const regs = await page.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).map(r => r.scope));
-  expect(regs).toEqual([`${baseURL}/play/`]);
+  expect(regs).toEqual([`${baseURL}/learn/`]);
   for (const url of ['/?home', '/parents/']) {
     const res = await page.goto(url);
     expect(res?.fromServiceWorker(), `${url} comes from the network`).toBe(false);

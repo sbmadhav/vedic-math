@@ -1,4 +1,4 @@
-import { test, expect, APP, open } from '../fixtures';
+import { test, expect, APP, open, pathTo } from '../fixtures';
 
 /* sutra-tags spec (openspec change sutras-first), Requirement "Tags in a Star round": one test per scenario. */
 
@@ -18,7 +18,7 @@ test('The end screen links: when the round ends, its tag is a link to #/sutras/s
   await open(page, '#/star/by11/1');
   await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
   await page.locator('#stSkip').click();
-  await expect(page.locator('.star-end a.sutra-tag-a')).toHaveAttribute('href', '#/sutras/s3');
+  await expect(page.locator('.star-end a.sutra-tag-a')).toHaveAttribute('href', pathTo('#/sutras/s3'));
 });
 
 test.describe('a new visitor', () => {
@@ -31,6 +31,6 @@ test.describe('a new visitor', () => {
     await expect(tag.locator('b[lang="sa-Latn"]')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
     await expect(tag.locator('.sutra-tag-m')).toHaveText('All from 9 and the last from 10');
     await expect(tag.locator('.say-btn')).toBeVisible();
-    await expect(tag.locator('a.sutra-tag-a')).toHaveAttribute('href', '#/sutras/s2');
+    await expect(tag.locator('a.sutra-tag-a')).toHaveAttribute('href', pathTo('#/sutras/s2'));
   });
 });

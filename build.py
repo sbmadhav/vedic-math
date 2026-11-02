@@ -12,32 +12,40 @@
                                               (CI deploys this way while R2 is not set up: R2_ACCOUNT_ID is empty)
 
 The site is served by Cloudflare Workers static assets (wrangler.jsonc; openspec change learnvedicmath, design D1)
-from the root of learnvedicmath.com: the landing page at /, the game at /play/, the grown-up pages at /parents/,
+from the root of learnvedicmath.com: the landing page at /, the game at /learn/, the grown-up pages at /parents/,
 /teachers/, /privacy/ and /terms/, the hand-off import page at /import/. Modules are at /js/, styles at /css/ and
 /math.css. Nothing is loaded from another repo or site: the design system (vendor/design-system/2.2.0/, published at
 /ds/2.2.0/), the fonts (fonts/), the icons (icons/), the GoatCounter script and the Firebase SDK (vendor/) are served
 from this site, and every same-origin script and stylesheet a page loads is pinned with ?v=<hash>.
 
-The source in git is never stamped: play/index.html has no import map and loads plain /js/app.js and /math.css, and
+The source in git is never stamped: learn/index.html has no import map and loads plain /js/app.js and /math.css, and
 the worker source (app/src/sw/sw.ts) says VERSION = 'dev' with an empty PRECACHE. Stamps exist only in the build output. CI runs this script and
 deploys the output (.github/workflows/ci.yml).
 
 What the build does (target site):
 - Copies every file git knows about except the repo-only files (`exclude:` in _config.yml, and any path with a part
   starting with "." or "_"). The page sources in site/ and the pinned design system are placed instead.
-- Pages: play/index.html (the game) and every site/**/*.html. Each must hold the site header from
+- Pages: learn/index.html (the game) and every site/**/*.html. Each must hold the site header from
   theme/header.html exactly as the vendored compose.py writes it. A page may include a Markdown file with
   <!-- include-md: PATH -->, rendered here (the legal pages and /licenses/).
-- In play/index.html: an import map that pins every module under /js/ to ?v=<hash of that file>, and the #vm-css map
+- In learn/index.html: an import map that pins every module under /js/ to ?v=<hash of that file>, and the #vm-css map
   for the play stylesheets. In every page: each same-origin .js and .css it loads gets ?v=<hash>.
 - sw.js: app/src/sw/sw.ts with its types taken out (tools/build-sw.mjs, run with the system node, 22.13 or newer),
   then VERSION and the PRECACHE list between the "build.py: precache" markers. Every entry has the hash the worker
-  checks on install: the game shell /play/, every file it loads, every module at its import-map URL, the play
+  checks on install: the game shell /learn/, every file it loads, every module at its import-map URL, the play
   stylesheets, the fonts, the icons and the manifest.
 - _headers: the security headers on every response, and per page a Content-Security-Policy and a stricter
   Report-Only one, built from that page's inline script hashes and THIRD_PARTIES. No page carries a CSP <meta>.
-- _redirects (old /vedic-math/ links to /play/), robots.txt, sitemap.xml, /.well-known/security.txt.
-- The first-load budget (tools/budget.ts): the Brotli size of everything a first visit to /play/ requests before the
+- _redirects (the game's old addresses: /play/ and old /vedic-math/ links to /learn/, the route aliases; the 200
+  rewrites for share links under /learn/), robots.txt,
+  sitemap.xml, /.well-known/security.txt.
+- The route pages (openspec change indexable-routes, design D4): tools/prerender/write.ts (run with the system node,
+  like the worker's type stripping) writes learn/<path>.html for every path the route table js/paths.js enumerates,
+  the game shell with that page's own title, description, canonical, Open Graph tags and robots line, plus
+  learn/404.html (the shell with noindex, which Cloudflare serves with status 404 for an unknown path under /learn/).
+  They all share the shell's inline scripts, so _headers has one rule for /learn/* (the shell's own page /learn/
+  included); the build fails when one differs, or when the Home page it writes is not the shell byte for byte.
+- The first-load budget (tools/budget.ts): the Brotli size of everything a first visit to /learn/ requests before the
   first tap, printed on every build and failing above docs/perf/baseline.json (not for --dev).
 
 It fails on: stamps in the source; a CSP <meta>, an inline event handler or a javascript: URL in a page; text in
@@ -53,7 +61,13 @@ import argparse, base64, datetime, fnmatch, hashlib, html as htmllib, importlib.
 
 ROOT = pathlib.Path(__file__).resolve().parent
 ORIGIN = "https://learnvedicmath.com"
-APP = "/play/"
+APP = "/learn/"   # the game shell, learn/index.html (openspec change indexable-routes, design D2)
+# The game's old address (/play, /play/..., not /js/play/ or /css/play/), named in no published file but _redirects;
+# the manifest keeps its id, which names the installed app and never changes (design D10)
+OLD_GAME = re.compile(r"(?:(?<![\w.~-])|(?<=learnvedicmath\.com))/play(?![\w.-])")
+MANIFEST_ID = '"id": "/play/"'
+PATHS_JS = "js/paths.js"   # the route table; its BASE ('/learn') is where the route pages live (prerender_base)
+PRERENDER = "tools/prerender/write.ts"   # writes the route pages from the game shell (prerender)
 DS_DIR, DS_URL = "vendor/design-system/2.2.0", "/ds/2.2.0/"
 DS_PUBLISHED = ["tokens.css", "components.css", "header.js"]
 DS_TOKENS = DS_URL.lstrip("/") + "tokens.css"
@@ -80,28 +94,17 @@ def fail(msg):
 
 
 # ---------- Third parties (openspec change learnvedicmath, design D10) ----------
-# The one list of hosts outside this site that a page or worker may reach. The Content-Security-Policy is built from
-# it, the build fails when a published file names a host that is in neither this list nor LINKS, and
+# The one list of hosts outside this site that a page or worker may reach, the policy's directives and the headers on
+# every response live in shared/src/policy.json (openspec change react-typescript, task 3.1; design D15), so the
+# Worker that renders pages (task 2.4) sends the same policy as this _headers file. The Content-Security-Policy is built
+# from it, the build fails when a published file names a host that is in neither THIRD_PARTIES nor LINKS, and
 # e2e/tests/third-party.spec.ts fails on a request to a host not here. "csp" maps a directive to the pages that allow
 # the host there ("play" is the game only, "*" every page). An empty csp means no page contacts it (only a worker,
 # which gets its own policy from its own response).
-VOICE_HOST = "https://voice.learnvedicmath.com"  # the R2 voice host (design D17)
-THIRD_PARTIES = [
-    {"host": VOICE_HOST, "own": True, "csp": {"media-src": "play", "connect-src": "play"},
-     "why": "Studio voice files (R2 bucket learnvedicmath-voice, design D17)", "when": "When read aloud plays a recorded line"},
-    {"host": "https://www.youtube-nocookie.com", "csp": {"frame-src": "play"},
-     "why": "A video plays in the page (privacy-enhanced mode)", "when": "After the Player taps play; no frame before"},
-    {"host": "https://learnvedicmath.goatcounter.com", "csp": {"connect-src": "*", "img-src": "*"},
-     "why": "Analytics beacons (cookieless; count.js is served from /vendor/goatcounter/)", "when": "After load and idle; never with Do Not Track or GPC"},
-    {"host": "https://static.cloudflareinsights.com", "csp": {"script-src": "*"},
-     "why": "Cloudflare Web Analytics beacon script (manual snippet, cookieless)", "when": "After load and idle, from js/analytics.js; never with Do Not Track or GPC"},
-    {"host": "https://cloudflareinsights.com", "csp": {"connect-src": "*"},
-     "why": "Cloudflare Web Analytics endpoint", "when": "After load and idle; never with Do Not Track or GPC"},
-    {"host": "https://cdn.jsdelivr.net", "csp": {},
-     "why": "Natural voice library (voice worker only)", "when": "After the Player opts in and confirms the download"},
-    {"host": "https://huggingface.co", "csp": {},
-     "why": "Natural voice model (voice worker only)", "when": "After the Player opts in and confirms the download"},
-]
+POLICY_SRC = "shared/src/policy.json"
+POLICY = json.loads((ROOT / POLICY_SRC).read_text())
+THIRD_PARTIES = POLICY["thirdParties"]
+VOICE_HOST = next(t["host"] for t in THIRD_PARTIES if t.get("voice"))  # the R2 voice host (design D17)
 # Firebase hosts come from js/cloud-config.js (firebase_sources below): World boards, for Players 13 and over only.
 
 # Hosts published files only link to or cite (a Player opens them by following a link); a page never fetches them
@@ -205,6 +208,16 @@ FIREBASE_KEY = re.compile(r"apiKey:\s*[\"']AIza[0-9A-Za-z_-]{30,}[\"']")
 TEXT_EXT = (".js", ".mjs", ".html", ".css", ".json", ".webmanifest", ".txt", ".md", ".svg", ".xml", ".map", ".csv", ".yml", ".yaml")
 SBMADHAV = re.compile(r"(?:https?:)?//(?:[\w-]+\.)*sbmadhav\.(?:com|github\.io)|sbmadhav\.goatcounter\.com")
 SHARED_PATHS = re.compile(r"(?<![\w.-])/(?:assets/(?:explore|analytics|count)\.js|assets/(?:fonts|icons)/|design-system/)")
+# A literal every match of the pattern above it contains. Python's regex engine scans every byte for a pattern that
+# starts with an alternation or a lookbehind, which over the thousands of route pages (check_route_pages) took seconds
+# per pattern; a substring check first skips the scan on a file that cannot match, and changes nothing that is caught.
+LITERALS = {PROVIDER_HOSTS: ("texttospeech", "elevenlabs", "openai", "tts.speech", "cognitiveservices", "polly."),
+            SECRETS: ("AIza", "AQ.", "ya29.", "sk-"), SBMADHAV: ("sbmadhav",), SHARED_PATHS: ("/assets/", "/design-system/")}
+
+
+def scan(pattern, text):
+    """pattern.search(text), after the literal pre-check in LITERALS."""
+    return pattern.search(text) if any(k in text for k in LITERALS[pattern]) else None
 
 
 # --voice off: the published js/voice-index.js names no recording and no host, so js/voice.js finds nothing recorded and
@@ -230,9 +243,165 @@ def worker_source():
     return r.stdout
 
 
+def prerender_base():
+    """The path base of the game's route pages, read from js/paths.js (`export const BASE = '/learn'`), so the router,
+    the prerender step and the _headers rule here read one constant (openspec change indexable-routes, design D3)."""
+    m = re.search(r"^export const BASE = '(/[\w-]+)';", (ROOT / PATHS_JS).read_text(), re.M)
+    if not m:
+        fail(f"{PATHS_JS}: no `export const BASE = '/...'` line; the route pages' path base is read from it")
+    return m.group(1)
+
+
+def prerender(out, shell):
+    """The route pages (design D4): tools/prerender/write.ts writes <out>/learn/<path>.html for every path of the route
+    table from the published game shell, and <out>/learn/404.html. Returns what it printed: the page count, how many
+    are indexed, the folder, and the [from, to] 200 rewrites for share links that go into _redirects."""
+    node = shutil.which("node")
+    if not node:
+        fail(f"node is not installed: it writes the route pages ({PRERENDER}, Node 22.18 or newer)")
+    r = subprocess.run([node, "--no-warnings", str(ROOT / PRERENDER), "--shell", str(shell), "--out", str(out)], capture_output=True, text=True)
+    if r.returncode != 0:
+        fail(f"{PRERENDER} failed:\n{r.stderr.strip()}")
+    try:
+        return json.loads(r.stdout)
+    except json.JSONDecodeError:
+        fail(f"{PRERENDER} printed no JSON summary: {r.stdout[:200]}")
+
+
+def check_route_pages(out, base, shell_html, count):
+    """Every page under the route pages' base is the shell with its own head, so the one _headers rule for <base>/*
+    carries their policy: the build fails on a page whose inline scripts differ from the shell's (search-pages spec,
+    "One header rule for the game's pages"), or on a count that is not the route table's plus the 404 shell."""
+    want = csp_hashes(shell_html)
+    pages = sorted(p for p in (out / base.lstrip("/")).rglob("*.html") if p.is_file())
+    if len(pages) != count + 1:
+        fail(f"{base}/: {len(pages)} pages written, expected {count} route pages and 404.html")
+    for p in pages:
+        rel = p.relative_to(out).as_posix()
+        if csp_hashes(p.read_text()) != want:
+            fail(f"{rel}: its inline scripts differ from the game shell's; every page under {base}/ shares one set, so one "
+                 f"_headers rule ({base}/*) covers them all (move the script out of the page, or into the shell)")
+
+
+# Static imports and export ... from (the same pattern tools/budget.ts and the import check read)
+IMPORT_RE = re.compile(r"""(?:^|[;\n}])\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|[;\n}])\s*import\s*['"]([^'"]+)['"]""")
+TS_ROOTS = ("shared/src/", "app/src/")   # where the modules the Legacy views import from TypeScript live
+TS_OUT = "js/ts/"                        # where they are published, inside the pinned /js/ modules
+
+
+def ts_published(path):
+    """shared/src/lib.ts -> js/ts/shared/src/lib.js"""
+    return TS_OUT + path[: -len(".ts")] + ".js"
+
+
+def ts_modules(all_files, js_sources):
+    """The TypeScript modules the Legacy views reach (openspec change react-typescript, tasks 3.1 to 3.3). A js/ module
+    that moved to shared/src/ or app/src/ keeps its URL and re-exports the .ts file; until the framework build (task 2.1)
+    bundles the game, the browser gets each .ts module reachable from js/ with its types taken out (tools/build-ts.mjs,
+    Node's own type stripper), published at /js/ts/<path>.js, with every import pointing at a published URL. Returns
+    {published path: JavaScript} for those modules and {js path: JavaScript} for the js/ modules whose .ts imports
+    were rewritten. A module outside shared/src/ and app/src/, a test, or a dynamic import() of a .ts file fails.
+    A js/ module that only re-exports one .ts module (shims()) is skipped: every static import of it points at the .ts
+    module's URL instead, so a first load requests one module, not two, one level sooner (docs/perf/baseline.md, "Off
+    the critical path"). The js/ file is still published at its URL, for a dynamic import() and the tests."""
+    ts_files = sorted(f for f in all_files if f.startswith(TS_ROOTS) and f.endswith(".ts") and not f.endswith((".test.ts", ".d.ts")))
+    wanted = {f for js, text in js_sources.items() for f in _ts_specs(js, text)}
+    if not wanted:
+        return {}, {}
+    node = shutil.which("node")
+    if not node:
+        fail("node is not installed: it publishes the TypeScript modules js/ imports (tools/build-ts.mjs, Node 22.13 or newer)")
+    r = subprocess.run([node, "--no-warnings", str(ROOT / "tools/build-ts.mjs"), *[str(ROOT / f) for f in ts_files]], capture_output=True, text=True)
+    if r.returncode != 0:
+        fail(f"tools/build-ts.mjs failed:\n{r.stderr.strip()}")
+    rel = lambda k: pathlib.Path(k).resolve().relative_to(ROOT.resolve()).as_posix()
+    res = json.loads(r.stdout)
+    stripped, errors = {rel(k): v for k, v in res["js"].items()}, {rel(k): v for k, v in res["errors"].items()}
+    def need(f, by):
+        if f in errors:
+            fail(f"{f}: {errors[f]} (imported by {by}; a module the Legacy views reach must be plain type syntax)")
+        if f not in stripped:
+            fail(f"{f}: imported by {by}, but not a module under {' or '.join(TS_ROOTS)} (tests and .d.ts files are never published)")
+    for js, text in js_sources.items():
+        for f in _ts_specs(js, text):
+            need(f, js)
+    # Every .ts module reachable from js/, through the stripped code (type-only imports are gone from it)
+    seen, queue = set(), sorted(wanted)
+    while queue:
+        f = queue.pop()
+        if f in seen:
+            continue
+        seen.add(f)
+        for g in _ts_specs(f, stripped[f]):
+            need(g, f)
+            queue.append(g)
+    shim = shims(js_sources)
+    published = {ts_published(f): _rewrite(f, stripped[f], all_files, shim) for f in sorted(seen)}
+    rewritten = {js: _rewrite(js, text, all_files, shim) for js, text in js_sources.items()
+                 if _ts_specs(js, text) or any(_resolve(js, s) in shim for s in _specs(text))}
+    return published, rewritten
+
+
+SHIM_LINE = re.compile(r"""export\s+(?:\*|\{\s*default\s*\})\s+from\s+['"]([^'"]+\.ts)['"]\s*;?""")
+
+
+def shims(js_sources):
+    """{js path: the .ts module it only re-exports}: a js/ module whose code, comments aside, is `export * from` one .ts
+    module, with or without `export { default } from` the same module, exports exactly that module's bindings, so an
+    import of it can import the .ts module itself (the same module instance, so the same state)."""
+    out = {}
+    for js, text in js_sources.items():
+        code = re.sub(r"/\*.*?\*/|//[^\n]*", "", text, flags=re.S).strip()
+        lines = [s for s in re.split(r"\s*\n\s*", code) if s]
+        targets = {_resolve(js, m.group(1)) for s in lines for m in [SHIM_LINE.fullmatch(s)] if m}
+        if lines and len(targets) == 1 and all(SHIM_LINE.fullmatch(s) for s in lines) and any(s.startswith("export *") for s in lines):
+            out[js] = targets.pop()
+    return out
+
+
+def _specs(text):
+    return [m.group(1) or m.group(2) for m in IMPORT_RE.finditer(text)]
+
+
+def _resolve(importer, spec):
+    return posixpath.normpath(spec[1:] if spec.startswith("/") else posixpath.join(posixpath.dirname(importer), spec))
+
+
+def _ts_specs(importer, text):
+    if re.search(r"""\bimport\s*\(\s*['"][^'"]+\.ts['"]""", text):
+        fail(f"{importer}: a dynamic import() of a .ts module; import TypeScript statically (build.py publishes what it can see)")
+    return [_resolve(importer, m.group(1) or m.group(2)) for m in IMPORT_RE.finditer(text)
+            if (m.group(1) or m.group(2)).endswith(".ts") and (m.group(1) or m.group(2)).startswith(("./", "../", "/"))]
+
+
+def _rewrite(importer, text, all_files, shim=None):
+    """The module's static imports as published URLs: a .ts module at /js/ts/...js, a js/ module that only re-exports
+    a .ts module (shim) at that module's URL, a js/ module (from a .ts file, whose published place differs from its
+    source's) at its own /js/ URL. Anything else is left for the import check."""
+    out, last = [], 0
+    is_ts = importer.endswith(".ts")
+    for m in IMPORT_RE.finditer(text):
+        g = 1 if m.group(1) else 2
+        spec = m.group(g)
+        if not spec.startswith(("./", "../", "/")):
+            continue
+        target = _resolve(importer, spec)
+        if shim and target in shim:
+            url = "/" + ts_published(shim[target])
+        elif target.endswith(".ts"):
+            url = "/" + ts_published(target)
+        elif is_ts and target.startswith("js/") and target in all_files:
+            url = "/" + target
+        else:
+            continue
+        out.append(text[last:m.start(g)] + url)
+        last = m.end(g)
+    return "".join(out) + text[last:]
+
+
 def check_budget(out, voice):
     """The first-load byte budget (openspec change react-typescript, performance-budget spec, task 1.8): tools/budget.ts
-    measures the Brotli size of everything a first visit to /play/ requests before the first tap (the page, what it
+    measures the Brotli size of everything a first visit to /learn/ requests before the first tap (the page, what it
     loads, the entry's static imports, sw.js and every file in PRECACHE), prints the table, and fails when the total is
     above docs/perf/baseline.json. A pull request that grows first load on purpose updates the baseline and says why.
     The baseline names the voice mode it was measured in (firstLoad.voice): js/voice-index.js and sw.js differ by mode,
@@ -282,31 +451,34 @@ def check_published(out, voice):
         fail(f"{len(files)} files in the output; Cloudflare Workers allows {MAX_FILES[voice]} per version on this plan (design D17)")
     for p in files:
         rel = p.relative_to(out).as_posix()
-        if p.stat().st_size > MAX_FILE_BYTES:
-            fail(f"{rel}: {p.stat().st_size} bytes; Cloudflare Workers serves files up to 25 MiB")
-        if voice == "off" and VOICE_HOST.split("//")[1].encode() in p.read_bytes().lower():
+        data = p.read_bytes()
+        if len(data) > MAX_FILE_BYTES:
+            fail(f"{rel}: {len(data)} bytes; Cloudflare Workers serves files up to 25 MiB")
+        if voice == "off" and VOICE_HOST.split("//")[1].encode() in data.lower():
             # every published file, text or not, compared ignoring case
             fail(f"{rel}: names the voice host {VOICE_HOST}; a build with --voice off must not (deploy-pipeline spec)")
         if not (p.suffix in TEXT_EXT or p.name in ("_headers", "_redirects")):
             continue
-        text = p.read_text(encoding="utf-8", errors="ignore")
+        text = data.decode("utf-8", errors="ignore")
         if rel == "js/cloud-config.js":
             text = FIREBASE_KEY.sub("", text)
-        host, secret = PROVIDER_HOSTS.search(text), SECRETS.search(text)
+        host, secret = scan(PROVIDER_HOSTS, text), scan(SECRETS, text)
         if host:
             fail(f"{rel}: names a speech provider ({host.group(0)}); the site must only play its own recorded files")
         if secret:
             fail(f"{rel}: holds something shaped like an API key or token ({secret.group(0)[:6]}...); keys stay in the shell that records")
+        if rel != "_redirects" and OLD_GAME.search(text.replace(MANIFEST_ID, "") if rel == "manifest.webmanifest" else text):
+            fail(f"{rel}: names the game's old address /play/; the game is at /learn/ (only _redirects maps old links; openspec change indexable-routes)")
         if rel != "_redirects" and "/vedic-math/" in text:
             fail(f"{rel}: names a /vedic-math/ path; the site is served from the root of learnvedicmath.com (only _redirects maps old links)")
         if "gstatic.com/firebasejs" in text:
             fail(f"{rel}: names gstatic.com/firebasejs; the Firebase SDK is served from /vendor/firebase/")
-        m = SBMADHAV.search(text.replace(EXPORT_PAGE, ""))
+        m = scan(SBMADHAV, text.replace(EXPORT_PAGE, ""))
         if m:
             fail(f"{rel}: refers to {m.group(0)}; the site loads and links nothing on sbmadhav.com except the export page {EXPORT_PAGE}")
         if rel.startswith(("vendor/", "ds/", "fonts/")):
             continue  # vendored code and licence texts: pinned by SHA256SUMS and reviewed when vendored; their comments may name anything
-        m = SHARED_PATHS.search(text)
+        m = scan(SHARED_PATHS, text)
         if m:
             fail(f"{rel}: loads {m.group(0)} from the old shared site; this site serves its own copy")
         for m in re.finditer(r"https?://([a-z0-9][a-z0-9.-]*[a-z0-9])", text.replace(EXPORT_PAGE, ""), re.I):
@@ -501,63 +673,36 @@ def csp_hashes(html):
 
 
 def csp(html, page, report_only=False):
-    """The policy for one page: this origin, the page's inline script hashes, and THIRD_PARTIES for that page."""
+    """The policy for one page: this origin, the page's inline script hashes, and THIRD_PARTIES for that page, in the
+    order of POLICY["directives"] (shared/src/policy.json)."""
     def extra(directive):
         hosts = [t["host"] for t in THIRD_PARTIES if t["csp"].get(directive) in ("*", page)]
         return hosts + (firebase_sources().get(directive, []) if page == "play" else [])
-    j = lambda *parts: " ".join(x for part in parts for x in part)
-    frames = extra("frame-src")
-    return "; ".join([
-        "default-src 'self'",
-        # 'wasm-unsafe-eval': the Math Lens digit reader (vendor/tesseract/) compiles WebAssembly; it allows no eval()
-        "script-src " + j(["'self'"], ["'wasm-unsafe-eval'"] if page == "play" else [], csp_hashes(html), extra("script-src")),
-        # style="" in markup the views build needs 'unsafe-inline' today; the Report-Only variant tries without it
-        "style-src 'self'" + ("" if report_only else " 'unsafe-inline'"),
-        "img-src " + j(["'self'", "data:"], extra("img-src")),
-        "font-src 'self'",
-        "connect-src " + j(["'self'"], extra("connect-src")),
-        "frame-src " + (j(frames) if frames else "'none'"),
-        "worker-src 'self'",
-        "manifest-src 'self'",
-        "media-src " + j(["'self'"], extra("media-src")),
-        "object-src 'none'",
-        "base-uri 'none'",
-        "form-action 'self'",
-        "frame-ancestors 'none'",
-        # Browsers ignore upgrade-insecure-requests in a Report-Only policy and log a console warning on every page
-        *([] if report_only else ["upgrade-insecure-requests"]),
-        *(["require-trusted-types-for 'script'"] if report_only else []),
-        # The Report-Only variant reports through report-to only, which the Reporting API batches: through report-uri
-        # every innerHTML of a view would be one request to /_csp
-        *([] if report_only else ["report-uri /_csp"]),
-        "report-to csp",
-    ])
+    out = []
+    for d in POLICY["directives"]:
+        if d.get("only") == ("enforced" if report_only else "report-only"):
+            continue
+        sources = (list(d["sources"]) + (d.get("play", []) if page == "play" else []) + (csp_hashes(html) if d.get("hashes") else [])
+                   + ([] if report_only else d.get("enforced", [])) + extra(d["name"]))
+        if not sources and "none" in d:
+            sources = [d["none"]]
+        out.append(" ".join([d["name"]] + sources))
+    return "; ".join(out)
 
 
-YT = '"https://www.youtube-nocookie.com"'
-COMMON_HEADERS = [
-    ("Strict-Transport-Security", "max-age=63072000; includeSubDomains"),
-    ("X-Content-Type-Options", "nosniff"),
-    ("Referrer-Policy", "strict-origin-when-cross-origin"),
-    ("Cross-Origin-Resource-Policy", "same-origin"),
-    ("X-Frame-Options", "DENY"),
-    # Camera and microphone are per page (headers_file): the game uses them (Math Lens, Tala Lab), no other page does
-    ("Permissions-Policy", "geolocation=(), payment=(), usb=(), serial=(), bluetooth=(), interest-cohort=(), "
-     f"browsing-topics=(), fullscreen=(self {YT}), autoplay=(self {YT}), encrypted-media=(self {YT}), picture-in-picture=(self {YT})"),
-    # Relative, so a preview or a local run reports to its own /_csp, never to production's
-    ("Reporting-Endpoints", 'csp="/_csp"'),
-]
+COMMON_HEADERS = [tuple(h) for h in POLICY["headers"] if h[0] != "//"]
 
 
 def headers_file(pages, preview):
-    """_headers for Cloudflare static assets. Policies and COOP sit on exact page paths only: Cloudflare joins the values
-    of every rule that matches a path, and two policies would both be enforced. For the same reason camera and
-    microphone are named only here, never on /*: the game page allows them for this site (Math Lens asks for the camera,
-    Tala Lab for the microphone, each after a tap), every other page turns them off."""
+    """_headers for Cloudflare static assets. Policies and COOP sit on exact page paths only, and on the one <base>/*
+    rule for the route pages, which all share the game shell's inline scripts (check_route_pages): Cloudflare joins the
+    values of every rule that matches a path, and two policies would both be enforced. For the same reason camera and
+    microphone are named only here, never on /*: the game ("play" pages) allows them for this site (Math Lens asks for
+    the camera, Tala Lab for the microphone, each after a tap), every other page turns them off."""
     rules = [("/*", COMMON_HEADERS + ([("X-Robots-Tag", "noindex, nofollow")] if preview else []))]
     for url, (html, kind) in sorted(pages.items()):
         rules.append((url, [("Cross-Origin-Opener-Policy", "same-origin-allow-popups" if url == "/import/" else "same-origin"),
-                            ("Permissions-Policy", "camera=(self), microphone=(self)" if url == "/play/" else "camera=(), microphone=()"),
+                            ("Permissions-Policy", "camera=(self), microphone=(self)" if kind == "play" else "camera=(), microphone=()"),
                             ("Content-Security-Policy", csp(html, kind)),
                             ("Content-Security-Policy-Report-Only", csp(html, kind, report_only=True))]))
     if len(rules) > MAX_HEADER_RULES:
@@ -571,8 +716,28 @@ def headers_file(pages, preview):
     return text
 
 
-REDIRECTS = ("# Written by build.py: old links from sbmadhav.com/vedic-math/ reach the game (the hash route rides along).\n"
-             "/vedic-math /play/ 301\n/vedic-math/* /play/ 301\n")
+# The game's old addresses, never removed (openspec change indexable-routes, design D9): /play/ and its paths move to
+# /learn/ (Cloudflare keeps the query, the browser the fragment, and the page's pre-paint script turns a #/ route into
+# its path), and the move's /vedic-math/ links end at /learn/ (the hash route rides along).
+REDIRECTS = ("# Written by build.py: the game's old addresses reach the same screen under /learn/.\n"
+             "/play /learn/ 301\n/play/* /learn/:splat 301\n/vedic-math /learn/ 301\n/vedic-math/* /learn/ 301\n")
+
+
+def redirects_file(rewrites, aliases):
+    """_redirects: the old-origin rules, then the 200 rewrites for share links (openspec change indexable-routes, design
+    D4): a path under a play experience with parameters (a Ghost race code, an Art piece, a Wall card, a Locks chapter)
+    and an Arena challenge link are answered with their page, status 200, by Cloudflare without running code; the app
+    reads the parameters from the address as today. One dynamic (splat) rule each, of Cloudflare's 100."""
+    text = REDIRECTS + "# A screen's second name answers 301 with its one path (design D2).\n"
+    text += "".join(f"{src} {dest} 301\n" for src, dest in aliases)
+    text += "# Share links with codes open their experience's page (status 200), which reads the code from the address.\n"
+    text += "".join(f"{src} {dest} 200\n" for src, dest in rewrites)
+    rules = [l for l in text.splitlines() if l and not l.startswith("#")]
+    if len(rules) > MAX_REDIRECTS:
+        fail(f"_redirects has {len(rules)} rules; Cloudflare allows {MAX_REDIRECTS}")
+    if sum("*" in l.split()[0] for l in rules) > 100:
+        fail("_redirects has more than 100 dynamic (splat) rules; Cloudflare allows 100")
+    return text
 
 
 def stamp_refs(html, versions):
@@ -584,7 +749,7 @@ def stamp_refs(html, versions):
 
 
 def page_url(rel):
-    """site/parents/index.html -> /parents/; site/404.html -> /404.html; play/index.html -> /play/."""
+    """site/parents/index.html -> /parents/; site/404.html -> /404.html; learn/index.html -> /learn/."""
     rel = rel[len("site/"):] if rel.startswith("site/") else rel
     return "/" + (rel[: -len("index.html")] if rel.endswith("index.html") else rel)
 
@@ -593,7 +758,7 @@ def build_site(args, out):
     dev = args.dev
     today = datetime.date.fromisoformat(os.environ["BUILD_TODAY"]) if os.environ.get("BUILD_TODAY") else datetime.date.today()
     all_files = git_files(out)
-    for required in ["play/index.html", SW_SRC, "tools/build-sw.mjs", "tools/budget.ts", "math.css", "manifest.webmanifest", "js/app.js", HEADER, "site/index.html",
+    for required in ["learn/index.html", SW_SRC, "tools/build-sw.mjs", "tools/build-ts.mjs", POLICY_SRC, "tools/budget.ts", PRERENDER, PATHS_JS, "math.css", "manifest.webmanifest", "js/app.js", HEADER, "site/index.html",
                      "site/404.html", "site/.well-known/security.txt", "THIRD-PARTY-NOTICES.md"]:
         if required not in all_files:
             fail(f"{required} is missing")
@@ -622,6 +787,13 @@ def build_site(args, out):
     # Published path -> source path. Pages are rendered separately; the design system goes to /ds/2.2.0/.
     publish = {f: f for f in files if not f.startswith("site/")}
     publish.update({DS_URL.lstrip("/") + f: f"{DS_DIR}/{f}" for f in DS_PUBLISHED})
+    # The TypeScript modules js/ imports, published under /js/ts/ with their types taken out (ts_modules)
+    ts_out, ts_js = ts_modules(all_files, {p: src(p).decode() for p in publish if p.startswith("js/") and p.endswith(".js")})
+    for f, text in {**ts_out, **ts_js}.items():
+        if f in ts_out and f in publish:
+            fail(f"{f}: is a source file and a published TypeScript module at once")
+        publish[f] = f
+        overrides[f] = text.encode()
     # The published tokens.css drops its @font-face lines (they point at the old site's /assets/fonts/): theme/fonts.css
     # declares the fonts once, from /fonts/ on this site
     tokens = re.sub(r"(?m)^@font-face[^\n]*\n", "", (ROOT / DS_DIR / "tokens.css").read_text())
@@ -631,7 +803,7 @@ def build_site(args, out):
 
     compose, partial = load_compose(), (ROOT / HEADER).read_text()
     pages = {}  # url -> [html, kind]
-    for rel in ["play/index.html"] + sorted(f for f in all_files if f.startswith("site/") and f.endswith(".html")):
+    for rel in ["learn/index.html"] + sorted(f for f in all_files if f.startswith("site/") and f.endswith(".html")):
         html = (ROOT / rel).read_text()
         check_page(rel, html)
         if "<!-- md-header -->" in html:
@@ -643,7 +815,7 @@ def build_site(args, out):
                 fail(f"{rel}: its header differs from {HEADER}. Run python3 {DS_DIR}/compose.py {HEADER} {rel}")
         elif rel != "site/404.html":
             fail(f"{rel}: has no <!-- md-header --> block; every page uses the site header ({HEADER})")
-        pages[page_url(rel)] = [render_includes(rel, html).replace("{{year}}", str(today.year)), "play" if rel == "play/index.html" else "site"]
+        pages[page_url(rel)] = [render_includes(rel, html).replace("{{year}}", str(today.year)), "play" if rel == "learn/index.html" else "site"]
         if left := placeholders(pages[page_url(rel)][0]):
             fail(f"{rel}: shows the placeholder {left[0]}; a published page never shows a draft's [bracketed] text "
                  "(reword it, or move it to the draft's \"(remove before publishing)\" section)")
@@ -651,9 +823,8 @@ def build_site(args, out):
     # Every static import is a relative or absolute path inside /js/. A bare specifier would fail without the map, a path
     # outside the folder would not be pinned, and a full URL would run code from another site.
     js = sorted(f for f in publish if f.startswith("js/") and f.endswith(".js"))
-    import_re = re.compile(r"""(?:^|[;\n}])\s*(?:import|export)\b[^'"`;]*?\bfrom\s*['"]([^'"]+)['"]|(?:^|[;\n}])\s*import\s*['"]([^'"]+)['"]""")
     for p in js:
-        for m in import_re.finditer(src(p).decode()):
+        for m in IMPORT_RE.finditer(src(p).decode()):
             spec = m.group(1) or m.group(2)
             if re.match(r"https?://", spec):
                 fail(f"{p}: imports {spec}; every module is served and pinned by this site")
@@ -664,6 +835,7 @@ def build_site(args, out):
                 fail(f"{p}: import '{spec}' resolves to {resolved}, outside the versioned /js/ modules")
 
     imports = {f"/{p}": f"/{p}?v={versions['/' + p]}" for p in js}
+    route_links = []  # (page, path) for each link to a screen's path under APP
     play_css = {f"/{f}": versions["/" + f] for f in publish if f.startswith("css/") and f.endswith(".css")}
     for url, page in pages.items():
         html = page[0]
@@ -672,12 +844,14 @@ def build_site(args, out):
                          + '<script type="application/json" id="vm-css">' + json.dumps(play_css) + "</script>\n" + MAP_END + "\n")
             entry = re.search(r'<script type="module" src="/js/app\.js"></script>', html)
             if not entry:
-                fail("play/index.html: module entry script not found")
+                fail("learn/index.html: module entry script not found")
             html = html[:entry.start()] + map_block + html[entry.start():]
         if not dev:
             html = stamp_refs(html, versions)
         for m in re.finditer(r'(?:src|href)="(/[^"?#]*)', html):
-            if not (m.group(1).endswith("/") or m.group(1)[1:] in publish or m.group(1)[1:] in GENERATED):
+            if m.group(1).startswith(APP) and not m.group(1).endswith("/"):
+                route_links.append((url, m.group(1)))  # a route page: checked once the prerender has written them
+            elif not (m.group(1).endswith("/") or m.group(1)[1:] in publish or m.group(1)[1:] in GENERATED):
                 fail(f"{url}: loads or links {m.group(1)}, which is not published")
         page[0] = html
 
@@ -707,9 +881,15 @@ def build_site(args, out):
     security_txt = (ROOT / "site/.well-known/security.txt").read_text()
     check_security_txt(security_txt, today)
     listed = sorted(u for u in pages if u not in ("/404.html", "/import/"))
+    # The route pages under <base>/ (prerender, below) are the game shell with their own head: one rule, with the game's
+    # policy, which also covers the shell at <base>/ (a second rule matching it would add a second policy)
+    base = prerender_base()
+    if APP != base + "/":
+        fail(f"{PATHS_JS}: BASE is {base}, but the game shell is published at {APP}; they move together")
+    with_policy = {u: (p[0], p[1]) for u, p in pages.items() if u not in ("/404.html", APP)}
+    with_policy[f"{base}/*"] = (play_html, "play")
     generated = {
-        "_headers": headers_file({u: (p[0], p[1]) for u, p in pages.items() if u != "/404.html"}, args.preview),
-        "_redirects": REDIRECTS,
+        "_headers": headers_file(with_policy, args.preview),
         "robots.txt": f"User-agent: *\nAllow: /\n\nSitemap: {ORIGIN}/sitemap.xml\n",
         "sitemap.xml": '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
                        + "".join(f"  <url><loc>{ORIGIN}{u}</loc></url>\n" for u in listed) + "</urlset>\n",
@@ -718,8 +898,6 @@ def build_site(args, out):
         DS_TOKENS: tokens,
         ".assetsignore": "# Written by build.py: files wrangler does not upload as static assets\n.assetsignore\n",
     }
-    if sum(1 for l in REDIRECTS.splitlines() if l and not l.startswith("#")) > MAX_REDIRECTS:
-        fail(f"_redirects has more than {MAX_REDIRECTS} rules")
 
     # ---------- write the output ----------
     empty(out)
@@ -733,6 +911,17 @@ def build_site(args, out):
         dest = out / (url[1:] + ("index.html" if url.endswith("/") else ""))
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(html)
+    # The route pages, from the game shell as written above (openspec change indexable-routes, design D4); their share-link
+    # rewrites go into _redirects. Not in the precache or the first load: the shell is the one page a first visit loads.
+    routes = prerender(out, out / (APP[1:] + "index.html"))
+    check_route_pages(out, base, play_html, routes["pages"])
+    if (out / (APP[1:] + "index.html")).read_text() != play_html:
+        fail(f"{APP}: the Home page the prerender wrote differs from the shell; the precache and the first load hash the shell, "
+             f"so its head must be Home's (title, description, canonical {ORIGIN}{APP})")
+    for url, link in route_links:
+        if not (out / (link[1:] + ".html")).is_file():
+            fail(f"{url}: links {link}, which no route page answers (js/paths.js lists every screen's path)")
+    generated["_redirects"] = redirects_file(routes["rewrites"], routes["aliases"])
     for f, text in generated.items():
         (out / f).parent.mkdir(parents=True, exist_ok=True)
         (out / f).write_text(text)
@@ -742,9 +931,9 @@ def build_site(args, out):
 
     rel = out.relative_to(ROOT) if out.is_relative_to(ROOT) else out
     n = sum(1 for p in out.rglob("*") if p.is_file())
-    print(f"{rel}/: {n} files, {len(pages)} pages, {len(imports)} modules pinned, app.js v={versions['/js/app.js']}, "
-          f"sw.js VERSION={sw_version} ({len(precache)} files precached){' [dev]' if dev else ''}{' [preview]' if args.preview else ''}"
-          f"{' [no Studio voice]' if voice_off else ''}")
+    print(f"{rel}/: {n} files, {len(pages)} pages, {routes['pages']} route pages under {base}/ ({routes['indexed']} indexed), {len(imports)} modules pinned, "
+          f"app.js v={versions['/js/app.js']}, sw.js VERSION={sw_version} ({len(precache)} files precached){' [dev]' if dev else ''}"
+          f"{' [preview]' if args.preview else ''}{' [no Studio voice]' if voice_off else ''}")
 
 
 def empty(out):

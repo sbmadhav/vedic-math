@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, open, chromiumOnly } from './fixtures';
+import { test, expect, open, chromiumOnly, hrefTo } from './fixtures';
 
 /* Sutra Spellbook, Discovery Locks and the Lost Śulba Scroll (openspec play-experiences): keyboard play keeps
    focus, Sparks events fire only for first clears, the scroll keeps its own class names, and the pages pass axe. */
@@ -43,11 +43,17 @@ test('Spellbook: a keyboard cast keeps focus on the digits after each key press'
   await expect(page.locator('.sp-after')).toBeVisible();
   await expect(page.locator('.sp-after .md-btn--primary')).toBeFocused();
   expect(await plays(page, 'spells/learn')).toBe(1);
+  /* the lesson opened at #/dojo/spells itself: "Cast it on a monster" still opens the monsters (Muse review, item 1) */
+  await expect(page.locator('.sp-after .md-btn--primary')).toHaveText('Cast it on a monster');
+  await page.locator('.sp-after .md-btn--primary').click();
+  await expect(page.locator('.sp-learn')).toHaveCount(0);
+  await expect(page.locator('.sp-m').first()).toBeVisible();
+  await expect(page.locator('.sp-tabs a[aria-current="page"]')).toHaveText('Cast');
   expect(issues.console).toEqual([]);
 });
 
 test('Spellbook: a learn link cannot skip ahead to a spell not yet unlocked', async ({ page }) => {
-  const later: string = await page.goto('/play/').then(() => page.evaluate(async () => (await e2eMod('play/exp/spells-core')).ORDER.challenger[2]));
+  const later: string = await page.goto('/learn/').then(() => page.evaluate(async () => (await e2eMod('play/exp/spells-core')).ORDER.challenger[2]));
   await open(page, `#/dojo/spells/learn/${later}`);
   /* a fresh Player gets the first lesson instead */
   const first: string = await page.evaluate(async () => (await e2eMod('play/exp/spells-core')).ORDER.challenger[0]);
@@ -138,10 +144,12 @@ test('Locks: level 1 clears by keyboard, and a replay pays no second Sparks even
   await open(page, '#/dojo/locks/eleven');
   await clearFeedLevel(page);
   await expect(page.locator('.lk-next')).toBeFocused();
+  /* the banner names the next level and what it asks, so it never reads as the stage just done (Muse review, item 2) */
+  await expect(page.locator('.lk-clear')).toContainText(/Next, level 2: Predict\. Guess \d in a row/);
   expect((await stored(page, 'locks')).eleven.done).toBe(1);
   expect(await plays(page, 'locks/level')).toBe(1);
   /* replay level 1 */
-  await page.locator('a.lk-lv[href="#/dojo/locks/eleven/0"]').click();
+  await page.locator(`a.lk-lv${hrefTo('#/dojo/locks/eleven/0')}`).click();
   await expect(page.locator('.lk-say')).toContainText('Feed the lock');
   await clearFeedLevel(page);
   expect(await plays(page, 'locks/level')).toBe(1);
@@ -235,7 +243,7 @@ test.describe('the scroll with two pieces found', () => {
 });
 
 test('Lost Scroll: a chapter 1 puzzle is solved and saved; in preview nothing is saved or counted', async ({ page, issues }) => {
-  const answer: number = await page.goto('/play/').then(() => page.evaluate(async () => (await e2eMod('play/exp/scroll-core')).puzzlesFor(1, 'challenger')[0].answer));
+  const answer: number = await page.goto('/learn/').then(() => page.evaluate(async () => (await e2eMod('play/exp/scroll-core')).puzzlesFor(1, 'challenger')[0].answer));
   await open(page, '#/sutras/lost-scroll/preview/1');
   await expect(page.locator('.sc-preview')).toContainText('nothing solved here is saved');
   await page.locator('#scAns').fill(String(answer));
@@ -258,7 +266,7 @@ test('Lost Scroll: a chapter 1 puzzle is solved and saved; in preview nothing is
 });
 
 test('Lost Scroll: solved rope, square and meter puzzles reopen showing their answer, and stay put', async ({ page, issues }) => {
-  await page.goto('/play/');
+  await page.goto('/learn/');
   const want = await page.evaluate(async () => {
     const S = await e2eMod('play/exp/scroll-core');
     const solved: Record<string, boolean> = {}, at: Record<string, [number, number, unknown]> = {};

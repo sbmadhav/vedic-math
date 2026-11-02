@@ -34,7 +34,7 @@ cd vedic-math && git config core.hooksPath .githooks
 python3 build.py --dev && node e2e/local-server.mjs 8124 _dev
 ```
 
-Then open http://localhost:8124/ (the landing page) or http://localhost:8124/play/ (the game). Run the build again after an edit.
+Then open http://localhost:8124/ (the landing page) or http://localhost:8124/learn/ (the game). Run the build again after an edit.
 
 ## Checks
 
@@ -47,7 +47,7 @@ Then open http://localhost:8124/ (the landing page) or http://localhost:8124/pla
 | End-to-end tests | `cd e2e && pnpm exec playwright test` |
 | Firestore rules tests (only when you change `cloud/`; needs Java) | `cd cloud/test && npm install && npm test` |
 
-The pre-commit hook runs the first four (the build into a throwaway directory). CI runs them on every pull request and checks that the build holds no repo-only files. A build inside the repo goes in a top-level folder whose name starts with `_` (`_site/`, `_dev/`, `_moved/`, or `--out _<name>`): git and ESLint ignore `_*/`, and `build.py` refuses any other place inside the repo. Every build but `--dev` stamps its output (versioned references and a stamped service worker), and that output is never committed: the source in git holds no cache stamps, so there is nothing to run or commit after editing `play/index.html`, `site/`, `math.css` or `js/`.
+The pre-commit hook runs the first four (the build into a throwaway directory). CI runs them on every pull request and checks that the build holds no repo-only files. A build inside the repo goes in a top-level folder whose name starts with `_` (`_site/`, `_dev/`, `_moved/`, or `--out _<name>`): git and ESLint ignore `_*/`, and `build.py` refuses any other place inside the repo. Every build but `--dev` stamps its output (versioned references and a stamped service worker), and that output is never committed: the source in git holds no cache stamps, so there is nothing to run or commit after editing `learn/index.html`, `site/`, `math.css` or `js/`.
 
 ## Tests
 
@@ -63,7 +63,7 @@ The suite runs against the live site by default. To test your checkout before it
 - Write for every play mode: Explorer (young kids), Challenger and Pro.
 - Never use em dashes in copy. Use a period, comma or colon.
 - Never send personal data to analytics or the leaderboards.
-- Module imports stay inside `/js/` (`build.py` fails on anything else), and nothing loads from another site unless it is in `THIRD_PARTIES` in `build.py`.
+- Module imports stay inside `/js/`, or name a TypeScript module under `shared/src/` or `app/src/` that `build.py` publishes under `/js/ts/` (`build.py` fails on anything else), and nothing loads from another site unless it is in `THIRD_PARTIES` (`shared/src/policy.json`, read by `build.py`).
 - Test both schemes, a 390px wide phone, keyboard only and reduced motion.
 
 ## Repo-only files

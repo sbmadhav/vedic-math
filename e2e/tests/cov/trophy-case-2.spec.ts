@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, pathTo } from '../fixtures';
 
 /* trophy-case spec, Requirement "A Trophy case on Me" (openspec working-memory-scaffolds):
    - Scenario "A Challenger's Trophy case": 4 Stars lit, one gold and one bronze Medal: "0 of 7" Belts, "4 of 63 Stars
@@ -24,11 +24,11 @@ test.describe('a Challenger with 4 Stars lit, one gold and one bronze Medal', ()
     await expect(tc.locator('.mq-strand', { hasText: 'Badges' })).toBeVisible();
     await expect(tc.locator('.badge-grid .badge').first()).toBeVisible();
     // Links
-    await expect(row('Stars').getByRole('link')).toHaveAttribute('href', '#/dojo');
-    await expect(row('Belts').getByRole('link')).toHaveAttribute('href', '#/dojo');
-    await expect(row('Medals').getByRole('link', { name: 'Games' })).toHaveAttribute('href', '#/games');
-    await expect(row('Medals').getByRole('link', { name: 'Challenge tower' })).toHaveAttribute('href', '#/tower');
-    await expect(row('Sutra cards').getByRole('link')).toHaveAttribute('href', '#/sutras');
+    await expect(row('Stars').getByRole('link')).toHaveAttribute('href', pathTo('#/dojo'));
+    await expect(row('Belts').getByRole('link')).toHaveAttribute('href', pathTo('#/dojo'));
+    await expect(row('Medals').getByRole('link', { name: 'Games' })).toHaveAttribute('href', pathTo('#/games'));
+    await expect(row('Medals').getByRole('link', { name: 'Challenge tower' })).toHaveAttribute('href', pathTo('#/tower'));
+    await expect(row('Sutra cards').getByRole('link')).toHaveAttribute('href', pathTo('#/sutras'));
     // The stats row keeps Skills mastered and Day streak only
     await expect(page.locator('.me-stats .md-kicker')).toHaveText(['Skills mastered', 'Day streak']);
   });

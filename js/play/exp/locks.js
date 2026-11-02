@@ -133,9 +133,9 @@ export function mount({ root, signal, params }) {
       const last = li === levels.length - 1;
       if (last) { confetti(70); machine.classList.add('is-open'); }
       panel.innerHTML = `<div class="lk-clear"><p class="lk-clear-big">${last ? 'Lock fully cracked!' : 'Level cleared'}</p>
-        <p>${last ? `You found it, used it and stretched it. ${esc(ch.found ? ch.found[0].toUpperCase() + ch.found.slice(1) : ch.sutra)} is yours.` : esc(levels[li + 1].name) + ' is next.'}</p>
+        <p>${last ? `You found it, used it and stretched it. ${esc(ch.found ? ch.found[0].toUpperCase() + ch.found.slice(1) : ch.sutra)} is yours.` : `Next, level ${li + 2}: <b>${esc(levels[li + 1].name)}</b>. ${esc(L.levelGoal(levels[li + 1]))}`}</p>
         <div class="px-row">${last ? '<a class="md-btn md-btn--primary" href="#/dojo/locks">Back to all locks</a>' : '<button type="button" class="md-btn md-btn--primary lk-next">Next level</button>'}</div></div>`;
-      say(last ? `Lock fully cracked. You discovered ${ch.found || ch.sutra}.` : `Level cleared. Next: ${levels[li + 1].name}.`);
+      say(last ? `Lock fully cracked. You discovered ${ch.found || ch.sutra}.` : `Level cleared. Next, level ${li + 2}: ${levels[li + 1].name}. ${L.levelGoal(levels[li + 1])}`);
       drawLevels();
       panel.querySelector('.md-btn')?.focus({ preventScroll: true });
     };

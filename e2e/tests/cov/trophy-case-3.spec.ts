@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, hrefTo } from '../fixtures';
 
 /* trophy-case spec, Requirement "No reward is lost" (openspec working-memory-scaffolds):
    - Scenario "Stored rewards": opening Me, the Dojo and a game leaves the stored Stars, Medals, Belts and Badges as
@@ -18,10 +18,10 @@ test('Me, the Dojo and a game leave every stored reward as it was, and still sho
   for (const b of Object.keys(SAVED.badges)) expect(before.badges[b]).toBe(SAVED.badges[b as keyof typeof SAVED.badges]);
 
   await open(page, '#/dojo');
-  await expect(page.locator('a.dojo-star[href="#/star/from9/1"]')).toHaveClass(/dojo-star--lit/);
-  await expect(page.locator('a.dojo-star[href="#/star/times5/1"]')).toHaveClass(/dojo-star--skipped/);
+  await expect(page.locator(`a.dojo-star${hrefTo('#/star/from9/1')}`)).toHaveClass(/dojo-star--lit/);
+  await expect(page.locator(`a.dojo-star${hrefTo('#/star/times5/1')}`)).toHaveClass(/dojo-star--skipped/);
   await open(page, '#/game/times-sprint');
-  await expect(page.locator('a.lv-node[href="#/game/times-sprint/1"] .medal--gold')).toBeAttached();
+  await expect(page.locator(`a.lv-node${hrefTo('#/game/times-sprint/1')} .medal--gold`)).toBeAttached();
   await open(page, '#/me');
   expect(await rewards(page)).toEqual(before);
 });

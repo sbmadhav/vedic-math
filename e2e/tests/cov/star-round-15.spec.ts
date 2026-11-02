@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, atRoute } from '../fixtures';
 
 /* star-round spec: "Calm path and announcements / Screen reader on a Comeback" and
    "Where Stars are offered / Trick page in Pro". Questions are random, so answers are worked out from the page. */
@@ -67,7 +67,7 @@ test.describe('Trick page in Pro', () => {
     test(`Star ${n} opens its own round`, async ({ page }) => {
       await open(page, '#/skill/v-sq5');
       await page.locator('.star-links .star-link').nth(n - 1).click();
-      await expect(page).toHaveURL(new RegExp(`#/star/sq5/${n}$`));
+      await expect(page).toHaveURL(atRoute(`#/star/sq5/${n}`));
       await expect(page.locator('#view h1')).toHaveText('Square numbers ending in 5');
       await expect(page.locator('.star-top .md-tag')).toHaveText(`Star ${n} of 3`);
       await question(page, 1);

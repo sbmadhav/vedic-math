@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, pathTo } from '../fixtures';
 
 /* sutra-tags spec (openspec change sutras-first), Requirement "A Sutra tag names the Sutra and what it means": one test
    per scenario. */
@@ -10,7 +10,7 @@ test('A Trick page in Challenger: the tag reads Sutra, Ekādhikena Pūrveṇa an
   await expect(tag.locator('b[lang="sa-Latn"]')).toHaveText('Ekādhikena Pūrveṇa');
   await expect(tag.locator('.sutra-tag-m')).toHaveText('By one more than the one before');
   await expect(tag.getByRole('button', { name: 'Hear how to say Ekādhikena Pūrveṇa' })).toBeVisible();
-  await expect(tag.getByRole('link', { name: /^Sutra Ekādhikena Pūrveṇa.*By one more than the one before.*open its deep dive$/ })).toHaveAttribute('href', '#/sutras/s1');
+  await expect(tag.getByRole('link', { name: /^Sutra Ekādhikena Pūrveṇa.*By one more than the one before.*open its deep dive$/ })).toHaveAttribute('href', pathTo('#/sutras/s1'));
 });
 
 test.describe('Explorer', () => {

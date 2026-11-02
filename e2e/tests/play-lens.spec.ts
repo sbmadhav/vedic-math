@@ -1,4 +1,4 @@
-import { test, expect, open } from './fixtures';
+import { test, expect, open, atRoute } from './fixtures';
 
 /* Math Lens camera (openspec play-experiences, "Camera and microphone only while in use"): the camera is asked
    for only after a tap next to a line saying what it is for, and every track stops on a hidden tab and on a route
@@ -83,7 +83,7 @@ test('leaving the page stops the camera', async ({ page }) => {
   await page.locator('.ln-on').click();
   await expect(page.locator('.ln-snap')).toBeEnabled();
   await page.locator('.px-back').first().click();
-  await expect(page).toHaveURL(/#\/games$/);
+  await expect(page).toHaveURL(atRoute('#/games'));
   await expect.poll(() => states(page)).toEqual(['ended']);
 });
 

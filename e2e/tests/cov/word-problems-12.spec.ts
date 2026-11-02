@@ -1,4 +1,4 @@
-import { test, expect, APP, open } from '../fixtures';
+import { test, expect, APP, open, atRoute } from '../fixtures';
 import { box, label, onlyChoice, skillOf, skip } from '../word-kit';
 
 /* word-problems spec (change word-problems-more), Requirement "Practice can ask only Word problems": one test per
@@ -8,7 +8,7 @@ test('A new Challenger asks for only Word problems: the first four questions are
   await open(page, '#/mix/3');
   await expect(onlyChoice(page, false)).toHaveAttribute('aria-pressed', 'true');
   await onlyChoice(page, true).click();
-  await expect(page).toHaveURL(/#\/mix\/3\/words$/);
+  await expect(page).toHaveURL(atRoute('#/mix/3/words'));
   await expect(onlyChoice(page, true)).toHaveText('Only Word problems');
   await expect(onlyChoice(page, true)).toHaveAttribute('aria-pressed', 'true');
   for (let i = 1; i <= 4; i++) {
@@ -22,7 +22,7 @@ test('Back to the mix: picking Mixed asks bare questions again, and a Word probl
   await open(page, '#/mix/3/words');
   await expect(label(page)).toHaveText('Word problem');
   await onlyChoice(page, false).click();
-  await expect(page).toHaveURL(/#\/mix\/3$/);
+  await expect(page).toHaveURL(atRoute('#/mix/3'));
   await expect(onlyChoice(page, false)).toHaveAttribute('aria-pressed', 'true');
   let bare = 0;
   for (let i = 1; i <= 6; i++) {
@@ -40,7 +40,7 @@ test.describe('Explorer', () => {
     await open(page, '#/mix/1');
     await expect(onlyChoice(page, true)).toHaveText('Only stories');
     await onlyChoice(page, true).click();
-    await expect(page).toHaveURL(/#\/mix\/1\/words$/);
+    await expect(page).toHaveURL(atRoute('#/mix/1/words'));
     for (let i = 1; i <= 3; i++) {
       await expect(label(page), `question ${i}`).toHaveText('Story time');
       await expect(box(page).locator('.mq-viz'), `question ${i}: a picture`).toBeVisible();
@@ -62,7 +62,7 @@ test.describe('Pro', () => {
     await expect(page.locator('#mixOnly [data-only]')).toHaveCount(0);
     // Its own Only page opens the mix
     await page.goto(`${APP}#/mix/11/words`);
-    await expect(page).toHaveURL(/#\/mix\/11$/);
+    await expect(page).toHaveURL(atRoute('#/mix/11'));
     await expect(label(page)).toHaveCount(0);
   });
 });

@@ -358,7 +358,7 @@ export const TOUR_STEPS = [
   { id: 'guide', options: [{ sel: '.mq-nav .nav-find',
     title: 'Find and help',
     body: 'Find anything by name, or press Ctrl K (Cmd K on a Mac). The guide is there too, and you can replay this tour from it.' },
-  { sel: '.home-places a[href="#/guide"]',
+  { sel: '.home-places a[href$="/guide"]',
     title: 'Need help?',
     body: 'How to play shows how everything works. You can see this tour again there.' }] }
 ];

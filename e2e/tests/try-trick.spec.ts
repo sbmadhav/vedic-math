@@ -1,4 +1,4 @@
-import { test, expect, APP, open, appErrors, type Page } from './fixtures';
+import { test, expect, APP, open, appErrors, type Page, atRoute, pathTo } from './fixtures';
 
 /* Try a trick inside each Mode (openspec try-trick-in-modes): a Try a trick under each Mode card on the Mode picker and
    a card on each Mode's Home; each Mode's lesson teaches one Sutra on a worked example, then asks three questions,
@@ -50,7 +50,7 @@ test.describe('the Mode picker', () => {
   test('Challenger: picks the Mode with no guess, counts it, and teaches Ekādhikena Pūrveṇa on 35²', async ({ page, issues }) => {
     await page.goto(APP);
     await page.locator('.mode-card[data-mode="challenger"]').click(); await page.locator('[data-try-open]').click(); /* the picker's card, then Home's Try a trick card (openspec change play-nav-by-mode) */
-    await expect(page).toHaveURL(/#\/try$/);
+    await expect(page).toHaveURL(atRoute('#/try'));
     await expect(page.locator('#tyH')).toHaveText('Square numbers ending in 5');
     await expect(page.locator('.try-sutra b')).toHaveText('Ekādhikena Pūrveṇa');
     await expect(page.locator('.try-sutra .sutra-tag-m')).toHaveText('By one more than the one before');
@@ -131,9 +131,9 @@ test.describe('Challenger', () => {
     await typeAnswer(page, 4225); await page.locator('#tyNext').click();
     await expect(page.locator('.try-end #tyQ')).toHaveText('Trick learned!');
     await expect(page.locator('.try-end-n')).toContainText('3 of 3 right.');
-    await expect(page.locator('#tyGoOn')).toHaveAttribute('href', '#/star/sq5/1');
-    await expect(page.locator('#tyHome')).toHaveAttribute('href', '#/');
-    await expect(page.locator('#tySutra')).toHaveAttribute('href', '#/sutras/s1');
+    await expect(page.locator('#tyGoOn')).toHaveAttribute('href', pathTo('#/star/sq5/1'));
+    await expect(page.locator('#tyHome')).toHaveAttribute('href', pathTo('#/'));
+    await expect(page.locator('#tySutra')).toHaveAttribute('href', pathTo('#/sutras/s1'));
     const after = await progress(page);
     expect(after.sparks).toBe((before.sparks || 0) + 30);
     expect(after.skills || {}).toEqual(before.skills || {});
@@ -149,7 +149,7 @@ test.describe('Challenger', () => {
     await page.locator('#tyStart').click();
     for (const a of ANSWERS.challenger) { await typeAnswer(page, a); await page.locator('#tyNext').click(); }
     await page.locator('#tyGoOn').click();
-    await expect(page).toHaveURL(/#\/star\/sq5\/1$/);
+    await expect(page).toHaveURL(atRoute('#/star/sq5/1'));
     await expect(page.locator('#stMain .star-tag')).toHaveText('Question 1 of 4');
     await page.locator('#stExit').click();
     await expect(page.locator('h1.home-h')).toHaveText('Learn a sutra, then use it');

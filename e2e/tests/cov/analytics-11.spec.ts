@@ -1,4 +1,4 @@
-import { test, expect, APP, open } from '../fixtures';
+import { test, expect, APP, open, atRoute } from '../fixtures';
 
 /* analytics spec, Requirement "Try a trick and Find are counted" (as modified by try-trick-in-modes): one test per scenario. The shared analytics.js is
    replaced by a stub that records window.siteTrack calls, so nothing is counted. */
@@ -29,7 +29,7 @@ test('A Find result: typing "squares" and following the first result sends exact
   await open(page, '#/find');
   await page.locator('#findIn').fill('squares');
   await page.locator('#findOut .find-hit').first().click();
-  await expect(page).toHaveURL(/#\/skill\/v-sq5$/);
+  await expect(page).toHaveURL(atRoute('#/skill/v-sq5'));
   const ev = await events(page);
   expect(ev.filter(([p]) => p.startsWith('math/find/'))).toEqual([['math/find/go', 'Vedic Math: find result followed']]);
   expect(ev.some(([p, t]) => /squares/i.test(p + ' ' + t))).toBe(false);
@@ -42,12 +42,12 @@ test('A browse link is not a Find result: following a browse link, with the box 
   await expect(page.locator('#findOut .find-hit').first()).toBeVisible();
   await expect(page.locator('#findOut .find-group')).toHaveCount(0);
   await page.locator('#findOut .find-hit').first().click();
-  await expect(page).not.toHaveURL(/#\/find$/);
+  await expect(page).not.toHaveURL(atRoute('#/find'));
   expect((await events(page)).filter(([p]) => p.startsWith('math/find/'))).toEqual([]);
   await open(page, '#/find');
   await page.locator('#findIn').fill('zzqx');
   await expect(page.locator('#findCount')).toHaveText('Nothing matched');
   await page.locator('#findOut .find-hit').first().click();
-  await expect(page).not.toHaveURL(/#\/find$/);
+  await expect(page).not.toHaveURL(atRoute('#/find'));
   expect((await events(page)).filter(([p]) => p.startsWith('math/find/'))).toEqual([]);
 });

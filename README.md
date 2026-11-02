@@ -1,6 +1,6 @@
 # Learn Vedic Math
 
-Speed tricks from the sutras, a counting-to-calculus skill map, games, daily quests, an Arena with Boards. Three play modes for every age. Served at [learnvedicmath.com](https://learnvedicmath.com/) from Cloudflare Workers static assets (`wrangler.jsonc`, ADR 0004): the landing page at `/`, the game at `/play/`, pages for grown-ups at `/parents/`, `/teachers/`, `/privacy/` and `/terms/`. Until the move is launched (openspec change `learnvedicmath`), the previous app keeps serving at sbmadhav.com/vedic-math/ from this repo's GitHub Pages.
+Speed tricks from the sutras, a counting-to-calculus skill map, games, daily quests, an Arena with Boards. Three play modes for every age. Served at [learnvedicmath.com](https://learnvedicmath.com/) from Cloudflare Workers static assets (`wrangler.jsonc`, ADR 0004): the landing page at `/`, the game at `/learn/`, pages for grown-ups at `/parents/`, `/teachers/`, `/privacy/` and `/terms/`. Until the move is launched (openspec change `learnvedicmath`), the previous app keeps serving at sbmadhav.com/vedic-math/ from this repo's GitHub Pages.
 
 The site is self-contained: the design system is a pinned copy (`vendor/design-system/2.2.0/`, published at `/ds/2.2.0/`) with its own theme (`theme/learnvedicmath.css`), and the fonts, icons, GoatCounter script and Firebase SDK are served from this site too.
 
@@ -8,7 +8,7 @@ The site is self-contained: the design system is a pinned copy (`vendor/design-s
 
 | Path | What it is |
 |---|---|
-| `play/index.html`, `math.css` | The game page and its styles |
+| `learn/index.html`, `math.css` | The game page and its styles |
 | `site/` | The landing page and the pages for grown-ups (rendered into place by the build; the legal pages include `docs/legal/`) |
 | `theme/` | The brand theme, the fonts stylesheet, the site header partial and the styles of the static pages |
 | `vendor/`, `fonts/`, `icons/`, `thumbs/` | Pinned third-party files (listed in `THIRD-PARTY-NOTICES.md`), fonts, icons and video thumbnails |
@@ -30,14 +30,14 @@ Build the site and serve it the way Cloudflare does (`_headers` and `_redirects`
 
 ```sh
 python3 build.py --dev                  # _dev/: the published layout without stamps, and a worker that caches nothing
-node e2e/local-server.mjs 8124 _dev     # http://localhost:8124/ and http://localhost:8124/play/
+node e2e/local-server.mjs 8124 _dev     # http://localhost:8124/ and http://localhost:8124/learn/
 ```
 
 `python3 build.py && node e2e/local-server.mjs 8124 _site` serves exactly what the deploy publishes (stamped, with the real worker). `pnpm --filter workers exec wrangler dev --config ../wrangler.jsonc` runs the same `_site` in Cloudflare's own runtime.
 
 ## Offline
 
-After one visit online, the game works offline: `/sw.js` (scope `/play/`) saves the page, its modules, styles, the design system, fonts and icons, each checked against the hash the build recorded. The deploy build stamps its version and file list. Leaderboards need a connection and fall back to this device. The source in git has a `'dev'` worker that caches nothing. To test offline locally, build and serve the published copy: `python3 build.py && node e2e/local-server.mjs 8124 _site`.
+After one visit online, the game works offline: `/sw.js` (scope `/learn/`) saves the page, its modules, styles, the design system, fonts and icons, each checked against the hash the build recorded. The deploy build stamps its version and file list. Leaderboards need a connection and fall back to this device. The source in git has a `'dev'` worker that caches nothing. To test offline locally, build and serve the published copy: `python3 build.py && node e2e/local-server.mjs 8124 _site`.
 
 ## Checks
 

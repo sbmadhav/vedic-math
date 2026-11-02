@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, atRoute, hrefTo, pathTo } from '../fixtures';
 
 /* site-header spec, Requirement "Learn and the Arcade hold the places" (openspec change play-nav-by-mode): one test per
    scenario. */
@@ -8,12 +8,12 @@ test.describe('Pro', () => {
   test.use({ seedMode: 'pro' });
   test('The Arcade: the Dojo, the Arena and Games as cards, each with one line, and the Dojo card opens #/dojo', async ({ page }) => {
     await open(page);
-    await page.locator('header .mq-nav a[href="#/arcade"]').click();
+    await page.locator(`header .mq-nav a${hrefTo('#/arcade')}`).click();
     const doors = page.locator('.arcade-doors a.door');
-    expect(await doors.evaluateAll(as => as.map(a => a.getAttribute('href')))).toEqual(['#/dojo', '#/arena', '#/games']);
+    expect(await doors.evaluateAll(as => as.map(a => a.getAttribute('href')))).toEqual(['#/dojo', '#/arena', '#/games'].map(pathTo));
     for (const d of await doors.all()) expect((await d.locator('.door-line').innerText()).length).toBeGreaterThan(20);
     await doors.first().click();
-    await expect(page).toHaveURL(/#\/dojo$/);
+    await expect(page).toHaveURL(atRoute('#/dojo'));
   });
 });
 
@@ -36,7 +36,7 @@ test('Learn holds the Sutras: the first card on Learn opens the Sutras page and 
   await open(page, '#/learn');
   const card = page.locator('#view a.learn-sutras');
   await expect(card).toContainText('0 of 29 cards collected');
-  expect(await page.locator('#view a.door').first().getAttribute('href')).toBe('#/sutras');
+  expect(await page.locator('#view a.door').first().getAttribute('href')).toBe(pathTo('#/sutras'));
   await card.click();
   await expect(page.locator('#view h1')).toHaveText('The 16 sutras and 13 sub-sutras');
 });

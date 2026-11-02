@@ -91,6 +91,20 @@ test('every play experience page renders with no CSP violation', async ({ page, 
   await expectNoViolations(page, v, 'the play experiences');
 });
 
+/* The route pages under /learn/ (openspec change indexable-routes, design D4, task 2.3): the game shell with its own
+   head, each sent under the one /learn/* policy, a share link's 200 rewrite included. Each is a new document, so the
+   violations are read before the next one loads. */
+test('three route pages under /learn/ render with no CSP violation', async ({ page, baseURL }) => {
+  const v = await watchViolations(page);
+  for (const path of ['/learn/kata/sq5/12', '/learn/sutras/s1', '/learn/arena/ghosts/r/abc']) {
+    await page.goto(path);
+    await expect(page.locator('#view h1, #view h2').first()).toBeVisible();
+    const csp = await policy(page, baseURL);
+    expect(csp).toContain("'wasm-unsafe-eval'");
+    await expectNoViolations(page, v, path);
+  }
+});
+
 test('Math Lens offers the camera under the published policy: its digit reader is served from this site', async ({ page, baseURL }) => {
   const v = await watchViolations(page);
   await open(page, '#/games/lens');

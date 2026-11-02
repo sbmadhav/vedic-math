@@ -5,7 +5,8 @@ import { test, expect, APP, open, appErrors, mod } from './fixtures';
    before the page has loaded; js/app.js loads them a second after it, so a round or the tour has them at once, and one
    asked for sooner loads then and still starts. */
 type Page = import('@playwright/test').Page;
-const LATE = ['arena', 'mental', 'tour', 'play/kit'];
+/* The mental families moved to shared/src/mental.ts (react-typescript task 3.1): the Arena reaches them at /js/ts/ */
+const LATE = ['arena', 'ts/shared/src/mental', 'tour', 'play/kit'];
 /* Each of them, by the path mod() gives wherever the build serves it, as it is requested: before or after the page's load */
 const record = async (page: Page) => {
   const paths = new Map<string, string>();

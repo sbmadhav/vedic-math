@@ -1,4 +1,4 @@
-import { test, expect } from '../fixtures';
+import { test, expect, atRoute } from '../fixtures';
 import AxeBuilder from '@axe-core/playwright';
 
 /* landing-pages, Requirements "The landing page leads with the Sutras and the method" and "Three Sutras one tap from
@@ -35,10 +35,10 @@ for (const scheme of ['light', 'dark'] as const) {
 
 test('A Sutra card: tapping the Nikhilaṃ Navataścaramaṃ Daśataḥ card opens that Deep dive in the game, not the Mode picker', async ({ page }, info) => {
   await page.goto('/');
-  const card = page.locator('a.lv-sutra[href="/play/#/sutras/s2"]');
+  const card = page.locator('a.lv-sutra[href="/learn/sutras/s2"]');
   await expect(card.locator('b[lang="sa-Latn"]')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
   if (info.project.use.hasTouch) await card.tap(); else await card.click();
-  await expect(page).toHaveURL(/\/play\/#\/sutras\/s2$/);
+  await expect(page).toHaveURL(atRoute('#/sutras/s2'));
   await expect(page.locator('dialog.sutra-modal #sdTitle')).toHaveText('Nikhilaṃ Navataścaramaṃ Daśataḥ');
   await expect(page.locator('.mode-pick')).toHaveCount(0);
 });
@@ -48,7 +48,7 @@ test("Where they come from: the section credits Bharati Krishna Tirtha's 1965 bo
   const note = page.locator('.lv-sutras .lv-sutras-note');
   await expect(note).toContainText("Bharati Krishna Tirtha's book Vedic Mathematics, published in 1965");
   await expect(note).toContainText('They are not found in the Vedas');
-  await expect(note.getByRole('link', { name: 'See all 29 sutras' })).toHaveAttribute('href', '/play/#/sutras');
+  await expect(note.getByRole('link', { name: 'See all 29 sutras' })).toHaveAttribute('href', '/learn/sutras');
 });
 
 test('The hero says little: "Math in your head, the sutra way", "Free, for ages 4 to adult." and Start learning, at most 14 words, with the Sutras and what the site teaches below it', async ({ page }) => {

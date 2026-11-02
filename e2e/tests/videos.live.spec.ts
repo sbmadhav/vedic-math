@@ -18,7 +18,7 @@ type Video = { id: string; title: string; yt: string };
 const SRC = readFileSync(join(__dirname, '..', '..', 'js', 'videos.js'), 'utf8');
 const { VIDEOS } = new Function(`${SRC.replace(/^export /gm, '')}\nreturn { VIDEOS };`)() as { VIDEOS: Video[] };
 
-const HOST = `${new URL(BASE_URL).origin}/play/__video-check.html`;
+const HOST = `${new URL(BASE_URL).origin}/learn/__video-check.html`;
 const PAGE = '<!doctype html><meta charset="utf-8"><title>Video check</title><iframe id="f" width="640" height="360" allow="encrypted-media" referrerpolicy="strict-origin-when-cross-origin"></iframe>';
 
 test.describe('every Watch shelf video still plays embedded', { tag: '@live-videos' }, () => {

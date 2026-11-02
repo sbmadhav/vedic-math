@@ -1,4 +1,4 @@
-import { test, expect, open, heldClock, cloudLog, type Mode, typeAnswer, needsWorldBoards } from '../fixtures';
+import { test, expect, open, heldClock, cloudLog, type Mode, typeAnswer, needsWorldBoards, pathTo } from '../fixtures';
 import type { Page, BrowserContext } from '@playwright/test';
 
 /* openspec posting-consent, "Age answer is never sent": a Player gives an Age answer and later posts (13 or over) or
@@ -101,7 +101,7 @@ test.describe('Age answer is never sent', () => {
     await page.clock.install();
 
     async function arenaRound() {
-      if (!page.url().endsWith('#/arena')) await open(page, '#/arena');
+      if (!page.url().endsWith(pathTo('#/arena'))) await open(page, '#/arena');
       // The last round's result is still in the play shell: Back to the Arena
       if (await page.locator('#arDone').isVisible()) await page.locator('#arDone').click();
       const answer = await page.evaluate(async m => {

@@ -2,9 +2,9 @@ import { test, expect, APP } from '../fixtures';
 
 /* hosting, Requirement "Returning Players go straight into the game" (as changed by landing-modes-and-return):
    one test per scenario. */
-test('A returning Player: / opens /play/ and the landing page is not shown', async ({ page }) => {
+test('A returning Player: / opens /learn/ and the landing page is not shown', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveURL(/\/play\/$/);
+  await expect(page).toHaveURL(/\/learn\/$/);
 });
 
 test('The brand link from the game: the landing page opens and stays, in its welcome back version', async ({ page }) => {

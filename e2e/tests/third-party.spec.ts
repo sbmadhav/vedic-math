@@ -4,26 +4,20 @@ import { test, expect, APP } from './fixtures';
 import type { Page } from '@playwright/test';
 
 /* Third parties (openspec third-party-requests, change learnvedicmath, design D10, task 7.4). build.py holds the one
-   list of hosts the site may reach (THIRD_PARTIES, each with its reason and the action that first reaches it); this spec
-   reads that list from the checkout, so a host a module starts to fetch from fails here as well as in the build. The
-   first visit the spec describes (the landing, /play/, a Mode, a Star, the Watch shelf and a video's player, without
+   list of hosts the site may reach (THIRD_PARTIES, read from shared/src/policy.json, each with its reason and the action
+   that first reaches it); this spec reads that list from the checkout, so a host a module starts to fetch from fails here as well as in the build. The
+   first visit the spec describes (the landing, /learn/, a Mode, a Star, the Watch shelf and a video's player, without
    pressing play) reaches no Google or YouTube host, and nothing but this origin and the listed hosts. The hosts that
    need a tap are out of a first visit: the YouTube frame comes after play (tests/watch.spec.ts), Firebase after a
    Player 13 or over opens a World board (tests/csp.spec.ts, tests/arena.spec.ts), the natural voice after an opt-in.
    The fixtures answer analytics locally; such a request still carries its host, so it is counted here. */
 
-const BUILD = readFileSync(join(__dirname, '..', '..', 'build.py'), 'utf8');
-/** The hosts of build.py's THIRD_PARTIES, a constant name (VOICE_HOST) resolved to its value */
+/* The list lives in shared/src/policy.json since react-typescript task 3.1 (build.py reads it as THIRD_PARTIES) */
+const POLICY = JSON.parse(readFileSync(join(__dirname, '..', '..', 'shared', 'src', 'policy.json'), 'utf8')) as { thirdParties: { host: string }[] };
+/** The hosts of build.py's THIRD_PARTIES */
 function thirdParties(): string[] {
-  const start = BUILD.indexOf('THIRD_PARTIES = [');
-  expect(start, 'build.py holds THIRD_PARTIES').toBeGreaterThan(0);
-  const block = BUILD.slice(start, BUILD.indexOf('\n]', start));
-  const consts = new Map([...BUILD.matchAll(/^([A-Z_]+)\s*=\s*"(https:\/\/[^"]+)"/gm)].map(m => [m[1], m[2]]));
-  return [...block.matchAll(/"host":\s*(?:"([^"]+)"|([A-Z_]+))/g)].map(m => {
-    const url = m[1] || consts.get(m[2]);
-    expect(url, `THIRD_PARTIES host ${m[0]} resolves`).toBeTruthy();
-    return new URL(url!).host;
-  });
+  expect(POLICY.thirdParties.length, 'shared/src/policy.json holds THIRD_PARTIES').toBeGreaterThan(0);
+  return POLICY.thirdParties.map(t => new URL(t.host).host);
 }
 const GOOGLE_OR_YOUTUBE = /(^|\.)(google\.com|gstatic\.com|googleapis\.com|googlevideo\.com|ytimg\.com|youtube\.com|youtube-nocookie\.com)$/;
 

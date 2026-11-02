@@ -1,4 +1,4 @@
-import { test, expect, open } from '../fixtures';
+import { test, expect, open, APP } from '../fixtures';
 
 /* sutra-tags spec (openspec change sutras-first), Requirement "Tags where a Trick is learned": one test per scenario. */
 
@@ -13,5 +13,5 @@ test("The Dojo: each of the 21 Trick cells has a tag link to its Sutra's Deep di
   await open(page, '#/dojo');
   const cells = page.locator('.dojo-cell');
   await expect(cells).toHaveCount(21);
-  for (const c of await cells.all()) await expect(c.locator('a.sutra-tag-a')).toHaveAttribute('href', /^#\/sutras\/[su]\d+$/);
+  for (const c of await cells.all()) await expect(c.locator('a.sutra-tag-a')).toHaveAttribute('href', new RegExp(`^${APP}sutras/[su]\\d+$`));
 });
