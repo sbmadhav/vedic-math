@@ -196,7 +196,7 @@ test('the published design system drops its @font-face lines: the fonts are decl
 
 /* What the worker saves on first request instead of at install (openspec change render-performance, design D10): the
    Play experiences and their styles and the video list (is_lazy in build.py) */
-const LAZY = /^\/(js\/play\/exp\/|css\/play\/|js\/play\/life\.js|js\/videos\.js)/;
+const LAZY = /^\/(js\/play\/exp\/|css\/play\/|js\/play\/life\.js|js\/videos\.js|js\/family-talk\.js|js\/ts\/shared\/src\/family-talk\.js)/; /* and the Family conversation (family-helpers step 3) */
 
 test('the precache list holds the core: every import-map module but the lazy ones, the shell, the styles, the body and heading fonts, icons and manifest, each with its hash', () => {
   build();
@@ -362,7 +362,7 @@ const parse = p => Object.fromEntries(p.split(/;\s*/).map(d => { const [k, ...v]
 /* The inline scripts a policy must allow: every one that runs (no type, or a module, import map or JavaScript type); a
    data block (application/json, the Trick pages' application/ld+json) never runs and gets no hash, as in build.py */
 const inlineHashes = html => [...html.matchAll(/<script(?![^>]*\bsrc=)([^>]*)>([\s\S]*?)<\/script>/g)]
-  .filter(m => !/\btype=/.test(m[1]) || /\btype="(module|importmap|text\/javascript|application\/javascript)"/.test(m[1])).map(m => `'sha256-${createHash('sha256').update(m[2]).digest('base64')}'`);
+  .filter(m => !/\btype=/.test(m[1]) || /\btype="(module|importmap|speculationrules|text\/javascript|application\/javascript)"/.test(m[1])).map(m => `'sha256-${createHash('sha256').update(m[2]).digest('base64')}'`);
 
 test('every response carries the security headers, without HSTS preload', () => {
   build();
@@ -683,4 +683,33 @@ test('the build prints the first-load table and fails above the budget: 20 KB in
       }));
     assert.doesNotThrow(() => build('--dev'), 'a --dev build has no PRECACHE and is not measured');
   } finally { setBudget(1e9); }
+});
+
+/* ---------- the Trick pages' browser modules (trick-pages design D4; teacher-warm-up design D7, task 1.2) ---------- */
+test('the Trick modules are published at /tricks/<name>.js with their types taken out, the warm-up page gets a page-local import map pinning its whole graph, and none is precached', () => {
+  build();
+  const warm = read('tricks/warm-up.js');
+  assert.doesNotMatch(warm, /import type|: string|: number|\bas [A-Z]\w*[;)]|<KeyboardEvent>/, 'types taken out');
+  assert.match(warm, /from '\/js\/ts\/shared\/src\/vedic\.js'/, 'the catalog by its published URL');
+  assert.match(warm, /from '\/js\/life\.js'/);
+  const page = read('teachers/warm-up/index.html');
+  const map = JSON.parse(page.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
+  for (const m of ['/tricks/warm-up.js', '/tricks/step-board.js', '/tricks/warm-up-problems.js', '/tricks/warm-up-pick.js', '/js/ts/shared/src/vedic.js', '/js/ts/shared/src/lib.js', '/js/life.js'])
+    assert.equal(map[m], `${m}?v=${sha(m.slice(1))}`, m);
+  assert.ok(!map['/tricks/calculator.js'], 'only the warm-up\'s own graph');
+  assert.ok(!Object.keys(map).some(k => /app\.js|arena\.js/.test(k)), 'only the entry\'s graph, not every /js/ module');
+  assert.match(page, /<script type="module" src="\/tricks\/warm-up\.js\?v=[0-9a-f]{10}"><\/script>/, 'the entry is stamped');
+  assert.ok(page.indexOf('type="importmap"') < page.indexOf('src="/tricks/warm-up.js'), 'the map comes before the module');
+  assert.match(page, /href="\/theme\/warm-up\.css\?v=[0-9a-f]{10}"/);
+  for (const f of walk(join(out, 'tricks')).filter(f => /warm-up|step-board/.test(f) && f.endsWith('.js')))
+    for (const m of read(relative(out, f)).matchAll(/from '([^']+)'/g)) assert.ok(map[m[1]], `${relative(out, f)} imports ${m[1]}, which the warm-up's map pins`);
+  assert.deepEqual(walk(join(out, 'tricks')).map(f => relative(out, f)).filter(f => f.endsWith('.js')).sort(), ['tricks/calculator.js', 'tricks/step-board.js', 'tricks/warm-up-pick.js', 'tricks/warm-up-problems.js', 'tricks/warm-up.js'], 'the runtime modules only: no declaration file, no .ts, not the Node-only generator and pages');
+  assert.ok(!sw().precache.some(([u]) => u.startsWith('/tricks/')), 'never precached: outside the game\'s first load');
+  assert.ok(!readFileSync(join(dir, 'site/teachers/warm-up/index.html'), 'utf8').includes('importmap'), 'the source page carries no map');
+  const rules = headerRules();
+  assert.ok(rules['/teachers/warm-up/'], 'the warm-up page has its own policy');
+  assert.match(rules['/teachers/warm-up/']['Content-Security-Policy'], /script-src 'self' 'sha256-[^']+' 'sha256-[^']+'/, 'the inline scripts: the color scheme script, the Speculation Rules and the import map');
+  assert.deepEqual(parse(rules['/teachers/warm-up/']['Content-Security-Policy'])['script-src'].filter(s => s.startsWith("'sha256-")), inlineHashes(page), 'the hashes are those of the page as published, the import map among them');
+  assert.equal(rules['/teachers/warm-up/']['Permissions-Policy'], 'camera=(), microphone=()');
+  assert.match(read('sitemap.xml'), /<loc>https:\/\/learnvedicmath\.com\/teachers\/warm-up\/<\/loc>/);
 });

@@ -55,11 +55,73 @@ test('each Player keeps their own answer across switches', () => {
   assert.equal(store.player().parentOk, undefined);
 });
 
-test('removing a Player removes their Age answer', () => {
-  const gone = store.player().id;
+/* The Grade answer (openspec change age-bands, task 2.1; ADR 0008): on the Player record, apart per Player, in the backup
+   code, gone with the Player; the home card mark on the progress record; Read aloud per Player with the one-time copy */
+test('setReading keeps a grade or an age with its time, apart per Player; clearReading removes it; a bad answer throws', async () => {
+  const second = store.player().id, first = store.allPlayers().find(p => p.id !== second).id;
+  assert.equal(store.reading(), null);
+  store.setReading({ grade: 'K' });
+  assert.deepEqual(Object.keys(store.reading()).sort(), ['at', 'grade']);
+  assert.equal(store.reading().grade, 'k', 'lower case, as the buttons name it');
+  assert.ok(store.reading().at > 0);
+  assert.equal(saved().list.find(p => p.id === second).reading.grade, 'k');
+  store.switchPlayer(first);
+  assert.equal(store.reading(), null, 'the other Player has none');
+  store.setReading({ age: 15 });
+  assert.equal(store.reading().age, 15);
+  assert.equal(store.player().age, 8, 'setReading never touches the Age answer (the grade question does, only when there is none)');
+  for (const bad of [null, {}, { grade: '13' }, { age: 0 }, { age: '9' }, { grade: 'k', age: 9 }]) assert.throws(() => store.setReading(bad), JSON.stringify(bad));
+  assert.equal(store.reading().age, 15, 'a refused answer changes nothing');
+  /* The backup code carries it inside the Player's record, and a restore brings it back */
+  await store.loadBackup();
+  const code = store.exportData(), payload = JSON.parse(code);
+  assert.equal(payload.players.list.find(p => p.id === first).reading.age, 15);
+  assert.equal(payload.players.list.find(p => p.id === second).reading.grade, 'k');
+  store.clearReading();
+  assert.equal(store.reading(), null);
+  assert.ok(!('reading' in saved().list.find(p => p.id === first)));
+  store.importData(code, 'replace');
+  assert.equal(store.reading().age, 15, 'the round trip through the backup code');
+  store.switchPlayer(second);
+  assert.equal(store.reading().grade, 'k');
+  store.switchPlayer(first);
+  store.clearReading();
+});
+
+test('the grade question mark is on the Player record, per Player', () => {
+  assert.equal(store.readingCard(), null);
+  store.setReadingCard('done');
+  assert.equal(store.readingCard(), 'done');
+  assert.equal(saved().list.find(p => p.id === store.player().id).readingCard, 'done');
+  const other = store.allPlayers().find(p => p.id !== store.player().id).id, me = store.player().id;
+  store.switchPlayer(other);
+  assert.equal(store.readingCard(), null);
+  store.switchPlayer(me);
+});
+
+test('Read aloud is a choice per Player: unset until set, true or false, apart per Player', () => {
+  const me = store.player().id, other = store.allPlayers().find(p => p.id !== me).id;
+  assert.equal(store.playerVoice(), undefined);
+  store.setPlayerVoice(false);
+  assert.equal(store.playerVoice(), false);
+  assert.equal(saved().list.find(p => p.id === me).voice, false);
+  store.switchPlayer(other);
+  assert.equal(store.playerVoice(), undefined);
+  store.setPlayerVoice(true);
+  assert.equal(store.playerVoice(), true);
+  store.switchPlayer(me);
+  assert.equal(store.playerVoice(), false);
+});
+
+test('removing a Player removes their Age answer and Grade answer', () => {
+  const gone = store.allPlayers().find(p => p.age === 15).id; /* the second Player, playing again */
+  store.switchPlayer(gone);
+  store.setReading({ grade: '7' });
+  assert.ok(mem['vm.players'].includes('"grade":"7"'));
   store.removePlayer(gone);
   assert.ok(!saved().list.some(p => p.id === gone));
   assert.ok(!mem['vm.players'].includes('"age":15'));
+  assert.ok(!mem['vm.players'].includes('"grade":"7"'));
   assert.equal(store.allPlayers().length, 1);
   assert.equal(store.player().age, 8);
 });
@@ -311,6 +373,25 @@ test('readBackup checks a code without writing: an old single-Player code become
   assert.equal(store.restoreOffer(moved).both, true, '6 Players here plus 6 more is the cap, 12');
   const seven = { ...moved, players: { ...moved.players, list: [...moved.players.list, { ...moved.players.list[0], id: 'pextra' }] } };
   assert.equal(store.restoreOffer(store.readBackup(JSON.stringify(seven))).both, false, '6 here plus 7 is over the cap');
+});
+
+/* Read aloud per Player (openspec change age-bands, AB4): a device that set vm.voice copies it once to every Player who
+   has no choice, marks the copy done and leaves vm.voice in place; a Player who already chose keeps their choice */
+test('the one-time copy of vm.voice to every Player runs once and leaves vm.voice in place', async () => {
+  const fresh = {};
+  const ls = { getItem: k => (k in fresh ? fresh[k] : null), setItem: (k, v) => { fresh[k] = String(v); }, removeItem: k => { delete fresh[k]; }, get length() { return Object.keys(fresh).length; }, key: i => Object.keys(fresh)[i] ?? null };
+  fresh['vm.voice'] = '1';
+  fresh['vm.players'] = JSON.stringify({ active: 'p1', list: [{ id: 'p1', name: 'Swift Tiger 42', avatar: 'teal', mode: 'challenger', created: 1 }, { id: 'p2', name: 'Bold Yak 55', avatar: 'plum', mode: 'pro', created: 1, voice: false }] });
+  globalThis.localStorage = ls;
+  const S2 = await import('../js/store.js?copy-voice');
+  assert.equal(S2.player().voice, true, 'the first Player got the device setting');
+  assert.equal(S2.allPlayers()[1].voice, false, 'a Player who chose keeps the choice');
+  assert.equal(fresh['vm.voiceCopied'], '1');
+  assert.equal(fresh['vm.voice'], '1', 'left for a rollback');
+  const P = JSON.parse(fresh['vm.players']); P.list.push({ id: 'p3', name: 'Lucky Otter 17', avatar: 'sky', mode: null, created: 1 }); fresh['vm.players'] = JSON.stringify(P);
+  const S3 = await import('../js/store.js?copy-voice-again');
+  assert.equal(S3.allPlayers()[2].voice, undefined, 'the copy does not run twice');
+  globalThis.localStorage = { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; }, get length() { return Object.keys(mem).length; }, key: i => Object.keys(mem)[i] ?? null };
 });
 
 /* Placement (openspec placement, task 2.2): the result, the card and the Hook flag live in the Player's record, travel

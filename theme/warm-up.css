@@ -1,0 +1,65 @@
+/* The projector warm-up (/teachers/warm-up/, openspec change teacher-warm-up, design D5). Tokens only, both color
+   schemes (the page's normal contrast: ink on the page background, accents on their --on-accent text). Sized for the
+   back of a room: the problem's numbers are at least a fifth of the viewport's height (max() over the display type
+   token), the title and the steps follow the viewport too. Nothing moves by itself: the only motion is a fade on the
+   step that appears after a press (data-moved on the stage), and none under reduced motion or Pause motion. */
+.wu-page { min-height: 100vh; }
+.wu-main { display: grid; grid-template-rows: auto 1fr auto auto; min-height: calc(100vh - var(--header-height)); }
+.wu-top { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); width: 100%; box-sizing: border-box; padding-top: var(--space-4); padding-bottom: var(--space-2); }
+.wu-h1 { margin: 0; font: 700 var(--text-label-size)/1.2 var(--font-sans); letter-spacing: var(--text-kicker-tracking); text-transform: uppercase; color: var(--ink-muted); }
+.wu-at { margin: 0; font: 700 var(--text-title-size)/1.2 var(--font-sans); color: var(--ink); }
+.wu-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-left: auto; }
+.wu-pick { display: inline-flex; align-items: center; gap: var(--space-2); font-weight: 700; color: var(--ink); }
+.wu-select { min-height: var(--control-height); padding: var(--space-1) var(--space-3); border: 2px solid var(--edge); border-radius: var(--radius-md); background: var(--card); color: var(--ink); font: 700 var(--text-label-size)/1.2 var(--font-sans); }
+.wu-select:focus-visible, .wu-nav .md-btn:focus-visible, .wu-tools .md-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+/* The stage: one screen at a time, centred, in the largest type */
+.wu-stage { display: grid; place-items: center; width: 100%; box-sizing: border-box; padding: var(--space-4) var(--space-6); text-align: center; }
+.wu-screen { width: 100%; max-width: 100%; margin: 0; }
+.wu-screen[hidden] { display: none; }
+.wu-kicker { margin: 0 0 var(--space-2); font: 700 clamp(var(--text-label-size), 2.4vh, 1.5rem)/1.2 var(--font-sans); letter-spacing: var(--text-kicker-tracking); text-transform: uppercase; color: var(--plum-strong); }
+.wu-title { margin: 0; font: var(--text-display-xl-weight) clamp(var(--text-display-l-size), 7vh, 5rem)/1.1 var(--display); letter-spacing: var(--text-display-xl-tracking); color: var(--ink); text-wrap: balance; }
+.wu-sutra { margin: var(--space-3) auto 0; max-width: 40em; font-size: clamp(var(--text-body-size), 2.6vh, 1.6rem); line-height: 1.4; color: var(--ink-muted); }
+.wu-sa { font-family: var(--display); font-weight: 600; color: var(--plum-strong); }
+.wu-idea { margin: var(--space-4) auto 0; max-width: 32em; font-size: clamp(var(--text-lede-size), 3.4vh, 2.2rem); line-height: 1.35; font-weight: 600; color: var(--ink); text-wrap: balance; }
+.wu-example { margin-top: var(--space-5); }
+.wu-ex-q { margin: 0; font: var(--text-display-xl-weight) clamp(var(--text-display-l-size), 9vh, 6rem)/1.1 var(--display); color: var(--ink); }
+
+/* A problem alone: its numbers at least a fifth of the viewport's height (144 px at 720), wrapping at a space when the
+   screen is narrow, never inside a number */
+.wu-problem { margin: 0; font: var(--text-display-xl-weight) max(var(--text-display-xl-size), 21vh)/1.1 var(--display); letter-spacing: var(--text-display-xl-tracking); color: var(--ink); text-wrap: balance; }
+.wu-answer { margin: var(--space-3) 0 0; font: var(--text-display-xl-weight) max(var(--text-display-l-size), 14vh)/1.1 var(--display); color: var(--plum-strong); }
+.wu-answer[hidden], .wu-board[hidden], .wu-tools [hidden], .wu-nav [hidden] { display: none; }
+
+/* The step board (/tricks/step-board.js): the steps build up and stay, the newest marked; large enough for the room */
+.wu-board { display: grid; gap: var(--space-2-5); margin: var(--space-4) auto 0; max-width: 60rem; text-align: left; }
+.wu-board--problem { margin-top: var(--space-5); }
+.sb-step { padding: var(--space-3) var(--space-4); border: 2px solid var(--line); border-radius: var(--radius-lg); background: var(--card); color: var(--ink); scroll-margin-block-end: calc(var(--control-height-lg) + var(--space-7) * 2); /* clear of the sticky buttons when brought into view */ }
+.sb-step[aria-current="step"] { border-color: var(--edge); box-shadow: var(--shadow-ledge); }
+.sb-show { font: 600 clamp(var(--text-h3-size), 4.2vh, 3rem)/1.4 var(--font-sans); letter-spacing: .02em; overflow-wrap: anywhere; color: var(--ink); }
+.sb-say { margin: var(--space-2) 0 0; font-size: clamp(var(--text-body-size), 2.8vh, 1.8rem); line-height: 1.4; color: var(--ink); }
+.hl { border-radius: var(--radius-2xs); padding: 0 .18em; color: var(--on-accent); }
+.hl-coral { background: var(--coral); } .hl-teal { background: var(--teal); } .hl-sky { background: var(--sky); } .hl-sun { background: var(--sun); } .hl-plum { background: var(--plum); }
+/* After a press the newest step fades in; none under reduced motion or Pause motion */
+.wu-stage[data-moved] .sb-step[aria-current="step"] { animation: wu-step-in var(--duration-medium) var(--ease-out); }
+@keyframes wu-step-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .wu-stage .sb-step { animation: none !important; } }
+html.motion-paused .wu-stage .sb-step, html.calm .wu-stage .sb-step { animation: none !important; }
+
+/* Practice at home: the Trick page's address in large type */
+.wu-url { margin: var(--space-3) 0 0; font: 600 clamp(var(--text-h2-size), 6vh, 4.4rem)/1.2 var(--font-sans); overflow-wrap: anywhere; }
+.wu-url a { color: var(--sky-strong); text-decoration-thickness: .06em; text-underline-offset: .12em; }
+.wu-url a:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; border-radius: var(--radius-sm); }
+.wu-home-note { margin: var(--space-4) auto 0; max-width: 36em; font-size: clamp(var(--text-body-size), 2.8vh, 1.8rem); line-height: 1.4; color: var(--ink-muted); }
+
+/* Back, Reveal, Next: in place at the foot, keyboard words beside them; they stay in view while a long step board scrolls */
+.wu-nav { position: sticky; bottom: 0; z-index: var(--z-base); display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); width: 100%; box-sizing: border-box; padding-top: var(--space-3); padding-bottom: var(--space-3); background: var(--bg); }
+.wu-nav .md-btn { min-width: 9em; justify-content: center; }
+.wu-keys { flex-basis: 100%; margin: 0; font-size: var(--text-small-size); color: var(--ink-muted); }
+@media (min-width: 900px) { .wu-keys { flex-basis: auto; margin-left: auto; } }
+.wu-honest { width: 100%; box-sizing: border-box; margin: 0; padding-top: var(--space-2); padding-bottom: var(--space-5); font-size: var(--text-small-size); color: var(--ink-muted); }
+.wu-honest a { color: var(--sky-strong); font-weight: 700; }
+@media (scripting: none) { .wu-nav, .wu-tools { display: none; } }
+/* The press dip of the buttons (components.css) is still under reduced motion and Pause motion */
+@media (prefers-reduced-motion: reduce) { .wu-nav .md-btn:is(:hover, :active), .wu-tools .md-btn:is(:hover, :active) { transform: none; } }
+html.motion-paused .wu-nav .md-btn:is(:hover, :active), html.calm .wu-nav .md-btn:is(:hover, :active), html.motion-paused .wu-tools .md-btn:is(:hover, :active), html.calm .wu-tools .md-btn:is(:hover, :active) { transform: none; }

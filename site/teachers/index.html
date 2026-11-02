@@ -48,14 +48,16 @@
   <div class="md-wrap lv-page">
     <h1>For teachers</h1>
     <p class="md-lede">Learn Vedic Math is a free game for practising mental math: the speed tricks from Bharati Krishna Tirtha's 1965 book, practice from counting to calculus, games and daily Stars.</p>
-    <!-- The warm-up box (UX audit 2026-10-29, task 1.2): what the Arena's daily round really is (js/app.js arenaView: 60
-         seconds, the same questions for every Player of a Mode today). /play/#/arena opens the Arena; on a device
-         with no Mode yet the Mode picker comes first and the Arena opens after it. -->
+    <!-- The warm-up box (UX audit 2026-10-29, task 1.2; openspec change teacher-warm-up, task 3.1): the projector warm-up
+         at /teachers/warm-up/ first (a static page: no Mode, no Player, nothing stored), the Arena's daily round beside it
+         (js/app.js arenaView: 60 seconds, the same questions for every Player of a Mode today; on a device with no Mode
+         yet the Mode picker comes first). The privacy words say what is true and nothing about school reviews (design D6). -->
     <section class="lv-callout" aria-labelledby="lv-warmup-h">
       <h2 id="lv-warmup-h">A 5-minute warm-up for today's class</h2>
-      <p>Put today's Arena round on the class screen: 60 seconds of quick questions, the same ones for every Player in the same Mode today. The class can race it together on one screen, calling out answers, or each student on their own device. Then talk through one question and the trick behind it.</p>
-      <p class="lv-callout-go"><a class="md-btn md-btn--primary" href="/play/#/arena">Open the Arena</a></p>
-      <p class="lv-callout-note">The first time on a device, pick the class's Mode. With Calm on, the Arena starts on an untimed round: pick Daily challenge for the 60-second race. There are no class accounts or class leaderboards: each device keeps its own scores.</p>
+      <p>Put one trick on the class screen. The projector warm-up shows today's Trick (a new one each day, or pick one), its worked example step by step, then three class problems that get harder, each with a Reveal and the steps behind it. It is made for a projector or smart board and a presenter clicker: big type, Full screen, and Page Down to go on.</p>
+      <p class="lv-callout-go"><a class="md-btn md-btn--primary" href="/teachers/warm-up/">Open the projector warm-up</a> <a class="md-btn" href="/play/#/arena">Open the Arena</a></p>
+      <p class="lv-callout-note">No sign-in and no student accounts. This page stores nothing on this device. Anonymous page and event counts are sent unless Do Not Track or Global Privacy Control is on: <a href="/privacy/">privacy policy</a>.</p>
+      <p class="lv-callout-note">Or race today's Arena round together: 60 seconds of quick questions, the same ones for every Player in the same Mode today, on one screen or each student on their own device. The first time on a device, pick the class's Mode. With Calm on, the Arena starts on an untimed round: pick Daily challenge for the 60-second race. There are no class accounts or class leaderboards: each device keeps its own scores.</p>
     </section>
     <h2>In a classroom</h2>
     <ul>

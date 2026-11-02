@@ -27,7 +27,7 @@ import { on, later, every, child, onAbort, lateImport } from './life.js';
 import * as metrics from './metrics.js';
 import { boltHTML } from './bolt.js';
 import { FAMILY_SVG } from './family.js';
-import { familyRound } from './family-hook.js';
+import { familyRound, talkEligible } from './family-hook.js';
 import { runStar } from './star.js';
 import { storyPlan, loadStories, storiesNow, storiesFrom, LABEL as STORY_LABEL, ONLY as STORY_ONLY, ROUND as STORY_ROUND } from './story-plan.js';
 import { runTry, tryFor as tryOf, sutraOf, finished as tryFinished } from './try.js';
@@ -49,6 +49,7 @@ import { tag as sutraTag, loadTags, fillTags } from './sutra-tag-slot.js'; /* js
 import { tagHTML, sutraOfTrick, SURFACES as TAG_SURFACES } from './sutra-tag-core.js'; /* its core, static: Home's Sutra door (#133 perf) */
 import { progressOf, progressLine, trickLine } from './sutra-progress.js';
 import { claim as claimSlot, release as releaseSlot } from './prompt-slot.js';
+import { suggestedMode, choicesAround, trimChoices, HELP_WORDS, readingLabel } from '../shared/src/bands.ts'; /* Reading bands (openspec change age-bands) */
 import { label as sparksLabel, ago as sparksAgo } from '../shared/src/sparks-log.ts'; /* the Sparks history's words (openspec change muse-review-polish) */
 import './voice-plan.js'; /* a level sooner (docs/perf/baseline.md) */
 
@@ -62,6 +63,9 @@ const onDemand = load => { let p; return () => (p ||= load().catch(e => { p = nu
 const loadLinks = onDemand(() => import('./connectors.js')); /* the Trick animator's digit connectors, on first use */
 storiesFrom(() => import('./stories.js')); /* the Word problems load after the first paint (js/story-plan.js) */
 const loadArena = onDemand(() => import('./arena.js')), loadTour = onDemand(() => import('./tour.js')), loadKit = onDemand(() => import('./play/kit.js'));
+/* The grade question (openspec change age-bands, js/grade-question.js): a first visit, the home card and Me open it; nothing else needs it */
+const loadGrade = onDemand(() => import('./grade-question.js'));
+const askGrade = (signal, onDone) => loadGrade().then(({ askGrade }) => { if (!signal.aborted) askGrade({ signal, onDone }); }, () => { if (!signal.aborted) onDone(null); });
 const loadPlacement = onDemand(() => import('./placement-view.js')); /* Placement's screens, only when #/placement opens (openspec placement) */
 const loadHook = onDemand(() => import('./hook.js')); /* the Hook, only for a Player who may be new (openspec hook) */
 const withArena = (area, signal, fn) => loadArena().then(A => { if (!signal.aborted) fn(A); }, () => { if (!signal.aborted) area.innerHTML = '<p class="md-lede">The round did not load. Check your connection and try again.</p>'; });
@@ -233,7 +237,7 @@ function chip() {
   const el = $('#mqChip'); if (!el) return; const p = store.player(), T = gm.titleInfo(), belt = fx.mode() && fx.mode() !== 'explorer' ? gm.currentBelt() : null;
   el.innerHTML = `<a href="#/me" class="mq-chip">${avatar(p, 30)}<span class="md-sr-only">${esc(p.name)}, ${T.title}${belt ? `, ${belt.name}` : ''}</span>${belt ? `<span class="mq-chip-belt" style="--belt:${belt.color}" data-belt="${belt.id}" aria-hidden="true"></span>` : ''}<span class="mq-chip-t"><span class="mq-sparkbar"><i style="width:${pct(T.pct)}%"></i></span></span></a>`;
 }
-store.on(type => { if (type === 'sparks' || type === 'player' || type === 'belt' || type === 'star') chip(); if (type === 'player') syncNav(); });
+store.on(type => { if (type === 'sparks' || type === 'player' || type === 'belt' || type === 'star') chip(); if (type === 'player') { fx.applyMode(); syncNav(); } }); /* the band class follows the Player too (openspec change age-bands) */
 /* The bar to the next Title, as a progressbar with its Sparks in words */
 function titleBar(T, cls = 'mq-sparkbar mq-sparkbar--big') {
   const text = T.next ? `${T.into} of ${T.need} Sparks to ${T.next}` : 'Top Title reached';
@@ -246,21 +250,28 @@ function modePicker({ signal } = {}) {
   const p = store.player();
   /* The hero says as little as it can (openspec try-trick-in-modes): one headline, one short line and the Nikhilam
      Family (js/family.js). Then one question, who is playing, with the three Mode cards as its only buttons (openspec
-     change play-nav-by-mode: one step at a time; each Mode's Try a trick waits on its Home). No Mode is guessed. */
+     change play-nav-by-mode: one step at a time; each Mode's Try a trick waits on its Home). No Mode is guessed.
+     The grade question comes first (openspec change age-bands, decision 2): a Player with no Grade answer who was never
+     asked sees it over the picker, whose cards keep their place unpainted until it closes; then the picker tags the
+     Mode the answer suggests (decision 7). Skip asks nothing more. An Early reader gets one speaker button that reads
+     the cards (the cards are buttons, so none can hold one). */
+  const asking = !store.reading() && store.readingCard() !== 'done';
+  const cards = () => { const sugg = suggestedMode(store.reading()); return Object.entries(fx.MODES).map(([id, m]) => `<button class="mode-card mode-card--${m.color}" data-mode="${id}"${id === sugg ? ' data-suggested' : ''}><span class="mode-ic" aria-hidden="true">${modeIcon(id)}</span><b>${m.name}</b>${id === sugg ? `<span class="md-tag md-tag--teal mode-sugg">${fx.copy('picker.suggested')}</span>` : ''}<small>${m.ages}</small><span>${fx.copy('picker.blurb.' + id)}</span><span class="mode-go" aria-hidden="true">Start as ${m.name}<svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>`).join(''); };
+  const hearCards = () => (fx.band() === 'early' ? `<p class="pick-hear"><button type="button" class="md-btn md-btn--sm" id="pickHear">${icon('speaker')} ${fx.copy('grade.hearChoices')}</button></p>` : '');
   view.innerHTML = `<section class="md-section mq-hero"><div class="md-wrap">
     <div class="mq-hero-in"><div class="mq-hero-t">
       <h1 class="md-heading">Fast, fun math for <span class="hl-word">every</span> brain</h1>
       <p class="md-lede mq-hero-sub">One trick, two minutes, no sign-up.</p>
     </div>${FAMILY_SVG}</div>
-    <h2 class="mq-h3 pick-h">Pick who is playing</h2>
-    <div class="mode-pick">${Object.entries(fx.MODES).map(([id, m]) => `<button class="mode-card mode-card--${m.color}" data-mode="${id}"><span class="mode-ic" aria-hidden="true">${modeIcon(id)}</span><b>${m.name}</b><small>${m.ages}</small><span>${m.blurb}</span><span class="mode-go" aria-hidden="true">Start as ${m.name}<svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></button>`).join('')}</div>
-    <p class="mq-note">Playing as <b>${esc(p.name)}</b>. Nicknames are made up for you, so no real names are ever needed. You can change who is playing any time.</p>
+    <h2 class="mq-h3 pick-h">${fx.copy('picker.heading')}</h2><div id="pickHearSlot">${hearCards()}</div>
+    <div class="mode-pick${asking ? ' mode-pick--wait' : ''}" id="modePick">${cards()}</div>
+    <p class="mq-note">Playing as <b>${esc(p.name)}</b>. ${fx.copy('picker.note')}</p>
     <p class="mq-note gd-pickhelp">Not sure which? <a href="#/guide">See how it works</a>.</p>
   </div></section>`;
   /* Picking a Mode is an everyday moment, not a win (openspec celebrations): the card pops, a few sparkles fly and the
      family cheers, then Home opens. Under no motion Home opens at once. */
   let picked = false;
-  view.querySelectorAll('[data-mode]').forEach(b => on(b, 'click', () => {
+  const wire = () => view.querySelectorAll('[data-mode]').forEach(b => on(b, 'click', () => {
     if (picked) return; picked = true;
     fx.sfx('pop'); fx.setMode(b.dataset.mode); gm.startDay();
     /* The route after the pick draws once: a changed hash renders through hashchange, the same hash through render() */
@@ -269,6 +280,10 @@ function modePicker({ signal } = {}) {
     fx.pop(b, signal); fx.sparkle(b, { n: 10 }); fx.cheer(view.querySelector('.lv-family'), signal);
     later(go, 560, signal);
   }, signal));
+  wire();
+  /* The speaker button reads each Mode's name and blurb (spoken because it was tapped) */
+  on($('#pickHearSlot'), 'click', e => { if (e.target.closest('#pickHear')) fx.speak(Object.entries(fx.MODES).map(([id, m]) => `${m.name}: ${fx.copy('picker.blurb.' + id)}`).join(' '), true); }, signal);
+  if (asking) askGrade(signal, () => { const pick = $('#modePick'); if (!pick) return; pick.innerHTML = cards(); pick.classList.remove('mode-pick--wait'); $('#pickHearSlot').innerHTML = hearCards(); wire(); });
 }
 /* Where a Mode card goes: the page the visitor asked for before picking (a Find result, a link), when it is a route
    in this app the picked Mode can open (one of its Find entries), else Home. Kept in memory only, never stored. */
@@ -299,10 +314,21 @@ function questsHTML() {
 }
 function heroStats() {
   const p = store.player(), T = gm.titleInfo();
-  return `<div class="me-strip">${avatar(p, 54)}<div class="me-strip-t"><small>${fx.t({ explorer: 'Hello,', challenger: store.playedBefore() ? 'Welcome back,' : 'Welcome,', pro: store.playedBefore() ? 'Welcome back,' : 'Welcome,' })}</small><b>${esc(p.name)}</b><span>${T.title}</span>${titleBar(T)}</div>
+  return `<div class="me-strip">${avatar(p, 54)}<div class="me-strip-t"><small>${fx.copy(store.playedBefore() ? 'home.greetingBack' : 'home.greeting')}</small><b>${esc(p.name)}</b><span>${T.title}</span>${titleBar(T)}</div>
     <div class="me-nums"><div><b>${store.sparks()}</b><small>Sparks</small></div><div><b>${store.streakDays()}</b><small>day streak</small></div><div><b>${Object.keys(store.badges()).length}</b><small>badges</small></div></div></div>`;
 }
 const tile = (href, title, sub, color, ic) => `<a class="play-tile play-tile--${color}" href="${href}"><span class="play-ic" aria-hidden="true">${icon(ic)}</span><b>${title}</b><small>${sub}</small></a>`;
+
+/* Read aloud on Home (openspec change age-bands): Explorer's button, and every Mode's for an Early reader */
+const voiceBtnHTML = () => `<button class="md-btn" id="voiceBtn" aria-pressed="${fx.voiceOn()}">${icon('speaker')} ${fx.copy(fx.voiceOn() ? 'home.readAloudOn' : 'home.readAloudOff')}</button>`;
+/* The one optional card for a Player with a Mode and no Grade answer (openspec change age-bands, decision 2): it opens
+   the grade question; answering or Not now retires it, and Me keeps the question under Reading help */
+const readingCardHTML = () => (store.reading() || store.readingCard() === 'done' ? '' : `<div class="md-card reading-card" id="readingCard"><span class="md-tag md-tag--teal">Bolt</span><h2 class="mq-h3">${fx.copy('home.card.title')}</h2><p class="door-line">${fx.copy('home.card.body')}</p><p class="door-acts"><button type="button" class="md-btn md-btn--sm md-btn--primary" id="readingAsk">${fx.copy('home.card.answer')}</button><button type="button" class="md-btn md-btn--sm" id="readingLater">${fx.copy('home.card.later')}</button></p></div>`);
+function wireReadingCard(signal, redraw) {
+  const card = $('#readingCard'); if (!card || !signal) return;
+  on($('#readingLater', card), 'click', () => { store.setReadingCard('done'); fx.sfx('tap'); card.remove(); }, signal);
+  on($('#readingAsk', card), 'click', () => askGrade(signal, redraw), signal);
+}
 
 /* Home: the Sky for a Challenger or Pro Player who turned it on (openspec sky-home), else the tile home of their Mode.
    tiles: the tile home whatever the switch says (#/tiles, from All places). */
@@ -310,20 +336,20 @@ function home(ctx = {}, { tiles = false } = {}) {
   if (!tiles && SKY.skyOn(store.player())) return skyHome(ctx);
   const m = fx.mode(); document.title = `Learn Vedic Math`;
   const last = keepGoingSkill(m);
-  const cont = last ? `<a class="mq-continue" href="#/skill/${last.id}">${ring(store.mastery(last.id), 40)}<span><small>Keep going</small><b>${both(last.title, last.kid)}</b></span><span class="mq-go" aria-hidden="true">&rarr;</span></a>` : '';
+  const cont = last ? `<a class="mq-continue" href="#/skill/${last.id}">${ring(store.mastery(last.id), 40)}<span><small>${fx.copy('home.keepGoing')}</small><b>${both(last.title, last.kid)}</b></span><span class="mq-go" aria-hidden="true">&rarr;</span></a>` : '';
   let body = '';
   if (m === 'explorer') {
     body = `${sutraToSay()}<div class="play-grid play-grid--big">
-      ${startHereTile()}${tile('#/game/balloons', 'Balloon pop', 'Count and pop', 'coral', 'balloon')}
-      ${tile('#/skill/k-count', 'How many dots?', 'Count with ten frames', 'sun', 'dots')}
-      ${tile('#/game/more-less', 'Which has more?', 'Big or small', 'teal', 'scale')}
-      ${tile('#/game/make-ten', 'Make ten', 'Find the partners', 'sky', 'ten')}
-      ${tile('#/skill/k-add10', 'Adding', 'Put together', 'plum', 'plus')}
-      ${tile('#/game/quick-look', 'Quick look', 'Flash dots', 'sun', 'eye')}
-      ${tile('#/skill/k-shapes', 'Shape detective', 'Name that shape', 'teal', 'shape')}
-      ${tile('#/arena', 'Race the clock', 'Tap fast!', 'coral', 'bolt')}
+      ${startHereTile()}${tile('#/game/balloons', 'Balloon pop', fx.copy('home.tile.balloons'), 'coral', 'balloon')}
+      ${tile('#/skill/k-count', 'How many dots?', fx.copy('home.tile.dots'), 'sun', 'dots')}
+      ${tile('#/game/more-less', 'Which has more?', fx.copy('home.tile.more'), 'teal', 'scale')}
+      ${tile('#/game/make-ten', 'Make ten', fx.copy('home.tile.ten'), 'sky', 'ten')}
+      ${tile('#/skill/k-add10', 'Adding', fx.copy('home.tile.add'), 'plum', 'plus')}
+      ${tile('#/game/quick-look', 'Quick look', fx.copy('home.tile.look'), 'sun', 'eye')}
+      ${tile('#/skill/k-shapes', 'Shape detective', fx.copy('home.tile.shapes'), 'teal', 'shape')}
+      ${tile('#/arena', 'Race the clock', fx.copy('home.tile.race'), 'coral', 'bolt')}
     </div>${placementCardHTML()}${tryCard(m)}
-    <p class="mq-cta"><button class="md-btn" id="voiceBtn" aria-pressed="${fx.voiceOn()}">${icon('speaker')} Read questions aloud: ${fx.voiceOn() ? 'on' : 'off'}</button> <a class="md-btn" href="#/watch">${icon('play')} Watch and sing</a></p>
+    <p class="mq-cta">${voiceBtnHTML()} <a class="md-btn" href="#/watch">${icon('play')} Watch and sing</a></p>
     <nav class="home-places" aria-label="More places"><span>More places:</span> <a class="md-chip" href="#/games">All games</a> <a class="md-chip" href="#/sutras">The sutras</a> <a class="md-chip" href="#/guide">How to play</a> <a class="md-chip" href="#/find">Find</a></nav>`; /* Explorer's menu has three tabs (openspec change play-nav-by-mode), so the places it left out are a tap away here */
   } else {
     /* Three doors first (openspec first-visit), each with one plain line that says what its word means; the rest of the
@@ -334,33 +360,33 @@ function home(ctx = {}, { tiles = false } = {}) {
        Skill map. The tag is text here: Learn the sutra is the door's link to the Deep dive. It is drawn with the first
        paint from js/sutra-tag-core.js, so no placeholder moves the doors when js/sutra-tag.js arrives (#133 perf). */
     const st = nt && sutraOfTrick(nt.id), ss = st && st.id;
-    const sutraDoor = `<div class="md-card door dojo-card sutra-door"><span class="md-tag md-tag--plum">${fx.t({ challenger: 'Your next sutra', pro: 'Next sutra' })}</span>
+    const sutraDoor = `<div class="md-card door dojo-card sutra-door"><span class="md-tag md-tag--plum">${fx.copy('home.door.sutraTag')}</span>
       ${st ? tagHTML(st.id, { mode: m, relation: st.relation, link: false, cls: 'sutra-door-tag' }) : `<h2 class="mq-h3">${nt ? 'Your next Star' : 'Every Star is lit. Legend!'}</h2>`}
       ${nt ? `<p>Next Star: <b>${nt.title}, Star ${ns.n}</b></p>` : ''}
       <p class="door-acts">${nt ? `<a class="md-btn md-btn--primary" href="#/star/${nt.id}/${ns.n}">Play this Star</a> ` : ''}${ss ? `<a class="md-btn" href="#/sutras/${ss}" data-tag="home">Learn the sutra</a> ` : ''}<a class="md-btn" href="#/dojo">Open the Dojo</a></p>
-      <p class="door-line">${fx.t({ challenger: 'A sutra is a short rule that does a whole sum in a line or two. A Star is a two-minute round of four questions on one of its tricks.', pro: 'A sutra is a one-line rule from Bharati Krishna Tirtha\'s 1965 book that replaces a long method. A Star is a two-minute round of four questions on one of its tricks.' })}</p>
+      <p class="door-line">${fx.copy('home.door.sutra')}</p>
       <div class="belts-mini">${bp.map(b => `<span class="belt-mini${b.earned ? ' on' : ''}" style="--belt:${b.color}" title="${b.name}"></span>`).join('')}</div>
       <p class="mq-small">${belt ? `You hold the ${belt.name}.` : 'Light Stars to earn your white belt.'}${next ? ` ${next.name}: ${next.lit} of ${gm.STARS_PER_BELT} Stars lit` : ''}${m === 'pro' ? ` · ${earned} of ${BELTS.length} belts, ${litStars()} of ${SKY.PATH.length} Stars` : ''}</p></div>`;
     const door = (href, title, line, color, ic) => `<a class="md-card door door--${color}" href="${href}"><span class="play-ic" aria-hidden="true">${icon(ic)}</span><b>${title}</b><span class="door-line">${line}</span></a>`;
-    const doors = m === 'challenger'
-      ? sutraDoor + door('#/arena', 'Race in the Arena', 'Sixty seconds, the same questions for every Challenger today, and a leaderboard at the end.', 'coral', 'trophy') + door('#/learn', 'Learn a skill', 'Skills by grade, from counting to calculus, each with a hint and a worked answer.', 'sun', 'map')
-      : sutraDoor + door('#/arena', "Today's Arena round", 'Sixty seconds of mental arithmetic: products, squares and percents. Every Pro gets the same questions today, and the best scores go on the leaderboard.', 'coral', 'trophy') + door('#/learn', 'Skill map', 'Algebra, geometry and calculus, each skill with a hint and a worked answer.', 'sky', 'map');
+    const doors = sutraDoor + door('#/arena', fx.copy('home.door.arenaTitle'), fx.copy('home.door.arena'), 'coral', 'trophy') + door('#/learn', fx.copy('home.door.learnTitle'), fx.copy('home.door.learn'), m === 'challenger' ? 'sun' : 'sky', 'map');
     const more = m === 'challenger'
       ? [tile('#/arena/party', 'Party Mode', 'Two to four players, one screen', 'sky', 'duel'), tile('#/games', 'Games', 'Times sprint, target, fractions', 'teal', 'game'), tile('#/sutras', 'Sutra cards', 'Collect all 29', 'plum', 'cards'), tile('#/watch', 'Watch and learn', 'Best trick videos', 'coral', 'play')]
       : [tile('#/sutras', 'Sutra deep dive', `${gm.collectedCount()} of ${SUTRAS.length + SUBSUTRAS.length} cards collected`, 'sun', 'cards'), tile('#/arena/party', 'Party Mode', 'Family math night', 'coral', 'duel'), tile('#/games', 'Puzzles and games', 'Hit the target and more', 'teal', 'game'), tile('#/watch', 'Watch shelf', '3Blue1Brown, Numberphile, more', 'sky', 'play')];
     const board = m === 'pro' ? `<div class="md-card board-card"><span class="md-tag md-tag--coral">Arena</span><h2 class="mq-h3">Today's leaderboard</h2><div id="homeBoard" class="lb-wrap"><p class="mq-small">Loading…</p></div>${parentNote()}</div>` : '';
-    body = `<div class="home-doors">${doors}</div>${placementCardHTML()}${tryCard(m)}${yourSutras(m, ss)}${heroStats()}${board ? `<div class="home-2">${questsHTML()}${board}</div>` : questsHTML()}
+    body = `<div class="home-doors">${doors}</div>${fx.band() === 'early' ? `<p class="mq-cta">${voiceBtnHTML()}</p>` : ''}${placementCardHTML()}${tryCard(m)}${yourSutras(m, ss)}${heroStats()}${board ? `<div class="home-2">${questsHTML()}${board}</div>` : questsHTML()}
       <details class="mq-more home-more" id="homeMore"${fx.homeMoreOpen() ? ' open' : ''}><summary>More ways to play</summary><div class="play-grid">${more.join('')}</div></details>`;
   }
   /* Home leads with the Sutras (openspec change sutras-first): Explorer keeps the Player strip on top; Challenger and Pro
      show it after the doors and "Your sutras" */
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">
     ${m === 'explorer' ? heroStats() : ''}
-    <h1 class="md-heading home-h">${fx.t({ explorer: 'What do you want to play?', challenger: 'Learn a sutra, then use it', pro: 'Mental math, the sutra way' })}</h1>
+    <h1 class="md-heading home-h">${fx.copy('home.heading')}</h1>
     <p class="mode-line">Mode: <b>${fx.MODES[m].name}</b>${store.modeGuessed() ? ', our guess for a first try' : ''} <a href="#/me">Change</a></p>
-    ${newHereHTML()}<div class="in-slot" id="installSlot"></div>${cont}${body}
+    ${newHereHTML()}${readingCardHTML()}<div class="in-slot" id="installSlot"></div>${cont}${body}
   </div></section>`;
-  const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); mount(c => home(c, { tiles })); }; /* a fresh view signal, so the Install nudge, the tour and Say it on Explorer's Sutra card mount again */
+  const redraw = () => mount(c => home(c, { tiles })); /* a fresh view signal, so the Install nudge, the tour and Say it on Explorer's Sutra card mount again */
+  const vb = $('#voiceBtn'); if (vb) vb.onclick = () => { fx.setVoice(!fx.voiceOn()); fx.speak('Hi! I will read the questions to you.', true); redraw(); };
+  wireReadingCard(ctx.signal, redraw);
   const hm = $('#homeMore'), keepMore = () => fx.setHomeMoreOpen(hm.open); /* remembered on this device */
   if (hm) { if (ctx.signal) on(hm, 'toggle', keepMore, ctx.signal); else hm.ontoggle = keepMore; } /* home() also runs with no view signal (an unknown Skill falls back to it): then a property on an element of this view */
   const tc = $('[data-try-open]'), counted = () => metrics.tryStart(m); /* the Try a trick card counts as a Try a trick pressed */
@@ -445,10 +471,11 @@ function keepGoingSkill(m) {
 const litStars = () => { const { lit } = store.starStates(); return SKY.PATH.filter(k => lit[k]).length; };
 function skyHome({ signal } = {}) {
   document.title = `Learn Vedic Math`;
-  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}${newHereHTML()}<div class="in-slot" id="installSlot"></div><div id="skyHome"></div>${placementCardHTML()}${tryCard(fx.mode())}
+  view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap">${heroStats()}${newHereHTML()}${readingCardHTML()}<div class="in-slot" id="installSlot"></div><div id="skyHome"></div>${placementCardHTML()}${tryCard(fx.mode())}
     <p class="mode-line">Mode: <b>${fx.MODES[fx.mode()].name}</b> <a href="#/me">Change</a></p></div></section>`;
   const back = (render.from || '').match(/^#\/star\/([\w-]+)\/(\d)$/);
   const out = skyView($('#skyHome'), { signal, focus: back ? `${back[1]}:${back[2]}` : null });
+  wireReadingCard(signal, () => mount(c => skyHome(c)));
   const tc = $('[data-try-open]'), m = fx.mode(), counted = () => metrics.tryStart(m); /* the Sky is this Player's Home, so it keeps the Try a trick card too */
   if (tc) { if (signal) on(tc, 'click', counted, signal); else tc.onclick = counted; }
   const pn = $('#placeNotNow'); if (pn && signal) on(pn, 'click', () => { store.setPlacementCard('done'); fx.sfx('tap'); mount(c => skyHome(c)); }, signal);
@@ -584,7 +611,7 @@ function showExample(s) {
 }
 /* ---------- Practice engine ---------- */
 /* Typed something that is not a plain number on an arithmetic skill: not a try, no Sparks */
-const notAnswerMsg = () => fx.t({ explorer: 'Type just the answer, like 7.', challenger: 'Type just the answer, like 56 or 3/4.', pro: 'Type just the answer as a number, like 56 or 3/4.' });
+const notAnswerMsg = () => fx.copy('practice.notAnswer');
 const KEYS = { basic: ['/', '-', '.'], alg: ['x', '^', '(', ')', '/', '-', '√', 'π'], set: [',', '-', '/', '√'], ineq: ['x', '<', '>', '<=', '>=', '-'], complex: ['i', '+', '-'] };
 /* One Practice session in root. signal: the view's. Each question runs under its own child signal, aborted by the next one.
    only: every question a Word problem on the Skill picked (Only Word problems, openspec word-problems-more design D2);
@@ -593,6 +620,15 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
   let s, p, tries = 0, hints = 0, done = false, right = 0, total = 0, run = 0, life = lives;
   const session = child(signal); let question = null;
   const explorer = fx.mode() === 'explorer';
+  /* The Reading band (openspec change age-bands, decision 4): an Early reader taps big buttons for every whole-number
+     answer in every Mode, 3 of them; Growing and Fluent use the Mode's entry, with 4 choices where choices show. The
+     question and its answer are the generator's: only how it is answered changes. */
+  const rules = fx.rules(), early = fx.band() === 'early', tapAnswers = explorer || early, nChoices = rules ? rules.choices : 4;
+  const asChoices = q => {
+    if (q.kind === 'choice') return q.choices.length > nChoices ? { ...q, choices: trimChoices(q.choices, q.answer, nChoices) } : q;
+    if (!tapAnswers || q.kind !== 'num' || !Number.isInteger(q.answer) || (!early && !(q.answer >= 0 && q.answer <= 200))) return q;
+    return { ...q, kind: 'choice', choices: choicesAround(q.answer, nChoices).map(String), answer: String(q.answer) };
+  };
   /* The Nikhilam Family helpers (openspec family-helpers): a no-op unless the Player turned them on in Me */
   const fam = familyRound({ root, card: root, signal: session.signal, area: lives ? 'run' : 'practice', protect: '.pr-q, .mq-viz, .pr-form, .pr-say:not(:empty), .pr-sol:not([hidden])', ctx: () => ({ skill: s, problem: p }), hint: () => { const b = $('#prHint', root); if (!b || b.hidden || done) return false; b.click(); return true; } });
   /* One Dial per Skill seen this session (Endless practice mixes Skills), starting at the Player's Skill Rating.
@@ -609,11 +645,11 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
     if (question) question.abort();
     question = child(session.signal);
     s = pickSkill(); const level = AD.levelFor(dialFor(s.id).lv), bare = s.gen(level); p = withPlain(s, (only ? onlyStory(s, bare) : tales.next(s, bare)) || bare); tries = 0; hints = 0; done = false;
-    // Explorer mode: no typing; small whole-number answers become big buttons
-    if (explorer && p.kind === 'num' && Number.isInteger(p.answer) && p.answer >= 0 && p.answer <= 200) { const near = [...new Set([p.answer + 1, p.answer - 1, p.answer + 2, p.answer + 10, p.answer - 2].filter(v => v >= 0))]; p = { ...p, kind: 'choice', choices: [p.answer, ...shuffle(near).slice(0, 3)].sort((a, b) => a - b).map(String), answer: String(p.answer) }; }
+    // Explorer and the Early band: no typing; whole-number answers become big buttons (small ones for Explorer with no band)
+    p = asChoices(p);
     const keyset = p.kind === 'expr' ? KEYS.alg : p.kind === 'set' ? KEYS.set : p.kind === 'ineq' ? KEYS.ineq : p.kind === 'complex' ? KEYS.complex : p.kind === 'num' && !['K', 1, 2].includes(s.grade) ? KEYS.basic : null;
     root.innerHTML = `
-      <div class="pr-head"><span class="pr-meter">${ring(store.mastery(s.id), 36)}<span><small>${mix ? `<a href="#/skill/${s.id}">${both(s.title, s.kid)}</a>` : 'Your turn'}</small><b id="prPct">${pct(store.mastery(s.id))}% mastery</b></span></span><span class="pr-run" id="prRun">${run >= 2 ? `<b>${run}</b> in a row` : ''}</span>${lives ? `<span class="pr-lives" role="img" aria-label="${life} lives left">${'<i class="on"></i>'.repeat(life)}${'<i></i>'.repeat(lives - life)}</span>` : ''}<span class="pr-score" role="img" aria-label="${right} of ${total} right this session">${right}/${total}</span></div>
+      <div class="pr-head"><span class="pr-meter">${ring(store.mastery(s.id), 36)}<span><small>${mix ? `<a href="#/skill/${s.id}">${both(s.title, s.kid)}</a>` : fx.copy('practice.yourTurn')}</small><b id="prPct">${pct(store.mastery(s.id))}% mastery</b></span></span><span class="pr-run" id="prRun">${run >= 2 ? `<b>${run}</b> in a row` : ''}</span>${lives ? `<span class="pr-lives" role="img" aria-label="${life} lives left">${'<i class="on"></i>'.repeat(life)}${'<i></i>'.repeat(lives - life)}</span>` : ''}<span class="pr-score" role="img" aria-label="${right} of ${total} right this session">${right}/${total}</span></div>
       ${p.story ? `<span class="md-tag md-tag--teal pr-story" id="prStory">${STORY_LABEL[mode] || STORY_LABEL.challenger}</span>` : ''}<div class="pr-q${plain(p.q).length > 60 ? ' long' : ''}${p.story ? ' pr-q--story' : ''}" id="prQ" data-level="${level}">${p.q}</div>
       ${p.viz ? `<div class="mq-viz">${p.viz}</div>` : ''}
       <form class="pr-form" id="prForm" autocomplete="off">${answerUI(p)}${keyset ? `<div class="pr-keys" role="group" aria-label="Symbol keys">${keyset.map(k => `<button type="button" class="pr-key" data-k="${esc(k)}">${esc(k)}</button>`).join('')}</div>` : ''}
@@ -642,7 +678,10 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
     root.querySelectorAll('#prHint, #prShow').forEach(b => (b.hidden = true));
     btn.focus({ preventScroll: true });
   };
-  const PRAISE = { explorer: ['Yay! You got it!', 'Super star!', 'Woohoo! Correct!', 'You are so smart!'], challenger: ['Correct!', 'Nailed it!', 'Boom! First try.', 'Lightning fast!'], pro: ['Correct.', 'Exactly right.', 'Clean.', 'Correct, first try.'] };
+  /* Bolt's lines come from the copy table by band, then Mode (shared/src/copy.ts); a praise line is drawn in the handler
+     that shows it. Read aloud follows the Player's choice or the band's default (fx.voiceOn): an Early reader hears every
+     line and hint after the tap that showed it, a Growing or Fluent reader taps Hear it. */
+  const told = (html, tone = '', spoken = null) => { say(html, tone); if (spoken && fx.voiceOn()) fx.speak(spoken); };
   /* Symbol keys and the "Want a hint?" link: one delegated handler for the whole session */
   on(root, 'click', e => {
     const k = e.target.closest('.pr-key'); if (k) { fx.sfx('tap'); const inp = root.querySelector('.ans-in:focus') || root.querySelector('.ans-in:not([readonly])'); if (inp) { const v = k.dataset.k, a = inp.selectionStart ?? inp.value.length; inp.value = inp.value.slice(0, a) + v + inp.value.slice(inp.selectionEnd ?? a); inp.focus(); inp.setSelectionRange(a + v.length, a + v.length); } return; }
@@ -653,18 +692,18 @@ function practice(root, pickSkill, { mix = null, lives = 0, onOver = null, signa
     on($('#prForm', root), 'submit', e => {
       e.preventDefault();
       if ($('#prCheck', root).dataset.next) { fx.sfx('tap'); return next(); }
-      const res = grade(); if (res.partial) { say(res.partial); return; } if (res.empty) { say('Type an answer first.'); return; }
+      const res = grade(); if (res.partial) { say(res.partial); return; } if (res.empty) { say(fx.copy('practice.empty')); return; }
       if (res.notAnswer) { say(notAnswerMsg()); return; }
       tries++;
-      if (res.ok) { fx.sfx('ok'); const first = tries === 1 && !hints; fam.note({ type: 'right', first }); const msg = first ? pick(PRAISE[fx.mode()] || PRAISE.challenger) : 'You got it!'; say(msg + (first ? ` <span class="pr-sparks">+${10 + Math.min(store.skill(s.id).streak + 1, 5)} Sparks</span>` : ''), 'ok'); fx.bounce($('#prSay .md-bubble', root), qs); fx.twinkle($('#prSay .pr-sparks', root), qs); if (explorer) fx.speak(msg, true); finish(true); return; }
+      if (res.ok) { fx.sfx('ok'); const first = tries === 1 && !hints; fam.note({ type: 'right', first }); const msg = first ? fx.line('practice.praise') : fx.copy('practice.gotIt'); told(msg + (first ? ` <span class="pr-sparks">+${10 + Math.min(store.skill(s.id).streak + 1, 5)} Sparks</span>` : ''), 'ok', msg); fx.bounce($('#prSay .md-bubble', root), qs); fx.twinkle($('#prSay .pr-sparks', root), qs); finish(true); return; }
       fx.sfx('no'); fx.wiggle(root.querySelector('.pr-in, .pr-choices, .pr-fields, .pr-split'), qs); fam.note({ type: 'miss' });
-      if (lives) { life--; reveal(); say(life ? `Oops! ${life} ${life === 1 ? 'life' : 'lives'} left. See how it works, then keep going.` : 'Out of lives!', 'no'); finish(false); const lv = root.querySelector('.pr-lives'); lv.innerHTML = '<i class="on"></i>'.repeat(life) + '<i></i>'.repeat(lives - life); lv.setAttribute('aria-label', `${life} lives left`); if (!life && onOver) { const b = $('#prCheck', root); b.textContent = 'See my score'; b.onclick = e => { e.preventDefault(); onOver(right); }; } return; }
-      if (tries === 1) { say((res.msg ? res.msg + ' ' : '') + 'Not quite. Try once more.' + (p.hints[0] && !hints ? ' <button type="button" class="md-link" data-hint>Want a hint?</button>' : ''), 'no'); if (explorer) fx.speak('Not quite. Try again!', true); }
-      else if (tries === 2) { hints = Math.max(hints, 1); const h = p.hints[Math.min(1, p.hints.length - 1)] || p.hints[0]; say((res.msg ? res.msg + ' ' : '') + `Hint: ${h}`, 'no'); if (explorer && h) fx.speak(h, true); } // read the hint that is shown
-      else { reveal(); say('That one was tricky. See how it works, then try the next one.', 'no'); finish(false); }
+      if (lives) { life--; reveal(); told(life ? (life === 1 ? fx.copy('practice.oneLife') : fx.copy('practice.livesLeft', { n: life })) : fx.copy('practice.outOfLives'), 'no'); finish(false); const lv = root.querySelector('.pr-lives'); lv.innerHTML = '<i class="on"></i>'.repeat(life) + '<i></i>'.repeat(lives - life); lv.setAttribute('aria-label', `${life} lives left`); if (!life && onOver) { const b = $('#prCheck', root); b.textContent = 'See my score'; b.onclick = e => { e.preventDefault(); onOver(right); }; } return; }
+      if (tries === 1) { const retry = fx.copy('practice.retry'); told((res.msg ? res.msg + ' ' : '') + retry + (p.hints[0] && !hints ? ` <button type="button" class="md-link" data-hint>${fx.copy('practice.hintOffer')}</button>` : ''), 'no', retry); }
+      else if (tries === 2) { hints = Math.max(hints, 1); const h = p.hints[Math.min(1, p.hints.length - 1)] || p.hints[0]; told((res.msg ? res.msg + ' ' : '') + `${fx.copy('practice.hintLead')} ${h}`, 'no', h); } // read the hint that is shown
+      else { reveal(); told(fx.copy('practice.tricky'), 'no'); finish(false); }
     }, qs);
-    on($('#prHint', root), 'click', () => { if (done) return; const h = p.hints[Math.min(hints, p.hints.length - 1)]; if (p.story && hints === 0) metrics.storyAsking(); hints++; say(`Hint: ${h}`); if (explorer) fx.speak(h, true); fam.note({ type: 'hint' }); }, qs);
-    on($('#prShow', root), 'click', () => { if (done) return; tries = Math.max(tries, 3); reveal(); say('Read the steps, then try the next one.'); finish(false); }, qs);
+    on($('#prHint', root), 'click', () => { if (done) return; const h = p.hints[Math.min(hints, p.hints.length - 1)]; if (p.story && hints === 0) metrics.storyAsking(); hints++; told(`${fx.copy('practice.hintLead')} ${h}`, '', h); fam.note({ type: 'hint' }); }, qs);
+    on($('#prShow', root), 'click', () => { if (done) return; tries = Math.max(tries, 3); reveal(); say(fx.copy('practice.showSteps')); finish(false); }, qs);
     const hear = $('#prHear', root); if (hear) on(hear, 'click', () => fx.speakQuestion(p, true), qs);
     root.querySelectorAll('.pr-choice').forEach(b => on(b, 'click', () => { if (done) return; root.querySelectorAll('.pr-choice').forEach(x => x.setAttribute('aria-pressed', 'false')); b.setAttribute('aria-pressed', 'true'); $('#prForm', root).requestSubmit(); }, qs));
   };
@@ -1004,15 +1043,17 @@ function challengeView(id, { signal } = {}) {
   };
   const go = (area, rsig) => withArena(area, rsig, ({ runChallenge }) => {
     track('challenge/' + ch.format, 'Challenge ' + id); metrics.roundStart('tower');
-    /* Calm: the tower is Practice, so no clock. Sprint and Time attack Medals are measured against the clock. */
-    const untimed = fx.calmOn(), clockMedal = ch.format === 'sprint' || ch.format === 'timeattack';
-    runChallenge(area, ch, LV.challengeSet(ch), { tap: fx.mode() === 'explorer', signal: rsig, untimed, onEnd: r => {
+    /* Calm, or an Early reader (openspec change age-bands): the tower is Practice, so no clock. Sprint and Time attack
+       Medals are measured against the clock. Early taps 3 choices in every Mode; Growing sees the clock as a bar. */
+    const rules = fx.rules(), early = fx.band() === 'early';
+    const untimed = fx.calmOn() || early, clockMedal = ch.format === 'sprint' || ch.format === 'timeattack';
+    runChallenge(area, ch, LV.challengeSet(ch), { tap: fx.mode() === 'explorer' || early, choices: rules ? rules.choices : 4, bar: !!rules && rules.clock !== 'mode', signal: rsig, untimed, onEnd: r => {
       metrics.roundEnd('tower', fx.MODES[fx.mode()].league);
       const noClock = r.untimed && clockMedal;
       const medal = noClock ? 0 : LV.challengeMedal(ch, r), improved = store.setMedal(LV.challengeKey(id), medal), sp = medal * 15 + r.right * 2;
       if (sp) store.addSparks(sp, 'challenge'); store.bump('arena'); store.touchDay(); if (medal === 3) fx.confetti(100); else if (medal) fx.confetti(40);
       const nextId = id % LV.PER_CHAPTER ? id + 1 : null;
-      area.innerHTML = resultHTML({ medal, noClock }, [`${r.right} right, ${r.wrong} missed${ch.goal === 'points' ? `, ${r.score} points` : ''}${ch.goal === 'seconds' && !noClock ? `, ${r.secs} seconds` : ''}.`, `<span class="fx-sparks">+${sp} Sparks</span>${improved ? ' New best.' : ''}`, ...(noClock ? [`<span class="lv-noclock">Medals for ${F.name} need the clock. Turn Calm off to play for one.</span>`] : [])], nextId ? `#/challenge/${nextId}` : `#/tower/${ch.chapter + 2 <= LV.TOPICS.length ? ch.chapter + 2 : 1}`, `#/challenge/${id}`, `#/tower/${ch.chapter + 1}`, 'Chapter map');
+      area.innerHTML = resultHTML({ medal, noClock }, [`${r.right} right, ${r.wrong} missed${ch.goal === 'points' ? `, ${r.score} points` : ''}${ch.goal === 'seconds' && !noClock ? `, ${r.secs} seconds` : ''}.`, `<span class="fx-sparks">+${sp} Sparks</span>${improved ? ' New best.' : ''}`, ...(noClock ? [`<span class="lv-noclock">Medals for ${F.name} need the clock. ${fx.copy('game.noClockWhy')}</span>`] : [])], nextId ? `#/challenge/${nextId}` : `#/tower/${ch.chapter + 2 <= LV.TOPICS.length ? ch.chapter + 2 : 1}`, `#/challenge/${id}`, `#/tower/${ch.chapter + 1}`, 'Chapter map');
       const rt = area.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); mount(ctx => challengeView(id, ctx)); };
       fx.rollSparks(area, rsig);
       if (play) play.setExit('Back');
@@ -1222,7 +1263,7 @@ function parentNote() {
     <p class="pn-now"><b>${now}</b></p>${placed ? `
     <p class="pn-place">Placement: ${esc(p.name)} placed at about ${gradeWords(placed.grade)}. It only sets where practice starts, and it stays on this device.</p>` : ''}
     <p>World boards run on Google Firebase. Three kinds of post go to boards for the player's league: the score of a Daily challenge in the Arena and the score of a Ranked round of a game (today's and this week's board for each), and the player's Sparks total for this week (one weekly board). Sparks come from all play, Practice included, so practice adds to that posted weekly total. Practice scores themselves never leave this device.</p>
-    <p>Nothing is posted before a player answers one question about their age. The answer stays on this device and is never sent. Nothing is ever posted for a player whose answer is under 13: their scores rank on this device's board only.</p>
+    <p>Nothing is posted before a player answers one question about their age. The answer stays on this device and is never sent. Nothing is ever posted for a player whose answer is under 13: their scores rank on this device's board only. A grade or age, if given, stays on this device and only changes how much reading help Bolt gives.</p>
     <p>No identity exists until the first post: looking at World boards needs no sign-in. ${fx.t({
       explorer: "When a player 13 or older first posts, Firebase gives that player their own random ID on this browser and keeps it with the dates it was created and last used. Each player on this device who posts has their own ID and their own entry on each board. Removing a player on the Me page forgets their ID on this device.",
       challenger: "At the first post of a player 13 or older, Firebase gives that player their own random ID on this browser and keeps it with the dates it was created and last used. Each player on this device who posts has their own ID and their own entry on each board. Removing a player on the Me page forgets their ID on this device.",
@@ -1236,6 +1277,7 @@ function parentNote() {
       pro: 'Separately from World boards, the site counts visits and actions in the app (pages opened, questions answered, rounds finished) to improve it, with GoatCounter and Cloudflare Web Analytics, anonymously: no cookies, no IDs and no names.',
     })}</p>
     <p class="pn-video">Video pictures come from this site, and a video loads from YouTube, in privacy-enhanced mode, only after a player presses play; YouTube's own rules apply once it plays. Watching posts nothing.</p>
+    <p class="pn-family">Talking with the Family (an option in Me for players 13 and over, off until turned on) sends each message with the Skill, the question's numbers and the words of that visit to our server, which asks an AI model (Claude, by Anthropic) to answer as Bolt and the Family; nothing about the player goes with it, nothing is kept, and a Cloudflare Turnstile bot check runs once per browser session before the first message. It is never offered to a player whose age answer is under 13.</p>
     <p class="pn-more">More in the <a href="/privacy/?home">privacy policy</a> and the <a href="/parents/?home">page for parents</a>.</p></details>`;
 }
 /* A Board: this device's entries for everyone; the World board only for a Player whose Age answer is 13 or over, and
@@ -1317,7 +1359,11 @@ function arenaView({ signal } = {}, link = null) {
      (Word problems, Practice with no clock: openspec word-problems-more) or friend (a challenge link's round from another
      day or League: Practice with the link's questions and its clock, arena-challenge-link design D2 and D11). With Calm
      on, the untimed Practice round is picked until the Player picks another this visit. */
-  let type = fx.calmOn() ? 'untimed' : 'daily';
+  /* An Early reader's Practice has no clock (openspec change age-bands, decision 4), so the untimed round is chosen first
+     for them too; the daily round keeps the League's clock and input for every band, drawn as a bar with no ticks for
+     Early and Growing. Arena Practice: Early taps 3 choices in every Mode. */
+  const rules = fx.rules(), early = fx.band() === 'early', bar = !!rules && rules.clock !== 'mode';
+  let type = fx.calmOn() || early ? 'untimed' : 'daily';
   /* A challenge link once js/arena.js has checked it (parseChallenge): { day, league, score, ranked }, or null */
   let ch = null;
   view.innerHTML = `<section class="md-section mq-tight"><div class="md-wrap mq-narrow">
@@ -1330,11 +1376,7 @@ function arenaView({ signal } = {}, link = null) {
     ${playShelf('arena', 'More ways to race')}</div></section>`;
   const shell = $('#arShell'), rKey = 'arena:' + league, mode = fx.mode();
   const arenaRating = () => Math.round(AD.rating(rKey, mode, 0, { practice: true })); /* where Practice rounds start: a Placement level sets it when there is no Rating (openspec placement) */
-  const arenaRatingLine = () => `<small id="arRating" data-rating="${arenaRating()}">${fx.t({
-    explorer: `Your Arena Rating: <b>${arenaRating()}</b> of 20. Practice rounds get harder as you get them right.`,
-    challenger: `Your Arena Rating: <b>${arenaRating()}</b> of 20. Practice rounds start there and adapt to every answer.`,
-    pro: `Arena Rating: <b>${arenaRating()}</b>/20. Practice rounds start there and adapt to every answer; the daily round is the same for everyone.`
-  })}</small>`;
+  const arenaRatingLine = () => `<small id="arRating" data-rating="${arenaRating()}">${fx.copy('arena.rating', { r: { html: `<b>${arenaRating()}</b>` } })}</small>`;
   /* The friend's line (design D2 and D3): the Score to beat and, off the link's date or League, why the round is Practice */
   const friendLine = () => {
     if (!ch) return '';
@@ -1345,8 +1387,8 @@ function arenaView({ signal } = {}, link = null) {
   };
   const lobby = (result = '') => {
     const friend = !!ch && !ch.ranked;
-    shell.innerHTML = `${result}${friendLine()}<div class="g-optrow" role="group" aria-label="Round type">${friend ? `<button class="md-chip" aria-pressed="${type === 'friend'}" data-t="friend">Play your friend's round</button>` : ''}<button class="md-chip" aria-pressed="${type === 'daily'}" data-t="daily">Daily challenge</button><button class="md-chip" aria-pressed="${type === 'practice'}" data-t="practice">Practice round</button><button class="md-chip" aria-pressed="${type === 'untimed'}" data-t="untimed">Practice, no clock</button><button class="md-chip" aria-pressed="${type === 'words'}" data-t="words">${STORY_ROUND[mode] || STORY_ROUND.challenger}</button></div>
-      ${fx.calmOn() ? `<p class="ar-calm" id="arCalmNote">The daily challenge is a timed race for everyone. Practice has no clock in Calm.${friend ? " Your friend's round keeps its clock too: the Score to beat was made in 60 seconds." : ''}</p>` : ''}
+    shell.innerHTML = `${result}${friendLine()}<div class="g-optrow" role="group" aria-label="Round type">${friend ? `<button class="md-chip" aria-pressed="${type === 'friend'}" data-t="friend">Play your friend's round</button>` : ''}<button class="md-chip" aria-pressed="${type === 'daily'}" data-t="daily">${fx.copy('arena.daily')}</button><button class="md-chip" aria-pressed="${type === 'practice'}" data-t="practice">${fx.copy('arena.practiceType')}</button><button class="md-chip" aria-pressed="${type === 'untimed'}" data-t="untimed">${fx.copy('arena.untimed')}</button><button class="md-chip" aria-pressed="${type === 'words'}" data-t="words">${STORY_ROUND[mode] || STORY_ROUND.challenger}</button></div>
+      ${fx.calmOn() ? `<p class="ar-calm" id="arCalmNote">The daily challenge is a timed race for everyone. Practice has no clock in Calm.${friend ? " Your friend's round keeps its clock too: the Score to beat was made in 60 seconds." : ''}</p>` : early ? `<p class="ar-calm" id="arCalmNote">${fx.copy('arena.noClockNote')}</p>` : ''}
       <p class="g-best">League: <b>${fx.MODES[fx.mode()].name}</b> · Your best today: <b>${store.best('arena-' + day)}</b><br>${arenaRatingLine()}</p>
       <button class="md-btn md-btn--primary ar-go" id="arGo">${icon('bolt')} Start</button>
       <div class="lb-cols"><div><h2 class="mq-h3">Today</h2><div id="lbDay" class="lb-wrap"></div></div><div><h2 class="mq-h3">This week</h2><div id="lbWeek" class="lb-wrap"></div></div></div>
@@ -1386,15 +1428,11 @@ function arenaView({ signal } = {}, link = null) {
        D5; arena-challenge-link design D10: the friend's set is another day's or League's, not this Player's level). */
     const fixed = words || friend;
     const before = arenaRating(), dial = new AD.Dial(AD.rating(rKey, mode, 0, { practice: type !== 'daily' })); /* the daily round keeps the Mode's start (ADR 0007) */
-    const untimed = words || type === 'untimed' || (type === 'practice' && fx.calmOn());
-    A.runArena(area, { league: friend ? ch.league : league, day: ranked ? day : friend ? ch.day : null, dial: fixed ? null : dial, signal: rsig, untimed, ...(words ? { deal: storyDeal(A, storiesNow()), count: A.STORY_QS } : {}), onEnd: async r => {
+    const untimed = words || type === 'untimed' || (type === 'practice' && (fx.calmOn() || early));
+    A.runArena(area, { league: friend ? ch.league : league, day: ranked ? day : friend ? ch.day : null, dial: fixed ? null : dial, signal: rsig, untimed, tap: early, choices: rules ? rules.choices : 4, bar, ...(words ? { deal: storyDeal(A, storiesNow()), count: A.STORY_QS } : {}), onEnd: async r => {
       metrics.roundEnd('arena', league);
       const after = fixed ? before : Math.round(AD.saveRating(rKey, dial) || before);
-      const moved = fixed || dial.n < 4 ? '' : fx.t({
-        explorer: after > before ? ` Your Arena Rating went up to ${after}!` : after < before ? ` Your Arena Rating is ${after} now.` : '',
-        challenger: after > before ? ` Arena Rating up to ${after}.` : after < before ? ` Arena Rating now ${after}.` : '',
-        pro: after > before ? ` Arena Rating up to ${after}.` : after < before ? ` Arena Rating down to ${after}.` : ''
-      });
+      const moved = fixed || dial.n < 4 || after === before ? '' : ' ' + fx.copy(after > before ? 'arena.ratingUp' : 'arena.ratingDown', { r: after });
       store.bump('arena'); store.touchDay();
       if (r.score > store.count('arenaBest')) store.bump('arenaBest', r.score - store.count('arenaBest'));
       const sp = Math.round(r.score / 5); if (sp) store.addSparks(sp, 'arena');
@@ -1402,7 +1440,7 @@ function arenaView({ signal } = {}, link = null) {
       if (ranked) {
         const isBest = store.setBest('arena-' + day, r.score);
         if (store.markSeen('daily:' + day)) store.bump('dailyDays');
-        if (isBest) { fx.confetti(100); msg = 'New personal best for today!'; }
+        if (isBest) { fx.confetti(100); msg = fx.copy('arena.newBest'); }
         postScore([`daily-${day}-${league}`, `week-${wk}-${league}`], r.score, `for today's ${fx.MODES[fx.mode()].name} race.`);
       }
       /* The Score to beat, answered (arena-challenge-link design D3), on the friend's own round, Ranked or Practice */
@@ -1567,8 +1605,8 @@ function gameView(id, lvl = 0, { signal } = {}) {
     play = openShell(`${g.title}${lvl ? ` level ${lvl}` : ''}`, { signal: session.signal, exit: mode === 'endless' ? 'Finish' : 'Stop', exitId: 'gQuit', onExit: () => quit(), focusBack: () => $('#gStart', shell) });
     const area = play.area;
     round = child(session.signal); const roundSignal = round.signal;
-    /* Calm: a Practice round (a Level) of a timed game has no clock and ends after its questions; Ranked keeps the clock */
-    const untimed = !!g.secs && mode !== 'ranked' && fx.calmOn();
+    /* Calm, or an Early reader (openspec change age-bands): a Practice round (a Level) of a timed game has no clock and ends after its questions; Ranked keeps the clock */
+    const untimed = !!g.secs && mode !== 'ranked' && (fx.calmOn() || fx.band() === 'early'); /* an Early reader too (openspec change age-bands) */
     const startD = L ? L.cfg.start : AD.rating('game:' + g.id, m, 0, { practice: mode === 'endless' }), dial = new AD.Dial(startD, { floor: L ? L.cfg.floor : 1 }); /* Endless practice starts at a Placement level with no Rating; a Ranked round at the Mode's start (ADR 0007) */
     area.innerHTML = `<div class="g-head"><span class="g-hud" id="gHud">${dialMeter(dial.lv)}<span class="g-pts"><b id="gPts">0</b> pts</span></span><span class="g-sayline" id="gSay" role="status" aria-live="polite"></span></div><div class="g-area" id="gArea"></div>`;
     const sayEl = $('#gSay', area), hudEl = $('#gHud', area);
@@ -1589,7 +1627,7 @@ function gameView(id, lvl = 0, { signal } = {}) {
         /* A Level of a timed game played without the clock earns Sparks but no Medal */
         const noClock = untimed, medal = noClock ? 0 : levelMedal(L.goal, score), improved = store.setMedal(gkey(lvl), medal), sp = 10 + medal * 10 + Math.min(60, Math.round(score / 40)); store.addSparks(sp, 'game');
         if (medal === 3) fx.confetti(100); else if (medal) fx.confetti(40);
-        showResult(resultHTML({ medal, noClock }, [`${score.toLocaleString('en-US')} points.${noClock ? '' : ` Goals: ${L.goal.map(v => v.toLocaleString('en-US')).join(', ')}.`}`, skillLine + skillMove, `<span class="fx-sparks">+${sp} Sparks</span>${improved ? ' New best.' : ''}`, ...(noClock ? ['<span class="lv-noclock">Medals for this game need the clock. Turn Calm off to play for one.</span>'] : [])], lvl < LEVELS_PER_GAME ? `#/game/${g.id}/${lvl + 1}` : null, `#/game/${g.id}/${lvl}`, `#/game/${g.id}`, 'Game home'), close);
+        showResult(resultHTML({ medal, noClock }, [`${score.toLocaleString('en-US')} points.${noClock ? '' : ` Goals: ${L.goal.map(v => v.toLocaleString('en-US')).join(', ')}.`}`, skillLine + skillMove, `<span class="fx-sparks">+${sp} Sparks</span>${improved ? ' New best.' : ''}`, ...(noClock ? [`<span class="lv-noclock">Medals for this game need the clock. ${fx.copy('game.noClockWhy')}</span>`] : [])], lvl < LEVELS_PER_GAME ? `#/game/${g.id}/${lvl + 1}` : null, `#/game/${g.id}/${lvl}`, `#/game/${g.id}`, 'Game home'), close);
         const rt = area.querySelector('[data-retry]'); if (rt) rt.onclick = e => { e.preventDefault(); mount(ctx => gameView(g.id, lvl, ctx)); };
         fx.rollSparks(area, signal);
         return;
@@ -1914,7 +1952,15 @@ function familySwitchHTML(p) {
   return `<div class="me-family md-card"><button type="button" class="md-switch" role="switch" id="familySwitch" aria-checked="${on}" aria-describedby="familyAbout"><span>Try the Nikhilam Family helpers</span><span class="md-track" aria-hidden="true"><span class="md-knob"></span></span></button>
     <p class="mq-small" id="familyAbout">${fx.t({ explorer: 'Shunya, Nava and Eka hop in when a question gets tricky. They give clues, never the answer.', challenger: 'Shunya, Nava and Eka, the Zero, Nine and One of the Nikhilam Family, are your study friends. When a question gets tricky they hop in with a hint, the method or an example on other numbers, never the answer.', pro: 'Shunya, Nava and Eka, the Zero, Nine and One of the Nikhilam Family, notice when a question is not going well and offer a hint, the method or a worked example on other numbers, never the answer.' })} Saved for this Player on this device.</p>
     ${on ? `<fieldset class="me-fam-when"><legend>When they help</legend>${FAMILY_WHEN.map(([v, l]) => `<label><input type="radio" name="familyHelp" value="${v}"${v === when ? ' checked' : ''}> ${l}</label>`).join('')}</fieldset>` : ''}
+    ${on && talkEligible(p.age, store.savedGrade()) ? familyTalkHTML(p) : ''}
     <p class="pr-say" id="familyMsg" role="status" aria-live="polite"></p></div>`;
+}
+/* "Talk with the Family" (openspec family-helpers step 3, helper-conversation spec, design D15 and D18): opt-in, and
+   only offered to a Player whose saved answers say 13 or over (talkEligible); nothing is offered to anyone else */
+function familyTalkHTML(p) {
+  const on = p.familyTalk === true;
+  return `<button type="button" class="md-switch" role="switch" id="familyTalkSwitch" aria-checked="${on}" aria-describedby="familyTalkAbout"><span>Talk with the Family</span><span class="md-track" aria-hidden="true"><span class="md-knob"></span></span></button>
+    <p class="mq-small" id="familyTalkAbout">Type a question in a visit and Bolt, Shunya, Nava or Eka answer in their own words: a hint, the method or an example on other numbers, never the answer. Each message sends the Skill, the question's numbers and the words of that visit to our server, which asks an AI model (Claude, by Anthropic) to reply; nothing about you goes with it, and nothing is kept. A quick bot check (Cloudflare Turnstile) runs once before your first message. For Players 13 and over. Don't share your name or where you live.</p>`;
 }
 /* The Trophy case on Me (openspec working-memory-scaffolds, trophy-case spec): every reward but Sparks in one place,
    each row with a link to where it is earned; the Badges follow it. Explorer is not offered Belts or Stars, so their
@@ -1930,6 +1976,17 @@ function trophyCaseHTML() {
     row('cards', 'Sutra cards', `${gm.collectedCount()} of ${SUTRAS.length + SUBSUTRAS.length} collected`, '', '<a href="#/sutras">See the Sutras</a>')
   ];
   return `<section class="trophy-case" aria-labelledby="trophyH"><h2 class="mq-strand" id="trophyH">Trophy case</h2><div class="trophy-grid">${rows.join('')}</div>`;
+}
+/* "For grown-ups: Reading help" on Me (openspec change age-bands, decisions 2 and 3): the Grade answer as how much
+   reading help Bolt gives (lots, some, a little; never a band name), with Change and Clear. No adult check: it changes
+   presentation only. The answer stays on this device (ADR 0008). */
+function readingHelpHTML() {
+  const r = store.reading(), b = fx.band();
+  return `<h3 class="mq-h3" id="readingH">For grown-ups: Reading help</h3>
+    <div class="me-reading md-card" role="group" aria-labelledby="readingH">
+      <p class="mq-small" id="readingNote">${r ? `Reading help: <b>${HELP_WORDS[b]}</b> (${esc(readingLabel(r))}).` : 'No grade or age given: Bolt talks the way the Mode does.'} A grade or age, if given, stays on this device and only changes how much reading help Bolt gives: read aloud, shorter words, answer buttons and Practice clocks. Never how hard the math is.</p>
+      <p class="me-acts"><button type="button" class="md-btn md-btn--sm" id="readingChange">${r ? 'Change' : 'Answer the grade question'}</button>${r ? '<button type="button" class="md-btn md-btn--sm" id="readingClear">Clear</button>' : ''}</p>
+    </div>`;
 }
 /* Recent Sparks (openspec change muse-review-polish, design D4): the last 50 awards from store.sparksLog(), newest
    first, each with what it was for and when; the first eight open, the rest behind Show all. On this device only. */
@@ -1970,6 +2027,7 @@ function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw
     ${skySwitchHTML(p)}
     ${familySwitchHTML(p)}${install ? install.meCardHTML() : '<div id="meInstallCard" hidden></div>'}
     <div class="me-set"><label><input type="checkbox" id="setSound" ${fx.soundOn() ? 'checked' : ''}> Sound effects</label><label><input type="checkbox" id="setVoice" ${fx.voiceOn() ? 'checked' : ''}> Read questions aloud</label></div>
+    ${readingHelpHTML()}
     ${ambienceSettingsHTML()}
     <h3 class="mq-h3" id="calmH">Calm and motion</h3>
     <div class="me-calm" role="group" aria-labelledby="calmH">
@@ -2009,12 +2067,16 @@ function meView(ctx = {}) { /* ctx.signal: the view's, from the router; a redraw
   const sky = $('#skySwitch'); if (sky) sky.onclick = () => { store.updatePlayer({ sky: sky.getAttribute('aria-checked') !== 'true' }); fx.sfx('pop'); meView(ctx); $('#skySwitch').focus(); $('#skyMsg').textContent = SKY.skyOn(store.player()) ? 'The Sky is your home now.' : 'Your home is the tile home again.'; };
   const fam = $('#familySwitch'); if (fam) fam.onclick = () => { store.updatePlayer({ family: fam.getAttribute('aria-checked') !== 'true' }); fx.sfx('pop'); meView(ctx); $('#familySwitch').focus(); $('#familyMsg').textContent = store.player().family ? 'The Family helpers are on.' : 'The Family helpers are off.'; };
   view.querySelectorAll('input[name="familyHelp"]').forEach(r => r.onchange = () => { store.updatePlayer({ familyHelp: r.value }); $('#familyMsg').textContent = r.value === 'off' ? 'They will stay away.' : r.value === 'ask' ? 'They come when you tap Ask a friend.' : 'They come when a question gets tricky, or when you ask.'; });
+  const talk = $('#familyTalkSwitch'); if (talk) talk.onclick = () => { store.updatePlayer({ familyTalk: talk.getAttribute('aria-checked') !== 'true' }); fx.sfx('pop'); meView(ctx); $('#familyTalkSwitch').focus(); $('#familyMsg').textContent = store.player().familyTalk ? 'Talking with the Family is on: ask them anything about a question.' : 'Talking with the Family is off.'; };
   $('#setSound').onchange = e => { fx.setSound(e.target.checked); fx.sfx('ok'); };
   $('#setBg').onchange = e => { setBg(e.target.checked); const t = document.getElementById('vmBg'); if (t) t.checked = e.target.checked; };
   $('#setCalm').onclick = e => { fx.setCalm(!fx.calmOn()); e.currentTarget.setAttribute('aria-checked', String(fx.calmOn())); };
   $('#setMotion').onclick = () => fx.setMotionPaused(!fx.motionPaused());
   view.querySelectorAll('.me-size [data-size]').forEach(b => b.onclick = () => { fx.setTextSize(b.dataset.size); view.querySelectorAll('.me-size [data-size]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.size === fx.textSize()))); });
   $('#setVoice').onchange = e => { fx.setVoice(e.target.checked); if (e.target.checked) fx.speak('Read aloud is on.', true); else fx.stopSpeaking(); };
+  /* Reading help (openspec change age-bands): Change opens the grade question, Clear removes the Grade answer; both redraw */
+  const rch = $('#readingChange'); if (rch) rch.onclick = () => askGrade(ctx.signal || boot.signal, () => meView(ctx));
+  const rcl = $('#readingClear'); if (rcl) rcl.onclick = () => { store.clearReading(); fx.applyMode(); fx.sfx('tap'); meView(ctx); $('#readingChange').focus(); };
   fx.wireVoiceSettings(view, { player: p.id });
   wireAmbienceSettings(view);
   wireWorldBoards(view);

@@ -13,7 +13,7 @@ import { SKILLS } from '../js/skills/index.js';
 import { seeded, kata, KATAS_PER_TRICK } from '../js/levels.js';
 import { TRICKS } from '../js/vedic.js';
 import { makeSet } from '../js/arena.js';
-import { wholeSkills, fixedLines, STITCHED_K2 } from '../tools/voice/lines.mjs';
+import { wholeSkills, fixedLines, bandLines, STITCHED_K2 } from '../tools/voice/lines.mjs';
 import { allExplanationLines } from '../js/explain-lines.js';
 import { VIDEOS, LINKS } from '../js/videos.js';
 import { TEMPLATES, WRITTEN, storyFor } from '../js/stories.js';
@@ -105,4 +105,20 @@ test('every Explorer menu tab line has studio audio', { skip: !manifest && 'noth
   const lines = new Set(manifest.lines), clips = new Set(manifest.clips);
   const miss = NAV_LINES.map(t => normalize(t)).filter(w => w && !covered(w, lines, clips));
   assert.deepEqual(miss, [], `${miss.length} menu tab lines have no studio audio; re-run tools/voice/lines.mjs, record.mjs and publish.mjs`);
+});
+
+/* Reading bands (openspec change age-bands, task 3.3): every `early` copy line and every Bolt line is on the whole-line
+   list, so the owner's next recording run covers them (band-copy spec "Early lines are recorded whole"). Until that
+   re-record they play in the Built-in voice or stitched from clips; the change's archive removes the todo so this
+   becomes a hard gate. A line with a count is a Server line from its sentence template and is not listed. */
+test('every Early and Bolt line of the copy table is on the whole-line list, with no placeholder', () => {
+  const lines = bandLines();
+  assert.ok(lines.length >= 60, `the band lines (${lines.length})`);
+  for (const t of ['You did it!', 'Try again!', 'Boom.', 'What grade are you in?', 'A grown-up can help.']) assert.ok(lines.includes(t), t);
+  assert.ok(lines.every(t => !/\{\w+\}/.test(t)), 'no line with a count: those come from shared/src/voice-text.ts templates');
+});
+test('every Early and Bolt line has studio audio', { skip: !manifest && 'nothing recorded yet (no tools/voice/manifest.json)', todo: 'until the age-bands re-record (owner)' }, () => {
+  const lines = new Set(manifest.lines), clips = new Set(manifest.clips);
+  const miss = bandLines().map(t => normalize(t)).filter(w => w && !covered(w, lines, clips));
+  assert.deepEqual(miss.slice(0, 10), [], `${miss.length} band lines have no studio audio; re-run tools/voice/lines.mjs, record.mjs and publish.mjs`);
 });

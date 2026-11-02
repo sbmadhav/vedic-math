@@ -10,6 +10,18 @@ const NONE = { note() {}, askHTML: '', on: false };
 /* The switch, off by default (FAMILY_DEFAULT), and the setting: 'always' (default), 'ask' or 'off' */
 export const helpersOn = p => !!p && p.family === true && p.familyHelp !== 'off';
 export const ASK_HTML = '<button type="button" class="md-btn md-btn--sm fh-ask" data-fh-ask>Ask a friend</button>';
+/* Talking with the Family (step 3, design D15, helper-conversation spec): offered only to a Player whose saved answers
+   say 13 or over: an Age answer of 13 or over, or with no Age answer a Grade answer of grade 9 or above (grade 8 starts
+   at 12 or 13, so it does not count); an Age answer under 13 always rules it out. age is the Player's Age answer (a
+   number or 'adult', js/store.js setAge), grade the saved Grade answer (store.savedGrade()); both stay on the device. */
+export function talkEligible(age, grade) {
+  if (age === 'adult') return true;
+  if (typeof age === 'number') return age >= 13;
+  const g = Number(grade);
+  return Number.isInteger(g) && g >= 9;
+}
+/* The switch "Talk with the Family" (player.familyTalk, off by default), and only with the helpers on and the gate open */
+export const talkOn = (p, grade) => helpersOn(p) && p.familyTalk === true && talkEligible(p.age, grade);
 
 /* A round's Family: familyRound({ root, card, signal, area, protect, ctx, hint }) -> { note(event), askHTML, on }.
    Events are createCoach()'s (js/family-helpers.js). Taps on Ask a friend inside root are wired here. */
